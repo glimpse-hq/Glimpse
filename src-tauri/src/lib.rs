@@ -396,7 +396,6 @@ fn update_settings(
     llmEndpoint: String,
     llmApiKey: String,
     llmModel: String,
-    userContext: String,
     editModeEnabled: bool,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
@@ -471,7 +470,6 @@ fn update_settings(
     next.llm_endpoint = llmEndpoint;
     next.llm_api_key = llmApiKey;
     next.llm_model = llmModel;
-    next.user_context = userContext;
     next.edit_mode_enabled = editModeEnabled;
 
     let next = state

@@ -61,7 +61,6 @@ type StoredSettings = {
     llm_endpoint: string;
     llm_api_key: string;
     llm_model: string;
-    user_context: string;
     dictionary: string[];
     edit_mode_enabled: boolean;
 };
@@ -588,7 +587,6 @@ const SettingsModal = ({
                     llmEndpoint,
                     llmApiKey,
                     llmModel,
-                    userContext: "",
                     editModeEnabled,
                 });
                 setError(null);

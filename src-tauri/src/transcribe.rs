@@ -71,18 +71,18 @@ pub(crate) fn queue_transcription(
                 "[transcription] Using cloud auth: url={} edit_mode={}",
                 creds.function_url, has_selection
             );
-            let cloud_prompt = dictionary::build_dictionary_prompt(&settings.dictionary);
-            let cloud_user_context = build_cloud_user_context(&settings);
+            
+            let payload = build_transcription_payload(
+                &settings,
+                pending_selected_text.clone(),
+                None,
+                creds.history_sync_enabled,
+            );
             let cloud_config = transcription_api::CloudTranscriptionConfig::new(
                 creds.function_url,
                 creds.jwt,
-                true,
-                cloud_user_context,
-                creds.history_sync_enabled,
-            )
-            .with_selected_text(pending_selected_text.clone())
-            .with_language(Some(settings.language.clone()))
-            .with_prompt(cloud_prompt);
+                payload,
+            );
 
             match transcription_api::request_cloud_transcription(
                 &http,
@@ -454,18 +454,18 @@ pub(crate) fn retry_transcription_async(
                 "[retry_transcription] Using cloud auth: url={}",
                 creds.function_url
             );
+            
+            let payload = build_transcription_payload(
+                &settings,
+                None,
+                Some(retry_id.clone()),
+                creds.history_sync_enabled,
+            );
             let cloud_config = transcription_api::CloudTranscriptionConfig::new(
                 creds.function_url,
                 creds.jwt,
-                true,
-                if settings.user_context.trim().is_empty() {
-                    None
-                } else {
-                    Some(settings.user_context.clone())
-                },
-                creds.history_sync_enabled,
-            )
-            .with_local_id(Some(retry_id.clone()));
+                payload,
+            );
 
             match transcription_api::request_cloud_transcription(
                 &http,
@@ -1089,21 +1089,29 @@ pub(crate) fn count_words(text: &str) -> u32 {
         .count() as u32
 }
 
-fn build_cloud_user_context(settings: &UserSettings) -> Option<String> {
-    let mut parts = Vec::new();
+fn build_transcription_payload(
+    settings: &UserSettings,
+    selected_text: Option<String>,
+    local_id: Option<String>,
+    history_sync: bool,
+) -> transcription_api::TranscriptionPayload {
+    let personality = mode_context::resolve_active_personality(settings)
+        .map(|p| transcription_api::PersonalityPayload::from_personality(&p));
 
-    if !settings.user_context.trim().is_empty() {
-        parts.push(settings.user_context.trim().to_string());
-    }
-
-    if let Some(prompt) = mode_context::build_mode_prompt(settings) {
-        parts.push(prompt);
-    }
-
-    if parts.is_empty() {
+    let user_name = if settings.user_name.trim().is_empty() {
         None
     } else {
-        Some(parts.join("\n\n"))
+        Some(settings.user_name.trim().to_string())
+    };
+
+    transcription_api::TranscriptionPayload {
+        user_name,
+        language: settings.language.clone(),
+        dictionary: settings.dictionary.clone(),
+        personality,
+        selected_text,
+        history_sync,
+        local_id,
     }
 }
 

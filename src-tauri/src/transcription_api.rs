@@ -2,9 +2,10 @@ use std::fs;
 
 use anyhow::{anyhow, Context, Result};
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::recorder::RecordingSaved;
+use crate::settings::Personality;
 
 /// Maximum audio file size 25MB
 const MAX_AUDIO_SIZE_BYTES: u64 = 25 * 1024 * 1024;
@@ -19,19 +20,45 @@ pub fn auto_paste_enabled() -> bool {
     env_flag("GLIMPSE_AUTO_PASTE", true)
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct TranscriptionPayload {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_name: Option<String>,
+    pub language: String,
+    pub dictionary: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub personality: Option<PersonalityPayload>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_text: Option<String>,
+    pub history_sync: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub local_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PersonalityPayload {
+    pub id: String,
+    pub name: String,
+    pub instructions: Vec<String>,
+}
+
+impl PersonalityPayload {
+    pub fn from_personality(p: &Personality) -> Self {
+        Self {
+            id: p.id.clone(),
+            name: p.name.clone(),
+            instructions: p.instructions.clone(),
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub struct CloudTranscriptionConfig {
     pub function_url: String,
     pub jwt: String,
-    pub llm_cleanup: bool,
-    pub user_context: Option<String>,
-    pub language: Option<String>,
-    pub selected_text: Option<String>,
+    pub payload: TranscriptionPayload,
     pub auto_paste: bool,
-    pub history_sync_enabled: bool,
-    pub prompt: Option<String>,
-    pub local_id: Option<String>,
 }
 
 fn env_flag(key: &str, default: bool) -> bool {
@@ -41,46 +68,13 @@ fn env_flag(key: &str, default: bool) -> bool {
 }
 
 impl CloudTranscriptionConfig {
-    pub fn new(
-        function_url: String,
-        jwt: String,
-        llm_cleanup: bool,
-        user_context: Option<String>,
-        history_sync_enabled: bool,
-    ) -> Self {
+    pub fn new(function_url: String, jwt: String, payload: TranscriptionPayload) -> Self {
         Self {
             function_url,
             jwt,
-            llm_cleanup,
-            user_context,
-            language: None,
-            selected_text: None,
+            payload,
             auto_paste: env_flag("GLIMPSE_AUTO_PASTE", true),
-            history_sync_enabled,
-            prompt: None,
-            local_id: None,
         }
-    }
-
-    pub fn with_selected_text(mut self, text: Option<String>) -> Self {
-        self.selected_text = text;
-        self
-    }
-
-    #[allow(dead_code)]
-    pub fn with_language(mut self, language: Option<String>) -> Self {
-        self.language = language;
-        self
-    }
-
-    pub fn with_prompt(mut self, prompt: Option<String>) -> Self {
-        self.prompt = prompt;
-        self
-    }
-
-    pub fn with_local_id(mut self, local_id: Option<String>) -> Self {
-        self.local_id = local_id;
-        self
     }
 }
 
@@ -161,55 +155,26 @@ pub async fn request_cloud_transcription(
     let bytes = fs::read(&saved.path)
         .with_context(|| format!("Failed to read recording at {}", saved.path.display()))?;
 
-    let mut url = config.function_url.clone();
-    let mut query_parts = Vec::new();
+    let url = config.function_url.clone();
 
-    if !config.llm_cleanup {
-        query_parts.push("llm_cleanup=false".to_string());
-    }
-    if let Some(ref ctx) = config.user_context {
-        query_parts.push(format!("user_context={}", urlencoding::encode(ctx)));
-    }
-    if let Some(ref language) = config.language {
-        query_parts.push(format!("language={}", urlencoding::encode(language)));
-    }
-    if let Some(ref prompt) = config.prompt {
-        query_parts.push(format!("prompt={}", urlencoding::encode(prompt)));
-    }
-
-    if !query_parts.is_empty() {
-        url = format!("{}?{}", url, query_parts.join("&"));
-    }
+    let payload_json = serde_json::to_string(&config.payload)
+        .context("Failed to serialize transcription payload")?;
+    
+    use base64::Engine;
+    let payload_encoded = base64::engine::general_purpose::STANDARD.encode(payload_json.as_bytes());
 
     eprintln!(
         "[cloud_transcription] POST {} (audio size: {} bytes, edit_mode: {})",
         url,
         bytes.len(),
-        config.selected_text.is_some()
+        config.payload.selected_text.is_some()
     );
 
-    let mut request = client
+    let request = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", &config.jwt))
         .header("Content-Type", "audio/wav")
-        .header(
-            "X-History-Sync-Enabled",
-            if config.history_sync_enabled {
-                "true"
-            } else {
-                "false"
-            },
-        );
-
-    if let Some(ref selected) = config.selected_text {
-        use base64::Engine;
-        let encoded = base64::engine::general_purpose::STANDARD.encode(selected.as_bytes());
-        request = request.header("X-Selected-Text", encoded);
-    }
-
-    if let Some(ref local_id) = config.local_id {
-        request = request.header("X-Local-Id", local_id);
-    }
+        .header("X-Transcription-Meta", payload_encoded);
 
     let response = request
         .body(bytes)

@@ -261,12 +261,6 @@ pub async fn cleanup_transcription(
 
     eprintln!("[LLM] Processing transcription: {} chars", text.len());
 
-    let user_content = if settings.user_context.is_empty() {
-        text.to_string()
-    } else {
-        format!("Context: {}\n\n{}", settings.user_context, text)
-    };
-
     let body = ChatRequest {
         model: resolve_model(settings),
         messages: vec![
@@ -276,7 +270,7 @@ pub async fn cleanup_transcription(
             },
             Message {
                 role: "user".into(),
-                content: user_content,
+                content: text.to_string(),
             },
         ],
         temperature: 0.2,

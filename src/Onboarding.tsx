@@ -390,7 +390,6 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                 llmEndpoint,
                 llmApiKey,
                 llmModel,
-                userContext: "",
                 editModeEnabled: false,
             });
             await invoke("complete_onboarding");

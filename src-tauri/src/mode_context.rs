@@ -155,3 +155,18 @@ pub fn build_mode_prompt(settings: &UserSettings) -> Option<String> {
     prompt.push_str(&instructions);
     Some(prompt)
 }
+
+pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality> {
+    if !permissions::check_accessibility_permission() {
+        return None;
+    }
+
+    let context = accessibility_context::get_active_context()?;
+    
+    settings
+        .personalities
+        .iter()
+        .filter(|mode| mode.enabled)
+        .find(|mode| mode_matches(mode, &context))
+        .cloned()
+}
