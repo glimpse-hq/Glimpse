@@ -259,6 +259,29 @@ impl StorageManager {
         }
     }
 
+    pub fn get_all_filtered(&self, search_query: Option<&str>) -> Result<Vec<TranscriptionRecord>> {
+        let conn = self.connection.lock();
+        let (where_clause, params) = Self::build_search_query(search_query);
+
+        let sql = format!(
+            "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                    speech_model, llm_model, word_count, audio_duration_seconds, synced
+             FROM transcriptions
+             {}
+             ORDER BY timestamp DESC",
+            where_clause
+        );
+
+        let mut stmt = conn.prepare(&sql)?;
+        let records = stmt
+            .query_map(rusqlite::params_from_iter(params.iter()), |row| {
+                Self::record_from_row(row)
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        Ok(records)
+    }
+
     pub fn delete(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection.lock();
         let record = Self::get_record(&conn, id)?;

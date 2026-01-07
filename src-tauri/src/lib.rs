@@ -689,8 +689,12 @@ fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
 #[tauri::command]
 fn get_transcriptions(
     state: tauri::State<AppState>,
+    search_query: Option<String>,
 ) -> Result<Vec<storage::TranscriptionRecord>, String> {
-    Ok(state.storage().get_all())
+    state
+        .storage()
+        .get_all_filtered(search_query.as_deref())
+        .map_err(|err| format!("Failed to get transcriptions: {err}"))
 }
 
 #[tauri::command]

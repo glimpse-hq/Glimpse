@@ -22,7 +22,6 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
         undoLlmCleanup,
         clearAllTranscriptions,
         searchTranscriptions,
-        loadMore
     } = useTranscriptions();
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -160,40 +159,12 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                 ) : transcriptions.length > 0 || isLoading ? (
                     <Virtuoso
                         style={{ height: '100%' }}
-                        totalCount={totalCount}
-                        rangeChanged={({ startIndex, endIndex }) => {
-                            const PAGE_SIZE = 50;
-                            const startPage = Math.floor(startIndex / PAGE_SIZE) * PAGE_SIZE;
-                            const endPage = Math.floor(endIndex / PAGE_SIZE) * PAGE_SIZE;
-
-                            for (let offset = startPage; offset <= endPage; offset += PAGE_SIZE) {
-                                loadMore(offset);
-                            }
-                        }}
+                        data={transcriptions}
                         overscan={200}
                         components={{
                             Header: () => <div className="h-1" />,
                         }}
-                        itemContent={(index) => {
-                            const record = transcriptions[index];
-                            if (!record) {
-                                return (
-                                    <div className="pb-1 pl-1 pr-2">
-                                        <div className="h-[100px] w-full rounded-lg bg-surface-surface border border-border-primary flex items-center justify-center">
-                                            <DotMatrix
-                                                rows={1}
-                                                cols={3}
-                                                activeDots={[0, 1, 2]}
-                                                dotSize={3}
-                                                gap={2}
-                                                color="var(--color-border-secondary)"
-                                                animated
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            }
-
+                        itemContent={(_index, record) => {
                             const isRetrying = retryingIds.includes(record.id);
                             return (
                                 <div className="pb-1 pl-1">
