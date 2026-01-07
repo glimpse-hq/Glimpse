@@ -134,7 +134,7 @@ fn default_personalities() -> Vec<Personality> {
                 "Spark".to_string(),
             ],
             websites: vec![
-                "gmail.com".to_string(),
+                "mail.google.com".to_string(),
                 "outlook.com".to_string(),
                 "mail.yahoo.com".to_string(),
             ],
