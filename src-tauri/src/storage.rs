@@ -594,6 +594,18 @@ impl StorageManager {
             "synced",
             "ALTER TABLE transcriptions ADD COLUMN synced INTEGER NOT NULL DEFAULT 0",
         )?;
+        Self::ensure_column(
+            conn,
+            "transcriptions",
+            "mode_id",
+            "ALTER TABLE transcriptions ADD COLUMN mode_id TEXT NULL",
+        )?;
+        Self::ensure_column(
+            conn,
+            "transcriptions",
+            "mode_name",
+            "ALTER TABLE transcriptions ADD COLUMN mode_name TEXT NULL",
+        )?;
         Ok(())
     }
 
