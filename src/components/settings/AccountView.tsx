@@ -239,7 +239,7 @@ const AccountView = ({
 
     if (!currentUser) return null;
 
-    const isSubscriber = currentUser.labels?.includes("subscriber");
+    const isSubscriber = currentUser.labels?.includes("cloud");
 
     return (
         <div className="space-y-6">

@@ -121,7 +121,7 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
 
     useEffect(() => {
         setUserId(user?.$id ?? null);
-        setIsSubscriber(user?.labels?.includes("subscriber") ?? false);
+        setIsSubscriber(user?.labels?.includes("cloud") ?? false);
     }, [user]);
 
     const loadTranscriptions = useCallback(async (query?: string) => {

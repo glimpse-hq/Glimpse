@@ -190,7 +190,7 @@ const SettingsModal = ({
     const [authShowPassword, setAuthShowPassword] = useState(false);
     const [whatsNewOpen, setWhatsNewOpen] = useState(false);
 
-    const isSubscriber = currentUser?.labels?.includes("subscriber") ?? false;
+    const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
     const isDeveloper = currentUser?.labels?.includes("dev") ?? false;
 
     const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {

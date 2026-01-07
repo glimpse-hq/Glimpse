@@ -32,7 +32,7 @@ export function useCloudTranscription() {
                     return;
                 }
 
-                const isSubscriber = user.labels?.includes("subscriber") || user.labels?.includes("cloud") || false;
+                const isSubscriber = user.labels?.includes("cloud") || false;
                 const isTester = user.labels?.includes("tester") || false;
 
                 if (!CLOUD_FUNCTION_URL) {

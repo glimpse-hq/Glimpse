@@ -213,7 +213,7 @@ pub async fn request_cloud_transcription(
         if let Some(ref code) = parsed.code {
             match code.as_str() {
                 "QUOTA_EXCEEDED" => {
-                    let user_type = parsed.user_type.as_deref().unwrap_or("subscriber");
+                    let user_type = parsed.user_type.as_deref().unwrap_or("cloud");
                     return Err(anyhow!("QUOTA_EXCEEDED:{}", user_type));
                 }
                 "QUOTA_CHECK_FAILED" => {
