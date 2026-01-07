@@ -206,7 +206,6 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                                         onRetryLlm={retryLlmCleanup}
                                         onUndoLlm={undoLlmCleanup}
                                         showLlmButtons={showLlmButtons}
-                                        searchQuery={debouncedQuery}
                                         skipAnimation={!!debouncedQuery}
                                         shiftHeld={shiftHeld}
                                     />

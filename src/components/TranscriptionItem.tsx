@@ -1,8 +1,22 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import ReactMarkdown, { Components } from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import { Copy, Trash2, RotateCw, Check, ChevronDown, ChevronUp, MoreVertical, Wand2, AlertTriangle, Undo2, Cloud } from "lucide-react";
 import { TranscriptionRecord } from "../hooks/useTranscriptions";
 import DotMatrix from "./DotMatrix";
+
+const markdownComponents: Components = {
+    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+    strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
+    em: ({ children }) => <em className="italic">{children}</em>,
+    code: ({ children }) => (
+        <code className="px-1 py-0.5 rounded bg-surface-elevated text-[12px] font-mono text-content-primary">{children}</code>
+    ),
+    ul: ({ children }) => <ul className="list-disc list-inside mb-2 last:mb-0 space-y-0.5">{children}</ul>,
+    ol: ({ children }) => <ol className="list-decimal list-inside mb-2 last:mb-0 space-y-0.5">{children}</ol>,
+    li: ({ children }) => <li className="text-[13px]">{children}</li>,
+};
 
 interface TranscriptionItemProps {
     record: TranscriptionRecord;
@@ -12,20 +26,26 @@ interface TranscriptionItemProps {
     onUndoLlm?: (id: string) => Promise<void>;
     isRetrying?: boolean;
     showLlmButtons?: boolean;
-    searchQuery?: string;
     skipAnimation?: boolean;
     shiftHeld?: boolean;
 }
 
-const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete, onRetry, onRetryLlm, onUndoLlm, isRetrying = false, showLlmButtons = false, searchQuery = "", skipAnimation = false, shiftHeld = false }) => {
+const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete, onRetry, onRetryLlm, onUndoLlm, isRetrying = false, showLlmButtons = false, skipAnimation = false, shiftHeld = false }) => {
     const [copied, setCopied] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [retryError, setRetryError] = useState<string | null>(null);
     const [isRetryingLlm, setIsRetryingLlm] = useState(false);
     const [isUndoingLlm, setIsUndoingLlm] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isOverflowing, setIsOverflowing] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const textRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (textRef.current && !isExpanded) {
+            setIsOverflowing(textRef.current.scrollHeight > textRef.current.clientHeight);
+        }
+    }, [record.text, isExpanded]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -63,7 +83,6 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
 
     const handleRetry = async () => {
         if (isRetrying) return;
-        setRetryError(null);
         setMenuOpen(false);
         try {
             await onRetry(record.id);
@@ -118,23 +137,6 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
         const minutes = Math.floor(seconds / 60);
         const remaining = Math.round(seconds % 60);
         return remaining === 0 ? `${minutes}m audio` : `${minutes}m ${remaining}s audio`;
-    };
-
-    // Only truncate if text is very long (>300 chars)
-    const shouldTruncate = displayText && displayText.length > 300;
-    const truncatedText = shouldTruncate && !isExpanded
-        ? displayText.slice(0, 300) + "..."
-        : displayText;
-
-    const highlightText = (text: string | null, query: string) => {
-        if (!text || !query.trim()) return text;
-        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-        const parts = text.split(regex);
-        return parts.map((part, i) =>
-            regex.test(part) ? (
-                <mark key={i} className="bg-amber-400/30 text-amber-200 rounded-sm px-0.5">{part}</mark>
-            ) : part
-        );
     };
 
     return (
@@ -222,13 +224,18 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                     {isError ? (
                         <div className="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/[0.06] px-2.5 py-2">
                             <p className="text-[12px] text-red-300/80">
-                                {retryError || errorMessage}
+                                {errorMessage}
                             </p>
                         </div>
                     ) : (
-                        <p className="text-[13px] leading-relaxed whitespace-pre-wrap text-content-secondary select-text cursor-text">
-                            {highlightText(truncatedText, searchQuery)}
-                        </p>
+                        <div 
+                            ref={textRef}
+                            className={`text-[13px] leading-relaxed text-content-secondary select-text cursor-text ${!isExpanded ? "line-clamp-6" : ""}`}
+                        >
+                            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkBreaks]}>
+                                {displayText || ""}
+                            </ReactMarkdown>
+                        </div>
                     )}
 
                     <div className="flex flex-wrap items-center gap-3 mt-1 text-[9px] text-content-disabled">
@@ -248,7 +255,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                             </>
                         )}
 
-                        {shouldTruncate && (
+                        {(isOverflowing || isExpanded) && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
                                 className="flex items-center gap-1 text-[9px] text-content-muted hover:text-content-secondary transition-colors"
