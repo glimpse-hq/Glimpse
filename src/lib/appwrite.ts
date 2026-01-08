@@ -1,6 +1,6 @@
 import { Client, Account, Databases } from "appwrite";
 
-const client = new Client();
+export const client = new Client();
 
 client
     .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT)
