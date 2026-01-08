@@ -157,11 +157,12 @@ pub async fn request_cloud_transcription(
 
     let url = config.function_url.clone();
 
-    let payload_json = serde_json::to_string(&config.payload)
-        .context("Failed to serialize transcription payload")?;
-    
     use base64::Engine;
-    let payload_encoded = base64::engine::general_purpose::STANDARD.encode(payload_json.as_bytes());
+    let audio_encoded = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    let body = serde_json::json!({
+        "audio_base64": audio_encoded,
+        "meta": &config.payload,
+    });
 
     eprintln!(
         "[cloud_transcription] POST {} (audio size: {} bytes, edit_mode: {})",
@@ -173,11 +174,10 @@ pub async fn request_cloud_transcription(
     let request = client
         .post(&url)
         .header("Authorization", format!("Bearer {}", &config.jwt))
-        .header("Content-Type", "audio/wav")
-        .header("X-Transcription-Meta", payload_encoded);
+        .header("Content-Type", "application/json");
 
     let response = request
-        .body(bytes)
+        .json(&body)
         .send()
         .await
         .context("Failed to reach cloud transcription API")?;

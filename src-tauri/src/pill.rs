@@ -123,7 +123,9 @@ impl AudioSpectrumEmitter {
 
     fn stop(mut self) {
         self.stop.store(true, Ordering::Relaxed);
-        let _ = self.handle.take();
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+        }
     }
 }
 
