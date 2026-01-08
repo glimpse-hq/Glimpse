@@ -1,4 +1,4 @@
-use crate::AppRuntime;
+use crate::{AppRuntime, AppState, pill};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
@@ -119,4 +119,55 @@ fn position_toast_window(_app: &AppHandle<AppRuntime>, toast_window: &WebviewWin
         let y = screen.height as i32 - bottom_margin;
         let _ = toast_window.set_position(tauri::PhysicalPosition::new(x, y));
     }
+}
+
+#[tauri::command]
+pub fn toast_dismissed(app: AppHandle<AppRuntime>) {
+    let state = app.state::<AppState>();
+    if state.pill().status() == pill::PillStatus::Error {
+        state.pill().reset(&app);
+    }
+    hide(&app);
+}
+
+#[tauri::command]
+pub fn debug_show_toast(
+    toast_type: String,
+    message: String,
+    action: Option<String>,
+    action_label: Option<String>,
+    app: AppHandle<AppRuntime>,
+) {
+    emit_toast(
+        &app,
+        Payload {
+            toast_type,
+            title: None,
+            message,
+            auto_dismiss: Some(true),
+            duration: Some(8000),
+            retry_id: None,
+            mode: None,
+            action,
+            action_label,
+        },
+    );
+}
+
+#[tauri::command]
+pub fn show_celebration_toast(app: AppHandle<AppRuntime>) {
+    emit_toast(
+        &app,
+        Payload {
+            toast_type: "celebration".to_string(),
+            title: Some("Upgrade Complete!".to_string()),
+            message: "Welcome to Glimpse Cloud!".to_string(),
+            auto_dismiss: Some(true),
+            duration: Some(6000),
+            retry_id: None,
+            mode: None,
+            action: None,
+            action_label: None,
+        },
+    );
 }

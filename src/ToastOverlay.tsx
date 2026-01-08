@@ -5,7 +5,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import DotMatrix from "./components/DotMatrix";
 
 // Types
-export type ToastType = "error" | "info" | "success" | "warning" | "update";
+export type ToastType = "error" | "info" | "success" | "warning" | "update" | "celebration";
 
 export interface ToastPayload {
   type: ToastType;
@@ -29,7 +29,47 @@ const COLORS: Record<ToastType, { border: string; dot: string }> = {
   success: { border: "border-emerald-500/30", dot: "bg-emerald-400" },
   warning: { border: "border-amber-500/40", dot: "bg-amber-400" },
   update: { border: "border-violet-500/40", dot: "bg-violet-400" },
+  celebration: { border: "border-amber-500/30", dot: "bg-amber-400" },
 };
+
+const TwinklingGrid = React.memo(() => {
+  const dots = React.useMemo(() => {
+    const cols = 50;
+    const rows = 12;
+    const gap = 6;
+    const size = 2;
+
+    const items = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (Math.random() > 0.4) continue;
+
+        const delay = Math.random() * 5;
+        const duration = 2 + Math.random() * 4;
+
+        items.push(
+          <div
+            key={`${r}-${c}`}
+            className="absolute rounded-full"
+            style={{
+              left: c * (gap + size),
+              top: r * (gap + size),
+              width: size,
+              height: size,
+              backgroundColor: "var(--color-cloud)",
+              opacity: 0.15,
+              animation: `twinkle ${duration}s ease-in-out infinite`,
+              animationDelay: `-${delay}s`,
+            }}
+          />
+        );
+      }
+    }
+    return items;
+  }, []);
+
+  return <div className="absolute inset-0 overflow-hidden opacity-60 pointer-events-none">{dots}</div>;
+});
 
 const ToastOverlay: React.FC = () => {
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -119,7 +159,14 @@ const ToastOverlay: React.FC = () => {
 
   // Listen for toast events
   useEffect(() => {
-    const unsub1 = listen<ToastPayload>("toast:show", (ev) => {
+    const unsub1 = listen<ToastPayload>("toast:show", async (ev) => {
+      try {
+        await getCurrentWindow().show();
+        await getCurrentWindow().setFocus();
+      } catch (err) {
+        console.error("Failed to show toast window:", err);
+      }
+
       if (timerRef.current) clearTimeout(timerRef.current);
       if (dismissAnimationTimerRef.current) {
         clearTimeout(dismissAnimationTimerRef.current);
@@ -135,6 +182,7 @@ const ToastOverlay: React.FC = () => {
         success: 2000,
         warning: 5000,
         update: 0,
+        celebration: 6000,
       };
       const autoDismiss = ev.payload.autoDismiss !== false;
       const dur = ev.payload.duration ?? durations[ev.payload.type];
@@ -193,6 +241,7 @@ const ToastOverlay: React.FC = () => {
         `}
         onClick={(e) => e.stopPropagation()}
       >
+        {toast.type === "celebration" && <TwinklingGrid />}
         {/* X button */}
         <button
           type="button"

@@ -10,6 +10,7 @@ import {
     type ReactNode,
 } from "react";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 import type { Models } from "appwrite";
 import { getCurrentUser, type User } from "../lib";
 import { client } from "../lib/appwrite";
@@ -50,7 +51,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 (event) => {
                     const nextUser = event.payload;
                     if (!nextUser) return;
-                    setState((prev) => ({ ...prev, user: nextUser }));
+                    
+                    setState((prev) => {
+                        const wasSubscriber = prev.user?.labels?.includes("cloud") ?? false;
+                        const isSubscriber = nextUser.labels?.includes("cloud") ?? false;
+
+                        if (prev.user && !wasSubscriber && isSubscriber) {
+                             invoke("show_celebration_toast").catch(console.error);
+                        }
+                        
+                        return { ...prev, user: nextUser };
+                    });
+                    
                     emit("auth:changed").catch(() => { });
                 }
             );

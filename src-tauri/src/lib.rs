@@ -153,7 +153,7 @@ pub fn run() {
             model_manager::delete_model,
             model_manager::cancel_download,
             audio::list_input_devices,
-            toast_dismissed,
+            toast::toast_dismissed,
             open_accessibility_settings,
             open_microphone_settings,
             complete_onboarding,
@@ -161,14 +161,15 @@ pub fn run() {
             reset_onboarding,
             import_transcription_from_cloud,
             mark_transcription_synced,
-            debug_show_toast,
+            toast::debug_show_toast,
             fetch_llm_models,
             cloud::set_cloud_credentials,
             cloud::clear_cloud_credentials,
             cloud::open_sign_in,
             cloud::open_checkout,
             open_whats_new,
-            switch_to_local_mode
+            switch_to_local_mode,
+            toast::show_celebration_toast
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -540,29 +541,6 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
     })
 }
 
-#[tauri::command]
-fn debug_show_toast(
-    toast_type: String,
-    message: String,
-    action: Option<String>,
-    action_label: Option<String>,
-    app: AppHandle<AppRuntime>,
-) {
-    toast::emit_toast(
-        &app,
-        toast::Payload {
-            toast_type,
-            title: None,
-            message,
-            auto_dismiss: Some(true),
-            duration: Some(8000),
-            retry_id: None,
-            mode: None,
-            action,
-            action_label,
-        },
-    );
-}
 
 #[tauri::command]
 async fn fetch_llm_models(
@@ -933,14 +911,6 @@ pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
     app.state::<AppState>().pill().cancel(app);
 }
 
-#[tauri::command]
-fn toast_dismissed(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    if state.pill().status() == pill::PillStatus::Error {
-        state.pill().reset(&app);
-    }
-    toast::hide(&app);
-}
 
 #[tauri::command]
 fn cancel_recording(app: AppHandle<AppRuntime>) {
