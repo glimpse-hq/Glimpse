@@ -95,7 +95,8 @@ end tell
         let (window_title, url) = unsafe {
             let app_element = AXUIElementCreateApplication(pid);
             if app_element.is_null() {
-                (String::new(), None)
+                return None;
+            } else {
             } else {
                 let window_element = copy_attribute(app_element, "AXFocusedWindow");
                 let title = if window_element.is_null() {
