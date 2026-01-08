@@ -104,8 +104,8 @@ fn validate_jwt_expiry(jwt: &str) -> Result<(), CloudError> {
     if let Some(exp) = payload.exp {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+            .map_err(|_| CloudError::JwtInvalid)?
+            .as_secs();
 
         if now + 60 >= exp {
             return Err(CloudError::JwtExpired);
