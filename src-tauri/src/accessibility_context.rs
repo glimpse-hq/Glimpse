@@ -97,7 +97,6 @@ end tell
             if app_element.is_null() {
                 return None;
             } else {
-            } else {
                 let window_element = copy_attribute(app_element, "AXFocusedWindow");
                 let title = if window_element.is_null() {
                     String::new()
