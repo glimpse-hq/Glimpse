@@ -181,9 +181,13 @@ pub fn set_cloud_credentials(
     history_sync_enabled: bool,
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
-    state
-        .cloud_manager()
-        .set_credentials(jwt, function_url, is_subscriber, is_tester, history_sync_enabled);
+    state.cloud_manager().set_credentials(
+        jwt,
+        function_url,
+        is_subscriber,
+        is_tester,
+        history_sync_enabled,
+    );
     Ok(())
 }
 
@@ -208,7 +212,7 @@ pub fn open_sign_in(app: AppHandle<AppRuntime>) -> Result<(), String> {
 pub fn open_checkout(app: AppHandle<AppRuntime>) -> Result<(), String> {
     dotenvy::dotenv().ok();
     let checkout_url =
-        std::env::var("VITE_CHECKOUT_URL").map_err(|_| "VITE_CHECKOUT_URL not set".to_string())?;
+        std::env::var("CHECKOUT_URL").map_err(|_| "CHECKOUT_URL not set".to_string())?;
 
     app.opener()
         .open_url(&checkout_url, None::<&str>)
