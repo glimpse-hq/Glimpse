@@ -575,14 +575,11 @@ const PersonalizationView = () => {
                         const moreApps = Math.max(0, personality.apps.length - appsPreview.length);
                         const moreSites = Math.max(0, personality.websites.length - sitesPreview.length);
                         return (
-                            <button
+                                <button
                                 key={personality.id}
                                 onClick={() => setActivePersonalityId(personality.id)}
                                 className="group relative rounded-xl border border-border-primary bg-surface-secondary p-2.5 text-left transition-colors hover:bg-surface-tertiary"
                             >
-                                <div className="absolute inset-0 pointer-events-none opacity-10">
-                                    <DotMatrix rows={6} cols={18} activeDots={[0, 4, 7, 9, 12, 18, 22, 25, 31, 35, 40, 44, 50, 55, 60, 66]} dotSize={2} gap={4} color="var(--color-border-primary)" />
-                                </div>
                                 <div className="relative space-y-2">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>

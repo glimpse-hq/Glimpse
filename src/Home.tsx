@@ -165,15 +165,9 @@ const Home = () => {
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-surface-tertiary font-sans text-white select-none">
-            <motion.aside
-                initial={false}
-                animate={{ width: sidebarWidth }}
-                transition={{
-                    type: "tween",
-                    duration: 0.2,
-                    ease: [0.25, 0.1, 0.25, 1]
-                }}
-                className="relative flex flex-col border-r border-border-primary bg-surface-secondary shrink-0"
+            <aside
+                style={{ width: sidebarWidth }}
+                className="relative flex flex-col border-r border-border-primary bg-surface-secondary shrink-0 transition-[width] duration-200 ease-out will-change-[width]"
             >
                 <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
@@ -329,9 +323,9 @@ const Home = () => {
                         onClick={() => setIsSettingsOpen(true)}
                     />
                 </div>
-            </motion.aside>
+            </aside>
 
-            <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative">
+            <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
                 <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
                 {currentUser && (
