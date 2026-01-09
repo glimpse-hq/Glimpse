@@ -84,8 +84,8 @@ pub fn hide(app: &AppHandle<AppRuntime>) {
 
 fn position_toast_window(_app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) {
     let scale_factor = toast_window.scale_factor().unwrap_or(1.0);
-    let toast_width = (320.0 * scale_factor) as i32;
-    let bottom_margin = (200.0 * scale_factor) as i32;
+    let toast_width = (420.0 * scale_factor) as i32;
+    let bottom_margin = (300.0 * scale_factor) as i32;
 
     if let Ok(Some(monitor)) = toast_window.current_monitor() {
         let screen = monitor.size();

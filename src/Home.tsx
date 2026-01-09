@@ -70,6 +70,7 @@ const Home = () => {
     useEffect(() => {
         let unlistenSettings: UnlistenFn | null = null;
         let unlistenNavigate: UnlistenFn | null = null;
+        let unlistenModels: UnlistenFn | null = null;
 
         const loadSettings = async () => {
             try {
@@ -105,6 +106,13 @@ const Home = () => {
             unlistenNavigate = fn;
         });
 
+        listen("navigate:models", () => {
+            setSettingsTab("models");
+            setIsSettingsOpen(true);
+        }).then((fn) => {
+            unlistenModels = fn;
+        });
+
         let unlistenSignIn: UnlistenFn | null = null;
         listen("navigate:sign-in", () => {
             setSettingsTab("account");
@@ -131,6 +139,7 @@ const Home = () => {
         return () => {
             unlistenSettings?.();
             unlistenNavigate?.();
+            unlistenModels?.();
             unlistenSignIn?.();
             unlistenAuthError?.();
             unlistenAuthChanged?.();

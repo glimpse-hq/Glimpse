@@ -154,6 +154,7 @@ pub fn run() {
             toast::toast_dismissed,
             open_accessibility_settings,
             open_microphone_settings,
+            open_llm_cleanup_settings,
             complete_onboarding,
             cancel_recording,
             reset_onboarding,
@@ -347,6 +348,24 @@ fn open_accessibility_settings() -> Result<(), String> {
 #[tauri::command]
 fn open_microphone_settings() -> Result<(), String> {
     permissions::open_microphone_settings()
+}
+
+#[tauri::command]
+fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    if let Err(err) = tray::toggle_settings_window(&app) {
+        eprintln!("Failed to open settings window: {err}");
+        return Err(err.to_string());
+    }
+
+    let app_clone = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        if let Err(err) = app_clone.emit("navigate:models", ()) {
+            eprintln!("Failed to emit navigate:models: {err}");
+        }
+    });
+
+    Ok(())
 }
 
 #[tauri::command]

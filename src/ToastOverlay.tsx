@@ -225,13 +225,13 @@ const ToastOverlay: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full flex flex-col justify-end items-center pb-6"
+      className="fixed inset-0 flex flex-col justify-end items-center pb-6"
       onClick={handleBackgroundClick}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
         className={`
-          relative w-full max-h-[160px] bg-black rounded-2xl border px-4 py-3 overflow-hidden
+          w-fit max-w-[420px] max-h-[140px] bg-black rounded-2xl border px-4 py-3 overflow-y-auto overflow-x-hidden
           ${colors.border}
           ${toast.isLeaving ? "animate-toast-out" : "animate-toast-in"}
         `}
@@ -266,7 +266,7 @@ const ToastOverlay: React.FC = () => {
             {toast.type === "update" && (
               <p className="text-[10px] text-violet-400 font-medium mb-0.5">GLIMPSE</p>
             )}
-            <p className="text-[12px] text-gray-200 leading-relaxed">{toast.message}</p>
+            <p className="text-[12px] text-gray-200 leading-relaxed break-words">{toast.message}</p>
             {showRetry && (
               <button
                 type="button"
