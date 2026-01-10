@@ -4,7 +4,8 @@ import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { createJwt, getCurrentUser } from "../lib/auth";
 
 const CLOUD_FUNCTION_URL = import.meta.env.VITE_CLOUD_TRANSCRIPTION_URL;
-const JWT_REFRESH_INTERVAL = 13 * 60 * 1000; // 13 minutes (JWT expires in 15)
+const JWT_REFRESH_INTERVAL = 10 * 60 * 1000;
+const JWT_MAX_AGE_MS = 12 * 60 * 1000;
 const JWT_REFRESH_BACKOFF_BASE_MS = 5000;
 const JWT_REFRESH_BACKOFF_MAX_MS = 5 * 60 * 1000;
 const JWT_REFRESH_BACKOFF_JITTER = 0.2;
@@ -14,8 +15,14 @@ export function useCloudTranscription() {
     const hadAuthError = useRef(false);
     const refreshInFlight = useRef<Promise<void> | null>(null);
     const lastRefreshTime = useRef<number>(0);
+    const jwtCreatedAt = useRef<number>(0);
     const refreshFailures = useRef(0);
     const refreshBackoffTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const isJwtStale = useCallback(() => {
+        if (jwtCreatedAt.current === 0) return true;
+        return Date.now() - jwtCreatedAt.current > JWT_MAX_AGE_MS;
+    }, []);
 
     const setupCloudCredentials = useCallback(async (force = false) => {
         if (refreshInFlight.current) {
@@ -83,6 +90,7 @@ export function useCloudTranscription() {
                     isTester,
                     historySyncEnabled,
                 });
+                jwtCreatedAt.current = Date.now();
                 clearRefreshBackoff();
 
                 if (hadAuthError.current) {
@@ -120,11 +128,11 @@ export function useCloudTranscription() {
         };
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
-                setupCloudCredentials();
+                setupCloudCredentials(isJwtStale());
             }
         };
         const handleWindowFocus = () => {
-            setupCloudCredentials();
+            setupCloudCredentials(isJwtStale());
         };
 
         window.addEventListener("storage", handleStorageChange);
@@ -157,7 +165,7 @@ export function useCloudTranscription() {
             unlistenAuth?.();
             unlistenAuthError?.();
         };
-    }, [setupCloudCredentials]);
+    }, [setupCloudCredentials, isJwtStale]);
 
     return {
         refreshCredentials: setupCloudCredentials,

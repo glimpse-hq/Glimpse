@@ -144,6 +144,9 @@ pub fn show_sign_in_required(app: &AppHandle<AppRuntime>, error: &CloudError) {
         CloudError::NotSubscriber => {
             show_upgrade_required(app, error);
         }
+        CloudError::JwtExpired => {
+            emit_auth_error(app);
+        }
         _ => {
             toast::show_with_action(
                 app,
