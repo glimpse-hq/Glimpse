@@ -68,7 +68,7 @@ fn site_matches(haystack: &str, site: &str) -> bool {
 
     let mut labels = site.split('.');
     if let Some(label) = labels.next() {
-        if label != site && label.len() >= 4 {
+        if label != site && label.len() >= 2 {
             return token_match(&target, label);
         }
     }
