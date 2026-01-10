@@ -136,8 +136,15 @@ fn is_blacklisted_app(name: &str) -> bool {
         return true;
     }
 
-    let substrings = ["helper", "installer", "uninstaller", "updater", "agent"];
-    substrings.iter().any(|needle| lowered.contains(needle))
+    let suffix_tokens = ["installer", "uninstaller", "updater", "agent"];
+    let mut last_token = None;
+    for token in lowered.split(|ch: char| !ch.is_ascii_alphanumeric()) {
+        if !token.is_empty() {
+            last_token = Some(token);
+        }
+    }
+
+    last_token.is_some_and(|token| suffix_tokens.contains(&token))
 }
 
 #[cfg(target_os = "macos")]
