@@ -21,6 +21,7 @@ mod toast;
 mod transcribe;
 mod transcription_api;
 mod tray;
+mod update_checker;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -123,6 +124,10 @@ pub fn run() {
                 let _ = tray::toggle_settings_window(&h);
             });
 
+            let update_handle = handle.clone();
+            let update_state = handle.state::<AppState>().update_state().clone();
+            update_checker::start_background_checker(update_handle, update_state);
+
             let _ = app.track_event("app_started", None);
 
             Ok(())
@@ -167,8 +172,14 @@ pub fn run() {
             cloud::open_sign_in,
             cloud::open_checkout,
             open_whats_new,
+            open_about_page,
             switch_to_local_mode,
-            toast::show_celebration_toast
+            toast::show_celebration_toast,
+            update_checker::get_update_status,
+            update_checker::trigger_update_check,
+            update_checker::simulate_update_available,
+            update_checker::clear_update_state,
+            update_checker::show_update_toast_now
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -198,6 +209,7 @@ pub struct AppState {
     cloud_manager: cloud::CloudManager,
     pending_selected_text: parking_lot::Mutex<Option<String>>,
     download_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    update_state: update_checker::SharedUpdateState,
 }
 
 impl AppState {
@@ -239,6 +251,7 @@ impl AppState {
             cloud_manager: cloud::CloudManager::new(),
             pending_selected_text: parking_lot::Mutex::new(None),
             download_tokens: parking_lot::Mutex::new(HashMap::new()),
+            update_state: update_checker::create_state(),
         }
     }
 
@@ -332,6 +345,10 @@ impl AppState {
 
     pub fn clear_download_token(&self, model: &str) {
         self.download_tokens.lock().remove(model);
+    }
+
+    pub fn update_state(&self) -> &update_checker::SharedUpdateState {
+        &self.update_state
     }
 }
 
@@ -596,6 +613,22 @@ fn open_whats_new(app: AppHandle<AppRuntime>) {
         std::thread::sleep(std::time::Duration::from_millis(400));
         if let Err(e) = app_clone.emit("open_whats_new", ()) {
             eprintln!("Failed to emit open_whats_new: {e}");
+        }
+    });
+}
+
+#[tauri::command]
+fn open_about_page(app: AppHandle<AppRuntime>) {
+    if let Err(err) = tray::toggle_settings_window(&app) {
+        eprintln!("Failed to open settings window: {err}");
+        return;
+    }
+
+    let app_clone = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        if let Err(e) = app_clone.emit("navigate:about", ()) {
+            eprintln!("Failed to emit navigate:about: {e}");
         }
     });
 }

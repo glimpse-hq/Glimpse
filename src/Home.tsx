@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X } from "lucide-react";
+import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X, ArrowUpCircle } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import SettingsModal from "./components/settings/SettingsModal";
@@ -62,6 +62,7 @@ const Home = () => {
     const [appVersion, setAppVersion] = useState("-");
     const popupRef = useRef<HTMLDivElement>(null);
     const [hasAuthIssue, setHasAuthIssue] = useState(false);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
 
     const [llmCleanupEnabled, setLlmCleanupEnabled] = useState(false);
 
@@ -143,6 +144,39 @@ const Home = () => {
             unlistenSignIn?.();
             unlistenAuthError?.();
             unlistenAuthChanged?.();
+        };
+    }, []);
+
+    useEffect(() => {
+        let unlistenUpdate: UnlistenFn | null = null;
+        let unlistenCleared: UnlistenFn | null = null;
+
+        const checkUpdateStatus = async () => {
+            try {
+                const status = await invoke<{ available: boolean; version: string | null }>("get_update_status");
+                setUpdateAvailable(status.available);
+            } catch (err) {
+                console.error("Failed to check update status:", err);
+            }
+        };
+
+        checkUpdateStatus();
+
+        listen<string>("update:available", () => {
+            setUpdateAvailable(true);
+        }).then((fn) => {
+            unlistenUpdate = fn;
+        });
+
+        listen("update:cleared", () => {
+            setUpdateAvailable(false);
+        }).then((fn) => {
+            unlistenCleared = fn;
+        });
+
+        return () => {
+            unlistenUpdate?.();
+            unlistenCleared?.();
         };
     }, []);
 
@@ -324,6 +358,27 @@ const Home = () => {
                             )}
                         </AnimatePresence>
                     </div>
+
+                    {updateAvailable && (
+                        <button
+                            onClick={() => {
+                                setSettingsTab("about");
+                                setIsSettingsOpen(true);
+                            }}
+                            className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} hover:bg-surface-overlay transition-colors`}
+                            style={{ color: "var(--color-accent)" }}
+                        >
+                            <div className="flex items-center justify-center w-[18px] shrink-0">
+                                <ArrowUpCircle size={18} />
+                            </div>
+                            <span
+                                style={{ width: isSidebarCollapsed ? 0 : 'auto', opacity: isSidebarCollapsed ? 0 : 1 }}
+                                className="text-[13px] font-medium whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                            >
+                                Update available
+                            </span>
+                        </button>
+                    )}
 
                     <SidebarItem
                         icon={<Settings size={18} />}

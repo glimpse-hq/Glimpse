@@ -31,7 +31,10 @@ const COLORS: Record<ToastType, { border: string; dot: string }> = {
   celebration: { border: "border-amber-500/30", dot: "bg-amber-400" },
 };
 
-const TwinklingGrid = React.memo(() => {
+const TwinklingGrid = React.memo(({ variant = "cloud" }: { variant?: "cloud" | "accent" }) => {
+  const color = variant === "accent" ? "var(--color-accent)" : "var(--color-cloud)";
+  const animationName = variant === "accent" ? "twinkle-accent" : "twinkle";
+  
   const dots = React.useMemo(() => {
     const cols = 50;
     const rows = 12;
@@ -55,9 +58,9 @@ const TwinklingGrid = React.memo(() => {
               top: r * (gap + size),
               width: size,
               height: size,
-              backgroundColor: "var(--color-cloud)",
+              backgroundColor: color,
               opacity: 0.15,
-              animation: `twinkle ${duration}s ease-in-out infinite`,
+              animation: `${animationName} ${duration}s ease-in-out infinite`,
               animationDelay: `-${delay}s`,
             }}
           />
@@ -65,7 +68,7 @@ const TwinklingGrid = React.memo(() => {
       }
     }
     return items;
-  }, []);
+  }, [color, animationName]);
 
   return <div className="absolute inset-0 overflow-hidden opacity-60 pointer-events-none">{dots}</div>;
 });
@@ -237,7 +240,8 @@ const ToastOverlay: React.FC = () => {
         `}
         onClick={(e) => e.stopPropagation()}
       >
-        {toast.type === "celebration" && <TwinklingGrid />}
+        {toast.type === "celebration" && <TwinklingGrid variant="cloud" />}
+        {toast.type === "update" && <TwinklingGrid variant="accent" />}
         <button
           type="button"
           onClick={handleClose}

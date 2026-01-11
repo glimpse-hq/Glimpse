@@ -9,7 +9,7 @@ use crate::{
     model_manager,
     recorder::{CompletedRecording, RecordingSaved},
     settings::{Personality, TranscriptionMode, UserSettings},
-    storage, toast, transcription_api, AppRuntime, AppState, EVENT_TRANSCRIPTION_COMPLETE,
+    storage, toast, transcription_api, update_checker, AppRuntime, AppState, EVENT_TRANSCRIPTION_COMPLETE,
     EVENT_TRANSCRIPTION_ERROR,
 };
 
@@ -214,6 +214,9 @@ pub(crate) fn queue_transcription(
                         .pill()
                         .safe_reset(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
+
+                    let update_state = app_handle.state::<AppState>().update_state().clone();
+                    update_checker::maybe_show_update_toast(&app_handle, &update_state);
                 }
                 Err(err) => {
                     if is_cancelled() {
@@ -810,6 +813,9 @@ fn emit_transcription_complete_with_cleanup(
             None,
         );
     }
+
+    let update_state = app.state::<AppState>().update_state().clone();
+    update_checker::maybe_show_update_toast(app, &update_state);
 }
 
 fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {

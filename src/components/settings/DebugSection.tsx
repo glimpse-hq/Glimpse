@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { Bug, Bell, AlertTriangle, CheckCircle, Info, AlertCircle, Zap } from "lucide-react";
+import { Bug, Bell, AlertTriangle, CheckCircle, Info, AlertCircle, Zap, Download, RefreshCw, Trash2, Sparkles } from "lucide-react";
 
 export function DebugSection() {
     const showToast = async (
@@ -19,6 +19,22 @@ export function DebugSection() {
     const resetVersionTracking = () => {
         localStorage.setItem("glimpse_last_version", "0.0.0");
         alert("Version tracking reset. Reload the app to see the update toast.");
+    };
+
+    const simulateUpdateAvailable = async () => {
+        await invoke("simulate_update_available", { version: "99.0.0" });
+    };
+
+    const triggerUpdateCheck = async () => {
+        await invoke("trigger_update_check");
+    };
+
+    const clearUpdateState = async () => {
+        await invoke("clear_update_state");
+    };
+
+    const showUpdateToastNow = async () => {
+        await invoke("show_update_toast_now");
     };
 
     return (
@@ -66,16 +82,59 @@ export function DebugSection() {
                             Info
                         </button>
                         <button
+                            onClick={() => showToast("celebration", "Welcome to Glimpse Cloud!")}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 hover:bg-amber-500/20 transition-colors"
+                        >
+                            <Sparkles size={12} />
+                            Celebration
+                        </button>
+                        <button
                             onClick={() => showToast(
                                 "update",
-                                "Updated to v0.4.0",
-                                "open_whats_new",
-                                "See what's new"
+                                "v0.5.0 → v0.6.0",
+                                "open_about_page",
+                                "Update"
                             )}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors col-span-2"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors"
                         >
                             <Zap size={12} />
-                            Update Toast (with action)
+                            Update Toast
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider mb-3">
+                        Update Checker
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            onClick={simulateUpdateAvailable}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors"
+                        >
+                            <Download size={12} />
+                            Simulate Update
+                        </button>
+                        <button
+                            onClick={showUpdateToastNow}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors"
+                        >
+                            <Zap size={12} />
+                            Show Update Toast
+                        </button>
+                        <button
+                            onClick={triggerUpdateCheck}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors"
+                        >
+                            <RefreshCw size={12} />
+                            Check GitHub Now
+                        </button>
+                        <button
+                            onClick={clearUpdateState}
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors"
+                        >
+                            <Trash2 size={12} />
+                            Clear Update State
                         </button>
                     </div>
                 </div>
@@ -89,7 +148,7 @@ export function DebugSection() {
                         className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors w-full"
                     >
                         <Bell size={12} />
-                        Reset Version (trigger update toast on reload)
+                        Reset Version (trigger "just updated" toast)
                     </button>
                 </div>
 
