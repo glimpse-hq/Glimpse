@@ -38,78 +38,20 @@ import DebugSection from "./DebugSection";
 import { logout, getOAuth2Url, login, createAccount, type User as AppwriteUser } from "../../lib/auth";
 import WhatsNewModal from "./WhatsNewModal";
 import { Dropdown } from "../Dropdown";
-import { type LlmProvider, LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "../../lib/llmProviders";
+import { LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "../../lib/llmProviders";
+import type {
+    TranscriptionMode,
+    StoredSettings,
+    AppInfo,
+    ModelInfo,
+    ModelStatus,
+    DownloadProgressPayload,
+    DeviceInfo,
+    DownloadEvent,
+    LlmProvider,
+} from "../../types";
 
 import { OAuthProvider } from "appwrite";
-
-
-type TranscriptionMode = "cloud" | "local";
-
-type StoredSettings = {
-    smart_shortcut: string;
-    smart_enabled: boolean;
-    hold_shortcut: string;
-    hold_enabled: boolean;
-    toggle_shortcut: string;
-    toggle_enabled: boolean;
-    transcription_mode: TranscriptionMode;
-    local_model: string;
-    microphone_device: string | null;
-    language: string;
-    llm_cleanup_enabled: boolean;
-    llm_provider: LlmProvider;
-    llm_endpoint: string;
-    llm_api_key: string;
-    llm_model: string;
-    dictionary: string[];
-    edit_mode_enabled: boolean;
-};
-
-type AppInfo = {
-    version: string;
-    data_dir_size_bytes: number;
-    data_dir_path: string;
-};
-
-type ModelInfo = {
-    key: string;
-    label: string;
-    description: string;
-    size_mb: number;
-    file_count: number;
-    engine: string;
-    variant: string;
-    tags: string[];
-};
-
-type ModelStatus = {
-    key: string;
-    installed: boolean;
-    bytes_on_disk: number;
-    missing_files: string[];
-    directory: string;
-};
-
-type DownloadProgressPayload = {
-    model: string;
-    file: string;
-    downloaded: number;
-    total: number;
-    percent: number;
-};
-
-type DeviceInfo = {
-    id: string;
-    name: string;
-    is_default: boolean;
-};
-
-type DownloadEvent =
-    | { status: "idle"; percent: number; downloaded: number; total: number; file?: string }
-    | { status: "downloading"; percent: number; downloaded: number; total: number; file: string }
-    | { status: "complete"; percent: number; downloaded: number; total: number }
-    | { status: "cancelled"; percent: number; downloaded: number; total: number }
-    | { status: "error"; percent: number; downloaded: number; total: number; message: string };
 
 const modifierOrder = ["Control", "Shift", "Alt", "Command"];
 

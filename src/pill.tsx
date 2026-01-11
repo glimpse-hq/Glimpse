@@ -2,17 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-
-type PillStatus = "idle" | "listening" | "processing" | "error";
-
-interface PillStatePayload {
-  status: PillStatus;
-  mode?: string;
-}
-
-interface AudioSpectrumPayload {
-  bins: number[];
-}
+import type { PillStatus, PillStatePayload, AudioSpectrumPayload } from "./types";
 
 interface GridInfo {
   spacing: number;

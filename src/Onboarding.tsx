@@ -39,24 +39,8 @@ import { Dropdown } from "./components/Dropdown";
 import FAQModal from "./components/FAQModal";
 import { OAuthProvider } from "appwrite";
 import { createAccount, login, createOAuth2Session, updateName, updatePreferences, getCurrentUser } from "./lib/auth";
-import { type LlmProvider, LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "./lib/llmProviders";
-
-
-type ModelInfo = {
-    key: string;
-    label: string;
-    description: string;
-    size_mb: number;
-    engine: string;
-    variant: string;
-    tags: string[];
-};
-
-type StoredSettings = {
-    local_model?: string;
-};
-
-type TranscriptionMode = "cloud" | "local";
+import { LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "./lib/llmProviders";
+import type { ModelInfo, ModelStatus, StoredSettings, TranscriptionMode, LlmProvider } from "./types";
 
 type OnboardingStep = "welcome" | "cloud-signin" | "cloud-profile" | "cloud-sync" | "local-model" | "cleanup" | "local-signin" | "microphone" | "accessibility" | "ready";
 
@@ -65,14 +49,6 @@ type LocalDownloadStatus = {
     percent: number;
     file?: string;
     message?: string;
-};
-
-type ModelStatus = {
-    key: string;
-    installed: boolean;
-    bytes_on_disk: number;
-    missing_files: string[];
-    directory: string;
 };
 
 interface OnboardingProps {

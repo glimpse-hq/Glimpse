@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import DotMatrix from "./DotMatrix";
 import { Dropdown } from "./Dropdown";
+import type { Personality } from "../types";
 
 const normalizeEntry = (value: string) => value.trim();
 
@@ -51,15 +52,6 @@ const getInitials = (value: string) => {
     if (parts.length === 0) return "?";
     if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
     return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-};
-
-type Personality = {
-    id: string;
-    name: string;
-    enabled: boolean;
-    apps: string[];
-    websites: string[];
-    instructions: string[];
 };
 
 type InstalledApp = {

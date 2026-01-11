@@ -10,12 +10,7 @@ import TranscriptionList from "./components/TranscriptionList";
 import DictionaryView from "./components/DictionaryView";
 import PersonalizationView from "./components/PersonalizationView";
 import { useAuth } from "./hooks/useAuth";
-
-type TranscriptionMode = "cloud" | "local";
-
-type StoredSettings = {
-    transcription_mode: TranscriptionMode;
-};
+import type { TranscriptionMode, StoredSettings } from "./types";
 
 const SidebarItem = ({
     icon,

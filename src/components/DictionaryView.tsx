@@ -4,26 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ArrowRight, BookOpen, Edit3, Loader2, Plus, Replace, Trash2 } from "lucide-react";
 import DotMatrix from "./DotMatrix";
-
-type TranscriptionMode = "cloud" | "local";
-
-type StoredSettings = {
-    transcription_mode: TranscriptionMode;
-    local_model: string;
-    dictionary?: string[];
-};
-
-type ModelInfo = {
-    key: string;
-    label: string;
-    engine: string;
-    variant: string;
-};
-
-type Replacement = {
-    from: string;
-    to: string;
-};
+import type { StoredSettings, ModelInfo, Replacement } from "../types";
 
 type ActivePage = "dictionary" | "replacements";
 

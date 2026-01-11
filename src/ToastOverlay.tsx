@@ -3,20 +3,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import DotMatrix from "./components/DotMatrix";
+import type { ToastType, ToastPayload } from "./types";
 
-export type ToastType = "error" | "info" | "success" | "warning" | "update" | "celebration";
-
-export interface ToastPayload {
-  type: ToastType;
-  title?: string;
-  message: string;
-  autoDismiss?: boolean;
-  duration?: number;
-  retryId?: string;
-  mode?: "local" | "cloud";
-  action?: string;
-  actionLabel?: string;
-}
+export type { ToastType, ToastPayload };
 
 interface ToastState extends ToastPayload {
   isLeaving: boolean;

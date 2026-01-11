@@ -7,31 +7,8 @@ import Home from "./Home";
 import Onboarding from "./Onboarding";
 import { AuthProvider } from "./hooks/useAuth";
 import { useCloudTranscription } from "./hooks/useCloudTranscription";
+import type { StoredSettings, AppInfo } from "./types";
 import "./App.css";
-
-type StoredSettings = {
-  onboarding_completed: boolean;
-  hold_shortcut: string;
-  hold_enabled: boolean;
-  toggle_shortcut: string;
-  toggle_enabled: boolean;
-  transcription_mode: string;
-  local_model: string;
-  microphone_device: string | null;
-  language: string;
-  llm_cleanup_enabled: boolean;
-  llm_provider: string;
-  llm_endpoint: string;
-  llm_api_key: string;
-  llm_model: string;
-  dictionary: string[];
-};
-
-type AppInfo = {
-  version: string;
-  data_dir_size_bytes: number;
-  data_dir_path: string;
-};
 
 const VERSION_STORAGE_KEY = "glimpse_last_version";
 
