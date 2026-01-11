@@ -1,44 +1,18 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import {
-    checkAccessibilityPermission,
-    checkMicrophonePermission,
-    requestAccessibilityPermission,
-} from "tauri-plugin-macos-permissions-api";
-import {
-    X,
-    Keyboard,
-    Cpu,
-    Download,
-    Trash2,
-    Loader2,
-    AlertCircle,
-    Info,
-    User,
-    Server,
-    Key,
-    Github,
-    Square,
-    Mail,
-    Sliders,
-    Check,
-    Eye,
-    EyeOff,
-    Copy,
-    Bug,
-} from "lucide-react";
-import DotMatrix from "../DotMatrix";
-import AccountView from "./AccountView";
+import { motion, AnimatePresence } from "framer-motion";
+import { checkAccessibilityPermission, checkMicrophonePermission } from "tauri-plugin-macos-permissions-api";
+import { Bug, Cpu, Info, Keyboard, Mail, Sliders, User, X } from "lucide-react";
 import FAQModal from "../FAQModal";
-import { UpdateChecker } from "./UpdateChecker";
-import DebugSection from "./DebugSection";
-import { logout, getOAuth2Url, login, createAccount, type User as AppwriteUser } from "../../lib/auth";
 import WhatsNewModal from "./WhatsNewModal";
-import { Dropdown } from "../Dropdown";
-import { LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "../../lib/llmProviders";
+import AboutTab from "./tabs/AboutTab";
+import AccountTab from "./tabs/AccountTab";
+import AdvancedTab from "./tabs/AdvancedTab";
+import DeveloperTab from "./tabs/DeveloperTab";
+import GeneralTab from "./tabs/GeneralTab";
+import ModelsTab from "./tabs/ModelsTab";
+import { logout, createAccount, type User as AppwriteUser } from "../../lib/auth";
 import type {
     TranscriptionMode,
     StoredSettings,
@@ -50,8 +24,6 @@ import type {
     DownloadEvent,
     LlmProvider,
 } from "../../types";
-
-import { OAuthProvider } from "appwrite";
 
 const modifierOrder = ["Control", "Shift", "Alt", "Command"];
 
@@ -490,6 +462,13 @@ const SettingsModal = ({
         return () => window.removeEventListener("keydown", handleEscape);
     }, [isOpen, captureActive, onClose]);
 
+    const handleStartCapture = (mode: "smart" | "hold" | "toggle") => {
+        pressedModifiers.current.clear();
+        primaryKey.current = null;
+        setCaptureActive(mode);
+        setError(null);
+    };
+
     const finalizeCapture = () => {
         setCaptureActive(null);
         pressedModifiers.current.clear();
@@ -769,905 +748,117 @@ const SettingsModal = ({
                             <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-8 pb-5 settings-scroll">
                                 <AnimatePresence mode="wait">
                                     {activeTab === "account" && (
-                                        <motion.div
-                                            key="account"
+                                        <AccountTab
                                             variants={tabContentVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="exit"
-                                            className="space-y-4"
-                                        >
-                                            <header>
-                                                <h1 className="text-lg font-medium text-content-primary">Account</h1>
-                                                <p className="mt-1 text-[12px] text-content-muted">Manage your profile, sessions, and subscription.</p>
-                                            </header>
-
-                                            {authError && (
-                                                <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
-                                                    <AlertCircle size={16} className="shrink-0" />
-                                                    <span className="flex-1">{authError}</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(authError);
-                                                            setAuthErrorCopied(true);
-                                                            setTimeout(() => setAuthErrorCopied(false), 1500);
-                                                        }}
-                                                        className="shrink-0 p-1 rounded hover:bg-red-500/20 transition-colors"
-                                                        title="Copy error"
-                                                    >
-                                                        {authErrorCopied ? <Check size={14} /> : <Copy size={14} />}
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {authLoading ? (
-                                                <div className="flex flex-col items-center justify-center py-16">
-                                                    <Loader2 size={24} className="animate-spin text-cloud mb-3" />
-                                                    <p className="text-[12px] text-content-muted mb-3">Loading...</p>
-                                                    <button
-                                                        onClick={handleCancelAuth}
-                                                        className="text-[11px] text-content-disabled hover:text-content-muted transition-colors"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                </div>
-                                            ) : currentUser ? (
-                                                <AccountView
-                                                    currentUser={currentUser}
-                                                    cloudSyncEnabled={cloudSyncEnabled}
-                                                    onCloudSyncToggle={() => setCloudSyncEnabled(!cloudSyncEnabled)}
-                                                    onUserUpdate={async () => {
-                                                        await onUpdateUser();
-                                                        setShowEmailForm(false);
-                                                    }}
-                                                    onSignOut={handleSignOut}
-                                                />
-
-                                            ) : (
-                                                <div className="grid grid-cols-5 gap-4">
-                                                    <div className="col-span-3 relative rounded-2xl border border-border-primary bg-surface-tertiary p-5 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden min-h-[280px]">
-                                                        <div className="absolute inset-0 pointer-events-none opacity-18">
-                                                            <DotMatrix rows={8} cols={24} activeDots={[1, 4, 7, 10, 12, 15, 18, 20, 23]} dotSize={2} gap={4} color="var(--color-border-secondary)" />
-                                                        </div>
-                                                        <div className="relative flex flex-col h-full">
-                                                            <div className="flex items-center gap-2 mb-3">
-                                                                <DotMatrix rows={2} cols={2} activeDots={[0, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                                                <span className="text-[10px] font-semibold text-cloud">Glimpse Cloud</span>
-                                                                <span className="ml-auto rounded-lg bg-surface-elevated px-2 py-0.5 text-[9px] font-medium text-content-muted">$5.99/mo</span>
-                                                            </div>
-
-                                                            <div className="flex flex-col gap-1.5 text-[11px] text-content-primary font-medium mb-4">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="h-1 w-3 rounded-full bg-cloud/80" />
-                                                                    <span>Cross-device sync</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="h-1 w-3 rounded-full bg-cloud/80" />
-                                                                    <span>Bigger & better models</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="h-1 w-3 rounded-full bg-cloud/80" />
-                                                                    <span>Faster processing</span>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="mt-auto flex items-center gap-3 rounded-xl border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-secondary leading-relaxed">
-                                                                <DotMatrix rows={3} cols={5} activeDots={[0, 2, 4, 6, 8, 10, 12, 14]} dotSize={2} gap={2} color="var(--color-bg-hover)" />
-                                                                <p className="flex-1">Get faster processing, better models and cross-device sync with cloud.</p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="col-span-2 relative rounded-2xl border border-border-primary bg-surface-tertiary p-5 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden min-h-[280px] flex flex-col">
-                                                        <div className="absolute inset-0 pointer-events-none opacity-18">
-                                                            <DotMatrix rows={8} cols={12} activeDots={[0, 3, 6, 9, 12, 15, 18, 21]} dotSize={2} gap={4} color="var(--color-border-secondary)" />
-                                                        </div>
-
-                                                        <div className="relative flex flex-col flex-1">
-                                                            <AnimatePresence mode="wait">
-                                                                {showEmailForm ? (
-                                                                    <motion.div
-                                                                        key="email-form"
-                                                                        initial={{ opacity: 0 }}
-                                                                        animate={{ opacity: 1 }}
-                                                                        exit={{ opacity: 0, scale: 0.95 }}
-                                                                        transition={{ duration: 0.15 }}
-                                                                        className="relative flex flex-col h-full"
-                                                                    >
-                                                                        <div className="flex items-center justify-between mb-3">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <DotMatrix rows={2} cols={2} activeDots={[0, 1, 2, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                                                                <span className="text-[10px] font-semibold text-content-secondary">Continue with Email</span>
-                                                                            </div>
-                                                                            <button
-                                                                                onClick={() => setShowEmailForm(false)}
-                                                                                className="text-[9px] text-content-disabled hover:text-content-muted transition-colors"
-                                                                            >
-                                                                                Back
-                                                                            </button>
-                                                                        </div>
-
-                                                                        <form
-                                                                            onSubmit={async (e) => {
-                                                                                e.preventDefault();
-                                                                                setAuthError(null);
-                                                                                setAuthLoading(true);
-                                                                                try {
-                                                                                    await login(authEmail, authPassword);
-                                                                                    await onUpdateUser();
-                                                                                    setShowEmailForm(false);
-                                                                                } catch (loginErr) {
-                                                                                    const errorMsg = loginErr instanceof Error ? loginErr.message : "";
-                                                                                    if (errorMsg.includes("Invalid credentials") || errorMsg.includes("user") || errorMsg.includes("not found")) {
-                                                                                        setPendingAuth({ email: authEmail, password: authPassword });
-                                                                                        setShowNewAccountConfirm(true);
-                                                                                    } else {
-                                                                                        setAuthError(errorMsg || "Authentication failed");
-                                                                                    }
-                                                                                } finally {
-                                                                                    setAuthLoading(false);
-                                                                                }
-                                                                            }}
-                                                                            className="flex-1 flex flex-col gap-2"
-                                                                        >
-                                                                            <input
-                                                                                type="email"
-                                                                                placeholder="Email"
-                                                                                value={authEmail}
-                                                                                onChange={(e) => setAuthEmail(e.target.value)}
-                                                                                required
-                                                                                className="w-full rounded-lg border border-border-primary bg-surface-surface px-3 py-2 text-[11px] text-white placeholder-content-disabled outline-none focus:border-border-hover"
-                                                                            />
-                                                                            <div className="relative">
-                                                                                <input
-                                                                                    type={authShowPassword ? "text" : "password"}
-                                                                                    placeholder="Password"
-                                                                                    value={authPassword}
-                                                                                    onChange={(e) => setAuthPassword(e.target.value)}
-                                                                                    required
-                                                                                    minLength={8}
-                                                                                    className="w-full rounded-lg border border-border-primary bg-surface-surface px-3 py-2 pr-9 text-[11px] text-white placeholder-content-disabled outline-none focus:border-border-hover"
-                                                                                />
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => setAuthShowPassword(!authShowPassword)}
-                                                                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-content-disabled hover:text-content-muted transition-colors"
-                                                                                >
-                                                                                    {authShowPassword ? <EyeOff size={12} /> : <Eye size={12} />}
-                                                                                </button>
-                                                                            </div>
-                                                                            <button
-                                                                                type="submit"
-                                                                                className="mt-auto w-full rounded-xl bg-cloud py-2.5 text-[11px] font-semibold text-black hover:bg-cloud-light transition-colors"
-                                                                            >
-                                                                                Continue
-                                                                            </button>
-                                                                        </form>
-                                                                    </motion.div>
-                                                                ) : (
-                                                                    <motion.div
-                                                                        key="oauth-options"
-                                                                        initial={{ opacity: 0 }}
-                                                                        animate={{ opacity: 1 }}
-                                                                        exit={{ opacity: 0, scale: 0.95 }}
-                                                                        transition={{ duration: 0.15 }}
-                                                                        className="relative flex flex-col h-full"
-                                                                    >
-                                                                        <div className="flex items-center gap-2 mb-3">
-                                                                            <DotMatrix rows={2} cols={2} activeDots={[0, 1, 2, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                                                            <span className="text-[10px] font-semibold text-content-secondary">Sign In</span>
-                                                                        </div>
-
-                                                                        <p className="text-[10px] text-content-muted mb-4 leading-relaxed">
-                                                                            Sign in to sync your transcriptions across devices.
-                                                                        </p>
-
-                                                                        <div className="flex flex-col gap-2 mt-auto">
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const url = getOAuth2Url(OAuthProvider.Google, window.location.href);
-                                                                                    openUrl(url);
-                                                                                }}
-                                                                                className="flex items-center justify-center gap-2 w-full rounded-xl border border-border-secondary bg-surface-secondary px-3 py-2.5 text-[11px] text-content-primary hover:bg-surface-surface hover:border-border-hover transition-all"
-                                                                            >
-                                                                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
-                                                                                    <path fill="#EA4335" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                                                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                                                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                                                                    <path fill="#4285F4" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                                                                </svg>
-                                                                                Google
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const url = getOAuth2Url(OAuthProvider.Github, window.location.href);
-                                                                                    openUrl(url);
-                                                                                }}
-                                                                                className="flex items-center justify-center gap-2 w-full rounded-xl border border-border-secondary bg-surface-secondary px-3 py-2.5 text-[11px] text-content-primary hover:bg-surface-surface hover:border-border-hover transition-all"
-                                                                            >
-                                                                                <Github size={14} fill="currentColor" />
-                                                                                GitHub
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setShowEmailForm(true)}
-                                                                                className="flex items-center justify-center gap-2 w-full rounded-xl border border-border-secondary bg-surface-secondary px-3 py-2.5 text-[11px] text-content-primary hover:bg-surface-surface hover:border-border-hover transition-all"
-                                                                            >
-                                                                                <Mail size={14} />
-                                                                                Email
-                                                                            </button>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-                                                            </AnimatePresence>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </motion.div>
+                                            authError={authError}
+                                            authErrorCopied={authErrorCopied}
+                                            setAuthErrorCopied={setAuthErrorCopied}
+                                            authLoading={authLoading}
+                                            currentUser={currentUser}
+                                            cloudSyncEnabled={cloudSyncEnabled}
+                                            setCloudSyncEnabled={setCloudSyncEnabled}
+                                            onUpdateUser={onUpdateUser}
+                                            handleSignOut={handleSignOut}
+                                            handleCancelAuth={handleCancelAuth}
+                                            showEmailForm={showEmailForm}
+                                            setShowEmailForm={setShowEmailForm}
+                                            authEmail={authEmail}
+                                            setAuthEmail={setAuthEmail}
+                                            authPassword={authPassword}
+                                            setAuthPassword={setAuthPassword}
+                                            authShowPassword={authShowPassword}
+                                            setAuthShowPassword={setAuthShowPassword}
+                                            setAuthError={setAuthError}
+                                            setAuthLoading={setAuthLoading}
+                                            setPendingAuth={setPendingAuth}
+                                            setShowNewAccountConfirm={setShowNewAccountConfirm}
+                                        />
                                     )}
 
+
                                     {activeTab === "general" && (
-                                        <motion.div
-                                            key="general"
+                                        <GeneralTab
                                             variants={tabContentVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="exit"
-                                            className="space-y-6"
-                                        >
-
-                                            <div className="space-y-2">
-                                                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Processing</h2>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button
-                                                        onClick={() => setTranscriptionMode("cloud")}
-                                                        className={`py-3 px-3.5 rounded-lg border text-left transition-all ${transcriptionMode === "cloud"
-                                                            ? "border-cloud-30 bg-cloud-5"
-                                                            : "border-border-primary bg-transparent hover:border-border-secondary"
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-baseline gap-1.5">
-                                                            <span className={`text-[13px] font-medium ${transcriptionMode === "cloud" ? "text-cloud" : "text-content-secondary"
-                                                                }`}>Cloud</span>
-                                                            <span className={`text-[10px] ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
-                                                                }`}>fast</span>
-                                                        </div>
-                                                        <p className={`text-[10px] mt-1 ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
-                                                            }`}>Process audio in the cloud</p>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setTranscriptionMode("local")}
-                                                        className={`py-3 px-3.5 rounded-lg border text-left transition-all ${transcriptionMode === "local"
-                                                            ? "border-local-30 bg-local-5"
-                                                            : "border-border-primary bg-transparent hover:border-border-secondary"
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-baseline gap-1.5">
-                                                            <span className={`text-[13px] font-medium ${transcriptionMode === "local" ? "text-local" : "text-content-secondary"
-                                                                }`}>Local</span>
-                                                            <span className={`text-[10px] ${transcriptionMode === "local" ? "text-local-50" : "text-content-disabled"
-                                                                }`}>private</span>
-                                                        </div>
-                                                        <p className={`text-[10px] mt-1 ${transcriptionMode === "local" ? "text-local-50" : "text-content-disabled"
-                                                            }`}>Runs entirely on your device</p>
-                                                    </button>
-                                                </div>
-                                                <AnimatePresence>
-                                                    {!loading && transcriptionMode === "local" && !modelStatus[localModel]?.installed && (
-                                                        <motion.p
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: "auto" }}
-                                                            exit={{ opacity: 0, height: 0 }}
-                                                            className="text-[10px] text-warning"
-                                                        >
-                                                            No model installed. <button onClick={() => setActiveTab("models")} className="underline hover:text-cloud transition-colors">Download one</button> to use local.
-                                                        </motion.p>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-
-
-                                            <div className="grid grid-cols-2 gap-3">
-
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-medium text-content-muted">Microphone</label>
-                                                    <div className="relative z-20">
-                                                        <Dropdown
-                                                            value={microphoneDevice || ""}
-                                                            onChange={(val) => setMicrophoneDevice(val === "" ? null : val)}
-                                                            options={[
-                                                                { value: "", label: "System Default" },
-                                                                ...inputDevices.map((device) => ({
-                                                                    value: device.id,
-                                                                    label: device.name,
-                                                                })),
-                                                            ]}
-                                                            placeholder="Select microphone..."
-                                                        />
-                                                    </div>
-                                                </div>
-
-
-                                                <div className="space-y-1.5">
-                                                    <label className="text-[10px] font-medium text-content-muted"> Transcription Language</label>
-                                                    <div className="relative z-10">
-                                                        <Dropdown
-                                                            value={language}
-                                                            onChange={(val) => setLanguage(val)}
-                                                            options={languages.map(lang => ({
-                                                                value: lang.code,
-                                                                label: lang.name
-                                                            }))}
-                                                            searchable
-                                                            searchPlaceholder="Search language..."
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-
-
-                                            <div className="grid grid-cols-2 gap-3">
-                                                <div className="space-y-2">
-                                                    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Shortcuts</h2>
-
-                                                    <div className="space-y-1.5">
-                                                        <ShortcutRow
-                                                            label="Smart"
-                                                            description="tap to hold, long-press to toggle"
-                                                            shortcut={smartShortcut}
-                                                            enabled={smartEnabled}
-                                                            isCapturing={captureActive === "smart"}
-                                                            capturePreview={capturePreview}
-                                                            onToggle={() => {
-                                                                if (!smartEnabled && !holdEnabled && !toggleEnabled) return;
-                                                                setSmartEnabled(!smartEnabled);
-                                                            }}
-                                                            onCapture={() => {
-                                                                if (!smartEnabled) return;
-                                                                pressedModifiers.current.clear();
-                                                                primaryKey.current = null;
-                                                                setCaptureActive("smart");
-                                                                setError(null);
-                                                            }}
-                                                            canDisable={holdEnabled || toggleEnabled}
-                                                        />
-                                                        <ShortcutRow
-                                                            label="Hold"
-                                                            description="hold to talk, release to stop"
-                                                            shortcut={holdShortcut}
-                                                            enabled={holdEnabled}
-                                                            isCapturing={captureActive === "hold"}
-                                                            capturePreview={capturePreview}
-                                                            onToggle={() => {
-                                                                if (!holdEnabled && !toggleEnabled && !smartEnabled) return;
-                                                                setHoldEnabled(!holdEnabled);
-                                                            }}
-                                                            onCapture={() => {
-                                                                if (!holdEnabled) return;
-                                                                pressedModifiers.current.clear();
-                                                                primaryKey.current = null;
-                                                                setCaptureActive("hold");
-                                                                setError(null);
-                                                            }}
-                                                            canDisable={smartEnabled || toggleEnabled}
-                                                        />
-                                                        <ShortcutRow
-                                                            label="Toggle"
-                                                            description="tap to start, tap to stop"
-                                                            shortcut={toggleShortcut}
-                                                            enabled={toggleEnabled}
-                                                            isCapturing={captureActive === "toggle"}
-                                                            capturePreview={capturePreview}
-                                                            onToggle={() => {
-                                                                if (!toggleEnabled && !holdEnabled && !smartEnabled) return;
-                                                                setToggleEnabled(!toggleEnabled);
-                                                            }}
-                                                            onCapture={() => {
-                                                                if (!toggleEnabled) return;
-                                                                pressedModifiers.current.clear();
-                                                                primaryKey.current = null;
-                                                                setCaptureActive("toggle");
-                                                                setError(null);
-                                                            }}
-                                                            canDisable={smartEnabled || holdEnabled}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Features</h2>
-
-
-                                                    <div className={`rounded-lg border transition-all ${editModeEnabled ? "border-border-secondary bg-surface-surface" : "border-border-primary bg-transparent"
-                                                        }`}>
-                                                        <div className="py-2 px-2.5">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[11px] font-medium text-content-primary">Edit Mode</span>
-                                                                <button
-                                                                    onClick={() => setEditModeEnabled(!editModeEnabled)}
-                                                                    className={`w-7 h-4 rounded-full transition-colors relative ${editModeEnabled ? "bg-cloud" : "bg-border-secondary"
-                                                                        }`}
-                                                                >
-                                                                    <motion.div
-                                                                        className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm"
-                                                                        animate={{ left: editModeEnabled ? "calc(100% - 14px)" : "2px" }}
-                                                                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                                    />
-                                                                </button>
-                                                            </div>
-                                                            <div className="flex items-center justify-between mt-0.5">
-                                                                <span className="text-[9px] text-content-disabled">transform selected text with voice</span>
-                                                                <div className="relative group">
-                                                                    <button className="p-0.5 text-content-disabled hover:text-content-muted transition-colors">
-                                                                        <Info size={10} />
-                                                                    </button>
-                                                                    <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block z-10">
-                                                                        <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 text-[9px] text-content-secondary w-44 shadow-lg leading-tight">
-                                                                            <p>Select text in any app, use your shortcut, speak a command like "make formal" or "fix grammar"</p>
-                                                                            {transcriptionMode === "local" && !llmCleanupEnabled && (
-                                                                                <p className="text-warning mt-1">Requires LLM in Models tab</p>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-
-                                            <AnimatePresence>
-                                                {error && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, height: 0 }}
-                                                        animate={{ opacity: 1, height: "auto" }}
-                                                        exit={{ opacity: 0, height: 0 }}
-                                                    >
-                                                        <div className="flex items-center gap-2 text-[11px] text-error">
-                                                            <span className="flex-1">{error}</span>
-                                                            <button
-                                                                onClick={() => {
-                                                                    navigator.clipboard.writeText(error || "");
-                                                                    setErrorCopied(true);
-                                                                    setTimeout(() => setErrorCopied(false), 1500);
-                                                                }}
-                                                                className="text-error/60 hover:text-error transition-colors"
-                                                            >
-                                                                {errorCopied ? <Check size={11} /> : <Copy size={11} />}
-                                                            </button>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </motion.div>
+                                            transcriptionMode={transcriptionMode}
+                                            onTranscriptionModeChange={setTranscriptionMode}
+                                            loading={loading}
+                                            modelStatus={modelStatus}
+                                            localModel={localModel}
+                                            onOpenModelsTab={() => setActiveTab("models")}
+                                            inputDevices={inputDevices}
+                                            microphoneDevice={microphoneDevice}
+                                            onMicrophoneDeviceChange={setMicrophoneDevice}
+                                            language={language}
+                                            onLanguageChange={setLanguage}
+                                            languages={languages}
+                                            smartShortcut={smartShortcut}
+                                            smartEnabled={smartEnabled}
+                                            setSmartEnabled={setSmartEnabled}
+                                            holdShortcut={holdShortcut}
+                                            holdEnabled={holdEnabled}
+                                            setHoldEnabled={setHoldEnabled}
+                                            toggleShortcut={toggleShortcut}
+                                            toggleEnabled={toggleEnabled}
+                                            setToggleEnabled={setToggleEnabled}
+                                            captureActive={captureActive}
+                                            capturePreview={capturePreview}
+                                            onStartCapture={handleStartCapture}
+                                            error={error}
+                                            errorCopied={errorCopied}
+                                            setErrorCopied={setErrorCopied}
+                                            editModeEnabled={editModeEnabled}
+                                            setEditModeEnabled={setEditModeEnabled}
+                                            llmCleanupEnabled={llmCleanupEnabled}
+                                        />
                                     )}
 
                                     {activeTab === "models" && (
-                                        <motion.div
-                                            key="models"
+                                        <ModelsTab
                                             variants={tabContentVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="exit"
-                                            className="space-y-5"
-                                        >
-                                            <header>
-                                                <h1 className="text-lg font-medium text-content-primary">Local Models</h1>
-                                                <p className="mt-1 text-[12px] text-content-muted">Manage transcription engines and AI cleanup.</p>
-                                            </header>
-                                            <div className="rounded-xl border border-border-primary bg-surface-surface">
-                                                <div className="p-4">
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <div>
-                                                            <h3 className="text-[13px] font-medium text-content-primary">AI Cleanup</h3>
-                                                            <p className="text-[11px] text-content-disabled">Use an LLM to clean up transcriptions</p>
-                                                        </div>
-                                                        <motion.button
-                                                            onClick={() => setLlmCleanupEnabled(!llmCleanupEnabled)}
-                                                            className={`relative w-10 h-5 rounded-full transition-colors ${llmCleanupEnabled ? "bg-cloud" : "bg-border-secondary"}`}
-                                                            whileTap={{ scale: 0.95 }}
-                                                        >
-                                                            <motion.div
-                                                                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
-                                                                animate={{ left: llmCleanupEnabled ? "calc(100% - 18px)" : "2px" }}
-                                                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                                            />
-                                                        </motion.button>
-                                                    </div>
-
-                                                    <AnimatePresence initial={false}>
-                                                        {llmCleanupEnabled && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: "auto", opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                                                                style={{ overflow: "visible" }}
-                                                            >
-                                                                <div className="pt-3 border-t border-border-primary space-y-3">
-                                                                    <div className="space-y-1.5">
-                                                                        <label className="text-[11px] font-medium text-content-muted ml-1">Provider</label>
-                                                                        <Dropdown
-                                                                            value={llmProvider}
-                                                                            onChange={(val) => {
-                                                                                setLlmProvider(val);
-                                                                                const preset = getProviderPreset(val);
-                                                                                if (preset) {
-                                                                                    setLlmEndpoint(preset.endpoint);
-                                                                                    setLlmModel(preset.defaultModel);
-                                                                                }
-                                                                            }}
-                                                                            options={[
-                                                                                { value: "custom" as LlmProvider, label: "Custom" },
-                                                                                { value: "_local_header" as LlmProvider, label: "Local", isHeader: true },
-                                                                                ...LOCAL_PROVIDERS.filter(p => p.id !== "custom").map(p => ({
-                                                                                    value: p.id,
-                                                                                    label: p.label
-                                                                                })),
-                                                                                { value: "_cloud_header" as LlmProvider, label: "Cloud (API Key)", isHeader: true },
-                                                                                ...CLOUD_PROVIDERS.map(p => ({
-                                                                                    value: p.id,
-                                                                                    label: p.label
-                                                                                }))
-                                                                            ]}
-                                                                            placeholder="Select provider..."
-                                                                            searchable
-                                                                            searchPlaceholder="Search providers..."
-                                                                        />
-                                                                    </div>
-
-                                                                    {llmProvider && (
-                                                                        <>
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                                                    <Server size={10} />
-                                                                                    Endpoint {llmProvider !== "custom" && <span className="text-content-disabled">(auto-filled)</span>}
-                                                                                </label>
-                                                                                <input
-                                                                                    type="text"
-                                                                                    value={llmEndpoint}
-                                                                                    onChange={(e) => setLlmEndpoint(e.target.value)}
-                                                                                    placeholder={getProviderPreset(llmProvider)?.endpoint ?? "https://your-llm-endpoint.com"}
-                                                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                                                />
-                                                                            </div>
-
-                                                                            <div className="space-y-1.5">
-                                                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                                                    <Key size={10} />
-                                                                                    API Key {!getProviderPreset(llmProvider)?.apiKeyRequired && <span className="text-content-disabled">(if required)</span>}
-                                                                                </label>
-                                                                                <input
-                                                                                    type="password"
-                                                                                    value={llmApiKey}
-                                                                                    onChange={(e) => setLlmApiKey(e.target.value)}
-                                                                                    placeholder={getProviderPreset(llmProvider)?.apiKeyRequired ? "Required" : "Optional"}
-                                                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                                                />
-                                                                            </div>
-
-                                                                            <div className="relative z-0">
-                                                                                <Dropdown
-                                                                                    value={llmModel}
-                                                                                    onChange={(val) => setLlmModel(val)}
-                                                                                    onOpen={fetchAvailableModels}
-                                                                                    options={[
-                                                                                        ...availableModels.map(m => ({ value: m, label: m })),
-                                                                                        ...(llmModel && !availableModels.includes(llmModel) ? [{ value: llmModel, label: llmModel }] : [])
-                                                                                    ]}
-                                                                                    placeholder={`Model (default: ${getProviderPreset(llmProvider)?.defaultModel || "none"})`}
-                                                                                    searchable
-                                                                                    searchPlaceholder="Search available models..."
-                                                                                />
-                                                                            </div>
-                                                                        </>
-                                                                    )}
-
-                                                                    <div className="flex items-start gap-2 rounded-lg border border-border-secondary bg-surface-elevated px-3 py-2">
-                                                                        <Info size={12} className="text-content-muted shrink-0 mt-0.5" />
-                                                                        <p className="text-[10px] text-content-muted">
-                                                                            Removes filler words, fixes repetitions, and cleans up speech disfluencies while preserving your meaning.
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-content-disabled mb-3">Transcription Engines</h3>
-                                                <div className="space-y-2">
-                                                    {modelCatalog.map((model, index) => {
-                                                        const modelStat = modelStatus[model.key];
-                                                        const progress = downloadState[model.key];
-                                                        const installed = modelStat?.installed;
-                                                        const isActive = localModel === model.key && installed;
-                                                        const isDownloading = progress?.status === "downloading";
-                                                        const isCancelled = progress?.status === "cancelled";
-                                                        const showError = progress?.status === "error";
-                                                        const percent = progress?.percent ?? (installed ? 100 : 0);
-
-                                                        return (
-                                                            <motion.div
-                                                                key={model.key}
-                                                                initial={{ opacity: 0, y: 6 }}
-                                                                animate={{ opacity: 1, y: 0 }}
-                                                                transition={{ delay: index * 0.04 }}
-                                                                className={`rounded-xl border p-4 transition-colors ${isActive
-                                                                    ? "border-cloud-30 bg-cloud/[0.04]"
-                                                                    : "border-border-primary bg-surface-surface hover:border-border-secondary"
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-start justify-between gap-3">
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <h3 className="text-[13px] font-medium text-content-primary">{model.label}</h3>
-                                                                            {isActive && (
-                                                                                <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-cloud/20 text-cloud">Active</span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex flex-wrap gap-1.5 mt-1 mb-1.5">
-                                                                            {model.tags.map(tag => {
-                                                                                const isRecommended = tag.toLowerCase() === "recommended";
-                                                                                return (
-                                                                                    <span
-                                                                                        key={tag}
-                                                                                        className={
-                                                                                            isRecommended
-                                                                                                ? "px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border bg-local-10 text-local border-local-40"
-                                                                                                : "px-1.5 py-0.5 rounded text-[9px] font-medium bg-surface-elevated text-content-muted border border-border-secondary"
-                                                                                        }
-                                                                                    >
-                                                                                        {tag}
-                                                                                    </span>
-                                                                                );
-                                                                            })}
-                                                                        </div>
-                                                                        <p className="text-[11px] text-content-muted line-clamp-1">{model.description}</p>
-                                                                        <div className="mt-2 flex items-center gap-2">
-
-                                                                            <span className="text-[10px] text-content-disabled">{model.variant}</span>
-                                                                            <span className="text-[10px] text-content-disabled">•</span>
-                                                                            <span className="text-[10px] text-content-disabled">{formatBytes(model.size_mb * 1024 * 1024)}</span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="flex shrink-0 items-center gap-2">
-                                                                        {installed && !isActive && (
-                                                                            <motion.button
-                                                                                onClick={() => setLocalModel(model.key)}
-                                                                                className="rounded-lg bg-surface-elevated border border-border-secondary px-3 py-1.5 text-[10px] font-medium text-content-secondary hover:bg-surface-elevated-hover hover:text-content-primary transition-colors"
-                                                                                whileTap={{ scale: 0.97 }}
-                                                                            >
-                                                                                Use
-                                                                            </motion.button>
-                                                                        )}
-                                                                        {isDownloading ? (
-                                                                            <motion.button
-                                                                                onClick={() => handleCancelDownload(model.key)}
-                                                                                className="flex h-8 w-8 items-center justify-center rounded-lg border border-error/30 text-error hover:bg-error/10 transition-colors"
-                                                                                whileTap={{ scale: 0.95 }}
-                                                                                title="Stop download"
-                                                                            >
-                                                                                <Square size={10} fill="currentColor" />
-                                                                            </motion.button>
-                                                                        ) : (
-                                                                            <motion.button
-                                                                                onClick={() => (installed ? handleDelete(model.key) : handleDownload(model.key))}
-                                                                                disabled={isCancelled}
-                                                                                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-colors ${installed
-                                                                                    ? "border-error/20 text-error hover:bg-error/10"
-                                                                                    : isCancelled
-                                                                                        ? "border-border-secondary text-content-disabled cursor-default"
-                                                                                        : "border-border-secondary text-content-muted hover:bg-surface-elevated hover:text-content-secondary"
-                                                                                    }`}
-                                                                                whileTap={!isCancelled ? { scale: 0.95 } : {}}
-                                                                            >
-                                                                                {installed ? (
-                                                                                    <Trash2 size={12} />
-                                                                                ) : (
-                                                                                    <Download size={12} className={isCancelled ? "" : ""} />
-                                                                                )}
-                                                                            </motion.button>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                                {(isDownloading || !installed) && (
-                                                                    <div className="mt-3">
-                                                                        <ModelProgress percent={percent} status={progress?.status ?? "idle"} />
-                                                                        <div className="h-4 flex items-center mt-1.5">
-                                                                            {isDownloading && (
-                                                                                <p className="text-[10px] leading-none text-content-muted tabular-nums truncate w-full">
-                                                                                    {progress?.percent?.toFixed(0)}% · {(progress as Extract<DownloadEvent, { status: "downloading" }>).file}
-                                                                                </p>
-                                                                            )}
-                                                                            {showError && (
-                                                                                <p className="text-[10px] leading-none text-error flex items-center gap-1 w-full truncate">
-                                                                                    <AlertCircle size={10} />
-                                                                                    {(progress as Extract<DownloadEvent, { status: "error" }>).message}
-                                                                                </p>
-                                                                            )}
-                                                                            {isCancelled && (
-                                                                                <p className="text-[10px] leading-none text-content-muted">
-                                                                                    Cancelled
-                                                                                </p>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </motion.div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </motion.div>
+                                            llmCleanupEnabled={llmCleanupEnabled}
+                                            setLlmCleanupEnabled={setLlmCleanupEnabled}
+                                            llmProvider={llmProvider}
+                                            setLlmProvider={setLlmProvider}
+                                            llmEndpoint={llmEndpoint}
+                                            setLlmEndpoint={setLlmEndpoint}
+                                            llmApiKey={llmApiKey}
+                                            setLlmApiKey={setLlmApiKey}
+                                            llmModel={llmModel}
+                                            setLlmModel={setLlmModel}
+                                            availableModels={availableModels}
+                                            fetchAvailableModels={fetchAvailableModels}
+                                            modelCatalog={modelCatalog}
+                                            modelStatus={modelStatus}
+                                            downloadState={downloadState}
+                                            localModel={localModel}
+                                            setLocalModel={setLocalModel}
+                                            handleDownload={handleDownload}
+                                            handleDelete={handleDelete}
+                                            handleCancelDownload={handleCancelDownload}
+                                            formatBytes={formatBytes}
+                                        />
                                     )}
 
                                     {activeTab === "advanced" && (
-                                        <motion.div
-                                            key="advanced"
+                                        <AdvancedTab
                                             variants={tabContentVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="exit"
-                                            className="space-y-6"
-                                        >
-
-                                            <div className="space-y-2">
-                                                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Permissions</h2>
-
-                                                <div className="grid grid-cols-2 gap-2">
-
-                                                    <div className="rounded-lg border border-border-primary bg-surface-surface">
-                                                        <div className="py-2.5 px-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[11px] font-medium text-content-primary">Microphone</span>
-                                                                {micPermission === null ? (
-                                                                    <Loader2 size={10} className="animate-spin text-content-muted" />
-                                                                ) : micPermission ? (
-                                                                    <span className="text-[10px] text-success flex items-center gap-1">
-                                                                        <Check size={10} />
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-warning">off</span>
-                                                                )}
-                                                            </div>
-                                                            <span className="text-[9px] text-content-disabled block mt-0.5">required for transcription</span>
-                                                            <button
-                                                                onClick={() => invoke("open_microphone_settings")}
-                                                                className="mt-2 text-[10px] text-content-muted hover:text-content-secondary transition-colors"
-                                                            >
-                                                                Open Settings
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-
-                                                    <div className="rounded-lg border border-border-primary bg-surface-surface">
-                                                        <div className="py-2.5 px-3">
-                                                            <div className="flex items-center justify-between">
-                                                                <span className="text-[11px] font-medium text-content-primary">Accessibility</span>
-                                                                {accessibilityPermission === null ? (
-                                                                    <Loader2 size={10} className="animate-spin text-content-muted" />
-                                                                ) : accessibilityPermission ? (
-                                                                    <span className="text-[10px] text-success flex items-center gap-1">
-                                                                        <Check size={10} />
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-warning">off</span>
-                                                                )}
-                                                            </div>
-                                                            <span className="text-[9px] text-content-disabled block mt-0.5">required for auto-paste</span>
-                                                            <button
-                                                                onClick={async () => {
-                                                                    try {
-                                                                        const granted = await requestAccessibilityPermission();
-                                                                        if (!granted) await invoke("open_accessibility_settings");
-                                                                    } catch {
-                                                                        await invoke("open_accessibility_settings");
-                                                                    }
-                                                                }}
-                                                                className="mt-2 text-[10px] text-content-muted hover:text-content-secondary transition-colors"
-                                                            >
-                                                                Open Settings
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <p className="text-[9px] text-content-disabled px-0.5">
-                                                    Restart Glimpse after changing permissions in System Settings.
-                                                </p>
-                                            </div>
-                                        </motion.div>
+                                            micPermission={micPermission}
+                                            accessibilityPermission={accessibilityPermission}
+                                        />
                                     )}
 
                                     {activeTab === "about" && (
-                                        <motion.div
-                                            key="about"
+                                        <AboutTab
                                             variants={tabContentVariants}
-                                            initial="hidden"
-                                            animate="visible"
-                                            exit="exit"
-                                            className="space-y-6"
-                                        >
-
-                                            <div className="space-y-2">
-                                                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">App Info</h2>
-
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3">
-                                                        <span className="text-[9px] text-content-disabled block">Version</span>
-                                                        <span className="text-[12px] text-content-primary font-medium">{appInfo?.version ?? "-"}</span>
-                                                    </div>
-                                                    <div className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3">
-                                                        <span className="text-[9px] text-content-disabled block">Storage Used</span>
-                                                        <span className="text-[12px] text-content-primary font-medium">{appInfo ? formatBytes(appInfo.data_dir_size_bytes) : "-"}</span>
-                                                    </div>
-                                                </div>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={handleOpenDataDir}
-                                                    disabled={!appInfo?.data_dir_path}
-                                                    className="w-full rounded-lg border border-border-primary bg-surface-surface py-2 px-3 text-left hover:border-border-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                                >
-                                                    <span className="text-[9px] text-content-disabled block">Data Location</span>
-                                                    <span className="text-[11px] text-content-muted font-mono truncate block"><span className="border-b border-dotted border-content-disabled pb-[1px]">{appInfo?.data_dir_path ?? "-"}</span></span>
-                                                </button>
-                                            </div>
-
-
-                                            <div className="space-y-2">
-                                                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Updates</h2>
-                                                <UpdateChecker />
-                                            </div>
-
-
-                                            <div className="space-y-2">
-                                                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Setup</h2>
-
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <button
-                                                        onClick={async () => {
-                                                            try {
-                                                                await invoke("reset_onboarding");
-                                                                window.location.reload();
-                                                            } catch (err) {
-                                                                console.error("Failed to restart onboarding:", err);
-                                                            }
-                                                        }}
-                                                        className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3 text-left hover:border-border-secondary transition-colors"
-                                                    >
-                                                        <span className="text-[11px] font-medium text-content-primary block">Restart Onboarding</span>
-                                                        <span className="text-[9px] text-content-disabled">re-run setup wizard</span>
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => setShowFAQModal(true)}
-                                                        className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3 text-left hover:border-border-secondary transition-colors"
-                                                    >
-                                                        <span className="text-[11px] font-medium text-content-primary block">FAQ & Help</span>
-                                                        <span className="text-[9px] text-content-disabled">common questions</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </motion.div>
+                                            appInfo={appInfo}
+                                            formatBytes={formatBytes}
+                                            onOpenDataDir={handleOpenDataDir}
+                                            onOpenFAQ={() => setShowFAQModal(true)}
+                                        />
                                     )}
 
                                     {activeTab === "developer" && isDeveloper && (
-                                        <motion.div
-                                            key="developer"
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, y: -10 }}
-                                            transition={{ duration: 0.15 }}
-                                            className="p-6"
-                                        >
-                                            <DebugSection />
-                                        </motion.div>
+                                        <DeveloperTab />
                                     )}
                                 </AnimatePresence>
                             </div>
@@ -1766,7 +957,7 @@ const SettingsModal = ({
 };
 
 const ModalNavItem = ({ icon, label, active, onClick }: {
-    icon: React.ReactNode; label: string; active: boolean; onClick: () => void;
+    icon: ReactNode; label: string; active: boolean; onClick: () => void;
 }) => (
     <motion.button
         onClick={onClick}
@@ -1779,94 +970,5 @@ const ModalNavItem = ({ icon, label, active, onClick }: {
     </motion.button>
 );
 
-const ShortcutRow = ({ label, description, shortcut, enabled, isCapturing, capturePreview, onToggle, onCapture, canDisable }: {
-    label: string;
-    description: string;
-    shortcut: string;
-    enabled: boolean;
-    isCapturing: boolean;
-    capturePreview: string;
-    onToggle: () => void;
-    onCapture: () => void;
-    canDisable: boolean;
-}) => (
-    <div className={`rounded-lg border transition-all ${enabled ? "border-border-secondary bg-surface-surface" : "border-border-primary bg-transparent"
-        }`}>
-        <div className="py-2 px-2.5">
-
-            <div className="flex items-center justify-between">
-                <span className="text-[11px] font-medium text-content-primary">{label}</span>
-                <button
-                    onClick={onToggle}
-                    disabled={enabled && !canDisable}
-                    className={`w-7 h-4 rounded-full transition-colors relative ${enabled ? "bg-cloud" : "bg-border-secondary"
-                        } ${enabled && !canDisable ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                    <motion.div
-                        className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm"
-                        animate={{ left: enabled ? "calc(100% - 14px)" : "2px" }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                    />
-                </button>
-            </div>
-
-            <div className="flex items-center justify-between mt-0.5">
-                <span className="text-[9px] text-content-disabled">{description}</span>
-                <motion.button
-                    onClick={onCapture}
-                    disabled={!enabled}
-                    className={`font-mono text-[10px] px-1.5 py-0.5 rounded transition-all ${isCapturing
-                        ? "text-content-primary border border-border-hover"
-                        : enabled
-                            ? "text-content-secondary hover:text-content-primary hover:bg-surface-elevated"
-                            : "text-content-disabled cursor-not-allowed"
-                        }`}
-                >
-                    {isCapturing ? (
-                        <span className="flex items-center gap-1.5">
-                            <motion.span
-                                className="w-1 h-1 rounded-full bg-cloud"
-                                animate={{ opacity: [0.3, 1, 0.3] }}
-                                transition={{ duration: 1, repeat: Infinity }}
-                            />
-                            <span className={capturePreview ? "text-content-primary" : "text-content-muted"}>
-                                {capturePreview || "..."}
-                            </span>
-                        </span>
-                    ) : shortcut}
-                </motion.button>
-            </div>
-        </div>
-    </div>
-);
-
-const ModelProgress = ({ percent, status }: { percent: number; status: string }) => {
-    const cols = 50;
-    const rows = 3;
-    const totalDots = cols * rows;
-    const activeCount = Math.round((percent / 100) * totalDots);
-
-    const activeDots = useMemo(() => {
-        const dots: number[] = [];
-        for (let i = 0; i < activeCount && i < totalDots; i++) {
-            dots.push(i);
-        }
-        return dots;
-    }, [activeCount, totalDots]);
-
-    const color = status === "error" ? "var(--color-error)" : status === "complete" ? "var(--color-success)" : "var(--color-cloud)";
-
-    return (
-        <DotMatrix
-            rows={rows}
-            cols={cols}
-            activeDots={activeDots}
-            dotSize={3}
-            gap={2}
-            color={color}
-            className="opacity-70"
-        />
-    );
-};
 
 export default SettingsModal;

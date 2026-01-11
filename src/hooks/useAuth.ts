@@ -23,6 +23,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
     isAuthenticated: boolean;
+    isSubscriber: boolean;
     refresh: () => Promise<void>;
 }
 
@@ -122,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         () => ({
             ...state,
             isAuthenticated: state.user !== null,
+            isSubscriber: state.user?.labels?.includes("cloud") ?? false,
             refresh,
         }),
         [state, refresh]

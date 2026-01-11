@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { createJwt, getCurrentUser } from "../lib/auth";
+import { useCloudSyncEnabled } from "./useCloudSyncEnabled";
 
 const CLOUD_FUNCTION_URL = import.meta.env.VITE_CLOUD_TRANSCRIPTION_URL;
 const JWT_REFRESH_INTERVAL = 10 * 60 * 1000;
@@ -10,7 +11,8 @@ const JWT_REFRESH_BACKOFF_BASE_MS = 5000;
 const JWT_REFRESH_BACKOFF_MAX_MS = 5 * 60 * 1000;
 const JWT_REFRESH_BACKOFF_JITTER = 0.2;
 
-export function useCloudTranscription() {
+export function useCloudCredentials() {
+    const { cloudSyncEnabled } = useCloudSyncEnabled();
     const jwtRefreshInterval = useRef<ReturnType<typeof setInterval> | null>(null);
     const hadAuthError = useRef(false);
     const refreshInFlight = useRef<Promise<void> | null>(null);
@@ -80,7 +82,7 @@ export function useCloudTranscription() {
                     return;
                 }
 
-                const historySyncEnabled = localStorage.getItem("glimpse_cloud_sync_enabled") === "true";
+                const historySyncEnabled = cloudSyncEnabled;
 
                 const jwt = await createJwt();
                 await invoke("set_cloud_credentials", {
@@ -109,7 +111,11 @@ export function useCloudTranscription() {
         } finally {
             refreshInFlight.current = null;
         }
-    }, []);
+    }, [cloudSyncEnabled]);
+
+    useEffect(() => {
+        setupCloudCredentials(true);
+    }, [cloudSyncEnabled, setupCloudCredentials]);
 
     useEffect(() => {
         let unlistenAuth: UnlistenFn | null = null;
@@ -121,11 +127,6 @@ export function useCloudTranscription() {
             setupCloudCredentials();
         }, JWT_REFRESH_INTERVAL);
 
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === "glimpse_cloud_sync_enabled") {
-                setupCloudCredentials(true);
-            }
-        };
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
                 setupCloudCredentials(isJwtStale());
@@ -135,7 +136,6 @@ export function useCloudTranscription() {
             setupCloudCredentials(isJwtStale());
         };
 
-        window.addEventListener("storage", handleStorageChange);
         window.addEventListener("focus", handleWindowFocus);
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -159,7 +159,6 @@ export function useCloudTranscription() {
             if (refreshBackoffTimeout.current) {
                 clearTimeout(refreshBackoffTimeout.current);
             }
-            window.removeEventListener("storage", handleStorageChange);
             window.removeEventListener("focus", handleWindowFocus);
             document.removeEventListener("visibilitychange", handleVisibilityChange);
             unlistenAuth?.();
