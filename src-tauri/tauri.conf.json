@@ -59,7 +59,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; connect-src 'self' https://*.appwrite.io https://*.cloud.appwrite.io https://api.openai.com https://api.groq.com http://localhost:* http://127.0.0.1:* https:; base-uri 'self'; form-action 'self'"
+      "csp": "default-src 'self' asset: customprotocol:; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*"
+
     },
     "macOSPrivateApi": true
   },
