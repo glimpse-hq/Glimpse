@@ -76,7 +76,6 @@ impl CloudManager {
     pub fn get_credentials(&self) -> Option<CloudCredentials> {
         self.credentials.lock().clone()
     }
-
 }
 
 #[derive(Deserialize)]

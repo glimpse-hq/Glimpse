@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { invoke } from "@tauri-apps/api/core";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -331,21 +330,9 @@ const AccountView = ({
                                 </div>
                             </div>
                         </div>
-                        {isSubscriber ? (
-                            <button
-                                onClick={() => openUrl("https://glimpse-app.lemonsqueezy.com/billing")}
-                                className="text-[11px] font-medium text-amber-400 hover:text-amber-300 transition-colors"
-                            >
-                                Manage
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => openUrl("https://glimpse-app.lemonsqueezy.com/buy/16bdbd7d-2aa4-4c4e-a101-482386083ea7")}
-                                className="px-3 py-1.5 rounded-lg bg-amber-400/10 border border-amber-400/20 text-[11px] font-medium text-amber-400 hover:bg-amber-400/20 transition-colors"
-                            >
-                                Upgrade
-                            </button>
-                        )}
+                        <span className="rounded-lg bg-surface-elevated px-2 py-0.5 text-[9px] font-medium text-content-muted">
+                            In development
+                        </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 transition-colors">

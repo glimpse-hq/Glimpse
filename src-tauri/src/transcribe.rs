@@ -9,8 +9,8 @@ use crate::{
     model_manager,
     recorder::{CompletedRecording, RecordingSaved},
     settings::{Personality, TranscriptionMode, UserSettings},
-    storage, toast, transcription_api, update_checker, AppRuntime, AppState, EVENT_TRANSCRIPTION_COMPLETE,
-    EVENT_TRANSCRIPTION_ERROR,
+    storage, toast, transcription_api, update_checker, AppRuntime, AppState,
+    EVENT_TRANSCRIPTION_COMPLETE, EVENT_TRANSCRIPTION_ERROR,
 };
 
 #[derive(Serialize, Clone)]
@@ -73,7 +73,7 @@ pub(crate) fn queue_transcription(
                 "[transcription] Using cloud auth: url={} edit_mode={}",
                 creds.function_url, has_selection
             );
-            
+
             let payload = build_transcription_payload(
                 &settings,
                 pending_selected_text.clone(),
@@ -475,7 +475,7 @@ pub(crate) fn retry_transcription_async(
                 "[retry_transcription] Using cloud auth: url={}",
                 creds.function_url
             );
-            
+
             let payload = build_transcription_payload(
                 &settings,
                 None,
@@ -691,7 +691,11 @@ pub(crate) fn retry_transcription_async(
                 }
 
                 let metadata = storage::TranscriptionMetadata {
-                    speech_model: resolve_speech_model_label(&settings, use_local, reported_model.as_deref()),
+                    speech_model: resolve_speech_model_label(
+                        &settings,
+                        use_local,
+                        reported_model.as_deref(),
+                    ),
                     llm_model: if llm_cleaned {
                         llm_cleanup::resolved_model_name(&settings)
                     } else {
@@ -1171,8 +1175,7 @@ pub(crate) fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, 
 fn decode_wav(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
     let file = std::fs::File::open(path)
         .with_context(|| format!("Failed to open WAV file at {}", path.display()))?;
-    let mut reader =
-        hound::WavReader::new(file).map_err(|err| anyhow!("WAV read error: {err}"))?;
+    let mut reader = hound::WavReader::new(file).map_err(|err| anyhow!("WAV read error: {err}"))?;
     let spec = reader.spec();
     if spec.sample_format != hound::SampleFormat::Int {
         return Err(anyhow!("Unsupported WAV sample format"));

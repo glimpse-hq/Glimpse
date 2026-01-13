@@ -112,7 +112,7 @@ pub async fn download_model_files<R: Runtime>(
         if cancel_token.is_cancelled() {
             return Err(anyhow!("Download cancelled"));
         }
-        
+
         if let Err(err) = download_file(
             app,
             client,

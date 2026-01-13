@@ -1,17 +1,17 @@
+mod accessibility_context;
 mod analytics;
 mod assistive;
 mod audio;
 mod cloud;
 mod crypto;
 mod dictionary;
-mod personalization;
-mod accessibility_context;
-mod mode_context;
 mod downloader;
 mod llm_cleanup;
 mod local_transcription;
+mod mode_context;
 mod model_manager;
 mod permissions;
+mod personalization;
 mod pill;
 mod platform;
 mod recorder;
@@ -94,11 +94,7 @@ pub fn run() {
                     eprintln!("Failed to persist default local model: {err}");
                 }
             }
-            app.manage(AppState::new(
-                Arc::clone(&settings_store),
-                settings,
-                handle,
-            ));
+            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
 
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
@@ -575,7 +571,6 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
     })
 }
 
-
 #[tauri::command]
 async fn fetch_llm_models(
     endpoint: String,
@@ -656,7 +651,12 @@ fn switch_to_local_mode(app: AppHandle<AppRuntime>) -> Result<(), String> {
         eprintln!("Failed to emit settings change: {err}");
     }
 
-    toast::show(&app, "success", None, "Switched to local mode. Cloud sync still works.");
+    toast::show(
+        &app,
+        "success",
+        None,
+        "Switched to local mode. Cloud sync still works.",
+    );
 
     Ok(())
 }
@@ -852,7 +852,7 @@ async fn retry_llm_cleanup(
     let llm_model = llm_cleanup::resolved_model_name(&settings);
 
     let text_to_clean = record.raw_text.unwrap_or(record.text);
-    
+
     // Look up the saved personality (if it still exists and is enabled)
     let saved_personality = record.mode_id.as_ref().and_then(|id| {
         settings
@@ -936,7 +936,6 @@ pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
 pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
     app.state::<AppState>().pill().cancel(app);
 }
-
 
 #[tauri::command]
 fn cancel_recording(app: AppHandle<AppRuntime>) {

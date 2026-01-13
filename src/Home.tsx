@@ -50,7 +50,7 @@ const Home = () => {
     const [settingsTab, setSettingsTab] = useState<"general" | "account" | "models" | "about">("general");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
     const [activeView, setActiveView] = useState<"home" | "dictionary" | "brain">("home");
-    const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode>("cloud");
+    const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode>("local");
     const { user: currentUser, refresh: refreshUser } = useAuth();
     const [showSupportPopup, setShowSupportPopup] = useState(false);
     const [showFAQ, setShowFAQ] = useState(false);

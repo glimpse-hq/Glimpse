@@ -162,7 +162,7 @@ pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality
     }
 
     let context = accessibility_context::get_active_context()?;
-    
+
     settings
         .personalities
         .iter()
@@ -171,7 +171,10 @@ pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality
         .cloned()
 }
 
-pub fn build_mode_prompt_for_personality(settings: &UserSettings, personality: &Personality) -> Option<String> {
+pub fn build_mode_prompt_for_personality(
+    settings: &UserSettings,
+    personality: &Personality,
+) -> Option<String> {
     if personality.instructions.is_empty() {
         return None;
     }

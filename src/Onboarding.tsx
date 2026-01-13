@@ -25,24 +25,15 @@ import {
     Wand2,
     AlertTriangle,
     Mail,
-    Lock,
-    Eye,
-    EyeOff,
-    AlertCircle,
-    CloudCog,
-    HelpCircle,
-    User,
-    Copy,
 } from "lucide-react";
 import DotMatrix from "./components/DotMatrix";
 import { Dropdown } from "./components/Dropdown";
 import FAQModal from "./components/FAQModal";
-import { OAuthProvider } from "appwrite";
-import { createAccount, login, createOAuth2Session, updateName, updatePreferences, getCurrentUser } from "./lib/auth";
 import { LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "./lib/llmProviders";
 import type { ModelInfo, ModelStatus, StoredSettings, TranscriptionMode, LlmProvider } from "./types";
 
-type OnboardingStep = "welcome" | "cloud-signin" | "cloud-profile" | "cloud-sync" | "local-model" | "cleanup" | "local-signin" | "microphone" | "accessibility" | "ready";
+ type OnboardingStep = "welcome" | "local-model" | "cleanup" | "local-signin" | "microphone" | "accessibility" | "ready";
+
 
 type LocalDownloadStatus = {
     status: "idle" | "downloading" | "complete" | "error" | "cancelled";
@@ -212,7 +203,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     const [accessibilityPermission, setAccessibilityPermission] = useState(false);
     const [isCheckingMic, setIsCheckingMic] = useState(true);
     const [isCheckingAccessibility, setIsCheckingAccessibility] = useState(true);
-    const [selectedMode, setSelectedMode] = useState<TranscriptionMode>("cloud");
+    const [selectedMode, setSelectedMode] = useState<TranscriptionMode>("local");
     const [localModelChoice, setLocalModelChoice] = useState<typeof PARAKEET_KEY | typeof WHISPER_KEY>(WHISPER_KEY);
     const [localDownload, setLocalDownload] = useState<Record<string, LocalDownloadStatus>>({
         [PARAKEET_KEY]: { status: "idle", percent: 0 },
@@ -227,28 +218,14 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     const [llmModel, setLlmModel] = useState("");
     const [showLocalConfirm, setShowLocalConfirm] = useState(false);
 
-    const [authMode, setAuthMode] = useState<"signin" | "signup">("signup");
-    const [authEmail, setAuthEmail] = useState("");
-    const [authPassword, setAuthPassword] = useState("");
-    const [authName, setAuthName] = useState("");
-    const [authShowPassword, setAuthShowPassword] = useState(false);
-    const [authLoading, setAuthLoading] = useState(false);
-    const [authError, setAuthError] = useState<string | null>(null);
-    const [authErrorCopied, setAuthErrorCopied] = useState(false);
-
-    const [cloudSyncEnabled, setCloudSyncEnabled] = useState(false);
     const [showFAQModal, setShowFAQModal] = useState(false);
-    const [showNewAccountConfirm, setShowNewAccountConfirm] = useState(false);
-    const [pendingAuth, setPendingAuth] = useState<{ email: string; password: string; name: string } | null>(null);
 
     const [smartShortcut, setSmartShortcut] = useState("Control+Space");
     const [captureActive, setCaptureActive] = useState(false);
     const pressedModifiers = useRef<Set<string>>(new Set());
     const primaryKey = useRef<string | null>(null);
 
-    const steps: OnboardingStep[] = selectedMode === "cloud"
-        ? ["welcome", "cloud-signin", "cloud-profile", "cloud-sync", "microphone", "accessibility", "ready"]
-        : ["welcome", "local-model", "cleanup", "microphone", "accessibility", "ready"];
+    const steps: OnboardingStep[] = ["welcome", "local-model", "cleanup", "microphone", "accessibility", "ready"];
     const currentStepIndex = steps.indexOf(step);
 
     useEffect(() => {
@@ -343,7 +320,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
     const handleComplete = async () => {
         try {
-            localStorage.setItem("glimpse_cloud_sync_enabled", String(cloudSyncEnabled));
+            localStorage.setItem("glimpse_cloud_sync_enabled", "false");
 
             await invoke("update_settings", {
                 smartShortcut,
@@ -691,10 +668,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 <button
                                     type="button"
-                                    onClick={() => setSelectedMode("cloud")}
-                                    className={`group relative w-full rounded-2xl border border-border-primary bg-surface-tertiary p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden transition-all ${selectedMode === "cloud" ? "ring-1 ring-amber-400/50" : ""
-                                        }`}
-                                    aria-pressed={selectedMode === "cloud"}
+                                    onClick={() => {}}
+                                    disabled
+                                    className={`group relative w-full rounded-2xl border border-border-primary bg-surface-tertiary p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden transition-all opacity-60 cursor-not-allowed`}
+                                    aria-disabled
                                 >
                                     <div className="absolute inset-0 pointer-events-none">
                                         <div className="absolute inset-0 opacity-18">
@@ -704,6 +681,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     <div className="relative flex items-center gap-2">
                                         <DotMatrix rows={2} cols={2} activeDots={[0, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
                                         <span className="text-[10px] font-semibold text-amber-400">Glimpse Cloud</span>
+                                        <span className="ml-2 rounded-lg bg-surface-elevated px-2 py-0.5 text-[9px] font-medium text-content-muted">In development</span>
                                     </div>
                                     <div className="relative flex flex-col gap-1.5 text-[11px] text-content-secondary font-medium">
                                         <div className="flex items-center gap-2">
@@ -773,315 +751,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                         </motion.div>
                     )}
 
-                    {step === "cloud-signin" && (
-                        <motion.div
-                            key="cloud-signin"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex flex-col items-center text-center w-full max-w-sm"
-                        >
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
-                                {authMode === "signin" ? "Sign in to Glimpse Cloud" : "Create your account"}
-                            </h2>
-                            <p className="text-sm text-content-muted mb-6">
-                                {authMode === "signin"
-                                    ? "Sync transcriptions across devices"
-                                    : "Get started with Glimpse Cloud"}
-                            </p>
 
-                            {authError && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="w-full mb-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400"
-                                >
-                                    <AlertCircle size={16} className="shrink-0" />
-                                    <span className="flex-1">{authError}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(authError);
-                                            setAuthErrorCopied(true);
-                                            setTimeout(() => setAuthErrorCopied(false), 1500);
-                                        }}
-                                        className="shrink-0 p-1 rounded hover:bg-red-500/20 transition-colors"
-                                        title="Copy error"
-                                    >
-                                        {authErrorCopied ? <Check size={14} /> : <Copy size={14} />}
-                                    </button>
-                                </motion.div>
-                            )}
 
-                            <form
-                                className="w-full space-y-3"
-                                onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    setAuthError(null);
-                                    setAuthLoading(true);
-                                    try {
-                                        if (authMode === "signup") {
-                                            await createAccount(authEmail, authPassword, authName || undefined);
-                                        } else {
-                                            await login(authEmail, authPassword);
-                                        }
-                                        const user = await getCurrentUser();
-                                        if (authName.trim() || user?.name) {
-                                            setStep("cloud-sync");
-                                        } else {
-                                            goToNextStep();
-                                        }
-                                    } catch (err) {
-                                        setAuthError(err instanceof Error ? err.message : "Authentication failed");
-                                    } finally {
-                                        setAuthLoading(false);
-                                    }
-                                }}
-                            >
-                                {authMode === "signup" && (
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Name (optional)"
-                                            value={authName}
-                                            onChange={(e) => setAuthName(e.target.value)}
-                                            className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 pl-11 text-sm text-white placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                        />
-                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-content-disabled">
-                                            <User size={16} />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="relative">
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        value={authEmail}
-                                        onChange={(e) => setAuthEmail(e.target.value)}
-                                        required
-                                        className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 pl-11 text-sm text-white placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                    />
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-content-disabled">
-                                        <Mail size={16} />
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <input
-                                        type={authShowPassword ? "text" : "password"}
-                                        placeholder="Password"
-                                        value={authPassword}
-                                        onChange={(e) => setAuthPassword(e.target.value)}
-                                        required
-                                        minLength={8}
-                                        className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 pl-11 pr-11 text-sm text-white placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                    />
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-content-disabled">
-                                        <Lock size={16} />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAuthShowPassword(!authShowPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-content-disabled hover:text-content-muted transition-colors"
-                                    >
-                                        {authShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={authLoading}
-                                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {authLoading ? (
-                                        <>
-                                            <Loader2 size={16} className="animate-spin" />
-                                            {authMode === "signin" ? "Signing in..." : "Creating account..."}
-                                        </>
-                                    ) : authMode === "signin" ? (
-                                        "Sign In"
-                                    ) : (
-                                        "Create Account"
-                                    )}
-                                </button>
-                            </form>
-
-                            <div className="my-5 flex w-full items-center gap-3">
-                                <div className="flex-1 h-px bg-border-primary" />
-                                <span className="text-xs text-content-disabled">or continue with</span>
-                                <div className="flex-1 h-px bg-border-primary" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 w-full">
-                                <button
-                                    type="button"
-                                    onClick={() => createOAuth2Session(OAuthProvider.Google)}
-                                    className="flex items-center justify-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2.5 text-sm text-content-secondary hover:bg-surface-overlay hover:border-border-secondary transition-colors"
-                                >
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                    </svg>
-                                    Google
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => createOAuth2Session(OAuthProvider.Github)}
-                                    className="flex items-center justify-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2.5 text-sm text-content-secondary hover:bg-surface-overlay hover:border-border-secondary transition-colors"
-                                >
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385c.6.105.825-.255.825-.57c0-.285-.015-1.23-.015-2.235c-3.015.555-3.795-.735-4.035-1.41c-.135-.345-.72-1.41-1.23-1.695c-.42-.225-1.02-.78-.015-.795c.945-.015 1.62.87 1.845 1.23c1.08 1.815 2.805 1.305 3.495.99c.105-.78.42-1.305.765-1.605c-2.67-.3-5.46-1.335-5.46-5.925c0-1.305.465-2.385 1.23-3.225c-.12-.3-.54-1.53.12-3.18c0 0 1.005-.315 3.3 1.23c.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23c.66 1.65.24 2.88.12 3.18c.765.84 1.23 1.905 1.23 3.225c0 4.605-2.805 5.625-5.475 5.925c.435.375.81 1.095.81 2.22c0 1.605-.015 2.895-.015 3.3c0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-                                    </svg>
-                                    GitHub
-                                </button>
-                            </div>
-
-                            <p className="mt-5 text-sm text-content-muted">
-                                {authMode === "signin" ? (
-                                    <>
-                                        Don't have an account?{" "}
-                                        <button
-                                            type="button"
-                                            onClick={() => { setAuthMode("signup"); setAuthError(null); }}
-                                            className="text-amber-400 hover:text-amber-300 transition-colors"
-                                        >
-                                            Sign up
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        Already have an account?{" "}
-                                        <button
-                                            type="button"
-                                            onClick={() => { setAuthMode("signin"); setAuthError(null); }}
-                                            className="text-amber-400 hover:text-amber-300 transition-colors"
-                                        >
-                                            Sign in
-                                        </button>
-                                    </>
-                                )}
-                            </p>
-                        </motion.div>
-                    )}
-
-                    {step === "cloud-profile" && (
-                        <motion.div
-                            key="cloud-profile"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex flex-col items-center text-center w-full max-w-sm"
-                        >
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
-                                Welcome to Glimpse!
-                            </h2>
-                            <p className="text-sm text-content-muted mb-6">
-                                Let's personalize your experience
-                            </p>
-
-                            <form
-                                className="w-full space-y-4"
-                                onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    setAuthLoading(true);
-                                    try {
-                                        if (authName.trim()) {
-                                            await updateName(authName.trim());
-                                        }
-                                        goToNextStep();
-                                    } catch (err) {
-                                        console.error("Failed to update name:", err);
-                                        goToNextStep();
-                                    } finally {
-                                        setAuthLoading(false);
-                                    }
-                                }}
-                            >
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="What should we call you?"
-                                        value={authName}
-                                        onChange={(e) => setAuthName(e.target.value)}
-                                        autoFocus
-                                        className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 text-sm text-white text-center placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                    />
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={authLoading}
-                                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {authLoading ? (
-                                        <>
-                                            <Loader2 size={16} className="animate-spin" />
-                                            Saving...
-                                        </>
-                                    ) : (
-                                        "Continue"
-                                    )}
-                                </button>
-                            </form>
-
-                            <button
-                                type="button"
-                                onClick={goToNextStep}
-                                className="mt-4 text-xs text-content-disabled hover:text-content-muted transition-colors"
-                            >
-                                Skip for now
-                            </button>
-                        </motion.div>
-                    )}
-
-                    {step === "cloud-sync" && (
-                        <motion.div
-                            key="cloud-sync"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex flex-col items-center text-center w-full max-w-sm"
-                        >
-                            <div className="mb-4 rounded-2xl bg-amber-400/10 p-4">
-                                <CloudCog size={32} className="text-amber-400" />
-                            </div>
-                            <h2 className="text-xl font-semibold text-content-primary mb-2">
-                                Sync your history?
-                            </h2>
-                            <p className="text-sm text-content-muted mb-8 leading-relaxed max-w-[280px]">
-                                We can securely sync your transcription text (not audio) to the cloud so you can access it anywhere.
-                            </p>
-
-                            <div className="w-full space-y-4">
-                                <div
-                                    className="flex items-center justify-between rounded-xl border border-border-primary bg-surface-surface p-4 cursor-pointer hover:border-border-secondary transition-colors"
-                                    onClick={() => setCloudSyncEnabled(!cloudSyncEnabled)}
-                                >
-                                    <div className="flex flex-col items-start gap-1">
-                                        <span className="text-sm font-medium text-content-primary">History Sync</span>
-                                        <span className="text-[11px] text-content-muted">Text-only backup</span>
-                                    </div>
-                                    <div className={`relative w-11 h-6 rounded-full transition-colors ${cloudSyncEnabled ? "bg-amber-400" : "bg-border-secondary"}`}>
-                                        <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${cloudSyncEnabled ? "translate-x-5" : "translate-x-0.5"}`} />
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={goToNextStep}
-                                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-white transition-colors"
-                                >
-                                    Continue
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
 
                     {step === "local-model" && (
                         <motion.div
@@ -1482,158 +1153,16 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             transition={{ duration: 0.3 }}
                             className="flex flex-col items-center text-center w-full max-w-sm"
                         >
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
-                                Free Transcription Sync
-                            </h2>
-                            <p className="text-sm text-content-muted mb-6">
-                                Sign in to sync your transcriptions across devices, it's free!
+                            <div className="mb-4 rounded-2xl bg-local/10 p-4">
+                                <Mail size={28} className="text-local" />
+                            </div>
+                            <h2 className="text-xl font-semibold text-content-primary mb-2">Transcription Sync</h2>
+                            <p className="text-sm text-content-muted mb-2 leading-relaxed">
+                                Cloud sync is currently <span className="text-content-primary font-medium">in development</span>.
                             </p>
-
-                            {authError && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="w-full mb-4 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400"
-                                >
-                                    <AlertCircle size={16} className="shrink-0" />
-                                    <span className="flex-1">{authError}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(authError);
-                                            setAuthErrorCopied(true);
-                                            setTimeout(() => setAuthErrorCopied(false), 1500);
-                                        }}
-                                        className="shrink-0 p-1 rounded hover:bg-red-500/20 transition-colors"
-                                        title="Copy error"
-                                    >
-                                        {authErrorCopied ? <Check size={14} /> : <Copy size={14} />}
-                                    </button>
-                                </motion.div>
-                            )}
-
-                            <form
-                                className="w-full space-y-3"
-                                onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    setAuthError(null);
-                                    setAuthLoading(true);
-                                    try {
-                                        await login(authEmail, authPassword);
-                                        skippedFrom.current = "local-signin";
-                                        setStep("microphone");
-                                    } catch (loginErr) {
-                                        const errorMsg = loginErr instanceof Error ? loginErr.message : "";
-                                        if (errorMsg.includes("Invalid credentials") || errorMsg.includes("user") || errorMsg.includes("not found")) {
-                                            setPendingAuth({ email: authEmail, password: authPassword, name: authName.trim() });
-                                            setShowNewAccountConfirm(true);
-                                        } else {
-                                            setAuthError(errorMsg || "Authentication failed");
-                                        }
-                                    } finally {
-                                        setAuthLoading(false);
-                                    }
-                                }}
-                            >
-                                {/* Name field - optional */}
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Name (optional)"
-                                        value={authName}
-                                        onChange={(e) => setAuthName(e.target.value)}
-                                        className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 pl-11 text-sm text-white placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                    />
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-content-disabled">
-                                        <User size={16} />
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <input
-                                        type="email"
-                                        placeholder="Email"
-                                        value={authEmail}
-                                        onChange={(e) => setAuthEmail(e.target.value)}
-                                        required
-                                        className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 pl-11 text-sm text-white placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                    />
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-content-disabled">
-                                        <Mail size={16} />
-                                    </div>
-                                </div>
-
-                                <div className="relative">
-                                    <input
-                                        type={authShowPassword ? "text" : "password"}
-                                        placeholder="Password"
-                                        value={authPassword}
-                                        onChange={(e) => setAuthPassword(e.target.value)}
-                                        required
-                                        minLength={8}
-                                        className="w-full rounded-lg border border-border-primary bg-surface-surface px-4 py-3 pl-11 pr-11 text-sm text-white placeholder-content-disabled outline-none transition-colors focus:border-border-hover focus:bg-surface-overlay"
-                                    />
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-content-disabled">
-                                        <Lock size={16} />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setAuthShowPassword(!authShowPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-content-disabled hover:text-content-muted transition-colors"
-                                    >
-                                        {authShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={authLoading}
-                                    className="w-full flex items-center justify-center gap-2 rounded-lg bg-local px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-local-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {authLoading ? (
-                                        <>
-                                            <Loader2 size={16} className="animate-spin" />
-                                            Signing in...
-                                        </>
-                                    ) : (
-                                        "Continue"
-                                    )}
-                                </button>
-                            </form>
-
-                            <div className="my-5 flex w-full items-center gap-3">
-                                <div className="flex-1 h-px bg-border-primary" />
-                                <span className="text-xs text-content-disabled">or continue with</span>
-                                <div className="flex-1 h-px bg-border-primary" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 w-full">
-                                <button
-                                    type="button"
-                                    onClick={() => createOAuth2Session(OAuthProvider.Google)}
-                                    className="flex items-center justify-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2.5 text-sm text-content-secondary hover:bg-surface-overlay hover:border-border-secondary transition-colors"
-                                >
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                    </svg>
-                                    Google
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => createOAuth2Session(OAuthProvider.Github)}
-                                    className="flex items-center justify-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2.5 text-sm text-content-secondary hover:bg-surface-overlay hover:border-border-secondary transition-colors"
-                                >
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385c.6.105.825-.255.825-.57c0-.285-.015-1.23-.015-2.235c-3.015.555-3.795-.735-4.035-1.41c-.135-.345-.72-1.41-1.23-1.695c-.42-.225-1.02-.78-.015-.795c.945-.015 1.62.87 1.845 1.23c1.08 1.815 2.805 1.305 3.495.99c.105-.78.42-1.305.765-1.605c-2.67-.3-5.46-1.335-5.46-5.925c0-1.305.465-2.385 1.23-3.225c-.12-.3-.54-1.53.12-3.18c0 0 1.005-.315 3.3 1.23c.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23c.66 1.65.24 2.88.12 3.18c.765.84 1.23 1.905 1.23 3.225c0 4.605-2.805 5.625-5.475 5.925c.435.375.81 1.095.81 2.22c0 1.605-.015 2.895-.015 3.3c0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
-                                    </svg>
-                                    GitHub
-                                </button>
-                            </div>
-
+                            <p className="text-xs text-content-disabled mb-7 leading-relaxed">
+                                You can keep using Glimpse locally. This screen will be enabled in a future update.
+                            </p>
 
                             <button
                                 type="button"
@@ -1641,18 +1170,9 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     skippedFrom.current = "local-signin";
                                     setStep("microphone");
                                 }}
-                                className="mt-4 text-xs text-content-disabled hover:text-content-muted transition-colors"
+                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-white transition-colors"
                             >
-                                Skip for now
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setShowFAQModal(true)}
-                                className="mt-3 flex items-center gap-1.5 text-xs text-content-disabled hover:text-local transition-colors"
-                            >
-                                <HelpCircle size={12} />
-                                How is this free?
+                                Continue
                             </button>
                         </motion.div>
                     )}
@@ -1899,69 +1419,6 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                 )}
             </AnimatePresence>
 
-            <AnimatePresence>
-                {showNewAccountConfirm && pendingAuth && (
-                    <motion.div
-                        key="new-account-confirm"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-6"
-                        onClick={() => setShowNewAccountConfirm(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.96, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.96, opacity: 0 }}
-                            transition={{ duration: 0.18 }}
-                            className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center gap-3 mb-3">
-                                <Mail size={20} className="text-local shrink-0" />
-                                <div>
-                                    <p className="text-[14px] font-semibold text-content-primary">Create new account?</p>
-                                    <p className="text-[11px] text-content-disabled">No account found for <span className="text-content-muted">{pendingAuth.email}</span>. Would you like to create a new account?</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    onClick={() => {
-                                        setShowNewAccountConfirm(false);
-                                        setPendingAuth(null);
-                                    }}
-                                    className="rounded-lg border border-border-secondary px-4 py-2 text-[12px] font-medium text-content-secondary hover:border-border-hover transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        setShowNewAccountConfirm(false);
-                                        setAuthLoading(true);
-                                        try {
-                                            await createAccount(pendingAuth.email, pendingAuth.password, pendingAuth.name || undefined);
-                                            if (pendingAuth.name) {
-                                                await updatePreferences({ displayName: pendingAuth.name });
-                                            }
-                                            setPendingAuth(null);
-                                            skippedFrom.current = "local-signin";
-                                            setStep("microphone");
-                                        } catch (err) {
-                                            setAuthError(err instanceof Error ? err.message : "Failed to create account");
-                                            setPendingAuth(null);
-                                        } finally {
-                                            setAuthLoading(false);
-                                        }
-                                    }}
-                                    className="rounded-lg bg-local px-4 py-2 text-[12px] font-semibold text-black hover:bg-local-light transition-colors"
-                                >
-                                    Create Account
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <FAQModal isOpen={showFAQModal} onClose={() => setShowFAQModal(false)} />
 

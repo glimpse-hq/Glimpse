@@ -1,4 +1,4 @@
-use crate::{AppRuntime, AppState, pill};
+use crate::{pill, AppRuntime, AppState};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 

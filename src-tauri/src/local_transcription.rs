@@ -52,11 +52,9 @@ impl LocalTranscriber {
 
     pub fn start_idle_monitor(self: &Arc<Self>) {
         let transcriber = Arc::clone(self);
-        std::thread::spawn(move || {
-            loop {
-                std::thread::sleep(IDLE_CHECK_INTERVAL);
-                transcriber.check_idle_unload();
-            }
+        std::thread::spawn(move || loop {
+            std::thread::sleep(IDLE_CHECK_INTERVAL);
+            transcriber.check_idle_unload();
         });
     }
 
@@ -72,7 +70,10 @@ impl LocalTranscriber {
             .unwrap_or(false);
 
         if should_unload {
-            eprintln!("[LocalTranscriber] Unloading model after {} seconds of inactivity", IDLE_TIMEOUT.as_secs());
+            eprintln!(
+                "[LocalTranscriber] Unloading model after {} seconds of inactivity",
+                IDLE_TIMEOUT.as_secs()
+            );
             self.unload();
         }
     }
@@ -182,7 +183,9 @@ impl LocalTranscriber {
                         MoonshineModelParams::variant(model_variant),
                     )
                     .map_err(|err| anyhow!("Failed to load Moonshine model: {err}"))?;
-                EngineInstance::Moonshine { engine: Box::new(engine) }
+                EngineInstance::Moonshine {
+                    engine: Box::new(engine),
+                }
             }
         };
 

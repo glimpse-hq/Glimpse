@@ -2,8 +2,8 @@ use anyhow::{anyhow, Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::{accessibility_context, mode_context};
 use crate::settings::{LlmProvider, Personality, UserSettings};
+use crate::{accessibility_context, mode_context};
 
 const SYSTEM_PROMPT: &str = r#"
 You clean up speech-to-text transcriptions. Your ONLY job is to:
@@ -190,7 +190,8 @@ fn build_system_prompt(settings: &UserSettings, mode: Option<&Personality>) -> S
     accessibility_context::log_active_context();
 
     if let Some(personality) = mode {
-        if let Some(prompt) = mode_context::build_mode_prompt_for_personality(settings, personality) {
+        if let Some(prompt) = mode_context::build_mode_prompt_for_personality(settings, personality)
+        {
             return prompt;
         }
     }
@@ -203,11 +204,8 @@ fn build_system_prompt(settings: &UserSettings, mode: Option<&Personality>) -> S
     SYSTEM_PROMPT.to_string()
 }
 
-
 fn get_endpoint(settings: &UserSettings) -> Result<String> {
-    if !settings.llm_endpoint.is_empty()
-        && settings.llm_endpoint.contains("/chat/completions")
-    {
+    if !settings.llm_endpoint.is_empty() && settings.llm_endpoint.contains("/chat/completions") {
         return Ok(settings.llm_endpoint.clone());
     }
 

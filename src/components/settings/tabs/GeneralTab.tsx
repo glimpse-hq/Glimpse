@@ -89,20 +89,22 @@ const GeneralTab = ({
             <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Processing</h2>
             <div className="grid grid-cols-2 gap-3">
                 <button
-                    onClick={() => onTranscriptionModeChange("cloud")}
-                    className={`py-3 px-3.5 rounded-lg border text-left transition-all ${transcriptionMode === "cloud"
+                    onClick={() => {}}
+                    disabled
+                    className={`py-3 px-3.5 rounded-lg border text-left transition-all opacity-60 cursor-not-allowed ${transcriptionMode === "cloud"
                         ? "border-cloud-30 bg-cloud-5"
-                        : "border-border-primary bg-transparent hover:border-border-secondary"
+                        : "border-border-primary bg-transparent"
                         }`}
+                    aria-disabled
                 >
                     <div className="flex items-baseline gap-1.5">
                         <span className={`text-[13px] font-medium ${transcriptionMode === "cloud" ? "text-cloud" : "text-content-secondary"
                             }`}>Cloud</span>
                         <span className={`text-[10px] ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
-                            }`}>fast</span>
+                            }`}>coming soon</span>
                     </div>
                     <p className={`text-[10px] mt-1 ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
-                        }`}>Process audio in the cloud</p>
+                        }`}>In development</p>
                 </button>
                 <button
                     onClick={() => onTranscriptionModeChange("local")}

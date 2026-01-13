@@ -7,7 +7,10 @@ use chrono::{DateTime, Local};
 use parking_lot::Mutex;
 use rustfft::{num_complex::Complex, FftPlanner};
 use serde::Serialize;
-use std::sync::{atomic::{AtomicBool, Ordering}, Arc};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
@@ -94,9 +97,9 @@ impl AudioSpectrumEmitter {
                     for idx in 0..SPECTRUM_BINS {
                         let magnitude = buffer[idx].norm() / SPECTRUM_SIZE as f32;
                         let db = 20.0 * magnitude.max(1e-10).log10();
-                        let normalized =
-                            ((db - SPECTRUM_MIN_DB) / (SPECTRUM_MAX_DB - SPECTRUM_MIN_DB))
-                                .clamp(0.0, 1.0);
+                        let normalized = ((db - SPECTRUM_MIN_DB)
+                            / (SPECTRUM_MAX_DB - SPECTRUM_MIN_DB))
+                            .clamp(0.0, 1.0);
                         smoothed[idx] = smoothed[idx] * SPECTRUM_SMOOTHING
                             + normalized * (1.0 - SPECTRUM_SMOOTHING);
                         bins[idx] = (smoothed[idx] * 255.0).round().clamp(0.0, 255.0) as u8;

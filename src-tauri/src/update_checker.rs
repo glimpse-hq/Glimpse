@@ -95,9 +95,12 @@ async fn check_for_update(
 pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdateState) {
     let (should_show, new_version) = {
         let guard = state.lock();
-        (guard.should_show_toast(), guard.available_version().cloned())
+        (
+            guard.should_show_toast(),
+            guard.available_version().cloned(),
+        )
     };
-    
+
     if !should_show {
         return;
     }
@@ -175,7 +178,7 @@ pub fn clear_update_state(app: AppHandle<AppRuntime>) {
 pub fn show_update_toast_now(app: AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
     let update_state = state.update_state().clone();
-    
+
     {
         let mut guard = update_state.lock();
         if !guard.is_available() {
@@ -183,6 +186,6 @@ pub fn show_update_toast_now(app: AppHandle<AppRuntime>) {
         }
         guard.toast_shown_this_session = false;
     }
-    
+
     maybe_show_update_toast(&app, &update_state);
 }
