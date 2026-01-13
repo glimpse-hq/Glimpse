@@ -26,7 +26,8 @@ fn build_tray_menu(
 ) -> tauri::Result<Menu<AppRuntime>> {
     let mut menu = MenuBuilder::new(app);
 
-    let mode_cloud = CheckMenuItemBuilder::with_id(MENU_ID_MODE_CLOUD, "Cloud")
+    let mode_cloud = CheckMenuItemBuilder::with_id(MENU_ID_MODE_CLOUD, "Cloud (Coming soon)")
+        .enabled(false)
         .checked(matches!(
             settings.transcription_mode,
             TranscriptionMode::Cloud
@@ -228,7 +229,9 @@ fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>
 fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     match id {
         MENU_ID_MODE_LOCAL => set_transcription_mode_from_menu(app, TranscriptionMode::Local),
-        MENU_ID_MODE_CLOUD => set_transcription_mode_from_menu(app, TranscriptionMode::Cloud),
+        MENU_ID_MODE_CLOUD => {
+            eprintln!("Cloud mode is coming soon; tray toggle disabled");
+        }
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
         MENU_ID_FEEDBACK => {
             if let Err(err) = app.opener().open_url(FEEDBACK_URL, None::<&str>) {

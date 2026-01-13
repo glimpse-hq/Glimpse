@@ -1,7 +1,7 @@
 {
   "name": "glimpse",
   "private": true,
-  "version": "0.4.3",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,7 +21,9 @@
     "lucide-react": "^0.554.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
     "react-virtuoso": "^4.17.0",
+    "remark-breaks": "^4.0.0",
     "tauri-plugin-macos-permissions-api": "^2.3.0"
   },
   "devDependencies": {

@@ -2,13 +2,7 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-
-type PillStatus = "idle" | "listening" | "processing" | "error";
-
-interface PillStatePayload {
-  status: PillStatus;
-  mode?: string;
-}
+import type { PillStatus, PillStatePayload, AudioSpectrumPayload } from "./types";
 
 interface GridInfo {
   spacing: number;
@@ -63,21 +57,15 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const heightsRef = useRef<number[]>([]);
   const animationRef = useRef<number | null>(null);
   const loaderTimeRef = useRef<number>(0);
-  const audioReferenceLevelRef = useRef<number>(100);
+  const audioDataRef = useRef<Uint8Array>(new Uint8Array(256));
+  const emptyAudioDataRef = useRef<Uint8Array>(new Uint8Array(256));
+  const lastAudioDataAtRef = useRef<number>(0);
+  const audioReferenceLevelRef = useRef<number>(0);
+  const audioFrameCountRef = useRef<number>(0);
 
-  // Single source of truth for frontend rendering (backend is the real truth)
   const [status, setStatus] = useState<PillStatus>("idle");
   const statusRef = useRef<PillStatus>("idle");
   const [isErrorFlashing, setIsErrorFlashing] = useState(false);
-
-  // Web Audio Refs
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const micGenerationRef = useRef(0);
-
-  // --- Visual Logic (Dumb) ---
 
   const getMaskOpacity = useCallback((x: number, y: number, width: number, height: number): number => {
     const radius = height / 2;
@@ -234,16 +222,24 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
       const SIGNAL_FLOOR = 15;
       const TARGET_PEAK = 200;
+      const MIN_REFERENCE = 40;
+
+      audioFrameCountRef.current++;
 
       if (framePeak > SIGNAL_FLOOR) {
+        // Adaptive rate: fast in first ~30 frames (~0.5s), then stabilize
+        const frameCount = audioFrameCountRef.current;
+        const adaptUp = frameCount < 30 ? 0.3 : 0.1;
+        const adaptDown = frameCount < 30 ? 0.05 : 0.005;
+
         if (framePeak > audioReferenceLevelRef.current) {
-          audioReferenceLevelRef.current += (framePeak - audioReferenceLevelRef.current) * 0.1;
+          audioReferenceLevelRef.current += (framePeak - audioReferenceLevelRef.current) * adaptUp;
         } else {
-          audioReferenceLevelRef.current += (framePeak - audioReferenceLevelRef.current) * 0.005;
+          audioReferenceLevelRef.current += (framePeak - audioReferenceLevelRef.current) * adaptDown;
         }
       }
 
-      const effectiveRef = Math.max(audioReferenceLevelRef.current, 50);
+      const effectiveRef = Math.max(audioReferenceLevelRef.current, MIN_REFERENCE);
       const normalizationFactor = TARGET_PEAK / effectiveRef;
 
       for (let i = 0; i <= centerCol; i++) {
@@ -394,14 +390,15 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         case "processing":
           drawProcessingFrame(loaderTimeRef.current);
           break;
-        case "listening":
-          if (analyserRef.current) {
-            const bufferLength = analyserRef.current.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyserRef.current.getByteFrequencyData(dataArray);
-            drawAudioFrame(dataArray);
-          }
+        case "listening": {
+          const now = performance.now();
+          const audioData =
+            now - lastAudioDataAtRef.current > 250
+              ? emptyAudioDataRef.current
+              : audioDataRef.current;
+          drawAudioFrame(audioData);
           break;
+        }
         case "error":
           drawErrorFrame(loaderTimeRef.current);
           break;
@@ -421,7 +418,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     }
 
     if (hasActivity) {
-      drawAudioFrame(new Uint8Array(0));
+      drawAudioFrame(emptyAudioDataRef.current);
       animationRef.current = requestAnimationFrame(fadeOutWave);
     } else {
       heightsRef.current.fill(0);
@@ -429,68 +426,9 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     }
   }, [drawAudioFrame, drawBaseDots]);
 
-  // --- Core Reactive Logic ---
-
-  const startMic = useCallback(async () => {
-    const generation = ++micGenerationRef.current;
-    try {
-      if (!audioContextRef.current) {
-        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-        audioContextRef.current = new AudioContextClass();
-      }
-
-      if (audioContextRef.current.state === "suspended") {
-        await audioContextRef.current.resume();
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        }
-      });
-
-      if (generation !== micGenerationRef.current) {
-        stream.getTracks().forEach(t => t.stop());
-        return;
-      }
-
-      streamRef.current = stream;
-
-      const analyser = audioContextRef.current.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.8;
-      analyserRef.current = analyser;
-
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      source.connect(analyser);
-      sourceRef.current = source;
-
-      runAnimation("listening");
-    } catch (err) {
-      console.error("Mic access failed:", err);
-      // Backend handles error state, we just log
-    }
-  }, [runAnimation]);
-
-  const stopMic = useCallback(() => {
-    micGenerationRef.current++;
-    if (sourceRef.current) {
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
-    }
-    analyserRef.current = null;
-    // We keep AudioContext alive for reuse
-  }, []);
-
   const hideWindow = useCallback(async () => {
     try {
-        invoke("cancel_recording"); // Tell backend to stop recording too
+        invoke("cancel_recording");
         const window = getCurrentWindow();
         await window.hide();
     } catch (err) {
@@ -515,45 +453,70 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [status, dismissOverlay]);
 
-  // Main Event Listener - Persistent, never recreated
+  const runAnimationRef = useRef(runAnimation);
+  const stopAllAnimationsRef = useRef(stopAllAnimations);
+  const drawBaseDotsRef = useRef(drawBaseDots);
+
+  useEffect(() => {
+    runAnimationRef.current = runAnimation;
+    stopAllAnimationsRef.current = stopAllAnimations;
+    drawBaseDotsRef.current = drawBaseDots;
+  }, [runAnimation, stopAllAnimations, drawBaseDots]);
+
+  useEffect(() => {
+    const unlistenPromise = listen<AudioSpectrumPayload>("audio:spectrum", (e) => {
+      const bins = e.payload.bins;
+      const current = audioDataRef.current;
+      if (current.length !== bins.length) {
+        audioDataRef.current = new Uint8Array(bins);
+        emptyAudioDataRef.current = new Uint8Array(bins.length);
+      } else {
+        for (let i = 0; i < bins.length; i++) {
+          current[i] = bins[i] ?? 0;
+        }
+      }
+      lastAudioDataAtRef.current = performance.now();
+    });
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
   useEffect(() => {
     const unlistenPromise = listen<PillStatePayload>("pill:state", (e) => {
       const prev = statusRef.current;
       const next = e.payload.status;
 
-      // Logic: Backend says X, we do Y
       if (next === "listening" && prev !== "listening") {
-        startMic();
-      } else if (next !== "listening" && prev === "listening") {
-        stopMic();
-      } else if (next === "listening" && prev === "listening") {
-        // Ensure animation is running if we're already listening
-        // (e.g. if overlay was hidden but state was somehow preserved?)
-        // Usually not needed, but safe
+        audioDataRef.current = emptyAudioDataRef.current;
+        lastAudioDataAtRef.current = 0;
+        audioReferenceLevelRef.current = 0;
+        audioFrameCountRef.current = 0;
+        heightsRef.current.fill(0);
+        runAnimationRef.current("listening");
       }
 
       statusRef.current = next;
       setStatus(next);
 
-      // Visuals
       if (next === "processing") {
-        runAnimation("processing");
+        runAnimationRef.current("processing");
       } else if (next === "error") {
         setIsErrorFlashing(true);
-        runAnimation("error");
+        runAnimationRef.current("error");
         setTimeout(() => setIsErrorFlashing(false), 1200);
       } else if (next === "idle") {
-        stopAllAnimations();
-        drawBaseDots();
+        stopAllAnimationsRef.current();
+        drawBaseDotsRef.current();
       }
     });
 
     return () => {
       unlistenPromise.then(unlisten => unlisten());
-      stopMic();
-      stopAllAnimations();
+      stopAllAnimationsRef.current();
     };
-  }, [startMic, stopMic, runAnimation, stopAllAnimations, drawBaseDots]);
+  }, []);
 
   useEffect(() => {
     if (status === "error" && !isErrorFlashing) {
@@ -562,7 +525,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     }
   }, [status, isErrorFlashing, drawStaticIcon, stopAllAnimations]);
 
-  // Initial canvas setup
   const setupCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -593,7 +555,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       heightsRef.current = new Array(cols).fill(0);
     }
     
-    // Initial draw
     if (statusRef.current === "idle") {
         drawBaseDots();
     }
@@ -615,7 +576,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       <div className="relative flex flex-col items-center pb-2">
         <div
           ref={containerRef}
-          className={`relative rounded-full bg-[#050505] overflow-hidden ${isErrorFlashing ? "animate-shake" : ""}`}
+          className={`relative rounded-full bg-surface-primary overflow-hidden ${isErrorFlashing ? "animate-shake" : ""}`}
           style={{
             width: PILL_WIDTH,
             height: PILL_HEIGHT,

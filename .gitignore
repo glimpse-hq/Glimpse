@@ -28,4 +28,3 @@ src-tauri/target/
 *.njsproj
 *.sln
 *.sw?
-AGENTS.md

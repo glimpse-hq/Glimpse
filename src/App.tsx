@@ -5,32 +5,10 @@ import PillOverlay from "./pill";
 import ToastOverlay from "./ToastOverlay";
 import Home from "./Home";
 import Onboarding from "./Onboarding";
+import { AuthProvider } from "./hooks/useAuth";
+import { useCloudCredentials } from "./hooks/useCloudCredentials";
+import type { StoredSettings, AppInfo } from "./types";
 import "./App.css";
-
-type StoredSettings = {
-  onboarding_completed: boolean;
-  hold_shortcut: string;
-  hold_enabled: boolean;
-  toggle_shortcut: string;
-  toggle_enabled: boolean;
-  transcription_mode: string;
-  local_model: string;
-  microphone_device: string | null;
-  language: string;
-  llm_cleanup_enabled: boolean;
-  llm_provider: string;
-  llm_endpoint: string;
-  llm_api_key: string;
-  llm_model: string;
-  user_context: string;
-  dictionary: string[];
-};
-
-type AppInfo = {
-  version: string;
-  data_dir_size_bytes: number;
-  data_dir_path: string;
-};
 
 const VERSION_STORAGE_KEY = "glimpse_last_version";
 
@@ -38,6 +16,8 @@ function App() {
   const [windowLabel, setWindowLabel] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useCloudCredentials();
 
   useEffect(() => {
     const win = getCurrentWindow();
@@ -99,13 +79,19 @@ function App() {
     if (windowLabel === "settings") {
       body.classList.add("settings-body");
       html.classList.add("settings-html");
+      html.style.backgroundColor = "#030303";
+      body.style.backgroundColor = "#030303";
     } else {
       body.classList.remove("settings-body");
       html.classList.remove("settings-html");
+      html.style.backgroundColor = "";
+      body.style.backgroundColor = "";
     }
     return () => {
       body.classList.remove("settings-body");
       html.classList.remove("settings-html");
+      html.style.backgroundColor = "";
+      body.style.backgroundColor = "";
     };
   }, [windowLabel]);
 
@@ -116,24 +102,22 @@ function App() {
   if (windowLabel === "settings") {
     if (isLoading) {
       return (
-        <div className="settings-view h-screen w-screen overflow-hidden bg-[#0a0a0c]" />
+        <div className="settings-view h-screen w-screen overflow-hidden bg-surface-secondary" />
       );
     }
 
-    // Show onboarding if not completed
-    if (showOnboarding) {
-      return (
-        <div className="settings-view h-screen w-screen overflow-hidden">
-          <Onboarding onComplete={handleOnboardingComplete} />
-        </div>
-      );
-    }
+    const settingsContent = showOnboarding ? (
+      <Onboarding onComplete={handleOnboardingComplete} />
+    ) : (
+      <Home />
+    );
 
-    // Show main app
     return (
-      <div className="settings-view h-screen w-screen overflow-hidden">
-        <Home />
-      </div>
+      <AuthProvider>
+        <div className="settings-view h-screen w-screen overflow-hidden">
+          {settingsContent}
+        </div>
+      </AuthProvider>
     );
   }
 

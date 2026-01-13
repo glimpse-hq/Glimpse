@@ -1,29 +1,18 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
     syncLocalTranscription,
+    batchSyncTranscriptions,
     listTranscriptions,
-    getCurrentUser,
     deleteCloudTranscription,
-    findByLocalId
+    findByLocalOrDocumentId
 } from "../lib";
+import { useAuth } from "./useAuth";
+import { useCloudSyncEnabled } from "./useCloudSyncEnabled";
+import type { TranscriptionRecord } from "../types";
 
-export type TranscriptionRecord = {
-    id: string;
-    timestamp: string;
-    text: string;
-    raw_text?: string | null;
-    audio_path: string;
-    status: "success" | "error";
-    error_message?: string;
-    llm_cleaned: boolean;
-    speech_model: string;
-    llm_model?: string | null;
-    word_count: number;
-    audio_duration_seconds: number;
-    synced: boolean;
-};
+export type { TranscriptionRecord };
 
 interface UseTranscriptionsOptions {
     cloudSyncEnabled?: boolean;
@@ -31,7 +20,6 @@ interface UseTranscriptionsOptions {
 
 const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 1000;
-const PAGE_SIZE = 50;
 
 async function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -59,189 +47,108 @@ async function withRetry<T>(
 }
 
 export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
-    const resolvedCloudSyncEnabled = useMemo(() => {
-        if (typeof options.cloudSyncEnabled === "boolean") {
-            return options.cloudSyncEnabled;
-        }
-        try {
-            if (typeof localStorage === "undefined") {
-                return false;
-            }
-            const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
-            if (stored === null) {
-                return false;
-            }
-            return stored === "true";
-        } catch {
-            return false;
-        }
-    }, [options.cloudSyncEnabled]);
+    const { cloudSyncEnabled } = useCloudSyncEnabled({ enabled: options.cloudSyncEnabled });
+    const { user, isSubscriber } = useAuth();
+
+    const userId = user?.$id ?? null;
 
     const [transcriptions, setTranscriptions] = useState<TranscriptionRecord[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
     const [searchQuery, setSearchQuery] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
-
-    const [userId, setUserId] = useState<string | null>(null);
-    const [isSubscriber, setIsSubscriber] = useState(false);
-
-    // Keep track of loaded offsets to prevent duplicate fetches
-    const loadedOffsets = useRef<Set<number>>(new Set());
-    const fetchingOffsets = useRef<Set<number>>(new Set());
+    const [retryingIds, setRetryingIds] = useState<string[]>([]);
+    const retryingIdsRef = useRef<string[]>([]);
 
     useEffect(() => {
-        const checkUser = async () => {
-            try {
-                const user = await getCurrentUser();
-                setUserId(user?.$id ?? null);
-                setIsSubscriber(user?.labels?.includes("subscriber") ?? false);
-            } catch {
-                setUserId(null);
-                setIsSubscriber(false);
-            }
-        };
-        checkUser();
-    }, []);
+        retryingIdsRef.current = retryingIds;
+    }, [retryingIds]);
 
-    const fetchPage = useCallback(async (offset: number, query: string) => {
-        try {
-            const records = await invoke<TranscriptionRecord[]>("list_transcriptions_paginated", {
-                limit: PAGE_SIZE,
-                offset,
-                searchQuery: query || null,
-            });
-            return records;
-        } catch (err) {
-            console.error("Failed to fetch page:", err);
-            throw err;
-        }
-    }, []);
+    const initialSyncDoneRef = useRef(false);
 
-    const searchTranscriptions = useCallback(async (query: string) => {
-        setSearchQuery(query);
+    const loadTranscriptions = useCallback(async (query?: string) => {
+        const searchFor = query ?? searchQuery;
         setIsLoading(true);
-        loadedOffsets.current.clear();
-        fetchingOffsets.current.clear();
+        setError(null);
         try {
-            // Get total count first
-            const count = await invoke<number>("get_transcription_count", {
-                searchQuery: query || null,
+            const records = await invoke<TranscriptionRecord[]>("get_transcriptions", {
+                searchQuery: searchFor || null,
             });
-            setTotalCount(count);
-
-            // Fetch first page
-            const firstPage = await fetchPage(0, query);
-            setTranscriptions(firstPage);
-            loadedOffsets.current.add(0);
+            setTranscriptions(records);
         } catch (err) {
+            console.error("Failed to load transcriptions:", err);
             setError(err instanceof Error ? err.message : String(err));
         } finally {
             setIsLoading(false);
         }
-    }, [fetchPage]);
+    }, [searchQuery]);
 
-    const loadMore = useCallback(async (offset: number) => {
-        if (loadedOffsets.current.has(offset)) return;
-        if (fetchingOffsets.current.has(offset)) return;
-
-        // Don't load if we're past the total count known (roughly)
-        if (offset >= totalCount && totalCount > 0) return;
-
-        try {
-            fetchingOffsets.current.add(offset);
-            const newRecords = await fetchPage(offset, searchQuery);
-
-            setTranscriptions(prev => {
-                const copy = [...prev];
-                newRecords.forEach((record, index) => {
-                    copy[offset + index] = record;
-                });
-                return copy;
-            });
-            loadedOffsets.current.add(offset);
-        } catch (err) {
-            console.error("Failed to load more:", err);
-        } finally {
-            fetchingOffsets.current.delete(offset);
-        }
-    }, [fetchPage, searchQuery, totalCount]);
+    const searchTranscriptions = useCallback(async (query: string) => {
+        setSearchQuery(query);
+        await loadTranscriptions(query);
+    }, [loadTranscriptions]);
 
     // Initial load
     useEffect(() => {
-        searchTranscriptions("");
+        loadTranscriptions("");
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const loadTranscriptions = useCallback(async () => {
-        // Alias for refreshing current view
-        return searchTranscriptions(searchQuery);
-    }, [searchTranscriptions, searchQuery]);
-
     const syncToCloud = useCallback(async (record: TranscriptionRecord) => {
-        if (!userId || !resolvedCloudSyncEnabled || !isSubscriber) return null;
+        if (!userId || !cloudSyncEnabled || !isSubscriber) return null;
 
         try {
-            setIsSyncing(true);
             const cloudDoc = await withRetry(() => syncLocalTranscription(userId, record));
-
             await invoke("mark_transcription_synced", { id: record.id });
-
             setTranscriptions(prev => prev.map(t =>
                 t.id === record.id ? { ...t, synced: true } : t
             ));
-
             return cloudDoc;
         } catch (err) {
             console.error("Failed to sync to cloud:", err);
             return null;
-        } finally {
-            setIsSyncing(false);
         }
-    }, [resolvedCloudSyncEnabled, userId, isSubscriber]);
+    }, [cloudSyncEnabled, userId, isSubscriber]);
 
     const syncAllToCloud = useCallback(async () => {
-        if (!userId || !resolvedCloudSyncEnabled || !isSubscriber) return;
+        if (!userId || !cloudSyncEnabled || !isSubscriber) return;
 
         setIsSyncing(true);
         try {
-            const currentRecords = await invoke<TranscriptionRecord[]>("get_transcriptions");
+            const unsyncedRecords = transcriptions.filter(r => !r.synced);
+            if (unsyncedRecords.length === 0) return;
 
-            const unsyncedRecords = currentRecords.filter(r => !r.synced);
+            console.log(`Batch syncing ${unsyncedRecords.length} records to cloud...`);
+            const { synced, failed } = await batchSyncTranscriptions(userId, unsyncedRecords);
 
-            if (unsyncedRecords.length === 0) {
-                return;
+            for (const id of synced) {
+                await invoke("mark_transcription_synced", { id });
             }
 
-            console.log(`Syncing ${unsyncedRecords.length} records to cloud...`);
+            if (synced.length > 0) {
+                setTranscriptions(prev => prev.map(t =>
+                    synced.includes(t.id) ? { ...t, synced: true } : t
+                ));
+            }
 
-            for (const record of unsyncedRecords) {
-                try {
-                    await withRetry(() => syncLocalTranscription(userId, record));
-                    await invoke("mark_transcription_synced", { id: record.id });
-                    setTranscriptions(prev => prev.map(t =>
-                        t.id === record.id ? { ...t, synced: true } : t
-                    ));
-                } catch (err) {
-                    console.error(`Failed to sync record ${record.id} after retries:`, err);
-                }
+            if (failed.length > 0) {
+                console.warn(`Failed to sync ${failed.length} records`);
             }
         } catch (err) {
             console.error("Failed to sync all to cloud:", err);
         } finally {
             setIsSyncing(false);
         }
-    }, [resolvedCloudSyncEnabled, userId, isSubscriber]);
+    }, [cloudSyncEnabled, userId, isSubscriber, transcriptions]);
 
     const syncFromCloud = useCallback(async () => {
-        if (!userId || !resolvedCloudSyncEnabled || !isSubscriber) return;
+        if (!userId || !cloudSyncEnabled || !isSubscriber) return;
 
+        setIsSyncing(true);
         try {
-            setIsSyncing(true);
-            const localRecords = await invoke<TranscriptionRecord[]>("get_transcriptions");
+            const localRecords = transcriptions;
 
-            // Fetch all cloud documents with pagination
+            // Fetch all cloud documents
             const PAGE_SIZE = 100;
             let offset = 0;
             let allCloudDocs: Awaited<ReturnType<typeof listTranscriptions>> = [];
@@ -249,14 +156,12 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
             while (true) {
                 const batch = await listTranscriptions(userId, PAGE_SIZE, offset);
                 allCloudDocs = allCloudDocs.concat(batch);
-
-                if (batch.length < PAGE_SIZE) {
-                    break; // No more pages
-                }
+                if (batch.length < PAGE_SIZE) break;
                 offset += PAGE_SIZE;
             }
 
             let importedCount = 0;
+            const normalizeModel = (m: string) => m?.replace(/^cloud-/, '') ?? '';
 
             for (const doc of allCloudDocs) {
                 if (doc.is_deleted) continue;
@@ -264,14 +169,16 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
 
                 const targetId = doc.local_id || doc.$id;
                 const existsById = localRecords.some(r => r.id === targetId);
-
                 const existsByTimestamp = doc.timestamp
                     ? localRecords.some(r => r.timestamp === doc.timestamp)
                     : false;
+                const existsByContent = localRecords.some(r =>
+                    r.text === doc.text &&
+                    normalizeModel(r.speech_model) === normalizeModel(doc.speech_model) &&
+                    Math.abs(r.audio_duration_seconds - doc.audio_duration_seconds) < 0.5
+                );
 
-                if (existsById || existsByTimestamp) {
-                    continue;
-                }
+                if (existsById || existsByTimestamp || existsByContent) continue;
 
                 const localRecord: TranscriptionRecord = {
                     id: targetId,
@@ -287,12 +194,12 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
                     word_count: doc.word_count,
                     audio_duration_seconds: doc.audio_duration_seconds,
                     synced: true,
+                    mode_id: doc.mode_id,
+                    mode_name: doc.mode_name,
                 };
 
                 const wasImported = await invoke<boolean>("import_transcription_from_cloud", { record: localRecord });
-                if (wasImported) {
-                    importedCount++;
-                }
+                if (wasImported) importedCount++;
             }
 
             if (importedCount > 0) {
@@ -303,15 +210,15 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
         } finally {
             setIsSyncing(false);
         }
-    }, [resolvedCloudSyncEnabled, userId, isSubscriber, loadTranscriptions]);
+    }, [cloudSyncEnabled, userId, isSubscriber, transcriptions, loadTranscriptions]);
 
     const deleteTranscription = useCallback(async (id: string) => {
         try {
             await invoke("delete_transcription", { id });
             setTranscriptions(prev => prev.filter(t => t.id !== id));
 
-            if (resolvedCloudSyncEnabled && userId && isSubscriber) {
-                const cloudDoc = await findByLocalId(userId, id);
+            if (cloudSyncEnabled && userId && isSubscriber) {
+                const cloudDoc = await findByLocalOrDocumentId(userId, id);
                 if (cloudDoc) {
                     await deleteCloudTranscription(cloudDoc.$id);
                 }
@@ -320,13 +227,18 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
             console.error("Failed to delete transcription:", err);
             throw err;
         }
-    }, [resolvedCloudSyncEnabled, userId, isSubscriber]);
+    }, [cloudSyncEnabled, userId, isSubscriber]);
 
     const retryTranscription = useCallback(async (id: string) => {
         try {
             await invoke("retry_transcription", { id });
+            setRetryingIds(prev => (prev.includes(id) ? prev : [...prev, id]));
         } catch (err) {
-            console.error("Failed to retry transcription:", err);
+            const errStr = typeof err === "string" ? err : String(err);
+            if (errStr && !errStr.includes("quota")) {
+                console.error("Failed to retry transcription:", err);
+            }
+            throw err;
         }
     }, []);
 
@@ -353,10 +265,10 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
             await invoke("delete_all_transcriptions");
             setTranscriptions([]);
 
-            if (resolvedCloudSyncEnabled && userId && isSubscriber && recordsToDelete.length > 0) {
+            if (cloudSyncEnabled && userId && isSubscriber && recordsToDelete.length > 0) {
                 await Promise.all(recordsToDelete.map(async (record) => {
                     try {
-                        const cloudDoc = await findByLocalId(userId, record.id);
+                        const cloudDoc = await findByLocalOrDocumentId(userId, record.id);
                         if (cloudDoc) {
                             await deleteCloudTranscription(cloudDoc.$id);
                         }
@@ -369,33 +281,39 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
             console.error("Failed to clear all transcriptions:", err);
             throw err;
         }
-    }, [transcriptions, resolvedCloudSyncEnabled, userId, isSubscriber]);
+    }, [transcriptions, cloudSyncEnabled, userId, isSubscriber]);
 
+    // Cloud sync on auth ready
     useEffect(() => {
-        loadTranscriptions();
-    }, [loadTranscriptions]);
-
-    useEffect(() => {
-        if (resolvedCloudSyncEnabled && userId && isSubscriber) {
-            // Run syncs sequentially to avoid race conditions
+        if (cloudSyncEnabled && userId && isSubscriber && !initialSyncDoneRef.current) {
+            initialSyncDoneRef.current = true;
             (async () => {
                 await syncFromCloud();
                 await syncAllToCloud();
             })();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [resolvedCloudSyncEnabled, userId, isSubscriber]);
+    }, [cloudSyncEnabled, userId, isSubscriber, syncFromCloud, syncAllToCloud]);
 
+    // Event listeners for transcription updates
     useEffect(() => {
-        const unlisten1 = listen<{ id: string }>("transcription:complete", async (event) => {
-            await loadTranscriptions();
+        let isCancelled = false;
+        const unlisteners: (() => void)[] = [];
 
-            if (resolvedCloudSyncEnabled && userId && isSubscriber) {
-                const records = await invoke<TranscriptionRecord[]>("get_transcriptions");
+        listen<{ id: string }>("transcription:complete", async (event) => {
+            if (isCancelled) return;
+            await loadTranscriptions();
+            if (retryingIdsRef.current.length > 0) {
+                setRetryingIds([]);
+            }
+
+            // Background sync to cloud
+            if (cloudSyncEnabled && userId && isSubscriber) {
+                const records = await invoke<TranscriptionRecord[]>("get_transcriptions", { searchQuery: null });
                 const newRecord = records.find(r => r.id === event.payload?.id) || records[0];
 
                 if (newRecord && !newRecord.synced) {
                     withRetry(() => syncLocalTranscription(userId, newRecord)).then(async () => {
+                        if (isCancelled) return;
                         await invoke("mark_transcription_synced", { id: newRecord.id });
                         setTranscriptions(prev => prev.map(t =>
                             t.id === newRecord.id ? { ...t, synced: true } : t
@@ -405,32 +323,42 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
                     });
                 }
             }
+        }).then(fn => {
+            if (!isCancelled) unlisteners.push(fn);
+            else fn();
         });
 
-        const unlisten2 = listen("transcription:error", () => {
+        listen("transcription:error", () => {
+            if (isCancelled) return;
             loadTranscriptions();
+            if (retryingIdsRef.current.length > 0) {
+                setRetryingIds([]);
+            }
+        }).then(fn => {
+            if (!isCancelled) unlisteners.push(fn);
+            else fn();
         });
 
         return () => {
-            unlisten1.then(fn => fn());
-            unlisten2.then(fn => fn());
+            isCancelled = true;
+            unlisteners.forEach(fn => fn());
         };
-    }, [loadTranscriptions, resolvedCloudSyncEnabled, userId, isSubscriber]);
+    }, [loadTranscriptions, cloudSyncEnabled, userId, isSubscriber]);
 
     return {
         transcriptions,
-        totalCount,
+        totalCount: transcriptions.length,
         isLoading,
         error,
         isSyncing,
         deleteTranscription,
         retryTranscription,
+        retryingIds,
         retryLlmCleanup,
         undoLlmCleanup,
         clearAllTranscriptions,
         refresh: loadTranscriptions,
-        searchTranscriptions, // Exposed for UI
-        loadMore,             // Exposed for infinite scroll
+        searchTranscriptions,
         syncToCloud,
         syncAllToCloud,
         syncFromCloud,
