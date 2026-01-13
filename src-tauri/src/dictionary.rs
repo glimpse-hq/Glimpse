@@ -30,19 +30,34 @@ pub fn sanitize_dictionary_entries(entries: &[String]) -> Vec<String> {
 }
 
 pub fn build_dictionary_prompt(entries: &[String]) -> Option<String> {
+    const MAX_PROMPT_BYTES: usize = 600;
+
     let cleaned = sanitize_dictionary_entries(entries);
     if cleaned.is_empty() {
         return None;
     }
 
-    let mut prompt =
-        String::from("Use the following preferred terms verbatim when transcribing:\n");
-    for term in cleaned {
-        prompt.push_str("- ");
-        prompt.push_str(&term);
-        prompt.push('\n');
+    let mut prompt = String::from("Context: ");
+    let mut added_any = false;
+
+    for (idx, term) in cleaned.iter().enumerate() {
+        let separator = if idx > 0 { ", " } else { "" };
+        let would_len = prompt.len() + separator.len() + term.len() + 1;
+
+        if would_len > MAX_PROMPT_BYTES {
+            break;
+        }
+
+        prompt.push_str(separator);
+        prompt.push_str(term);
+        added_any = true;
     }
 
+    if !added_any {
+        return None;
+    }
+
+    prompt.push('.');
     Some(prompt)
 }
 
