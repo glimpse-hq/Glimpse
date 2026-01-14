@@ -1,5 +1,3 @@
-
-
 ## New Features & improvements
 
 **Edit Mode:** 
@@ -7,6 +5,9 @@ You can now use voice commands to edit highlighted text ("Make this more profess
 
 **Auto unloading:** 
 Added an idle unloading feature for local models to save your system memory when not in use (5 min).
+
+**Redesigned Toasts:**
+Toasts are now fully redesigned to use space better, check for auto updates, and be overall cleaner. 
 
 ### UI/UX Changes:
 
