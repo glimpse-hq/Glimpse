@@ -1,13 +1,10 @@
-use std::{borrow::Cow, f32::consts::PI, fs, path::PathBuf, sync::Arc};
+use std::{f32::consts::PI, fs, io::Cursor, path::PathBuf, sync::Arc};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream};
 use crossbeam_channel::{bounded, unbounded, Sender};
-use mp3lame_encoder::{
-    Bitrate, Builder as LameBuilder, FlushNoGap, InterleavedPcm, MonoPcm, Quality,
-};
 use parking_lot::Mutex;
 use webrtc_vad::{Vad, VadMode};
 
@@ -20,8 +17,52 @@ pub enum RecordingRejectionReason {
     EmptyBuffer,
 }
 
+const SPECTRUM_SIZE: usize = 512;
+
+struct AudioSpectrumState {
+    samples: Vec<f32>,
+    write_index: usize,
+    filled: bool,
+}
+
+impl AudioSpectrumState {
+    fn new() -> Self {
+        Self {
+            samples: vec![0.0; SPECTRUM_SIZE],
+            write_index: 0,
+            filled: false,
+        }
+    }
+
+    fn push_sample(&mut self, sample: f32) {
+        self.samples[self.write_index] = sample;
+        self.write_index += 1;
+        if self.write_index >= SPECTRUM_SIZE {
+            self.write_index = 0;
+            self.filled = true;
+        }
+    }
+
+    fn reset(&mut self) {
+        self.samples.fill(0.0);
+        self.write_index = 0;
+        self.filled = false;
+    }
+
+    fn snapshot(&self) -> Option<Vec<f32>> {
+        if !self.filled {
+            return None;
+        }
+        let mut out = Vec::with_capacity(SPECTRUM_SIZE);
+        out.extend_from_slice(&self.samples[self.write_index..]);
+        out.extend_from_slice(&self.samples[..self.write_index]);
+        Some(out)
+    }
+}
+
 pub struct RecorderManager {
     tx: Sender<RecorderCommand>,
+    spectrum: Arc<Mutex<AudioSpectrumState>>,
 }
 
 struct ActiveRecording {
@@ -46,16 +87,20 @@ pub struct RecordingSaved {
     pub path: PathBuf,
     pub started_at: DateTime<Local>,
     pub ended_at: DateTime<Local>,
+    /// Override duration in seconds (used for retries when we know the original duration)
+    pub duration_override_seconds: Option<f32>,
 }
 
-impl RecorderManager {
-    pub fn new() -> Self {
+impl Default for RecorderManager {
+    fn default() -> Self {
         let (tx, rx) = unbounded();
+        let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
+        let spectrum_for_thread = Arc::clone(&spectrum);
 
         std::thread::Builder::new()
             .name("glimpse-recorder".into())
             .spawn(move || {
-                let mut core = RecorderCore::default();
+                let mut core = RecorderCore::new(spectrum_for_thread);
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
                         RecorderCommand::Start { device_id, respond } => {
@@ -69,7 +114,21 @@ impl RecorderManager {
             })
             .expect("failed to spawn recorder thread");
 
-        Self { tx }
+        Self { tx, spectrum }
+    }
+}
+
+impl RecorderManager {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn spectrum_snapshot(&self) -> Option<Vec<f32>> {
+        if let Some(state) = self.spectrum.try_lock() {
+            state.snapshot()
+        } else {
+            None
+        }
     }
 
     pub fn start(&self, device_id: Option<String>) -> Result<DateTime<Local>> {
@@ -108,12 +167,19 @@ enum RecorderCommand {
     },
 }
 
-#[derive(Default)]
 struct RecorderCore {
     active: Option<ActiveRecording>,
+    spectrum: Arc<Mutex<AudioSpectrumState>>,
 }
 
 impl RecorderCore {
+    fn new(spectrum: Arc<Mutex<AudioSpectrumState>>) -> Self {
+        Self {
+            active: None,
+            spectrum,
+        }
+    }
+
     fn start(&mut self, device_id: Option<String>) -> Result<DateTime<Local>> {
         if self.active.is_some() {
             return Err(anyhow!("Recording is already in progress"));
@@ -142,30 +208,51 @@ impl RecorderCore {
             (sample_rate as usize * channels as usize).max(48_000),
         )));
         let buffer_ref = buffer.clone();
+        let spectrum_ref = Arc::clone(&self.spectrum);
+        let channels_usize = channels as usize;
+        self.spectrum.lock().reset();
 
         let err_fn = |err| {
             eprintln!("Microphone stream error: {err}");
         };
 
         let stream = match format {
-            SampleFormat::F32 => device.build_input_stream(
-                &stream_config,
-                move |data: &[f32], _| push_f32_samples(data, &buffer_ref),
-                err_fn,
-                None,
-            )?,
-            SampleFormat::I16 => device.build_input_stream(
-                &stream_config,
-                move |data: &[i16], _| push_i16_samples(data, &buffer_ref),
-                err_fn,
-                None,
-            )?,
-            SampleFormat::U16 => device.build_input_stream(
-                &stream_config,
-                move |data: &[u16], _| push_u16_samples(data, &buffer_ref),
-                err_fn,
-                None,
-            )?,
+            SampleFormat::F32 => {
+                let spectrum_ref = Arc::clone(&spectrum_ref);
+                let channels = channels_usize;
+                device.build_input_stream(
+                    &stream_config,
+                    move |data: &[f32], _| {
+                        push_f32_samples(data, &buffer_ref, &spectrum_ref, channels)
+                    },
+                    err_fn,
+                    None,
+                )?
+            }
+            SampleFormat::I16 => {
+                let spectrum_ref = Arc::clone(&spectrum_ref);
+                let channels = channels_usize;
+                device.build_input_stream(
+                    &stream_config,
+                    move |data: &[i16], _| {
+                        push_i16_samples(data, &buffer_ref, &spectrum_ref, channels)
+                    },
+                    err_fn,
+                    None,
+                )?
+            }
+            SampleFormat::U16 => {
+                let spectrum_ref = Arc::clone(&spectrum_ref);
+                let channels = channels_usize;
+                device.build_input_stream(
+                    &stream_config,
+                    move |data: &[u16], _| {
+                        push_u16_samples(data, &buffer_ref, &spectrum_ref, channels)
+                    },
+                    err_fn,
+                    None,
+                )?
+            }
             _ => return Err(anyhow!("Unsupported sample format")),
         };
 
@@ -184,6 +271,7 @@ impl RecorderCore {
     }
 
     fn stop(&mut self) -> Result<Option<CompletedRecording>> {
+        self.spectrum.lock().reset();
         if let Some(active) = self.active.take() {
             drop(active.stream);
             let raw_samples = Arc::try_unwrap(active.buffer)
@@ -311,7 +399,6 @@ fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
         return 0.0;
     }
 
-    // Resample to VAD-compatible rate if needed
     let vad_rate = match sample_rate {
         8000 | 16000 | 32000 | 48000 => sample_rate,
         _ => 16000,
@@ -363,6 +450,10 @@ fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
     (speech_frames as f32 / total_frames as f32) * 100.0
 }
 
+const WAV_SAMPLE_RATE: u32 = 16_000;
+const WAV_CHANNELS: u16 = 1;
+const WAV_BITS_PER_SAMPLE: u16 = 16;
+
 pub fn persist_recording(
     base_dir: PathBuf,
     recording: CompletedRecording,
@@ -377,82 +468,82 @@ pub fn persist_recording(
     let folder = base_dir.join(date_dir);
     fs::create_dir_all(&folder)
         .with_context(|| format!("Failed to create recording folder at {}", folder.display()))?;
-    let file_path = folder.join(format!("{}.mp3", timestamp));
+    let file_path = folder.join(format!("{}.wav", timestamp));
 
-    let mp3_bytes = encode_to_mp3(
+    let wav_samples = prepare_wav_samples(
         &recording.samples,
         recording.sample_rate,
         recording.channels,
-    )?;
-    fs::write(&file_path, mp3_bytes)
+    );
+    if wav_samples.is_empty() {
+        return Err(anyhow!("Recording buffer is empty"));
+    }
+
+    let wav_bytes = encode_to_wav(&wav_samples, WAV_SAMPLE_RATE, WAV_CHANNELS)?;
+    fs::write(&file_path, wav_bytes)
         .with_context(|| format!("Failed to write recording file at {}", file_path.display()))?;
 
     Ok(RecordingSaved {
         path: file_path,
         started_at: recording.started_at,
         ended_at: recording.ended_at,
+        duration_override_seconds: None,
     })
 }
 
-fn encode_to_mp3(samples: &[i16], sample_rate: u32, channels: u16) -> Result<Vec<u8>> {
-    // Minimum samples needed for MP3 encoding (at least one frame worth)
-    // MP3 frames are typically 1152 samples for MPEG-1
-    const MIN_SAMPLES: usize = 1152;
-
-    if samples.len() < MIN_SAMPLES {
-        return Err(anyhow!("Recording too short (minimum ~50ms required)"));
+fn prepare_wav_samples(samples: &[i16], sample_rate: u32, channels: u16) -> Vec<i16> {
+    if samples.is_empty() {
+        return Vec::new();
     }
 
-    let mut builder =
-        LameBuilder::new().ok_or_else(|| anyhow!("Failed to initialize MP3 encoder"))?;
-    builder
-        .set_sample_rate(sample_rate)
-        .map_err(|err| anyhow!("Invalid sample rate: {err}"))?;
-    let constrained_channels = match channels {
-        0 => 1,
-        1 | 2 => channels,
-        _ => 1,
-    };
-    builder
-        .set_num_channels(constrained_channels as u8)
-        .map_err(|err| anyhow!("Invalid channel count: {err}"))?;
-    builder
-        .set_brate(Bitrate::Kbps128)
-        .map_err(|err| anyhow!("Failed to set bitrate: {err}"))?;
-    builder
-        .set_quality(Quality::VeryNice)
-        .map_err(|err| anyhow!("Failed to set quality: {err}"))?;
-
-    let mut encoder = builder
-        .build()
-        .map_err(|err| anyhow!("Failed to initialize encoder: {err}"))?;
-    let mut output = Vec::with_capacity(mp3lame_encoder::max_required_buffer_size(samples.len()));
-
-    let buffer: Cow<'_, [i16]> = if constrained_channels == channels || channels <= 2 {
-        Cow::Borrowed(samples)
+    let mono_samples = if channels > 1 {
+        downmix_to_mono(samples, channels as usize)
     } else {
-        Cow::Owned(downmix_to_mono(samples, channels as usize))
+        samples.to_vec()
     };
 
-    match constrained_channels {
-        1 => {
-            encoder
-                .encode_to_vec(MonoPcm(buffer.as_ref()), &mut output)
-                .map_err(|err| anyhow!("Encode error: {err}"))?;
-        }
-        2 => {
-            encoder
-                .encode_to_vec(InterleavedPcm(buffer.as_ref()), &mut output)
-                .map_err(|err| anyhow!("Encode error: {err}"))?;
-        }
-        _ => unreachable!(),
+    if sample_rate == WAV_SAMPLE_RATE {
+        return mono_samples;
     }
 
-    encoder
-        .flush_to_vec::<FlushNoGap>(&mut output)
-        .map_err(|err| anyhow!("Flush error: {err}"))?;
+    let mono_f32: Vec<f32> = mono_samples
+        .iter()
+        .map(|s| *s as f32 / i16::MAX as f32)
+        .collect();
+    let resampled = resample_linear(&mono_f32, sample_rate, WAV_SAMPLE_RATE);
+    resampled
+        .into_iter()
+        .map(|sample| (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16)
+        .collect()
+}
 
-    Ok(output)
+fn encode_to_wav(samples: &[i16], sample_rate: u32, channels: u16) -> Result<Vec<u8>> {
+    if samples.is_empty() {
+        return Err(anyhow!("Recording buffer is empty"));
+    }
+
+    let spec = hound::WavSpec {
+        channels,
+        sample_rate,
+        bits_per_sample: WAV_BITS_PER_SAMPLE,
+        sample_format: hound::SampleFormat::Int,
+    };
+
+    let mut cursor = Cursor::new(Vec::new());
+    {
+        let mut writer = hound::WavWriter::new(&mut cursor, spec)
+            .map_err(|err| anyhow!("WAV writer init failed: {err}"))?;
+        for sample in samples {
+            writer
+                .write_sample(*sample)
+                .map_err(|err| anyhow!("WAV write error: {err}"))?;
+        }
+        writer
+            .finalize()
+            .map_err(|err| anyhow!("WAV finalize error: {err}"))?;
+    }
+
+    Ok(cursor.into_inner())
 }
 
 fn samples_to_mono_f32(samples: &[i16], channels: usize) -> Vec<f32> {
@@ -643,16 +734,16 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> Vec<f32> {
                 run_start.get_or_insert(idx);
             } else if let Some(start) = run_start.take() {
                 if idx - start <= min_gap_frames {
-                    for gap_idx in start..idx {
-                        keep_mask[gap_idx] = true;
+                    for item in keep_mask.iter_mut().take(idx).skip(start) {
+                        *item = true;
                     }
                 }
             }
         }
         if let Some(start) = run_start.take() {
             if keep_mask.len() - start <= min_gap_frames {
-                for gap_idx in start..keep_mask.len() {
-                    keep_mask[gap_idx] = true;
+                for item in keep_mask.iter_mut().skip(start) {
+                    *item = true;
                 }
             }
         }
@@ -732,7 +823,28 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     output
 }
 
-fn push_f32_samples(data: &[f32], buffer: &Arc<Mutex<Vec<i16>>>) {
+fn push_f32_samples(
+    data: &[f32],
+    buffer: &Arc<Mutex<Vec<i16>>>,
+    spectrum: &Arc<Mutex<AudioSpectrumState>>,
+    channels: usize,
+) {
+    let channels = channels.max(1);
+    if let Some(mut analysis) = spectrum.try_lock() {
+        for frame in data.chunks(channels) {
+            let mut mono = 0f32;
+            let mut count = 0usize;
+            for &sample in frame {
+                let clamped = sample.clamp(-1.0, 1.0);
+                mono += clamped;
+                count += 1;
+            }
+            if count > 0 {
+                analysis.push_sample(mono / count as f32);
+            }
+        }
+    }
+
     let mut writer = buffer.lock();
     for &sample in data {
         let clamped = sample.clamp(-1.0, 1.0);
@@ -740,12 +852,57 @@ fn push_f32_samples(data: &[f32], buffer: &Arc<Mutex<Vec<i16>>>) {
     }
 }
 
-fn push_i16_samples(data: &[i16], buffer: &Arc<Mutex<Vec<i16>>>) {
+fn push_i16_samples(
+    data: &[i16],
+    buffer: &Arc<Mutex<Vec<i16>>>,
+    spectrum: &Arc<Mutex<AudioSpectrumState>>,
+    channels: usize,
+) {
+    let channels = channels.max(1);
+    let scale = 1.0 / i16::MAX as f32;
+    if let Some(mut analysis) = spectrum.try_lock() {
+        for frame in data.chunks(channels) {
+            let mut mono = 0f32;
+            let mut count = 0usize;
+            for &sample in frame {
+                let normalized = (sample as f32 * scale).clamp(-1.0, 1.0);
+                mono += normalized;
+                count += 1;
+            }
+            if count > 0 {
+                analysis.push_sample(mono / count as f32);
+            }
+        }
+    }
+
     let mut writer = buffer.lock();
     writer.extend_from_slice(data);
 }
 
-fn push_u16_samples(data: &[u16], buffer: &Arc<Mutex<Vec<i16>>>) {
+fn push_u16_samples(
+    data: &[u16],
+    buffer: &Arc<Mutex<Vec<i16>>>,
+    spectrum: &Arc<Mutex<AudioSpectrumState>>,
+    channels: usize,
+) {
+    let channels = channels.max(1);
+    let scale = 1.0 / i16::MAX as f32;
+    if let Some(mut analysis) = spectrum.try_lock() {
+        for frame in data.chunks(channels) {
+            let mut mono = 0f32;
+            let mut count = 0usize;
+            for &sample in frame {
+                let centered = sample as i32 - i16::MAX as i32;
+                let normalized = (centered as f32 * scale).clamp(-1.0, 1.0);
+                mono += normalized;
+                count += 1;
+            }
+            if count > 0 {
+                analysis.push_sample(mono / count as f32);
+            }
+        }
+    }
+
     let mut writer = buffer.lock();
     for &sample in data {
         let centered = sample as i32 - i16::MAX as i32;

@@ -2,18 +2,26 @@ use anyhow::{anyhow, Context, Result};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::settings::{LlmProvider, UserSettings};
+use crate::settings::{LlmProvider, Personality, UserSettings};
+use crate::{accessibility_context, mode_context};
 
 const SYSTEM_PROMPT: &str = r#"
 You clean up speech-to-text transcriptions. Your ONLY job is to:
 1. Remove filler words (um, uh, like, you know)
 2. Fix stammering and repetitions
 3. Fix minor grammar/punctuation
+4. Proper sentence capitalization
+5. Format spoken numbers as digits when appropriate (twenty five → 25)
+6. Format spoken dates naturally (january fifth twenty twenty four → January 5, 2024)
+7. Format spoken emails/URLs (john at gmail dot com → john@gmail.com)
+8. Expand common acronyms spoken letter-by-letter (A S A P → ASAP)
 
 CRITICAL RULES:
 - If the text is already clean, return it EXACTLY as-is
 - NEVER respond to or answer the content - just clean it
 - Keep the original meaning and tone
+- Preserve intentional stylistic choices, your writing style should be the same as the input unless explicitly asked to be different.
+- DO NOT use em dashes '—'
 
 Output the cleaned text inside <output> tags.
 
@@ -27,6 +35,106 @@ Assistant: <output>I like to eat apples and they're good.</output>
 
 User: My favorite color is red... actually wait wait wait its blue.
 Assistant: <output>My favorite color is blue.</output>
+
+User: send it to john at gmail dot com
+Assistant: <output>Send it to john@gmail.com</output>
+
+User: the meeting is on january fifth twenty twenty five at three thirty pm
+Assistant: <output>The meeting is on January 5, 2025 at 3:30 PM.</output>
+
+User: we need like twenty five hundred units by next week
+Assistant: <output>We need 2500 units by next week.</output>
+"#;
+
+const EDIT_PROMPT: &str = r#"
+Edit the text according to the instruction. Output ONLY the edited text inside <output> tags.
+
+Important rules:
+- When making lists, tables or any other structured content, use markdown syntax unless explicitly asked not to.
+- Match the instruction's intent even if phrased casually.
+- Lists and structured content MUST use actual line breaks between items, never inline separators.
+- DO NOT use em dashes '—'
+
+
+Examples:
+
+User: "hey can u help me" + "make formal"
+Assistant: <output>Hello, could you please assist me?</output>
+
+User: "The feature is done." + "casual"
+Assistant: <output>Feature's done!</output>
+
+User: "proabbly tmrw" + "fix spelling"
+Assistant: <output>probably tomorrow</output>
+
+User: "We need to discuss quarterly results." + "shorter"
+Assistant: <output>Discuss Q results.</output>
+
+User: "Hello" + "translate to spanish"
+Assistant: <output>Hola</output>
+
+User: "buy milk eggs bread butter" + "make a list"
+Assistant: <output>- Milk
+- Eggs
+- Bread
+- Butter</output>
+
+User: "Shopping: eggs milk bread. Recipes to try: pasta carbonara, chicken stir fry" + "markdown list"
+Assistant: <output>## Shopping
+
+- Eggs
+- Milk
+- Bread
+
+## Recipes to Try
+
+- Pasta carbonara
+- Chicken stir fry</output>
+
+User: "Fixed the login bug." + "expand"
+Assistant: <output>I resolved the login bug</output>
+
+User: "The quarterly report indicates significant growth across all departments with revenue increasing by 15% and customer satisfaction scores reaching an all-time high." + "summarize"
+Assistant: <output>Strong Q growth: +15% revenue, record satisfaction.</output>
+
+User: "I will fix it tomorrow" + "past tense"
+Assistant: <output>I fixed it yesterday</output>
+
+User: "We launched the product" + "future tense"
+Assistant: <output>We will launch the product</output>
+
+User: "I completed the task" + "third person"
+Assistant: <output>They completed the task</output>
+
+User: "Great job on the release" + "add emoji"
+Assistant: <output>Great job on the release! 🎉</output>
+
+User: "need the report by friday" + "as email"
+Assistant: <output>Hi,
+
+Could you please send me the report by Friday?
+
+Thanks!</output>
+
+User: "name age city" + "as json"
+Assistant: <output>```json
+{
+  "name": "",
+  "age": "",
+  "city": ""
+}
+```</output>
+
+User: "The server crashed." + "make a question"
+Assistant: <output>Did the server crash?</output>
+
+User: "Is the deployment ready?" + "make statement"
+Assistant: <output>The deployment is ready.</output>
+
+User: "wake up eat breakfast go to work" + "numbered list"
+Assistant: <output>1. Wake up
+2. Eat breakfast
+3. Go to work</output>
 "#;
 
 #[derive(Debug, Serialize)]
@@ -60,8 +168,12 @@ struct MessageContent {
 
 fn strip_control_tokens(text: &str) -> String {
     let re = regex::Regex::new(r"<\|[^|]+\|>").unwrap();
-    let result = re.replace_all(text, "").to_string();
-    result.split_whitespace().collect::<Vec<_>>().join(" ")
+    let result = re.replace_all(text, "");
+    result
+        .lines()
+        .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 fn parse_output(response: &str) -> Option<String> {
@@ -74,41 +186,66 @@ fn parse_output(response: &str) -> Option<String> {
     }
 }
 
+fn build_system_prompt(settings: &UserSettings, mode: Option<&Personality>) -> String {
+    accessibility_context::log_active_context();
+
+    if let Some(personality) = mode {
+        if let Some(prompt) = mode_context::build_mode_prompt_for_personality(settings, personality)
+        {
+            return prompt;
+        }
+    }
+
+    // No mode provided - auto-resolve from current context
+    if let Some(prompt) = mode_context::build_mode_prompt(settings) {
+        return prompt;
+    }
+
+    SYSTEM_PROMPT.to_string()
+}
+
 fn get_endpoint(settings: &UserSettings) -> Result<String> {
-    let base = match settings.llm_provider {
+    if !settings.llm_endpoint.is_empty() && settings.llm_endpoint.contains("/chat/completions") {
+        return Ok(settings.llm_endpoint.clone());
+    }
+
+    let endpoint = match settings.llm_provider {
         LlmProvider::None => return Err(anyhow!("LLM cleanup is disabled")),
-        LlmProvider::LmStudio => settings
-            .llm_endpoint
-            .as_str()
-            .is_empty()
-            .then_some("http://localhost:1234")
-            .unwrap_or(&settings.llm_endpoint),
-        LlmProvider::Ollama => settings
-            .llm_endpoint
-            .as_str()
-            .is_empty()
-            .then_some("http://localhost:11434")
-            .unwrap_or(&settings.llm_endpoint),
-        LlmProvider::OpenAI => settings
-            .llm_endpoint
-            .as_str()
-            .is_empty()
-            .then_some("https://api.openai.com")
-            .unwrap_or(&settings.llm_endpoint),
+        LlmProvider::LmStudio => {
+            if settings.llm_endpoint.is_empty() {
+                "http://localhost:1234"
+            } else {
+                &settings.llm_endpoint
+            }
+        }
+        LlmProvider::Ollama => {
+            if settings.llm_endpoint.is_empty() {
+                "http://localhost:11434"
+            } else {
+                &settings.llm_endpoint
+            }
+        }
+        LlmProvider::OpenAI => {
+            if settings.llm_endpoint.is_empty() {
+                "https://api.openai.com"
+            } else {
+                &settings.llm_endpoint
+            }
+        }
         _ => {
             if settings.llm_endpoint.is_empty() {
                 return Err(anyhow!("Endpoint not configured"));
             }
-            if settings.llm_endpoint.contains("/v1/chat/completions") {
-                return Ok(settings.llm_endpoint.clone());
-            }
             &settings.llm_endpoint
         }
     };
-    Ok(format!(
-        "{}/v1/chat/completions",
-        base.trim_end_matches('/')
-    ))
+
+    let base = get_base_url(endpoint, &settings.llm_provider);
+    if base.is_empty() {
+        return Err(anyhow!("Endpoint not configured"));
+    }
+
+    Ok(format!("{}/v1/chat/completions", base))
 }
 
 fn resolve_model(settings: &UserSettings) -> String {
@@ -128,29 +265,24 @@ pub async fn cleanup_transcription(
     client: &Client,
     text: &str,
     settings: &UserSettings,
+    mode: Option<&Personality>,
 ) -> Result<String> {
     if !settings.llm_cleanup_enabled || matches!(settings.llm_provider, LlmProvider::None) {
         return Err(anyhow!("LLM cleanup not configured"));
     }
 
-    eprintln!("[LLM] Transcription received: {}", text);
-
-    let user_content = if settings.user_context.is_empty() {
-        text.to_string()
-    } else {
-        format!("Context: {}\n\n{}", settings.user_context, text)
-    };
+    eprintln!("[LLM] Processing transcription: {} chars", text.len());
 
     let body = ChatRequest {
         model: resolve_model(settings),
         messages: vec![
             Message {
                 role: "system".into(),
-                content: SYSTEM_PROMPT.into(),
+                content: build_system_prompt(settings, mode),
             },
             Message {
                 role: "user".into(),
-                content: user_content,
+                content: text.to_string(),
             },
         ],
         temperature: 0.2,
@@ -175,7 +307,7 @@ pub async fn cleanup_transcription(
         .map(|c| c.message.content.clone())
         .unwrap_or_default();
 
-    eprintln!("[LLM] Response from LLM: {}", raw);
+    eprintln!("[LLM] Response received: {} chars", raw.len());
 
     let result = parse_output(&raw)
         .or_else(|| {
@@ -188,7 +320,7 @@ pub async fn cleanup_transcription(
         })
         .unwrap_or_else(|| text.to_string());
 
-    eprintln!("[LLM] Final cleaned output: {}", result);
+    eprintln!("[LLM] Cleanup complete: {} chars", result.len());
 
     Ok(result)
 }
@@ -203,6 +335,75 @@ pub fn resolved_model_name(settings: &UserSettings) -> Option<String> {
     } else {
         Some(resolve_model(settings))
     }
+}
+pub async fn edit_transcription(
+    client: &Client,
+    selected_text: &str,
+    voice_command: &str,
+    settings: &UserSettings,
+) -> Result<String> {
+    if !settings.llm_cleanup_enabled || matches!(settings.llm_provider, LlmProvider::None) {
+        return Err(anyhow!("LLM not configured for edit mode"));
+    }
+
+    eprintln!(
+        "[LLM Edit] Processing {} char command on {} chars of text",
+        voice_command.len(),
+        selected_text.len()
+    );
+
+    let user_content = format!("\"{}\" + \"{}\"", selected_text, voice_command);
+
+    let body = ChatRequest {
+        model: resolve_model(settings),
+        messages: vec![
+            Message {
+                role: "system".into(),
+                content: EDIT_PROMPT.into(),
+            },
+            Message {
+                role: "user".into(),
+                content: user_content,
+            },
+        ],
+        temperature: 0.2,
+        max_tokens: Some(8192),
+    };
+
+    let mut req = client.post(&get_endpoint(settings)?).json(&body);
+    if !settings.llm_api_key.is_empty() {
+        req = req.header("Authorization", format!("Bearer {}", settings.llm_api_key));
+    }
+
+    let resp = req.send().await.context("Failed to reach LLM API")?;
+    if !resp.status().is_success() {
+        let err = resp.text().await.unwrap_or_default();
+        return Err(anyhow!("LLM error {}", err));
+    }
+
+    let chat: ChatResponse = resp.json().await.context("Failed to parse response")?;
+    let raw = chat
+        .choices
+        .first()
+        .map(|c| c.message.content.clone())
+        .unwrap_or_default();
+
+    eprintln!("[LLM Edit] Response received: {} chars", raw.len());
+
+    let result = parse_output(&raw)
+        .or_else(|| {
+            let cleaned = strip_control_tokens(&raw);
+            if cleaned.is_empty() {
+                None
+            } else {
+                Some(cleaned)
+            }
+        })
+        .unwrap_or_else(|| selected_text.to_string());
+
+    eprintln!("[LLM Edit] Final output: {} chars", result.len());
+
+    Ok(result)
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,28 +1,36 @@
+mod accessibility_context;
 mod analytics;
 mod assistive;
 mod audio;
+mod cloud;
 mod crypto;
+mod dictionary;
 mod downloader;
 mod llm_cleanup;
 mod local_transcription;
+mod mode_context;
 mod model_manager;
 mod permissions;
+mod personalization;
 mod pill;
 mod platform;
 mod recorder;
 mod settings;
 mod storage;
 mod toast;
-mod transcription;
+mod transcribe;
+mod transcription_api;
 mod tray;
+mod update_checker;
 
-use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use pill::PillController;
 use recorder::{
     validate_recording, CompletedRecording, RecorderManager, RecordingRejectionReason,
@@ -30,9 +38,7 @@ use recorder::{
 };
 use reqwest::Client;
 use serde::Serialize;
-use settings::{
-    default_local_model, LlmProvider, Replacement, SettingsStore, TranscriptionMode, UserSettings,
-};
+use settings::{default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UserSettings};
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
 use tauri::Emitter;
@@ -46,10 +52,7 @@ use tauri_plugin_opener::OpenerExt;
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 pub(crate) const SETTINGS_WINDOW_LABEL: &str = "settings";
 pub(crate) const EVENT_RECORDING_START: &str = "recording:start";
-pub(crate) const EVENT_RECORDING_STOP: &str = "recording:stop";
-pub(crate) const EVENT_RECORDING_COMPLETE: &str = "recording:complete";
-pub(crate) const EVENT_RECORDING_ERROR: &str = "recording:error";
-pub(crate) const EVENT_TRANSCRIPTION_START: &str = "transcription:start";
+pub(crate) const EVENT_AUDIO_SPECTRUM: &str = "audio:spectrum";
 pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
@@ -64,7 +67,7 @@ pub fn run() {
     let aptabase_key = option_env!("APTABASE_KEY").unwrap_or("A-DEV-0000000000");
 
     let builder = tauri::Builder::default()
-        .plugin(tauri_plugin_aptabase::Builder::new(&aptabase_key).build())
+        .plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
@@ -83,7 +86,7 @@ pub fn run() {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             let handle = app.handle();
-            let settings_store = Arc::new(SettingsStore::new(&handle)?);
+            let settings_store = Arc::new(SettingsStore::new(handle)?);
             let mut settings = settings_store.load().unwrap_or_default();
             if model_manager::definition(&settings.local_model).is_none() {
                 settings.local_model = default_local_model();
@@ -91,33 +94,35 @@ pub fn run() {
                     eprintln!("Failed to persist default local model: {err}");
                 }
             }
-            app.manage(AppState::new(
-                Arc::clone(&settings_store),
-                settings,
-                &handle,
-            ));
+            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
 
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
-                platform::overlay::init(&handle, &window);
+                platform::overlay::init(handle, &window);
             }
 
             if let Some(toast_window) = handle.get_webview_window(toast::WINDOW_LABEL) {
                 let _ = toast_window.hide();
-                platform::toast::init(&handle, &toast_window);
+                platform::toast::init(handle, &toast_window);
             }
 
-            if let Ok(tray) = tray::build_tray(&handle) {
+            if let Ok(tray) = tray::build_tray(handle) {
                 handle.state::<AppState>().store_tray(tray);
             }
 
-            if let Err(err) = pill::register_shortcuts(&handle) {
+            if let Err(err) = pill::register_shortcuts(handle) {
                 eprintln!("Failed to register shortcuts: {err}");
             }
 
-            if let Err(err) = tray::toggle_settings_window(&handle) {
-                eprintln!("Failed to open settings window on launch: {err}");
-            }
+            let h = handle.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(Duration::from_millis(300));
+                let _ = tray::toggle_settings_window(&h);
+            });
+
+            let update_handle = handle.clone();
+            let update_state = handle.state::<AppState>().update_state().clone();
+            update_checker::start_background_checker(update_handle, update_state);
 
             let _ = app.track_event("app_started", None);
 
@@ -126,15 +131,16 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_settings,
             update_settings,
-            get_dictionary,
-            set_dictionary,
-            get_replacements,
-            set_replacements,
+            set_user_name,
+            dictionary::set_dictionary,
+            dictionary::get_replacements,
+            dictionary::set_replacements,
+            personalization::get_personalities,
+            personalization::set_personalities,
+            personalization::list_installed_apps,
             get_app_info,
             open_data_dir,
             get_transcriptions,
-            list_transcriptions_paginated,
-            get_transcription_count,
             delete_transcription,
             delete_all_transcriptions,
             retry_transcription,
@@ -144,30 +150,40 @@ pub fn run() {
             model_manager::check_model_status,
             model_manager::download_model,
             model_manager::delete_model,
+            model_manager::cancel_download,
             audio::list_input_devices,
-            toast_dismissed,
-            check_microphone_permission,
-            request_microphone_permission,
-            check_accessibility_permission,
+            toast::toast_dismissed,
             open_accessibility_settings,
             open_microphone_settings,
+            open_llm_cleanup_settings,
             complete_onboarding,
             cancel_recording,
             reset_onboarding,
             import_transcription_from_cloud,
             mark_transcription_synced,
-            debug_show_toast,
+            toast::debug_show_toast,
             fetch_llm_models,
-            open_whats_new
+            cloud::set_cloud_credentials,
+            cloud::clear_cloud_credentials,
+            cloud::open_sign_in,
+            cloud::open_checkout,
+            open_whats_new,
+            open_about_page,
+            switch_to_local_mode,
+            toast::show_celebration_toast,
+            update_checker::get_update_status,
+            update_checker::trigger_update_check,
+            update_checker::simulate_update_available,
+            update_checker::clear_update_state,
+            update_checker::show_update_toast_now
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|handler, event| match event {
-            tauri::RunEvent::Exit { .. } => {
+        .run(|handler, event| {
+            if let tauri::RunEvent::Exit = event {
                 let _ = handler.track_event("app_exited", None);
                 handler.flush_events_blocking();
             }
-            _ => {}
         });
 }
 
@@ -186,6 +202,10 @@ pub struct AppState {
     pub(crate) settings_close_handler_registered: AtomicBool,
     transcription_cancelled: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
+    cloud_manager: cloud::CloudManager,
+    pending_selected_text: parking_lot::Mutex<Option<String>>,
+    download_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    update_state: update_checker::SharedUpdateState,
 }
 
 impl AppState {
@@ -210,10 +230,13 @@ impl AppState {
 
         let recorder = Arc::new(RecorderManager::new());
 
+        let local_transcriber = Arc::new(local_transcription::LocalTranscriber::new());
+        local_transcriber.start_idle_monitor();
+
         Self {
             pill: Arc::new(PillController::new(Arc::clone(&recorder))),
             http,
-            local_transcriber: Arc::new(local_transcription::LocalTranscriber::new()),
+            local_transcriber,
             storage: Arc::new(storage),
             settings_store,
             settings: parking_lot::Mutex::new(settings),
@@ -221,6 +244,10 @@ impl AppState {
             settings_close_handler_registered: AtomicBool::new(false),
             transcription_cancelled: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
+            cloud_manager: cloud::CloudManager::new(),
+            pending_selected_text: parking_lot::Mutex::new(None),
+            download_tokens: parking_lot::Mutex::new(HashMap::new()),
+            update_state: update_checker::create_state(),
         }
     }
 
@@ -282,26 +309,48 @@ impl AppState {
     pub fn take_pending_path(&self) -> Option<PathBuf> {
         self.pending_recording_path.lock().take()
     }
+
+    pub fn cloud_manager(&self) -> &cloud::CloudManager {
+        &self.cloud_manager
+    }
+
+    pub fn set_pending_selected_text(&self, text: Option<String>) {
+        *self.pending_selected_text.lock() = text;
+    }
+
+    pub fn take_pending_selected_text(&self) -> Option<String> {
+        self.pending_selected_text.lock().take()
+    }
+
+    pub fn create_download_token(&self, model: &str) -> CancellationToken {
+        let token = CancellationToken::new();
+        self.download_tokens
+            .lock()
+            .insert(model.to_string(), token.clone());
+        token
+    }
+
+    pub fn cancel_download(&self, model: &str) -> bool {
+        if let Some(token) = self.download_tokens.lock().remove(model) {
+            token.cancel();
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn clear_download_token(&self, model: &str) {
+        self.download_tokens.lock().remove(model);
+    }
+
+    pub fn update_state(&self) -> &update_checker::SharedUpdateState {
+        &self.update_state
+    }
 }
 
 #[tauri::command]
 fn get_settings(state: tauri::State<AppState>) -> Result<UserSettings, String> {
     Ok(state.current_settings())
-}
-
-#[tauri::command]
-fn check_microphone_permission() -> permissions::PermissionStatus {
-    permissions::check_microphone_permission()
-}
-
-#[tauri::command]
-fn request_microphone_permission() -> permissions::PermissionStatus {
-    permissions::request_microphone_permission()
-}
-
-#[tauri::command]
-fn check_accessibility_permission() -> bool {
-    permissions::check_accessibility_permission()
 }
 
 #[tauri::command]
@@ -312,6 +361,24 @@ fn open_accessibility_settings() -> Result<(), String> {
 #[tauri::command]
 fn open_microphone_settings() -> Result<(), String> {
     permissions::open_microphone_settings()
+}
+
+#[tauri::command]
+fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    if let Err(err) = tray::toggle_settings_window(&app) {
+        eprintln!("Failed to open settings window: {err}");
+        return Err(err.to_string());
+    }
+
+    let app_clone = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        if let Err(err) = app_clone.emit("navigate:models", ()) {
+            eprintln!("Failed to emit navigate:models: {err}");
+        }
+    });
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -343,7 +410,7 @@ fn reset_onboarding(
 }
 
 #[tauri::command]
-#[allow(non_snake_case)]
+#[allow(non_snake_case, clippy::too_many_arguments)]
 fn update_settings(
     smartShortcut: String,
     smartEnabled: bool,
@@ -360,7 +427,7 @@ fn update_settings(
     llmEndpoint: String,
     llmApiKey: String,
     llmModel: String,
-    userContext: String,
+    editModeEnabled: bool,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<UserSettings, String> {
@@ -434,7 +501,7 @@ fn update_settings(
     next.llm_endpoint = llmEndpoint;
     next.llm_api_key = llmApiKey;
     next.llm_model = llmModel;
-    next.user_context = userContext;
+    next.edit_mode_enabled = editModeEnabled;
 
     let next = state
         .persist_settings(next)
@@ -458,187 +525,23 @@ fn update_settings(
     Ok(next)
 }
 
-fn sanitize_dictionary_entries(entries: &[String]) -> Vec<String> {
-    let mut seen = HashSet::new();
-    let mut cleaned = Vec::new();
-
-    for raw in entries {
-        let trimmed = raw.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        let normalized = trimmed.to_lowercase();
-        if seen.insert(normalized) {
-            // Cap using char boundaries to avoid UTF-8 slicing panics
-            let capped: String = trimmed.chars().take(160).collect();
-            let capped = capped.trim_end().to_string();
-            cleaned.push(capped);
-        }
-        if cleaned.len() >= 64 {
-            break;
-        }
-    }
-
-    cleaned
-}
-
-fn build_dictionary_prompt(entries: &[String]) -> Option<String> {
-    let cleaned = sanitize_dictionary_entries(entries);
-    if cleaned.is_empty() {
-        return None;
-    }
-
-    let mut prompt =
-        String::from("Use the following preferred terms verbatim when transcribing:\n");
-    for term in cleaned {
-        prompt.push_str("- ");
-        prompt.push_str(&term);
-        prompt.push('\n');
-    }
-
-    Some(prompt)
-}
-
-fn dictionary_prompt_for_model(
-    model: &model_manager::ReadyModel,
-    settings: &settings::UserSettings,
-) -> Option<String> {
-    if !matches!(model.engine, model_manager::LocalModelEngine::Whisper) {
-        return None;
-    }
-
-    build_dictionary_prompt(&settings.dictionary)
-}
-
 #[tauri::command]
-fn get_dictionary(state: tauri::State<AppState>) -> Result<Vec<String>, String> {
-    let mut settings = state.current_settings();
-    let cleaned = sanitize_dictionary_entries(&settings.dictionary);
-    if cleaned != settings.dictionary {
-        settings.dictionary = cleaned.clone();
-        state
-            .persist_settings(settings)
-            .map_err(|err| err.to_string())?;
-    }
-    Ok(cleaned)
-}
-
-#[tauri::command]
-fn set_dictionary(
-    entries: Vec<String>,
+fn set_user_name(
+    name: String,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
-) -> Result<Vec<String>, String> {
-    let cleaned = sanitize_dictionary_entries(&entries);
+) -> Result<UserSettings, String> {
     let mut settings = state.current_settings();
-    settings.dictionary = cleaned.clone();
-    let _ = app;
-    state
+    settings.user_name = name.trim().to_string();
+    let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
-    Ok(cleaned)
-}
 
-fn sanitize_replacements(replacements: &[Replacement]) -> Vec<Replacement> {
-    let mut seen = HashSet::new();
-    let mut cleaned = Vec::new();
-
-    for r in replacements {
-        let from = r.from.trim();
-        let to = r.to.trim();
-        if from.is_empty() {
-            continue;
-        }
-        let key = from.to_lowercase();
-        if seen.insert(key) {
-            let from_capped: String = from.chars().take(100).collect();
-            let to_capped: String = to.chars().take(200).collect();
-            cleaned.push(Replacement {
-                from: from_capped.trim().to_string(),
-                to: to_capped.trim().to_string(),
-            });
-        }
-        if cleaned.len() >= 64 {
-            break;
-        }
+    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
+        eprintln!("Failed to emit settings change: {err}");
     }
 
-    cleaned
-}
-
-pub fn apply_replacements(text: &str, replacements: &[Replacement]) -> String {
-    if replacements.is_empty() {
-        return text.to_string();
-    }
-
-    let mut result = text.to_string();
-    for r in replacements {
-        if r.from.is_empty() {
-            continue;
-        }
-        let pattern = format!(r"(?i)\b{}\b", regex::escape(&r.from));
-        if let Ok(re) = regex::Regex::new(&pattern) {
-            result = re
-                .replace_all(&result, |caps: &regex::Captures| {
-                    let matched = &caps[0];
-                    apply_case_pattern(matched, &r.to)
-                })
-                .to_string();
-        }
-    }
-    result
-}
-
-fn apply_case_pattern(matched: &str, replacement: &str) -> String {
-    if replacement.is_empty() {
-        return String::new();
-    }
-
-    let first_char = matched.chars().next();
-    let is_first_upper = first_char.map(|c| c.is_uppercase()).unwrap_or(false);
-    let is_all_upper = matched.len() > 1
-        && matched
-            .chars()
-            .all(|c| !c.is_alphabetic() || c.is_uppercase());
-
-    if is_all_upper {
-        replacement.to_uppercase()
-    } else if is_first_upper {
-        let mut chars = replacement.chars();
-        match chars.next() {
-            Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-            None => String::new(),
-        }
-    } else {
-        replacement.to_string()
-    }
-}
-
-#[tauri::command]
-fn get_replacements(state: tauri::State<AppState>) -> Result<Vec<Replacement>, String> {
-    let mut settings = state.current_settings();
-    let cleaned = sanitize_replacements(&settings.replacements);
-    if cleaned != settings.replacements {
-        settings.replacements = cleaned.clone();
-        state
-            .persist_settings(settings)
-            .map_err(|err| err.to_string())?;
-    }
-    Ok(cleaned)
-}
-
-#[tauri::command]
-fn set_replacements(
-    replacements: Vec<Replacement>,
-    state: tauri::State<AppState>,
-) -> Result<Vec<Replacement>, String> {
-    let cleaned = sanitize_replacements(&replacements);
-    let mut settings = state.current_settings();
-    settings.replacements = cleaned.clone();
-    state
-        .persist_settings(settings)
-        .map_err(|err| err.to_string())?;
-    Ok(cleaned)
+    Ok(next)
 }
 
 #[derive(Serialize)]
@@ -666,30 +569,6 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
         data_dir_size_bytes,
         data_dir_path,
     })
-}
-
-#[tauri::command]
-fn debug_show_toast(
-    toast_type: String,
-    message: String,
-    action: Option<String>,
-    action_label: Option<String>,
-    app: AppHandle<AppRuntime>,
-) {
-    toast::emit_toast(
-        &app,
-        toast::Payload {
-            toast_type,
-            title: None,
-            message,
-            auto_dismiss: Some(true),
-            duration: Some(8000),
-            retry_id: None,
-            mode: None,
-            action,
-            action_label,
-        },
-    );
 }
 
 #[tauri::command]
@@ -734,16 +613,77 @@ fn open_whats_new(app: AppHandle<AppRuntime>) {
 }
 
 #[tauri::command]
+fn open_about_page(app: AppHandle<AppRuntime>) {
+    if let Err(err) = tray::toggle_settings_window(&app) {
+        eprintln!("Failed to open settings window: {err}");
+        return;
+    }
+
+    let app_clone = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(150));
+        if let Err(e) = app_clone.emit("navigate:about", ()) {
+            eprintln!("Failed to emit navigate:about: {e}");
+        }
+    });
+}
+
+#[tauri::command]
+fn switch_to_local_mode(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut settings = state.current_settings();
+
+    if matches!(settings.transcription_mode, TranscriptionMode::Local) {
+        return Ok(());
+    }
+
+    settings.transcription_mode = TranscriptionMode::Local;
+
+    let settings = state
+        .persist_settings(settings)
+        .map_err(|e| e.to_string())?;
+
+    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
+    }
+
+    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &settings) {
+        eprintln!("Failed to emit settings change: {err}");
+    }
+
+    toast::show(
+        &app,
+        "success",
+        None,
+        "Switched to local mode. Cloud sync still works.",
+    );
+
+    Ok(())
+}
+
+#[tauri::command]
 fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(), String> {
     let path = path.ok_or_else(|| "Path is empty".to_string())?;
-    let path = PathBuf::from(path);
+    let path = PathBuf::from(&path);
 
-    if !path.exists() {
-        return Err("Path does not exist".to_string());
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to get app data dir: {e}"))?;
+
+    let canonical_path = path
+        .canonicalize()
+        .map_err(|_| "Path does not exist".to_string())?;
+    let canonical_data_dir = data_dir
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize data dir: {e}"))?;
+
+    if !canonical_path.starts_with(&canonical_data_dir) {
+        return Err("Path is outside app data directory".to_string());
     }
 
     app.opener()
-        .reveal_item_in_dir(&path)
+        .reveal_item_in_dir(&canonical_path)
         .map_err(|err| format!("Failed to open path: {err}"))
 }
 
@@ -777,32 +717,12 @@ fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
 #[tauri::command]
 fn get_transcriptions(
     state: tauri::State<AppState>,
-) -> Result<Vec<storage::TranscriptionRecord>, String> {
-    Ok(state.storage().get_all())
-}
-
-#[tauri::command]
-fn list_transcriptions_paginated(
-    state: tauri::State<AppState>,
-    limit: u32,
-    offset: u32,
     search_query: Option<String>,
 ) -> Result<Vec<storage::TranscriptionRecord>, String> {
     state
         .storage()
-        .get_paginated(limit, offset, search_query.as_deref())
-        .map_err(|err| format!("Failed to list transcriptions: {err}"))
-}
-
-#[tauri::command]
-fn get_transcription_count(
-    state: tauri::State<AppState>,
-    search_query: Option<String>,
-) -> Result<usize, String> {
-    state
-        .storage()
-        .get_count(search_query.as_deref())
-        .map_err(|err| format!("Failed to get transcription count: {err}"))
+        .get_all_filtered(search_query.as_deref())
+        .map_err(|err| format!("Failed to get transcriptions: {err}"))
 }
 
 #[tauri::command]
@@ -860,181 +780,52 @@ async fn retry_transcription(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
+    eprintln!("[retry_transcription] Starting retry for id={}", id);
+
     let record = state
         .storage()
         .get_by_id(&id)
         .ok_or_else(|| "Transcription not found".to_string())?;
 
-    // Removed status check to allow retrying any transcription
-    // if record.status != storage::TranscriptionStatus::Error {
-    //     return Err("Can only retry failed transcriptions".to_string());
-    // }
+    eprintln!(
+        "[retry_transcription] Found record: audio_path={} speech_model={} synced={}",
+        record.audio_path, record.speech_model, record.synced
+    );
+
+    if record.status == storage::TranscriptionStatus::Error {
+        if let Some(message) = record.error_message.as_deref() {
+            let lower = message.to_ascii_lowercase();
+            let is_quota_error =
+                lower.contains("quota reached") || lower.contains("beta tester limit");
+            if is_quota_error {
+                let is_tester = lower.contains("beta tester");
+                cloud::show_quota_exceeded(&app, is_tester);
+                return Err(String::new());
+            }
+        }
+    }
 
     let audio_path = PathBuf::from(&record.audio_path);
     if !audio_path.exists() {
-        return Err("Audio file not found".to_string());
+        if record.audio_path.contains("placeholder") || record.audio_path.contains("cloud_synced") {
+            return Err(
+                "Cannot retry cloud-synced transcriptions. Audio is only stored locally."
+                    .to_string(),
+            );
+        }
+        return Err("Audio file not found. It may have been deleted.".to_string());
     }
 
     let saved = RecordingSaved {
         path: audio_path,
         started_at: record.timestamp,
         ended_at: record.timestamp,
+        duration_override_seconds: Some(record.audio_duration_seconds),
     };
 
-    let _ = state.storage().delete(&id);
-
-    emit_transcription_start(&app, &saved);
-
-    let http = state.http();
-    let app_handle = app.clone();
-    let saved_for_task = saved.clone();
-
-    async_runtime::spawn(async move {
-        let settings = app_handle.state::<AppState>().current_settings();
-        let config = transcription::TranscriptionConfig::from_settings(&settings);
-        let use_local = matches!(settings.transcription_mode, TranscriptionMode::Local);
-
-        let result = if use_local {
-            match load_audio_for_transcription(&saved_for_task.path) {
-                Ok((samples, sample_rate)) => {
-                    let model_key = settings.local_model.clone();
-                    match model_manager::ensure_model_ready(&app_handle, &model_key) {
-                        Ok(ready_model) => {
-                            let dictionary_prompt =
-                                dictionary_prompt_for_model(&ready_model, &settings);
-                            let language = settings.language.clone();
-                            let transcriber = app_handle.state::<AppState>().local_transcriber();
-                            match async_runtime::spawn_blocking(move || {
-                                transcriber.transcribe(
-                                    &ready_model,
-                                    &samples,
-                                    sample_rate,
-                                    dictionary_prompt.as_deref(),
-                                    Some(&language),
-                                )
-                            })
-                            .await
-                            {
-                                Ok(inner) => inner,
-                                Err(err) => Err(anyhow!("Local transcription task failed: {err}")),
-                            }
-                        }
-                        Err(err) => Err(err),
-                    }
-                }
-                Err(err) => Err(err),
-            }
-        } else {
-            transcription::request_transcription(&http, &saved_for_task, &config).await
-        };
-
-        match result {
-            Ok(result) => {
-                let raw_transcript = result.transcript.clone();
-                let reported_model = result.speech_model.clone();
-
-                if count_words(&raw_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
-                    return;
-                }
-
-                let (final_transcript, llm_cleaned) =
-                    if llm_cleanup::is_cleanup_available(&settings) {
-                        match llm_cleanup::cleanup_transcription(&http, &raw_transcript, &settings)
-                            .await
-                        {
-                            Ok(cleaned) => (cleaned, true),
-                            Err(err) => {
-                                eprintln!(
-                                    "LLM cleanup failed during retry, using raw transcript: {err}"
-                                );
-                                (raw_transcript.clone(), false)
-                            }
-                        }
-                    } else {
-                        (raw_transcript.clone(), false)
-                    };
-
-                let final_transcript =
-                    apply_replacements(&final_transcript, &settings.replacements);
-
-                if count_words(&final_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
-                    return;
-                }
-
-                let mut pasted = false;
-                if config.auto_paste && !final_transcript.trim().is_empty() {
-                    let text = final_transcript.clone();
-                    match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await
-                    {
-                        Ok(Ok(())) => pasted = true,
-                        Ok(Err(err)) => {
-                            let err_str = err.to_string();
-                            let is_accessibility_issue =
-                                err_str.to_lowercase().contains("accessibility")
-                                    || err_str.to_lowercase().contains("permission")
-                                    || err_str.to_lowercase().contains("not allowed")
-                                    || err_str.to_lowercase().contains("assistive");
-
-                            if is_accessibility_issue {
-                                toast::show(
-                                    &app_handle,
-                                    "warning",
-                                    Some("Accessibility Required"),
-                                    "Enable accessibility access in System Settings to auto-paste transcriptions.",
-                                );
-                            } else {
-                                toast::show(
-                                    &app_handle,
-                                    "error",
-                                    None,
-                                    &format!("Auto paste failed: {err}"),
-                                );
-                            }
-                            eprintln!("Auto paste failed: {err}");
-                        }
-                        Err(err) => {
-                            toast::show(&app_handle, "error", None, "Auto paste failed");
-                            eprintln!("Auto paste task error: {err}");
-                        }
-                    }
-                }
-
-                let metadata = build_transcription_metadata(
-                    &saved_for_task,
-                    &settings,
-                    use_local,
-                    reported_model.as_deref(),
-                    &final_transcript,
-                    llm_cleaned,
-                );
-
-                emit_transcription_complete_with_cleanup(
-                    &app_handle,
-                    raw_transcript,
-                    final_transcript,
-                    pasted,
-                    saved_for_task.path.display().to_string(),
-                    llm_cleaned,
-                    metadata,
-                    "unknown",
-                    if use_local { "local" } else { "cloud" },
-                );
-
-                hide_overlay(&app_handle);
-            }
-            Err(err) => {
-                let stage = if use_local { "local" } else { "api" };
-                emit_transcription_error(
-                    &app_handle,
-                    format!("Transcription failed: {err}"),
-                    stage,
-                    saved_for_task.path.display().to_string(),
-                );
-            }
-        }
-    });
+    let settings = state.current_settings();
+    let saved_mode = (record.mode_id, record.mode_name);
+    transcribe::retry_transcription_async(&app, saved, settings, id, saved_mode);
 
     Ok(())
 }
@@ -1062,12 +853,28 @@ async fn retry_llm_cleanup(
 
     let text_to_clean = record.raw_text.unwrap_or(record.text);
 
+    // Look up the saved personality (if it still exists and is enabled)
+    let saved_personality = record.mode_id.as_ref().and_then(|id| {
+        settings
+            .personalities
+            .iter()
+            .find(|p| &p.id == id && p.enabled)
+            .cloned()
+    });
+
     let http = state.http();
     let storage = state.storage();
     let record_id = id.clone();
 
     async_runtime::spawn(async move {
-        match llm_cleanup::cleanup_transcription(&http, &text_to_clean, &settings).await {
+        match llm_cleanup::cleanup_transcription(
+            &http,
+            &text_to_clean,
+            &settings,
+            saved_personality.as_ref(),
+        )
+        .await
+        {
             Ok(cleaned) => {
                 if let Err(err) =
                     storage.update_with_llm_cleanup(&record_id, cleaned, llm_model.clone())
@@ -1131,13 +938,6 @@ pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
 }
 
 #[tauri::command]
-fn toast_dismissed(app: AppHandle<AppRuntime>) {
-    stop_active_recording(&app);
-    hide_overlay(&app);
-    toast::hide(&app);
-}
-
-#[tauri::command]
 fn cancel_recording(app: AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
     if state.pill().status() == pill::PillStatus::Processing {
@@ -1178,17 +978,6 @@ fn emit_complete(
     saved: RecordingSaved,
     recording: CompletedRecording,
 ) {
-    emit_event(
-        app,
-        EVENT_RECORDING_COMPLETE,
-        RecordingCompletePayload {
-            path: saved.path.display().to_string(),
-            started_at: saved.started_at.to_rfc3339(),
-            ended_at: saved.ended_at.to_rfc3339(),
-            duration_ms: (saved.ended_at - saved.started_at).num_milliseconds(),
-        },
-    );
-
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
             RecordingRejectionReason::TooShort {
@@ -1211,24 +1000,20 @@ fn emit_complete(
             eprintln!("Failed to remove rejected recording file: {err}");
         }
 
-        hide_overlay(app);
+        app.state::<AppState>().pill().reset(app);
         return;
     }
 
-    queue_transcription(app, saved, recording);
+    transcribe::queue_transcription(app, saved, recording);
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {
-    emit_event(
-        app,
-        EVENT_RECORDING_ERROR,
-        RecordingErrorPayload {
-            message: message.clone(),
-        },
-    );
-    app.state::<AppState>()
-        .pill()
-        .transition_to_error(app, &message);
+    let state = app.state::<AppState>();
+    let status = state.pill().status();
+    if status == pill::PillStatus::Listening || status == pill::PillStatus::Processing {
+        return;
+    }
+    state.pill().transition_to_error(app, &message);
 }
 
 pub(crate) fn emit_event<T: Serialize + Clone>(
@@ -1239,468 +1024,6 @@ pub(crate) fn emit_event<T: Serialize + Clone>(
     if let Err(err) = app.emit(event, payload) {
         eprintln!("Failed to emit {event}: {err}");
     }
-}
-
-fn queue_transcription(
-    app: &AppHandle<AppRuntime>,
-    saved: RecordingSaved,
-    recording: CompletedRecording,
-) {
-    emit_transcription_start(app, &saved);
-
-    let state = app.state::<AppState>();
-    state.clear_cancellation();
-    state.set_pending_path(Some(saved.path.clone()));
-
-    let http = state.http();
-    let app_handle = app.clone();
-    let saved_for_task = saved.clone();
-    let recording_for_task = recording.clone();
-
-    async_runtime::spawn(async move {
-        let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
-
-        let settings = app_handle.state::<AppState>().current_settings();
-        let config = transcription::TranscriptionConfig::from_settings(&settings);
-        let use_local = matches!(settings.transcription_mode, TranscriptionMode::Local);
-        let result = if use_local {
-            let model_key = settings.local_model.clone();
-            match model_manager::ensure_model_ready(&app_handle, &model_key) {
-                Ok(ready_model) => {
-                    let dictionary_prompt = dictionary_prompt_for_model(&ready_model, &settings);
-                    let language = settings.language.clone();
-                    let transcriber = app_handle.state::<AppState>().local_transcriber();
-                    let local_recording = recording_for_task.clone();
-                    match async_runtime::spawn_blocking(move || {
-                        transcriber.transcribe(
-                            &ready_model,
-                            &local_recording.samples,
-                            local_recording.sample_rate,
-                            dictionary_prompt.as_deref(),
-                            Some(&language),
-                        )
-                    })
-                    .await
-                    {
-                        Ok(inner) => inner,
-                        Err(err) => Err(anyhow!("Local transcription task failed: {err}")),
-                    }
-                }
-                Err(err) => Err(err),
-            }
-        } else {
-            transcription::request_transcription(&http, &saved_for_task, &config).await
-        };
-
-        match result {
-            Ok(result) => {
-                if is_cancelled() { return; }
-
-                let raw_transcript = result.transcript.clone();
-                let reported_model = result.speech_model.clone();
-
-                if count_words(&raw_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
-                    return;
-                }
-
-                if is_cancelled() { return; }
-
-                let (final_transcript, llm_cleaned) =
-                    if llm_cleanup::is_cleanup_available(&settings) {
-                        match llm_cleanup::cleanup_transcription(&http, &raw_transcript, &settings)
-                            .await
-                        {
-                            Ok(cleaned) => (cleaned, true),
-                            Err(err) => {
-                                eprintln!("LLM cleanup failed, using raw transcript: {err}");
-                                (raw_transcript.clone(), false)
-                            }
-                        }
-                    } else {
-                        (raw_transcript.clone(), false)
-                    };
-
-                let final_transcript =
-                    apply_replacements(&final_transcript, &settings.replacements);
-
-                if count_words(&final_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
-                    return;
-                }
-
-                if is_cancelled() { return; }
-
-                let mut pasted = false;
-                if config.auto_paste && !final_transcript.trim().is_empty() {
-                    let text = final_transcript.clone();
-                    match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await
-                    {
-                        Ok(Ok(())) => pasted = true,
-                        Ok(Err(err)) => {
-                            emit_transcription_error(
-                                &app_handle,
-                                format!("Auto paste failed: {err}"),
-                                "auto_paste",
-                                saved_for_task.path.display().to_string(),
-                            );
-                        }
-                        Err(err) => {
-                            emit_transcription_error(
-                                &app_handle,
-                                format!("Auto paste task error: {err}"),
-                                "auto_paste",
-                                saved_for_task.path.display().to_string(),
-                            );
-                        }
-                    }
-                }
-
-                let metadata = build_transcription_metadata(
-                    &saved_for_task,
-                    &settings,
-                    use_local,
-                    reported_model.as_deref(),
-                    &final_transcript,
-                    llm_cleaned,
-                );
-
-                emit_transcription_complete_with_cleanup(
-                    &app_handle,
-                    raw_transcript,
-                    final_transcript,
-                    pasted,
-                    saved_for_task.path.display().to_string(),
-                    llm_cleaned,
-                    metadata,
-                    "unknown",
-                    if use_local { "local" } else { "cloud" },
-                );
-
-                hide_overlay(&app_handle);
-            }
-            Err(err) => {
-                let stage = if use_local { "local" } else { "api" };
-                emit_transcription_error(
-                    &app_handle,
-                    format!("Transcription failed: {err}"),
-                    stage,
-                    saved_for_task.path.display().to_string(),
-                );
-            }
-        }
-    });
-}
-
-fn emit_transcription_start(app: &AppHandle<AppRuntime>, saved: &RecordingSaved) {
-    emit_event(
-        app,
-        EVENT_TRANSCRIPTION_START,
-        TranscriptionStartPayload {
-            path: saved.path.display().to_string(),
-        },
-    );
-}
-
-#[allow(dead_code)]
-fn emit_transcription_complete_with_cleanup(
-    app: &AppHandle<AppRuntime>,
-    raw_transcript: String,
-    final_transcript: String,
-    auto_paste: bool,
-    audio_path: String,
-    llm_cleaned: bool,
-    metadata: storage::TranscriptionMetadata,
-    mode: &str,
-    engine: &str,
-) {
-    analytics::track_transcription_completed(
-        app,
-        mode,
-        engine,
-        Some(&metadata.speech_model),
-        llm_cleaned,
-        metadata.audio_duration_seconds as f64,
-    );
-
-    emit_event(
-        app,
-        EVENT_TRANSCRIPTION_COMPLETE,
-        TranscriptionCompletePayload {
-            transcript: final_transcript.clone(),
-            auto_paste,
-        },
-    );
-
-    if llm_cleaned {
-        let _ = app
-            .state::<AppState>()
-            .storage()
-            .save_transcription_with_cleanup(
-                raw_transcript,
-                final_transcript,
-                audio_path,
-                metadata,
-            );
-    } else {
-        let _ = app.state::<AppState>().storage().save_transcription(
-            final_transcript,
-            audio_path,
-            storage::TranscriptionStatus::Success,
-            None,
-            metadata,
-        );
-    }
-}
-
-fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
-    emit_event(
-        app,
-        EVENT_TRANSCRIPTION_COMPLETE,
-        TranscriptionCompletePayload {
-            transcript: String::new(),
-            auto_paste: false,
-        },
-    );
-
-    toast::emit_toast(
-        app,
-        toast::Payload {
-            toast_type: "warning".to_string(),
-            title: None,
-            message: "No words detected. Recording deleted.".to_string(),
-            auto_dismiss: Some(true),
-            duration: Some(3000),
-            retry_id: None,
-            mode: None,
-            action: None,
-            action_label: None,
-        },
-    );
-
-    if audio_path.exists() {
-        if let Err(err) = std::fs::remove_file(audio_path) {
-            eprintln!(
-                "Failed to remove empty transcription audio {}: {err}",
-                audio_path.display()
-            );
-        }
-    }
-
-    hide_overlay(app);
-}
-
-fn emit_transcription_error(
-    app: &AppHandle<AppRuntime>,
-    message: String,
-    stage: &str,
-    audio_path: String,
-) {
-    let engine = if stage == "local" { "local" } else { "cloud" };
-    let reason = if message.contains("No speech") || message.contains("empty") {
-        "no_speech"
-    } else if message.contains("Model") || message.contains("model") {
-        "model_error"
-    } else {
-        "api_error"
-    };
-    analytics::track_transcription_failed(app, stage, engine, reason);
-
-    emit_event(
-        app,
-        EVENT_TRANSCRIPTION_ERROR,
-        TranscriptionErrorPayload {
-            message: message.clone(),
-            stage: stage.to_string(),
-        },
-    );
-
-    app.state::<AppState>()
-        .pill()
-        .transition_to_error(app, &message);
-
-    let settings = app.state::<AppState>().current_settings();
-    let is_local = matches!(settings.transcription_mode, TranscriptionMode::Local);
-
-    let toast_message = format_transcription_error(&message, is_local);
-    let metadata = storage::TranscriptionMetadata {
-        speech_model: resolve_speech_model_label(&settings, is_local, None),
-        ..Default::default()
-    };
-
-    let record_result = app.state::<AppState>().storage().save_transcription(
-        String::new(),
-        audio_path.clone(),
-        storage::TranscriptionStatus::Error,
-        Some(toast_message.clone()),
-        metadata,
-    );
-
-    let retry_id = if !is_local {
-        match record_result {
-            Ok(record) => Some(record.id),
-            Err(err) => {
-                eprintln!("Failed to persist failed transcription: {err}");
-                None
-            }
-        }
-    } else {
-        if let Err(err) = record_result {
-            eprintln!("Failed to persist failed transcription: {err}");
-        }
-        None
-    };
-
-    toast::emit_toast(
-        app,
-        toast::Payload {
-            toast_type: "error".to_string(),
-            title: None,
-            message: toast_message,
-            auto_dismiss: None,
-            duration: None,
-            retry_id,
-            mode: Some(if is_local {
-                "local".into()
-            } else {
-                "cloud".into()
-            }),
-            action: None,
-            action_label: None,
-        },
-    );
-}
-
-/// Creates user-friendly error message based on transcription mode
-fn format_transcription_error(message: &str, is_local: bool) -> String {
-    let msg_lower = message.to_lowercase();
-
-    if is_local {
-        if msg_lower.contains("not fully installed") || msg_lower.contains("missing:") {
-            return "No transcription model installed".to_string();
-        }
-        if msg_lower.contains("model not found") || msg_lower.contains("no model") {
-            return "No transcription model selected".to_string();
-        }
-    } else {
-        if msg_lower.contains("network") || msg_lower.contains("connection") {
-            return "Network error. Recording saved. Tap Retry to send again.".to_string();
-        }
-        if msg_lower.contains("api key") || msg_lower.contains("unauthorized") {
-            return "Invalid API key. Update it in Settings.".to_string();
-        }
-        if msg_lower.contains("timeout") {
-            return "Request timed out. Recording saved. Tap Retry to send again.".to_string();
-        }
-    }
-
-    if msg_lower.contains("microphone") || msg_lower.contains("audio input") {
-        return "Microphone error".to_string();
-    }
-    if msg_lower.contains("permission") {
-        return "Permission denied".to_string();
-    }
-    if msg_lower.contains("auto paste") {
-        return "Pasted to clipboard instead".to_string();
-    }
-
-    if is_local {
-        "Transcription failed".to_string()
-    } else {
-        "Transcription failed".to_string()
-    }
-}
-
-fn build_transcription_metadata(
-    saved: &RecordingSaved,
-    settings: &UserSettings,
-    use_local: bool,
-    reported_model: Option<&str>,
-    final_text: &str,
-    llm_cleaned: bool,
-) -> storage::TranscriptionMetadata {
-    storage::TranscriptionMetadata {
-        speech_model: resolve_speech_model_label(settings, use_local, reported_model),
-        llm_model: if llm_cleaned {
-            llm_cleanup::resolved_model_name(settings)
-        } else {
-            None
-        },
-        word_count: count_words(final_text),
-        audio_duration_seconds: compute_audio_duration_seconds(saved),
-    }
-}
-
-fn resolve_speech_model_label(
-    settings: &UserSettings,
-    use_local: bool,
-    reported_model: Option<&str>,
-) -> String {
-    if use_local {
-        model_manager::definition(&settings.local_model)
-            .map(|def| def.label.to_string())
-            .unwrap_or_else(|| settings.local_model.clone())
-    } else if let Some(model) = reported_model {
-        model.to_string()
-    } else {
-        "Cloud API".to_string()
-    }
-}
-
-fn compute_audio_duration_seconds(saved: &RecordingSaved) -> f32 {
-    let duration_ms = (saved.ended_at - saved.started_at).num_milliseconds();
-    (duration_ms.max(0) as f32) / 1000.0
-}
-
-fn count_words(text: &str) -> u32 {
-    text.split_whitespace()
-        .filter(|word| !word.is_empty())
-        .count() as u32
-}
-
-fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
-    use minimp3::{Decoder, Frame};
-    use std::io::Read;
-
-    let mut file = std::fs::File::open(path)
-        .with_context(|| format!("Failed to open audio file at {}", path.display()))?;
-    let mut mp3_data = Vec::new();
-    file.read_to_end(&mut mp3_data)
-        .context("Failed to read MP3 file")?;
-
-    let mut decoder = Decoder::new(&mp3_data[..]);
-    let mut samples = Vec::new();
-    let mut sample_rate = 16000;
-
-    loop {
-        match decoder.next_frame() {
-            Ok(Frame {
-                data,
-                sample_rate: sr,
-                channels,
-                ..
-            }) => {
-                sample_rate = sr as u32;
-
-                if channels == 1 {
-                    samples.extend_from_slice(&data);
-                } else {
-                    for chunk in data.chunks(channels) {
-                        let mono_sample: i32 = chunk.iter().map(|&s| s as i32).sum();
-                        samples.push((mono_sample / channels as i32) as i16);
-                    }
-                }
-            }
-            Err(minimp3::Error::Eof) => break,
-            Err(e) => return Err(anyhow!("MP3 decoding error: {}", e)),
-        }
-    }
-
-    if samples.is_empty() {
-        return Err(anyhow!("No audio data decoded from MP3 file"));
-    }
-
-    Ok((samples, sample_rate))
 }
 
 fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<PathBuf> {
@@ -1714,30 +1037,12 @@ fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<PathBuf> {
 
 #[derive(Serialize, Clone)]
 pub(crate) struct RecordingStartPayload {
-    started_at: String,
+    pub(crate) started_at: String,
 }
 
 #[derive(Serialize, Clone)]
-pub(crate) struct RecordingStopPayload {
-    ended_at: String,
-}
-
-#[derive(Serialize, Clone)]
-struct RecordingCompletePayload {
-    path: String,
-    started_at: String,
-    ended_at: String,
-    duration_ms: i64,
-}
-
-#[derive(Serialize, Clone)]
-struct RecordingErrorPayload {
-    message: String,
-}
-
-#[derive(Serialize, Clone)]
-struct TranscriptionStartPayload {
-    path: String,
+pub(crate) struct AudioSpectrumPayload {
+    pub(crate) bins: Vec<u8>,
 }
 
 #[derive(Serialize, Clone)]

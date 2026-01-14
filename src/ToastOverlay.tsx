@@ -3,21 +3,9 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import DotMatrix from "./components/DotMatrix";
+import type { ToastType, ToastPayload } from "./types";
 
-// Types
-export type ToastType = "error" | "info" | "success" | "warning" | "update";
-
-export interface ToastPayload {
-  type: ToastType;
-  title?: string;
-  message: string;
-  autoDismiss?: boolean;
-  duration?: number;
-  retryId?: string;
-  mode?: "local" | "cloud";
-  action?: string;
-  actionLabel?: string;
-}
+export type { ToastType, ToastPayload };
 
 interface ToastState extends ToastPayload {
   isLeaving: boolean;
@@ -29,7 +17,50 @@ const COLORS: Record<ToastType, { border: string; dot: string }> = {
   success: { border: "border-emerald-500/30", dot: "bg-emerald-400" },
   warning: { border: "border-amber-500/40", dot: "bg-amber-400" },
   update: { border: "border-violet-500/40", dot: "bg-violet-400" },
+  celebration: { border: "border-amber-500/30", dot: "bg-amber-400" },
 };
+
+const TwinklingGrid = React.memo(({ variant = "cloud" }: { variant?: "cloud" | "accent" }) => {
+  const color = variant === "accent" ? "var(--color-accent)" : "var(--color-cloud)";
+  const animationName = variant === "accent" ? "twinkle-accent" : "twinkle";
+  
+  const dots = React.useMemo(() => {
+    const cols = 50;
+    const rows = 12;
+    const gap = 6;
+    const size = 2;
+
+    const items = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (Math.random() > 0.4) continue;
+
+        const delay = Math.random() * 5;
+        const duration = 2 + Math.random() * 4;
+
+        items.push(
+          <div
+            key={`${r}-${c}`}
+            className="absolute rounded-full"
+            style={{
+              left: c * (gap + size),
+              top: r * (gap + size),
+              width: size,
+              height: size,
+              backgroundColor: color,
+              opacity: 0.15,
+              animation: `${animationName} ${duration}s ease-in-out infinite`,
+              animationDelay: `-${delay}s`,
+            }}
+          />
+        );
+      }
+    }
+    return items;
+  }, [color, animationName]);
+
+  return <div className="absolute inset-0 overflow-hidden opacity-60 pointer-events-none">{dots}</div>;
+});
 
 const ToastOverlay: React.FC = () => {
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -85,7 +116,6 @@ const ToastOverlay: React.FC = () => {
     dismissWithCleanup();
   };
 
-  // Handle retry
   const handleRetry = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -93,10 +123,16 @@ const ToastOverlay: React.FC = () => {
     setIsRetrying(true);
     try {
       await invoke("retry_transcription", { id: toast.retryId });
-      dismiss();
+      // Don't dismiss - the transcription runs async and will show a new toast
+      // (either success, error, or quota exceeded) which replaces this one
     } catch (err) {
       console.error("Retry failed:", err);
       setIsRetrying(false);
+      setToast(prev => prev ? {
+        ...prev,
+        message: typeof err === "string" ? err : "Retry failed. Please try again.",
+        type: "error",
+      } : null);
     }
   };
 
@@ -111,9 +147,15 @@ const ToastOverlay: React.FC = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [toast]);
 
-  // Listen for toast events
   useEffect(() => {
-    const unsub1 = listen<ToastPayload>("toast:show", (ev) => {
+    const unsub1 = listen<ToastPayload>("toast:show", async (ev) => {
+      try {
+        await getCurrentWindow().show();
+        await getCurrentWindow().setFocus();
+      } catch (err) {
+        console.error("Failed to show toast window:", err);
+      }
+
       if (timerRef.current) clearTimeout(timerRef.current);
       if (dismissAnimationTimerRef.current) {
         clearTimeout(dismissAnimationTimerRef.current);
@@ -122,13 +164,13 @@ const ToastOverlay: React.FC = () => {
       setToast({ ...ev.payload, isLeaving: false });
       setIsRetrying(false);
 
-      // Auto-dismiss for non-error toasts
       const durations: Record<ToastType, number> = {
         error: 0,
         info: 3000,
         success: 2000,
         warning: 5000,
         update: 0,
+        celebration: 6000,
       };
       const autoDismiss = ev.payload.autoDismiss !== false;
       const dur = ev.payload.duration ?? durations[ev.payload.type];
@@ -149,6 +191,9 @@ const ToastOverlay: React.FC = () => {
       }
       if (toastRef.current) {
         setToast(null);
+        try {
+          await invoke("toast_dismissed");
+        } catch { /* ignore */ }
         await getCurrentWindow().hide();
       }
     });
@@ -172,19 +217,20 @@ const ToastOverlay: React.FC = () => {
 
   return (
     <div
-      className="w-full h-full flex flex-col justify-end items-center pb-6"
+      className="fixed inset-0 flex flex-col justify-end items-center pb-6"
       onClick={handleBackgroundClick}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
         className={`
-          relative w-full max-h-[160px] bg-black rounded-2xl border px-4 py-3 overflow-hidden
+          w-fit max-w-[420px] max-h-[140px] bg-black rounded-2xl border px-4 py-3 overflow-y-auto overflow-x-hidden
           ${colors.border}
           ${toast.isLeaving ? "animate-toast-out" : "animate-toast-in"}
         `}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* X button */}
+        {toast.type === "celebration" && <TwinklingGrid variant="cloud" />}
+        {toast.type === "update" && <TwinklingGrid variant="accent" />}
         <button
           type="button"
           onClick={handleClose}
@@ -194,7 +240,6 @@ const ToastOverlay: React.FC = () => {
           ✕
         </button>
 
-        {/* Content */}
         <div className="flex items-start gap-3 pr-5">
           {toast.type === "update" ? (
             <div className="mt-0.5 shrink-0">
@@ -204,7 +249,7 @@ const ToastOverlay: React.FC = () => {
                 activeDots={[0, 1, 2, 3]}
                 dotSize={4}
                 gap={2}
-                color="#a78bfa"
+                color="var(--color-accent)"
               />
             </div>
           ) : (
@@ -214,7 +259,7 @@ const ToastOverlay: React.FC = () => {
             {toast.type === "update" && (
               <p className="text-[10px] text-violet-400 font-medium mb-0.5">GLIMPSE</p>
             )}
-            <p className="text-[12px] text-gray-200 leading-relaxed">{toast.message}</p>
+            <p className="text-[12px] text-gray-200 leading-relaxed break-words">{toast.message}</p>
             {showRetry && (
               <button
                 type="button"

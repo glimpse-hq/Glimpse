@@ -1,4 +1,6 @@
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
 use parking_lot::Mutex;
@@ -13,11 +15,15 @@ use transcribe_rs::{
 
 use crate::{
     model_manager::{self, LocalModelEngine, ReadyModel},
-    transcription::{normalize_transcript, TranscriptionSuccess},
+    transcription_api::{normalize_transcript, TranscriptionSuccess},
 };
+
+const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+const IDLE_CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
 pub struct LocalTranscriber {
     inner: Mutex<Option<LoadedEngine>>,
+    last_used: Mutex<Option<Instant>>,
 }
 
 struct LoadedEngine {
@@ -29,7 +35,7 @@ struct LoadedEngine {
 enum EngineInstance {
     Parakeet { engine: ParakeetEngine },
     Whisper { engine: WhisperEngine },
-    Moonshine { engine: MoonshineEngine },
+    Moonshine { engine: Box<MoonshineEngine> },
 }
 
 struct PreparedAudio {
@@ -40,7 +46,40 @@ impl LocalTranscriber {
     pub fn new() -> Self {
         Self {
             inner: Mutex::new(None),
+            last_used: Mutex::new(None),
         }
+    }
+
+    pub fn start_idle_monitor(self: &Arc<Self>) {
+        let transcriber = Arc::clone(self);
+        std::thread::spawn(move || loop {
+            std::thread::sleep(IDLE_CHECK_INTERVAL);
+            transcriber.check_idle_unload();
+        });
+    }
+
+    fn check_idle_unload(&self) {
+        if self.inner.lock().is_none() {
+            return;
+        }
+
+        let should_unload = self
+            .last_used
+            .lock()
+            .map(|last| last.elapsed() >= IDLE_TIMEOUT)
+            .unwrap_or(false);
+
+        if should_unload {
+            eprintln!(
+                "[LocalTranscriber] Unloading model after {} seconds of inactivity",
+                IDLE_TIMEOUT.as_secs()
+            );
+            self.unload();
+        }
+    }
+
+    fn touch(&self) {
+        *self.last_used.lock() = Some(Instant::now());
     }
 
     pub fn transcribe(
@@ -52,6 +91,8 @@ impl LocalTranscriber {
         language: Option<&str>,
     ) -> Result<TranscriptionSuccess> {
         self.ensure_engine(model)?;
+        self.touch();
+
         let prepared = prepare_audio(samples, sample_rate);
         let model_label = model_manager::definition(&model.key)
             .map(|def| def.label.to_string())
@@ -142,7 +183,9 @@ impl LocalTranscriber {
                         MoonshineModelParams::variant(model_variant),
                     )
                     .map_err(|err| anyhow!("Failed to load Moonshine model: {err}"))?;
-                EngineInstance::Moonshine { engine }
+                EngineInstance::Moonshine {
+                    engine: Box::new(engine),
+                }
             }
         };
 
@@ -154,6 +197,11 @@ impl LocalTranscriber {
         });
 
         Ok(())
+    }
+
+    pub fn unload(&self) {
+        *self.inner.lock() = None;
+        *self.last_used.lock() = None;
     }
 }
 
@@ -179,7 +227,7 @@ fn prepare_audio(samples: &[i16], sample_rate: u32) -> PreparedAudio {
     const EXTRA_PADDING: usize = 4_000;
 
     let padding_needed = MIN_SAMPLES.saturating_sub(data.len()) + EXTRA_PADDING;
-    data.extend(std::iter::repeat(0.0f32).take(padding_needed));
+    data.extend(std::iter::repeat_n(0.0f32, padding_needed));
 
     PreparedAudio { data }
 }

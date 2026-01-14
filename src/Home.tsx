@@ -1,20 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X } from "lucide-react";
+import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X, ArrowUpCircle } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import SettingsModal from "./components/SettingsModal";
+import SettingsModal from "./components/settings/SettingsModal";
 import FAQModal from "./components/FAQModal";
 import DotMatrix from "./components/DotMatrix";
 import TranscriptionList from "./components/TranscriptionList";
 import DictionaryView from "./components/DictionaryView";
-import { getCurrentUser, type User as AppwriteUser } from "./lib/auth";
-
-type TranscriptionMode = "cloud" | "local";
-
-type StoredSettings = {
-    transcription_mode: TranscriptionMode;
-};
+import PersonalizationView from "./components/PersonalizationView";
+import { useAuth } from "./hooks/useAuth";
+import type { TranscriptionMode, StoredSettings } from "./types";
 
 const SidebarItem = ({
     icon,
@@ -33,11 +29,11 @@ const SidebarItem = ({
         onClick={onClick}
         className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${collapsed ? "gap-0" : "gap-3"
             } ${active
-                ? "bg-[#1a1a1e] text-[#e8e8eb]"
-                : "text-[#6b6b76] hover:bg-[#151517] hover:text-[#a0a0ab]"
+                ? "bg-surface-elevated text-content-primary"
+                : "text-content-muted hover:bg-surface-overlay hover:text-content-secondary"
             }`}
     >
-        <div className={`flex items-center justify-center w-[18px] shrink-0 ${active ? "text-[#e8e8eb]" : "group-hover:text-[#a0a0ab]"}`}>
+        <div className={`flex items-center justify-center w-[18px] shrink-0 ${active ? "text-content-primary" : "group-hover:text-content-secondary"}`}>
             {icon}
         </div>
         <span
@@ -54,30 +50,23 @@ const Home = () => {
     const [settingsTab, setSettingsTab] = useState<"general" | "account" | "models" | "about">("general");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
     const [activeView, setActiveView] = useState<"home" | "dictionary" | "brain">("home");
-    const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode>("cloud");
-    const [currentUser, setCurrentUser] = useState<AppwriteUser | null>(null);
+    const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode>("local");
+    const { user: currentUser, refresh: refreshUser } = useAuth();
     const [showSupportPopup, setShowSupportPopup] = useState(false);
     const [showFAQ, setShowFAQ] = useState(false);
     const [appVersion, setAppVersion] = useState("-");
     const popupRef = useRef<HTMLDivElement>(null);
+    const [hasAuthIssue, setHasAuthIssue] = useState(false);
+    const [updateAvailable, setUpdateAvailable] = useState(false);
 
     const [llmCleanupEnabled, setLlmCleanupEnabled] = useState(false);
 
     const sidebarWidth = isSidebarCollapsed ? 68 : 200;
 
-    const loadUser = useCallback(async () => {
-        try {
-            const user = await getCurrentUser();
-            setCurrentUser(user);
-        } catch (err) {
-            console.error("Failed to load user:", err);
-            setCurrentUser(null);
-        }
-    }, []);
-
     useEffect(() => {
         let unlistenSettings: UnlistenFn | null = null;
         let unlistenNavigate: UnlistenFn | null = null;
+        let unlistenModels: UnlistenFn | null = null;
 
         const loadSettings = async () => {
             try {
@@ -90,7 +79,6 @@ const Home = () => {
         };
 
         loadSettings();
-        loadUser();
 
         invoke<{ version: string }>("get_app_info")
             .then((info) => setAppVersion(info.version))
@@ -114,11 +102,78 @@ const Home = () => {
             unlistenNavigate = fn;
         });
 
+        listen("navigate:models", () => {
+            setSettingsTab("models");
+            setIsSettingsOpen(true);
+        }).then((fn) => {
+            unlistenModels = fn;
+        });
+
+        let unlistenSignIn: UnlistenFn | null = null;
+        listen("navigate:sign-in", () => {
+            setSettingsTab("account");
+            setIsSettingsOpen(true);
+        }).then((fn) => {
+            unlistenSignIn = fn;
+        });
+
+        let unlistenAuthError: UnlistenFn | null = null;
+        let unlistenAuthChanged: UnlistenFn | null = null;
+
+        listen("cloud:auth-error", () => {
+            setHasAuthIssue(true);
+        }).then((fn) => {
+            unlistenAuthError = fn;
+        });
+
+        listen("auth:changed", () => {
+            setHasAuthIssue(false);
+        }).then((fn) => {
+            unlistenAuthChanged = fn;
+        });
+
         return () => {
             unlistenSettings?.();
             unlistenNavigate?.();
+            unlistenModels?.();
+            unlistenSignIn?.();
+            unlistenAuthError?.();
+            unlistenAuthChanged?.();
         };
-    }, [loadUser]);
+    }, []);
+
+    useEffect(() => {
+        let unlistenUpdate: UnlistenFn | null = null;
+        let unlistenCleared: UnlistenFn | null = null;
+
+        const checkUpdateStatus = async () => {
+            try {
+                const status = await invoke<{ available: boolean; version: string | null }>("get_update_status");
+                setUpdateAvailable(status.available);
+            } catch (err) {
+                console.error("Failed to check update status:", err);
+            }
+        };
+
+        checkUpdateStatus();
+
+        listen<string>("update:available", () => {
+            setUpdateAvailable(true);
+        }).then((fn) => {
+            unlistenUpdate = fn;
+        });
+
+        listen("update:cleared", () => {
+            setUpdateAvailable(false);
+        }).then((fn) => {
+            unlistenCleared = fn;
+        });
+
+        return () => {
+            unlistenUpdate?.();
+            unlistenCleared?.();
+        };
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -147,21 +202,10 @@ const Home = () => {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-[#0e0e10] font-sans text-white select-none">
-            <div
-                data-tauri-drag-region
-                className="fixed top-0 left-0 right-0 h-8 z-50"
-            />
-
-            <motion.aside
-                initial={false}
-                animate={{ width: sidebarWidth }}
-                transition={{
-                    type: "tween",
-                    duration: 0.2,
-                    ease: [0.25, 0.1, 0.25, 1]
-                }}
-                className="relative flex flex-col border-r border-[#1a1a1e] bg-[#0a0a0c] shrink-0"
+        <div className="flex h-screen w-screen overflow-hidden bg-surface-tertiary font-sans text-white select-none">
+            <aside
+                style={{ width: sidebarWidth }}
+                className="relative flex flex-col border-r border-border-primary bg-surface-secondary shrink-0 transition-[width] duration-200 ease-out will-change-[width]"
             >
                 <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
@@ -179,7 +223,7 @@ const Home = () => {
                         </div>
                         <span
                             style={{ width: isSidebarCollapsed ? 0 : 'auto', opacity: isSidebarCollapsed ? 0 : 1 }}
-                            className="text-[14px] font-bold tracking-wide text-[#e8e8eb] whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                            className="text-[14px] font-bold tracking-wide text-content-primary whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
                         >
                             Glimpse
                         </span>
@@ -210,10 +254,10 @@ const Home = () => {
                     />
                 </nav>
 
-                <div className="p-2 space-y-1 border-t border-[#1a1a1e]/50">
+                <div className="p-2 space-y-1 border-t border-border-primary">
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                        className="flex w-full items-center rounded-lg h-9 pl-[17px] text-[#4a4a54] hover:text-[#6b6b76]"
+                        className="flex w-full items-center rounded-lg h-9 pl-[17px] text-content-disabled hover:text-content-muted"
                     >
                         <div className="flex items-center justify-center w-[18px]">
                             <motion.div
@@ -228,10 +272,10 @@ const Home = () => {
                     <div className="relative">
                         <button
                             onClick={() => setShowSupportPopup(!showSupportPopup)}
-                            className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-[#6b6b76] hover:bg-[#151517] hover:text-[#a0a0ab] ${isSidebarCollapsed ? "gap-0" : "gap-3"
+                            className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:bg-surface-overlay hover:text-content-secondary ${isSidebarCollapsed ? "gap-0" : "gap-3"
                                 }`}
                         >
-                            <div className="flex items-center justify-center w-[18px] shrink-0 group-hover:text-[#a0a0ab]">
+                            <div className="flex items-center justify-center w-[18px] shrink-0 group-hover:text-content-secondary">
                                 <Info size={18} />
                             </div>
                             <span
@@ -250,14 +294,14 @@ const Home = () => {
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
                                     transition={{ duration: 0.15, ease: "easeOut" }}
-                                    className="absolute bottom-full left-2 mb-2 w-56 bg-[#111113] border border-[#2a2a30] rounded-xl shadow-xl overflow-hidden z-50"
+                                    className="absolute bottom-full left-2 mb-2 w-56 bg-surface-surface border border-border-secondary rounded-xl shadow-xl overflow-hidden z-50"
                                 >
-                                    <div className="p-3 border-b border-[#1e1e22]">
+                                    <div className="p-3 border-b border-border-primary">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[12px] font-medium text-[#e8e8eb]">Get Support</span>
+                                            <span className="text-[12px] font-medium text-content-primary">Get Support</span>
                                             <button
                                                 onClick={() => setShowSupportPopup(false)}
-                                                className="p-1 rounded-md hover:bg-[#1a1a1e] text-[#6b6b76] hover:text-[#a0a0ab] transition-colors"
+                                                className="p-1 rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-secondary transition-colors"
                                             >
                                                 <X size={14} />
                                             </button>
@@ -269,12 +313,12 @@ const Home = () => {
                                                 setShowSupportPopup(false);
                                                 setShowFAQ(true);
                                             }}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1a1a1e] transition-colors group w-full text-left"
+                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
                                         >
                                             <HelpCircle size={16} className="text-amber-400" />
                                             <div>
-                                                <div className="text-[12px] font-medium text-[#e8e8eb]">FAQ</div>
-                                                <div className="text-[10px] text-[#6b6b76]">Common questions</div>
+                                                <div className="text-[12px] font-medium text-content-primary">FAQ</div>
+                                                <div className="text-[10px] text-content-muted">Common questions</div>
                                             </div>
                                         </button>
                                         <a
@@ -282,12 +326,12 @@ const Home = () => {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={() => setShowSupportPopup(false)}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1a1a1e] transition-colors group"
+                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group"
                                         >
-                                            <Github size={16} className="text-[#a0a0ab]" />
+                                            <Github size={16} className="text-content-secondary" />
                                             <div>
-                                                <div className="text-[12px] font-medium text-[#e8e8eb]">GitHub Issues</div>
-                                                <div className="text-[10px] text-[#6b6b76]">Report bugs & features</div>
+                                                <div className="text-[12px] font-medium text-content-primary">GitHub Issues</div>
+                                                <div className="text-[10px] text-content-muted">Report bugs & features</div>
                                             </div>
                                         </a>
                                         <button
@@ -296,12 +340,12 @@ const Home = () => {
                                                 setSettingsTab("about");
                                                 setIsSettingsOpen(true);
                                             }}
-                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#1a1a1e] transition-colors group w-full text-left"
+                                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
                                         >
                                             <Info size={16} className="text-[#5865F2]" />
                                             <div>
-                                                <div className="text-[12px] font-medium text-[#e8e8eb]">About</div>
-                                                <div className="text-[10px] text-[#6b6b76]">v{appVersion} • {isCloudMode ? "Cloud" : "Local"}</div>
+                                                <div className="text-[12px] font-medium text-content-primary">About</div>
+                                                <div className="text-[10px] text-content-muted">v{appVersion} • {isCloudMode ? "Cloud" : "Local"}</div>
                                             </div>
                                         </button>
                                     </div>
@@ -310,6 +354,27 @@ const Home = () => {
                         </AnimatePresence>
                     </div>
 
+                    {updateAvailable && (
+                        <button
+                            onClick={() => {
+                                setSettingsTab("about");
+                                setIsSettingsOpen(true);
+                            }}
+                            className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} hover:bg-surface-overlay transition-colors`}
+                            style={{ color: "var(--color-accent)" }}
+                        >
+                            <div className="flex items-center justify-center w-[18px] shrink-0">
+                                <ArrowUpCircle size={18} />
+                            </div>
+                            <span
+                                style={{ width: isSidebarCollapsed ? 0 : 'auto', opacity: isSidebarCollapsed ? 0 : 1 }}
+                                className="text-[13px] font-medium whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                            >
+                                Update available
+                            </span>
+                        </button>
+                    )}
+
                     <SidebarItem
                         icon={<Settings size={18} />}
                         label="Settings"
@@ -317,9 +382,9 @@ const Home = () => {
                         onClick={() => setIsSettingsOpen(true)}
                     />
                 </div>
-            </motion.aside>
+            </aside>
 
-            <main className="flex flex-1 flex-col bg-[#0e0e10] overflow-hidden relative">
+            <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
                 <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
                 {currentUser && (
@@ -328,9 +393,9 @@ const Home = () => {
                             setSettingsTab("account");
                             setIsSettingsOpen(true);
                         }}
-                        className="fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#1e1e22] bg-[#111113] hover:bg-[#161618] hover:border-[#2a2a30] transition-colors z-10"
+                        className={`fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border bg-surface-surface hover:bg-surface-overlay hover:border-border-secondary transition-colors z-10 ${hasAuthIssue ? "border-error" : "border-border-primary"}`}
                     >
-                        <div className="w-6 h-6 rounded-full bg-[#1a1a1e] border border-[#2a2a30] flex items-center justify-center overflow-hidden">
+                        <div className="w-6 h-6 rounded-full bg-surface-elevated border border-border-secondary flex items-center justify-center overflow-hidden">
                             {(currentUser.prefs as Record<string, string>)?.avatar ? (
                                 <img
                                     src={(currentUser.prefs as Record<string, string>).avatar}
@@ -338,10 +403,10 @@ const Home = () => {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <User size={14} className="text-[#6b6b76]" />
+                                <User size={14} className="text-content-muted" />
                             )}
                         </div>
-                        <span className="text-[12px] text-[#a0a0ab] max-w-[100px] truncate">
+                        <span className="text-[12px] text-content-secondary max-w-[100px] truncate">
                             {currentUser.name || currentUser.email?.split("@")[0] || "Account"}
                         </span>
                     </button>
@@ -359,10 +424,10 @@ const Home = () => {
                                 transition={{ duration: 0.25, ease: "easeOut" }}
                             >
                                 <div className="mb-8">
-                                    <h1 className="text-3xl font-medium text-[#e8e8eb] tracking-tight">
+                                    <h1 className="text-3xl font-medium text-content-primary tracking-tight">
                                         {getGreeting()}
                                     </h1>
-                                    <p className="mt-2 text-[15px] text-[#5a5a64]">
+                                    <p className="mt-2 text-[15px] text-content-muted pl-[2px]">
                                         Ready when you are
                                     </p>
                                 </div>
@@ -387,17 +452,13 @@ const Home = () => {
                         {activeView === "brain" && (
                             <motion.div
                                 key="brain"
-                                className="flex flex-col items-center justify-start pt-12 text-[#4a4a54]"
+                                className="w-full max-w-5xl mx-auto pt-8"
                                 initial={{ opacity: 0, y: 8 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 8 }}
                                 transition={{ duration: 0.25, ease: "easeOut" }}
                             >
-                                <Brain size={48} strokeWidth={1} className="mb-4 opacity-50" />
-                                <p className="mb-2">Personalization</p>
-                                <span className="px-2 py-0.5 rounded-md bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[10px] font-medium">
-                                    Work in Progress
-                                </span>
+                                <PersonalizationView />
                             </motion.div>
                         )}
                     </AnimatePresence>
@@ -412,7 +473,7 @@ const Home = () => {
                 }}
                 initialTab={settingsTab}
                 currentUser={currentUser}
-                onUpdateUser={loadUser}
+                onUpdateUser={refreshUser}
                 transcriptionMode={transcriptionMode}
             />
 
