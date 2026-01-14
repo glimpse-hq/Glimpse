@@ -641,9 +641,9 @@ const SettingsModal = ({
     };
 
     const tabContentVariants = {
-        hidden: { opacity: 0, x: 8 },
-        visible: { opacity: 1, x: 0, transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const } },
-        exit: { opacity: 0, x: -8, transition: { duration: 0.12 } },
+        hidden: { opacity: 1, x: 0 },
+        visible: { opacity: 1, x: 0, transition: { duration: 0 } },
+        exit: { opacity: 1, x: 0, transition: { duration: 0 } },
     };
 
     return (
