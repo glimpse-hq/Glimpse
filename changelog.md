@@ -1,3 +1,20 @@
+0.5.1
+
+### Changes
+
+- Removed animations between pages.
+
+- Redesigned models tab to group by model type, and other QoL changes
+
+### Fixes
+
+- Fixed a bug where the info button would reopen after it was clicked while already open.
+
+---
+
+0.5.0
+
+
 ## New Features & improvements
 
 **Edit Mode:** 
