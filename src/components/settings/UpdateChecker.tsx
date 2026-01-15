@@ -10,24 +10,47 @@ interface UpdateCheckerProps {
     autoCheck?: boolean
 }
 
+const PENDING_RESTART_KEY = "glimpse_update_pending_restart"
+
+const formatError = (err: unknown): string => {
+    if (err instanceof Error) {
+        return `${err.name}: ${err.message}${err.stack ? `\n${err.stack}` : ""}`
+    }
+    if (typeof err === "string") {
+        return err
+    }
+    try {
+        return JSON.stringify(err)
+    } catch {
+        return String(err)
+    }
+}
+
 export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
     const [update, setUpdate] = useState<Update | null>(null)
     const [checking, setChecking] = useState(false)
     const [downloading, setDownloading] = useState(false)
     const [progress, setProgress] = useState(0)
     const [error, setError] = useState<string | null>(null)
-    const [installed, setInstalled] = useState(false)
+    const [downloadError, setDownloadError] = useState<string | null>(null)
+    const [installed, setInstalled] = useState(() => {
+        if (typeof window !== "undefined") {
+            return localStorage.getItem(PENDING_RESTART_KEY) === "true"
+        }
+        return false
+    })
     const [whatsNewOpen, setWhatsNewOpen] = useState(false)
 
     const checkForUpdates = useCallback(async () => {
         setChecking(true)
         setError(null)
+        setDownloadError(null)
         try {
             const result = await check()
             setUpdate(result)
         } catch (err) {
             console.error("Update check failed:", err)
-            setError(err instanceof Error ? err.message : "Failed to check for updates")
+            setError(formatError(err))
         } finally {
             setChecking(false)
         }
@@ -59,6 +82,7 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
         setDownloading(true)
         setProgress(0)
         setError(null)
+        setDownloadError(null)
 
         try {
             let downloaded = 0
@@ -82,15 +106,18 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
             })
 
             setInstalled(true)
+            setUpdate(null)
+            localStorage.setItem(PENDING_RESTART_KEY, "true")
         } catch (err) {
             console.error("Update failed:", err)
-            setError(err instanceof Error ? err.message : "Failed to download update")
+            setDownloadError(formatError(err))
         } finally {
             setDownloading(false)
         }
     }
 
     const handleRelaunch = async () => {
+        localStorage.removeItem(PENDING_RESTART_KEY)
         await relaunch()
     }
 
@@ -126,14 +153,16 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
             >
                 <Download size={16} className="text-amber-400" />
                 <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-amber-400">
-                        v{update.version} available
-                    </p>
-                    {update.body && (
-                        <p className="text-[10px] text-content-muted truncate max-w-[200px]">
-                            {update.body}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-[12px] font-medium text-amber-400">
+                            v{update.version} available
                         </p>
-                    )}
+                        {downloadError && (
+                            <span className="text-[10px] text-red-400/80 whitespace-pre-wrap break-words">
+                                {downloadError}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <AnimatePresence mode="wait">
                     {downloading ? (
@@ -178,7 +207,7 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                 <AlertCircle size={16} className="text-red-400" />
                 <div className="flex-1 min-w-0">
                     <p className="text-[12px] font-medium text-red-400">Update check failed</p>
-                    <p className="text-[10px] text-red-400/70 truncate">{error}</p>
+                    <p className="text-[10px] text-red-400/70 whitespace-pre-wrap break-words">{error}</p>
                 </div>
                 <motion.button
                     onClick={checkForUpdates}
