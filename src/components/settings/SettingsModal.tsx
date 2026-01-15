@@ -641,9 +641,9 @@ const SettingsModal = ({
     };
 
     const tabContentVariants = {
-        hidden: { opacity: 0, x: 8 },
-        visible: { opacity: 1, x: 0, transition: { duration: 0.18, ease: [0.22, 1, 0.36, 1] as const } },
-        exit: { opacity: 0, x: -8, transition: { duration: 0.12 } },
+        hidden: { opacity: 1, x: 0 },
+        visible: { opacity: 1, x: 0, transition: { duration: 0 } },
+        exit: { opacity: 1, x: 0, transition: { duration: 0 } },
     };
 
     return (
@@ -745,7 +745,7 @@ const SettingsModal = ({
                         </aside>
 
                         <main className="flex flex-1 flex-col min-h-0 bg-surface-overlay">
-                            <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-8 pb-5 settings-scroll">
+                            <div className="flex-1 min-h-0 overflow-y-scroll px-6 pt-8 pb-5 settings-scroll" style={{ scrollbarGutter: 'stable' }}>
                                 <AnimatePresence mode="wait">
                                     {activeTab === "account" && (
                                         <AccountTab

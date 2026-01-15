@@ -56,6 +56,7 @@ const Home = () => {
     const [showFAQ, setShowFAQ] = useState(false);
     const [appVersion, setAppVersion] = useState("-");
     const popupRef = useRef<HTMLDivElement>(null);
+    const supportButtonRef = useRef<HTMLButtonElement>(null);
     const [hasAuthIssue, setHasAuthIssue] = useState(false);
     const [updateAvailable, setUpdateAvailable] = useState(false);
 
@@ -177,7 +178,11 @@ const Home = () => {
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+            if (
+                popupRef.current &&
+                !popupRef.current.contains(event.target as Node) &&
+                !supportButtonRef.current?.contains(event.target as Node)
+            ) {
                 setShowSupportPopup(false);
             }
         };
@@ -271,6 +276,7 @@ const Home = () => {
 
                     <div className="relative">
                         <button
+                            ref={supportButtonRef}
                             onClick={() => setShowSupportPopup(!showSupportPopup)}
                             className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:bg-surface-overlay hover:text-content-secondary ${isSidebarCollapsed ? "gap-0" : "gap-3"
                                 }`}
@@ -413,55 +419,26 @@ const Home = () => {
                 )}
 
                 <div className="flex-1 flex flex-col px-12 pb-16">
-                    <AnimatePresence mode="wait">
-                        {activeView === "home" && (
-                            <motion.div
-                                key="home"
-                                className="w-full max-w-2xl mx-auto pt-8"
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 12 }}
-                                transition={{ duration: 0.25, ease: "easeOut" }}
-                            >
-                                <div className="mb-8">
-                                    <h1 className="text-3xl font-medium text-content-primary tracking-tight">
-                                        {getGreeting()}
-                                    </h1>
-                                    <p className="mt-2 text-[15px] text-content-muted pl-[2px]">
-                                        Ready when you are
-                                    </p>
-                                </div>
+                    <div className={`w-full max-w-2xl mx-auto pt-8 ${activeView === "home" ? "" : "hidden"}`}>
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-medium text-content-primary tracking-tight">
+                                {getGreeting()}
+                            </h1>
+                            <p className="mt-2 text-[15px] text-content-muted pl-[2px]">
+                                Ready when you are
+                            </p>
+                        </div>
 
-                                <TranscriptionList showLlmButtons={showLlmButtons} />
-                            </motion.div>
-                        )}
+                        <TranscriptionList showLlmButtons={showLlmButtons} />
+                    </div>
 
-                        {activeView === "dictionary" && (
-                            <motion.div
-                                key="dictionary"
-                                className="w-full max-w-3xl mx-auto pt-8"
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 8 }}
-                                transition={{ duration: 0.25, ease: "easeOut" }}
-                            >
-                                <DictionaryView />
-                            </motion.div>
-                        )}
+                    <div className={`w-full max-w-3xl mx-auto pt-8 ${activeView === "dictionary" ? "" : "hidden"}`}>
+                        <DictionaryView />
+                    </div>
 
-                        {activeView === "brain" && (
-                            <motion.div
-                                key="brain"
-                                className="w-full max-w-5xl mx-auto pt-8"
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: 8 }}
-                                transition={{ duration: 0.25, ease: "easeOut" }}
-                            >
-                                <PersonalizationView />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                    <div className={`w-full max-w-5xl mx-auto pt-8 ${activeView === "brain" ? "" : "hidden"}`}>
+                        <PersonalizationView />
+                    </div>
                 </div>
             </main>
 

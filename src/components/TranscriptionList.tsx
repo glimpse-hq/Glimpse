@@ -97,8 +97,9 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
 
     return (
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
             className="w-full max-w-2xl"
         >
             <div className="flex items-center justify-between px-4 pb-3 mb-2">

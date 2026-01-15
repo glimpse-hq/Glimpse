@@ -235,14 +235,14 @@ const DictionaryView = () => {
         <div className="w-full text-left">
             <PageSwitcher activePage={activePage} onPageChange={setActivePage} />
 
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="wait" initial={false}>
                 {activePage === "dictionary" && (
                     <motion.div
                         key="dictionary"
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -16 }}
-                        transition={{ duration: 0.2 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
                     >
                         <div className="flex items-start gap-3 mb-4">
                             <DotMatrix
@@ -335,17 +335,12 @@ const DictionaryView = () => {
                                         )}
                                     </div>
                                 ) : (
-                                    <AnimatePresence mode="popLayout">
+                                    <>
                                         {filteredEntries.map((entry, filteredIndex) => {
                                             const originalIndex = entries.indexOf(entry);
                                             return (
-                                                    <motion.div
+                                                    <div
                                                         key={`${entry}-${originalIndex}-${filteredIndex}`}
-                                                        layout
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
-                                                        transition={{ duration: 0.18, ease: "easeOut" }}
                                                         className="group flex items-center gap-3 border-b border-border-primary px-4 py-2 last:border-none min-h-[64px]"
                                                     >
                                                     {editingIndex === originalIndex ? (
@@ -402,10 +397,10 @@ const DictionaryView = () => {
                                                             <Trash2 size={14} />
                                                         </button>
                                                     </div>
-                                                </motion.div>
+                                                </div>
                                             );
                                         })}
-                                    </AnimatePresence>
+                                    </>
                                 )}
                             </div>
 
@@ -426,10 +421,10 @@ const DictionaryView = () => {
                 {activePage === "replacements" && (
                     <motion.div
                         key="replacements"
-                        initial={{ opacity: 0, y: 16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -16 }}
-                        transition={{ duration: 0.2 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
                     >
                         <div className="flex items-start gap-3 mb-4">
                             <DotMatrix
