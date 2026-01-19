@@ -82,6 +82,44 @@ impl LocalTranscriber {
         *self.last_used.lock() = Some(Instant::now());
     }
 
+    pub fn preload_and_warm(&self, model: &ReadyModel) -> Result<()> {
+        let already_loaded = {
+            let guard = self.inner.lock();
+            guard
+                .as_ref()
+                .map(|current| current.key == model.key && current.path == model.path)
+                .unwrap_or(false)
+        };
+
+        if already_loaded {
+            return Ok(());
+        }
+
+        self.ensure_engine(model)?;
+        self.touch();
+
+        let silence = vec![0.0f32; 16_000 * 2];
+        let mut guard = self.inner.lock();
+        let loaded = guard
+            .as_mut()
+            .ok_or_else(|| anyhow!("Local model not available"))?;
+
+        let warmup_result = match &mut loaded.engine {
+            EngineInstance::Parakeet { engine, .. } => engine
+                .transcribe_samples(silence, None)
+                .map_err(|err| anyhow!("Parakeet warmup failed: {err}")),
+            EngineInstance::Whisper { engine } => engine
+                .transcribe_samples(silence, None)
+                .map_err(|err| anyhow!("Whisper warmup failed: {err}")),
+            EngineInstance::Moonshine { engine } => engine
+                .transcribe_samples(silence, None)
+                .map_err(|err| anyhow!("Moonshine warmup failed: {err}")),
+        };
+        let _ = warmup_result?;
+
+        Ok(())
+    }
+
     pub fn transcribe(
         &self,
         model: &ReadyModel,

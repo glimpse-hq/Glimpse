@@ -27,10 +27,11 @@ const AdvancedTab = ({ variants, micPermission, accessibilityPermission }: Advan
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] font-medium text-content-primary">Microphone</span>
                             {micPermission === null ? (
-                                <Loader2 size={10} className="animate-spin text-content-muted" />
+                                <Loader2 size={10} className="animate-spin text-content-muted" aria-label="Checking permission" />
                             ) : micPermission ? (
                                 <span className="text-[10px] text-success flex items-center gap-1">
-                                    <Check size={10} />
+                                    <Check size={10} aria-hidden="true" />
+                                    <span className="sr-only">Enabled</span>
                                 </span>
                             ) : (
                                 <span className="text-[10px] text-warning">off</span>
@@ -51,10 +52,11 @@ const AdvancedTab = ({ variants, micPermission, accessibilityPermission }: Advan
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] font-medium text-content-primary">Accessibility</span>
                             {accessibilityPermission === null ? (
-                                <Loader2 size={10} className="animate-spin text-content-muted" />
+                                <Loader2 size={10} className="animate-spin text-content-muted" aria-label="Checking permission" />
                             ) : accessibilityPermission ? (
                                 <span className="text-[10px] text-success flex items-center gap-1">
-                                    <Check size={10} />
+                                    <Check size={10} aria-hidden="true" />
+                                    <span className="sr-only">Enabled</span>
                                 </span>
                             ) : (
                                 <span className="text-[10px] text-warning">off</span>

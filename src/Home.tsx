@@ -263,6 +263,7 @@ const Home = () => {
                     <button
                         onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                         className="flex w-full items-center rounded-lg h-9 pl-[17px] text-content-disabled hover:text-content-muted"
+                        aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                     >
                         <div className="flex items-center justify-center w-[18px]">
                             <motion.div
@@ -280,6 +281,9 @@ const Home = () => {
                             onClick={() => setShowSupportPopup(!showSupportPopup)}
                             className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:bg-surface-overlay hover:text-content-secondary ${isSidebarCollapsed ? "gap-0" : "gap-3"
                                 }`}
+                            aria-expanded={showSupportPopup}
+                            aria-haspopup="menu"
+                            aria-label="Support menu"
                         >
                             <div className="flex items-center justify-center w-[18px] shrink-0 group-hover:text-content-secondary">
                                 <Info size={18} />
@@ -412,7 +416,7 @@ const Home = () => {
                                 <User size={14} className="text-content-muted" />
                             )}
                         </div>
-                        <span className="text-[12px] text-content-secondary max-w-[100px] truncate">
+                        <span className="text-[10px] text-content-secondary max-w-[100px] truncate">
                             {currentUser.name || currentUser.email?.split("@")[0] || "Account"}
                         </span>
                     </button>

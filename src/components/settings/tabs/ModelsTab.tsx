@@ -132,6 +132,9 @@ const ModelsTab = ({
                             onClick={() => setLlmCleanupEnabled(!llmCleanupEnabled)}
                             className={`relative w-10 h-5 rounded-full transition-colors ${llmCleanupEnabled ? "bg-cloud" : "bg-border-secondary"}`}
                             whileTap={{ scale: 0.95 }}
+                            role="switch"
+                            aria-checked={llmCleanupEnabled}
+                            aria-label="Toggle AI Cleanup"
                         >
                             <motion.div
                                 className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
@@ -194,13 +197,14 @@ const ModelsTab = ({
                                                     value={llmEndpoint}
                                                     onChange={(e) => setLlmEndpoint(e.target.value)}
                                                     placeholder={getProviderPreset(llmProvider)?.endpoint ?? "https://your-llm-endpoint.com"}
+                                                    aria-label="LLM Endpoint URL"
                                                     className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
                                                 />
                                             </div>
 
                                             <div className="space-y-1.5">
                                                 <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                    <Key size={10} />
+                                                    <Key size={10} aria-hidden="true" />
                                                     API Key {!getProviderPreset(llmProvider)?.apiKeyRequired && <span className="text-content-disabled">(if required)</span>}
                                                 </label>
                                                 <input
@@ -208,6 +212,7 @@ const ModelsTab = ({
                                                     value={llmApiKey}
                                                     onChange={(e) => setLlmApiKey(e.target.value)}
                                                     placeholder={getProviderPreset(llmProvider)?.apiKeyRequired ? "Required" : "Optional"}
+                                                    aria-label="LLM API Key"
                                                     className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
                                                 />
                                             </div>
@@ -257,13 +262,14 @@ const ModelsTab = ({
                                 <button
                                     onClick={() => toggleEngine(group.id)}
                                     className="w-full px-4 py-3 flex items-center gap-3 hover:bg-surface-elevated/50 transition-colors"
+                                    aria-expanded={isExpanded}
                                 >
                                     <motion.div
                                         animate={{ rotate: isExpanded ? 90 : 0 }}
                                         transition={{ duration: 0.15 }}
                                         className="text-content-disabled"
                                     >
-                                        <ChevronRight size={14} />
+                                        <ChevronRight size={14} aria-hidden="true" />
                                     </motion.div>
                                     <div className="flex-1 text-left">
                                         <div className="flex items-center gap-2">
@@ -402,16 +408,18 @@ const ModelRow = ({
                             onClick={onCancel}
                             className="flex h-6 w-6 items-center justify-center rounded-md text-error hover:bg-error/10 transition-colors"
                             title="Cancel"
+                            aria-label="Cancel download"
                         >
-                            <Square size={10} fill="currentColor" />
+                            <Square size={10} fill="currentColor" aria-hidden="true" />
                         </button>
                     ) : installed ? (
                         <button
                             onClick={onDelete}
                             className="flex h-6 w-6 items-center justify-center rounded-md text-content-disabled hover:text-error hover:bg-error/10 transition-colors"
                             title="Delete"
+                            aria-label="Delete model"
                         >
-                            <Trash2 size={12} />
+                            <Trash2 size={12} aria-hidden="true" />
                         </button>
                     ) : (
                         <button
@@ -423,8 +431,9 @@ const ModelRow = ({
                                     : "text-content-muted hover:text-content-primary hover:bg-surface-elevated"
                             }`}
                             title="Download"
+                            aria-label="Download model"
                         >
-                            <Download size={12} />
+                            <Download size={12} aria-hidden="true" />
                         </button>
                     )}
                 </div>

@@ -197,6 +197,9 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                 transition={{ duration: 0.15 }}
                 className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm"
                 onClick={onClose}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="modal-title"
             >
                 <motion.div
                     initial={{ opacity: 0, scale: 0.96, y: 20 }}
@@ -215,6 +218,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                 dotSize={3}
                                 gap={3}
                                 color="var(--color-cloud)"
+                                aria-hidden="true"
                             />
                             <div className="group">
                                 <p className="text-[12px] uppercase tracking-[0.18em] text-content-disabled">Personalization</p>
@@ -225,6 +229,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                             value={nameDraft}
                                             onChange={(event) => setNameDraft(event.target.value)}
                                             autoFocus
+                                            aria-label="Edit mode name"
                                             onKeyDown={(event) => {
                                                 if (event.key === "Enter") {
                                                     event.preventDefault();
@@ -241,18 +246,20 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                         <button
                                             onClick={handleSaveName}
                                             className="h-[28px] w-[28px] flex items-center justify-center rounded hover:bg-border-secondary text-content-primary"
+                                            aria-label="Save name"
                                         >
-                                            <Check size={14} />
+                                            <Check size={14} aria-hidden="true" />
                                         </button>
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-2 h-[28px]">
-                                        <h2 className="text-[18px] font-semibold text-content-primary">{personality.name}</h2>
+                                        <h2 id="modal-title" className="text-[18px] font-semibold text-content-primary">{personality.name}</h2>
                                         <button
                                             onClick={() => setIsEditingName(true)}
                                             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-content-muted hover:text-content-secondary"
+                                            aria-label="Edit name"
                                         >
-                                            <Pencil size={12} />
+                                            <Pencil size={12} aria-hidden="true" />
                                         </button>
                                     </div>
                                 )}
@@ -263,14 +270,16 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                 onClick={onDelete}
                                 className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
                                 title="Delete mode"
+                                aria-label="Delete mode"
                             >
-                                <Trash2 size={14} />
+                                <Trash2 size={14} aria-hidden="true" />
                             </button>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-lg hover:bg-surface-elevated text-content-muted hover:text-content-primary transition-colors"
+                                aria-label="Close modal"
                             >
-                                <X size={16} />
+                                <X size={16} aria-hidden="true" />
                             </button>
                         </div>
                     </div>
@@ -283,6 +292,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                     value={instructionsText}
                                     onChange={(event) => handleInstructionsChange(event.target.value)}
                                     placeholder="Add custom instructions"
+                                    aria-label="Custom instructions"
                                     className="w-full h-20 resize-none bg-transparent text-[11px] leading-[20px] font-mono text-content-primary placeholder-content-disabled outline-none custom-scrollbar"
                                 />
                             </div>
@@ -361,13 +371,14 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                             }
                                         }}
                                         placeholder="Add a site like gmail.com"
+                                        aria-label="Add website domain"
                                         className="bg-transparent text-[12px] text-content-primary placeholder-content-disabled outline-none flex-1"
                                     />
                                     <button
                                         onClick={addWebsite}
                                         className="flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5 text-[11px] text-content-primary hover:bg-surface-elevated-hover transition-colors"
                                     >
-                                        <Plus size={12} />
+                                        <Plus size={12} aria-hidden="true" />
                                         Add
                                     </button>
                                 </div>
@@ -567,10 +578,18 @@ const PersonalizationView = () => {
                         const moreApps = Math.max(0, personality.apps.length - appsPreview.length);
                         const moreSites = Math.max(0, personality.websites.length - sitesPreview.length);
                         return (
-                                <button
+                                <div
                                 key={personality.id}
                                 onClick={() => setActivePersonalityId(personality.id)}
-                                className="group relative rounded-xl border border-border-primary bg-surface-secondary p-2.5 text-left transition-colors hover:bg-surface-tertiary"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        setActivePersonalityId(personality.id);
+                                    }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                className="group relative rounded-xl border border-border-primary bg-surface-secondary p-2.5 text-left transition-colors hover:bg-surface-tertiary cursor-pointer"
                             >
                                 <div className="relative space-y-2">
                                     <div className="flex items-start justify-between gap-3">
@@ -587,7 +606,7 @@ const PersonalizationView = () => {
                                                 aria-label="Edit mode"
                                                 title="Edit mode"
                                             >
-                                                <Pencil size={12} />
+                                                <Pencil size={12} aria-hidden="true" />
                                             </button>
                                             <button
                                                 onClick={(event) => {
@@ -595,6 +614,8 @@ const PersonalizationView = () => {
                                                     updatePersonality(personality.id, { enabled: !personality.enabled });
                                                 }}
                                                 aria-label={personality.enabled ? "Disable mode" : "Enable mode"}
+                                                role="switch"
+                                                aria-checked={personality.enabled}
                                                 className={`relative h-4 w-7 rounded-full transition-colors ${personality.enabled
                                                     ? "bg-cloud"
                                                     : "bg-border-secondary"
@@ -662,7 +683,7 @@ const PersonalizationView = () => {
                                         </span>
                                     </div>
                                 </div>
-                            </button>
+                            </div>
                         );
                     })}
                 </div>

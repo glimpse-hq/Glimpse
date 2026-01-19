@@ -1,3 +1,23 @@
+0.5.2
+
+### Features
+
+- Added model preloading when the hotkey is pressed.
+
+### Changes
+
+- Enhanced accessibility and improved UI consistency across components.
+
+- Clarified edit mode "(i) message" in General Settings.
+
+- Cleaned up padding around the transcription list.
+
+### Fixes
+
+- Added guarding for unadded Appwrite credentials. (Mainly for local dev)
+
+---
+
 0.5.1
 
 ### Changes

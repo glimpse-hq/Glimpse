@@ -112,30 +112,35 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                         gap={2}
                         color="var(--color-cloud)"
                         className="opacity-60"
+                        aria-hidden="true"
                     />
-                    <h2 className="text-[11px] text-content-muted uppercase tracking-wider font-semibold">
+                    <h2 className="text-xs text-content-muted uppercase tracking-wider font-semibold">
                         Recent Transcriptions
                     </h2>
                 </div>
 
                 <div className="relative">
-                    <div className="flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-1.5 focus-within:border-border-secondary transition-colors">
-                        <Search size={12} className="text-content-disabled shrink-0" />
+                    <div className="relative flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-1.5 focus-within:border-border-secondary transition-colors">
+                        <Search size={12} className="text-content-disabled shrink-0" aria-hidden="true" />
                         <input
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search..."
-                            className="bg-transparent text-[11px] text-content-secondary placeholder-content-disabled outline-none w-28 focus:w-36 transition-all"
+                            aria-label="Search transcriptions"
+                            className="bg-transparent text-[11px] text-content-secondary placeholder-content-disabled outline-none w-28 focus:w-36 transition-all pr-4"
                         />
-                        {searchQuery && (
-                            <button
-                                onClick={() => setSearchQuery("")}
-                                className="text-content-disabled hover:text-content-muted transition-colors"
-                            >
-                                <X size={12} />
-                            </button>
-                        )}
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery("")}
+                                    aria-label="Clear search"
+                                    className="text-content-disabled hover:text-content-muted transition-colors"
+                                >
+                                    <X size={12} aria-hidden="true" />
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -152,6 +157,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                             gap={4}
                             color="var(--color-text-disabled)"
                             className="opacity-40 mb-4"
+                            aria-hidden="true"
                         />
                         <p className="text-[13px] text-content-muted text-center max-w-xs">
                             Your recent transcriptions will appear here
@@ -163,12 +169,12 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                         data={transcriptions}
                         overscan={200}
                         components={{
-                            Header: () => <div className="h-1" />,
+                            Header: () => <div className="h-1.5" />,
                         }}
                         itemContent={(_index, record) => {
                             const isRetrying = retryingIds.includes(record.id);
                             return (
-                                <div className="pb-1 pl-1">
+                                <div className="pb-1 pl-1.5">
                                     <TranscriptionItem
                                         key={record.id}
                                         record={record}
@@ -199,7 +205,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
             </div>
 
             <div className="flex items-center justify-between px-4 pt-2">
-                <span className="text-[9px] text-border-hover uppercase tracking-wider">
+                <span className="text-[10px] text-border-hover uppercase tracking-wider">
                     {searchQuery ? (
                         `${transcriptions.length} result${transcriptions.length === 1 ? '' : 's'}`
                     ) : (
@@ -212,14 +218,14 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                             <button
                                 onClick={confirmClearAll}
                                 disabled={isClearing}
-                                className="text-[9px] text-red-300 uppercase tracking-wider hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="text-[10px] text-red-300 uppercase tracking-wider hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isClearing ? 'Clearing...' : 'Confirm'}
                             </button>
                             <button
                                 onClick={() => setShowConfirm(false)}
                                 disabled={isClearing}
-                                className="text-[9px] text-content-muted uppercase tracking-wider hover:text-content-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="text-[10px] text-content-muted uppercase tracking-wider hover:text-content-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
@@ -227,7 +233,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                     ) : (
                         <button
                             onClick={() => setShowConfirm(true)}
-                            className="text-[9px] text-content-muted uppercase tracking-wider hover:text-red-400 transition-colors"
+                            className="text-[10px] text-content-muted uppercase tracking-wider hover:text-red-400 transition-colors"
                         >
                             Clear All
                         </button>

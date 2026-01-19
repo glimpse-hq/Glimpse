@@ -189,7 +189,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {isError && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="text-[9px] text-red-400 font-medium uppercase tracking-wider">
+                                <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider">
                                     Failed
                                 </span>
                             </>
@@ -197,7 +197,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {isCloudModel && !isError && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="flex items-center gap-1 text-[9px] text-cloud">
+                                <span className="flex items-center gap-1 text-[10px] text-cloud">
                                     <Cloud size={9} />
                                     Cloud
                                 </span>
@@ -206,7 +206,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {record.llm_cleaned && !isError && !isCloudModel && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="flex items-center gap-1 text-[9px] text-local">
+                                <span className="flex items-center gap-1 text-[10px] text-local">
                                     <Wand2 size={9} />
                                     Cleaned
                                 </span>
@@ -224,7 +224,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
 
                     {isError ? (
                         <div className="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/[0.06] px-2.5 py-2">
-                            <p className="text-[12px] text-red-300/80">
+                            <p className="text-[12px] text-red-300">
                                 {errorMessage}
                             </p>
                         </div>
@@ -239,23 +239,23 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-3 mt-1 text-[9px] text-content-disabled">
+                    <div className="flex flex-wrap items-center gap-3 mt-1 text-[10px] text-content-disabled">
                         {!isError && (
                             <>
                                 <span>{wordCountLabel}</span>
-                                <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
+                                <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" aria-hidden="true" />
                                 <span>{formatDuration(record.audio_duration_seconds ?? 0)}</span>
-                                <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
+                                <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" aria-hidden="true" />
                                 <span>Speech: {speechModelLabel}</span>
                                 {llmModelLabel && (
                                     <>
-                                        <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
+                                        <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" aria-hidden="true" />
                                         <span>LLM: {llmModelLabel}</span>
                                     </>
                                 )}
                                 {modeLabel && (
                                     <>
-                                        <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
+                                        <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" aria-hidden="true" />
                                         <span>Mode: {modeLabel}</span>
                                     </>
                                 )}
@@ -265,16 +265,17 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {(isOverflowing || isExpanded) && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
-                                className="flex items-center gap-1 text-[9px] text-content-muted hover:text-content-secondary transition-colors"
+                                className="flex items-center gap-1 p-1 -ml-1 text-[10px] text-content-muted hover:text-content-secondary transition-colors"
+                                aria-label={isExpanded ? "Show less" : "Show more"}
                             >
                                 {isExpanded ? (
                                     <>
-                                        <ChevronUp size={12} />
+                                        <ChevronUp size={12} aria-hidden="true" />
                                         <span>Show less</span>
                                     </>
                                 ) : (
                                     <>
-                                        <ChevronDown size={12} />
+                                        <ChevronDown size={12} aria-hidden="true" />
                                         <span>Show more</span>
                                     </>
                                 )}
@@ -293,11 +294,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                 className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 hover:bg-surface-elevated ${copied ? "bg-surface-elevated" : ""
                                     }`}
                                 title={copied ? "Copied" : "Copy transcription"}
+                                aria-label={copied ? "Copied" : "Copy transcription"}
                             >
                                 {copied ? (
-                                    <Check size={14} className="text-success" />
+                                    <Check size={14} className="text-success" aria-hidden="true" />
                                 ) : (
-                                    <Copy size={14} className="text-content-secondary" />
+                                    <Copy size={14} className="text-content-secondary" aria-hidden="true" />
                                 )}
                             </motion.button>
                         )}
@@ -314,11 +316,14 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                             className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 ${shiftHeld ? "hover:bg-red-500/10" : "hover:bg-surface-elevated"
                                 }`}
                             title={shiftHeld ? "Delete" : "More options"}
+                            aria-label={shiftHeld ? "Delete" : "More options"}
+                            aria-haspopup="true"
+                            aria-expanded={menuOpen}
                         >
                             {shiftHeld ? (
-                                <Trash2 size={14} className="text-red-400" />
+                                <Trash2 size={14} className="text-red-400" aria-hidden="true" />
                             ) : (
-                                <MoreVertical size={14} className="text-content-muted" />
+                                <MoreVertical size={14} className="text-content-muted" aria-hidden="true" />
                             )}
                         </motion.button>
 
