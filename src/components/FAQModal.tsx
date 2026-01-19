@@ -41,6 +41,9 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                     transition={{ duration: 0.15 }}
                     className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
                     onClick={onClose}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="faq-title"
                 >
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -53,18 +56,19 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                         <div className="relative flex items-center justify-between p-5 border-b border-border-primary">
                             <div className="flex items-center gap-3">
                                 <div className="flex items-center justify-center w-8 h-8">
-                                    <HelpCircle size={16} className="text-amber-400" />
+                                    <HelpCircle size={16} className="text-amber-400" aria-hidden="true" />
                                 </div>
                                 <div>
-                                    <h2 className="text-[15px] font-semibold text-white">Frequently Asked Questions</h2>
+                                    <h2 id="faq-title" className="text-[15px] font-semibold text-white">Frequently Asked Questions</h2>
                                     <p className="text-[11px] text-content-muted">Common questions about Glimpse</p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-lg hover:bg-surface-elevated text-content-disabled hover:text-white transition-colors"
+                                aria-label="Close FAQ"
                             >
-                                <X size={16} />
+                                <X size={16} aria-hidden="true" />
                             </button>
                         </div>
 

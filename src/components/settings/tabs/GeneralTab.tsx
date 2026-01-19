@@ -86,28 +86,33 @@ const GeneralTab = ({
         className="space-y-6"
     >
         <div className="space-y-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Processing</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <h2 className="text-[12px] font-semibold uppercase tracking-wider text-content-muted">Processing</h2>
+            <div className="grid grid-cols-2 gap-3" role="radiogroup" aria-label="Processing Mode">
                 <button
                     onClick={() => {}}
                     disabled
+                    role="radio"
+                    aria-checked={transcriptionMode === "cloud"}
+                    aria-label="Cloud processing (Coming soon)"
                     className={`py-3 px-3.5 rounded-lg border text-left transition-all opacity-60 cursor-not-allowed ${transcriptionMode === "cloud"
                         ? "border-cloud-30 bg-cloud-5"
                         : "border-border-primary bg-transparent"
                         }`}
-                    aria-disabled
+                    aria-disabled="true"
                 >
                     <div className="flex items-baseline gap-1.5">
                         <span className={`text-[13px] font-medium ${transcriptionMode === "cloud" ? "text-cloud" : "text-content-secondary"
                             }`}>Cloud</span>
-                        <span className={`text-[10px] ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
+                        <span className={`text-[11px] ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
                             }`}>coming soon</span>
                     </div>
-                    <p className={`text-[10px] mt-1 ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
+                    <p className={`text-[11px] mt-1 ${transcriptionMode === "cloud" ? "text-cloud-50" : "text-content-disabled"
                         }`}>In development</p>
                 </button>
                 <button
                     onClick={() => onTranscriptionModeChange("local")}
+                    role="radio"
+                    aria-checked={transcriptionMode === "local"}
                     className={`py-3 px-3.5 rounded-lg border text-left transition-all ${transcriptionMode === "local"
                         ? "border-local-30 bg-local-5"
                         : "border-border-primary bg-transparent hover:border-border-secondary"
@@ -116,10 +121,10 @@ const GeneralTab = ({
                     <div className="flex items-baseline gap-1.5">
                         <span className={`text-[13px] font-medium ${transcriptionMode === "local" ? "text-local" : "text-content-secondary"
                             }`}>Local</span>
-                        <span className={`text-[10px] ${transcriptionMode === "local" ? "text-local-50" : "text-content-disabled"
+                        <span className={`text-[11px] ${transcriptionMode === "local" ? "text-local-50" : "text-content-disabled"
                             }`}>private</span>
                     </div>
-                    <p className={`text-[10px] mt-1 ${transcriptionMode === "local" ? "text-local-50" : "text-content-disabled"
+                    <p className={`text-[11px] mt-1 ${transcriptionMode === "local" ? "text-local-50" : "text-content-disabled"
                         }`}>Runs entirely on your device</p>
                 </button>
             </div>
@@ -129,7 +134,7 @@ const GeneralTab = ({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="text-[10px] text-warning"
+                        className="text-[11px] text-warning"
                     >
                         No model installed. <button onClick={onOpenModelsTab} className="underline hover:text-cloud transition-colors">Download one</button> to use local.
                     </motion.p>
@@ -139,7 +144,7 @@ const GeneralTab = ({
 
         <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-content-muted">Microphone</label>
+                <label className="text-[11px] font-medium text-content-muted">Microphone</label>
                 <div className="relative z-20">
                     <Dropdown
                         value={microphoneDevice || ""}
@@ -157,7 +162,7 @@ const GeneralTab = ({
             </div>
 
             <div className="space-y-1.5">
-                <label className="text-[10px] font-medium text-content-muted"> Transcription Language</label>
+                <label className="text-[11px] font-medium text-content-muted">Transcription Language</label>
                 <div className="relative z-10">
                     <Dropdown
                         value={language}
@@ -175,7 +180,7 @@ const GeneralTab = ({
 
         <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Shortcuts</h2>
+                <h2 className="text-[12px] font-semibold uppercase tracking-wider text-content-muted">Shortcuts</h2>
 
                 <div className="space-y-1.5">
                     <ShortcutRow
@@ -233,7 +238,7 @@ const GeneralTab = ({
             </div>
 
             <div className="space-y-2">
-                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Features</h2>
+                <h2 className="text-[12px] font-semibold uppercase tracking-wider text-content-muted">Features</h2>
 
                 <div className={`rounded-lg border transition-all ${editModeEnabled ? "border-border-secondary bg-surface-surface" : "border-border-primary bg-transparent"
                     }`}>
@@ -242,6 +247,9 @@ const GeneralTab = ({
                             <span className="text-[11px] font-medium text-content-primary">Edit Mode</span>
                             <button
                                 onClick={() => setEditModeEnabled(!editModeEnabled)}
+                                role="switch"
+                                aria-checked={editModeEnabled}
+                                aria-label="Toggle Edit Mode"
                                 className={`w-7 h-4 rounded-full transition-colors relative ${editModeEnabled ? "bg-cloud" : "bg-border-secondary"
                                     }`}
                             >
@@ -253,10 +261,13 @@ const GeneralTab = ({
                             </button>
                         </div>
                         <div className="flex items-center justify-between mt-0.5">
-                            <span className="text-[9px] text-content-disabled">transform selected text with voice</span>
+                            <span className="text-[10px] text-content-disabled">transform selected text with voice</span>
                             <div className="relative group">
-                                <button className="p-0.5 text-content-disabled hover:text-content-muted transition-colors">
-                                    <Info size={10} />
+                                <button
+                                    className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
+                                    aria-label="More information about Edit Mode"
+                                >
+                                    <Info size={10} aria-hidden="true" />
                                 </button>
                                 <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block z-10">
                                     <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 text-[9px] text-content-secondary w-44 shadow-lg leading-tight">
@@ -330,6 +341,9 @@ const ShortcutRow = ({
                 <button
                     onClick={onToggle}
                     disabled={enabled && !canDisable}
+                    role="switch"
+                    aria-checked={enabled}
+                    aria-label={`Toggle ${label} shortcut`}
                     className={`w-7 h-4 rounded-full transition-colors relative ${enabled ? "bg-cloud" : "bg-border-secondary"} ${enabled && !canDisable ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                     <motion.div
@@ -340,10 +354,11 @@ const ShortcutRow = ({
                 </button>
             </div>
             <div className="flex items-center justify-between mt-0.5">
-                <span className="text-[9px] text-content-disabled">{description}</span>
+                <span className="text-[10px] text-content-disabled">{description}</span>
                 <motion.button
                     onClick={onCapture}
                     disabled={!enabled}
+                    aria-label={`Record new shortcut for ${label}, currently ${shortcut}`}
                     className={`font-mono text-[10px] px-1.5 py-0.5 rounded transition-all ${isCapturing
                         ? "text-content-primary border border-border-hover"
                         : enabled

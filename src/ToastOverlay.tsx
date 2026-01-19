@@ -219,6 +219,14 @@ const ToastOverlay: React.FC = () => {
     <div
       className="fixed inset-0 flex flex-col justify-end items-center pb-6"
       onClick={handleBackgroundClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleBackgroundClick();
+        }
+      }}
+      role="button"
+      tabIndex={0}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
@@ -228,16 +236,18 @@ const ToastOverlay: React.FC = () => {
           ${toast.isLeaving ? "animate-toast-out" : "animate-toast-in"}
         `}
         onClick={(e) => e.stopPropagation()}
+        role="alert"
       >
         {toast.type === "celebration" && <TwinklingGrid variant="cloud" />}
         {toast.type === "update" && <TwinklingGrid variant="accent" />}
         <button
           type="button"
           onClick={handleClose}
+          aria-label="Close notification"
           className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center 
                      text-gray-500 hover:text-white text-xs transition-colors z-10"
         >
-          ✕
+          <span aria-hidden="true">✕</span>
         </button>
 
         <div className="flex items-start gap-3 pr-5">
@@ -250,6 +260,7 @@ const ToastOverlay: React.FC = () => {
                 dotSize={4}
                 gap={2}
                 color="var(--color-accent)"
+                aria-hidden="true"
               />
             </div>
           ) : (
@@ -257,15 +268,15 @@ const ToastOverlay: React.FC = () => {
           )}
           <div className="flex-1 min-w-0">
             {toast.type === "update" && (
-              <p className="text-[10px] text-violet-400 font-medium mb-0.5">GLIMPSE</p>
+              <p className="text-[11px] text-violet-400 font-medium mb-0.5">GLIMPSE</p>
             )}
-            <p className="text-[12px] text-gray-200 leading-relaxed break-words">{toast.message}</p>
+            <p className="text-[13px] text-gray-200 leading-relaxed break-words">{toast.message}</p>
             {showRetry && (
               <button
                 type="button"
                 onClick={handleRetry}
                 disabled={isRetrying}
-                className="mt-2 text-[11px] text-blue-400 hover:text-white disabled:text-gray-600 transition-colors"
+                className="mt-2 text-xs text-blue-400 hover:text-white disabled:text-gray-600 transition-colors"
               >
                 {isRetrying ? "Retrying…" : "Retry transcription"}
               </button>
@@ -283,7 +294,7 @@ const ToastOverlay: React.FC = () => {
                     console.error("Action failed:", err);
                   }
                 }}
-                className={`mt-2 text-[11px] ${toast.type === "update" ? "text-violet-400" : "text-blue-400"} hover:text-white transition-colors block font-medium`}
+                className={`mt-2 text-xs ${toast.type === "update" ? "text-violet-400" : "text-blue-400"} hover:text-white transition-colors block font-medium`}
               >
                 {toast.actionLabel} →
               </button>
