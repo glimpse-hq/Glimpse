@@ -567,12 +567,24 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     return () => observer.disconnect();
   }, [setupCanvas]);
 
+  const getStatusMessage = (s: PillStatus) => {
+    switch (s) {
+      case "listening": return "Listening...";
+      case "processing": return "Processing...";
+      case "error": return "Error occurred";
+      default: return "";
+    }
+  };
+
   return (
     <div
       className={`relative w-full h-full flex flex-col justify-end select-none ${className}`}
       style={style}
       onContextMenu={(e) => e.preventDefault()}
     >
+      <div className="sr-only" role="status" aria-live="polite">
+        {getStatusMessage(status)}
+      </div>
       <div className="relative flex flex-col items-center pb-2">
         <div
           ref={containerRef}
@@ -586,6 +598,8 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
           <canvas
             ref={canvasRef}
             className="absolute inset-0 w-full h-full block"
+            role="img"
+            aria-label="Audio visualizer"
           />
         </div>
       </div>

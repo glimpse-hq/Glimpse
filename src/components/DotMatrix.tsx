@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 
-interface DotMatrixProps {
+interface DotMatrixProps extends React.HTMLAttributes<HTMLDivElement> {
     rows?: number;
     cols?: number;
     activeDots?: number[];
@@ -21,6 +21,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
     gap = 4,
     color = "currentColor",
     animated = false,
+    ...rest
 }) => {
     const dots = useMemo(() => {
         const total = rows * cols;
@@ -56,6 +57,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
                 gap: gap,
                 width: "fit-content",
             }}
+            {...rest}
         >
             {dots}
         </div>

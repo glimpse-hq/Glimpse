@@ -1,7 +1,8 @@
 use crate::{
-    assistive, cloud, emit_event, llm_cleanup, permissions, platform, recorder::RecorderManager,
-    settings::TranscriptionMode, toast, AppRuntime, AppState, AudioSpectrumPayload,
-    EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
+    assistive, cloud, emit_event, llm_cleanup, model_manager, permissions, platform,
+    recorder::RecorderManager,
+    settings::{TranscriptionMode, UserSettings},
+    toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
 };
 use chrono::{DateTime, Local};
 use parking_lot::Mutex;
@@ -183,6 +184,32 @@ impl PillController {
         }
     }
 
+    fn preload_local_model_if_needed(&self, app: &AppHandle<AppRuntime>, settings: &UserSettings) {
+        if !matches!(settings.transcription_mode, TranscriptionMode::Local) {
+            return;
+        }
+
+        let app_handle = app.clone();
+        let settings = settings.clone();
+
+        std::thread::spawn(move || {
+            let model_key = settings.local_model.clone();
+            let ready_model = match model_manager::ensure_model_ready(&app_handle, &model_key) {
+                Ok(model) => model,
+                Err(err) => {
+                    eprintln!("[LocalTranscriber] Skipping preload: {err}");
+                    return;
+                }
+            };
+
+            let state = app_handle.state::<AppState>();
+            let transcriber = state.local_transcriber();
+            if let Err(err) = transcriber.preload_and_warm(&ready_model) {
+                eprintln!("[LocalTranscriber] Preload warmup failed: {err}");
+            }
+        });
+    }
+
     fn emit_state(&self, app: &AppHandle<AppRuntime>) {
         let status = *self.status.lock();
         let mode = self.recording_mode.lock().map(|m| match m {
@@ -352,6 +379,8 @@ impl PillController {
         let state = app.state::<AppState>();
         let settings = state.current_settings();
 
+        self.preload_local_model_if_needed(app, &settings);
+
         match self.recorder.start(settings.microphone_device) {
             Ok(started) => {
                 self.transition_to(app, PillStatus::Listening);
@@ -427,6 +456,8 @@ impl PillController {
 
             let state = app.state::<AppState>();
             let settings = state.current_settings();
+
+            self.preload_local_model_if_needed(app, &settings);
 
             match self.recorder.start(settings.microphone_device) {
                 Ok(started) => {

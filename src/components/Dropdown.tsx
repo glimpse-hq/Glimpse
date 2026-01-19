@@ -96,10 +96,12 @@ export function Dropdown<T extends string | number>({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary py-2 px-3 text-[11px] text-left hover:border-border-secondary focus:border-border-hover focus:outline-none transition-colors"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                className="w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary py-2 px-3 text-xs text-left hover:border-border-secondary focus:border-border-hover focus:outline-none transition-colors"
             >
                 <div className="flex items-center gap-2 min-w-0">
-                    {icon && <span className="text-content-muted shrink-0">{icon}</span>}
+                    {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
                     {label && <span className="text-content-muted shrink-0">{label}</span>}
                     <span className={`truncate ${selectedOption ? "text-content-primary" : "text-content-muted"}`}>
                         {selectedOption ? selectedOption.label : placeholder}
@@ -107,6 +109,7 @@ export function Dropdown<T extends string | number>({
                 </div>
                 <ChevronDown
                     size={14}
+                    aria-hidden="true"
                     className={`text-content-muted shrink-0 ml-2 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
                 />
             </button>
@@ -123,27 +126,29 @@ export function Dropdown<T extends string | number>({
                         {searchable && (
                             <div className="p-2 border-b border-border-secondary shrink-0">
                                 <div className="relative">
-                                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-content-disabled" />
+                                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-content-disabled" aria-hidden="true" />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder={searchPlaceholder}
+                                        aria-label="Search options"
                                         autoFocus
-                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 text-[11px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
+                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 text-xs text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </div>
                             </div>
                         )}
 
-                        <div className="overflow-y-auto min-h-[40px]">
+                        <div className="overflow-y-auto min-h-[40px]" role="listbox">
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((option) => 
                                     option.isHeader ? (
                                         <div
                                             key={option.value}
-                                            className="px-3 py-1.5 text-[9px] font-semibold uppercase tracking-wider text-content-disabled border-t border-border-secondary first:border-t-0 mt-1 first:mt-0"
+                                            role="presentation"
+                                            className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled border-t border-border-secondary first:border-t-0 mt-1 first:mt-0"
                                         >
                                             {option.label}
                                         </div>
@@ -151,6 +156,8 @@ export function Dropdown<T extends string | number>({
                                         <button
                                             key={option.value}
                                             type="button"
+                                            role="option"
+                                            aria-selected={value === option.value}
                                             onClick={() => {
                                                 onChange(option.value);
                                                 setIsOpen(false);
@@ -163,7 +170,7 @@ export function Dropdown<T extends string | number>({
                                         >
                                             <div className="flex flex-col gap-0.5 min-w-0 flex-1">
                                                 <span className="text-[12px] font-medium truncate flex items-center gap-2">
-                                                    {option.icon && <span>{option.icon}</span>}
+                                                    {option.icon && <span aria-hidden="true">{option.icon}</span>}
                                                     {option.label}
                                                 </span>
                                                 {option.description && (
@@ -173,12 +180,12 @@ export function Dropdown<T extends string | number>({
                                                     </span>
                                                 )}
                                             </div>
-                                            {value === option.value && <Check size={12} className="shrink-0 ml-2" />}
+                                            {value === option.value && <Check size={12} className="shrink-0 ml-2" aria-hidden="true" />}
                                         </button>
                                     )
                                 )
                             ) : (
-                                <div className="px-3 py-4 text-[11px] text-content-muted text-center">
+                                <div className="px-3 py-4 text-xs text-content-muted text-center">
                                     No options found
                                 </div>
                             )}

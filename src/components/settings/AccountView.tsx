@@ -260,13 +260,14 @@ const AccountView = ({
                     </div>
                     <div className="group">
                         <div className="flex items-center gap-2">
-                            {isEditingName ? (
+                                    {isEditingName ? (
                                 <div className="flex items-center gap-2 h-[28px]">
                                     <input
                                         type="text"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
                                         autoFocus
+                                        aria-label="Edit name"
                                         className="bg-surface-surface border border-border-primary rounded-lg px-2 py-0 text-[18px] font-medium text-white focus:border-amber-400/50 outline-none w-48 h-full"
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") handleSaveName();
@@ -279,9 +280,10 @@ const AccountView = ({
                                     <button
                                         onClick={handleSaveName}
                                         disabled={nameLoading}
+                                        aria-label="Save name"
                                         className="h-[28px] w-[28px] flex items-center justify-center rounded hover:bg-border-secondary text-amber-400"
                                     >
-                                        <Check size={16} />
+                                        <Check size={16} aria-hidden="true" />
                                     </button>
                                 </div>
                             ) : (
@@ -291,9 +293,10 @@ const AccountView = ({
                                     </h1>
                                     <button
                                         onClick={() => setIsEditingName(true)}
+                                        aria-label="Edit name"
                                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-content-muted hover:text-content-secondary"
                                     >
-                                        <Pencil size={12} />
+                                        <Pencil size={12} aria-hidden="true" />
                                     </button>
                                 </div>
                             )}
@@ -303,9 +306,10 @@ const AccountView = ({
                             onClick={() => setShowPasswordModal(true)}
                             className="flex items-center gap-1.5 text-[11px] text-content-disabled hover:text-content-primary transition-colors group/pass"
                         >
-                            <Lock size={10} />
+                            <Lock size={10} aria-hidden="true" />
                             <span className="font-mono">••••••••</span>
-                            <Pencil size={10} className="opacity-0 group-hover/pass:opacity-100 transition-opacity" />
+                            <Pencil size={10} className="opacity-0 group-hover/pass:opacity-100 transition-opacity" aria-hidden="true" />
+                            <span className="sr-only">Change password</span>
                         </button>
                     </div>
                 </div>
@@ -347,6 +351,9 @@ const AccountView = ({
                         {isSubscriber ? (
                             <button
                                 onClick={onCloudSyncToggle}
+                                role="switch"
+                                aria-checked={cloudSyncEnabled}
+                                aria-label="Toggle History Sync"
                                 className={`relative w-7 h-4 rounded-full transition-colors ${cloudSyncEnabled ? "bg-amber-400" : "bg-border-secondary"}`}
                             >
                                 <div
@@ -568,14 +575,16 @@ const AccountView = ({
                                                     value={currentPassword}
                                                     onChange={(e) => setCurrentPassword(e.target.value)}
                                                     placeholder="Current password"
+                                                    aria-label="Current password"
                                                     className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 text-[13px] text-white placeholder-content-disabled focus:border-content-disabled outline-none transition-colors"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                                     className="absolute right-3 top-2.5 text-content-disabled hover:text-content-secondary"
+                                                    aria-label={showCurrentPassword ? "Hide password" : "Show password"}
                                                 >
-                                                    {showCurrentPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                    {showCurrentPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                                                 </button>
                                             </div>
                                         </div>
@@ -587,14 +596,16 @@ const AccountView = ({
                                                     value={newPassword}
                                                     onChange={(e) => setNewPassword(e.target.value)}
                                                     placeholder="New password"
+                                                    aria-label="New password"
                                                     className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 text-[13px] text-white placeholder-content-disabled focus:border-content-disabled outline-none transition-colors"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowNewPassword(!showNewPassword)}
                                                     className="absolute right-3 top-2.5 text-content-disabled hover:text-content-secondary"
+                                                    aria-label={showNewPassword ? "Hide password" : "Show password"}
                                                 >
-                                                    {showNewPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                                                    {showNewPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                                                 </button>
                                             </div>
                                         </div>
@@ -605,6 +616,7 @@ const AccountView = ({
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 placeholder="Confirm new password"
+                                                aria-label="Confirm new password"
                                                 className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 text-[13px] text-white placeholder-content-disabled focus:border-content-disabled outline-none transition-colors"
                                             />
                                         </div>

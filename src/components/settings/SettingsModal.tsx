@@ -665,13 +665,17 @@ const SettingsModal = ({
                         className="relative flex max-h-[80vh] h-[625px] w-[850px] overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50"
                         variants={modalVariants}
                         onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="Settings"
                     >
                         <motion.button
                             onClick={onClose}
                             className="absolute right-2 top-3 z-20 flex h-7 w-7 items-center justify-center rounded-lg text-content-muted hover:bg-surface-elevated hover:text-content-secondary transition-colors"
                             whileTap={{ scale: 0.95 }}
+                            aria-label="Close settings"
                         >
-                            <X size={14} />
+                            <X size={14} aria-hidden="true" />
                         </motion.button>
                         <aside className="flex w-44 flex-col border-r border-border-primary bg-surface-surface">
                             <div className="px-4 pt-5 pb-4">
@@ -679,9 +683,9 @@ const SettingsModal = ({
                             </div>
                             <nav className="flex-1 px-2 space-y-4">
                                 <div className="space-y-1">
-                                    <p className="px-2.5 pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-content-disabled">Account</p>
+                                    <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Account</p>
                                     <ModalNavItem
-                                        icon={<User size={14} />}
+                                        icon={<User size={14} aria-hidden="true" />}
                                         label="Account"
                                         active={activeTab === "account"}
                                         onClick={() => setActiveTab("account")}
@@ -689,21 +693,21 @@ const SettingsModal = ({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="px-2.5 pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-content-disabled">General</p>
+                                    <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled">General</p>
                                     <ModalNavItem
-                                        icon={<Keyboard size={14} />}
+                                        icon={<Keyboard size={14} aria-hidden="true" />}
                                         label="General"
                                         active={activeTab === "general"}
                                         onClick={() => setActiveTab("general")}
                                     />
                                     <ModalNavItem
-                                        icon={<Sliders size={14} />}
+                                        icon={<Sliders size={14} aria-hidden="true" />}
                                         label="Advanced"
                                         active={activeTab === "advanced"}
                                         onClick={() => setActiveTab("advanced")}
                                     />
                                     <ModalNavItem
-                                        icon={<Info size={14} />}
+                                        icon={<Info size={14} aria-hidden="true" />}
                                         label="About"
                                         active={activeTab === "about"}
                                         onClick={() => setActiveTab("about")}
@@ -718,9 +722,9 @@ const SettingsModal = ({
                                             exit={{ opacity: 0, height: 0 }}
                                             transition={{ duration: 0.15 }}
                                         >
-                                            <p className="px-2.5 pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-content-disabled">Local</p>
+                                            <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Local</p>
                                             <ModalNavItem
-                                                icon={<Cpu size={14} />}
+                                                icon={<Cpu size={14} aria-hidden="true" />}
                                                 label="Models"
                                                 active={activeTab === "models"}
                                                 onClick={() => setActiveTab("models")}
@@ -731,9 +735,9 @@ const SettingsModal = ({
 
                                 {isDeveloper && (
                                     <div className="space-y-1">
-                                        <p className="px-2.5 pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-red-400/60">Developer</p>
+                                        <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-red-400/60">Developer</p>
                                         <ModalNavItem
-                                            icon={<Bug size={14} />}
+                                            icon={<Bug size={14} aria-hidden="true" />}
                                             label="Debug"
                                             active={activeTab === "developer"}
                                             onClick={() => setActiveTab("developer")}

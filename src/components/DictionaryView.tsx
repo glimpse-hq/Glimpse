@@ -285,10 +285,11 @@ const DictionaryView = () => {
                                         }
                                     }}
                                     placeholder="Search or add a word..."
+                                    aria-label="Add or search dictionary entry"
                                     className="flex-1 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
                                 {isSearching && entries.length > 0 && (
-                                    <span className="text-[12px] text-content-muted whitespace-nowrap">
+                                    <span className="text-[12px] text-content-muted whitespace-nowrap" role="status">
                                         {filteredEntries.length} of {entries.length}
                                     </span>
                                 )}
@@ -296,8 +297,9 @@ const DictionaryView = () => {
                                     onClick={handleAdd}
                                     disabled={!newEntry.trim() || saving || entries.includes(newEntry.trim())}
                                     className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[13px] text-content-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors"
+                                    aria-label="Add entry"
                                 >
-                                    {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                                    {saving ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
                                     Add
                                 </button>
                             </div>
@@ -377,15 +379,16 @@ const DictionaryView = () => {
                                                             <div className="text-[11px] text-content-muted">Press Enter to save</div>
                                                         ) : (
                                                             <>
-                                                                <div className="text-[11px] text-content-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                                                                <div className="text-[11px] text-content-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden="true">
                                                                     Click to edit
                                                                 </div>
                                                                 <button
                                                                     onClick={() => startEditing(originalIndex)}
                                                                     className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
                                                                     title="Edit"
+                                                                    aria-label={`Edit ${entry}`}
                                                                 >
-                                                                    <Edit3 size={14} />
+                                                                    <Edit3 size={14} aria-hidden="true" />
                                                                 </button>
                                                             </>
                                                         )}
@@ -393,8 +396,9 @@ const DictionaryView = () => {
                                                             onClick={() => handleDelete(originalIndex)}
                                                             className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
                                                             title="Delete"
+                                                            aria-label={`Delete ${entry}`}
                                                         >
-                                                            <Trash2 size={14} />
+                                                            <Trash2 size={14} aria-hidden="true" />
                                                         </button>
                                                     </div>
                                                 </div>
@@ -450,9 +454,10 @@ const DictionaryView = () => {
                                     value={newFrom}
                                     onChange={(e) => setNewFrom(e.target.value)}
                                     placeholder="Find word..."
+                                    aria-label="Find word to replace"
                                     className="flex-1 min-w-0 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
-                                <ArrowRight size={14} className="text-content-disabled shrink-0" />
+                                <ArrowRight size={14} className="text-content-disabled shrink-0" aria-hidden="true" />
                                 <input
                                     value={newTo}
                                     onChange={(e) => setNewTo(e.target.value)}
@@ -463,6 +468,7 @@ const DictionaryView = () => {
                                         }
                                     }}
                                     placeholder="Replace with..."
+                                    aria-label="Replace with"
                                     className="flex-1 min-w-0 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
                                 <button
@@ -473,8 +479,9 @@ const DictionaryView = () => {
                                         replacements.some((r) => r.from.toLowerCase() === newFrom.trim().toLowerCase())
                                     }
                                     className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[13px] text-content-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors shrink-0"
+                                    aria-label="Add replacement"
                                 >
-                                    {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                                    {saving ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
                                     Add
                                 </button>
                             </div>
@@ -580,21 +587,23 @@ const DictionaryView = () => {
                                                             Press Enter to save
                                                         </div>
                                                     ) : (
-                                                        <button
-                                                            onClick={() => startEditingReplacement(idx)}
-                                                            className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                            title="Edit"
-                                                        >
-                                                            <Edit3 size={14} />
-                                                        </button>
-                                                    )}
                                                     <button
-                                                        onClick={() => handleDeleteReplacement(idx)}
-                                                        className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                        title="Delete"
+                                                        onClick={() => startEditingReplacement(idx)}
+                                                        className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
+                                                        title="Edit"
+                                                        aria-label={`Edit replacement for ${replacement.from}`}
                                                     >
-                                                        <Trash2 size={14} />
+                                                        <Edit3 size={14} aria-hidden="true" />
                                                     </button>
+                                                )}
+                                                <button
+                                                    onClick={() => handleDeleteReplacement(idx)}
+                                                    className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
+                                                    title="Delete"
+                                                    aria-label={`Delete replacement for ${replacement.from}`}
+                                                >
+                                                    <Trash2 size={14} aria-hidden="true" />
+                                                </button>
                                                 </div>
                                             </motion.div>
                                         ))}

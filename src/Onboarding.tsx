@@ -711,6 +711,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                         : "border-border-primary bg-surface-tertiary"
                                         }`}
                                     aria-pressed={selectedMode === "local"}
+                                    aria-label="Select Local mode (Privacy-first, on-device)"
                                 >
                                     <div className="absolute inset-0 pointer-events-none">
                                         <div className="absolute inset-0 opacity-14">
@@ -783,6 +784,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             setLocalModelChoice(WHISPER_KEY);
                                         }
                                     }}
+                                    aria-label="Select Whisper Large V3 Turbo model"
+                                    aria-pressed={localModelChoice === WHISPER_KEY}
                                     className={`relative w-full rounded-2xl border p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] overflow-hidden transition-colors cursor-pointer ${isWhisperActive
                                         ? "border-border-primary bg-amber-400/5 ring-1 ring-amber-400/60"
                                         : localModelChoice === WHISPER_KEY
@@ -898,6 +901,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             setLocalModelChoice(PARAKEET_KEY);
                                         }
                                     }}
+                                    aria-label="Select Parakeet (INT8) model"
+                                    aria-pressed={localModelChoice === PARAKEET_KEY}
                                     className={`relative w-full rounded-2xl border border-border-primary p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.2)] overflow-hidden transition-colors cursor-pointer ${isParakeetActive
                                         ? "bg-amber-400/5 ring-1 ring-amber-400/60"
                                         : localModelChoice === PARAKEET_KEY
