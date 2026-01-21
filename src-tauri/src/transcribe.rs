@@ -1115,9 +1115,7 @@ fn compute_audio_duration_seconds(saved: &RecordingSaved) -> f32 {
 }
 
 pub(crate) fn count_words(text: &str) -> u32 {
-    text.split_whitespace()
-        .filter(|word| !word.is_empty())
-        .count() as u32
+    text.split_whitespace().count() as u32
 }
 
 fn build_transcription_payload(
