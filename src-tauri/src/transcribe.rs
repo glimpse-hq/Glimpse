@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
-use serde::Serialize;
 use tauri::{async_runtime, AppHandle, Manager};
 
 use crate::{
@@ -10,20 +9,9 @@ use crate::{
     recorder::{CompletedRecording, RecordingSaved},
     settings::{Personality, TranscriptionMode, UserSettings},
     storage, toast, transcription_api, update_checker, AppRuntime, AppState,
-    EVENT_TRANSCRIPTION_COMPLETE, EVENT_TRANSCRIPTION_ERROR,
+    TranscriptionCompletePayload, TranscriptionErrorPayload, EVENT_TRANSCRIPTION_COMPLETE,
+    EVENT_TRANSCRIPTION_ERROR,
 };
-
-#[derive(Serialize, Clone)]
-struct TranscriptionCompletePayload {
-    transcript: String,
-    auto_paste: bool,
-}
-
-#[derive(Serialize, Clone)]
-struct TranscriptionErrorPayload {
-    message: String,
-    stage: String,
-}
 
 pub(crate) fn queue_transcription(
     app: &AppHandle<AppRuntime>,
@@ -1207,19 +1195,5 @@ fn decode_wav(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
 }
 
 fn downmix_interleaved(samples: &[i16], channels: usize) -> Vec<i16> {
-    if channels <= 1 {
-        return samples.to_vec();
-    }
-
-    let frames = samples.len() / channels;
-    let mut mono = Vec::with_capacity(frames);
-    for frame in 0..frames {
-        let mut acc = 0i32;
-        for ch in 0..channels {
-            let idx = frame * channels + ch;
-            acc += samples.get(idx).copied().unwrap_or_default() as i32;
-        }
-        mono.push((acc / channels as i32) as i16);
-    }
-    mono
+    crate::recorder::downmix_to_mono(samples, channels)
 }

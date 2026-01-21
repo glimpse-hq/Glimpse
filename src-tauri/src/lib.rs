@@ -1055,13 +1055,13 @@ pub(crate) struct AudioSpectrumPayload {
 }
 
 #[derive(Serialize, Clone)]
-struct TranscriptionCompletePayload {
-    transcript: String,
-    auto_paste: bool,
+pub(crate) struct TranscriptionCompletePayload {
+    pub(crate) transcript: String,
+    pub(crate) auto_paste: bool,
 }
 
 #[derive(Serialize, Clone)]
-struct TranscriptionErrorPayload {
-    message: String,
-    stage: String,
+pub(crate) struct TranscriptionErrorPayload {
+    pub(crate) message: String,
+    pub(crate) stage: String,
 }

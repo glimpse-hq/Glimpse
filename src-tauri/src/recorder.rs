@@ -910,7 +910,7 @@ fn push_u16_samples(
     }
 }
 
-fn downmix_to_mono(samples: &[i16], channels: usize) -> Vec<i16> {
+pub(crate) fn downmix_to_mono(samples: &[i16], channels: usize) -> Vec<i16> {
     if channels <= 1 {
         return samples.to_vec();
     }
