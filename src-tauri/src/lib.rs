@@ -675,6 +675,10 @@ fn update_settings(
         if let Err(err) = tray::refresh_tray_menu(&app, &next) {
             eprintln!("Failed to refresh tray menu: {err}");
         }
+        #[cfg(target_os = "macos")]
+        if let Err(err) = set_app_menu(&app, &next) {
+            eprintln!("Failed to refresh app menu: {err}");
+        }
     }
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
