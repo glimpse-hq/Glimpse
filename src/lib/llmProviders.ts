@@ -10,7 +10,7 @@ export type LlmProviderPreset = {
     apiKeyRequired: boolean;
 };
 
-export const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
+const LLM_PROVIDER_PRESETS: LlmProviderPreset[] = [
     { id: "custom", label: "Custom", endpoint: "", defaultModel: "", apiKeyRequired: false },
     { id: "lmstudio", label: "LM Studio", endpoint: "http://localhost:1234/v1", defaultModel: "", apiKeyRequired: false },
     { id: "ollama", label: "Ollama", endpoint: "http://localhost:11434/v1", defaultModel: "", apiKeyRequired: false },

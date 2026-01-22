@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { Bug, Bell, AlertTriangle, CheckCircle, Info, AlertCircle, Zap, Download, RefreshCw, Trash2, Sparkles } from "lucide-react";
 
-export function DebugSection() {
+function DebugSection() {
     const showToast = async (
         toastType: string,
         message: string,

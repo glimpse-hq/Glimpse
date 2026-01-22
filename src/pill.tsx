@@ -38,7 +38,7 @@ const COLORS = {
   red: "239, 68, 68",
 };
 
-export interface PillOverlayProps {
+interface PillOverlayProps {
   className?: string;
   style?: React.CSSProperties;
   sensitivity?: number;

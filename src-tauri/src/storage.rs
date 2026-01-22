@@ -583,7 +583,5 @@ impl StorageManager {
 }
 
 fn count_words(text: &str) -> u32 {
-    text.split_whitespace()
-        .filter(|word| !word.is_empty())
-        .count() as u32
+    crate::transcribe::count_words(text)
 }

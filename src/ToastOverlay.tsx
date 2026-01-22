@@ -5,8 +5,6 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import DotMatrix from "./components/DotMatrix";
 import type { ToastType, ToastPayload } from "./types";
 
-export type { ToastType, ToastPayload };
-
 interface ToastState extends ToastPayload {
   isLeaving: boolean;
 }

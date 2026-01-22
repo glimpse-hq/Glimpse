@@ -12,9 +12,16 @@ use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Windo
 use tauri::ActivationPolicy;
 use tauri_plugin_opener::OpenerExt;
 
+// On macOS, share constants with the app menu; on other platforms, define locally
+#[cfg(target_os = "macos")]
+use crate::platform::macos::menu::{MENU_ID_MODEL_PREFIX, MENU_ID_MODE_CLOUD, MENU_ID_MODE_LOCAL};
+#[cfg(not(target_os = "macos"))]
 const MENU_ID_MODE_LOCAL: &str = "menu_mode_local";
+#[cfg(not(target_os = "macos"))]
 const MENU_ID_MODE_CLOUD: &str = "menu_mode_cloud";
+#[cfg(not(target_os = "macos"))]
 const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
+
 const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 const MENU_ID_FEEDBACK: &str = "menu_send_feedback";
@@ -94,25 +101,33 @@ fn build_tray_menu(
     menu = menu.item(&mic_submenu.build()?);
 
     if matches!(settings.transcription_mode, TranscriptionMode::Local) {
-        let mut model_submenu = SubmenuBuilder::new(app, "Model");
-        for model in model_manager::list_models() {
-            let installed = model_manager::check_model_status(app.clone(), model.key.clone())
-                .map(|s| s.installed)
-                .unwrap_or(false);
-            let label = if installed {
-                model.label.clone()
-            } else {
-                format!("{} (Not downloaded)", model.label)
-            };
-            let item = CheckMenuItemBuilder::with_id(
-                format!("{MENU_ID_MODEL_PREFIX}{}", model.key),
-                label,
-            )
-            .enabled(installed)
-            .checked(installed && settings.local_model == model.key)
-            .build(app)?;
-            model_submenu = model_submenu.item(&item);
+        let mut model_submenu = SubmenuBuilder::new(app, "Models");
+        let models = model_manager::list_models();
+        let groups = model_manager::group_models_by_engine(&models);
+
+        for group in groups {
+            let mut engine_submenu = SubmenuBuilder::new(app, &group.name);
+            for model in &group.models {
+                let installed = model_manager::check_model_status(app.clone(), model.key.clone())
+                    .map(|s| s.installed)
+                    .unwrap_or(false);
+                let label = if installed {
+                    model.label.clone()
+                } else {
+                    format!("{} (Not downloaded)", model.label)
+                };
+                let item = CheckMenuItemBuilder::with_id(
+                    format!("{MENU_ID_MODEL_PREFIX}{}", model.key),
+                    label,
+                )
+                .enabled(installed)
+                .checked(installed && settings.local_model == model.key)
+                .build(app)?;
+                engine_submenu = engine_submenu.item(&item);
+            }
+            model_submenu = model_submenu.item(&engine_submenu.build()?);
         }
+
         menu = menu.item(&model_submenu.build()?);
     }
 

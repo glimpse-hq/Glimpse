@@ -332,7 +332,7 @@ const Home = () => {
                                             </div>
                                         </button>
                                         <a
-                                            href="https://github.com/LegendarySpy/Glimpse"
+                                            href="https://github.com/LegendarySpy/Glimpse/issues/new/choose"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={() => setShowSupportPopup(false)}
@@ -341,7 +341,7 @@ const Home = () => {
                                             <Github size={16} className="text-content-secondary" />
                                             <div>
                                                 <div className="text-[12px] font-medium text-content-primary">GitHub Issues</div>
-                                                <div className="text-[10px] text-content-muted">Report bugs & features</div>
+                                                <div className="text-[10px] text-content-muted">Report bugs & request features</div>
                                             </div>
                                         </a>
                                         <button

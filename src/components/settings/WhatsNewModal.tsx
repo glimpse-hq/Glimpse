@@ -25,7 +25,7 @@ const isFeatureRelease = (version: string): boolean => {
     return patch === 0;
 };
 
-export function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
+function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
     const [releases, setReleases] = useState<ReleaseInfo[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
