@@ -322,9 +322,9 @@ fn calculate_dir_size(dir: &Path) -> Result<u64> {
 
 fn engine_label(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Parakeet { .. } => "Parakeet (ONNX)",
-        LocalModelEngine::Whisper => "Whisper (GGML)",
-        LocalModelEngine::Moonshine { .. } => "Moonshine (ONNX)",
+        LocalModelEngine::Parakeet { .. } => "Parakeet",
+        LocalModelEngine::Whisper => "Whisper",
+        LocalModelEngine::Moonshine { .. } => "Moonshine",
     }
 }
 
@@ -343,6 +343,39 @@ pub fn list_models() -> Vec<ModelInfo> {
             tags: def.tags.iter().map(|s| s.to_string()).collect(),
         })
         .collect()
+}
+
+#[derive(Debug, Clone)]
+pub struct EngineGroup {
+    pub name: String,
+    pub models: Vec<ModelInfo>,
+}
+
+pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
+    let mut groups: std::collections::HashMap<String, Vec<ModelInfo>> = std::collections::HashMap::new();
+
+    for model in models {
+        groups
+            .entry(model.engine.clone())
+            .or_default()
+            .push(model.clone());
+    }
+
+    let mut result: Vec<_> = groups
+        .into_iter()
+        .map(|(name, models)| EngineGroup { name, models })
+        .collect();
+
+    result.sort_by_key(|g| {
+        match g.name.as_str() {
+            "Whisper" => 0,
+            "Parakeet" => 1,
+            "Moonshine" => 2,
+            _ => 3,
+        }
+    });
+
+    result
 }
 
 #[tauri::command]

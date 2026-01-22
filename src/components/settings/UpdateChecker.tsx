@@ -254,5 +254,3 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
         </>
     )
 }
-
-export default UpdateChecker

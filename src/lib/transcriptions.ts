@@ -32,7 +32,7 @@ export interface CloudTranscription extends Document {
 
 export type TranscriptionInput = Omit<CloudTranscription, "$id" | "$createdAt" | "$updatedAt" | "$permissions" | "$collectionId" | "$databaseId" | "$sequence">;
 
-export async function createTranscription(
+async function createTranscription(
     userId: string,
     data: TranscriptionInput
 ): Promise<CloudTranscription> {
@@ -50,7 +50,7 @@ export async function createTranscription(
     );
 }
 
-export async function getTranscription(documentId: string): Promise<CloudTranscription> {
+async function getTranscription(documentId: string): Promise<CloudTranscription> {
     return getDocument<CloudTranscription>(DATABASE_ID, COLLECTION_ID, documentId);
 }
 
@@ -69,7 +69,7 @@ export async function listTranscriptions(
     return result.documents;
 }
 
-export async function updateTranscription(
+async function updateTranscription(
     documentId: string,
     data: Partial<TranscriptionInput>
 ): Promise<CloudTranscription> {
@@ -87,7 +87,7 @@ export async function deleteCloudTranscription(documentId: string): Promise<void
     });
 }
 
-export async function findByLocalId(userId: string, localId: string): Promise<CloudTranscription | null> {
+async function findByLocalId(userId: string, localId: string): Promise<CloudTranscription | null> {
     const result = await listDocuments<CloudTranscription>(DATABASE_ID, COLLECTION_ID, [
         Query.equal("user_id", userId),
         Query.equal("local_id", localId),
@@ -288,7 +288,7 @@ export function getCachedUsageStats(userId: string): CloudUsageStats | null {
     }
 }
 
-export function setCachedUsageStats(userId: string, stats: CloudUsageStats): void {
+function setCachedUsageStats(userId: string, stats: CloudUsageStats): void {
     const cache: UsageCache = {
         stats,
         timestamp: Date.now(),

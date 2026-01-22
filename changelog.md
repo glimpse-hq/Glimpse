@@ -1,3 +1,16 @@
+0.5.3
+
+### Features
+- When the app is open, you can now use spotlight / raycast to open the main window again without having to reopen it from the tray.
+
+- Added proper mac menu bar options (the top left) allowing you to more easily change model, and adjust other settings.
+
+- Added proper GitHub issue templates, making it easier to report bugs or request features.
+### Changes
+- Several internal cleanups to keep the code cleaner & slimmer.
+
+---
+
 0.5.2
 
 ### Features
