@@ -1,6 +1,6 @@
 ---
 name: Feature request
-description: Suggest an idea for Glimpse
+about: Suggest an idea for Glimpse
 title: "[Feature Request] "
 labels: enhancement
 assignees: ''
