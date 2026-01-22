@@ -61,7 +61,8 @@ pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/i
 #[cfg(target_os = "macos")]
 fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     use platform::macos::menu::{
-        MENU_ID_CHECK_UPDATES, MENU_ID_MODE_LOCAL, MENU_ID_MODEL_PREFIX, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
+        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODE_LOCAL,
+        MENU_ID_MODEL_PREFIX, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
     };
     use tauri_plugin_opener::OpenerExt;
 
@@ -80,9 +81,15 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_MODE_LOCAL => {
             set_transcription_mode(app, settings::TranscriptionMode::Local);
         }
+        MENU_ID_MIC_DEFAULT => {
+            set_microphone(app, None);
+        }
         _ => {
             if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
                 set_local_model(app, model_key);
+            } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
+                let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
+                set_microphone(app, Some(device_id));
             }
         }
     }
@@ -150,6 +157,30 @@ fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
             }
         }
         Err(err) => eprintln!("Failed to update model selection: {err}"),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
+    let state = app.state::<AppState>();
+    let mut current = state.current_settings();
+    if current.microphone_device.as_deref() == device_id {
+        return;
+    }
+    current.microphone_device = device_id.map(|id| id.to_string());
+    match state.persist_settings(current.clone()) {
+        Ok(saved) => {
+            if let Err(err) = set_app_menu(app, &saved) {
+                eprintln!("Failed to refresh app menu: {err}");
+            }
+            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
+                eprintln!("Failed to refresh tray menu: {err}");
+            }
+            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
+                eprintln!("Failed to emit settings change: {err}");
+            }
+        }
+        Err(err) => eprintln!("Failed to update microphone selection: {err}"),
     }
 }
 

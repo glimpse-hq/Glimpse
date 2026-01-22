@@ -1,8 +1,10 @@
+use crate::audio;
 use crate::model_manager;
 use crate::settings::{TranscriptionMode, UserSettings};
 use crate::AppRuntime;
 use tauri::menu::{
-    CheckMenuItemBuilder, Menu, MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder,
+    CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, MenuItemBuilder, PredefinedMenuItem,
+    SubmenuBuilder,
 };
 use tauri::AppHandle;
 
@@ -13,6 +15,8 @@ pub const MENU_ID_REPORT_ISSUE: &str = "menu_report_issue";
 pub const MENU_ID_MODE_LOCAL: &str = "menu_mode_local";
 pub const MENU_ID_MODE_CLOUD: &str = "menu_mode_cloud";
 pub const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
+pub const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
+pub const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 
 pub fn build_app_menu(
     app: &AppHandle<AppRuntime>,
@@ -76,6 +80,55 @@ pub fn build_app_menu(
 
         app_submenu = app_submenu.item(&model_submenu.build()?);
     }
+
+    // Microphone submenu
+    let mut mic_submenu = SubmenuBuilder::new(app, "Microphone");
+    let default_mic = CheckMenuItemBuilder::with_id(MENU_ID_MIC_DEFAULT, "System Default")
+        .checked(settings.microphone_device.is_none())
+        .build(app)?;
+    mic_submenu = mic_submenu.item(&default_mic);
+
+    match audio::list_input_devices() {
+        Ok(devices) => {
+            if devices.is_empty() {
+                let unavailable = MenuItem::with_id(
+                    app,
+                    "menu_mic_none",
+                    "No input devices found",
+                    false,
+                    None::<&str>,
+                )?;
+                mic_submenu = mic_submenu.item(&unavailable);
+            } else {
+                for device in devices {
+                    let label = if device.is_default {
+                        format!("{} (Default)", device.name)
+                    } else {
+                        device.name.clone()
+                    };
+                    let checked = settings.microphone_device.as_deref() == Some(device.id.as_str());
+                    let item = CheckMenuItemBuilder::with_id(
+                        format!("{MENU_ID_MIC_PREFIX}dev:{}", device.id),
+                        label,
+                    )
+                    .checked(checked)
+                    .build(app)?;
+                    mic_submenu = mic_submenu.item(&item);
+                }
+            }
+        }
+        Err(err) => {
+            let unavailable = MenuItem::with_id(
+                app,
+                "menu_mic_error",
+                format!("Microphone unavailable ({err})"),
+                false,
+                None::<&str>,
+            )?;
+            mic_submenu = mic_submenu.item(&unavailable);
+        }
+    }
+    app_submenu = app_submenu.item(&mic_submenu.build()?);
 
     app_submenu = app_submenu
         .separator()
