@@ -1380,10 +1380,7 @@ fn transcribe_local_chunked(
         let chunk = &samples[start..end];
         let chunk_speech_percent =
             speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
-        if chunk_speech_percent < VAD_MIN_SPEECH_PERCENT_CHUNK {
-            if end == samples.len() {
-                break;
-            }
+        if chunk_speech_percent < VAD_MIN_SPEECH_PERCENT_CHUNK && end != samples.len() {
             start += step;
             continue;
         }
