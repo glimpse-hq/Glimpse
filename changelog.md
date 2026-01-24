@@ -1,3 +1,16 @@
+0.5.4
+
+### Changes
+- Improved local transcription reliability for longer recordings by chunking and VAD gating.
+- Centralized scrollbar styling for more consistent UI polish.
+
+### Fixes
+- Added the ability to cancel in-progress transcription retries.
+- Updates whisper prompt, this should make the dictionary perform better
+- Removed username from the personality prompt
+
+---
+
 0.5.3
 
 ### Features

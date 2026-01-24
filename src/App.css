@@ -171,10 +171,32 @@ body {
   background: var(--color-scrollbar-thumb-hover);
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
 .settings-scroll {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+
+.scrollbar-gutter {
+  scrollbar-gutter: stable both-edges;
 }
 
 .settings-scroll::-webkit-scrollbar {
@@ -195,6 +217,54 @@ body {
   background: var(--color-scrollbar-thumb-subtle-hover);
 }
 
+.library-scrubber {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-border-secondary);
+  outline: none;
+  cursor: pointer;
+}
+
+.library-scrubber:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-cloud-30);
+}
+
+.library-scrubber::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.library-scrubber::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-cloud);
+  border: 2px solid var(--color-bg-overlay);
+  box-shadow: 0 0 6px var(--color-cloud-20);
+  margin-top: -3px;
+}
+
+.library-scrubber::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.library-scrubber::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-cloud);
+  border: 2px solid var(--color-bg-overlay);
+  box-shadow: 0 0 6px var(--color-cloud-20);
+}
+
 @keyframes pulse-glow {
 
   0%,
@@ -209,6 +279,26 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.transcript-processing-text {
+  transition: opacity 0.9s ease-in-out;
+  will-change: opacity;
+}
+
+.transcript-processing-dim {
+  opacity: 0.72;
+}
+
+.transcript-search-hit {
+  background: var(--color-cloud-20);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+.transcript-search-hit-active {
+  background: var(--color-cloud-50);
 }
 
 @keyframes shake {

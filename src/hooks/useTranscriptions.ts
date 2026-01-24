@@ -242,6 +242,16 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
         }
     }, []);
 
+    const cancelRetryTranscription = useCallback(async (id: string) => {
+        try {
+            await invoke("cancel_retry_transcription", { id });
+        } catch (err) {
+            console.error("Failed to cancel retry transcription:", err);
+        } finally {
+            setRetryingIds(prev => prev.filter(entry => entry !== id));
+        }
+    }, []);
+
     const retryLlmCleanup = useCallback(async (id: string) => {
         try {
             await invoke("retry_llm_cleanup", { id });
@@ -353,6 +363,7 @@ export function useTranscriptions(options: UseTranscriptionsOptions = {}) {
         isSyncing,
         deleteTranscription,
         retryTranscription,
+        cancelRetryTranscription,
         retryingIds,
         retryLlmCleanup,
         undoLlmCleanup,

@@ -2,16 +2,25 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
 use tauri::{async_runtime, AppHandle, Manager};
+use tokio_util::sync::CancellationToken;
+use webrtc_vad::VadMode;
 
 use crate::{
     accessibility_context, analytics, assistive, cloud, dictionary, llm_cleanup, mode_context,
     model_manager,
-    recorder::{CompletedRecording, RecordingSaved},
+    recorder::{speech_percentage_i16_with_mode, CompletedRecording, RecordingSaved},
     settings::{Personality, TranscriptionMode, UserSettings},
     storage, toast, transcription_api, update_checker, AppRuntime, AppState,
     TranscriptionCompletePayload, TranscriptionErrorPayload, EVENT_TRANSCRIPTION_COMPLETE,
     EVENT_TRANSCRIPTION_ERROR,
 };
+
+const WHISPER_CHUNK_SECONDS: f32 = 28.0;
+const WHISPER_CHUNK_OVERLAP_SECONDS: f32 = 2.0;
+const MOONSHINE_CHUNK_SECONDS: f32 = 60.0;
+const MOONSHINE_CHUNK_OVERLAP_SECONDS: f32 = 2.0;
+const VAD_MIN_SPEECH_PERCENT_FILE: f32 = 2.0;
+const VAD_MIN_SPEECH_PERCENT_CHUNK: f32 = 5.0;
 
 pub(crate) fn queue_transcription(
     app: &AppHandle<AppRuntime>,
@@ -233,14 +242,58 @@ pub(crate) fn queue_transcription(
                     let language = settings.language.clone();
                     let transcriber = app_handle.state::<AppState>().local_transcriber();
                     let local_recording = recording_for_task.clone();
+                    let is_whisper =
+                        matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
+                    let is_moonshine = matches!(
+                        ready_model.engine,
+                        model_manager::LocalModelEngine::Moonshine { .. }
+                    );
                     match async_runtime::spawn_blocking(move || {
-                        transcriber.transcribe(
-                            &ready_model,
-                            &local_recording.samples,
-                            local_recording.sample_rate,
-                            dictionary_prompt.as_deref(),
-                            Some(&language),
-                        )
+                        if is_whisper {
+                            transcribe_local_chunked(
+                                &transcriber,
+                                &ready_model,
+                                &local_recording.samples,
+                                local_recording.sample_rate,
+                                dictionary_prompt.as_deref(),
+                                Some(&language),
+                                WHISPER_CHUNK_SECONDS,
+                                WHISPER_CHUNK_OVERLAP_SECONDS,
+                                None,
+                            )
+                        } else if is_moonshine {
+                            transcribe_local_chunked(
+                                &transcriber,
+                                &ready_model,
+                                &local_recording.samples,
+                                local_recording.sample_rate,
+                                dictionary_prompt.as_deref(),
+                                Some(&language),
+                                MOONSHINE_CHUNK_SECONDS,
+                                MOONSHINE_CHUNK_OVERLAP_SECONDS,
+                                None,
+                            )
+                        } else {
+                            let speech_percent = speech_percentage_i16_with_mode(
+                                &local_recording.samples,
+                                local_recording.sample_rate,
+                                VadMode::VeryAggressive,
+                            );
+                            if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
+                                Ok(transcription_api::TranscriptionSuccess {
+                                    transcript: String::new(),
+                                    speech_model: None,
+                                })
+                            } else {
+                                transcriber.transcribe(
+                                    &ready_model,
+                                    &local_recording.samples,
+                                    local_recording.sample_rate,
+                                    dictionary_prompt.as_deref(),
+                                    Some(&language),
+                                )
+                            }
+                        }
                     })
                     .await
                     {
@@ -427,6 +480,7 @@ pub(crate) fn retry_transcription_async(
     settings: UserSettings,
     original_id: String,
     saved_mode: (Option<String>, Option<String>),
+    cancel_token: CancellationToken,
 ) {
     let http = app.state::<AppState>().http();
     let cloud_creds = app.state::<AppState>().cloud_manager().get_credentials();
@@ -445,6 +499,27 @@ pub(crate) fn retry_transcription_async(
     });
 
     async_runtime::spawn(async move {
+        struct RetryTokenGuard {
+            app: AppHandle<AppRuntime>,
+            id: String,
+        }
+
+        impl Drop for RetryTokenGuard {
+            fn drop(&mut self) {
+                self.app
+                    .state::<AppState>()
+                    .clear_retry_transcription(&self.id);
+            }
+        }
+
+        let _guard = RetryTokenGuard {
+            app: app_handle.clone(),
+            id: retry_id.clone(),
+        };
+
+        if cancel_token.is_cancelled() {
+            return;
+        }
         let use_local = matches!(settings.transcription_mode, TranscriptionMode::Local);
         let use_cloud_auth = !use_local && cloud_creds.is_some();
 
@@ -485,6 +560,9 @@ pub(crate) fn retry_transcription_async(
             .await
             {
                 Ok(cloud_result) => {
+                    if cancel_token.is_cancelled() {
+                        return;
+                    }
                     eprintln!(
                         "[retry_transcription] Cloud response: transcript_len={} raw_text_len={:?} llm_cleaned={}",
                         cloud_result.transcript.len(),
@@ -565,6 +643,9 @@ pub(crate) fn retry_transcription_async(
                         );
                 }
                 Err(err) => {
+                    if cancel_token.is_cancelled() {
+                        return;
+                    }
                     let err_string = err.to_string();
                     if err_string.contains("QUOTA_EXCEEDED") {
                         let is_tester = err_string.contains(":tester");
@@ -607,14 +688,61 @@ pub(crate) fn retry_transcription_async(
                                 dictionary::dictionary_prompt_for_model(&ready_model, &settings);
                             let language = settings.language.clone();
                             let transcriber = app_handle.state::<AppState>().local_transcriber();
+                            let is_whisper = matches!(
+                                ready_model.engine,
+                                model_manager::LocalModelEngine::Whisper
+                            );
+                            let is_moonshine = matches!(
+                                ready_model.engine,
+                                model_manager::LocalModelEngine::Moonshine { .. }
+                            );
+                            let cancel_token_clone = cancel_token.clone();
                             match async_runtime::spawn_blocking(move || {
-                                transcriber.transcribe(
-                                    &ready_model,
-                                    &samples,
-                                    sample_rate,
-                                    dictionary_prompt.as_deref(),
-                                    Some(&language),
-                                )
+                                if is_whisper {
+                                    transcribe_local_chunked(
+                                        &transcriber,
+                                        &ready_model,
+                                        &samples,
+                                        sample_rate,
+                                        dictionary_prompt.as_deref(),
+                                        Some(&language),
+                                        WHISPER_CHUNK_SECONDS,
+                                        WHISPER_CHUNK_OVERLAP_SECONDS,
+                                        Some(&cancel_token_clone),
+                                    )
+                                } else if is_moonshine {
+                                    transcribe_local_chunked(
+                                        &transcriber,
+                                        &ready_model,
+                                        &samples,
+                                        sample_rate,
+                                        dictionary_prompt.as_deref(),
+                                        Some(&language),
+                                        MOONSHINE_CHUNK_SECONDS,
+                                        MOONSHINE_CHUNK_OVERLAP_SECONDS,
+                                        Some(&cancel_token_clone),
+                                    )
+                                } else {
+                                    let speech_percent = speech_percentage_i16_with_mode(
+                                        &samples,
+                                        sample_rate,
+                                        VadMode::VeryAggressive,
+                                    );
+                                    if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
+                                        Ok(transcription_api::TranscriptionSuccess {
+                                            transcript: String::new(),
+                                            speech_model: None,
+                                        })
+                                    } else {
+                                        transcriber.transcribe(
+                                            &ready_model,
+                                            &samples,
+                                            sample_rate,
+                                            dictionary_prompt.as_deref(),
+                                            Some(&language),
+                                        )
+                                    }
+                                }
                             })
                             .await
                             {
@@ -640,6 +768,9 @@ pub(crate) fn retry_transcription_async(
 
         match result {
             Ok(result) => {
+                if cancel_token.is_cancelled() {
+                    return;
+                }
                 let raw_transcript = result.transcript.clone();
                 let reported_model = result.speech_model.clone();
 
@@ -675,6 +806,10 @@ pub(crate) fn retry_transcription_async(
 
                 if count_words(&final_transcript) == 0 {
                     handle_empty_transcription(&app_handle, &saved_for_task.path);
+                    return;
+                }
+
+                if cancel_token.is_cancelled() {
                     return;
                 }
 
@@ -740,6 +875,9 @@ pub(crate) fn retry_transcription_async(
                 );
             }
             Err(err) => {
+                if cancel_token.is_cancelled() {
+                    return;
+                }
                 let stage = if use_local { "local" } else { "api" };
                 emit_transcription_error(
                     &app_handle,
@@ -1194,4 +1332,201 @@ fn decode_wav(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
 
 fn downmix_interleaved(samples: &[i16], channels: usize) -> Vec<i16> {
     crate::recorder::downmix_to_mono(samples, channels)
+}
+
+fn transcribe_local_chunked(
+    transcriber: &crate::local_transcription::LocalTranscriber,
+    model: &model_manager::ReadyModel,
+    samples: &[i16],
+    sample_rate: u32,
+    initial_prompt: Option<&str>,
+    language: Option<&str>,
+    chunk_seconds: f32,
+    overlap_seconds: f32,
+    cancel_token: Option<&CancellationToken>,
+) -> Result<transcription_api::TranscriptionSuccess> {
+    if samples.is_empty() {
+        return Err(anyhow!("No audio samples provided"));
+    }
+
+    let speech_percent =
+        speech_percentage_i16_with_mode(samples, sample_rate, VadMode::VeryAggressive);
+    if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
+        return Ok(transcription_api::TranscriptionSuccess {
+            transcript: String::new(),
+            speech_model: None,
+        });
+    }
+
+    let chunk_samples = ((sample_rate.max(1) as f32) * chunk_seconds).round() as usize;
+    let chunk_samples = chunk_samples.max(1);
+    let overlap_samples =
+        ((sample_rate.max(1) as f32) * overlap_seconds).round() as usize;
+    let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
+    let step = chunk_samples.saturating_sub(overlap_samples).max(1);
+
+    let mut full_text = String::new();
+    let mut start = 0usize;
+    let mut model_label = None;
+    let mut used_prompt = false;
+
+    while start < samples.len() {
+        if let Some(token) = cancel_token {
+            if token.is_cancelled() {
+                return Err(anyhow!("Transcription cancelled"));
+            }
+        }
+        let end = (start + chunk_samples).min(samples.len());
+        let chunk = &samples[start..end];
+        let chunk_speech_percent =
+            speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
+        let min_chunk_threshold = if end == samples.len() {
+            VAD_MIN_SPEECH_PERCENT_FILE
+        } else {
+            VAD_MIN_SPEECH_PERCENT_CHUNK
+        };
+        if chunk_speech_percent < min_chunk_threshold {
+            start += step;
+            continue;
+        }
+        let prompt = if !used_prompt { initial_prompt } else { None };
+        let result = transcriber.transcribe(model, chunk, sample_rate, prompt, language)?;
+        if prompt.is_some() {
+            used_prompt = true;
+        }
+        if model_label.is_none() {
+            model_label = result.speech_model.clone();
+        }
+
+        let chunk_text = result.transcript;
+        if !chunk_text.trim().is_empty() {
+            let deduped = dedupe_overlap_text(&full_text, &chunk_text);
+            if !deduped.trim().is_empty() {
+                if !full_text.is_empty() {
+                    full_text.push('\n');
+                }
+                full_text.push_str(&deduped);
+            }
+        }
+
+        if end == samples.len() {
+            break;
+        }
+        start += step;
+    }
+
+    Ok(transcription_api::TranscriptionSuccess {
+        transcript: full_text.trim().to_string(),
+        speech_model: model_label,
+    })
+}
+
+const MIN_OVERLAP_TOKENS: usize = 3;
+const MAX_OVERLAP_TOKENS: usize = 30;
+
+#[derive(Debug, Clone)]
+struct TokenOffset {
+    norm: String,
+    start: usize,
+}
+
+pub(crate) fn dedupe_overlap_text(existing: &str, next: &str) -> String {
+    let existing_trim = existing.trim_end();
+    let next_trim = next.trim();
+    if existing_trim.is_empty() {
+        return next_trim.to_string();
+    }
+
+    if let Some(drop_index) = find_overlap_drop_index(existing_trim, next) {
+        if drop_index >= next.len() {
+            return String::new();
+        }
+        return next[drop_index..].trim_start().to_string();
+    }
+
+    let existing_tail = last_chars(existing_trim, 120);
+    if !existing_tail.is_empty() && next_trim.starts_with(&existing_tail) {
+        return next_trim[existing_tail.len()..].trim_start().to_string();
+    }
+
+    next_trim.to_string()
+}
+
+fn find_overlap_drop_index(existing: &str, next: &str) -> Option<usize> {
+    let existing_tokens = tokenize_with_offsets(existing);
+    let next_tokens = tokenize_with_offsets(next);
+    if existing_tokens.is_empty() || next_tokens.is_empty() {
+        return None;
+    }
+
+    let max_overlap = existing_tokens
+        .len()
+        .min(next_tokens.len())
+        .min(MAX_OVERLAP_TOKENS);
+    if max_overlap < MIN_OVERLAP_TOKENS {
+        return None;
+    }
+
+    for overlap in (MIN_OVERLAP_TOKENS..=max_overlap).rev() {
+        let start_existing = existing_tokens.len() - overlap;
+        let mut matches = true;
+        for idx in 0..overlap {
+            if existing_tokens[start_existing + idx].norm != next_tokens[idx].norm {
+                matches = false;
+                break;
+            }
+        }
+        if matches {
+            if overlap >= next_tokens.len() {
+                return Some(next.len());
+            }
+            return Some(next_tokens[overlap].start);
+        }
+    }
+
+    None
+}
+
+fn tokenize_with_offsets(text: &str) -> Vec<TokenOffset> {
+    let mut tokens = Vec::new();
+    let mut current = String::new();
+    let mut current_start = 0usize;
+    let mut in_token = false;
+
+    for (idx, ch) in text.char_indices() {
+        if ch.is_alphanumeric() {
+            if !in_token {
+                in_token = true;
+                current_start = idx;
+                current.clear();
+            }
+            for lower in ch.to_lowercase() {
+                current.push(lower);
+            }
+        } else if in_token {
+            tokens.push(TokenOffset {
+                norm: current.clone(),
+                start: current_start,
+            });
+            in_token = false;
+        }
+    }
+
+    if in_token {
+        tokens.push(TokenOffset {
+            norm: current,
+            start: current_start,
+        });
+    }
+
+    tokens
+}
+
+fn last_chars(value: &str, count: usize) -> String {
+    let mut chars: Vec<char> = value.chars().collect();
+    if chars.len() <= count {
+        return value.to_string();
+    }
+    chars.drain(0..chars.len() - count);
+    chars.into_iter().collect()
 }

@@ -17,6 +17,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
         isLoading,
         deleteTranscription,
         retryTranscription,
+        cancelRetryTranscription,
         retryingIds,
         retryLlmCleanup,
         undoLlmCleanup,
@@ -181,6 +182,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                                         isRetrying={isRetrying}
                                         onDelete={deleteTranscription}
                                         onRetry={retryTranscription}
+                                        onCancelRetry={cancelRetryTranscription}
                                         onRetryLlm={retryLlmCleanup}
                                         onUndoLlm={undoLlmCleanup}
                                         showLlmButtons={showLlmButtons}
@@ -190,7 +192,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                                 </div>
                             );
                         }}
-                        className="custom-scrollbar scrollbar-balanced"
+                        className="custom-scrollbar scrollbar-gutter"
                     />
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center">
@@ -241,24 +243,6 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                 )}
             </div>
 
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 4px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #1a1a1e;
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #252528;
-                }
-                .scrollbar-balanced {
-                    scrollbar-gutter: stable both-edges;
-                }
-            `}</style>
         </motion.div>
     );
 };

@@ -706,21 +706,6 @@ const PersonalizationView = () => {
                 />
             )}
 
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: var(--color-scrollbar-thumb);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: var(--color-scrollbar-thumb-hover);
-                }
-            `}</style>
         </div>
     );
 };

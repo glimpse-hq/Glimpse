@@ -37,7 +37,7 @@ pub fn build_dictionary_prompt(entries: &[String]) -> Option<String> {
         return None;
     }
 
-    let mut prompt = String::from("Context: ");
+    let mut prompt = String::new();
     let mut added_any = false;
 
     for (idx, term) in cleaned.iter().enumerate() {

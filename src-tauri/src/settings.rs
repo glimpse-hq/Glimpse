@@ -196,7 +196,7 @@ fn seed_personality_notes(personalities: &mut [Personality]) {
                 "- Write in correct email semi-formal, friendly, formatting with new lines and paragraphs.".to_string(),
                 "- Fix run-on sentences by breaking them into distinct, logical statements.".to_string(),
                 "- Ensure standard capitalization and punctuation rules are applied strictly.".to_string(),
-                "- Sign off with my name".to_string(),
+                "- Sign off emails with [My Name].".to_string(),
             ],
             "notes" => vec![
                 "- Distill into a concise, scannable format based on the user's speech.".to_string(),

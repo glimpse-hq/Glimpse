@@ -148,9 +148,6 @@ pub fn build_mode_prompt(settings: &UserSettings) -> Option<String> {
     }
 
     let mut prompt = MODE_PROMPT_PREAMBLE.to_string();
-    if !settings.user_name.trim().is_empty() {
-        prompt.push_str(&format!("\n- My name is: {}", settings.user_name.trim()));
-    }
     prompt.push_str("\n\n");
     prompt.push_str(&instructions);
     Some(prompt)
@@ -172,7 +169,7 @@ pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality
 }
 
 pub fn build_mode_prompt_for_personality(
-    settings: &UserSettings,
+    _settings: &UserSettings,
     personality: &Personality,
 ) -> Option<String> {
     if personality.instructions.is_empty() {
@@ -189,9 +186,6 @@ pub fn build_mode_prompt_for_personality(
     }
 
     let mut prompt = MODE_PROMPT_PREAMBLE.to_string();
-    if !settings.user_name.trim().is_empty() {
-        prompt.push_str(&format!("\n- My name is: {}", settings.user_name.trim()));
-    }
     prompt.push_str("\n\n");
     prompt.push_str(&instructions);
     Some(prompt)
