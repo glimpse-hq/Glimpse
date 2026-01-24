@@ -394,7 +394,11 @@ fn calculate_rms(samples: &[f32]) -> f32 {
 }
 
 /// Calculate percentage of frames containing speech using VAD
-fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
+fn calculate_speech_percentage_with_mode(
+    samples: &[f32],
+    sample_rate: u32,
+    mode: VadMode,
+) -> f32 {
     if samples.is_empty() {
         return 0.0;
     }
@@ -424,8 +428,7 @@ fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
 
     let mut vad = match Vad::new(vad_rate as i32) {
         Ok(mut instance) => {
-            // Use aggressive mode to be more strict about detecting speech
-            let _ = instance.fvad_set_mode(VadMode::LowBitrate);
+            let _ = instance.fvad_set_mode(mode);
             instance
         }
         Err(_) => return 100.0, // If VAD fails, assume it's valid
@@ -448,6 +451,28 @@ fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
     }
 
     (speech_frames as f32 / total_frames as f32) * 100.0
+}
+
+fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
+    calculate_speech_percentage_with_mode(samples, sample_rate, VadMode::LowBitrate)
+}
+
+pub fn speech_percentage_i16_with_mode(
+    samples: &[i16],
+    sample_rate: u32,
+    mode: VadMode,
+) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+
+    let scale = 1.0 / i16::MAX as f32;
+    let samples_f32: Vec<f32> = samples
+        .iter()
+        .map(|sample| *sample as f32 * scale)
+        .collect();
+
+    calculate_speech_percentage_with_mode(&samples_f32, sample_rate, mode)
 }
 
 const WAV_SAMPLE_RATE: u32 = 16_000;
@@ -517,7 +542,11 @@ fn prepare_wav_samples(samples: &[i16], sample_rate: u32, channels: u16) -> Vec<
         .collect()
 }
 
-fn encode_to_wav(samples: &[i16], sample_rate: u32, channels: u16) -> Result<Vec<u8>> {
+fn encode_to_wav(
+    samples: &[i16],
+    sample_rate: u32,
+    channels: u16,
+) -> Result<Vec<u8>> {
     if samples.is_empty() {
         return Err(anyhow!("Recording buffer is empty"));
     }

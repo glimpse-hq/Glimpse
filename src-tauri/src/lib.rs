@@ -294,6 +294,7 @@ pub fn run() {
             delete_transcription,
             delete_all_transcriptions,
             retry_transcription,
+            cancel_retry_transcription,
             retry_llm_cleanup,
             undo_llm_cleanup,
             model_manager::list_models,
@@ -364,6 +365,7 @@ pub struct AppState {
     cloud_manager: cloud::CloudManager,
     pending_selected_text: parking_lot::Mutex<Option<String>>,
     download_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     update_state: update_checker::SharedUpdateState,
 }
 
@@ -406,6 +408,7 @@ impl AppState {
             cloud_manager: cloud::CloudManager::new(),
             pending_selected_text: parking_lot::Mutex::new(None),
             download_tokens: parking_lot::Mutex::new(HashMap::new()),
+            retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             update_state: update_checker::create_state(),
         }
     }
@@ -500,6 +503,25 @@ impl AppState {
 
     pub fn clear_download_token(&self, model: &str) {
         self.download_tokens.lock().remove(model);
+    }
+
+    pub fn register_retry_transcription(&self, id: String) -> CancellationToken {
+        let token = CancellationToken::new();
+        self.retry_tokens.lock().insert(id, token.clone());
+        token
+    }
+
+    pub fn cancel_retry_transcription(&self, id: &str) -> bool {
+        if let Some(token) = self.retry_tokens.lock().remove(id) {
+            token.cancel();
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn clear_retry_transcription(&self, id: &str) {
+        self.retry_tokens.lock().remove(id);
     }
 
     pub fn update_state(&self) -> &update_checker::SharedUpdateState {
@@ -988,9 +1010,18 @@ async fn retry_transcription(
 
     let settings = state.current_settings();
     let saved_mode = (record.mode_id, record.mode_name);
-    transcribe::retry_transcription_async(&app, saved, settings, id, saved_mode);
+    let cancel_token = state.register_retry_transcription(id.clone());
+    transcribe::retry_transcription_async(&app, saved, settings, id, saved_mode, cancel_token);
 
     Ok(())
+}
+
+#[tauri::command]
+fn cancel_retry_transcription(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<bool, String> {
+    Ok(state.cancel_retry_transcription(&id))
 }
 
 #[tauri::command]

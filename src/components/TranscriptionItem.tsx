@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
-import { Copy, Trash2, RotateCw, Check, ChevronDown, ChevronUp, MoreVertical, Wand2, AlertTriangle, Undo2, Cloud } from "lucide-react";
+import { Copy, Trash2, RotateCw, Check, ChevronDown, ChevronUp, MoreVertical, Wand2, AlertTriangle, Undo2, Cloud, X } from "lucide-react";
 import { TranscriptionRecord } from "../hooks/useTranscriptions";
 import DotMatrix from "./DotMatrix";
 
@@ -22,6 +22,7 @@ interface TranscriptionItemProps {
     record: TranscriptionRecord;
     onDelete: (id: string) => Promise<void>;
     onRetry: (id: string) => Promise<void>;
+    onCancelRetry?: (id: string) => Promise<void>;
     onRetryLlm?: (id: string) => Promise<void>;
     onUndoLlm?: (id: string) => Promise<void>;
     isRetrying?: boolean;
@@ -30,7 +31,7 @@ interface TranscriptionItemProps {
     shiftHeld?: boolean;
 }
 
-const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete, onRetry, onRetryLlm, onUndoLlm, isRetrying = false, showLlmButtons = false, skipAnimation = false, shiftHeld = false }) => {
+const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete, onRetry, onCancelRetry, onRetryLlm, onUndoLlm, isRetrying = false, showLlmButtons = false, skipAnimation = false, shiftHeld = false }) => {
     const [copied, setCopied] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isRetryingLlm, setIsRetryingLlm] = useState(false);
@@ -38,6 +39,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
     const [isExpanded, setIsExpanded] = useState(false);
     const [isOverflowing, setIsOverflowing] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [selectionText, setSelectionText] = useState("");
     const menuRef = useRef<HTMLDivElement>(null);
     const textRef = useRef<HTMLDivElement>(null);
 
@@ -51,6 +53,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setMenuOpen(false);
+                setSelectionText("");
             }
         };
 
@@ -65,9 +68,21 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
             await navigator.clipboard.writeText(record.text);
             setCopied(true);
             setMenuOpen(false);
+            setSelectionText("");
             setTimeout(() => setCopied(false), 2000);
         } catch (err) {
             console.error("Failed to copy:", err);
+        }
+    };
+
+    const handleCopySelection = async () => {
+        if (!selectionText.trim()) return;
+        try {
+            await navigator.clipboard.writeText(selectionText);
+            setMenuOpen(false);
+            setSelectionText("");
+        } catch (err) {
+            console.error("Failed to copy selection:", err);
         }
     };
 
@@ -75,6 +90,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
         if (isDeleting) return;
         setIsDeleting(true);
         setMenuOpen(false);
+        setSelectionText("");
         onDelete(record.id).catch(err => {
             console.error("Failed to delete:", err);
             setIsDeleting(false);
@@ -84,6 +100,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
     const handleRetry = async () => {
         if (isRetrying) return;
         setMenuOpen(false);
+        setSelectionText("");
         try {
             await onRetry(record.id);
         } catch {
@@ -95,6 +112,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
         if (isRetryingLlm || !onRetryLlm) return;
         setIsRetryingLlm(true);
         setMenuOpen(false);
+        setSelectionText("");
         try {
             await onRetryLlm(record.id);
         } catch (err) {
@@ -108,6 +126,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
         if (isUndoingLlm || !onUndoLlm) return;
         setIsUndoingLlm(true);
         setMenuOpen(false);
+        setSelectionText("");
         try {
             await onUndoLlm(record.id);
         } catch (err) {
@@ -139,6 +158,29 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
         const remaining = Math.round(seconds % 60);
         return remaining === 0 ? `${minutes}m audio` : `${minutes}m ${remaining}s audio`;
     };
+    const allowContextMenu = !isRetryingLlm && !isUndoingLlm;
+
+    const captureSelectionText = () => {
+        const selection = window.getSelection();
+        if (!selection) return "";
+        const text = selection.toString();
+        if (!text.trim()) return "";
+        const anchor = selection.anchorNode;
+        const focus = selection.focusNode;
+        if (
+            textRef.current &&
+            ((anchor && textRef.current.contains(anchor)) ||
+                (focus && textRef.current.contains(focus)))
+        ) {
+            return text;
+        }
+        return "";
+    };
+
+    const openMenu = () => {
+        setSelectionText(captureSelectionText());
+        setMenuOpen(true);
+    };
 
     return (
         <motion.div
@@ -147,20 +189,43 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2 }}
             className="group relative snap-start"
+            onContextMenu={(event) => {
+                if (!allowContextMenu) return;
+                event.preventDefault();
+                if (shiftHeld) {
+                    handleDelete();
+                } else {
+                    openMenu();
+                }
+            }}
         >
             <div className={`flex items-start gap-3 py-3 px-4 rounded-lg transition-colors ${isError ? "bg-red-500/[0.03]" : "hover:bg-surface-surface"}`}>
                 {/* Status Indicator */}
                 <div className="mt-1.5 shrink-0">
                     {isRetrying ? (
-                        <DotMatrix
-                            rows={1}
-                            cols={1}
-                            activeDots={[0]}
-                            dotSize={4}
-                            gap={1}
-                            color="var(--color-warning)"
-                            className="opacity-70"
-                        />
+                        <button
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onCancelRetry?.(record.id);
+                            }}
+                            className="relative flex items-center justify-center group/stop"
+                            aria-label="Stop transcription"
+                            title="Stop transcription"
+                        >
+                            <DotMatrix
+                                rows={1}
+                                cols={1}
+                                activeDots={[0]}
+                                dotSize={4}
+                                gap={1}
+                                color="var(--color-warning)"
+                                className="opacity-70 transition-opacity group-hover/stop:opacity-20"
+                            />
+                            <X
+                                size={10}
+                                className="absolute text-cloud opacity-0 transition-opacity group-hover/stop:opacity-100"
+                            />
+                        </button>
                     ) : isError ? (
                         <AlertTriangle size={14} className="text-red-400/70" />
                     ) : (
@@ -232,6 +297,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         <div 
                             ref={textRef}
                             className={`text-[13px] leading-relaxed text-content-secondary select-text cursor-text ${!isExpanded ? "line-clamp-6" : ""}`}
+                            onMouseUp={() => setSelectionText(captureSelectionText())}
+                            onKeyUp={() => setSelectionText(captureSelectionText())}
                         >
                             <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkBreaks]}>
                                 {displayText || ""}
@@ -309,11 +376,16 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                 if (shiftHeld) {
                                     handleDelete();
                                 } else {
-                                    setMenuOpen(!menuOpen);
+                                    if (menuOpen) {
+                                        setMenuOpen(false);
+                                        setSelectionText("");
+                                    } else {
+                                        openMenu();
+                                    }
                                 }
                             }}
                             whileTap={{ scale: 0.95 }}
-                            className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 ${shiftHeld ? "hover:bg-red-500/10" : "hover:bg-surface-elevated"
+                            className={`p-1.5 rounded-md transition-colors ${shiftHeld ? "hover:bg-red-500/10" : "hover:bg-surface-elevated"
                                 }`}
                             title={shiftHeld ? "Delete" : "More options"}
                             aria-label={shiftHeld ? "Delete" : "More options"}
@@ -340,6 +412,18 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                         right: menuRef.current ? window.innerWidth - menuRef.current.getBoundingClientRect().right : 0,
                                     }}
                                 >
+                                    {selectionText.trim().length > 0 && (
+                                        <>
+                                            <button
+                                                onClick={handleCopySelection}
+                                                className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors"
+                                            >
+                                                <Copy size={12} className="text-content-muted" />
+                                                <span>Copy selection</span>
+                                            </button>
+                                            <div className="h-px bg-border-secondary mx-2" />
+                                        </>
+                                    )}
                                     <button
                                         onClick={handleRetry}
                                         disabled={isRetrying}

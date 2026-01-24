@@ -169,7 +169,7 @@ pub fn resolve_active_personality(settings: &UserSettings) -> Option<Personality
 }
 
 pub fn build_mode_prompt_for_personality(
-    settings: &UserSettings,
+    _settings: &UserSettings,
     personality: &Personality,
 ) -> Option<String> {
     if personality.instructions.is_empty() {
