@@ -1,5 +1,6 @@
 export * from "./settings";
 export * from "./models";
+export * from "./library";
 export * from "./audio";
 export * from "./app";
 export * from "./transcription";

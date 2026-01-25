@@ -28,6 +28,8 @@ Pre-built releases are available on the [Releases page](https://github.com/Legen
 - **Assistive text insertion** — Automatically inserts transcribed text where you're typing
 - **Edit mode** — Highlight any text and speak the changes to it
 - **Personalization** — Teach Glimpse how to respond in each app or website
+- **Library** — Transcribe audio & video files, export in multiple formats, and synced playback.
+
 - **More coming soon** — See the [Roadmap](#roadmap) below
 
 ## Building Locally
@@ -80,7 +82,7 @@ bun tauri build
 - [ ] App localization via lingui
 - [x] Personalization & per app context: per-app writing styles (email, messaging, etc.)
 - [x] Edit mode: rewrite whats selected text with full context
-- [ ] Transcribe audio and video files
+- [x] Transcribe audio and video files
 - [ ] Ask mode: query what's on your screen
 - [ ] Better customizable keybinds
 
