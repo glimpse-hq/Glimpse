@@ -163,6 +163,17 @@ pub fn build_app_menu(
         .item(&PredefinedMenuItem::maximize(app, Some("Zoom"))?)
         .build()?;
 
+    // Edit menu (enables standard copy/paste shortcuts)
+    let edit_menu = SubmenuBuilder::new(app, "Edit")
+        .item(&PredefinedMenuItem::undo(app, Some("Undo"))?)
+        .item(&PredefinedMenuItem::redo(app, Some("Redo"))?)
+        .separator()
+        .item(&PredefinedMenuItem::cut(app, Some("Cut"))?)
+        .item(&PredefinedMenuItem::copy(app, Some("Copy"))?)
+        .item(&PredefinedMenuItem::paste(app, Some("Paste"))?)
+        .item(&PredefinedMenuItem::select_all(app, Some("Select All"))?)
+        .build()?;
+
     // Help menu
     let help_menu = SubmenuBuilder::new(app, "Help")
         .item(&MenuItemBuilder::with_id(MENU_ID_WEBSITE, "Github").build(app)?)
@@ -170,6 +181,6 @@ pub fn build_app_menu(
         .build()?;
 
     MenuBuilder::new(app)
-        .items(&[&app_menu, &view_menu, &help_menu])
+        .items(&[&app_menu, &edit_menu, &view_menu, &help_menu])
         .build()
 }

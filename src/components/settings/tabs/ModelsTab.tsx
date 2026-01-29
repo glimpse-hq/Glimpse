@@ -234,10 +234,10 @@ const ModelsTab = ({
                                         </>
                                     )}
 
-                                    <div className="flex items-start gap-2 rounded-lg border border-border-secondary bg-surface-elevated px-3 py-2">
-                                        <Info size={12} className="text-content-muted shrink-0 mt-0.5" />
+                                    <div className="flex items-center gap-2 rounded-lg border border-border-secondary bg-surface-elevated px-3 py-2">
+                                        <Info size={12} className="text-content-muted shrink-0" />
                                         <p className="text-[10px] text-content-muted">
-                                            Removes filler words, fixes repetitions, and cleans up speech disfluencies while preserving your meaning.
+                                            Removes filler words, fixes repetitions, and cleans up disfluencies without changing meaning.
                                         </p>
                                     </div>
                                 </div>
