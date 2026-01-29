@@ -531,22 +531,22 @@ const PersonalizationView = () => {
                     gap={3}
                     color="var(--color-accent)"
                 />
-                <div className="flex-1">
-                    <p className="text-2xl font-medium text-content-primary tracking-tight">Personalization</p>
-                    <div className="mt-1 flex items-center justify-between gap-4">
-                        <p className="text-[12px] text-content-secondary">
+                <div className="flex-1 flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-2xl font-medium text-content-primary tracking-tight">Personalization</p>
+                        <p className="mt-1 text-[12px] text-content-secondary">
                             Tailor modes to apps, sites, and custom instructions.
                         </p>
-                        <button
-                            onClick={handleAddMode}
-                            aria-label="New mode"
-                            title="New mode"
-                            className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-2.5 py-1.5 text-[11px] font-medium text-content-primary hover:bg-surface-elevated transition-colors"
-                        >
-                            <Plus size={12} />
-                            New mode
-                        </button>
                     </div>
+                    <button
+                        onClick={handleAddMode}
+                        aria-label="New mode"
+                        title="New mode"
+                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-2.5 py-1.5 text-[11px] font-medium text-content-primary hover:bg-surface-elevated transition-colors"
+                    >
+                        <Plus size={12} />
+                        New mode
+                    </button>
                 </div>
             </div>
 
