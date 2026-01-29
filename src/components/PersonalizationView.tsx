@@ -206,7 +206,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                     animate={{ opacity: 1, scale: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96, y: 20 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="relative w-[520px] h-[620px] max-w-[92vw] max-h-[92vh] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                    className="relative w-[520px] h-[620px] max-w-[92vw] max-h-[92vh] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
@@ -293,7 +293,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                     onChange={(event) => handleInstructionsChange(event.target.value)}
                                     placeholder="Add custom instructions"
                                     aria-label="Custom instructions"
-                                    className="w-full h-20 resize-none bg-transparent text-[11px] leading-[20px] font-mono text-content-primary placeholder-content-disabled outline-none custom-scrollbar"
+                                    className="w-full h-32 resize-none bg-transparent text-[11px] leading-[20px] font-mono text-content-primary placeholder-content-disabled outline-none custom-scrollbar"
                                 />
                             </div>
                         </section>
@@ -316,7 +316,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                     searchPlaceholder="Search applications..."
                                     menuClassName="max-h-[220px]"
                                 />
-                                <div className="space-y-2 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                                <div className="relative flex-1 min-h-0">
+                                    <div className="space-y-1 h-full overflow-y-auto custom-scrollbar custom-scrollbar-thin">
                                     {personality.apps.length === 0 ? (
                                         <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 text-[11px] text-content-muted">
                                             No applications selected
@@ -347,6 +348,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                             );
                                         })
                                     )}
+                                    </div>
+                                    <div className="scroll-fade-bottom" aria-hidden="true" />
                                 </div>
                             </section>
 
@@ -385,7 +388,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                 {websiteError && (
                                     <p className="text-[10px] text-error">{websiteError}</p>
                                 )}
-                                <div className="space-y-2 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+                                <div className="relative flex-1 min-h-0">
+                                    <div className="space-y-1 h-full overflow-y-auto custom-scrollbar">
                                     {personality.websites.length === 0 ? (
                                         <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 text-[11px] text-content-muted">
                                             No websites added
@@ -410,6 +414,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                             </div>
                                         ))
                                     )}
+                                    </div>
+                                    <div className="scroll-fade-bottom" aria-hidden="true" />
                                 </div>
                             </section>
                         </div>

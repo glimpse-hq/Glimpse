@@ -189,6 +189,55 @@ body {
   background: var(--color-scrollbar-thumb-hover);
 }
 
+.custom-scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scroll-fade-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18px;
+  background: linear-gradient(180deg, transparent, #161618);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scroll-fade-top {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 18px;
+  background: linear-gradient(180deg, #161618, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scroll-fade-bottom-dark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 18px;
+  background: linear-gradient(180deg, transparent, #0A0A0C);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.scroll-fade-top-dark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 18px;
+  background: linear-gradient(180deg, #0A0A0C, transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .settings-scroll {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;

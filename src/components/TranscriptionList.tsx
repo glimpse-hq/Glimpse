@@ -165,35 +165,39 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
                         </p>
                     </div>
                 ) : transcriptions.length > 0 || isLoading ? (
-                    <Virtuoso
-                        style={{ height: '100%' }}
-                        data={transcriptions}
-                        overscan={200}
-                        components={{
-                            Header: () => <div className="h-1.5" />,
-                        }}
-                        itemContent={(_index, record) => {
-                            const isRetrying = retryingIds.includes(record.id);
-                            return (
-                                <div className="pb-1 pl-1.5">
-                                    <TranscriptionItem
-                                        key={record.id}
-                                        record={record}
-                                        isRetrying={isRetrying}
-                                        onDelete={deleteTranscription}
-                                        onRetry={retryTranscription}
-                                        onCancelRetry={cancelRetryTranscription}
-                                        onRetryLlm={retryLlmCleanup}
-                                        onUndoLlm={undoLlmCleanup}
-                                        showLlmButtons={showLlmButtons}
-                                        skipAnimation={!!debouncedQuery}
-                                        shiftHeld={shiftHeld}
-                                    />
-                                </div>
-                            );
-                        }}
-                        className="custom-scrollbar scrollbar-gutter"
-                    />
+                    <>
+                        <div className="scroll-fade-top-dark" />
+                        <Virtuoso
+                            style={{ height: '100%' }}
+                            data={transcriptions}
+                            overscan={200}
+                            components={{
+                                Header: () => <div className="h-1.5" />,
+                            }}
+                            itemContent={(_index, record) => {
+                                const isRetrying = retryingIds.includes(record.id);
+                                return (
+                                    <div className="pb-1 pl-1.5">
+                                        <TranscriptionItem
+                                            key={record.id}
+                                            record={record}
+                                            isRetrying={isRetrying}
+                                            onDelete={deleteTranscription}
+                                            onRetry={retryTranscription}
+                                            onCancelRetry={cancelRetryTranscription}
+                                            onRetryLlm={retryLlmCleanup}
+                                            onUndoLlm={undoLlmCleanup}
+                                            showLlmButtons={showLlmButtons}
+                                            skipAnimation={!!debouncedQuery}
+                                            shiftHeld={shiftHeld}
+                                        />
+                                    </div>
+                                );
+                            }}
+                            className="custom-scrollbar scrollbar-gutter"
+                        />
+                        <div className="scroll-fade-bottom-dark" />
+                    </>
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center">
                         <div className="flex flex-col items-center justify-center py-8 px-4">
