@@ -24,5 +24,6 @@ declare module "howler" {
         playing(id?: number | string): boolean;
         seek(seek?: number, id?: number | string): number | void;
         duration(id?: number | string): number;
+        rate(rate: number, id?: number | string): number;
     }
 }

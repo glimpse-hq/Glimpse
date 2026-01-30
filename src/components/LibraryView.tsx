@@ -8,6 +8,8 @@ import {
     AlertTriangle,
     Check,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     CornerDownRight,
     Copy,
     FolderOpen,
@@ -37,6 +39,7 @@ import type {
 } from "../types";
 
 const SUPPORTED_EXTENSIONS = ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "mov", "webm", "mkv"];
+const PLAYBACK_RATES = [0.5, 1, 1.5, 2, 2.5, 3, 4];
 
 type LibraryViewProps = {
     pendingImportPaths: string[] | null;
@@ -78,6 +81,8 @@ const formatDuration = (seconds: number) => {
     }
     return `${minutes}:${secs.toString().padStart(2, "0")}`;
 };
+
+const formatPlaybackRate = (rate: number) => rate.toFixed(2).replace(/\.?0+$/, "");
 
 const formatTimestamp = (ms: number) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -1074,6 +1079,7 @@ const LibraryModal = ({
     const [isPlaying, setIsPlaying] = useState(false);
     const [audioReady, setAudioReady] = useState(false);
     const [audioError, setAudioError] = useState<string | null>(null);
+    const [playbackRate, setPlaybackRate] = useState(1);
     const [isScrubbing, setIsScrubbing] = useState(false);
     const [streamChunks, setStreamChunks] = useState<string[]>([]);
     const [showRetranscribe, setShowRetranscribe] = useState(false);
@@ -1083,6 +1089,7 @@ const LibraryModal = ({
     const transcriptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const howlRef = useRef<Howl | null>(null);
+    const playbackRateRef = useRef(1);
     const streamTranscriptRef = useRef("");
     const scrubWasPlayingRef = useRef(false);
     const scrubValueRef = useRef<number | null>(null);
@@ -1140,6 +1147,14 @@ const LibraryModal = ({
     useEffect(() => {
         isPlayingRef.current = isPlaying;
     }, [isPlaying]);
+
+    useEffect(() => {
+        playbackRateRef.current = playbackRate;
+        const sound = howlRef.current;
+        if (sound) {
+            sound.rate(playbackRate);
+        }
+    }, [playbackRate]);
 
     useEffect(() => {
         setNameDraft(item.name);
@@ -1224,6 +1239,7 @@ const LibraryModal = ({
             },
         });
 
+        sound.rate(playbackRateRef.current);
         howlRef.current = sound;
 
         return () => {
@@ -1231,6 +1247,18 @@ const LibraryModal = ({
             sound.unload();
         };
     }, [audioUrl, item.id, startSeekLoop, stopSeekLoop]);
+
+    const handlePlaybackRateStep = useCallback((direction: -1 | 1) => {
+        setPlaybackRate((prev) => {
+            const currentIndex = PLAYBACK_RATES.indexOf(prev);
+            const safeIndex = currentIndex === -1 ? PLAYBACK_RATES.indexOf(1) : currentIndex;
+            const nextIndex = Math.min(
+                PLAYBACK_RATES.length - 1,
+                Math.max(0, safeIndex + direction),
+            );
+            return PLAYBACK_RATES[nextIndex];
+        });
+    }, []);
 
     useEffect(() => {
         setTranscriptDraft(item.transcript ?? "");
@@ -1477,6 +1505,10 @@ const LibraryModal = ({
     const scrubberMax = audioDuration > 0 ? audioDuration : 1;
     const scrubberValue = Math.min(audioCurrentTime, scrubberMax);
     const scrubberPercent = scrubberMax > 0 ? (scrubberValue / scrubberMax) * 100 : 0;
+    const minPlaybackRate = PLAYBACK_RATES[0];
+    const maxPlaybackRate = PLAYBACK_RATES[PLAYBACK_RATES.length - 1];
+    const canDecreasePlaybackRate = playbackRate > minPlaybackRate;
+    const canIncreasePlaybackRate = playbackRate < maxPlaybackRate;
     const showStreaming = item.status.type === "transcribing" && !showTimestamps;
     const showSegmentView = showTimestamps && canShowTimestamps;
     const normalizedSearchQuery = searchQuery.trim();
@@ -1772,9 +1804,51 @@ const LibraryModal = ({
                                 >
                                     {isPlaying ? <Pause size={12} /> : <Play size={12} />}
                                 </button>
-                                <span className="text-[9px] text-content-disabled tabular-nums">
-                                    {formatDuration(audioCurrentTime)} / {formatDuration(audioDuration)}
-                                </span>
+                                <div className="flex flex-col items-center justify-center">
+                                    <span className="text-[9px] text-content-disabled tabular-nums leading-none">
+                                        {formatDuration(audioCurrentTime)} / {formatDuration(audioDuration)}
+                                    </span>
+                                    <div className="mt-[2px] flex items-center justify-center gap-0.25 text-[8px] leading-none">
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePlaybackRateStep(-1)}
+                                            disabled={!audioReady || !!audioError || !canDecreasePlaybackRate}
+                                            aria-label="Decrease playback speed"
+                                            className={`flex h-3 w-3 items-center justify-center rounded transition-colors ${
+                                                !audioReady || audioError || !canDecreasePlaybackRate
+                                                    ? "text-content-disabled"
+                                                    : "text-content-muted hover:text-content-primary"
+                                            }`}
+                                        >
+                                            <ChevronLeft size={9} />
+                                        </button>
+                                        <AnimatePresence mode="popLayout" initial={false}>
+                                            <motion.span
+                                                key={playbackRate}
+                                                initial={{ opacity: 0, y: -2, scale: 0.92 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 2, scale: 0.92 }}
+                                                transition={{ duration: 0.16, ease: "easeOut" }}
+                                                className="w-[28px] text-center text-[8px] font-medium text-content-secondary tabular-nums"
+                                            >
+                                                {formatPlaybackRate(playbackRate)}x
+                                            </motion.span>
+                                        </AnimatePresence>
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePlaybackRateStep(1)}
+                                            disabled={!audioReady || !!audioError || !canIncreasePlaybackRate}
+                                            aria-label="Increase playback speed"
+                                            className={`flex h-3 w-3 items-center justify-center rounded transition-colors ${
+                                                !audioReady || audioError || !canIncreasePlaybackRate
+                                                    ? "text-content-disabled"
+                                                    : "text-content-muted hover:text-content-primary"
+                                            }`}
+                                        >
+                                            <ChevronRight size={9} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div className="mt-2">
                                 <input
