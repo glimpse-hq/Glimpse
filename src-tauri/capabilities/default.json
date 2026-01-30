@@ -10,6 +10,9 @@
   "permissions": [
     "core:default",
     "core:window:allow-start-dragging",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:default",
     "opener:default",
     "macos-permissions:default"
   ]

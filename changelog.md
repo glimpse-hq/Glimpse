@@ -1,3 +1,16 @@
+0.6.0
+
+### Library mode
+Added a new Library tab where you can drag files anywhere in the app to transcribe.
+
+- Files can be imported into the app or transcribed from where they are.
+- Tag, rename, delete, search, and filter your library items.
+- Export transcripts as TXT, MD, SRT, or VTT.
+- Retranscribe items with a different local model.
+- Using Whisper & Parakeet models you can timestamp speech and play it back with auto highlighting.
+
+---
+
 0.5.5
 
 ### Changes
