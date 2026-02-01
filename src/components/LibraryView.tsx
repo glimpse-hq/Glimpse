@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Howl } from "howler";
 import {
     AlertTriangle,
@@ -288,36 +289,77 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
     }, [refreshModelStatus]);
 
     useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Shift") setShiftHeld(true);
+        let cancelled = false;
+        let unlistenFocus: UnlistenFn | null = null;
+
+        const handleKeyChange = (event: KeyboardEvent) => {
+            setShiftHeld(event.shiftKey);
         };
-        const handleKeyUp = (event: KeyboardEvent) => {
-            if (event.key === "Shift") setShiftHeld(false);
+        const resetShift = () => setShiftHeld(false);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState !== "visible") {
+                setShiftHeld(false);
+            }
         };
-        document.addEventListener("keydown", handleKeyDown);
-        document.addEventListener("keyup", handleKeyUp);
+
+        getCurrentWindow()
+            .onFocusChanged(() => {
+                setShiftHeld(false);
+            })
+            .then((unlisten) => {
+                if (cancelled) {
+                    unlisten();
+                } else {
+                    unlistenFocus = unlisten;
+                }
+            })
+            .catch(() => {});
+
+        document.addEventListener("keydown", handleKeyChange);
+        document.addEventListener("keyup", handleKeyChange);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", resetShift);
+        window.addEventListener("focus", resetShift);
+
         return () => {
-            document.removeEventListener("keydown", handleKeyDown);
-            document.removeEventListener("keyup", handleKeyUp);
+            cancelled = true;
+            document.removeEventListener("keydown", handleKeyChange);
+            document.removeEventListener("keyup", handleKeyChange);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", resetShift);
+            window.removeEventListener("focus", resetShift);
+            unlistenFocus?.();
         };
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
         let unlistenComplete: UnlistenFn | null = null;
         let unlistenError: UnlistenFn | null = null;
 
         const setup = async () => {
-            unlistenComplete = await listen<{ model: string }>("download:complete", (event) => {
-                refreshModelStatus(event.payload.model);
-            });
-            unlistenError = await listen<{ model: string }>("download:error", (event) => {
-                refreshModelStatus(event.payload.model);
-            });
+            const [complete, error] = await Promise.all([
+                listen<{ model: string }>("download:complete", (event) => {
+                    refreshModelStatus(event.payload.model);
+                }),
+                listen<{ model: string }>("download:error", (event) => {
+                    refreshModelStatus(event.payload.model);
+                }),
+            ]);
+
+            if (cancelled) {
+                complete();
+                error();
+            } else {
+                unlistenComplete = complete;
+                unlistenError = error;
+            }
         };
 
         setup();
 
         return () => {
+            cancelled = true;
             unlistenComplete?.();
             unlistenError?.();
         };
