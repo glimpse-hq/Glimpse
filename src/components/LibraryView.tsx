@@ -35,6 +35,7 @@ import type {
     LibraryItem,
     LibraryItemPatch,
     LibraryItemStatus,
+    TranscriptSegment,
     ModelInfo,
     ModelStatus,
     StoredSettings,
@@ -2168,7 +2169,9 @@ const LibraryModal = ({
                                 data={item.segments ?? []}
                                 overscan={200}
                                 className="custom-scrollbar text-[13px] text-content-secondary leading-relaxed pr-2"
-                                itemKey={(index, segment) => `${segment.start_ms}-${index}`}
+                                computeItemKey={(index: number, segment: TranscriptSegment) =>
+                                    `${segment.start_ms}-${index}`
+                                }
                                 itemContent={(idx, segment) => {
                                     const isActive = idx === activeSegmentIndex;
                                     return (
@@ -2219,7 +2222,7 @@ const LibraryModal = ({
                                     data={streamChunks}
                                     overscan={200}
                                     className="custom-scrollbar text-[13px] text-content-secondary leading-relaxed pr-2"
-                                    itemKey={(index) => `${item.id}-chunk-${index}`}
+                                    computeItemKey={(index: number) => `${item.id}-chunk-${index}`}
                                     itemContent={(idx, chunk) => (
                                         <div className="pb-2">
                                             <motion.p
