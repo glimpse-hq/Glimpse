@@ -466,6 +466,10 @@ pub fn speech_percentage_i16_with_mode(
         return 0.0;
     }
 
+    if matches!(sample_rate, 8000 | 16000 | 32000 | 48000) {
+        return calculate_speech_percentage_i16_with_mode(samples, sample_rate, mode);
+    }
+
     let scale = 1.0 / i16::MAX as f32;
     let samples_f32: Vec<f32> = samples
         .iter()
@@ -473,6 +477,48 @@ pub fn speech_percentage_i16_with_mode(
         .collect();
 
     calculate_speech_percentage_with_mode(&samples_f32, sample_rate, mode)
+}
+
+fn calculate_speech_percentage_i16_with_mode(
+    samples: &[i16],
+    sample_rate: u32,
+    mode: VadMode,
+) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+
+    let frame_ms = 30usize;
+    let frame_len = (sample_rate as usize * frame_ms) / 1000;
+    if frame_len == 0 || samples.len() < frame_len {
+        return 0.0;
+    }
+
+    let mut vad = match Vad::new(sample_rate as i32) {
+        Ok(mut instance) => {
+            let _ = instance.fvad_set_mode(mode);
+            instance
+        }
+        Err(_) => return 100.0, // If VAD fails, assume it's valid
+    };
+
+    let mut speech_frames = 0;
+    let mut total_frames = 0;
+    for chunk in samples.chunks(frame_len) {
+        if chunk.len() < frame_len {
+            break;
+        }
+        total_frames += 1;
+        if vad.is_voice_segment(chunk).unwrap_or(false) {
+            speech_frames += 1;
+        }
+    }
+
+    if total_frames == 0 {
+        return 0.0;
+    }
+
+    (speech_frames as f32 / total_frames as f32) * 100.0
 }
 
 const WAV_SAMPLE_RATE: u32 = 16_000;
