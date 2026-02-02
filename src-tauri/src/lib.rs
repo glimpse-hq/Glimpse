@@ -400,6 +400,7 @@ pub struct AppState {
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
     pub(crate) settings_close_handler_registered: AtomicBool,
     transcription_cancelled: AtomicBool,
+    transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
     cloud_manager: cloud::CloudManager,
@@ -447,6 +448,7 @@ impl AppState {
             tray: parking_lot::Mutex::new(None),
             settings_close_handler_registered: AtomicBool::new(false),
             transcription_cancelled: AtomicBool::new(false),
+            transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
             cloud_manager: cloud::CloudManager::new(),
@@ -501,6 +503,9 @@ impl AppState {
 
     pub fn request_cancellation(&self) {
         self.transcription_cancelled.store(true, Ordering::SeqCst);
+        if let Some(token) = self.transcription_token.lock().as_ref() {
+            token.cancel();
+        }
     }
 
     pub fn is_cancelled(&self) -> bool {
@@ -509,6 +514,13 @@ impl AppState {
 
     pub fn clear_cancellation(&self) {
         self.transcription_cancelled.store(false, Ordering::SeqCst);
+        *self.transcription_token.lock() = None;
+    }
+
+    pub fn create_transcription_token(&self) -> CancellationToken {
+        let token = CancellationToken::new();
+        *self.transcription_token.lock() = Some(token.clone());
+        token
     }
 
     pub fn should_show_ffmpeg_toast(&self) -> bool {
