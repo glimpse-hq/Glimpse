@@ -735,8 +735,9 @@ impl StorageManager {
         id: &str,
         patch: LibraryItemPatch,
     ) -> Result<Option<LibraryItem>> {
-        let conn = self.connection.lock();
-        let mut item = match get_library_item_by_id(&conn, id)? {
+        let mut conn = self.connection.lock();
+        let tx = conn.transaction()?;
+        let mut item = match get_library_item_by_id(&tx, id)? {
             Some(item) => item,
             None => return Ok(None),
         };
@@ -772,7 +773,8 @@ impl StorageManager {
             item.duration_seconds = duration_seconds;
         }
 
-        update_library_item_full(&conn, &item)?;
+        update_library_item_full(&tx, &item)?;
+        tx.commit()?;
         Ok(Some(item))
     }
 

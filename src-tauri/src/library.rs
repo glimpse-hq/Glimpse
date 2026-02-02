@@ -434,19 +434,28 @@ pub fn export_library_item_to_path(
     let content = build_export_content(&item, format.clone())
         .map_err(|err| format!("Failed to build export: {err}"))?;
 
-    let output_path = PathBuf::from(output_path);
+    let output_path = PathBuf::from(&output_path);
+
+    // Validate output path is absolute and doesn't contain path traversal
+    if !output_path.is_absolute() {
+        return Err("Export path must be absolute".to_string());
+    }
+    if output_path
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err("Export path contains invalid components".to_string());
+    }
+
     if let Some(parent) = output_path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create export directory at {}", parent.display()))
+            .with_context(|| format!("Failed to create export directory"))
             .map_err(|err| err.to_string())?;
     }
 
-    fs::write(&output_path, content.as_bytes()).with_context(|| {
-        format!(
-            "Failed to write export file to {}",
-            output_path.display()
-        )
-    }).map_err(|err| err.to_string())?;
+    fs::write(&output_path, content.as_bytes())
+        .with_context(|| "Failed to write export file".to_string())
+        .map_err(|err| err.to_string())?;
 
     Ok(())
 }
@@ -719,11 +728,25 @@ fn start_library_transcription_internal(
         Ok(Some(item)) => item,
         Ok(None) => {
             eprintln!("Library item not found for transcription: {id}");
+            let _ = app.emit(
+                EVENT_LIBRARY_ERROR,
+                LibraryErrorPayload {
+                    id: id.clone(),
+                    message: "Library item not found".to_string(),
+                },
+            );
             release_library_slot(app, state, &id);
             return;
         }
         Err(err) => {
             eprintln!("Failed to load library item {id}: {err}");
+            let _ = app.emit(
+                EVENT_LIBRARY_ERROR,
+                LibraryErrorPayload {
+                    id: id.clone(),
+                    message: format!("Failed to load library item: {err}"),
+                },
+            );
             release_library_slot(app, state, &id);
             return;
         }
