@@ -91,8 +91,8 @@ bun tauri build
 
 Glimpse collects anonymous usage analytics via [Aptabase](https://aptabase.com/) to help improve the app. This includes:
 
-- App launches and session duration
-- Which transcription engine is used (local vs cloud)
+- App launches and exits (including uptime, recording seconds, and transcription count)
+- Which transcription engine is used (local vs cloud), plus recording keybind mode (hold/toggle/smart)
 - Model downloads and onboarding completion
 
 **What's NOT collected:** transcription content, API keys, prompts, or any personally identifiable information.
