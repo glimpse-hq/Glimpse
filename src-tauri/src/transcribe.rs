@@ -32,6 +32,7 @@ pub(crate) fn queue_transcription(
     state.set_pending_path(Some(saved.path.clone()));
 
     let pending_selected_text = state.take_pending_selected_text();
+    let cancel_token = state.create_transcription_token();
 
     let http = state.http();
     let app_handle = app.clone();
@@ -248,6 +249,7 @@ pub(crate) fn queue_transcription(
                         ready_model.engine,
                         model_manager::LocalModelEngine::Moonshine { .. }
                     );
+                    let cancel_token_clone = cancel_token.clone();
                     match async_runtime::spawn_blocking(move || {
                         if is_whisper {
                             transcribe_local_chunked(
@@ -259,7 +261,7 @@ pub(crate) fn queue_transcription(
                                 Some(&language),
                                 WHISPER_CHUNK_SECONDS,
                                 WHISPER_CHUNK_OVERLAP_SECONDS,
-                                None,
+                                Some(&cancel_token_clone),
                             )
                         } else if is_moonshine {
                             transcribe_local_chunked(
@@ -271,7 +273,7 @@ pub(crate) fn queue_transcription(
                                 Some(&language),
                                 MOONSHINE_CHUNK_SECONDS,
                                 MOONSHINE_CHUNK_OVERLAP_SECONDS,
-                                None,
+                                Some(&cancel_token_clone),
                             )
                         } else {
                             let speech_percent = speech_percentage_i16_with_mode(

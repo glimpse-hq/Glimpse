@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { Virtuoso } from "react-virtuoso";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import type { UnlistenFn } from "@tauri-apps/api/event";
 import { useTranscriptions } from "../hooks/useTranscriptions";
 import TranscriptionItem from "./TranscriptionItem";
 import DotMatrix from "./DotMatrix";
@@ -32,17 +34,46 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
     const [shiftHeld, setShiftHeld] = useState(false);
     const hasLoadedOnce = useRef(false);
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === "Shift") setShiftHeld(true);
+        let cancelled = false;
+        let unlistenFocus: UnlistenFn | null = null;
+
+        const handleKeyChange = (e: KeyboardEvent) => {
+            setShiftHeld(e.shiftKey);
         };
-        const handleKeyUp = (e: KeyboardEvent) => {
-            if (e.key === "Shift") setShiftHeld(false);
+        const resetShift = () => setShiftHeld(false);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState !== "visible") {
+                setShiftHeld(false);
+            }
         };
-        document.addEventListener("keydown", handleKeyDown);
-        document.addEventListener("keyup", handleKeyUp);
+
+        getCurrentWindow()
+            .onFocusChanged(() => {
+                setShiftHeld(false);
+            })
+            .then((unlisten) => {
+                if (cancelled) {
+                    unlisten();
+                } else {
+                    unlistenFocus = unlisten;
+                }
+            })
+            .catch(() => {});
+
+        document.addEventListener("keydown", handleKeyChange);
+        document.addEventListener("keyup", handleKeyChange);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", resetShift);
+        window.addEventListener("focus", resetShift);
+
         return () => {
-            document.removeEventListener("keydown", handleKeyDown);
-            document.removeEventListener("keyup", handleKeyUp);
+            cancelled = true;
+            document.removeEventListener("keydown", handleKeyChange);
+            document.removeEventListener("keyup", handleKeyChange);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", resetShift);
+            window.removeEventListener("focus", resetShift);
+            unlistenFocus?.();
         };
     }, []);
 

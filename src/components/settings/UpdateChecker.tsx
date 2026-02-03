@@ -5,6 +5,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import WhatsNewModal from "./WhatsNewModal"
+import DotMatrix from "../DotMatrix"
 
 interface UpdateCheckerProps {
     autoCheck?: boolean
@@ -173,15 +174,21 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                             exit={{ opacity: 0 }}
                             className="flex items-center gap-2"
                         >
-                            <div className="w-20 h-1.5 bg-border-secondary rounded-full overflow-hidden">
-                                <motion.div
-                                    className="h-full bg-amber-400 rounded-full"
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${progress}%` }}
-                                    transition={{ duration: 0.2 }}
-                                />
-                            </div>
-                            <span className="text-[10px] text-content-muted w-8">{progress}%</span>
+                            <DotMatrix
+                                rows={2}
+                                cols={10}
+                                activeDots={Array.from(
+                                    { length: Math.min(10, Math.max(0, Math.floor((progress / 100) * 10))) },
+                                    (_, col) => [col, col + 10],
+                                ).flat()}
+                                dotSize={2}
+                                gap={2}
+                                color="var(--color-accent)"
+                                className="opacity-80"
+                            />
+                            <span className="text-[10px] text-content-muted w-8 tabular-nums">
+                                {progress}%
+                            </span>
                         </motion.div>
                     ) : (
                         <motion.button

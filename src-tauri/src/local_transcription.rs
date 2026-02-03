@@ -7,7 +7,7 @@ use parking_lot::Mutex;
 use transcribe_rs::{
     engines::{
         moonshine::{ModelVariant as MoonshineModelVariant, MoonshineEngine, MoonshineModelParams},
-        parakeet::{ParakeetEngine, ParakeetModelParams},
+        parakeet::{ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity},
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
     TranscriptionEngine,
@@ -17,6 +17,12 @@ use crate::{
     model_manager::{self, LocalModelEngine, ReadyModel},
     transcription_api::{normalize_transcript, TranscriptionSuccess},
 };
+
+#[derive(Debug)]
+pub struct TranscriptionSuccessWithSegments {
+    pub transcript: String,
+    pub segments: Option<Vec<transcribe_rs::TranscriptionSegment>>,
+}
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 const IDLE_CHECK_INTERVAL: Duration = Duration::from_secs(60);
@@ -128,6 +134,41 @@ impl LocalTranscriber {
         initial_prompt: Option<&str>,
         language: Option<&str>,
     ) -> Result<TranscriptionSuccess> {
+        let (result, model_label) =
+            self.transcribe_internal(model, samples, sample_rate, initial_prompt, language, false)?;
+
+        Ok(TranscriptionSuccess {
+            transcript: normalize_transcript(&result.text),
+            speech_model: Some(model_label),
+        })
+    }
+
+    pub fn transcribe_with_segments(
+        &self,
+        model: &ReadyModel,
+        samples: &[i16],
+        sample_rate: u32,
+        initial_prompt: Option<&str>,
+        language: Option<&str>,
+    ) -> Result<TranscriptionSuccessWithSegments> {
+        let (result, _) =
+            self.transcribe_internal(model, samples, sample_rate, initial_prompt, language, true)?;
+
+        Ok(TranscriptionSuccessWithSegments {
+            transcript: normalize_transcript(&result.text),
+            segments: result.segments,
+        })
+    }
+
+    fn transcribe_internal(
+        &self,
+        model: &ReadyModel,
+        samples: &[i16],
+        sample_rate: u32,
+        initial_prompt: Option<&str>,
+        language: Option<&str>,
+        with_segments: bool,
+    ) -> Result<(transcribe_rs::TranscriptionResult, String)> {
         self.ensure_engine(model)?;
         self.touch();
 
@@ -141,12 +182,18 @@ impl LocalTranscriber {
             .as_mut()
             .ok_or_else(|| anyhow!("Local model not available"))?;
 
-        let transcript = match &mut loaded.engine {
+        let result = match &mut loaded.engine {
             EngineInstance::Parakeet { engine, .. } => {
-                let result = engine
-                    .transcribe_samples(prepared.data.clone(), None)
-                    .map_err(|err| anyhow!("Parakeet transcription failed: {err}"))?;
-                result.text
+                let params = if with_segments {
+                    Some(ParakeetInferenceParams {
+                        timestamp_granularity: TimestampGranularity::Segment,
+                    })
+                } else {
+                    None
+                };
+                engine
+                    .transcribe_samples(prepared.data.clone(), params)
+                    .map_err(|err| anyhow!("Parakeet transcription failed: {err}"))?
             }
             EngineInstance::Whisper { engine } => {
                 let params = if initial_prompt.is_some() || language.is_some() {
@@ -159,23 +206,16 @@ impl LocalTranscriber {
                     None
                 };
 
-                let result = engine
+                engine
                     .transcribe_samples(prepared.data.clone(), params)
-                    .map_err(|err| anyhow!("Whisper transcription failed: {err}"))?;
-                result.text
+                    .map_err(|err| anyhow!("Whisper transcription failed: {err}"))?
             }
-            EngineInstance::Moonshine { engine } => {
-                let result = engine
-                    .transcribe_samples(prepared.data.clone(), None)
-                    .map_err(|err| anyhow!("Moonshine transcription failed: {err}"))?;
-                result.text
-            }
+            EngineInstance::Moonshine { engine } => engine
+                .transcribe_samples(prepared.data.clone(), None)
+                .map_err(|err| anyhow!("Moonshine transcription failed: {err}"))?,
         };
 
-        Ok(TranscriptionSuccess {
-            transcript: normalize_transcript(&transcript),
-            speech_model: Some(model_label),
-        })
+        Ok((result, model_label))
     }
 
     fn ensure_engine(&self, model: &ReadyModel) -> Result<()> {

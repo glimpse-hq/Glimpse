@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X, ArrowUpCircle } from "lucide-react";
+import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X, ArrowUpCircle, Library } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import SettingsModal from "./components/settings/SettingsModal";
@@ -9,6 +9,7 @@ import DotMatrix from "./components/DotMatrix";
 import TranscriptionList from "./components/TranscriptionList";
 import DictionaryView from "./components/DictionaryView";
 import PersonalizationView from "./components/PersonalizationView";
+import LibraryView from "./components/LibraryView";
 import { useAuth } from "./hooks/useAuth";
 import type { TranscriptionMode, StoredSettings } from "./types";
 
@@ -49,7 +50,7 @@ const Home = () => {
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [settingsTab, setSettingsTab] = useState<"general" | "account" | "models" | "about">("general");
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
-    const [activeView, setActiveView] = useState<"home" | "dictionary" | "brain">("home");
+    const [activeView, setActiveView] = useState<"home" | "dictionary" | "brain" | "library">("home");
     const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode>("local");
     const { user: currentUser, refresh: refreshUser } = useAuth();
     const [showSupportPopup, setShowSupportPopup] = useState(false);
@@ -61,6 +62,8 @@ const Home = () => {
     const [updateAvailable, setUpdateAvailable] = useState(false);
 
     const [llmCleanupEnabled, setLlmCleanupEnabled] = useState(false);
+    const [dragActive, setDragActive] = useState(false);
+    const [pendingImportPaths, setPendingImportPaths] = useState<string[] | null>(null);
 
     const sidebarWidth = isSidebarCollapsed ? 68 : 200;
 
@@ -68,6 +71,11 @@ const Home = () => {
         let unlistenSettings: UnlistenFn | null = null;
         let unlistenNavigate: UnlistenFn | null = null;
         let unlistenModels: UnlistenFn | null = null;
+        let unlistenDragEnter: UnlistenFn | null = null;
+        let unlistenDragOver: UnlistenFn | null = null;
+        let unlistenDragLeave: UnlistenFn | null = null;
+        let unlistenDragDrop: UnlistenFn | null = null;
+        let unlistenOpenImport: UnlistenFn | null = null;
 
         const loadSettings = async () => {
             try {
@@ -110,6 +118,47 @@ const Home = () => {
             unlistenModels = fn;
         });
 
+        listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
+            if (event.payload?.paths?.length) {
+                setDragActive(true);
+            }
+        }).then((fn) => {
+            unlistenDragEnter = fn;
+        });
+
+        listen<{ paths?: string[] }>("tauri://drag-over", (event) => {
+            if (event.payload?.paths?.length) {
+                setDragActive(true);
+            }
+        }).then((fn) => {
+            unlistenDragOver = fn;
+        });
+
+        listen("tauri://drag-leave", () => {
+            setDragActive(false);
+        }).then((fn) => {
+            unlistenDragLeave = fn;
+        });
+
+        listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
+            setDragActive(false);
+            if (event.payload?.paths?.length) {
+                setPendingImportPaths(Array.from(new Set(event.payload.paths)));
+                setActiveView("library");
+            }
+        }).then((fn) => {
+            unlistenDragDrop = fn;
+        });
+
+        listen<string[]>("library:open_import", (event) => {
+            if (event.payload?.length) {
+                setPendingImportPaths(Array.from(new Set(event.payload)));
+                setActiveView("library");
+            }
+        }).then((fn) => {
+            unlistenOpenImport = fn;
+        });
+
         let unlistenSignIn: UnlistenFn | null = null;
         listen("navigate:sign-in", () => {
             setSettingsTab("account");
@@ -137,6 +186,11 @@ const Home = () => {
             unlistenSettings?.();
             unlistenNavigate?.();
             unlistenModels?.();
+            unlistenDragEnter?.();
+            unlistenDragOver?.();
+            unlistenDragLeave?.();
+            unlistenDragDrop?.();
+            unlistenOpenImport?.();
             unlistenSignIn?.();
             unlistenAuthError?.();
             unlistenAuthChanged?.();
@@ -193,6 +247,35 @@ const Home = () => {
         }
     }, [showSupportPopup]);
 
+    useEffect(() => {
+        const handleCopy = (event: KeyboardEvent) => {
+            const key = event.key.toLowerCase();
+            if (!((event.metaKey || event.ctrlKey) && key === "c")) return;
+
+            const active = document.activeElement as HTMLElement | null;
+            if (
+                active &&
+                (active.tagName === "INPUT" ||
+                    active.tagName === "TEXTAREA" ||
+                    active.isContentEditable)
+            ) {
+                return;
+            }
+
+            const selection = window.getSelection();
+            const text = selection?.toString() ?? "";
+            if (!text.trim()) return;
+
+            event.preventDefault();
+            navigator.clipboard.writeText(text).catch((err) => {
+                console.error("Failed to copy selection:", err);
+            });
+        };
+
+        document.addEventListener("keydown", handleCopy);
+        return () => document.removeEventListener("keydown", handleCopy);
+    }, []);
+
     const isCloudMode = transcriptionMode === "cloud";
     const logoColor = isCloudMode ? "var(--color-cloud)" : "var(--color-local)";
     const logoActiveDots = isCloudMode ? [0, 3] : [1, 2];
@@ -209,6 +292,7 @@ const Home = () => {
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-surface-tertiary font-sans text-white select-none">
             <aside
+                data-app-sidebar
                 style={{ width: sidebarWidth }}
                 className="relative flex flex-col border-r border-border-primary bg-surface-secondary shrink-0 transition-[width] duration-200 ease-out will-change-[width]"
             >
@@ -257,6 +341,17 @@ const Home = () => {
                         collapsed={isSidebarCollapsed}
                         onClick={() => setActiveView("brain")}
                     />
+
+                    <div className="pt-3">
+                        <div className="h-px bg-border-primary mx-4 mb-3" />
+                        <SidebarItem
+                            icon={<Library size={18} />}
+                            label="Library"
+                            active={activeView === "library"}
+                            collapsed={isSidebarCollapsed}
+                            onClick={() => setActiveView("library")}
+                        />
+                    </div>
                 </nav>
 
                 <div className="p-2 space-y-1 border-t border-border-primary">
@@ -422,7 +517,7 @@ const Home = () => {
                     </button>
                 )}
 
-                <div className="flex-1 flex flex-col px-12 pb-16">
+                <div className="flex-1 flex flex-col px-12 pb-16 min-h-0">
                     <div className={`w-full max-w-2xl mx-auto pt-8 ${activeView === "home" ? "" : "hidden"}`}>
                         <div className="mb-8">
                             <h1 className="text-3xl font-medium text-content-primary tracking-tight">
@@ -443,8 +538,46 @@ const Home = () => {
                     <div className={`w-full max-w-5xl mx-auto pt-8 ${activeView === "brain" ? "" : "hidden"}`}>
                         <PersonalizationView />
                     </div>
+
+                    <div className={`w-full pt-8 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}>
+                        <LibraryView
+                            pendingImportPaths={pendingImportPaths}
+                            onSetImportPaths={setPendingImportPaths}
+                            sidebarWidth={sidebarWidth}
+                        />
+                    </div>
                 </div>
             </main>
+
+            <AnimatePresence>
+                {dragActive && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.96, y: 12 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.96, y: 12 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="flex flex-col items-center justify-center rounded-2xl border border-border-secondary bg-surface-overlay px-8 py-6 shadow-2xl"
+                        >
+                            <div className="text-[12px] uppercase tracking-[0.2em] text-content-muted">
+                                Library Import
+                            </div>
+                            <div className="mt-2 text-[16px] font-medium text-content-primary">
+                                Drop files to transcribe
+                            </div>
+                            <div className="mt-1 text-[12px] text-content-disabled">
+                                MP3, WAV, M4A, MP4, MOV, and more
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <SettingsModal
                 isOpen={isSettingsOpen}

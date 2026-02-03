@@ -7,6 +7,7 @@ mod crypto;
 mod dictionary;
 mod downloader;
 mod llm_cleanup;
+mod library;
 mod local_transcription;
 mod mode_context;
 mod model_manager;
@@ -23,7 +24,7 @@ mod transcription_api;
 mod tray;
 mod update_checker;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -38,7 +39,9 @@ use recorder::{
 };
 use reqwest::Client;
 use serde::Serialize;
-use settings::{default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UserSettings};
+use settings::{
+    default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UserSettings,
+};
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
 use tauri::Emitter;
@@ -57,6 +60,7 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
+pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-mac";
 
 #[cfg(target_os = "macos")]
 fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
@@ -205,6 +209,7 @@ pub fn run() {
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -294,9 +299,17 @@ pub fn run() {
             delete_transcription,
             delete_all_transcriptions,
             retry_transcription,
-            cancel_retry_transcription,
             retry_llm_cleanup,
             undo_llm_cleanup,
+            cancel_retry_transcription,
+            library::create_library_item,
+            library::get_library_items_page,
+            library::update_library_item,
+            library::delete_library_item,
+            library::cancel_library_transcription,
+            library::retry_library_transcription,
+            library::export_library_item_to_path,
+            library::get_library_tags,
             model_manager::list_models,
             model_manager::check_model_status,
             model_manager::download_model,
@@ -307,6 +320,7 @@ pub fn run() {
             open_accessibility_settings,
             open_microphone_settings,
             open_llm_cleanup_settings,
+            open_ffmpeg_install,
             complete_onboarding,
             cancel_recording,
             reset_onboarding,
@@ -331,6 +345,16 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|handler, event| match event {
+            #[cfg(target_os = "macos")]
+            tauri::RunEvent::Opened { urls } => {
+                let paths = urls
+                    .into_iter()
+                    .filter_map(|url| url.to_file_path().ok())
+                    .collect();
+                if let Err(err) = library::handle_opened_paths(handler, paths) {
+                    eprintln!("Failed to handle opened files: {err}");
+                }
+            }
             tauri::RunEvent::Reopen {
                 has_visible_windows,
                 ..
@@ -351,6 +375,21 @@ pub(crate) type AppRuntime = Wry;
 
 type GlimpseResult<T> = Result<T>;
 
+#[derive(Clone)]
+pub struct LibraryJob {
+    pub id: String,
+    pub kind: LibraryJobKind,
+}
+
+#[derive(Clone)]
+pub enum LibraryJobKind {
+    Import {
+        source_path: PathBuf,
+        store_original: bool,
+    },
+    TranscribeExisting,
+}
+
 pub struct AppState {
     pill: Arc<PillController>,
     http: Client,
@@ -361,10 +400,15 @@ pub struct AppState {
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
     pub(crate) settings_close_handler_registered: AtomicBool,
     transcription_cancelled: AtomicBool,
+    transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
+    ffmpeg_toast_shown: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
     cloud_manager: cloud::CloudManager,
     pending_selected_text: parking_lot::Mutex<Option<String>>,
     download_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    library_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    library_queue: parking_lot::Mutex<VecDeque<LibraryJob>>,
+    library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     update_state: update_checker::SharedUpdateState,
 }
@@ -404,10 +448,15 @@ impl AppState {
             tray: parking_lot::Mutex::new(None),
             settings_close_handler_registered: AtomicBool::new(false),
             transcription_cancelled: AtomicBool::new(false),
+            transcription_token: parking_lot::Mutex::new(None),
+            ffmpeg_toast_shown: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
             cloud_manager: cloud::CloudManager::new(),
             pending_selected_text: parking_lot::Mutex::new(None),
             download_tokens: parking_lot::Mutex::new(HashMap::new()),
+            library_tokens: parking_lot::Mutex::new(HashMap::new()),
+            library_queue: parking_lot::Mutex::new(VecDeque::new()),
+            library_active: parking_lot::Mutex::new(None),
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             update_state: update_checker::create_state(),
         }
@@ -454,6 +503,9 @@ impl AppState {
 
     pub fn request_cancellation(&self) {
         self.transcription_cancelled.store(true, Ordering::SeqCst);
+        if let Some(token) = self.transcription_token.lock().as_ref() {
+            token.cancel();
+        }
     }
 
     pub fn is_cancelled(&self) -> bool {
@@ -462,6 +514,19 @@ impl AppState {
 
     pub fn clear_cancellation(&self) {
         self.transcription_cancelled.store(false, Ordering::SeqCst);
+        *self.transcription_token.lock() = None;
+    }
+
+    pub fn create_transcription_token(&self) -> CancellationToken {
+        let token = CancellationToken::new();
+        *self.transcription_token.lock() = Some(token.clone());
+        token
+    }
+
+    pub fn should_show_ffmpeg_toast(&self) -> bool {
+        self.ffmpeg_toast_shown
+            .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
     }
 
     pub fn set_pending_path(&self, path: Option<PathBuf>) {
@@ -503,6 +568,66 @@ impl AppState {
 
     pub fn clear_download_token(&self, model: &str) {
         self.download_tokens.lock().remove(model);
+    }
+
+    pub fn register_library_transcription(&self, id: String) -> CancellationToken {
+        let mut tokens = self.library_tokens.lock();
+        if let Some(token) = tokens.get(&id) {
+            return token.clone();
+        }
+        let token = CancellationToken::new();
+        tokens.insert(id, token.clone());
+        token
+    }
+
+    pub fn enqueue_library_job(&self, job: LibraryJob) -> bool {
+        if self.library_tokens.lock().contains_key(&job.id) {
+            return false;
+        }
+        if self.library_active.lock().as_deref() == Some(&job.id) {
+            return false;
+        }
+        let mut queue = self.library_queue.lock();
+        if queue.iter().any(|queued| queued.id == job.id) {
+            return false;
+        }
+        queue.push_back(job);
+        true
+    }
+
+    pub fn claim_next_library_job(&self) -> Option<LibraryJob> {
+        let mut active = self.library_active.lock();
+        if active.is_some() {
+            return None;
+        }
+        let mut queue = self.library_queue.lock();
+        let next = queue.pop_front()?;
+        *active = Some(next.id.clone());
+        Some(next)
+    }
+
+    pub fn clear_active_library_job(&self, id: &str) {
+        let mut active = self.library_active.lock();
+        if active.as_deref() == Some(id) {
+            *active = None;
+        }
+    }
+
+    pub fn remove_library_job(&self, id: &str) -> bool {
+        let mut queue = self.library_queue.lock();
+        let before = queue.len();
+        queue.retain(|queued| queued.id != id);
+        before != queue.len()
+    }
+
+    pub fn cancel_library_transcription(&self, id: &str) {
+        if let Some(token) = self.library_tokens.lock().get(id) {
+            token.cancel();
+        }
+    }
+
+    pub fn clear_library_transcription(&self, id: &str) {
+        self.library_tokens.lock().remove(id);
     }
 
     pub fn register_retry_transcription(&self, id: String) -> CancellationToken {
@@ -559,6 +684,14 @@ fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
         }
     });
 
+    Ok(())
+}
+
+#[tauri::command]
+fn open_ffmpeg_install(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    app.opener()
+        .open_url(FFMPEG_HELP_URL, None::<&str>)
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 

@@ -336,31 +336,6 @@ body {
   box-shadow: 0 0 6px var(--color-cloud-20);
 }
 
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.transcript-processing-text {
-  transition: opacity 0.9s ease-in-out;
-  will-change: opacity;
-}
-
-.transcript-processing-dim {
-  opacity: 0.72;
-}
-
 .transcript-search-hit {
   background: var(--color-cloud-20);
   color: inherit;

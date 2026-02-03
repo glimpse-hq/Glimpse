@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Glimpse",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "identifier": "dev.glimpse.glimpse",
   "build": {
     "beforeDevCommand": "bun run dev",
@@ -59,8 +59,11 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' asset: customprotocol:; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*"
-
+      "csp": "default-src 'self' asset: http://asset.localhost customprotocol:; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/library/**"]
+      }
     },
     "macOSPrivateApi": true
   },
