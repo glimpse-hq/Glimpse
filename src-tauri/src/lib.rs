@@ -29,6 +29,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
 use anyhow::{Context, Result};
@@ -109,7 +110,7 @@ fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::Transcrip
     current.transcription_mode = mode;
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
-            llm_cleanup::schedule_preflight(state.http(), saved.clone(), true);
+            state.request_preflight_refresh();
             if let Err(err) = set_app_menu(app, &saved) {
                 eprintln!("Failed to refresh app menu: {err}");
             }
@@ -251,12 +252,6 @@ pub fn run() {
             }
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
-
-            {
-                let state = handle.state::<AppState>();
-                let settings = state.current_settings();
-                llm_cleanup::schedule_preflight(state.http(), settings, true);
-            }
 
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
@@ -433,6 +428,7 @@ pub struct AppState {
     update_state: update_checker::SharedUpdateState,
     preflight_cancel: CancellationToken,
     preflight_started: AtomicBool,
+    preflight_notify: Arc<Notify>,
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
 }
@@ -492,6 +488,7 @@ impl AppState {
             update_state: update_checker::create_state(),
             preflight_cancel: CancellationToken::new(),
             preflight_started: AtomicBool::new(false),
+            preflight_notify: Arc::new(Notify::new()),
             session_started_at: Instant::now(),
             session_counters: parking_lot::Mutex::new(SessionCounters {
                 recording_seconds: 0.0,
@@ -703,22 +700,48 @@ impl AppState {
         }
 
         let token = self.preflight_cancel.clone();
+        let notify = Arc::clone(&self.preflight_notify);
+
         async_runtime::spawn(async move {
+            let mut ticker = tokio::time::interval(llm_cleanup::PREFLIGHT_TTL);
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            let mut refresh_pending = false;
+
             loop {
                 tokio::select! {
                     _ = token.cancelled() => break,
-                    _ = tokio::time::sleep(Duration::from_secs(300)) => {
-                        let state = app.state::<AppState>();
-                        let settings = state.current_settings();
-                        llm_cleanup::schedule_preflight(state.http(), settings, false);
+                    _ = notify.notified() => {
+                        refresh_pending = true;
+                    }
+                    _ = ticker.tick() => {}
+                }
+
+                if token.is_cancelled() {
+                    break;
+                }
+
+                if !refresh_pending {
+                    // If we were woken by the ticker, the cache is still fresh.
+                    if llm_cleanup::cached_preflight_available().is_some() {
+                        continue;
                     }
                 }
+
+                let state = app.state::<AppState>();
+                let settings = state.current_settings();
+                llm_cleanup::run_preflight(state.http(), settings).await;
+                refresh_pending = false;
             }
         });
     }
 
     pub fn stop_preflight_loop(&self) {
         self.preflight_cancel.cancel();
+    }
+
+    pub fn request_preflight_refresh(&self) {
+        llm_cleanup::clear_preflight_cache();
+        self.preflight_notify.notify_one();
     }
 
     pub fn update_state(&self) -> &update_checker::SharedUpdateState {
@@ -893,7 +916,7 @@ fn update_settings(
         .persist_settings(next)
         .map_err(|err| err.to_string())?;
 
-    llm_cleanup::schedule_preflight(state.http(), next.clone(), true);
+    state.request_preflight_refresh();
 
     pill::register_shortcuts(&app).map_err(|err| err.to_string())?;
 

@@ -4,7 +4,6 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
-use tauri::async_runtime;
 
 use crate::settings::{LlmProvider, Personality, TranscriptionMode, UserSettings};
 use crate::{accessibility_context, mode_context};
@@ -473,14 +472,13 @@ pub async fn fetch_available_models(
     Ok(data.data.into_iter().map(|m| m.id).collect())
 }
 
-const PREFLIGHT_TTL: Duration = Duration::from_secs(300);
+pub const PREFLIGHT_TTL: Duration = Duration::from_secs(300);
 const PREFLIGHT_NOTICE_COOLDOWN: Duration = Duration::from_secs(120);
 
 #[derive(Default)]
 struct PreflightState {
     last_checked_at: Option<Instant>,
     available: Option<bool>,
-    in_flight: bool,
     last_notice_at: Option<Instant>,
 }
 
@@ -518,51 +516,30 @@ pub fn note_preflight_failure() {
     state.available = Some(false);
 }
 
-pub fn schedule_preflight(client: Client, settings: UserSettings, force: bool) {
-    if settings.transcription_mode != TranscriptionMode::Local {
-        return;
-    }
+pub fn clear_preflight_cache() {
+    let mut state = preflight_state().lock();
+    state.last_checked_at = None;
+    state.available = None;
+}
 
-    if !is_cleanup_available(&settings) {
-        return;
-    }
-
+pub async fn run_preflight(client: Client, settings: UserSettings) {
+    if settings.transcription_mode != TranscriptionMode::Local
+        || !is_cleanup_available(&settings)
     {
-        let mut state = preflight_state().lock();
-        if state.in_flight {
-            return;
-        }
-
-        if !force {
-            if let Some(last) = state.last_checked_at {
-                if last.elapsed() < PREFLIGHT_TTL {
-                    return;
-                }
-            }
-        } else {
-            state.available = None;
-        }
-
-        state.in_flight = true;
+        clear_preflight_cache();
+        return;
     }
 
     let endpoint = settings.llm_endpoint.clone();
     let provider = settings.llm_provider.clone();
     let api_key = settings.llm_api_key.clone();
 
-    async_runtime::spawn(async move {
-        let result = fetch_available_models(&client, &endpoint, &provider, &api_key).await;
-        let mut state = preflight_state().lock();
-        state.in_flight = false;
-        state.last_checked_at = Some(Instant::now());
-        match result {
-            Ok(models) => {
-                let available = !models.is_empty();
-                state.available = Some(available);
-            }
-            Err(_err) => {
-                state.available = Some(false);
-            }
-        }
-    });
+    let available = match fetch_available_models(&client, &endpoint, &provider, &api_key).await {
+        Ok(models) => !models.is_empty(),
+        Err(_err) => false,
+    };
+
+    let mut state = preflight_state().lock();
+    state.last_checked_at = Some(Instant::now());
+    state.available = Some(available);
 }
