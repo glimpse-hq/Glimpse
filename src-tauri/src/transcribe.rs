@@ -179,9 +179,6 @@ pub(crate) fn queue_transcription(
                     app_handle
                         .state::<AppState>()
                         .record_transcription_completed();
-                    app_handle
-                        .state::<AppState>()
-                        .record_transcription_completed();
 
                     crate::emit_event(
                         &app_handle,
