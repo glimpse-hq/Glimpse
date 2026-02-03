@@ -6,6 +6,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream};
 use crossbeam_channel::{bounded, unbounded, Sender};
 use parking_lot::Mutex;
+use uuid::Uuid;
 use webrtc_vad::{Vad, VadMode};
 
 /// Reason why a recording was rejected
@@ -535,11 +536,13 @@ pub fn persist_recording(
 
     let date_dir = recording.started_at.format("%Y-%m-%d").to_string();
     let timestamp = recording.started_at.format("%H%M%S").to_string();
+    let millis = recording.started_at.timestamp_subsec_millis();
+    let suffix = Uuid::new_v4().simple().to_string();
 
     let folder = base_dir.join(date_dir);
     fs::create_dir_all(&folder)
         .with_context(|| format!("Failed to create recording folder at {}", folder.display()))?;
-    let file_path = folder.join(format!("{}.wav", timestamp));
+    let file_path = folder.join(format!("{timestamp}-{millis:03}-{suffix}.wav"));
 
     let wav_samples = prepare_wav_samples(
         &recording.samples,
