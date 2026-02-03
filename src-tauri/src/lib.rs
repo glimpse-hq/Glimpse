@@ -721,7 +721,8 @@ impl AppState {
                 }
 
                 if !refresh_pending {
-                    // If we were woken by the ticker, the cache is still fresh.
+                    // If woken by ticker, check if cache is still fresh (< TTL).
+                    // Returns None when cache is expired, triggering refresh below.
                     if llm_cleanup::cached_preflight_available().is_some() {
                         continue;
                     }
