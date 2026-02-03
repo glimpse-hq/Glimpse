@@ -286,13 +286,9 @@ pub fn run() {
             let update_state = handle.state::<AppState>().update_state().clone();
             update_checker::start_background_checker(update_handle, update_state);
 
-            let preflight_handle = handle.clone();
-            std::thread::spawn(move || loop {
-                std::thread::sleep(Duration::from_secs(300));
-                let state = preflight_handle.state::<AppState>();
-                let settings = state.current_settings();
-                llm_cleanup::schedule_preflight(state.http(), settings, false);
-            });
+            handle
+                .state::<AppState>()
+                .start_preflight_loop(handle.clone());
 
             let _ = app.track_event("app_started", None);
 
@@ -380,6 +376,7 @@ pub fn run() {
             }
             tauri::RunEvent::Exit => {
                 let state = handler.state::<AppState>();
+                state.stop_preflight_loop();
                 let now = Instant::now();
                 let counters = state.session_counters.lock();
                 analytics::track_app_exited(
@@ -434,6 +431,8 @@ pub struct AppState {
     library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     update_state: update_checker::SharedUpdateState,
+    preflight_cancel: CancellationToken,
+    preflight_started: AtomicBool,
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
 }
@@ -491,6 +490,8 @@ impl AppState {
             library_active: parking_lot::Mutex::new(None),
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             update_state: update_checker::create_state(),
+            preflight_cancel: CancellationToken::new(),
+            preflight_started: AtomicBool::new(false),
             session_started_at: Instant::now(),
             session_counters: parking_lot::Mutex::new(SessionCounters {
                 recording_seconds: 0.0,
@@ -694,6 +695,30 @@ impl AppState {
 
     pub fn clear_retry_transcription(&self, id: &str) {
         self.retry_tokens.lock().remove(id);
+    }
+
+    pub fn start_preflight_loop(&self, app: AppHandle<AppRuntime>) {
+        if self.preflight_started.swap(true, Ordering::SeqCst) {
+            return;
+        }
+
+        let token = self.preflight_cancel.clone();
+        async_runtime::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = token.cancelled() => break,
+                    _ = tokio::time::sleep(Duration::from_secs(300)) => {
+                        let state = app.state::<AppState>();
+                        let settings = state.current_settings();
+                        llm_cleanup::schedule_preflight(state.http(), settings, false);
+                    }
+                }
+            }
+        });
+    }
+
+    pub fn stop_preflight_loop(&self) {
+        self.preflight_cancel.cancel();
     }
 
     pub fn update_state(&self) -> &update_checker::SharedUpdateState {
