@@ -173,6 +173,7 @@ fn set_transcription_mode_from_menu(app: &AppHandle<AppRuntime>, mode: Transcrip
     settings.transcription_mode = mode;
     match state.persist_settings(settings.clone()) {
         Ok(saved) => {
+            crate::llm_cleanup::schedule_preflight(state.http(), saved.clone(), true);
             if let Err(err) = refresh_tray_menu(app, &saved) {
                 eprintln!("Failed to refresh tray menu: {err}");
             }

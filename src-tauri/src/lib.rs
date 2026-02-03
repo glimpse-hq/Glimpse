@@ -109,6 +109,7 @@ fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::Transcrip
     current.transcription_mode = mode;
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
+            llm_cleanup::schedule_preflight(state.http(), saved.clone(), true);
             if let Err(err) = set_app_menu(app, &saved) {
                 eprintln!("Failed to refresh app menu: {err}");
             }
@@ -251,6 +252,12 @@ pub fn run() {
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
 
+            {
+                let state = handle.state::<AppState>();
+                let settings = state.current_settings();
+                llm_cleanup::schedule_preflight(state.http(), settings, true);
+            }
+
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
                 platform::overlay::init(handle, &window);
@@ -278,6 +285,14 @@ pub fn run() {
             let update_handle = handle.clone();
             let update_state = handle.state::<AppState>().update_state().clone();
             update_checker::start_background_checker(update_handle, update_state);
+
+            let preflight_handle = handle.clone();
+            std::thread::spawn(move || loop {
+                std::thread::sleep(Duration::from_secs(300));
+                let state = preflight_handle.state::<AppState>();
+                let settings = state.current_settings();
+                llm_cleanup::schedule_preflight(state.http(), settings, false);
+            });
 
             let _ = app.track_event("app_started", None);
 
@@ -852,6 +867,8 @@ fn update_settings(
     let next = state
         .persist_settings(next)
         .map_err(|err| err.to_string())?;
+
+    llm_cleanup::schedule_preflight(state.http(), next.clone(), true);
 
     pill::register_shortcuts(&app).map_err(|err| err.to_string())?;
 

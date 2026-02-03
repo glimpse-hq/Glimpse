@@ -1,8 +1,12 @@
 use anyhow::{anyhow, Context, Result};
+use parking_lot::Mutex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
+use tauri::async_runtime;
 
-use crate::settings::{LlmProvider, Personality, UserSettings};
+use crate::settings::{LlmProvider, Personality, TranscriptionMode, UserSettings};
 use crate::{accessibility_context, mode_context};
 
 const SYSTEM_PROMPT: &str = r#"
@@ -467,4 +471,98 @@ pub async fn fetch_available_models(
         .await
         .context("Failed to parse models response")?;
     Ok(data.data.into_iter().map(|m| m.id).collect())
+}
+
+const PREFLIGHT_TTL: Duration = Duration::from_secs(300);
+const PREFLIGHT_NOTICE_COOLDOWN: Duration = Duration::from_secs(120);
+
+#[derive(Default)]
+struct PreflightState {
+    last_checked_at: Option<Instant>,
+    available: Option<bool>,
+    in_flight: bool,
+    last_notice_at: Option<Instant>,
+}
+
+static PREFLIGHT_STATE: OnceLock<Mutex<PreflightState>> = OnceLock::new();
+
+fn preflight_state() -> &'static Mutex<PreflightState> {
+    PREFLIGHT_STATE.get_or_init(|| Mutex::new(PreflightState::default()))
+}
+
+pub fn cached_preflight_available() -> Option<bool> {
+    let state = preflight_state().lock();
+    if let Some(last) = state.last_checked_at {
+        if last.elapsed() > PREFLIGHT_TTL {
+            return None;
+        }
+    }
+    state.available
+}
+
+pub fn should_show_unavailable_notice() -> bool {
+    let mut state = preflight_state().lock();
+    let now = Instant::now();
+    if let Some(last) = state.last_notice_at {
+        if now.duration_since(last) < PREFLIGHT_NOTICE_COOLDOWN {
+            return false;
+        }
+    }
+    state.last_notice_at = Some(now);
+    true
+}
+
+pub fn note_preflight_failure() {
+    let mut state = preflight_state().lock();
+    state.last_checked_at = Some(Instant::now());
+    state.available = Some(false);
+}
+
+pub fn schedule_preflight(client: Client, settings: UserSettings, force: bool) {
+    if settings.transcription_mode != TranscriptionMode::Local {
+        return;
+    }
+
+    if !is_cleanup_available(&settings) {
+        return;
+    }
+
+    {
+        let mut state = preflight_state().lock();
+        if state.in_flight {
+            return;
+        }
+
+        if !force {
+            if let Some(last) = state.last_checked_at {
+                if last.elapsed() < PREFLIGHT_TTL {
+                    return;
+                }
+            }
+        } else {
+            state.available = None;
+        }
+
+        state.in_flight = true;
+    }
+
+    let endpoint = settings.llm_endpoint.clone();
+    let provider = settings.llm_provider.clone();
+    let api_key = settings.llm_api_key.clone();
+
+    async_runtime::spawn(async move {
+        let result = fetch_available_models(&client, &endpoint, &provider, &api_key).await;
+        let mut state = preflight_state().lock();
+        state.in_flight = false;
+        state.last_checked_at = Some(Instant::now());
+        match result {
+            Ok(models) => {
+                let available = !models.is_empty();
+                state.available = Some(available);
+            }
+            Err(_err) => {
+                state.available = Some(false);
+            }
+        }
+    });
 }

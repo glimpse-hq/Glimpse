@@ -1,6 +1,5 @@
 use crate::{
-    assistive, cloud, emit_event, llm_cleanup, model_manager, permissions, platform,
-    recorder::RecorderManager,
+    assistive, cloud, emit_event, model_manager, permissions, platform, recorder::RecorderManager,
     settings::{TranscriptionMode, UserSettings},
     toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
 };
@@ -352,10 +351,6 @@ impl PillController {
             return false;
         }
 
-        if !check_llm_cleanup_preflight(app) {
-            return false;
-        }
-
         if !check_mic_permission(app) {
             return false;
         }
@@ -435,10 +430,6 @@ impl PillController {
         if self.is_recording() {
             self.stop_and_process(app);
         } else {
-            if !check_llm_cleanup_preflight(app) {
-                return;
-            }
-
             if !check_mic_permission(app) {
                 return;
             }
@@ -604,75 +595,6 @@ impl PillController {
         toast::show(app, "info", None, "Transcription cancelled");
         self.reset(app);
     }
-}
-
-fn check_llm_cleanup_preflight(app: &AppHandle<AppRuntime>) -> bool {
-    let state = app.state::<AppState>();
-    let settings = state.current_settings();
-
-    if settings.transcription_mode != TranscriptionMode::Local {
-        return true;
-    }
-
-    if !settings.llm_cleanup_enabled {
-        return true;
-    }
-
-    let has_selection = if settings.edit_mode_enabled {
-        match assistive::get_selected_text_ax() {
-            Some(text) if text.len() <= 10_000 => true,
-            _ => false,
-        }
-    } else {
-        false
-    };
-
-    let models_result = tauri::async_runtime::block_on(llm_cleanup::fetch_available_models(
-        &state.http(),
-        &settings.llm_endpoint,
-        &settings.llm_provider,
-        &settings.llm_api_key,
-    ));
-
-    let models_ok = match models_result {
-        Ok(models) => !models.is_empty(),
-        Err(err) => {
-            eprintln!("LLM cleanup preflight failed: {err}");
-            false
-        }
-    };
-
-    if models_ok {
-        return true;
-    }
-
-    if has_selection {
-        toast::emit_toast(
-            app,
-            toast::Payload {
-                toast_type: "error".to_string(),
-                title: Some("Edit Mode".to_string()),
-                message: "LLM cleanup unreachable. Edit mode won't run.".to_string(),
-                auto_dismiss: Some(true),
-                duration: Some(10_000),
-                retry_id: None,
-                mode: None,
-                action: Some("open_llm_cleanup_settings".to_string()),
-                action_label: Some("Open Settings".to_string()),
-            },
-        );
-        return false;
-    }
-
-    toast::show_with_action(
-        app,
-        "warning",
-        Some("LLM Cleanup"),
-        "LLM cleanup unreachable. Transcription will skip cleanup.",
-        "open_llm_cleanup_settings",
-        "Open Settings",
-    );
-    true
 }
 
 fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {

@@ -368,42 +368,54 @@ pub(crate) fn queue_transcription(
                     return;
                 }
 
-                let (final_transcript, llm_cleaned) =
-                    if llm_cleanup::is_cleanup_available(&settings) {
-                        if let Some(ref selected) = pending_selected_text {
-                            match llm_cleanup::edit_transcription(
-                                &http,
-                                selected,
-                                &raw_transcript,
-                                &settings,
-                            )
-                            .await
-                            {
-                                Ok(edited) => (edited, true),
-                                Err(err) => {
-                                    eprintln!("LLM edit failed, using raw transcript: {err}");
-                                    (raw_transcript.clone(), false)
-                                }
-                            }
-                        } else {
-                            match llm_cleanup::cleanup_transcription(
-                                &http,
-                                &raw_transcript,
-                                &settings,
-                                active_mode.as_ref(),
-                            )
-                            .await
-                            {
-                                Ok(cleaned) => (cleaned, true),
-                                Err(err) => {
-                                    eprintln!("LLM cleanup failed, using raw transcript: {err}");
-                                    (raw_transcript.clone(), false)
-                                }
+                let is_edit_mode = pending_selected_text.is_some();
+                let cleanup_enabled = llm_cleanup::is_cleanup_available(&settings);
+                let preflight_unavailable = cleanup_enabled
+                    && matches!(llm_cleanup::cached_preflight_available(), Some(false));
+                let should_use_llm = cleanup_enabled && !preflight_unavailable;
+
+                let (final_transcript, llm_cleaned) = if should_use_llm {
+                    if let Some(ref selected) = pending_selected_text {
+                        match llm_cleanup::edit_transcription(
+                            &http,
+                            selected,
+                            &raw_transcript,
+                            &settings,
+                        )
+                        .await
+                        {
+                            Ok(edited) => (edited, true),
+                            Err(err) => {
+                                eprintln!("LLM edit failed, using raw transcript: {err}");
+                                llm_cleanup::note_preflight_failure();
+                                maybe_warn_llm_unavailable(&app_handle, true);
+                                (raw_transcript.clone(), false)
                             }
                         }
                     } else {
-                        (raw_transcript.clone(), false)
-                    };
+                        match llm_cleanup::cleanup_transcription(
+                            &http,
+                            &raw_transcript,
+                            &settings,
+                            active_mode.as_ref(),
+                        )
+                        .await
+                        {
+                            Ok(cleaned) => (cleaned, true),
+                            Err(err) => {
+                                eprintln!("LLM cleanup failed, using raw transcript: {err}");
+                                llm_cleanup::note_preflight_failure();
+                                maybe_warn_llm_unavailable(&app_handle, false);
+                                (raw_transcript.clone(), false)
+                            }
+                        }
+                    }
+                } else {
+                    if preflight_unavailable {
+                        maybe_warn_llm_unavailable(&app_handle, is_edit_mode);
+                    }
+                    (raw_transcript.clone(), false)
+                };
 
                 let final_transcript =
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
@@ -800,27 +812,36 @@ pub(crate) fn retry_transcription_async(
                     return;
                 }
 
-                let (final_transcript, llm_cleaned) =
-                    if llm_cleanup::is_cleanup_available(&settings) {
-                        match llm_cleanup::cleanup_transcription(
-                            &http,
-                            &raw_transcript,
-                            &settings,
-                            saved_personality.as_ref(),
-                        )
-                        .await
-                        {
-                            Ok(cleaned) => (cleaned, true),
-                            Err(err) => {
-                                eprintln!(
-                                    "LLM cleanup failed during retry, using raw transcript: {err}"
-                                );
-                                (raw_transcript.clone(), false)
-                            }
+                let cleanup_enabled = llm_cleanup::is_cleanup_available(&settings);
+                let preflight_unavailable = cleanup_enabled
+                    && matches!(llm_cleanup::cached_preflight_available(), Some(false));
+                let should_use_llm = cleanup_enabled && !preflight_unavailable;
+
+                let (final_transcript, llm_cleaned) = if should_use_llm {
+                    match llm_cleanup::cleanup_transcription(
+                        &http,
+                        &raw_transcript,
+                        &settings,
+                        saved_personality.as_ref(),
+                    )
+                    .await
+                    {
+                        Ok(cleaned) => (cleaned, true),
+                        Err(err) => {
+                            eprintln!(
+                                "LLM cleanup failed during retry, using raw transcript: {err}"
+                            );
+                            llm_cleanup::note_preflight_failure();
+                            maybe_warn_llm_unavailable(&app_handle, false);
+                            (raw_transcript.clone(), false)
                         }
-                    } else {
-                        (raw_transcript.clone(), false)
-                    };
+                    }
+                } else {
+                    if preflight_unavailable {
+                        maybe_warn_llm_unavailable(&app_handle, false);
+                    }
+                    (raw_transcript.clone(), false)
+                };
 
                 let final_transcript =
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
@@ -1481,6 +1502,38 @@ pub(crate) fn dedupe_overlap_text(existing: &str, next: &str) -> String {
     }
 
     next_trim.to_string()
+}
+
+fn maybe_warn_llm_unavailable(app: &AppHandle<AppRuntime>, is_edit_mode: bool) {
+    if !llm_cleanup::should_show_unavailable_notice() {
+        return;
+    }
+
+    if is_edit_mode {
+        toast::emit_toast(
+            app,
+            toast::Payload {
+                toast_type: "error".to_string(),
+                title: Some("Edit Mode".to_string()),
+                message: "LLM cleanup unreachable. Edit mode won't run.".to_string(),
+                auto_dismiss: Some(true),
+                duration: Some(10_000),
+                retry_id: None,
+                mode: None,
+                action: Some("open_llm_cleanup_settings".to_string()),
+                action_label: Some("Open Settings".to_string()),
+            },
+        );
+    } else {
+        toast::show_with_action(
+            app,
+            "warning",
+            Some("LLM Cleanup"),
+            "LLM cleanup unreachable. Transcription will skip cleanup.",
+            "open_llm_cleanup_settings",
+            "Open Settings",
+        );
+    }
 }
 
 fn find_overlap_drop_index(existing: &str, next: &str) -> Option<usize> {
