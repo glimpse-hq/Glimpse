@@ -30,6 +30,7 @@ pub(crate) fn queue_transcription(
     let state = app.state::<AppState>();
     state.clear_cancellation();
     state.set_pending_path(Some(saved.path.clone()));
+    state.record_recording_seconds(compute_audio_duration_seconds(&saved) as f64);
 
     let pending_selected_text = state.take_pending_selected_text();
     let cancel_token = state.create_transcription_token();
@@ -165,12 +166,19 @@ pub(crate) fn queue_transcription(
 
                     analytics::track_transcription_completed(
                         &app_handle,
-                        "cloud_auth",
-                        "cloud_auth",
+                        "cloud",
+                        saved_for_task
+                            .recording_mode
+                            .as_deref()
+                            .unwrap_or("unknown"),
+                        "cloud",
                         Some(&metadata.speech_model),
                         cloud_result.llm_cleaned,
                         metadata.audio_duration_seconds as f64,
                     );
+                    app_handle
+                        .state::<AppState>()
+                        .record_transcription_completed();
 
                     crate::emit_event(
                         &app_handle,
@@ -357,42 +365,54 @@ pub(crate) fn queue_transcription(
                     return;
                 }
 
-                let (final_transcript, llm_cleaned) =
-                    if llm_cleanup::is_cleanup_available(&settings) {
-                        if let Some(ref selected) = pending_selected_text {
-                            match llm_cleanup::edit_transcription(
-                                &http,
-                                selected,
-                                &raw_transcript,
-                                &settings,
-                            )
-                            .await
-                            {
-                                Ok(edited) => (edited, true),
-                                Err(err) => {
-                                    eprintln!("LLM edit failed, using raw transcript: {err}");
-                                    (raw_transcript.clone(), false)
-                                }
-                            }
-                        } else {
-                            match llm_cleanup::cleanup_transcription(
-                                &http,
-                                &raw_transcript,
-                                &settings,
-                                active_mode.as_ref(),
-                            )
-                            .await
-                            {
-                                Ok(cleaned) => (cleaned, true),
-                                Err(err) => {
-                                    eprintln!("LLM cleanup failed, using raw transcript: {err}");
-                                    (raw_transcript.clone(), false)
-                                }
+                let is_edit_mode = pending_selected_text.is_some();
+                let cleanup_enabled = llm_cleanup::is_cleanup_available(&settings);
+                let preflight_unavailable = cleanup_enabled
+                    && matches!(llm_cleanup::cached_preflight_available(), Some(false));
+                let should_use_llm = cleanup_enabled && !preflight_unavailable;
+
+                let (final_transcript, llm_cleaned) = if should_use_llm {
+                    if let Some(ref selected) = pending_selected_text {
+                        match llm_cleanup::edit_transcription(
+                            &http,
+                            selected,
+                            &raw_transcript,
+                            &settings,
+                        )
+                        .await
+                        {
+                            Ok(edited) => (edited, true),
+                            Err(err) => {
+                                eprintln!("LLM edit failed, using raw transcript: {err}");
+                                llm_cleanup::note_preflight_failure();
+                                maybe_warn_llm_unavailable(&app_handle, true);
+                                (raw_transcript.clone(), false)
                             }
                         }
                     } else {
-                        (raw_transcript.clone(), false)
-                    };
+                        match llm_cleanup::cleanup_transcription(
+                            &http,
+                            &raw_transcript,
+                            &settings,
+                            active_mode.as_ref(),
+                        )
+                        .await
+                        {
+                            Ok(cleaned) => (cleaned, true),
+                            Err(err) => {
+                                eprintln!("LLM cleanup failed, using raw transcript: {err}");
+                                llm_cleanup::note_preflight_failure();
+                                maybe_warn_llm_unavailable(&app_handle, false);
+                                (raw_transcript.clone(), false)
+                            }
+                        }
+                    }
+                } else {
+                    if preflight_unavailable {
+                        maybe_warn_llm_unavailable(&app_handle, is_edit_mode);
+                    }
+                    (raw_transcript.clone(), false)
+                };
 
                 let final_transcript =
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
@@ -448,7 +468,11 @@ pub(crate) fn queue_transcription(
                     saved_for_task.path.display().to_string(),
                     llm_cleaned,
                     metadata,
-                    "unknown",
+                    if use_local { "local" } else { "cloud" },
+                    saved_for_task
+                        .recording_mode
+                        .as_deref()
+                        .unwrap_or("unknown"),
                     if use_local { "local" } else { "cloud" },
                 );
 
@@ -603,8 +627,12 @@ pub(crate) fn retry_transcription_async(
 
                     analytics::track_transcription_completed(
                         &app_handle,
-                        "cloud_auth",
-                        "cloud_auth",
+                        "cloud",
+                        saved_for_task
+                            .recording_mode
+                            .as_deref()
+                            .unwrap_or("unknown"),
+                        "cloud",
                         Some(&metadata.speech_model),
                         cloud_result.llm_cleaned,
                         metadata.audio_duration_seconds as f64,
@@ -781,27 +809,36 @@ pub(crate) fn retry_transcription_async(
                     return;
                 }
 
-                let (final_transcript, llm_cleaned) =
-                    if llm_cleanup::is_cleanup_available(&settings) {
-                        match llm_cleanup::cleanup_transcription(
-                            &http,
-                            &raw_transcript,
-                            &settings,
-                            saved_personality.as_ref(),
-                        )
-                        .await
-                        {
-                            Ok(cleaned) => (cleaned, true),
-                            Err(err) => {
-                                eprintln!(
-                                    "LLM cleanup failed during retry, using raw transcript: {err}"
-                                );
-                                (raw_transcript.clone(), false)
-                            }
+                let cleanup_enabled = llm_cleanup::is_cleanup_available(&settings);
+                let preflight_unavailable = cleanup_enabled
+                    && matches!(llm_cleanup::cached_preflight_available(), Some(false));
+                let should_use_llm = cleanup_enabled && !preflight_unavailable;
+
+                let (final_transcript, llm_cleaned) = if should_use_llm {
+                    match llm_cleanup::cleanup_transcription(
+                        &http,
+                        &raw_transcript,
+                        &settings,
+                        saved_personality.as_ref(),
+                    )
+                    .await
+                    {
+                        Ok(cleaned) => (cleaned, true),
+                        Err(err) => {
+                            eprintln!(
+                                "LLM cleanup failed during retry, using raw transcript: {err}"
+                            );
+                            llm_cleanup::note_preflight_failure();
+                            maybe_warn_llm_unavailable(&app_handle, false);
+                            (raw_transcript.clone(), false)
                         }
-                    } else {
-                        (raw_transcript.clone(), false)
-                    };
+                    }
+                } else {
+                    if preflight_unavailable {
+                        maybe_warn_llm_unavailable(&app_handle, false);
+                    }
+                    (raw_transcript.clone(), false)
+                };
 
                 let final_transcript =
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
@@ -860,12 +897,19 @@ pub(crate) fn retry_transcription_async(
 
                 analytics::track_transcription_completed(
                     &app_handle,
-                    "unknown",
+                    if use_local { "local" } else { "cloud" },
+                    saved_for_task
+                        .recording_mode
+                        .as_deref()
+                        .unwrap_or("unknown"),
                     if use_local { "local" } else { "cloud" },
                     Some(&metadata.speech_model),
                     llm_cleaned,
                     metadata.audio_duration_seconds as f64,
                 );
+                app_handle
+                    .state::<AppState>()
+                    .record_transcription_completed();
 
                 crate::emit_event(
                     &app_handle,
@@ -902,16 +946,19 @@ fn emit_transcription_complete_with_cleanup(
     llm_cleaned: bool,
     metadata: storage::TranscriptionMetadata,
     mode: &str,
+    keybind: &str,
     engine: &str,
 ) {
     analytics::track_transcription_completed(
         app,
         mode,
+        keybind,
         engine,
         Some(&metadata.speech_model),
         llm_cleaned,
         metadata.audio_duration_seconds as f64,
     );
+    app.state::<AppState>().record_transcription_completed();
 
     crate::emit_event(
         app,
@@ -1452,6 +1499,38 @@ pub(crate) fn dedupe_overlap_text(existing: &str, next: &str) -> String {
     }
 
     next_trim.to_string()
+}
+
+fn maybe_warn_llm_unavailable(app: &AppHandle<AppRuntime>, is_edit_mode: bool) {
+    if !llm_cleanup::should_show_unavailable_notice() {
+        return;
+    }
+
+    if is_edit_mode {
+        toast::emit_toast(
+            app,
+            toast::Payload {
+                toast_type: "error".to_string(),
+                title: Some("Edit Mode".to_string()),
+                message: "LLM cleanup unreachable. Edit mode won't run.".to_string(),
+                auto_dismiss: Some(true),
+                duration: Some(10_000),
+                retry_id: None,
+                mode: None,
+                action: Some("open_llm_cleanup_settings".to_string()),
+                action_label: Some("Open Settings".to_string()),
+            },
+        );
+    } else {
+        toast::show_with_action(
+            app,
+            "warning",
+            Some("LLM Cleanup"),
+            "LLM cleanup unreachable. Transcription will skip cleanup.",
+            "open_llm_cleanup_settings",
+            "Open Settings",
+        );
+    }
 }
 
 fn find_overlap_drop_index(existing: &str, next: &str) -> Option<usize> {

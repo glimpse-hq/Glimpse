@@ -1,3 +1,20 @@
+0.6.1
+
+### Changes
+
+- LLM preflight now runs in the background. If recording with LLM cleanup used to feel delayed, that lag is gone.
+- Cleaned up analytics so session length is tracked more accurately. We now record which keybind was used (hold, toggle, smart) and separate active vs background time.
+- New background art for the DMG install screen (temporary, still iterating).
+
+### Fixes
+
+- Fixed a visual bug where buttons would shift when opening the overlay.
+- Library view hitboxes feel better, tag add jitter is gone, and the `+` button is a touch larger.
+
+
+
+---
+
 0.6.0
 
 ### Library mode

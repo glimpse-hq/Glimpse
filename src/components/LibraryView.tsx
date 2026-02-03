@@ -326,6 +326,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
     const [editingNameDraft, setEditingNameDraft] = useState("");
     const [editingTagId, setEditingTagId] = useState<string | null>(null);
     const [tagDraft, setTagDraft] = useState("");
+    const [followTimestamps, setFollowTimestamps] = useState(true);
 
     const refreshTags = useCallback(() => {
         return invoke<string[]>("get_library_tags")
@@ -676,7 +677,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                     </div>
                 )}
             </div>
-            <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-3">
+            <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-3 pt-1">
                 <div key="library-list" className="flex flex-col gap-6 w-full">
                     <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
                         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
@@ -783,6 +784,8 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 item={selectedItem}
                                 models={installedModels}
                                 shiftHeld={shiftHeld}
+                                followTimestamps={followTimestamps}
+                                onFollowTimestampsChange={setFollowTimestamps}
                                 onClose={() => setSelectedItem(null)}
                                 onDelete={async () => {
                                     await deleteItemAndRefreshTags(selectedItem.id);
@@ -1111,9 +1114,9 @@ const LibraryCard = ({
                 )}
             </AnimatePresence>
 
-            <div className="mt-3">
+            <div className="mt-3 min-h-[24px]">
                 {isAddingTag ? (
-                    <div className="flex items-center gap-1" onClick={(event) => event.stopPropagation()}>
+                    <div className="flex items-center gap-1 h-5" onClick={(event) => event.stopPropagation()}>
                         <input
                             value={tagDraft}
                             onChange={(event) => onChangeTagDraft(event.target.value)}
@@ -1129,7 +1132,7 @@ const LibraryCard = ({
                             }}
                             onBlur={onCancelTagEdit}
                             placeholder="New tag..."
-                            className="flex-1 min-w-0 bg-transparent border-b border-border-primary px-0.5 py-0.5 text-[10px] text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
+                            className="flex-1 min-w-0 h-5 box-border bg-transparent border-b border-border-primary px-0.5 py-0 text-[10px] leading-none text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
                             autoFocus
                         />
                     </div>
@@ -1160,7 +1163,7 @@ const LibraryCard = ({
                                 event.stopPropagation();
                                 onStartTagEdit();
                             }}
-                            className="flex items-center justify-center w-5 h-5 text-[11px] text-content-disabled hover:text-content-muted transition-colors"
+                            className="flex items-center justify-center w-6 h-6 rounded-md bg-transparent text-[14px] text-content-disabled hover:text-content-muted hover:bg-surface-elevated transition-colors border-0 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-hover focus-visible:ring-offset-0"
                         >
                             +
                         </button>
@@ -1175,6 +1178,8 @@ const LibraryModal = ({
     item,
     models,
     shiftHeld,
+    followTimestamps,
+    onFollowTimestampsChange,
     onClose,
     onDelete,
     onRetry,
@@ -1185,6 +1190,8 @@ const LibraryModal = ({
     item: LibraryItem;
     models: ModelInfo[];
     shiftHeld: boolean;
+    followTimestamps: boolean;
+    onFollowTimestampsChange: (value: boolean | ((prev: boolean) => boolean)) => void;
     onClose: () => void;
     onDelete: () => void;
     onRetry: () => Promise<void>;
@@ -1197,7 +1204,6 @@ const LibraryModal = ({
     const [transcriptDraft, setTranscriptDraft] = useState(item.transcript ?? "");
     const [tagInput, setTagInput] = useState("");
     const [showTimestamps, setShowTimestamps] = useState(item.show_timestamps);
-    const [followTimestamps, setFollowTimestamps] = useState(true);
     const [exportOpen, setExportOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1292,7 +1298,6 @@ const LibraryModal = ({
         setNameDraft(item.name);
         const nextShowTimestamps = item.show_timestamps && canShowTimestamps;
         setShowTimestamps(nextShowTimestamps);
-        setFollowTimestamps(nextShowTimestamps);
         setExportOpen(false);
         setCopyConfirmed(false);
         setShowRetranscribe(false);
@@ -1307,12 +1312,6 @@ const LibraryModal = ({
         scrubWasPlayingRef.current = false;
         scrubValueRef.current = null;
     }, [item.id, item.name, item.show_timestamps, item.duration_seconds, canShowTimestamps]);
-
-    useEffect(() => {
-        if (!showTimestamps || !canShowTimestamps) {
-            setFollowTimestamps(false);
-        }
-    }, [showTimestamps, canShowTimestamps]);
 
     useEffect(() => {
         stopSeekLoop();
@@ -1632,6 +1631,7 @@ const LibraryModal = ({
     const canIncreasePlaybackRate = playbackRate < maxPlaybackRate;
     const showStreaming = item.status.type === "transcribing" && !showTimestamps;
     const showSegmentView = showTimestamps && canShowTimestamps;
+    const followTimestampsActive = followTimestamps && showSegmentView;
     const normalizedSearchQuery = searchQuery.trim();
     const activeSegmentIndex = useMemo(() => {
         if (!showTimestamps || !canShowTimestamps) return -1;
@@ -1825,13 +1825,13 @@ const LibraryModal = ({
     ]);
 
     useEffect(() => {
-        if (!followTimestamps || activeSegmentIndex < 0 || !showSegmentView) return;
+        if (!followTimestampsActive || activeSegmentIndex < 0) return;
         segmentsVirtuosoRef.current?.scrollToIndex({
             index: activeSegmentIndex,
             align: "center",
             behavior: "smooth",
         });
-    }, [activeSegmentIndex, followTimestamps, showSegmentView]);
+    }, [activeSegmentIndex, followTimestampsActive]);
 
     return (
         <div className="flex h-full w-full min-h-0 overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50">
@@ -1974,7 +1974,7 @@ const LibraryModal = ({
                                     const nextValue = !showTimestamps;
                                     setShowTimestamps(nextValue);
                                     if (!nextValue) {
-                                        setFollowTimestamps(false);
+                                        onFollowTimestampsChange(false);
                                     }
                                     onUpdate({ show_timestamps: nextValue });
                                 }}
@@ -1985,6 +1985,7 @@ const LibraryModal = ({
                             >
                                 <motion.div
                                     className="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm"
+                                    initial={false}
                                     animate={{ left: showTimestamps ? "calc(100% - 14px)" : "2px" }}
                                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                 />
@@ -1999,19 +2000,20 @@ const LibraryModal = ({
                             </div>
                             <button
                                 onClick={() => {
-                                    if (!showTimestamps || !canShowTimestamps) return;
-                                    setFollowTimestamps((prev) => !prev);
+                                    if (!showSegmentView) return;
+                                    onFollowTimestampsChange((prev) => !prev);
                                 }}
                                 className={`relative w-7 h-3 rounded-full transition-colors ${
-                                    followTimestamps ? "bg-cloud" : "bg-border-secondary"
-                                } ${!showTimestamps || !canShowTimestamps ? "opacity-40 cursor-not-allowed" : ""}`}
+                                    followTimestampsActive ? "bg-cloud" : "bg-border-secondary"
+                                } ${!showSegmentView ? "opacity-40 cursor-not-allowed" : ""}`}
                                 role="switch"
-                                aria-checked={followTimestamps}
-                                disabled={!showTimestamps || !canShowTimestamps}
+                                aria-checked={followTimestampsActive}
+                                disabled={!showSegmentView}
                             >
                                 <motion.div
                                     className="absolute top-[1px] w-2.5 h-2.5 rounded-full bg-white shadow-sm"
-                                    animate={{ left: followTimestamps ? "calc(100% - 10px)" : "2px" }}
+                                    initial={false}
+                                    animate={{ left: followTimestampsActive ? "calc(100% - 10px)" : "2px" }}
                                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
                                 />
                             </button>

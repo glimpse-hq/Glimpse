@@ -1,8 +1,11 @@
 use anyhow::{anyhow, Context, Result};
+use parking_lot::Mutex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 
-use crate::settings::{LlmProvider, Personality, UserSettings};
+use crate::settings::{LlmProvider, Personality, TranscriptionMode, UserSettings};
 use crate::{accessibility_context, mode_context};
 
 const SYSTEM_PROMPT: &str = r#"
@@ -467,4 +470,76 @@ pub async fn fetch_available_models(
         .await
         .context("Failed to parse models response")?;
     Ok(data.data.into_iter().map(|m| m.id).collect())
+}
+
+pub const PREFLIGHT_TTL: Duration = Duration::from_secs(300);
+const PREFLIGHT_NOTICE_COOLDOWN: Duration = Duration::from_secs(120);
+
+#[derive(Default)]
+struct PreflightState {
+    last_checked_at: Option<Instant>,
+    available: Option<bool>,
+    last_notice_at: Option<Instant>,
+}
+
+static PREFLIGHT_STATE: OnceLock<Mutex<PreflightState>> = OnceLock::new();
+
+fn preflight_state() -> &'static Mutex<PreflightState> {
+    PREFLIGHT_STATE.get_or_init(|| Mutex::new(PreflightState::default()))
+}
+
+pub fn cached_preflight_available() -> Option<bool> {
+    let state = preflight_state().lock();
+    if let Some(last) = state.last_checked_at {
+        if last.elapsed() >= PREFLIGHT_TTL {
+            return None;
+        }
+    }
+    state.available
+}
+
+pub fn should_show_unavailable_notice() -> bool {
+    let mut state = preflight_state().lock();
+    let now = Instant::now();
+    if let Some(last) = state.last_notice_at {
+        if now.duration_since(last) < PREFLIGHT_NOTICE_COOLDOWN {
+            return false;
+        }
+    }
+    state.last_notice_at = Some(now);
+    true
+}
+
+pub fn note_preflight_failure() {
+    let mut state = preflight_state().lock();
+    state.last_checked_at = Some(Instant::now());
+    state.available = Some(false);
+}
+
+pub fn clear_preflight_cache() {
+    let mut state = preflight_state().lock();
+    state.last_checked_at = None;
+    state.available = None;
+}
+
+pub async fn run_preflight(client: Client, settings: UserSettings) {
+    if settings.transcription_mode != TranscriptionMode::Local
+        || !is_cleanup_available(&settings)
+    {
+        clear_preflight_cache();
+        return;
+    }
+
+    let endpoint = settings.llm_endpoint.clone();
+    let provider = settings.llm_provider.clone();
+    let api_key = settings.llm_api_key.clone();
+
+    let available = match fetch_available_models(&client, &endpoint, &provider, &api_key).await {
+        Ok(models) => !models.is_empty(),
+        Err(_err) => false,
+    };
+
+    let mut state = preflight_state().lock();
+    state.last_checked_at = Some(Instant::now());
+    state.available = Some(available);
 }

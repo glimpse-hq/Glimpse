@@ -222,7 +222,7 @@ body {
   right: 0;
   bottom: 0;
   height: 18px;
-  background: linear-gradient(180deg, transparent, #161618);
+  background: linear-gradient(180deg, transparent, var(--color-bg-overlay));
   pointer-events: none;
   z-index: 1;
 }
@@ -233,7 +233,7 @@ body {
   right: 0;
   top: 0;
   height: 18px;
-  background: linear-gradient(180deg, #161618, transparent);
+  background: linear-gradient(180deg, var(--color-bg-overlay), transparent);
   pointer-events: none;
   z-index: 1;
 }
@@ -244,7 +244,7 @@ body {
   right: 0;
   bottom: 0;
   height: 18px;
-  background: linear-gradient(180deg, transparent, #0A0A0C);
+  background: linear-gradient(180deg, transparent, var(--color-bg-secondary));
   pointer-events: none;
   z-index: 1;
 }
@@ -255,7 +255,7 @@ body {
   right: 0;
   top: 0;
   height: 18px;
-  background: linear-gradient(180deg, #0A0A0C, transparent);
+  background: linear-gradient(180deg, var(--color-bg-secondary), transparent);
   pointer-events: none;
   z-index: 1;
 }

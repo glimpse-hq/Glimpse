@@ -79,8 +79,8 @@ function App() {
     if (windowLabel === "settings") {
       body.classList.add("settings-body");
       html.classList.add("settings-html");
-      html.style.backgroundColor = "#030303";
-      body.style.backgroundColor = "#030303";
+      html.style.backgroundColor = "var(--color-bg-primary)";
+      body.style.backgroundColor = "var(--color-bg-primary)";
     } else {
       body.classList.remove("settings-body");
       html.classList.remove("settings-html");

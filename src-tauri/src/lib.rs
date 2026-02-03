@@ -28,7 +28,8 @@ use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
 use anyhow::{Context, Result};
@@ -109,6 +110,7 @@ fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::Transcrip
     current.transcription_mode = mode;
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
+            state.request_preflight_refresh();
             if let Err(err) = set_app_menu(app, &saved) {
                 eprintln!("Failed to refresh app menu: {err}");
             }
@@ -279,6 +281,10 @@ pub fn run() {
             let update_state = handle.state::<AppState>().update_state().clone();
             update_checker::start_background_checker(update_handle, update_state);
 
+            handle
+                .state::<AppState>()
+                .start_preflight_loop(handle.clone());
+
             let _ = app.track_event("app_started", None);
 
             Ok(())
@@ -364,7 +370,16 @@ pub fn run() {
                 }
             }
             tauri::RunEvent::Exit => {
-                let _ = handler.track_event("app_exited", None);
+                let state = handler.state::<AppState>();
+                state.stop_preflight_loop();
+                let now = Instant::now();
+                let counters = state.session_counters.lock();
+                analytics::track_app_exited(
+                    handler,
+                    (now - state.session_started_at).as_secs_f64(),
+                    counters.recording_seconds,
+                    counters.transcription_count,
+                );
                 handler.flush_events_blocking();
             }
             _ => {}
@@ -411,7 +426,19 @@ pub struct AppState {
     library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     update_state: update_checker::SharedUpdateState,
+    preflight_cancel: CancellationToken,
+    preflight_started: AtomicBool,
+    preflight_notify: Arc<Notify>,
+    session_started_at: Instant,
+    session_counters: parking_lot::Mutex<SessionCounters>,
 }
+
+#[derive(Clone, Copy)]
+struct SessionCounters {
+    recording_seconds: f64,
+    transcription_count: u32,
+}
+
 
 impl AppState {
     pub fn new(
@@ -459,6 +486,14 @@ impl AppState {
             library_active: parking_lot::Mutex::new(None),
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             update_state: update_checker::create_state(),
+            preflight_cancel: CancellationToken::new(),
+            preflight_started: AtomicBool::new(false),
+            preflight_notify: Arc::new(Notify::new()),
+            session_started_at: Instant::now(),
+            session_counters: parking_lot::Mutex::new(SessionCounters {
+                recording_seconds: 0.0,
+                transcription_count: 0,
+            }),
         }
     }
 
@@ -483,6 +518,16 @@ impl AppState {
 
     pub fn pill(&self) -> &PillController {
         &self.pill
+    }
+
+    pub fn record_recording_seconds(&self, duration_secs: f64) {
+        if duration_secs.is_finite() && duration_secs > 0.0 {
+            self.session_counters.lock().recording_seconds += duration_secs;
+        }
+    }
+
+    pub fn record_transcription_completed(&self) {
+        self.session_counters.lock().transcription_count += 1;
     }
 
     fn http(&self) -> Client {
@@ -647,6 +692,57 @@ impl AppState {
 
     pub fn clear_retry_transcription(&self, id: &str) {
         self.retry_tokens.lock().remove(id);
+    }
+
+    pub fn start_preflight_loop(&self, app: AppHandle<AppRuntime>) {
+        if self.preflight_started.swap(true, Ordering::SeqCst) {
+            return;
+        }
+
+        let token = self.preflight_cancel.clone();
+        let notify = Arc::clone(&self.preflight_notify);
+
+        async_runtime::spawn(async move {
+            let mut ticker = tokio::time::interval(llm_cleanup::PREFLIGHT_TTL);
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            let mut refresh_pending = false;
+
+            loop {
+                tokio::select! {
+                    _ = token.cancelled() => break,
+                    _ = notify.notified() => {
+                        refresh_pending = true;
+                    }
+                    _ = ticker.tick() => {}
+                }
+
+                if token.is_cancelled() {
+                    break;
+                }
+
+                if !refresh_pending {
+                    // If woken by ticker, check if cache is still fresh (< TTL).
+                    // Returns None when cache is expired, triggering refresh below.
+                    if llm_cleanup::cached_preflight_available().is_some() {
+                        continue;
+                    }
+                }
+
+                let state = app.state::<AppState>();
+                let settings = state.current_settings();
+                llm_cleanup::run_preflight(state.http(), settings).await;
+                refresh_pending = false;
+            }
+        });
+    }
+
+    pub fn stop_preflight_loop(&self) {
+        self.preflight_cancel.cancel();
+    }
+
+    pub fn request_preflight_refresh(&self) {
+        llm_cleanup::clear_preflight_cache();
+        self.preflight_notify.notify_one();
     }
 
     pub fn update_state(&self) -> &update_checker::SharedUpdateState {
@@ -820,6 +916,8 @@ fn update_settings(
     let next = state
         .persist_settings(next)
         .map_err(|err| err.to_string())?;
+
+    state.request_preflight_refresh();
 
     pill::register_shortcuts(&app).map_err(|err| err.to_string())?;
 
@@ -1139,6 +1237,7 @@ async fn retry_transcription(
         started_at: record.timestamp,
         ended_at: record.timestamp,
         duration_override_seconds: Some(record.audio_duration_seconds),
+        recording_mode: None,
     };
 
     let settings = state.current_settings();

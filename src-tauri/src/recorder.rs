@@ -81,6 +81,7 @@ pub struct CompletedRecording {
     pub channels: u16,
     pub started_at: DateTime<Local>,
     pub ended_at: DateTime<Local>,
+    pub recording_mode: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +91,7 @@ pub struct RecordingSaved {
     pub ended_at: DateTime<Local>,
     /// Override duration in seconds (used for retries when we know the original duration)
     pub duration_override_seconds: Option<f32>,
+    pub recording_mode: Option<String>,
 }
 
 impl Default for RecorderManager {
@@ -287,6 +289,7 @@ impl RecorderCore {
                     channels: active.channels,
                     started_at: active.started_at,
                     ended_at: Local::now(),
+                    recording_mode: None,
                 }));
             }
 
@@ -308,6 +311,7 @@ impl RecorderCore {
                 channels: 1,
                 started_at: active.started_at,
                 ended_at: Local::now(),
+                recording_mode: None,
             }))
         } else {
             Ok(None)
@@ -553,6 +557,8 @@ pub fn persist_recording(
         return Err(anyhow!("Recording buffer is empty"));
     }
 
+    let duration_override_seconds = Some(wav_samples.len() as f32 / WAV_SAMPLE_RATE as f32);
+
     let wav_bytes = encode_to_wav(&wav_samples, WAV_SAMPLE_RATE, WAV_CHANNELS)?;
     fs::write(&file_path, wav_bytes)
         .with_context(|| format!("Failed to write recording file at {}", file_path.display()))?;
@@ -561,7 +567,8 @@ pub fn persist_recording(
         path: file_path,
         started_at: recording.started_at,
         ended_at: recording.ended_at,
-        duration_override_seconds: None,
+        duration_override_seconds,
+        recording_mode: recording.recording_mode.clone(),
     })
 }
 

@@ -1327,7 +1327,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     : "border-amber-400/30 bg-amber-400/5 hover:border-amber-400/50 hover:bg-amber-400/10"
                                     }`}
                                 animate={captureActive ? {
-                                    borderColor: ["rgba(251, 191, 36, 0.5)", "rgba(251, 191, 36, 1)", "rgba(251, 191, 36, 0.5)"]
+                                    borderColor: ["var(--color-cloud-50)", "var(--color-cloud)", "var(--color-cloud-50)"]
                                 } : {}}
                                 transition={{ duration: 1.2, repeat: captureActive ? Infinity : 0 }}
                             >

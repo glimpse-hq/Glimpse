@@ -1,13 +1,15 @@
 name: 'publish'
 
 on:
-  pull_request:
-    branches: '**'
   push:
     branches:
       - main
       - release
   workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   publish-tauri:
@@ -37,16 +39,29 @@ jobs:
         with:
           bun-version: latest
 
+      - name: cache bun
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            ~/.cache/bun
+            ~/Library/Caches/bun
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
-      - name: install frontend dependencies
-        run: bun install
+      - name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
 
-      - name: build frontend
-        run: bun run build
+      - name: install frontend dependencies
+        run: bun install --frozen-lockfile
 
       - name: import Apple Developer Certificate
         env:
