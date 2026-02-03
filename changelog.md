@@ -1,3 +1,15 @@
+0.6.1
+
+### Changes
+
+- LLM preflight checking is now done in the background, if you felt a delay when activating recording with LLM cleanup enabled, this is now gone.
+
+- Cleaned up how analytics are calculated and what is, this update now records what keybind is used (hold, toggle, smart) and has more accurate session length capturing, now distinguishing between how long the app itself is active versus how long it's in the background.
+
+
+
+---
+
 0.6.0
 
 ### Library mode
