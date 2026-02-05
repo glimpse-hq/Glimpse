@@ -347,6 +347,22 @@ body {
   background: var(--color-cloud-50);
 }
 
+@keyframes tag-input-intro {
+  from {
+    opacity: 0.65;
+    border-bottom-color: transparent;
+  }
+
+  to {
+    opacity: 1;
+    border-bottom-color: var(--color-border-primary);
+  }
+}
+
+.tag-input-intro {
+  animation: tag-input-intro 0.12s ease-out;
+}
+
 @keyframes shake {
 
   0%,

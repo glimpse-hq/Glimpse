@@ -103,6 +103,7 @@ const SettingsModal = ({
     const [authPassword, setAuthPassword] = useState("");
     const [authShowPassword, setAuthShowPassword] = useState(false);
     const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+    const didHydrateRef = useRef(false);
 
     const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
     const isDeveloper = currentUser?.labels?.includes("dev") ?? false;
@@ -123,6 +124,12 @@ const SettingsModal = ({
             setActiveTab(initialTab);
         }
     }, [isOpen, initialTab]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            didHydrateRef.current = false;
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         localStorage.setItem("glimpse_cloud_sync_enabled", String(cloudSyncEnabled));
@@ -487,6 +494,10 @@ const SettingsModal = ({
 
     useEffect(() => {
         if (loading) return;
+        if (!didHydrateRef.current) {
+            didHydrateRef.current = true;
+            return;
+        }
 
         const saveSettings = async () => {
             try {

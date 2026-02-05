@@ -1,3 +1,23 @@
+0.6.2
+
+### Features
+
+- Added the ability when tagging a library item to see a list of already existing tags.
+
+- Added the ability in the menu bar to see & copy last transcriptions.
+
+### Changes
+
+- Changed the ordering of the tray menu to match the Glimpse menu
+
+### Fixes
+
+- Fixed a visual bug where opening settings would feel laggy.
+
+
+
+---
+
 0.6.1
 
 ### Changes

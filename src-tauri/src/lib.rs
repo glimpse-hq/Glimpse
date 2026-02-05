@@ -15,6 +15,7 @@ mod permissions;
 mod personalization;
 mod pill;
 mod platform;
+mod recent_transcriptions;
 mod recorder;
 mod settings;
 mod storage;
@@ -65,6 +66,9 @@ pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimps
 
 #[cfg(target_os = "macos")]
 fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
+    use crate::recent_transcriptions::{
+        copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
+    };
     use platform::macos::menu::{
         MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODE_LOCAL,
         MENU_ID_MODEL_PREFIX, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
@@ -90,7 +94,9 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             set_microphone(app, None);
         }
         _ => {
-            if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
+            if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
+                copy_transcription_to_clipboard(app, transcription_id);
+            } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
                 set_local_model(app, model_key);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
@@ -191,7 +197,7 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
 }
 
 #[cfg(target_os = "macos")]
-fn set_app_menu(
+pub(crate) fn set_app_menu(
     app: &AppHandle<AppRuntime>,
     settings: &settings::UserSettings,
 ) -> tauri::Result<()> {
@@ -244,14 +250,16 @@ pub fn run() {
                 }
             }
 
+            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+
             #[cfg(target_os = "macos")]
             {
+                let handle = app.handle();
+                let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = set_app_menu(handle, &settings) {
                     eprintln!("Failed to set app menu: {err}");
                 }
             }
-
-            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
 
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
@@ -1161,8 +1169,12 @@ fn mark_transcription_synced(id: String, state: tauri::State<AppState>) -> Resul
 }
 
 #[tauri::command]
-fn delete_transcription(id: String, state: tauri::State<AppState>) -> Result<bool, String> {
-    match state.storage().delete(&id) {
+fn delete_transcription(
+    id: String,
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<AppState>,
+) -> Result<bool, String> {
+    let result = match state.storage().delete(&id) {
         Ok(Some(audio_path)) => {
             let path = PathBuf::from(audio_path);
             if path.exists() {
@@ -1172,11 +1184,25 @@ fn delete_transcription(id: String, state: tauri::State<AppState>) -> Result<boo
         }
         Ok(None) => Ok(false),
         Err(err) => Err(format!("Failed to delete transcription: {err}")),
+    }?;
+
+    let settings = state.current_settings();
+    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
     }
+    #[cfg(target_os = "macos")]
+    if let Err(err) = set_app_menu(&app, &settings) {
+        eprintln!("Failed to refresh app menu: {err}");
+    }
+
+    Ok(result)
 }
 
 #[tauri::command]
-fn delete_all_transcriptions(state: tauri::State<AppState>) -> Result<u32, String> {
+fn delete_all_transcriptions(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<AppState>,
+) -> Result<u32, String> {
     let audio_paths = state
         .storage()
         .delete_all()
@@ -1185,6 +1211,15 @@ fn delete_all_transcriptions(state: tauri::State<AppState>) -> Result<u32, Strin
     let deleted_count = audio_paths.len() as u32;
     for audio_path in audio_paths {
         let _ = std::fs::remove_file(audio_path);
+    }
+
+    let settings = state.current_settings();
+    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
+    }
+    #[cfg(target_os = "macos")]
+    if let Err(err) = set_app_menu(&app, &settings) {
+        eprintln!("Failed to refresh app menu: {err}");
     }
 
     Ok(deleted_count)

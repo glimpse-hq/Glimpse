@@ -2,6 +2,8 @@ use anyhow::{anyhow, Result};
 
 #[cfg(target_os = "macos")]
 use arboard::{Clipboard, ImageData, SetExtApple};
+#[cfg(not(target_os = "macos"))]
+use arboard::Clipboard;
 #[cfg(target_os = "macos")]
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
 #[cfg(target_os = "macos")]
@@ -98,6 +100,17 @@ pub fn paste_text(text: &str) -> Result<()> {
 }
 
 #[cfg(target_os = "macos")]
+pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
+    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    clipboard
+        .set()
+        .exclude_from_history()
+        .text(text.to_string())
+        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
 struct ClipboardBackup {
     text: Option<String>,
     html: Option<String>,
@@ -172,6 +185,15 @@ fn send_paste_keystroke() -> Result<()> {
 #[cfg(not(target_os = "macos"))]
 pub fn paste_text(_text: &str) -> Result<()> {
     Err(anyhow!("Assistive paste is only supported on macOS"))
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
+    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    clipboard
+        .set_text(text.to_string())
+        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+    Ok(())
 }
 
 #[cfg(not(target_os = "macos"))]

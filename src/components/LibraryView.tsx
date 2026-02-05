@@ -576,8 +576,8 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
         setTagDraft("");
     };
 
-    const commitTagAdd = async (itemId: string) => {
-        const nextTag = tagDraft.trim();
+    const commitTagAdd = async (itemId: string, overrideTag?: string) => {
+        const nextTag = (overrideTag ?? tagDraft).trim();
         if (!nextTag) {
             setEditingTagId(null);
             setTagDraft("");
@@ -732,9 +732,10 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 tagDraft={tagDraft}
                                 onStartTagEdit={() => startTagEdit(item)}
                                 onChangeTagDraft={setTagDraft}
-                                onCommitTagAdd={() => commitTagAdd(item.id)}
+                                onCommitTagAdd={(value) => commitTagAdd(item.id, value)}
                                 onCancelTagEdit={cancelTagEdit}
                                 shiftHeld={shiftHeld}
+                                availableTags={availableTags}
                             />
                         ))}
 
@@ -795,6 +796,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 onCancel={() => cancelTranscription(selectedItem.id)}
                                 onUpdate={(patch) => updateItemWithTags(selectedItem.id, patch)}
                                 onExport={(format, outputPath) => exportItem(selectedItem.id, format, outputPath)}
+                                availableTags={availableTags}
                             />
                         </div>
                     </div>
@@ -868,6 +870,7 @@ const LibraryCard = ({
     onCommitTagAdd,
     onCancelTagEdit,
     shiftHeld,
+    availableTags,
 }: {
     item: LibraryItem;
     onOpen: () => void;
@@ -885,9 +888,10 @@ const LibraryCard = ({
     tagDraft: string;
     onStartTagEdit: () => void;
     onChangeTagDraft: (value: string) => void;
-    onCommitTagAdd: () => void;
+    onCommitTagAdd: (value?: string) => void;
     onCancelTagEdit: () => void;
     shiftHeld: boolean;
+    availableTags: string[];
 }) => {
     const status = item.status;
     const tagPreview = item.tags.slice(0, 2);
@@ -898,8 +902,19 @@ const LibraryCard = ({
     const isAddingTag = editingTagId === item.id;
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const [tagMenuOpen, setTagMenuOpen] = useState(false);
+    const tagMenuRef = useRef<HTMLDivElement>(null);
     const statusText = statusLabel(status);
     const errorDetails = status.type === "error" ? getLibraryErrorDetails(status.message) : null;
+    const normalizedDraft = tagDraft.trim().toLowerCase();
+    const filteredTagOptions = availableTags.filter((tag) => {
+        const tagLower = tag.toLowerCase();
+        if (item.tags.some((existing) => existing.toLowerCase() === tagLower)) {
+            return false;
+        }
+        if (!normalizedDraft) return true;
+        return tagLower.includes(normalizedDraft);
+    });
 
     const handleDelete = async () => {
         setMenuOpen(false);
@@ -965,6 +980,25 @@ const LibraryCard = ({
 
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [menuOpen]);
+
+    useEffect(() => {
+        if (!isAddingTag) {
+            setTagMenuOpen(false);
+        }
+    }, [isAddingTag]);
+
+    useEffect(() => {
+        if (!tagMenuOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (tagMenuRef.current && !tagMenuRef.current.contains(event.target as Node)) {
+                setTagMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [tagMenuOpen]);
 
     return (
         <div
@@ -1116,7 +1150,59 @@ const LibraryCard = ({
 
             <div className="mt-3 min-h-[24px]">
                 {isAddingTag ? (
-                    <div className="flex items-center gap-1 h-5" onClick={(event) => event.stopPropagation()}>
+                    <div
+                        className="flex items-center gap-1.5 min-h-[24px]"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div ref={tagMenuRef} className="relative flex items-center">
+                            <button
+                                type="button"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => setTagMenuOpen((prev) => !prev)}
+                                className="flex items-center justify-center w-6 h-6 rounded text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors"
+                                aria-label="Select existing tag"
+                                title="Select existing tag"
+                            >
+                                <ChevronDown
+                                    size={12}
+                                    className={`translate-y-[1px] transition-transform duration-150 ${tagMenuOpen ? "rotate-180" : ""}`}
+                                />
+                            </button>
+                            <AnimatePresence>
+                                {tagMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.98, y: -4 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.98, y: -4 }}
+                                        transition={{ duration: 0.12 }}
+                                        className="absolute left-0 top-full mt-1 z-[120] w-36 rounded-md border border-border-secondary/80 bg-surface-overlay shadow-lg shadow-black/40 overflow-hidden"
+                                    >
+                                        <div className="max-h-36 overflow-y-auto">
+                                            {filteredTagOptions.length > 0 ? (
+                                                filteredTagOptions.map((tag) => (
+                                                    <button
+                                                        key={tag}
+                                                        type="button"
+                                                        onMouseDown={(event) => event.preventDefault()}
+                                                        onClick={() => {
+                                                            onCommitTagAdd(tag);
+                                                            setTagMenuOpen(false);
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-1.5 text-[10px] font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
+                                                    >
+                                                        {tag}
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="px-2.5 py-2 text-[9px] text-content-muted">
+                                                    {availableTags.length === 0 ? "No tags yet" : "No other tags"}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
                         <input
                             value={tagDraft}
                             onChange={(event) => onChangeTagDraft(event.target.value)}
@@ -1132,7 +1218,7 @@ const LibraryCard = ({
                             }}
                             onBlur={onCancelTagEdit}
                             placeholder="New tag..."
-                            className="flex-1 min-w-0 h-5 box-border bg-transparent border-b border-border-primary px-0.5 py-0 text-[10px] leading-none text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
+                            className="tag-input-intro flex-1 min-w-0 h-6 box-border bg-transparent border-b border-border-primary px-0.5 py-0 text-[10px] leading-none text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
                             autoFocus
                         />
                     </div>
@@ -1186,6 +1272,7 @@ const LibraryModal = ({
     onCancel,
     onUpdate,
     onExport,
+    availableTags,
 }: {
     item: LibraryItem;
     models: ModelInfo[];
@@ -1198,11 +1285,13 @@ const LibraryModal = ({
     onCancel: () => void;
     onUpdate: (patch: LibraryItemPatch) => Promise<LibraryItem>;
     onExport: (format: ExportFormat, outputPath: string) => Promise<void>;
+    availableTags: string[];
 }) => {
     const [nameDraft, setNameDraft] = useState(item.name);
     const [isEditingName, setIsEditingName] = useState(false);
     const [transcriptDraft, setTranscriptDraft] = useState(item.transcript ?? "");
     const [tagInput, setTagInput] = useState("");
+    const [tagMenuOpen, setTagMenuOpen] = useState(false);
     const [showTimestamps, setShowTimestamps] = useState(item.show_timestamps);
     const [exportOpen, setExportOpen] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -1219,10 +1308,10 @@ const LibraryModal = ({
     const [showRetranscribe, setShowRetranscribe] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeSearchIndex, setActiveSearchIndex] = useState(0);
-    const [hoveredTagIndex, setHoveredTagIndex] = useState<number | null>(null);
     const transcriptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const howlRef = useRef<Howl | null>(null);
+    const tagMenuRef = useRef<HTMLDivElement>(null);
     const playbackRateRef = useRef(1);
     const streamTranscriptRef = useRef("");
     const scrubWasPlayingRef = useRef(false);
@@ -1460,6 +1549,19 @@ const LibraryModal = ({
         };
     }, [transcriptDraft, transcriptAvailable, item.transcript, onUpdate]);
 
+    useEffect(() => {
+        if (!tagMenuOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (tagMenuRef.current && !tagMenuRef.current.contains(event.target as Node)) {
+                setTagMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [tagMenuOpen]);
+
     const handleNameCommit = async () => {
         const value = nameDraft.trim();
         if (!value || value === item.name) {
@@ -1471,8 +1573,8 @@ const LibraryModal = ({
         setIsEditingName(false);
     };
 
-    const handleAddTag = async () => {
-        const value = tagInput.trim();
+    const handleAddTag = async (overrideTag?: string) => {
+        const value = (overrideTag ?? tagInput).trim();
         if (!value) return;
         if (item.tags.some((tag) => tag.toLowerCase() === value.toLowerCase())) {
             setTagInput("");
@@ -1481,6 +1583,16 @@ const LibraryModal = ({
         await onUpdate({ tags: [...item.tags, value] });
         setTagInput("");
     };
+
+    const normalizedTagInput = tagInput.trim().toLowerCase();
+    const filteredTagOptions = availableTags.filter((tag) => {
+        const tagLower = tag.toLowerCase();
+        if (item.tags.some((existing) => existing.toLowerCase() === tagLower)) {
+            return false;
+        }
+        if (!normalizedTagInput) return true;
+        return tagLower.includes(normalizedTagInput);
+    });
 
     const handleRemoveTag = async (tag: string) => {
         await onUpdate({ tags: item.tags.filter((entry) => entry !== tag) });
@@ -2025,42 +2137,82 @@ const LibraryModal = ({
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Tags</p>
                         <div className="flex flex-wrap gap-2 max-h-20 overflow-auto custom-scrollbar scrollbar-gutter pr-3">
                             {item.tags.length === 0 && <span className="text-[10px] text-content-disabled italic">None</span>}
-                            {item.tags.map((tag, idx) => {
-                                const isHovered = hoveredTagIndex === idx;
-                                return (
-                                    <span
-                                        key={`${tag}-${idx}`}
-                                        onClick={() => {
-                                            if (shiftHeld) {
-                                                handleRemoveTag(tag);
-                                            }
-                                        }}
-                                        className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded text-[10px] bg-white/5 border transition-colors leading-none ${
-                                            isHovered
-                                                ? "text-red-200 border-red-500/60"
-                                                : "text-content-secondary border-white/10"
-                                        }`}
-                                    >
+                            {item.tags.map((tag, idx) => (
+                                <span
+                                    key={`${tag}-${idx}`}
+                                    onClick={() => {
+                                        if (shiftHeld) {
+                                            handleRemoveTag(tag);
+                                        }
+                                    }}
+                                    className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded text-[10px] bg-white/5 border transition-colors leading-none text-content-secondary border-white/10 ${
+                                        shiftHeld ? "cursor-pointer hover:text-red-200 hover:border-red-500/60" : ""
+                                    }`}
+                                >
                                     <span>{tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}</span>
                                     <button
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleRemoveTag(tag);
                                         }}
-                                        onMouseEnter={() => setHoveredTagIndex(idx)}
-                                        onMouseLeave={() => setHoveredTagIndex(null)}
-                                        onFocus={() => setHoveredTagIndex(idx)}
-                                        onBlur={() => setHoveredTagIndex(null)}
                                         className="ml-1 text-content-disabled hover:text-red-300 transition-colors cursor-pointer shrink-0"
                                         aria-label={`Remove ${tag}`}
                                     >
                                         <X size={10} />
                                     </button>
                                 </span>
-                                );
-                            })}
+                            ))}
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 min-h-[24px]">
+                            <div ref={tagMenuRef} className="relative flex items-center">
+                                <button
+                                    type="button"
+                                    onMouseDown={(event) => event.preventDefault()}
+                                    onClick={() => setTagMenuOpen((prev) => !prev)}
+                                    className="flex items-center justify-center w-6 h-6 rounded text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors"
+                                    aria-label="Select existing tag"
+                                    title="Select existing tag"
+                                >
+                                <ChevronDown
+                                    size={12}
+                                    className={`translate-y-[1px] transition-transform duration-150 ${tagMenuOpen ? "rotate-180" : ""}`}
+                                />
+                                </button>
+                                <AnimatePresence>
+                                    {tagMenuOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.98, y: -4 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.98, y: -4 }}
+                                            transition={{ duration: 0.12 }}
+                                            className="absolute left-0 top-full mt-1 z-[120] w-36 rounded-md border border-border-secondary/80 bg-surface-overlay shadow-lg shadow-black/40 overflow-hidden"
+                                        >
+                                            <div className="max-h-36 overflow-y-auto">
+                                                {filteredTagOptions.length > 0 ? (
+                                                    filteredTagOptions.map((tag) => (
+                                                        <button
+                                                            key={tag}
+                                                            type="button"
+                                                            onMouseDown={(event) => event.preventDefault()}
+                                                            onClick={() => {
+                                                                handleAddTag(tag);
+                                                                setTagMenuOpen(false);
+                                                            }}
+                                                            className="w-full text-left px-2.5 py-1.5 text-[10px] font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
+                                                        >
+                                                            {tag}
+                                                        </button>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-2.5 py-2 text-[9px] text-content-muted">
+                                                        {availableTags.length === 0 ? "No tags yet" : "No other tags"}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                             <input
                                 value={tagInput}
                                 onChange={(event) => setTagInput(event.target.value)}
@@ -2071,7 +2223,7 @@ const LibraryModal = ({
                                     }
                                 }}
                                 placeholder="New tag..."
-                                className="flex-1 min-w-0 bg-transparent border-b border-border-primary px-0.5 py-1 text-[10px] text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
+                                className="flex-1 min-w-0 h-6 bg-transparent border-b border-border-primary px-0.5 py-0 text-[10px] text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
                             />
                         </div>
                     </div>

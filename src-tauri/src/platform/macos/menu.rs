@@ -1,5 +1,6 @@
 use crate::audio;
 use crate::model_manager;
+use crate::recent_transcriptions::build_recent_transcriptions_menu;
 use crate::settings::{TranscriptionMode, UserSettings};
 use crate::AppRuntime;
 use tauri::menu::{
@@ -130,7 +131,11 @@ pub fn build_app_menu(
     }
     app_submenu = app_submenu.item(&mic_submenu.build()?);
 
+    let recent_submenu = build_recent_transcriptions_menu(app, "Last Transcriptions")?;
+
     app_submenu = app_submenu
+        .separator()
+        .item(&recent_submenu)
         .separator()
         .item(&PredefinedMenuItem::services(app, Some("Services"))?)
         .separator()
