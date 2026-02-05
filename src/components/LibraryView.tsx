@@ -1308,7 +1308,6 @@ const LibraryModal = ({
     const [showRetranscribe, setShowRetranscribe] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeSearchIndex, setActiveSearchIndex] = useState(0);
-    const [hoveredTagIndex, setHoveredTagIndex] = useState<number | null>(null);
     const transcriptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const howlRef = useRef<Howl | null>(null);
@@ -2138,40 +2137,31 @@ const LibraryModal = ({
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Tags</p>
                         <div className="flex flex-wrap gap-2 max-h-20 overflow-auto custom-scrollbar scrollbar-gutter pr-3">
                             {item.tags.length === 0 && <span className="text-[10px] text-content-disabled italic">None</span>}
-                            {item.tags.map((tag, idx) => {
-                                const isHovered = hoveredTagIndex === idx;
-                                return (
-                                    <span
-                                        key={`${tag}-${idx}`}
-                                        onClick={() => {
-                                            if (shiftHeld) {
-                                                handleRemoveTag(tag);
-                                            }
-                                        }}
-                                        className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded text-[10px] bg-white/5 border transition-colors leading-none ${
-                                            isHovered
-                                                ? "text-red-200 border-red-500/60"
-                                                : "text-content-secondary border-white/10"
-                                        }`}
-                                    >
+                            {item.tags.map((tag, idx) => (
+                                <span
+                                    key={`${tag}-${idx}`}
+                                    onClick={() => {
+                                        if (shiftHeld) {
+                                            handleRemoveTag(tag);
+                                        }
+                                    }}
+                                    className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded text-[10px] bg-white/5 border transition-colors leading-none text-content-secondary border-white/10 ${
+                                        shiftHeld ? "cursor-pointer hover:text-red-200 hover:border-red-500/60" : ""
+                                    }`}
+                                >
                                     <span>{tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}</span>
                                     <button
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             handleRemoveTag(tag);
                                         }}
-                                        onMouseEnter={() => setHoveredTagIndex(idx)}
-                                        onMouseLeave={() => setHoveredTagIndex(null)}
-                                        onFocus={() => setHoveredTagIndex(idx)}
-                                        onBlur={() => setHoveredTagIndex(null)}
                                         className="ml-1 text-content-disabled hover:text-red-300 transition-colors cursor-pointer shrink-0"
                                         aria-label={`Remove ${tag}`}
                                     >
                                         <X size={10} />
                                     </button>
                                 </span>
-                                );
-                            })}
+                            ))}
                         </div>
                         <div className="flex items-center gap-1.5 min-h-[24px]">
                             <div ref={tagMenuRef} className="relative flex items-center">
