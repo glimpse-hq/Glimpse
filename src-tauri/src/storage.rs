@@ -296,6 +296,31 @@ impl StorageManager {
         Ok(records)
     }
 
+    pub fn get_recent_transcriptions(&self, limit: usize) -> Result<Vec<TranscriptionRecord>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let conn = self.connection.lock();
+        let mut stmt = conn.prepare(
+            "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+             FROM transcriptions
+             WHERE status = ?1 AND text <> ''
+             ORDER BY timestamp DESC
+             LIMIT ?2",
+        )?;
+
+        let records = stmt
+            .query_map(
+                params![TranscriptionStatus::Success.as_str(), limit as i64],
+                |row| Self::record_from_row(row),
+            )?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        Ok(records)
+    }
+
     pub fn delete(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection.lock();
         let record = Self::get_record(&conn, id)?;

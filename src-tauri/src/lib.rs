@@ -15,6 +15,7 @@ mod permissions;
 mod personalization;
 mod pill;
 mod platform;
+mod recent_transcriptions;
 mod recorder;
 mod settings;
 mod storage;
@@ -65,6 +66,9 @@ pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimps
 
 #[cfg(target_os = "macos")]
 fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
+    use crate::recent_transcriptions::{
+        copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
+    };
     use platform::macos::menu::{
         MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODE_LOCAL,
         MENU_ID_MODEL_PREFIX, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
@@ -90,7 +94,9 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             set_microphone(app, None);
         }
         _ => {
-            if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
+            if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
+                copy_transcription_to_clipboard(app, transcription_id);
+            } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
                 set_local_model(app, model_key);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
@@ -191,7 +197,7 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
 }
 
 #[cfg(target_os = "macos")]
-fn set_app_menu(
+pub(crate) fn set_app_menu(
     app: &AppHandle<AppRuntime>,
     settings: &settings::UserSettings,
 ) -> tauri::Result<()> {
@@ -244,14 +250,16 @@ pub fn run() {
                 }
             }
 
+            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+
             #[cfg(target_os = "macos")]
             {
+                let handle = app.handle();
+                let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = set_app_menu(handle, &settings) {
                     eprintln!("Failed to set app menu: {err}");
                 }
             }
-
-            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
 
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
