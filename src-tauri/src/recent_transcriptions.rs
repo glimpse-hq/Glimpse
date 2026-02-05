@@ -72,9 +72,15 @@ pub fn build_recent_transcriptions_menu(
 
 pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcription_id: &str) {
     let record = app.state::<AppState>().storage().get_by_id(transcription_id);
-    let Some(record) = record else { return };
+    let Some(record) = record else {
+        emit_copy_error_toast(app, "Transcription no longer available");
+        refresh_recent_menus(app);
+        return;
+    };
     let text = record.text.trim();
     if text.is_empty() {
+        emit_copy_error_toast(app, "Transcription is empty");
+        refresh_recent_menus(app);
         return;
     }
     if let Err(err) = assistive::copy_text_to_clipboard(text) {
@@ -96,6 +102,34 @@ pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcriptio
             action_label: None,
         },
     );
+}
+
+fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
+    toast::emit_toast(
+        app,
+        toast::Payload {
+            toast_type: "error".to_string(),
+            title: None,
+            message: message.to_string(),
+            auto_dismiss: Some(true),
+            duration: Some(1600),
+            retry_id: None,
+            mode: None,
+            action: None,
+            action_label: None,
+        },
+    );
+}
+
+fn refresh_recent_menus(app: &AppHandle<AppRuntime>) {
+    let settings = app.state::<AppState>().current_settings();
+    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
+    }
+    #[cfg(target_os = "macos")]
+    if let Err(err) = crate::set_app_menu(app, &settings) {
+        eprintln!("Failed to refresh app menu: {err}");
+    }
 }
 
 fn format_transcription_preview(text: &str, max_len: usize) -> String {

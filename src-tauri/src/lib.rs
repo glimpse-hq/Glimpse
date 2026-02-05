@@ -1169,22 +1169,47 @@ fn mark_transcription_synced(id: String, state: tauri::State<AppState>) -> Resul
 }
 
 #[tauri::command]
-fn delete_transcription(id: String, state: tauri::State<AppState>) -> Result<bool, String> {
+fn delete_transcription(
+    id: String,
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<AppState>,
+) -> Result<bool, String> {
     match state.storage().delete(&id) {
         Ok(Some(audio_path)) => {
             let path = PathBuf::from(audio_path);
             if path.exists() {
                 let _ = std::fs::remove_file(path);
             }
+            let settings = state.current_settings();
+            if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
+                eprintln!("Failed to refresh tray menu: {err}");
+            }
+            #[cfg(target_os = "macos")]
+            if let Err(err) = set_app_menu(&app, &settings) {
+                eprintln!("Failed to refresh app menu: {err}");
+            }
             Ok(true)
         }
-        Ok(None) => Ok(false),
+        Ok(None) => {
+            let settings = state.current_settings();
+            if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
+                eprintln!("Failed to refresh tray menu: {err}");
+            }
+            #[cfg(target_os = "macos")]
+            if let Err(err) = set_app_menu(&app, &settings) {
+                eprintln!("Failed to refresh app menu: {err}");
+            }
+            Ok(false)
+        }
         Err(err) => Err(format!("Failed to delete transcription: {err}")),
     }
 }
 
 #[tauri::command]
-fn delete_all_transcriptions(state: tauri::State<AppState>) -> Result<u32, String> {
+fn delete_all_transcriptions(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<AppState>,
+) -> Result<u32, String> {
     let audio_paths = state
         .storage()
         .delete_all()
@@ -1193,6 +1218,15 @@ fn delete_all_transcriptions(state: tauri::State<AppState>) -> Result<u32, Strin
     let deleted_count = audio_paths.len() as u32;
     for audio_path in audio_paths {
         let _ = std::fs::remove_file(audio_path);
+    }
+
+    let settings = state.current_settings();
+    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
+    }
+    #[cfg(target_os = "macos")]
+    if let Err(err) = set_app_menu(&app, &settings) {
+        eprintln!("Failed to refresh app menu: {err}");
     }
 
     Ok(deleted_count)
