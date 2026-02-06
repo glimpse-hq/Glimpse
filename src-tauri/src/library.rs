@@ -460,7 +460,7 @@ pub fn export_library_item_to_path(
 
     if let Some(parent) = output_path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create export directory"))
+            .context("Failed to create export directory")
             .map_err(|err| err.to_string())?;
     }
 
@@ -1044,13 +1044,7 @@ fn transcribe_library_item(
                     app,
                     state.storage(),
                     &item.id,
-                    progress,
-                    chunk_index,
-                    total_chunks,
-                    None,
-                    None,
-                    None,
-                    None,
+                    LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
                 );
                 return Ok(());
             }
@@ -1123,13 +1117,15 @@ fn transcribe_library_item(
                 app,
                 state.storage(),
                 &item.id,
-                progress,
-                chunk_index,
-                total_chunks,
-                transcript_patch,
-                segments_patch,
-                appended_text,
-                chunk_segments,
+                LibraryProgressUpdate {
+                    progress,
+                    current_chunk: chunk_index,
+                    total_chunks,
+                    transcript: transcript_patch,
+                    segments: segments_patch,
+                    chunk_text: appended_text,
+                    chunk_segments,
+                },
             );
             Ok(())
         })?;
@@ -1168,13 +1164,7 @@ fn transcribe_library_item(
                     app,
                     state.storage(),
                     &item.id,
-                    progress,
-                    chunk_index,
-                    total_chunks,
-                    None,
-                    None,
-                    None,
-                    None,
+                    LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
                 );
                 return Ok(());
             }
@@ -1205,13 +1195,7 @@ fn transcribe_library_item(
                 app,
                 state.storage(),
                 &item.id,
-                progress,
-                chunk_index,
-                total_chunks,
-                None,
-                None,
-                None,
-                None,
+                LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
             );
             Ok(())
         })?;
@@ -1273,13 +1257,7 @@ fn transcribe_library_item(
                 app,
                 state.storage(),
                 &item.id,
-                progress,
-                chunk_index,
-                total_chunks,
-                None,
-                None,
-                None,
-                None,
+                LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
             );
             return Ok(());
         }
@@ -1327,13 +1305,7 @@ fn transcribe_library_item(
             app,
             state.storage(),
             &item.id,
-            progress,
-            chunk_index,
-            total_chunks,
-            None,
-            None,
-            None,
-            None,
+            LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
         );
         Ok(())
     })?;
@@ -1348,10 +1320,7 @@ fn transcribe_library_item(
     })
 }
 
-fn report_progress(
-    app: &AppHandle<AppRuntime>,
-    storage: Arc<StorageManager>,
-    id: &str,
+struct LibraryProgressUpdate {
     progress: f32,
     current_chunk: u32,
     total_chunks: u32,
@@ -1359,7 +1328,38 @@ fn report_progress(
     segments: Option<Vec<TranscriptSegment>>,
     chunk_text: Option<String>,
     chunk_segments: Option<Vec<TranscriptSegment>>,
+}
+
+impl LibraryProgressUpdate {
+    fn with_chunk_counts(progress: f32, current_chunk: u32, total_chunks: u32) -> Self {
+        Self {
+            progress,
+            current_chunk,
+            total_chunks,
+            transcript: None,
+            segments: None,
+            chunk_text: None,
+            chunk_segments: None,
+        }
+    }
+}
+
+fn report_progress(
+    app: &AppHandle<AppRuntime>,
+    storage: Arc<StorageManager>,
+    id: &str,
+    update: LibraryProgressUpdate,
 ) {
+    let LibraryProgressUpdate {
+        progress,
+        current_chunk,
+        total_chunks,
+        transcript,
+        segments,
+        chunk_text,
+        chunk_segments,
+    } = update;
+
     let _ = storage.update_library_item(
         id,
         LibraryItemPatch {
@@ -1458,11 +1458,9 @@ fn sanitize_folder_name(value: &str) -> String {
         if ch.is_ascii_alphanumeric() {
             out.push(ch.to_ascii_lowercase());
             prev_dash = false;
-        } else if ch == ' ' || ch == '-' || ch == '_' {
-            if !prev_dash {
-                out.push('-');
-                prev_dash = true;
-            }
+        } else if (ch == ' ' || ch == '-' || ch == '_') && !prev_dash {
+            out.push('-');
+            prev_dash = true;
         }
     }
     out.trim_matches('-').to_string()
@@ -2069,7 +2067,7 @@ fn convert_with_ffmpeg(
             .arg("pipe:1")
             .arg("-nostats")
             .arg("-i")
-            .arg(&input)
+            .arg(input)
             .arg("-vn")
             .arg("-acodec")
             .arg("pcm_s16le")
@@ -2077,7 +2075,7 @@ fn convert_with_ffmpeg(
             .arg(TARGET_SAMPLE_RATE.to_string())
             .arg("-ac")
             .arg("1")
-            .arg(&output)
+            .arg(output)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
@@ -2150,7 +2148,7 @@ fn convert_with_ffmpeg(
         .arg("-loglevel")
         .arg("error")
         .arg("-i")
-        .arg(&input)
+        .arg(input)
         .arg("-vn")
         .arg("-acodec")
         .arg("pcm_s16le")
@@ -2158,7 +2156,7 @@ fn convert_with_ffmpeg(
         .arg(TARGET_SAMPLE_RATE.to_string())
         .arg("-ac")
         .arg("1")
-        .arg(&output)
+        .arg(output)
         .spawn()
         .map_err(|err| match err.kind() {
             ErrorKind::NotFound => anyhow!("FFmpeg not found on PATH."),

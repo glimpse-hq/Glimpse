@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, ChevronLeft, Home as HomeIcon, Book, Brain, User, Info, HelpCircle, Github, X, ArrowUpCircle, Library } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import SettingsModal from "./components/settings/SettingsModal";
 import FAQModal from "./components/FAQModal";
 import DotMatrix from "./components/DotMatrix";
@@ -100,11 +100,10 @@ const Home = () => {
             unlistenSettings = fn;
         });
 
-        listen("navigate:about", async () => {
+        listen("navigate:about", () => {
             setSettingsTab("about");
             setIsSettingsOpen(true);
-            setTimeout(async () => {
-                const { emit } = await import("@tauri-apps/api/event");
+            setTimeout(() => {
                 emit("updater:check");
             }, 100);
         }).then((fn) => {

@@ -284,9 +284,10 @@ impl StorageManager {
 
         let mut stmt = conn.prepare(&sql)?;
         let records = stmt
-            .query_map(rusqlite::params_from_iter(params.iter()), |row| {
-                Self::record_from_row(row)
-            })?
+            .query_map(
+                rusqlite::params_from_iter(params.iter()),
+                Self::record_from_row,
+            )?
             .collect::<rusqlite::Result<Vec<_>>>()?;
 
         Ok(records)
@@ -310,7 +311,7 @@ impl StorageManager {
         let records = stmt
             .query_map(
                 params![TranscriptionStatus::Success.as_str(), limit as i64],
-                |row| Self::record_from_row(row),
+                Self::record_from_row,
             )?
             .collect::<rusqlite::Result<Vec<_>>>()?;
 

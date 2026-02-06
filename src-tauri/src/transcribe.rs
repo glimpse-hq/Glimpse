@@ -265,11 +265,13 @@ pub(crate) fn queue_transcription(
                                 &ready_model,
                                 &local_recording.samples,
                                 local_recording.sample_rate,
-                                dictionary_prompt.as_deref(),
-                                Some(&language),
-                                WHISPER_CHUNK_SECONDS,
-                                WHISPER_CHUNK_OVERLAP_SECONDS,
-                                Some(&cancel_token_clone),
+                                LocalChunkingConfig {
+                                    initial_prompt: dictionary_prompt.as_deref(),
+                                    language: Some(&language),
+                                    chunk_seconds: WHISPER_CHUNK_SECONDS,
+                                    overlap_seconds: WHISPER_CHUNK_OVERLAP_SECONDS,
+                                    cancel_token: Some(&cancel_token_clone),
+                                },
                             )
                         } else if is_moonshine {
                             transcribe_local_chunked(
@@ -277,11 +279,13 @@ pub(crate) fn queue_transcription(
                                 &ready_model,
                                 &local_recording.samples,
                                 local_recording.sample_rate,
-                                dictionary_prompt.as_deref(),
-                                Some(&language),
-                                MOONSHINE_CHUNK_SECONDS,
-                                MOONSHINE_CHUNK_OVERLAP_SECONDS,
-                                Some(&cancel_token_clone),
+                                LocalChunkingConfig {
+                                    initial_prompt: dictionary_prompt.as_deref(),
+                                    language: Some(&language),
+                                    chunk_seconds: MOONSHINE_CHUNK_SECONDS,
+                                    overlap_seconds: MOONSHINE_CHUNK_OVERLAP_SECONDS,
+                                    cancel_token: Some(&cancel_token_clone),
+                                },
                             )
                         } else {
                             let speech_percent = speech_percentage_i16_with_mode(
@@ -449,16 +453,16 @@ pub(crate) fn queue_transcription(
                     }
                 }
 
-                let metadata = build_transcription_metadata(
-                    &saved_for_task,
-                    &settings,
+                let metadata = build_transcription_metadata(TranscriptionMetadataInput {
+                    saved: &saved_for_task,
+                    settings: &settings,
                     use_local,
-                    reported_model.as_deref(),
-                    &final_transcript,
+                    reported_model: reported_model.as_deref(),
+                    final_text: &final_transcript,
                     llm_cleaned,
-                    false, // Not synced - local transcriptions need to be synced later
-                    active_mode.as_ref(),
-                );
+                    synced: false, // Not synced - local transcriptions need to be synced later
+                    mode: active_mode.as_ref(),
+                });
 
                 emit_transcription_complete_with_cleanup(
                     &app_handle,
@@ -734,11 +738,13 @@ pub(crate) fn retry_transcription_async(
                                         &ready_model,
                                         &samples,
                                         sample_rate,
-                                        dictionary_prompt.as_deref(),
-                                        Some(&language),
-                                        WHISPER_CHUNK_SECONDS,
-                                        WHISPER_CHUNK_OVERLAP_SECONDS,
-                                        Some(&cancel_token_clone),
+                                        LocalChunkingConfig {
+                                            initial_prompt: dictionary_prompt.as_deref(),
+                                            language: Some(&language),
+                                            chunk_seconds: WHISPER_CHUNK_SECONDS,
+                                            overlap_seconds: WHISPER_CHUNK_OVERLAP_SECONDS,
+                                            cancel_token: Some(&cancel_token_clone),
+                                        },
                                     )
                                 } else if is_moonshine {
                                     transcribe_local_chunked(
@@ -746,11 +752,13 @@ pub(crate) fn retry_transcription_async(
                                         &ready_model,
                                         &samples,
                                         sample_rate,
-                                        dictionary_prompt.as_deref(),
-                                        Some(&language),
-                                        MOONSHINE_CHUNK_SECONDS,
-                                        MOONSHINE_CHUNK_OVERLAP_SECONDS,
-                                        Some(&cancel_token_clone),
+                                        LocalChunkingConfig {
+                                            initial_prompt: dictionary_prompt.as_deref(),
+                                            language: Some(&language),
+                                            chunk_seconds: MOONSHINE_CHUNK_SECONDS,
+                                            overlap_seconds: MOONSHINE_CHUNK_OVERLAP_SECONDS,
+                                            cancel_token: Some(&cancel_token_clone),
+                                        },
                                     )
                                 } else {
                                     let speech_percent = speech_percentage_i16_with_mode(
@@ -1261,16 +1269,31 @@ fn format_transcription_error(message: &str, is_local: bool) -> String {
     "Transcription failed".to_string()
 }
 
-fn build_transcription_metadata(
-    saved: &RecordingSaved,
-    settings: &UserSettings,
+struct TranscriptionMetadataInput<'a> {
+    saved: &'a RecordingSaved,
+    settings: &'a UserSettings,
     use_local: bool,
-    reported_model: Option<&str>,
-    final_text: &str,
+    reported_model: Option<&'a str>,
+    final_text: &'a str,
     llm_cleaned: bool,
     synced: bool,
-    mode: Option<&Personality>,
+    mode: Option<&'a Personality>,
+}
+
+fn build_transcription_metadata(
+    input: TranscriptionMetadataInput<'_>,
 ) -> storage::TranscriptionMetadata {
+    let TranscriptionMetadataInput {
+        saved,
+        settings,
+        use_local,
+        reported_model,
+        final_text,
+        llm_cleaned,
+        synced,
+        mode,
+    } = input;
+
     storage::TranscriptionMetadata {
         speech_model: resolve_speech_model_label(settings, use_local, reported_model),
         llm_model: if llm_cleaned {
@@ -1321,7 +1344,7 @@ fn build_transcription_payload(
     history_sync: bool,
     mode: Option<&Personality>,
 ) -> transcription_api::TranscriptionPayload {
-    let personality = mode.map(|p| transcription_api::PersonalityPayload::from_personality(p));
+    let personality = mode.map(transcription_api::PersonalityPayload::from_personality);
 
     let user_name = if settings.user_name.trim().is_empty() {
         None
@@ -1392,17 +1415,29 @@ fn downmix_interleaved(samples: &[i16], channels: usize) -> Vec<i16> {
     crate::recorder::downmix_to_mono(samples, channels)
 }
 
+struct LocalChunkingConfig<'a> {
+    initial_prompt: Option<&'a str>,
+    language: Option<&'a str>,
+    chunk_seconds: f32,
+    overlap_seconds: f32,
+    cancel_token: Option<&'a CancellationToken>,
+}
+
 fn transcribe_local_chunked(
     transcriber: &crate::local_transcription::LocalTranscriber,
     model: &model_manager::ReadyModel,
     samples: &[i16],
     sample_rate: u32,
-    initial_prompt: Option<&str>,
-    language: Option<&str>,
-    chunk_seconds: f32,
-    overlap_seconds: f32,
-    cancel_token: Option<&CancellationToken>,
+    config: LocalChunkingConfig<'_>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
+    let LocalChunkingConfig {
+        initial_prompt,
+        language,
+        chunk_seconds,
+        overlap_seconds,
+        cancel_token,
+    } = config;
+
     if samples.is_empty() {
         return Err(anyhow!("No audio samples provided"));
     }

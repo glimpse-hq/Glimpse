@@ -217,7 +217,7 @@ pub fn list_installed_apps() -> Result<Vec<InstalledApp>, String> {
         }
 
         apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
-        return Ok(apps);
+        Ok(apps)
     }
 
     #[cfg(not(target_os = "macos"))]
