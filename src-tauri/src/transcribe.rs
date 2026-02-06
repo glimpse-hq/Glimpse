@@ -1418,8 +1418,7 @@ fn transcribe_local_chunked(
 
     let chunk_samples = ((sample_rate.max(1) as f32) * chunk_seconds).round() as usize;
     let chunk_samples = chunk_samples.max(1);
-    let overlap_samples =
-        ((sample_rate.max(1) as f32) * overlap_seconds).round() as usize;
+    let overlap_samples = ((sample_rate.max(1) as f32) * overlap_seconds).round() as usize;
     let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
     let step = chunk_samples.saturating_sub(overlap_samples).max(1);
 

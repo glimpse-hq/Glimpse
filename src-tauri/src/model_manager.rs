@@ -352,7 +352,8 @@ pub struct EngineGroup {
 }
 
 pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
-    let mut groups: std::collections::HashMap<String, Vec<ModelInfo>> = std::collections::HashMap::new();
+    let mut groups: std::collections::HashMap<String, Vec<ModelInfo>> =
+        std::collections::HashMap::new();
 
     for model in models {
         groups
@@ -366,13 +367,11 @@ pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
         .map(|(name, models)| EngineGroup { name, models })
         .collect();
 
-    result.sort_by_key(|g| {
-        match g.name.as_str() {
-            "Whisper" => 0,
-            "Parakeet" => 1,
-            "Moonshine" => 2,
-            _ => 3,
-        }
+    result.sort_by_key(|g| match g.name.as_str() {
+        "Whisper" => 0,
+        "Parakeet" => 1,
+        "Moonshine" => 2,
+        _ => 3,
     });
 
     result

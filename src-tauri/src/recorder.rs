@@ -399,11 +399,7 @@ fn calculate_rms(samples: &[f32]) -> f32 {
 }
 
 /// Calculate percentage of frames containing speech using VAD
-fn calculate_speech_percentage_with_mode(
-    samples: &[f32],
-    sample_rate: u32,
-    mode: VadMode,
-) -> f32 {
+fn calculate_speech_percentage_with_mode(samples: &[f32], sample_rate: u32, mode: VadMode) -> f32 {
     if samples.is_empty() {
         return 0.0;
     }
@@ -462,11 +458,7 @@ fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
     calculate_speech_percentage_with_mode(samples, sample_rate, VadMode::LowBitrate)
 }
 
-pub fn speech_percentage_i16_with_mode(
-    samples: &[i16],
-    sample_rate: u32,
-    mode: VadMode,
-) -> f32 {
+pub fn speech_percentage_i16_with_mode(samples: &[i16], sample_rate: u32, mode: VadMode) -> f32 {
     if samples.is_empty() {
         return 0.0;
     }
@@ -598,11 +590,7 @@ fn prepare_wav_samples(samples: &[i16], sample_rate: u32, channels: u16) -> Vec<
         .collect()
 }
 
-fn encode_to_wav(
-    samples: &[i16],
-    sample_rate: u32,
-    channels: u16,
-) -> Result<Vec<u8>> {
+fn encode_to_wav(samples: &[i16], sample_rate: u32, channels: u16) -> Result<Vec<u8>> {
     if samples.is_empty() {
         return Err(anyhow!("Recording buffer is empty"));
     }

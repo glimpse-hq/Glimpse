@@ -1,5 +1,6 @@
 use crate::{
-    assistive, cloud, emit_event, model_manager, permissions, platform, recorder::RecorderManager,
+    assistive, cloud, emit_event, model_manager, permissions, platform,
+    recorder::RecorderManager,
     settings::{TranscriptionMode, UserSettings},
     toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
 };

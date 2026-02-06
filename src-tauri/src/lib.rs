@@ -6,8 +6,8 @@ mod cloud;
 mod crypto;
 mod dictionary;
 mod downloader;
-mod llm_cleanup;
 mod library;
+mod llm_cleanup;
 mod local_transcription;
 mod mode_context;
 mod model_manager;
@@ -41,9 +41,7 @@ use recorder::{
 };
 use reqwest::Client;
 use serde::Serialize;
-use settings::{
-    default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UserSettings,
-};
+use settings::{default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UserSettings};
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
 use tauri::Emitter;
@@ -70,8 +68,8 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
     };
     use platform::macos::menu::{
-        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODE_LOCAL,
-        MENU_ID_MODEL_PREFIX, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
+        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODEL_PREFIX,
+        MENU_ID_MODE_LOCAL, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
     };
     use tauri_plugin_opener::OpenerExt;
 
@@ -446,7 +444,6 @@ struct SessionCounters {
     recording_seconds: f64,
     transcription_count: u32,
 }
-
 
 impl AppState {
     pub fn new(

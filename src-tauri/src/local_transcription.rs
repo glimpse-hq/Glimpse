@@ -7,7 +7,9 @@ use parking_lot::Mutex;
 use transcribe_rs::{
     engines::{
         moonshine::{ModelVariant as MoonshineModelVariant, MoonshineEngine, MoonshineModelParams},
-        parakeet::{ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity},
+        parakeet::{
+            ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
+        },
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
     TranscriptionEngine,
