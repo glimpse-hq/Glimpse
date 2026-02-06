@@ -71,7 +71,10 @@ pub fn build_recent_transcriptions_menu(
 }
 
 pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcription_id: &str) {
-    let record = app.state::<AppState>().storage().get_by_id(transcription_id);
+    let record = app
+        .state::<AppState>()
+        .storage()
+        .get_by_id(transcription_id);
     let Some(record) = record else {
         emit_copy_error_toast(app, "Transcription no longer available");
         refresh_recent_menus(app);

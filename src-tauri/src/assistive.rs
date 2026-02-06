@@ -1,9 +1,9 @@
 use anyhow::{anyhow, Result};
 
-#[cfg(target_os = "macos")]
-use arboard::{Clipboard, ImageData, SetExtApple};
 #[cfg(not(target_os = "macos"))]
 use arboard::Clipboard;
+#[cfg(target_os = "macos")]
+use arboard::{Clipboard, ImageData, SetExtApple};
 #[cfg(target_os = "macos")]
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
 #[cfg(target_os = "macos")]

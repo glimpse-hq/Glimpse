@@ -11,11 +11,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::library::{
-    LibraryFilter,
-    LibraryItem,
-    LibraryItemPatch,
-    LibraryItemStatus,
-    TranscriptSegment,
+    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, TranscriptSegment,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -288,9 +284,10 @@ impl StorageManager {
 
         let mut stmt = conn.prepare(&sql)?;
         let records = stmt
-            .query_map(rusqlite::params_from_iter(params.iter()), |row| {
-                Self::record_from_row(row)
-            })?
+            .query_map(
+                rusqlite::params_from_iter(params.iter()),
+                Self::record_from_row,
+            )?
             .collect::<rusqlite::Result<Vec<_>>>()?;
 
         Ok(records)
@@ -314,7 +311,7 @@ impl StorageManager {
         let records = stmt
             .query_map(
                 params![TranscriptionStatus::Success.as_str(), limit as i64],
-                |row| Self::record_from_row(row),
+                Self::record_from_row,
             )?
             .collect::<rusqlite::Result<Vec<_>>>()?;
 
@@ -930,7 +927,6 @@ fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
         show_timestamps: row.get::<_, i64>("show_timestamps")? == 1,
     })
 }
-
 
 fn serialize_segments(segments: &Option<Vec<TranscriptSegment>>) -> Result<Option<String>> {
     match segments {

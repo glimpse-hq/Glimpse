@@ -3,21 +3,16 @@ use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind};
 use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use std::sync::Arc;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use symphonia::core::{
-    audio::SampleBuffer,
-    codecs::DecoderOptions,
-    errors::Error as SymphoniaError,
-    formats::FormatOptions,
-    io::MediaSourceStream,
-    meta::MetadataOptions,
-    probe::Hint,
+    audio::SampleBuffer, codecs::DecoderOptions, errors::Error as SymphoniaError,
+    formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint,
 };
 use tauri::{async_runtime, AppHandle, Emitter, Manager};
 use tokio_util::sync::CancellationToken;
@@ -25,11 +20,8 @@ use uuid::Uuid;
 
 use crate::transcribe::count_words;
 use crate::{
-    dictionary, model_manager,
-    recorder::speech_percentage_i16_with_mode,
-    storage::StorageManager,
-    toast, transcribe, AppRuntime, AppState,
-    LibraryJob, LibraryJobKind,
+    dictionary, model_manager, recorder::speech_percentage_i16_with_mode, storage::StorageManager,
+    toast, transcribe, AppRuntime, AppState, LibraryJob, LibraryJobKind,
 };
 use webrtc_vad::VadMode;
 
@@ -300,9 +292,9 @@ pub fn delete_library_item(
             .map_err(|_| "Library item path could not be resolved; delete aborted.".to_string())?
     } else if let Some(parent) = path.parent() {
         if parent.exists() {
-            let parent = parent
-                .canonicalize()
-                .map_err(|_| "Library item folder could not be resolved; delete aborted.".to_string())?;
+            let parent = parent.canonicalize().map_err(|_| {
+                "Library item folder could not be resolved; delete aborted.".to_string()
+            })?;
             parent.join(path.file_name().unwrap_or_default())
         } else {
             path.clone()
@@ -311,7 +303,9 @@ pub fn delete_library_item(
         path.clone()
     };
     if !safe_path.starts_with(&root) {
-        return Err("Library item is stored outside the library folder; delete aborted.".to_string());
+        return Err(
+            "Library item is stored outside the library folder; delete aborted.".to_string(),
+        );
     }
 
     if let Some(parent) = safe_path.parent() {
@@ -403,8 +397,7 @@ pub fn retry_library_transcription(
                 store_original: item.store_original,
             };
         } else {
-            let message =
-                "Original file not found. Re-import the file to try again.".to_string();
+            let message = "Original file not found. Re-import the file to try again.".to_string();
             let _ = storage.update_library_item(
                 &id,
                 LibraryItemPatch {
@@ -467,7 +460,7 @@ pub fn export_library_item_to_path(
 
     if let Some(parent) = output_path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create export directory"))
+            .context("Failed to create export directory")
             .map_err(|err| err.to_string())?;
     }
 
@@ -779,7 +772,10 @@ fn start_library_transcription_internal(
         }
     };
 
-    if matches!(item.status, LibraryItemStatus::Cancelling | LibraryItemStatus::Cancelled) {
+    if matches!(
+        item.status,
+        LibraryItemStatus::Cancelling | LibraryItemStatus::Cancelled
+    ) {
         release_library_slot(app, state, &id);
         return;
     }
@@ -973,21 +969,14 @@ fn schedule_library_job(
     start_next_library_job(app, state);
 }
 
-fn start_next_library_job(
-    app: &AppHandle<AppRuntime>,
-    state: &tauri::State<'_, AppState>,
-) {
+fn start_next_library_job(app: &AppHandle<AppRuntime>, state: &tauri::State<'_, AppState>) {
     let Some(job) = state.claim_next_library_job() else {
         return;
     };
     start_library_job_internal(app, job);
 }
 
-fn release_library_slot(
-    app: &AppHandle<AppRuntime>,
-    state: &tauri::State<'_, AppState>,
-    id: &str,
-) {
+fn release_library_slot(app: &AppHandle<AppRuntime>, state: &tauri::State<'_, AppState>, id: &str) {
     state.clear_active_library_job(id);
     state.clear_library_transcription(id);
     start_next_library_job(app, state);
@@ -1020,10 +1009,8 @@ fn transcribe_library_item(
     let dictionary_prompt = dictionary::dictionary_prompt_for_model(&ready_model, &settings);
     let language = settings.language.clone();
     let transcriber = state.local_transcriber();
-    let use_whisper_chunking = matches!(
-        ready_model.engine,
-        model_manager::LocalModelEngine::Whisper
-    );
+    let use_whisper_chunking =
+        matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
     let use_moonshine_chunking = matches!(
         ready_model.engine,
         model_manager::LocalModelEngine::Moonshine { .. }
@@ -1031,11 +1018,12 @@ fn transcribe_library_item(
 
     if use_whisper_chunking {
         let chunk_size = (WHISPER_CHUNK_SECONDS as usize * sample_rate as usize).max(1);
-        let overlap =
-            (WHISPER_CHUNK_OVERLAP_SECONDS as usize * sample_rate as usize).min(chunk_size.saturating_sub(1));
+        let overlap = (WHISPER_CHUNK_OVERLAP_SECONDS as usize * sample_rate as usize)
+            .min(chunk_size.saturating_sub(1));
         let step = chunk_size.saturating_sub(overlap).max(1);
 
-        let total_chunks = compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
+        let total_chunks =
+            compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
         let mut full_text = String::new();
         let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
         let mut last_end_ms: u64 = 0;
@@ -1056,13 +1044,7 @@ fn transcribe_library_item(
                     app,
                     state.storage(),
                     &item.id,
-                    progress,
-                    chunk_index,
-                    total_chunks,
-                    None,
-                    None,
-                    None,
-                    None,
+                    LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
                 );
                 return Ok(());
             }
@@ -1135,13 +1117,15 @@ fn transcribe_library_item(
                 app,
                 state.storage(),
                 &item.id,
-                progress,
-                chunk_index,
-                total_chunks,
-                transcript_patch,
-                segments_patch,
-                appended_text,
-                chunk_segments,
+                LibraryProgressUpdate {
+                    progress,
+                    current_chunk: chunk_index,
+                    total_chunks,
+                    transcript: transcript_patch,
+                    segments: segments_patch,
+                    chunk_text: appended_text,
+                    chunk_segments,
+                },
             );
             Ok(())
         })?;
@@ -1161,7 +1145,8 @@ fn transcribe_library_item(
         let overlap = (MOONSHINE_CHUNK_OVERLAP_SECONDS as usize * sample_rate as usize)
             .min(chunk_size.saturating_sub(1));
         let step = chunk_size.saturating_sub(overlap).max(1);
-        let total_chunks = compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
+        let total_chunks =
+            compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
         let mut full_text = String::new();
         let mut chunk_index: u32 = 0;
 
@@ -1179,13 +1164,7 @@ fn transcribe_library_item(
                     app,
                     state.storage(),
                     &item.id,
-                    progress,
-                    chunk_index,
-                    total_chunks,
-                    None,
-                    None,
-                    None,
-                    None,
+                    LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
                 );
                 return Ok(());
             }
@@ -1216,13 +1195,7 @@ fn transcribe_library_item(
                 app,
                 state.storage(),
                 &item.id,
-                progress,
-                chunk_index,
-                total_chunks,
-                None,
-                None,
-                None,
-                None,
+                LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
             );
             Ok(())
         })?;
@@ -1284,13 +1257,7 @@ fn transcribe_library_item(
                 app,
                 state.storage(),
                 &item.id,
-                progress,
-                chunk_index,
-                total_chunks,
-                None,
-                None,
-                None,
-                None,
+                LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
             );
             return Ok(());
         }
@@ -1338,13 +1305,7 @@ fn transcribe_library_item(
             app,
             state.storage(),
             &item.id,
-            progress,
-            chunk_index,
-            total_chunks,
-            None,
-            None,
-            None,
-            None,
+            LibraryProgressUpdate::with_chunk_counts(progress, chunk_index, total_chunks),
         );
         Ok(())
     })?;
@@ -1359,10 +1320,7 @@ fn transcribe_library_item(
     })
 }
 
-fn report_progress(
-    app: &AppHandle<AppRuntime>,
-    storage: Arc<StorageManager>,
-    id: &str,
+struct LibraryProgressUpdate {
     progress: f32,
     current_chunk: u32,
     total_chunks: u32,
@@ -1370,7 +1328,38 @@ fn report_progress(
     segments: Option<Vec<TranscriptSegment>>,
     chunk_text: Option<String>,
     chunk_segments: Option<Vec<TranscriptSegment>>,
+}
+
+impl LibraryProgressUpdate {
+    fn with_chunk_counts(progress: f32, current_chunk: u32, total_chunks: u32) -> Self {
+        Self {
+            progress,
+            current_chunk,
+            total_chunks,
+            transcript: None,
+            segments: None,
+            chunk_text: None,
+            chunk_segments: None,
+        }
+    }
+}
+
+fn report_progress(
+    app: &AppHandle<AppRuntime>,
+    storage: Arc<StorageManager>,
+    id: &str,
+    update: LibraryProgressUpdate,
 ) {
+    let LibraryProgressUpdate {
+        progress,
+        current_chunk,
+        total_chunks,
+        transcript,
+        segments,
+        chunk_text,
+        chunk_segments,
+    } = update;
+
     let _ = storage.update_library_item(
         id,
         LibraryItemPatch {
@@ -1433,7 +1422,6 @@ struct LibraryErrorPayload {
     message: String,
 }
 
-
 #[derive(Debug, Clone, Serialize)]
 struct LibraryImportProgressPayload {
     id: String,
@@ -1446,7 +1434,10 @@ fn is_supported_format(ext: &str) -> bool {
 
 fn model_supports_timestamps(model_key: &str) -> bool {
     match model_manager::definition(model_key) {
-        Some(def) => !matches!(def.engine, model_manager::LocalModelEngine::Moonshine { .. }),
+        Some(def) => !matches!(
+            def.engine,
+            model_manager::LocalModelEngine::Moonshine { .. }
+        ),
         None => false,
     }
 }
@@ -1467,11 +1458,9 @@ fn sanitize_folder_name(value: &str) -> String {
         if ch.is_ascii_alphanumeric() {
             out.push(ch.to_ascii_lowercase());
             prev_dash = false;
-        } else if ch == ' ' || ch == '-' || ch == '_' {
-            if !prev_dash {
-                out.push('-');
-                prev_dash = true;
-            }
+        } else if (ch == ' ' || ch == '-' || ch == '_') && !prev_dash {
+            out.push('-');
+            prev_dash = true;
         }
     }
     out.trim_matches('-').to_string()
@@ -1771,15 +1760,19 @@ fn decode_audio_to_wav(
     }
 
     let probed = symphonia::default::get_probe()
-        .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
         .map_err(|err| anyhow!("Failed to read audio container: {err}"))?;
     let mut format = probed.format;
     let track = format
         .default_track()
         .or_else(|| {
             format.tracks().iter().find(|track| {
-                track.codec_params.sample_rate.is_some()
-                    && track.codec_params.channels.is_some()
+                track.codec_params.sample_rate.is_some() && track.codec_params.channels.is_some()
             })
         })
         .ok_or_else(|| anyhow!("No supported audio tracks found"))?;
@@ -1838,9 +1831,7 @@ fn decode_audio_to_wav(
 
         let packet = match format.next_packet() {
             Ok(packet) => packet,
-            Err(SymphoniaError::IoError(err)) if err.kind() == ErrorKind::UnexpectedEof => {
-                break
-            }
+            Err(SymphoniaError::IoError(err)) if err.kind() == ErrorKind::UnexpectedEof => break,
             Err(SymphoniaError::ResetRequired) => {
                 decoder.reset();
                 continue;
@@ -2076,7 +2067,7 @@ fn convert_with_ffmpeg(
             .arg("pipe:1")
             .arg("-nostats")
             .arg("-i")
-            .arg(&input)
+            .arg(input)
             .arg("-vn")
             .arg("-acodec")
             .arg("pcm_s16le")
@@ -2084,7 +2075,7 @@ fn convert_with_ffmpeg(
             .arg(TARGET_SAMPLE_RATE.to_string())
             .arg("-ac")
             .arg("1")
-            .arg(&output)
+            .arg(output)
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
@@ -2114,9 +2105,9 @@ fn convert_with_ffmpeg(
             }
 
             line.clear();
-            let read = reader.read_line(&mut line).map_err(|err| {
-                anyhow!("Failed to read ffmpeg progress output: {err}")
-            })?;
+            let read = reader
+                .read_line(&mut line)
+                .map_err(|err| anyhow!("Failed to read ffmpeg progress output: {err}"))?;
             if read == 0 {
                 break;
             }
@@ -2132,7 +2123,9 @@ fn convert_with_ffmpeg(
             }
         }
 
-        let status = child.wait().map_err(|err| anyhow!("Failed to run ffmpeg: {err}"))?;
+        let status = child
+            .wait()
+            .map_err(|err| anyhow!("Failed to run ffmpeg: {err}"))?;
         if let Some(token) = token {
             if token.is_cancelled() {
                 let _ = fs::remove_file(output);
@@ -2155,7 +2148,7 @@ fn convert_with_ffmpeg(
         .arg("-loglevel")
         .arg("error")
         .arg("-i")
-        .arg(&input)
+        .arg(input)
         .arg("-vn")
         .arg("-acodec")
         .arg("pcm_s16le")
@@ -2163,7 +2156,7 @@ fn convert_with_ffmpeg(
         .arg(TARGET_SAMPLE_RATE.to_string())
         .arg("-ac")
         .arg("1")
-        .arg(&output)
+        .arg(output)
         .spawn()
         .map_err(|err| match err.kind() {
             ErrorKind::NotFound => anyhow!("FFmpeg not found on PATH."),
@@ -2224,7 +2217,12 @@ fn find_ffmpeg_in_path() -> Option<PathBuf> {
         "ffmpeg"
     };
     let fallback_dirs: &[&str] = if cfg!(target_os = "macos") {
-        &["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin"]
+        &[
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/opt/local/bin",
+            "/usr/bin",
+        ]
     } else {
         &["/usr/local/bin", "/usr/bin"]
     };
@@ -2238,7 +2236,12 @@ fn find_ffprobe_in_path() -> Option<PathBuf> {
         "ffprobe"
     };
     let fallback_dirs: &[&str] = if cfg!(target_os = "macos") {
-        &["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/usr/bin"]
+        &[
+            "/opt/homebrew/bin",
+            "/usr/local/bin",
+            "/opt/local/bin",
+            "/usr/bin",
+        ]
     } else {
         &["/usr/local/bin", "/usr/bin"]
     };
@@ -2278,13 +2281,17 @@ fn probe_media_duration_ms_symphonia(path: &Path) -> Option<u64> {
     }
 
     let probed = symphonia::default::get_probe()
-        .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+        .format(
+            &hint,
+            mss,
+            &FormatOptions::default(),
+            &MetadataOptions::default(),
+        )
         .ok()?;
     let format = probed.format;
     let track = format.default_track().or_else(|| {
         format.tracks().iter().find(|track| {
-            track.codec_params.sample_rate.is_some()
-                && track.codec_params.channels.is_some()
+            track.codec_params.sample_rate.is_some() && track.codec_params.channels.is_some()
         })
     })?;
     let time_base = track.codec_params.time_base?;

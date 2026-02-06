@@ -523,9 +523,7 @@ pub fn clear_preflight_cache() {
 }
 
 pub async fn run_preflight(client: Client, settings: UserSettings) {
-    if settings.transcription_mode != TranscriptionMode::Local
-        || !is_cleanup_available(&settings)
-    {
+    if settings.transcription_mode != TranscriptionMode::Local || !is_cleanup_available(&settings) {
         clear_preflight_cache();
         return;
     }

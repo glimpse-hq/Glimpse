@@ -21,7 +21,7 @@ fn extract_host(candidate: &str) -> Option<String> {
 
     let slash_index = value.find('/').unwrap_or(value.len());
     let host_port = &value[..slash_index];
-    let host_port = host_port.split('@').last().unwrap_or(host_port);
+    let host_port = host_port.split('@').next_back().unwrap_or(host_port);
     let host = host_port.split(':').next().unwrap_or(host_port);
 
     if host.is_empty() {
