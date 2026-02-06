@@ -1,3 +1,14 @@
+0.6.3
+
+
+### Fixes
+
+- Fixed "Failed to read chunk" which could happen when downloading models
+
+
+---
+
+
 0.6.2
 
 ### Features
