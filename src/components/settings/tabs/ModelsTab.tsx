@@ -11,39 +11,33 @@ type EngineGroup = {
     label: string;
     description: string;
     recommended?: boolean;
+    models: ModelInfo[];
 };
 
-const ENGINE_GROUPS: EngineGroup[] = [
-    {
-        id: "whisper",
-        label: "Whisper",
-        description: "OpenAI's speech recognition with custom vocabulary support.",
-        recommended: true,
-    },
-    {
-        id: "parakeet",
-        label: "Parakeet TDT v3",
-        description: "NVIDIA's fast English speech recognition.",
-    },
-    {
-        id: "moonshine",
-        label: "Moonshine",
-        description: "Extremely fast, lightweight, optimized for real-time use.",
-    },
-];
+const engineDescription = (engineId: string, engineLabel: string) => {
+    if (engineId.startsWith("whisper")) {
+        return "OpenAI's speech recognition with custom vocabulary support.";
+    }
+    if (engineId.startsWith("parakeet")) {
+        return "NVIDIA's multilingual speech recognition.";
+    }
+    if (engineId.startsWith("moonshine")) {
+        return "Extremely fast, lightweight, optimized for real-time use.";
+    }
+    return `${engineLabel} transcription engine.`;
+};
+
+const enginePriority = (engineId: string): number => {
+    if (engineId.startsWith("whisper")) return 0;
+    if (engineId.startsWith("parakeet")) return 1;
+    if (engineId.startsWith("moonshine")) return 2;
+    return 3;
+};
 
 const getSizeColor = (sizeMb: number): string => {
     if (sizeMb < 500) return "text-green-400";
     if (sizeMb < 1500) return "text-amber-400";
     return "text-red-400";
-};
-
-const getEngineId = (engine: string): string => {
-    const lower = engine.toLowerCase();
-    if (lower.includes("whisper")) return "whisper";
-    if (lower.includes("parakeet")) return "parakeet";
-    if (lower.includes("moonshine")) return "moonshine";
-    return engine;
 };
 
 type ModelsTabProps = {
@@ -97,10 +91,35 @@ const ModelsTab = ({
 }: ModelsTabProps) => {
     const [expandedEngine, setExpandedEngine] = useState<string | null>(null);
 
-    const groupedModels = ENGINE_GROUPS.map(group => ({
-        ...group,
-        models: modelCatalog.filter(m => getEngineId(m.engine) === group.id),
-    })).filter(group => group.models.length > 0);
+    const groupedMap = new Map<string, ModelInfo[]>();
+    for (const model of modelCatalog) {
+        const existing = groupedMap.get(model.engine_id);
+        if (existing) {
+            existing.push(model);
+        } else {
+            groupedMap.set(model.engine_id, [model]);
+        }
+    }
+
+    const groupedModels: EngineGroup[] = Array.from(groupedMap.entries())
+        .map(([id, models]) => {
+            const label = models[0]?.engine ?? id;
+            const recommended = models.some((model) =>
+                model.tags.some((tag) => tag.toLowerCase() === "recommended")
+            );
+            return {
+                id,
+                label,
+                description: engineDescription(id, label),
+                recommended,
+                models,
+            };
+        })
+        .sort((a, b) => {
+            const priorityDelta = enginePriority(a.id) - enginePriority(b.id);
+            if (priorityDelta !== 0) return priorityDelta;
+            return a.label.localeCompare(b.label);
+        });
 
     const toggleEngine = (engineId: string) => {
         setExpandedEngine(prev => prev === engineId ? null : engineId);
@@ -363,6 +382,7 @@ const ModelRow = ({
     const showError = progress?.status === "error";
     const percent = progress?.percent ?? (installed ? 100 : 0);
     const isRecommended = model.tags.some(t => t.toLowerCase() === "recommended");
+    const visibleTags = model.tags.filter((tag) => tag.toLowerCase() !== "recommended");
 
     return (
         <div className={`rounded-lg px-3 py-2.5 transition-colors ${isActive ? "bg-cloud/10" : "hover:bg-surface-elevated/50"}`}>
@@ -383,11 +403,11 @@ const ModelRow = ({
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`text-[10px] ${getSizeColor(model.size_mb)}`}>{formatBytes(model.size_mb * 1024 * 1024)}</span>
-                        {model.tags.filter(t => t.toLowerCase() !== "recommended").length > 0 && (
+                        {visibleTags.length > 0 && (
                             <>
                                 <span className="text-[10px] text-content-disabled">·</span>
                                 <span className="text-[10px] text-content-disabled">
-                                    {model.tags.filter(t => t.toLowerCase() !== "recommended").join(", ")}
+                                    {visibleTags.join(", ")}
                                 </span>
                             </>
                         )}

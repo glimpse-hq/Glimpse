@@ -29,6 +29,7 @@ import {
 import DotMatrix from "./DotMatrix";
 import { Dropdown, type DropdownOption } from "./Dropdown";
 import { useLibraryItems } from "../hooks/useLibraryItems";
+import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../lib/modelCapabilities";
 import type {
     ExportFormat,
     LibraryImportOptions,
@@ -165,7 +166,7 @@ const formatTimestamp = (ms: number) => {
 };
 
 const isTimestampSupported = (model?: ModelInfo | null) =>
-    model ? !model.engine.toLowerCase().includes("moonshine") : false;
+    hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
 
 const getFileExtension = (path: string) => {
     const parts = path.split(".");

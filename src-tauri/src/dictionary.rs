@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    model_manager::{LocalModelEngine, ReadyModel},
+    model_manager::{model_supports_capability, ReadyModel, MODEL_CAPABILITY_DICTIONARY},
     settings::{Replacement, UserSettings},
     AppState,
 };
@@ -62,7 +62,9 @@ pub fn build_dictionary_prompt(entries: &[String]) -> Option<String> {
 }
 
 pub fn dictionary_prompt_for_model(model: &ReadyModel, settings: &UserSettings) -> Option<String> {
-    if !matches!(model.engine, LocalModelEngine::Whisper) {
+    let supports_dictionary = model_supports_capability(&model.key, MODEL_CAPABILITY_DICTIONARY);
+
+    if !supports_dictionary {
         return None;
     }
 

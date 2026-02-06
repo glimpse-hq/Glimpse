@@ -1433,13 +1433,7 @@ fn is_supported_format(ext: &str) -> bool {
 }
 
 fn model_supports_timestamps(model_key: &str) -> bool {
-    match model_manager::definition(model_key) {
-        Some(def) => !matches!(
-            def.engine,
-            model_manager::LocalModelEngine::Moonshine { .. }
-        ),
-        None => false,
-    }
+    model_manager::model_supports_capability(model_key, model_manager::MODEL_CAPABILITY_TIMESTAMPS)
 }
 
 fn build_folder_name(base: &str, id: &str) -> String {

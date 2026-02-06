@@ -11,6 +11,7 @@ mod llm_cleanup;
 mod local_transcription;
 mod mode_context;
 mod model_manager;
+mod model_language_table;
 mod permissions;
 mod personalization;
 mod pill;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +13,13 @@ import DeveloperTab from "./tabs/DeveloperTab";
 import GeneralTab from "./tabs/GeneralTab";
 import ModelsTab from "./tabs/ModelsTab";
 import { logout, createAccount, type User as AppwriteUser } from "../../lib/auth";
+import {
+    buildTranscriptionLanguageView,
+    getActiveTranscriptionEngine,
+    getCatalogTranscriptionEngines,
+    getInstalledTranscriptionEngines,
+    type TranscriptionEngineId,
+} from "../../lib/transcriptionLanguages";
 import type {
     TranscriptionMode,
     StoredSettings,
@@ -26,21 +33,6 @@ import type {
 } from "../../types";
 
 const modifierOrder = ["Control", "Shift", "Alt", "Command"];
-
-const languages = [
-    { code: "", name: "Auto" },
-    { code: "en", name: "English" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-    { code: "it", name: "Italian" },
-    { code: "pt", name: "Portuguese" },
-    { code: "nl", name: "Dutch" },
-    { code: "ru", name: "Russian" },
-    { code: "zh", name: "Chinese" },
-    { code: "ja", name: "Japanese" },
-    { code: "ko", name: "Korean" },
-];
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -107,6 +99,29 @@ const SettingsModal = ({
 
     const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
     const isDeveloper = currentUser?.labels?.includes("dev") ?? false;
+    const activeTranscriptionEngine = useMemo(
+        () => getActiveTranscriptionEngine(modelCatalog, localModel),
+        [modelCatalog, localModel]
+    );
+    const installedTranscriptionEngines = useMemo(
+        () => getInstalledTranscriptionEngines(modelCatalog, modelStatus),
+        [modelCatalog, modelStatus]
+    );
+    const catalogTranscriptionEngines = useMemo(
+        () => getCatalogTranscriptionEngines(modelCatalog),
+        [modelCatalog]
+    );
+    const visibleTranscriptionEngines: TranscriptionEngineId[] = useMemo(() => {
+        if (installedTranscriptionEngines.length > 0) return installedTranscriptionEngines;
+        if (activeTranscriptionEngine) return [activeTranscriptionEngine];
+        if (catalogTranscriptionEngines.length > 0) return [catalogTranscriptionEngines[0]];
+        return [];
+    }, [installedTranscriptionEngines, activeTranscriptionEngine, catalogTranscriptionEngines]);
+    const showLanguageSupportBadges = installedTranscriptionEngines.length > 1;
+    const languageView = useMemo(
+        () => buildTranscriptionLanguageView(modelCatalog, activeTranscriptionEngine, visibleTranscriptionEngines),
+        [modelCatalog, activeTranscriptionEngine, visibleTranscriptionEngines]
+    );
 
     const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {
         const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
@@ -805,7 +820,9 @@ const SettingsModal = ({
                                             onMicrophoneDeviceChange={setMicrophoneDevice}
                                             language={language}
                                             onLanguageChange={setLanguage}
-                                            languages={languages}
+                                            languages={languageView.options}
+                                            languageBadgeColumns={languageView.badgeColumns}
+                                            showLanguageSupportBadges={showLanguageSupportBadges}
                                             smartShortcut={smartShortcut}
                                             smartEnabled={smartEnabled}
                                             setSmartEnabled={setSmartEnabled}

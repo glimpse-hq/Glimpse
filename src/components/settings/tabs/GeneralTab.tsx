@@ -2,13 +2,9 @@ import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { Check, Copy, Info } from "lucide-react";
 import { Dropdown } from "../../Dropdown";
 import type { DeviceInfo, ModelStatus, TranscriptionMode } from "../../../types";
+import type { LanguageBadgeColumn, TranscriptionLanguageOption } from "../../../lib/transcriptionLanguages";
 
 type CaptureMode = "smart" | "hold" | "toggle" | null;
-
-type LanguageOption = {
-    code: string;
-    name: string;
-};
 
 type GeneralTabProps = {
     variants: Variants;
@@ -23,7 +19,9 @@ type GeneralTabProps = {
     onMicrophoneDeviceChange: (deviceId: string | null) => void;
     language: string;
     onLanguageChange: (language: string) => void;
-    languages: LanguageOption[];
+    languages: TranscriptionLanguageOption[];
+    languageBadgeColumns: LanguageBadgeColumn[];
+    showLanguageSupportBadges: boolean;
     smartShortcut: string;
     smartEnabled: boolean;
     setSmartEnabled: (value: boolean) => void;
@@ -58,6 +56,8 @@ const GeneralTab = ({
     language,
     onLanguageChange,
     languages,
+    languageBadgeColumns,
+    showLanguageSupportBadges,
     smartShortcut,
     smartEnabled,
     setSmartEnabled,
@@ -162,15 +162,52 @@ const GeneralTab = ({
             </div>
 
             <div className="space-y-1.5">
-                <label className="text-[11px] font-medium text-content-muted">Transcription Language</label>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1">
+                        <label className="text-[11px] font-medium text-content-muted">Transcription Language</label>
+                        <div className="relative group">
+                            <button
+                                className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
+                                aria-label="More information about transcription language support badges"
+                            >
+                                <Info size={10} aria-hidden="true" />
+                            </button>
+                            <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-10">
+                                <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 text-[9px] text-content-secondary w-56 shadow-lg leading-tight">
+                                    <p>Language list is filtered to the models you have installed.</p>
+                                    <p className="mt-1">When multiple engines are installed, badges show which engine supports each language (for example WS, MS, P3).</p>
+                                    <p className="mt-1">Amber badge matches your active local model.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div className="relative z-10">
                     <Dropdown
                         value={language}
                         onChange={(val) => onLanguageChange(val)}
-                        options={languages.map(lang => ({
-                            value: lang.code,
-                            label: lang.name
-                        }))}
+                        options={languages.map((lang) => {
+                            if (!showLanguageSupportBadges) {
+                                return {
+                                    value: lang.code,
+                                    label: lang.name,
+                                };
+                            }
+
+                            return {
+                                value: lang.code,
+                                label: lang.name,
+                                badges: languageBadgeColumns.map((column) => {
+                                    const source = lang.badges.find((badge) => badge.engine === column.engine);
+                                    return {
+                                        label: column.label,
+                                        highlighted: source?.highlighted ?? false,
+                                        visible: Boolean(source),
+                                    };
+                                }),
+                                fixedBadgeSlots: true,
+                            };
+                        })}
                         searchable
                         searchPlaceholder="Search language..."
                     />

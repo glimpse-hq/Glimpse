@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ArrowRight, BookOpen, Edit3, Loader2, Plus, Replace, Trash2 } from "lucide-react";
 import DotMatrix from "./DotMatrix";
+import { hasModelCapability, MODEL_CAPABILITY_DICTIONARY } from "../lib/modelCapabilities";
 import type { StoredSettings, ModelInfo, Replacement } from "../types";
 
 type ActivePage = "dictionary" | "replacements";
@@ -226,10 +227,8 @@ const DictionaryView = () => {
 
     const currentModel = models.find((m) => m.key === settings?.local_model);
     const isLocal = settings?.transcription_mode === "local";
-    const isWhisper =
-        currentModel?.engine.toLowerCase().includes("whisper") ||
-        currentModel?.variant.toLowerCase().includes("whisper");
-    const showWarning = Boolean(isLocal && currentModel && !isWhisper);
+    const supportsDictionary = hasModelCapability(currentModel, MODEL_CAPABILITY_DICTIONARY);
+    const showWarning = Boolean(isLocal && currentModel && !supportsDictionary);
 
     return (
         <div className="w-full text-left">
@@ -265,9 +264,9 @@ const DictionaryView = () => {
                             <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100">
                                 <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                                 <div className="text-[13px] leading-relaxed">
-                                    Dictionary only locally works with Whisper models. Current model{" "}
+                                    Dictionary works only for models with dictionary support. Current model{" "}
                                     <span className="font-semibold">{currentModel?.label ?? settings?.local_model}</span>{" "}
-                                    will ignore these entries until you switch to a Whisper option.
+                                    will ignore these entries until you switch to a compatible model.
                                 </div>
                             </div>
                         )}

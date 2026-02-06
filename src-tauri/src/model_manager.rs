@@ -7,8 +7,14 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime};
 
 use crate::downloader::{download_model_files, ModelFileDescriptor};
+use crate::model_language_table::{
+    moonshine_supported_languages, parakeet_v3_supported_languages, whisper_supported_languages,
+    SupportedLanguageInfo,
+};
 
 const MODELS_ROOT: &str = "models";
+pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
+pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
 
 #[derive(Debug, Clone)]
 pub enum ModelStorage {
@@ -40,6 +46,7 @@ pub struct ModelDefinition {
     pub variant: &'static str,
     pub storage: ModelStorage,
     pub tags: &'static [&'static str],
+    pub capabilities: &'static [&'static str],
 }
 
 #[derive(Debug, Clone)]
@@ -144,7 +151,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         key: "whisper_large_v3_turbo_q8",
         label: "Whisper Large V3 Turbo",
         description:
-            "Great quality local Whisper model with multilingual support, supports custom words.",
+            "Great quality local Whisper model with multilingual support and dictionary support.",
         size_mb: 880.0,
         files: &WHISPER_LARGE_V3_TURBO_Q8_FILES,
         engine: LocalModelEngine::Whisper,
@@ -152,7 +159,8 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         storage: ModelStorage::File {
             artifact: "ggml-large-v3-turbo-q8_0.bin",
         },
-        tags: &["Recommended", "Custom Words", "Multilingual"],
+        tags: &["Recommended", "Dictionary", "Multilingual"],
+        capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
     },
     ModelDefinition {
         key: "parakeet_tdt_int8",
@@ -164,6 +172,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         variant: "Int8",
         storage: ModelStorage::Directory,
         tags: &["Multilingual", "Fast"],
+        capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
     },
     ModelDefinition {
         key: "parakeet_tdt_fp32",
@@ -175,11 +184,12 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         variant: "FP32",
         storage: ModelStorage::Directory,
         tags: &["Multilingual", "High Accuracy"],
+        capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
     },
     ModelDefinition {
         key: "whisper_small_q5",
         label: "Whisper Small",
-        description: "CPU-friendly, supports custom words.",
+        description: "CPU-friendly with dictionary support.",
         size_mb: 200.0,
         files: &WHISPER_SMALL_Q5_FILES,
         engine: LocalModelEngine::Whisper,
@@ -187,7 +197,8 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         storage: ModelStorage::File {
             artifact: "ggml-small-q5_1.bin",
         },
-        tags: &["English", "Custom Words", "CPU Friendly"],
+        tags: &["English", "Dictionary", "CPU Friendly"],
+        capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
     },
     ModelDefinition {
         key: "moonshine_tiny",
@@ -201,6 +212,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         variant: "Tiny",
         storage: ModelStorage::Directory,
         tags: &["English", "Fast", "Lightweight"],
+        capabilities: &[],
     },
     ModelDefinition {
         key: "moonshine_base",
@@ -214,6 +226,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         variant: "Base",
         storage: ModelStorage::Directory,
         tags: &["English", "Balanced"],
+        capabilities: &[],
     },
 ];
 
@@ -255,9 +268,22 @@ pub struct ModelInfo {
     pub description: String,
     pub size_mb: f32,
     pub file_count: usize,
+    pub engine_id: String,
     pub engine: String,
     pub variant: String,
     pub tags: Vec<String>,
+    pub capabilities: Vec<String>,
+    pub supported_languages: Vec<SupportedLanguageInfo>,
+}
+
+pub fn model_supports_capability(model_key: &str, capability: &str) -> bool {
+    definition(model_key)
+        .map(|def| {
+            def.capabilities
+                .iter()
+                .any(|entry| entry.eq_ignore_ascii_case(capability))
+        })
+        .unwrap_or(false)
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -267,6 +293,14 @@ pub struct ModelStatus {
     pub bytes_on_disk: u64,
     pub missing_files: Vec<String>,
     pub directory: String,
+}
+
+fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
+    match engine {
+        LocalModelEngine::Whisper => whisper_supported_languages(),
+        LocalModelEngine::Moonshine { .. } => moonshine_supported_languages(),
+        LocalModelEngine::Parakeet { .. } => parakeet_v3_supported_languages(),
+    }
 }
 
 impl ModelStatus {
@@ -322,9 +356,17 @@ fn calculate_dir_size(dir: &Path) -> Result<u64> {
 
 fn engine_label(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Parakeet { .. } => "Parakeet",
+        LocalModelEngine::Parakeet { .. } => "Parakeet v3",
         LocalModelEngine::Whisper => "Whisper",
         LocalModelEngine::Moonshine { .. } => "Moonshine",
+    }
+}
+
+fn engine_id(engine: &LocalModelEngine) -> &'static str {
+    match engine {
+        LocalModelEngine::Parakeet { .. } => "parakeet_v3",
+        LocalModelEngine::Whisper => "whisper",
+        LocalModelEngine::Moonshine { .. } => "moonshine",
     }
 }
 
@@ -338,9 +380,12 @@ pub fn list_models() -> Vec<ModelInfo> {
             description: def.description.to_string(),
             size_mb: def.size_mb,
             file_count: def.files.len(),
+            engine_id: engine_id(&def.engine).to_string(),
             engine: engine_label(&def.engine).to_string(),
             variant: def.variant.to_string(),
             tags: def.tags.iter().map(|s| s.to_string()).collect(),
+            capabilities: def.capabilities.iter().map(|s| s.to_string()).collect(),
+            supported_languages: supported_languages(&def.engine),
         })
         .collect()
 }
@@ -357,20 +402,26 @@ pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
 
     for model in models {
         groups
-            .entry(model.engine.clone())
+            .entry(model.engine_id.clone())
             .or_default()
             .push(model.clone());
     }
 
     let mut result: Vec<_> = groups
-        .into_iter()
-        .map(|(name, models)| EngineGroup { name, models })
+        .into_values()
+        .map(|models| EngineGroup {
+            name: models
+                .first()
+                .map(|m| m.engine.clone())
+                .unwrap_or_else(|| "Unknown".to_string()),
+            models,
+        })
         .collect();
 
-    result.sort_by_key(|g| match g.name.as_str() {
-        "Whisper" => 0,
-        "Parakeet" => 1,
-        "Moonshine" => 2,
+    result.sort_by_key(|g| match g.models.first().map(|m| m.engine_id.as_str()) {
+        Some("whisper") => 0,
+        Some("parakeet_v3") => 1,
+        Some("moonshine") => 2,
         _ => 3,
     });
 
