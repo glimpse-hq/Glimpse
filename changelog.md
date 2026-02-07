@@ -1,3 +1,23 @@
+0.6.4
+
+
+### Features
+
+- Updated the Transcription Language drop down to show available languages based on the installed model, and what models support which languages if multiple are installed.
+
+### Changes
+
+- Redesigned the model download screen and removed AI cleanup from onboarding.
+
+- Updated design of AI Cleanup to fit the app better.
+
+- Updated how some background tasks are ran to reduce cpu usage.
+
+### Fixes
+
+- Cleaned up how expanding the sidebar looks in library view to feel smoother.
+---
+
 0.6.3
 
 
