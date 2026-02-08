@@ -8,3 +8,7 @@ export type PillStatePayload = {
 export type AudioSpectrumPayload = {
     bins: number[];
 };
+
+export type TranscriptionPreviewPayload = {
+    text: string;
+};
