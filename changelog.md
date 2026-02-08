@@ -3,7 +3,7 @@
 
 ### Features
 
-- Updated the Transcription Language drop down to show available languages based on the installed model, and what models support which languages if multiple are installed.
+- Updated the Transcription Language dropdown to show available languages based on the installed model, and what models support which languages if multiple are installed.
 
 
 **Personalization**
@@ -12,7 +12,7 @@
 
 - You can now resize the custom instructions box.
 
-- Holding Shift on a card now lets you quickly delete it .
+- Holding Shift on a card now lets you quickly delete it.
 
 ### Changes
 
@@ -20,7 +20,7 @@
 
 - Updated design of AI Cleanup to fit the app better.
 
-- Updated how some background tasks are ran to reduce cpu usage.
+- Updated how some background tasks are run to reduce CPU usage.
 
 ### Fixes
 
