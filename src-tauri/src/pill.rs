@@ -19,6 +19,7 @@ const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 
 pub const EVENT_PILL_STATE: &str = "pill:state";
+pub const EVENT_TRANSCRIPTION_PREVIEW: &str = "transcription:preview";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -57,6 +58,11 @@ enum ShortcutOrigin {
 pub struct PillStatePayload {
     pub status: PillStatus,
     pub mode: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct TranscriptionPreviewPayload {
+    pub text: String,
 }
 
 const SPECTRUM_SIZE: usize = 512;
@@ -135,6 +141,91 @@ impl AudioSpectrumEmitter {
     }
 }
 
+struct PreviewEmitter {
+    stop: Arc<AtomicBool>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+impl PreviewEmitter {
+    fn start(app: AppHandle<AppRuntime>, recorder: Arc<RecorderManager>) -> Self {
+        let stop = Arc::new(AtomicBool::new(false));
+        let stop_signal = Arc::clone(&stop);
+        let handle = std::thread::spawn(move || {
+            let interval = Duration::from_millis(500);
+
+            while !stop_signal.load(Ordering::Relaxed) {
+                std::thread::sleep(interval);
+                if stop_signal.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                if let Ok(Some((raw_samples, sample_rate, channels))) = recorder.snapshot() {
+                    if raw_samples.is_empty() {
+                        continue;
+                    }
+
+                    // 1. Downmix to mono if needed
+                    let mut samples = if channels > 1 {
+                        crate::recorder::downmix_to_mono(&raw_samples, channels as usize)
+                    } else {
+                        raw_samples
+                    };
+
+                    // 2. Sliding window: Keep only the last 15 seconds of audio
+                    // This prevents the preview from lagging behind as recording grows
+                    const WINDOW_SECONDS: usize = 15;
+                    let max_samples = sample_rate as usize * WINDOW_SECONDS;
+                    if samples.len() > max_samples {
+                        samples = samples[samples.len() - max_samples..].to_vec();
+                    }
+
+                    let state = app.state::<AppState>();
+                    let settings = state.current_settings();
+
+                    if !matches!(settings.transcription_mode, TranscriptionMode::Local) {
+                        continue;
+                    }
+
+                    let ready_model = match model_manager::ensure_model_ready(&app, &settings.local_model) {
+                        Ok(m) => m,
+                        Err(_) => continue,
+                    };
+
+                    let transcriber = state.local_transcriber();
+                    if let Ok(result) = transcriber.transcribe(
+                        &ready_model,
+                        &samples,
+                        sample_rate,
+                        None,
+                        Some(&settings.language),
+                    ) {
+                        emit_event(
+                            &app,
+                            EVENT_TRANSCRIPTION_PREVIEW,
+                            TranscriptionPreviewPayload {
+                                text: result.transcript,
+                            },
+                        );
+                    }
+                }
+            }
+        });
+        Self {
+            stop,
+            handle: Some(handle),
+        }
+    }
+
+    fn stop(mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            std::thread::spawn(move || {
+                let _ = handle.join();
+            });
+        }
+    }
+}
+
 pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
@@ -143,6 +234,7 @@ pub struct PillController {
     shortcut_origin: Mutex<Option<ShortcutOrigin>>,
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<AudioSpectrumEmitter>>,
+    preview_emitter: Mutex<Option<PreviewEmitter>>,
 }
 
 impl PillController {
@@ -155,6 +247,7 @@ impl PillController {
             shortcut_origin: Mutex::new(None),
             recorder,
             audio_spectrum_emitter: Mutex::new(None),
+            preview_emitter: Mutex::new(None),
         }
     }
 
@@ -179,6 +272,23 @@ impl PillController {
 
     fn stop_audio_spectrum_emitter(&self) {
         if let Some(emitter) = self.audio_spectrum_emitter.lock().take() {
+            emitter.stop();
+        }
+    }
+
+    fn start_preview_emitter(&self, app: &AppHandle<AppRuntime>) {
+        let mut emitter = self.preview_emitter.lock();
+        if emitter.is_some() {
+            return;
+        }
+        *emitter = Some(PreviewEmitter::start(
+            app.clone(),
+            Arc::clone(&self.recorder),
+        ));
+    }
+
+    fn stop_preview_emitter(&self) {
+        if let Some(emitter) = self.preview_emitter.lock().take() {
             emitter.stop();
         }
     }
@@ -276,6 +386,7 @@ impl PillController {
 
     fn reset_recording_state(&self) {
         self.stop_audio_spectrum_emitter();
+        self.stop_preview_emitter();
         *self.recording_mode.lock() = None;
         *self.smart_press_time.lock() = None;
         // Note: hold_key_down is intentionally NOT cleared here.
@@ -371,6 +482,7 @@ impl PillController {
             Ok(started) => {
                 self.transition_to(app, PillStatus::Listening);
                 self.start_audio_spectrum_emitter(app);
+                self.start_preview_emitter(app);
                 emit_event(
                     app,
                     crate::EVENT_RECORDING_START,
@@ -440,6 +552,7 @@ impl PillController {
                 Ok(started) => {
                     self.transition_to(app, PillStatus::Listening);
                     self.start_audio_spectrum_emitter(app);
+                    self.start_preview_emitter(app);
                     emit_event(
                         app,
                         crate::EVENT_RECORDING_START,
@@ -516,6 +629,7 @@ impl PillController {
 
     fn stop_and_process(&self, app: &AppHandle<AppRuntime>) {
         self.stop_audio_spectrum_emitter();
+        self.stop_preview_emitter();
         *self.recording_mode.lock() = None;
         self.transition_to(app, PillStatus::Processing);
         self.capture_selected_text_if_enabled(app);
@@ -558,6 +672,7 @@ impl PillController {
 
     pub fn cancel(&self, app: &AppHandle<AppRuntime>) {
         self.stop_audio_spectrum_emitter();
+        self.stop_preview_emitter();
         if let Err(err) = self.recorder.stop() {
             eprintln!("Failed to stop recorder: {err}");
         }
@@ -570,6 +685,7 @@ impl PillController {
         }
 
         self.stop_audio_spectrum_emitter();
+        self.stop_preview_emitter();
         let state = app.state::<AppState>();
         state.request_cancellation();
         let _ = self.recorder.stop();

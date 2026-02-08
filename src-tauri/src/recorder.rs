@@ -112,6 +112,9 @@ impl Default for RecorderManager {
                         RecorderCommand::Stop { respond } => {
                             let _ = respond.send(core.stop());
                         }
+                        RecorderCommand::Snapshot { respond } => {
+                            let _ = respond.send(Ok(core.snapshot()));
+                        }
                     }
                 }
             })
@@ -158,6 +161,18 @@ impl RecorderManager {
             .recv()
             .map_err(|err| anyhow!("Recorder not responding: {err}"))?
     }
+
+    pub fn snapshot(&self) -> Result<Option<(Vec<i16>, u32, u16)>> {
+        let (respond_tx, respond_rx) = bounded(1);
+        self.tx
+            .send(RecorderCommand::Snapshot {
+                respond: respond_tx,
+            })
+            .map_err(|err| anyhow!("Recorder channel closed: {err}"))?;
+        respond_rx
+            .recv()
+            .map_err(|err| anyhow!("Recorder not responding: {err}"))?
+    }
 }
 
 enum RecorderCommand {
@@ -167,6 +182,9 @@ enum RecorderCommand {
     },
     Stop {
         respond: Sender<Result<Option<CompletedRecording>>>,
+    },
+    Snapshot {
+        respond: Sender<Result<Option<(Vec<i16>, u32, u16)>>>,
     },
 }
 
@@ -315,6 +333,15 @@ impl RecorderCore {
             }))
         } else {
             Ok(None)
+        }
+    }
+
+    fn snapshot(&self) -> Option<(Vec<i16>, u32, u16)> {
+        if let Some(active) = &self.active {
+            let samples = active.buffer.lock().clone();
+            Some((samples, active.sample_rate, active.channels))
+        } else {
+            None
         }
     }
 }
