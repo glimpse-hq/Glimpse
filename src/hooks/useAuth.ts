@@ -64,13 +64,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         let unlisten: UnlistenFn | null = null;
+        let mounted = true;
         listen("auth:changed", () => {
             refresh();
         }).then((fn) => {
-            unlisten = fn;
+            if (mounted) {
+                unlisten = fn;
+            } else {
+                fn();
+            }
         });
 
         return () => {
+            mounted = false;
             unlisten?.();
         };
     }, [refresh]);
