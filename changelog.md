@@ -31,6 +31,8 @@
 - New modes now start with an empty name field when you click to rename.
 
 - Smoothed and cleaned up the Applications/Websites list scrolling so cards keep clear space from the scrollbar.
+
+- Improved search in AI Cleanup window
 ---
 
 0.6.3

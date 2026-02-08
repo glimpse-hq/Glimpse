@@ -81,13 +81,18 @@ export function Dropdown<T extends string | number>({
         };
     }, [isOpen]);
 
+    const query = searchQuery.trim().toLowerCase();
+
     const matchesSearch = (opt: DropdownOption<T>) =>
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        opt.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        !query ||
+        opt.label.toLowerCase().includes(query) ||
+        opt.description?.toLowerCase().includes(query);
 
     const filteredOptions = searchable
         ? options.filter((opt, idx) => {
-            if (!opt.isHeader) return matchesSearch(opt);
+            if (!opt.isHeader) {
+                return matchesSearch(opt);
+            }
             // Only show header if there are options after it that match the search
             for (let i = idx + 1; i < options.length; i++) {
                 if (options[i].isHeader) break;
@@ -126,12 +131,14 @@ export function Dropdown<T extends string | number>({
         return (
             <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide">
                 {badges.map((badge, index) => (
-                    <span
-                        key={`${badge.label}-${index}`}
-                        className={badge.highlighted ? "text-cloud" : "text-content-disabled"}
-                    >
-                        {badge.label}
-                    </span>
+                    badge.visible === false ? null : (
+                        <span
+                            key={`${badge.label}-${index}`}
+                            className={badge.highlighted ? "text-cloud" : "text-content-disabled"}
+                        >
+                            {badge.label}
+                        </span>
+                    )
                 ))}
             </span>
         );
