@@ -1,72 +1,81 @@
 import { emit } from "@tauri-apps/api/event";
-import { account, ID, type Models } from "./appwrite";
 
-export type User = Models.User<Models.Preferences>;
+export type User = {
+    $id: string;
+    $createdAt: string;
+    $updatedAt: string;
+    name: string;
+    email: string;
+    labels: string[];
+    prefs: Record<string, unknown>;
+};
+
+export type Session = {
+    $id: string;
+    current: boolean;
+    osName: string;
+    clientName: string;
+    countryName: string;
+};
+
+export type SessionList = {
+    total: number;
+    sessions: Session[];
+};
+
+export type Jwt = {
+    jwt: string;
+};
 
 function emitAuthChanged() {
     emit("auth:changed").catch(() => { });
 }
 
-export async function createAccount(
-    email: string,
-    password: string,
-    name?: string
-): Promise<User> {
-    const user = await account.create(ID.unique(), email, password, name);
-    await login(email, password);
-    return user;
+function cloudDisabledError() {
+    return new Error("Cloud account features are currently unavailable.");
 }
 
-async function login(
-    email: string,
-    password: string
-): Promise<Models.Session> {
-    try {
-        await account.deleteSession("current");
-    } catch {
-    }
-    const session = await account.createEmailPasswordSession(email, password);
-    emitAuthChanged();
-    return session;
+export async function createAccount(
+    _email: string,
+    _password: string,
+    _name?: string
+): Promise<User> {
+    throw cloudDisabledError();
 }
 
 export async function logout(): Promise<void> {
-    await account.deleteSession("current");
     emitAuthChanged();
 }
 
 export async function logoutAll(): Promise<void> {
-    await account.deleteSessions();
     emitAuthChanged();
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-    try {
-        return await account.get();
-    } catch {
-        return null;
-    }
+    return null;
 }
 
-export async function createJwt(): Promise<Models.Jwt> {
-    return account.createJWT();
+export async function createJwt(): Promise<Jwt> {
+    throw cloudDisabledError();
 }
 
-export async function updateName(name: string): Promise<User> {
-    return account.updateName(name);
+export async function updateName(_name: string): Promise<User> {
+    throw cloudDisabledError();
 }
 
 export async function updatePassword(
-    newPassword: string,
-    oldPassword: string
+    _newPassword: string,
+    _oldPassword: string
 ): Promise<User> {
-    return account.updatePassword(newPassword, oldPassword);
+    throw cloudDisabledError();
 }
 
-export async function listSessions(): Promise<Models.SessionList> {
-    return account.listSessions();
+export async function listSessions(): Promise<SessionList> {
+    return {
+        total: 0,
+        sessions: [],
+    };
 }
 
-export async function deleteSessionById(sessionId: string): Promise<void> {
-    await account.deleteSession(sessionId);
+export async function deleteSessionById(_sessionId: string): Promise<void> {
 }

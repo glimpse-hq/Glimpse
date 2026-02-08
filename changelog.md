@@ -1,3 +1,40 @@
+0.6.4
+
+
+### Features
+
+- Updated the Transcription Language dropdown to show available languages based on the installed model, and what models support which languages if multiple are installed.
+
+
+**Personalization**
+
+- Personalization modes now support up to 3,000 custom instruction characters with a live counter.
+
+- You can now resize the custom instructions box.
+
+- Holding Shift on a card now lets you quickly delete it.
+
+### Changes
+
+- Redesigned the model download screen and removed AI cleanup from onboarding.
+
+- Updated design of AI Cleanup to fit the app better.
+
+- Updated how some background tasks are run to reduce CPU usage.
+
+### Fixes
+
+- Cleaned up how expanding the sidebar looks in library view to feel smoother.
+
+- Fixed custom instructions getting cut off early after closing/reopening.
+
+- New modes now start with an empty name field when you click to rename.
+
+- Smoothed and cleaned up the Applications/Websites list scrolling so cards keep clear space from the scrollbar.
+
+- Improved search in AI Cleanup window
+---
+
 0.6.3
 
 

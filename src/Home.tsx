@@ -58,7 +58,6 @@ const Home = () => {
     const [appVersion, setAppVersion] = useState("-");
     const popupRef = useRef<HTMLDivElement>(null);
     const supportButtonRef = useRef<HTMLButtonElement>(null);
-    const [hasAuthIssue, setHasAuthIssue] = useState(false);
     const [updateAvailable, setUpdateAvailable] = useState(false);
 
     const [llmCleanupEnabled, setLlmCleanupEnabled] = useState(false);
@@ -166,21 +165,6 @@ const Home = () => {
             unlistenSignIn = fn;
         });
 
-        let unlistenAuthError: UnlistenFn | null = null;
-        let unlistenAuthChanged: UnlistenFn | null = null;
-
-        listen("cloud:auth-error", () => {
-            setHasAuthIssue(true);
-        }).then((fn) => {
-            unlistenAuthError = fn;
-        });
-
-        listen("auth:changed", () => {
-            setHasAuthIssue(false);
-        }).then((fn) => {
-            unlistenAuthChanged = fn;
-        });
-
         return () => {
             unlistenSettings?.();
             unlistenNavigate?.();
@@ -191,8 +175,6 @@ const Home = () => {
             unlistenDragDrop?.();
             unlistenOpenImport?.();
             unlistenSignIn?.();
-            unlistenAuthError?.();
-            unlistenAuthChanged?.();
         };
     }, []);
 
@@ -497,7 +479,7 @@ const Home = () => {
                             setSettingsTab("account");
                             setIsSettingsOpen(true);
                         }}
-                        className={`fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border bg-surface-surface hover:bg-surface-overlay hover:border-border-secondary transition-colors z-10 ${hasAuthIssue ? "border-error" : "border-border-primary"}`}
+                        className="fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-primary bg-surface-surface hover:bg-surface-overlay hover:border-border-secondary transition-colors z-10"
                     >
                         <div className="w-6 h-6 rounded-full bg-surface-elevated border border-border-secondary flex items-center justify-center overflow-hidden">
                             {(currentUser.prefs as Record<string, string>)?.avatar ? (

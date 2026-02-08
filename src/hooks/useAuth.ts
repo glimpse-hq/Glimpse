@@ -9,11 +9,8 @@ import {
     useState,
     type ReactNode,
 } from "react";
-import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/core";
-import type { Models } from "appwrite";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentUser, type User } from "../lib";
-import { client } from "../lib/appwrite";
 
 interface AuthState {
     user: User | null;
@@ -36,85 +33,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: null,
     });
 
-    const realtimeUnsub = useRef<(() => void) | null>(null);
-    const subscribedUserId = useRef<string | null>(null);
-
-    const subscribeToUser = useCallback((userId: string) => {
-        if (realtimeUnsub.current && subscribedUserId.current === userId) {
-            return;
-        }
-
-        realtimeUnsub.current?.();
-
-        try {
-            const unsubscribe = client.subscribe<Models.User<Models.Preferences>>(
-                "account",
-                (event) => {
-                    const nextUser = event.payload;
-                    if (!nextUser) return;
-                    
-                    setState((prev) => {
-                        const wasSubscriber = prev.user?.labels?.includes("cloud") ?? false;
-                        const isSubscriber = nextUser.labels?.includes("cloud") ?? false;
-
-                        if (prev.user && !wasSubscriber && isSubscriber) {
-                             invoke("show_celebration_toast").catch(console.error);
-                        }
-                        
-                        return { ...prev, user: nextUser };
-                    });
-                    
-                    emit("auth:changed").catch(() => { });
-                }
-            );
-            realtimeUnsub.current = () => unsubscribe();
-            subscribedUserId.current = userId;
-        } catch (err) {
-            console.error("Failed to subscribe to user updates", err);
-        }
-    }, []);
+    const mountedRef = useRef(true);
 
     const refresh = useCallback(async () => {
+        if (!mountedRef.current) return;
         setState((prev) => ({ ...prev, isLoading: true, error: null }));
         try {
             const user = await getCurrentUser();
-            setState({ user, isLoading: false, error: null });
-            if (user?.$id) {
-                subscribeToUser(user.$id);
-            } else {
-                realtimeUnsub.current?.();
-                realtimeUnsub.current = null;
-                subscribedUserId.current = null;
+            if (mountedRef.current) {
+                setState({ user, isLoading: false, error: null });
             }
         } catch (err) {
-            setState({
-                user: null,
-                isLoading: false,
-                error: err instanceof Error ? err.message : "Failed to load user",
-            });
-            realtimeUnsub.current?.();
-            realtimeUnsub.current = null;
-            subscribedUserId.current = null;
+            if (mountedRef.current) {
+                setState({
+                    user: null,
+                    isLoading: false,
+                    error: err instanceof Error ? err.message : "Failed to load user",
+                });
+            }
         }
-    }, [subscribeToUser]);
+    }, []);
 
     useEffect(() => {
+        mountedRef.current = true;
         refresh();
         return () => {
-            realtimeUnsub.current?.();
-            realtimeUnsub.current = null;
+            mountedRef.current = false;
         };
     }, [refresh]);
 
     useEffect(() => {
         let unlisten: UnlistenFn | null = null;
+        let mounted = true;
         listen("auth:changed", () => {
             refresh();
         }).then((fn) => {
-            unlisten = fn;
+            if (mounted) {
+                unlisten = fn;
+            } else {
+                fn();
+            }
         });
 
         return () => {
+            mounted = false;
             unlisten?.();
         };
     }, [refresh]);

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
-use parking_lot::Mutex;
+use parking_lot::{Condvar, Mutex};
 use transcribe_rs::{
     engines::{
         moonshine::{ModelVariant as MoonshineModelVariant, MoonshineEngine, MoonshineModelParams},
@@ -27,11 +27,11 @@ pub struct TranscriptionSuccessWithSegments {
 }
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
-const IDLE_CHECK_INTERVAL: Duration = Duration::from_secs(60);
 
 pub struct LocalTranscriber {
     inner: Mutex<Option<LoadedEngine>>,
     last_used: Mutex<Option<Instant>>,
+    idle_wait: Condvar,
 }
 
 struct LoadedEngine {
@@ -55,14 +55,34 @@ impl LocalTranscriber {
         Self {
             inner: Mutex::new(None),
             last_used: Mutex::new(None),
+            idle_wait: Condvar::new(),
         }
     }
 
     pub fn start_idle_monitor(self: &Arc<Self>) {
         let transcriber = Arc::clone(self);
-        std::thread::spawn(move || loop {
-            std::thread::sleep(IDLE_CHECK_INTERVAL);
-            transcriber.check_idle_unload();
+        std::thread::spawn(move || {
+            let mut last_used = transcriber.last_used.lock();
+
+            loop {
+                while last_used.is_none() {
+                    transcriber.idle_wait.wait(&mut last_used);
+                }
+
+                let Some(last_seen) = *last_used else {
+                    continue;
+                };
+                let wait_for = IDLE_TIMEOUT.saturating_sub(last_seen.elapsed());
+
+                if wait_for.is_zero() {
+                    drop(last_used);
+                    transcriber.check_idle_unload();
+                    last_used = transcriber.last_used.lock();
+                    continue;
+                }
+
+                transcriber.idle_wait.wait_for(&mut last_used, wait_for);
+            }
         });
     }
 
@@ -87,7 +107,9 @@ impl LocalTranscriber {
     }
 
     fn touch(&self) {
-        *self.last_used.lock() = Some(Instant::now());
+        let mut last_used = self.last_used.lock();
+        *last_used = Some(Instant::now());
+        self.idle_wait.notify_one();
     }
 
     pub fn preload_and_warm(&self, model: &ReadyModel) -> Result<()> {
@@ -280,8 +302,11 @@ impl LocalTranscriber {
     }
 
     pub fn unload(&self) {
-        *self.inner.lock() = None;
-        *self.last_used.lock() = None;
+        let mut inner = self.inner.lock();
+        let mut last_used = self.last_used.lock();
+        *inner = None;
+        *last_used = None;
+        self.idle_wait.notify_one();
     }
 }
 

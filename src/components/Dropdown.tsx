@@ -8,6 +8,12 @@ export interface DropdownOption<T extends string | number> {
     label: string;
     description?: string;
     icon?: React.ReactNode;
+    badges?: Array<{
+        label: string;
+        highlighted?: boolean;
+        visible?: boolean;
+    }>;
+    fixedBadgeSlots?: boolean;
     isHeader?: boolean;
 }
 
@@ -75,13 +81,18 @@ export function Dropdown<T extends string | number>({
         };
     }, [isOpen]);
 
+    const query = searchQuery.trim().toLowerCase();
+
     const matchesSearch = (opt: DropdownOption<T>) =>
-        opt.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        opt.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        !query ||
+        opt.label.toLowerCase().includes(query) ||
+        opt.description?.toLowerCase().includes(query);
 
     const filteredOptions = searchable
         ? options.filter((opt, idx) => {
-            if (!opt.isHeader) return matchesSearch(opt);
+            if (!opt.isHeader) {
+                return matchesSearch(opt);
+            }
             // Only show header if there are options after it that match the search
             for (let i = idx + 1; i < options.length; i++) {
                 if (options[i].isHeader) break;
@@ -90,6 +101,48 @@ export function Dropdown<T extends string | number>({
             return false;
         })
         : options;
+
+    const renderBadges = (
+        badges?: DropdownOption<T>["badges"],
+        fixedBadgeSlots?: boolean
+    ) => {
+        if (!badges || badges.length === 0) return null;
+
+        if (fixedBadgeSlots) {
+            return (
+                <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide">
+                    {badges.map((badge, index) => (
+                        <span
+                            key={`${badge.label}-${index}`}
+                            className={`w-5 text-right ${badge.visible === false
+                                ? "text-transparent"
+                                : badge.highlighted
+                                    ? "text-cloud"
+                                    : "text-content-disabled"
+                                }`}
+                        >
+                            {badge.label}
+                        </span>
+                    ))}
+                </span>
+            );
+        }
+
+        return (
+            <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide">
+                {badges.map((badge, index) => (
+                    badge.visible === false ? null : (
+                        <span
+                            key={`${badge.label}-${index}`}
+                            className={badge.highlighted ? "text-cloud" : "text-content-disabled"}
+                        >
+                            {badge.label}
+                        </span>
+                    )
+                ))}
+            </span>
+        );
+    };
 
     return (
         <div className={`relative ${className}`} ref={containerRef}>
@@ -107,11 +160,14 @@ export function Dropdown<T extends string | number>({
                         {selectedOption ? selectedOption.label : placeholder}
                     </span>
                 </div>
-                <ChevronDown
-                    size={14}
-                    aria-hidden="true"
-                    className={`text-content-muted shrink-0 ml-2 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                />
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                    {renderBadges(selectedOption?.badges, selectedOption?.fixedBadgeSlots)}
+                    <ChevronDown
+                        size={14}
+                        aria-hidden="true"
+                        className={`text-content-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                    />
+                </div>
             </button>
 
             <AnimatePresence>
@@ -180,7 +236,12 @@ export function Dropdown<T extends string | number>({
                                                     </span>
                                                 )}
                                             </div>
-                                            {value === option.value && <Check size={12} className="shrink-0 ml-2" aria-hidden="true" />}
+                                            <div className="shrink-0 ml-2 flex items-center gap-2">
+                                                {renderBadges(option.badges, option.fixedBadgeSlots)}
+                                                <span className="h-3 w-3 flex items-center justify-center">
+                                                    {value === option.value && <Check size={12} aria-hidden="true" />}
+                                                </span>
+                                            </div>
                                         </button>
                                     )
                                 )

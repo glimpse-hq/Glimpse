@@ -216,6 +216,47 @@ body {
   height: 4px;
 }
 
+.personalization-scroll {
+  overflow-y: auto;
+  overflow-y: overlay;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.instructions-scroll {
+  overflow-y: scroll;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.instructions-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.instructions-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.instructions-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb-subtle);
+  border-radius: 3px;
+}
+
+.instructions-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-subtle-hover);
+}
+
+.instructions-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
+  background: linear-gradient(180deg, transparent, var(--color-bg-surface));
+  pointer-events: none;
+}
+
 .scroll-fade-bottom {
   position: absolute;
   left: 0;

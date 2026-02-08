@@ -8,6 +8,8 @@ use uuid::Uuid;
 use crate::settings::Personality;
 use crate::{AppRuntime, AppState, EVENT_SETTINGS_CHANGED};
 
+const INSTRUCTION_CHAR_LIMIT: usize = 3000;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledApp {
     pub name: String,
@@ -42,6 +44,31 @@ fn sanitize_list(entries: &[String], limit: usize, max_len: usize, lower: bool) 
     cleaned
 }
 
+fn sanitize_instructions(entries: &[String]) -> Vec<String> {
+    let mut cleaned = Vec::new();
+    let mut remaining_chars = INSTRUCTION_CHAR_LIMIT;
+
+    for raw in entries {
+        if remaining_chars == 0 {
+            break;
+        }
+
+        let newline_cost = usize::from(!cleaned.is_empty());
+        if remaining_chars <= newline_cost {
+            break;
+        }
+
+        let allowed_chars = remaining_chars - newline_cost;
+        let capped: String = raw.chars().take(allowed_chars).collect();
+
+        remaining_chars -= newline_cost;
+        remaining_chars = remaining_chars.saturating_sub(capped.chars().count());
+        cleaned.push(capped);
+    }
+
+    cleaned
+}
+
 pub fn sanitize_personalities(entries: &[Personality]) -> Vec<Personality> {
     let mut seen = HashSet::new();
     let mut cleaned = Vec::new();
@@ -62,7 +89,7 @@ pub fn sanitize_personalities(entries: &[Personality]) -> Vec<Personality> {
         let capped_name: String = name.chars().take(60).collect();
         let apps = sanitize_list(&entry.apps, 64, 60, false);
         let websites = sanitize_list(&entry.websites, 64, 120, true);
-        let instructions = sanitize_list(&entry.instructions, 64, 220, false);
+        let instructions = sanitize_instructions(&entry.instructions);
 
         cleaned.push(Personality {
             id,
@@ -223,5 +250,65 @@ pub fn list_installed_apps() -> Result<Vec<InstalledApp>, String> {
     #[cfg(not(target_os = "macos"))]
     {
         Ok(Vec::new())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{sanitize_instructions, sanitize_personalities, INSTRUCTION_CHAR_LIMIT};
+    use crate::settings::Personality;
+
+    fn personality_with_instructions(instructions: Vec<String>) -> Personality {
+        Personality {
+            id: "test-id".to_string(),
+            name: "Test".to_string(),
+            enabled: true,
+            apps: Vec::new(),
+            websites: Vec::new(),
+            instructions,
+        }
+    }
+
+    #[test]
+    fn sanitize_personalities_allows_up_to_3000_instruction_chars() {
+        let instruction = "a".repeat(INSTRUCTION_CHAR_LIMIT + 250);
+        let cleaned = sanitize_personalities(&[personality_with_instructions(vec![instruction])]);
+
+        assert_eq!(cleaned.len(), 1);
+        assert_eq!(cleaned[0].instructions.len(), 1);
+        assert_eq!(
+            cleaned[0].instructions[0].chars().count(),
+            INSTRUCTION_CHAR_LIMIT
+        );
+    }
+
+    #[test]
+    fn sanitize_instructions_counts_newline_between_entries() {
+        let instructions = vec!["a".repeat(2000), "b".repeat(2000)];
+        let cleaned = sanitize_instructions(&instructions);
+
+        assert_eq!(cleaned.len(), 2);
+        assert_eq!(cleaned[1].chars().count(), 999);
+        assert_eq!(cleaned.join("\n").chars().count(), INSTRUCTION_CHAR_LIMIT);
+    }
+
+    #[test]
+    fn sanitize_instructions_is_not_limited_by_line_count() {
+        let instructions: Vec<String> = (0..240).map(|index| format!("line-{index}")).collect();
+        let cleaned = sanitize_instructions(&instructions);
+
+        assert_eq!(cleaned.len(), instructions.len());
+    }
+
+    #[test]
+    fn sanitize_instructions_preserves_duplicate_lines() {
+        let instructions = vec![
+            "repeat".to_string(),
+            "repeat".to_string(),
+            "repeat".to_string(),
+        ];
+        let cleaned = sanitize_instructions(&instructions);
+
+        assert_eq!(cleaned, instructions);
     }
 }

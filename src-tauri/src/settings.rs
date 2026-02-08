@@ -251,12 +251,12 @@ impl Default for UserSettings {
 #[serde(rename_all = "lowercase")]
 pub enum TranscriptionMode {
     #[default]
-    Cloud,
     Local,
+    Cloud,
 }
 
 fn default_transcription_mode() -> TranscriptionMode {
-    TranscriptionMode::Cloud
+    TranscriptionMode::Local
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -413,6 +413,11 @@ impl SettingsStore {
         if !settings.personalities_notes_seeded {
             seed_personality_notes(&mut settings.personalities);
             settings.personalities_notes_seeded = true;
+            self.save(&settings)?;
+        }
+
+        if matches!(settings.transcription_mode, TranscriptionMode::Cloud) {
+            settings.transcription_mode = TranscriptionMode::Local;
             self.save(&settings)?;
         }
 

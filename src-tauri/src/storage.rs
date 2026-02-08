@@ -153,17 +153,6 @@ impl StorageManager {
         Ok(record)
     }
 
-    pub fn import_transcription(&self, record: TranscriptionRecord) -> Result<bool> {
-        let conn = self.connection.lock();
-
-        if Self::get_record(&conn, &record.id)?.is_some() {
-            return Ok(false);
-        }
-
-        Self::insert_record(&conn, &record)?;
-        Ok(true)
-    }
-
     pub fn save_transcription_with_cleanup(
         &self,
         raw_text: String,
@@ -208,15 +197,6 @@ impl StorageManager {
     pub fn revert_to_raw(&self, id: &str) -> Result<Option<TranscriptionRecord>> {
         let conn = self.connection.lock();
         Self::revert_to_raw_internal(&conn, id)
-    }
-
-    pub fn mark_as_synced(&self, id: &str) -> Result<()> {
-        let conn = self.connection.lock();
-        conn.execute(
-            "UPDATE transcriptions SET synced = 1 WHERE id = ?1",
-            params![id],
-        )?;
-        Ok(())
     }
 
     pub fn update_transcription_result(

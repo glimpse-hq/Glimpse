@@ -29,6 +29,7 @@ import {
 import DotMatrix from "./DotMatrix";
 import { Dropdown, type DropdownOption } from "./Dropdown";
 import { useLibraryItems } from "../hooks/useLibraryItems";
+import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../lib/modelCapabilities";
 import type {
     ExportFormat,
     LibraryImportOptions,
@@ -165,7 +166,7 @@ const formatTimestamp = (ms: number) => {
 };
 
 const isTimestampSupported = (model?: ModelInfo | null) =>
-    model ? !model.engine.toLowerCase().includes("moonshine") : false;
+    hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
 
 const getFileExtension = (path: string) => {
     const parts = path.split(".");
@@ -616,7 +617,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         </p>
                     </div>
                 </header>
-                <div className="flex flex-wrap items-center justify-center gap-2 gap-y-2 w-full max-w-5xl">
+                <div className="grid w-full max-w-5xl min-w-0 grid-cols-[auto_minmax(0,1fr)_110px_110px_110px] items-center gap-2">
                     <button
                         onClick={handleImportClick}
                         className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 text-[12px] text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
@@ -624,7 +625,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         <Plus size={14} />
                         Import
                     </button>
-                    <div className="relative">
+                    <div className="relative min-w-0">
                         <div className="relative flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-2 focus-within:border-border-secondary transition-colors">
                             <Search size={12} className="text-content-disabled shrink-0" aria-hidden="true" />
                             <input
@@ -633,7 +634,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search library..."
                                 aria-label="Search library"
-                                className="bg-transparent text-[11px] text-content-secondary placeholder-content-disabled outline-none w-32 sm:w-40 md:w-44"
+                                className="w-full min-w-0 bg-transparent text-[11px] text-content-secondary placeholder-content-disabled outline-none"
                             />
                         </div>
                     </div>
@@ -648,7 +649,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             { value: "complete", label: "Done" },
                             { value: "error", label: "Failed" },
                         ]}
-                        className="w-[120px]"
+                        className="w-full min-w-0"
                     />
                     <Dropdown
                         value={dateFilter}
@@ -658,7 +659,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             { value: "last7", label: "Last 7 days" },
                             { value: "last30", label: "Last 30 days" },
                         ]}
-                        className="w-[120px]"
+                        className="w-full min-w-0"
                     />
                     <Dropdown
                         value={tagFilter}
@@ -667,7 +668,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             { value: "all", label: "All tags" },
                             ...availableTags.map((tag) => ({ value: tag, label: tag })),
                         ]}
-                        className="w-[120px]"
+                        className="w-full min-w-0"
                     />
                 </div>
 

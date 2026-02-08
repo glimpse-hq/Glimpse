@@ -48,20 +48,20 @@ const getOsIcon = (osName: string, clientName: string) => {
 
     return <Monitor size={16} className="text-content-secondary" />;
 };
-import type { Models } from "appwrite";
 import {
     updateName,
     updatePassword,
     listSessions,
     deleteSessionById,
     logoutAll,
-    type User as AppwriteUser
+    type Session as AuthSession,
+    type User as AuthUser
 } from "../../lib/auth";
 import { getCloudUsageStats, getCachedUsageStats, type CloudUsageStats } from "../../lib";
 import DotMatrix from "../DotMatrix";
 
 interface AccountViewProps {
-    currentUser: AppwriteUser | null;
+    currentUser: AuthUser | null;
     cloudSyncEnabled: boolean;
     onCloudSyncToggle: () => void;
     onUserUpdate: () => void;
@@ -90,7 +90,7 @@ const AccountView = ({
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
 
-    const [sessions, setSessions] = useState<Models.Session[]>([]);
+    const [sessions, setSessions] = useState<AuthSession[]>([]);
     const [sessionsLoading, setSessionsLoading] = useState(false);
     const [deletingSession, setDeletingSession] = useState<string | null>(null);
 

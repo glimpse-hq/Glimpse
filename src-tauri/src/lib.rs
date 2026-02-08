@@ -2,7 +2,6 @@ mod accessibility_context;
 mod analytics;
 mod assistive;
 mod audio;
-mod cloud;
 mod crypto;
 mod dictionary;
 mod downloader;
@@ -11,6 +10,7 @@ mod llm_cleanup;
 mod local_transcription;
 mod mode_context;
 mod model_manager;
+mod model_language_table;
 mod permissions;
 mod personalization;
 mod pill;
@@ -336,23 +336,11 @@ pub fn run() {
             complete_onboarding,
             cancel_recording,
             reset_onboarding,
-            import_transcription_from_cloud,
-            mark_transcription_synced,
             toast::debug_show_toast,
             fetch_llm_models,
-            cloud::set_cloud_credentials,
-            cloud::clear_cloud_credentials,
-            cloud::open_sign_in,
-            cloud::open_checkout,
             open_whats_new,
             open_about_page,
-            switch_to_local_mode,
-            toast::show_celebration_toast,
-            update_checker::get_update_status,
-            update_checker::trigger_update_check,
-            update_checker::simulate_update_available,
-            update_checker::clear_update_state,
-            update_checker::show_update_toast_now
+            update_checker::get_update_status
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -424,7 +412,6 @@ pub struct AppState {
     transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
-    cloud_manager: cloud::CloudManager,
     pending_selected_text: parking_lot::Mutex<Option<String>>,
     download_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     library_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
@@ -483,7 +470,6 @@ impl AppState {
             transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
             pending_recording_path: parking_lot::Mutex::new(None),
-            cloud_manager: cloud::CloudManager::new(),
             pending_selected_text: parking_lot::Mutex::new(None),
             download_tokens: parking_lot::Mutex::new(HashMap::new()),
             library_tokens: parking_lot::Mutex::new(HashMap::new()),
@@ -515,7 +501,11 @@ impl AppState {
         }
     }
 
-    pub fn persist_settings(&self, next: UserSettings) -> GlimpseResult<UserSettings> {
+    pub fn persist_settings(&self, mut next: UserSettings) -> GlimpseResult<UserSettings> {
+        if matches!(next.transcription_mode, TranscriptionMode::Cloud) {
+            next.transcription_mode = TranscriptionMode::Local;
+        }
+
         self.settings_store.save(&next)?;
         *self.settings.lock() = next.clone();
         Ok(next)
@@ -585,10 +575,6 @@ impl AppState {
 
     pub fn take_pending_path(&self) -> Option<PathBuf> {
         self.pending_recording_path.lock().take()
-    }
-
-    pub fn cloud_manager(&self) -> &cloud::CloudManager {
-        &self.cloud_manager
     }
 
     pub fn set_pending_selected_text(&self, text: Option<String>) {
@@ -1050,39 +1036,6 @@ fn open_about_page(app: AppHandle<AppRuntime>) {
 }
 
 #[tauri::command]
-fn switch_to_local_mode(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
-
-    if matches!(settings.transcription_mode, TranscriptionMode::Local) {
-        return Ok(());
-    }
-
-    settings.transcription_mode = TranscriptionMode::Local;
-
-    let settings = state
-        .persist_settings(settings)
-        .map_err(|e| e.to_string())?;
-
-    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &settings) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
-
-    toast::show(
-        &app,
-        "success",
-        None,
-        "Switched to local mode. Cloud sync still works.",
-    );
-
-    Ok(())
-}
-
-#[tauri::command]
 fn open_data_dir(path: Option<String>, app: AppHandle<AppRuntime>) -> Result<(), String> {
     let path = path.ok_or_else(|| "Path is empty".to_string())?;
     let path = PathBuf::from(&path);
@@ -1144,25 +1097,6 @@ fn get_transcriptions(
         .storage()
         .get_all_filtered(search_query.as_deref())
         .map_err(|err| format!("Failed to get transcriptions: {err}"))
-}
-
-#[tauri::command]
-fn import_transcription_from_cloud(
-    record: storage::TranscriptionRecord,
-    state: tauri::State<AppState>,
-) -> Result<bool, String> {
-    state
-        .storage()
-        .import_transcription(record)
-        .map_err(|err| format!("Failed to import transcription: {err}"))
-}
-
-#[tauri::command]
-fn mark_transcription_synced(id: String, state: tauri::State<AppState>) -> Result<(), String> {
-    state
-        .storage()
-        .mark_as_synced(&id)
-        .map_err(|err| format!("Failed to mark transcription as synced: {err}"))
 }
 
 #[tauri::command]
@@ -1240,28 +1174,9 @@ async fn retry_transcription(
         record.audio_path, record.speech_model, record.synced
     );
 
-    if record.status == storage::TranscriptionStatus::Error {
-        if let Some(message) = record.error_message.as_deref() {
-            let lower = message.to_ascii_lowercase();
-            let is_quota_error =
-                lower.contains("quota reached") || lower.contains("beta tester limit");
-            if is_quota_error {
-                let is_tester = lower.contains("beta tester");
-                cloud::show_quota_exceeded(&app, is_tester);
-                return Err(String::new());
-            }
-        }
-    }
-
     let audio_path = PathBuf::from(&record.audio_path);
     if !audio_path.exists() {
-        if record.audio_path.contains("placeholder") || record.audio_path.contains("cloud_synced") {
-            return Err(
-                "Cannot retry cloud-synced transcriptions. Audio is only stored locally."
-                    .to_string(),
-            );
-        }
-        return Err("Audio file not found. It may have been deleted.".to_string());
+        return Err("Cannot retry this transcription because its source audio is unavailable.".to_string());
     }
 
     let saved = RecordingSaved {

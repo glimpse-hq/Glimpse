@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { AlertCircle, Check, ChevronRight, Download, Info, Key, Server, Square, Trash2 } from "lucide-react";
-import { Dropdown } from "../../Dropdown";
+import { AlertCircle, Check, ChevronRight, Download, Square, Trash2 } from "lucide-react";
 import DotMatrix from "../../DotMatrix";
-import { CLOUD_PROVIDERS, getProviderPreset, LOCAL_PROVIDERS } from "../../../lib/llmProviders";
+import CleanupPanel from "../../CleanupPanel";
 import type { DownloadEvent, LlmProvider, ModelInfo, ModelStatus } from "../../../types";
 
 type EngineGroup = {
@@ -11,39 +10,33 @@ type EngineGroup = {
     label: string;
     description: string;
     recommended?: boolean;
+    models: ModelInfo[];
 };
 
-const ENGINE_GROUPS: EngineGroup[] = [
-    {
-        id: "whisper",
-        label: "Whisper",
-        description: "OpenAI's speech recognition with custom vocabulary support.",
-        recommended: true,
-    },
-    {
-        id: "parakeet",
-        label: "Parakeet TDT v3",
-        description: "NVIDIA's fast English speech recognition.",
-    },
-    {
-        id: "moonshine",
-        label: "Moonshine",
-        description: "Extremely fast, lightweight, optimized for real-time use.",
-    },
-];
+const engineDescription = (engineId: string, engineLabel: string) => {
+    if (engineId === "whisper") {
+        return "OpenAI's speech recognition with custom vocabulary support.";
+    }
+    if (engineId === "parakeet_v3") {
+        return "NVIDIA's multilingual speech recognition.";
+    }
+    if (engineId === "moonshine") {
+        return "Extremely fast, lightweight, optimized for real-time use.";
+    }
+    return `${engineLabel} transcription engine.`;
+};
+
+const enginePriority = (engineId: string): number => {
+    if (engineId === "whisper") return 0;
+    if (engineId === "parakeet_v3") return 1;
+    if (engineId === "moonshine") return 2;
+    return 3;
+};
 
 const getSizeColor = (sizeMb: number): string => {
     if (sizeMb < 500) return "text-green-400";
     if (sizeMb < 1500) return "text-amber-400";
     return "text-red-400";
-};
-
-const getEngineId = (engine: string): string => {
-    const lower = engine.toLowerCase();
-    if (lower.includes("whisper")) return "whisper";
-    if (lower.includes("parakeet")) return "parakeet";
-    if (lower.includes("moonshine")) return "moonshine";
-    return engine;
 };
 
 type ModelsTabProps = {
@@ -97,10 +90,35 @@ const ModelsTab = ({
 }: ModelsTabProps) => {
     const [expandedEngine, setExpandedEngine] = useState<string | null>(null);
 
-    const groupedModels = ENGINE_GROUPS.map(group => ({
-        ...group,
-        models: modelCatalog.filter(m => getEngineId(m.engine) === group.id),
-    })).filter(group => group.models.length > 0);
+    const groupedMap = new Map<string, ModelInfo[]>();
+    for (const model of modelCatalog) {
+        const existing = groupedMap.get(model.engine_id);
+        if (existing) {
+            existing.push(model);
+        } else {
+            groupedMap.set(model.engine_id, [model]);
+        }
+    }
+
+    const groupedModels: EngineGroup[] = Array.from(groupedMap.entries())
+        .map(([id, models]) => {
+            const label = models[0]?.engine ?? id;
+            const recommended = models.some((model) =>
+                model.tags.some((tag) => tag.toLowerCase() === "recommended")
+            );
+            return {
+                id,
+                label,
+                description: engineDescription(id, label),
+                recommended,
+                models,
+            };
+        })
+        .sort((a, b) => {
+            const priorityDelta = enginePriority(a.id) - enginePriority(b.id);
+            if (priorityDelta !== 0) return priorityDelta;
+            return a.label.localeCompare(b.label);
+        });
 
     const toggleEngine = (engineId: string) => {
         setExpandedEngine(prev => prev === engineId ? null : engineId);
@@ -120,132 +138,20 @@ const ModelsTab = ({
                 <p className="mt-1 text-[12px] text-content-muted">Manage transcription engines and AI cleanup.</p>
             </header>
 
-            {/* AI Cleanup Section */}
-            <div className="rounded-xl border border-border-primary bg-surface-surface">
-                <div className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                        <div>
-                            <h3 className="text-[13px] font-medium text-content-primary">AI Cleanup</h3>
-                            <p className="text-[11px] text-content-disabled">Use an LLM to clean up transcriptions</p>
-                        </div>
-                        <motion.button
-                            onClick={() => setLlmCleanupEnabled(!llmCleanupEnabled)}
-                            className={`relative w-10 h-5 rounded-full transition-colors ${llmCleanupEnabled ? "bg-cloud" : "bg-border-secondary"}`}
-                            whileTap={{ scale: 0.95 }}
-                            role="switch"
-                            aria-checked={llmCleanupEnabled}
-                            aria-label="Toggle AI Cleanup"
-                        >
-                            <motion.div
-                                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
-                                animate={{ left: llmCleanupEnabled ? "calc(100% - 18px)" : "2px" }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                        </motion.button>
-                    </div>
-
-                    <AnimatePresence initial={false}>
-                        {llmCleanupEnabled && (
-                            <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                                style={{ overflow: "visible" }}
-                            >
-                                <div className="pt-3 border-t border-border-primary space-y-3">
-                                    <div className="space-y-1.5">
-                                        <label className="text-[11px] font-medium text-content-muted ml-1">Provider</label>
-                                        <Dropdown
-                                            value={llmProvider}
-                                            onChange={(val) => {
-                                                setLlmProvider(val);
-                                                const preset = getProviderPreset(val);
-                                                if (preset) {
-                                                    setLlmEndpoint(preset.endpoint);
-                                                    setLlmModel(preset.defaultModel);
-                                                }
-                                            }}
-                                            options={[
-                                                { value: "custom" as LlmProvider, label: "Custom" },
-                                                { value: "_local_header" as LlmProvider, label: "Local", isHeader: true },
-                                                ...LOCAL_PROVIDERS.filter(p => p.id !== "custom").map(p => ({
-                                                    value: p.id,
-                                                    label: p.label
-                                                })),
-                                                { value: "_cloud_header" as LlmProvider, label: "Cloud (API Key)", isHeader: true },
-                                                ...CLOUD_PROVIDERS.map(p => ({
-                                                    value: p.id,
-                                                    label: p.label
-                                                }))
-                                            ]}
-                                            placeholder="Select provider..."
-                                            searchable
-                                            searchPlaceholder="Search providers..."
-                                        />
-                                    </div>
-
-                                    {llmProvider && (
-                                        <>
-                                            <div className="space-y-1.5">
-                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                    <Server size={10} />
-                                                    Endpoint {llmProvider !== "custom" && <span className="text-content-disabled">(auto-filled)</span>}
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={llmEndpoint}
-                                                    onChange={(e) => setLlmEndpoint(e.target.value)}
-                                                    placeholder={getProviderPreset(llmProvider)?.endpoint ?? "https://your-llm-endpoint.com"}
-                                                    aria-label="LLM Endpoint URL"
-                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1.5">
-                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                    <Key size={10} aria-hidden="true" />
-                                                    API Key {!getProviderPreset(llmProvider)?.apiKeyRequired && <span className="text-content-disabled">(if required)</span>}
-                                                </label>
-                                                <input
-                                                    type="password"
-                                                    value={llmApiKey}
-                                                    onChange={(e) => setLlmApiKey(e.target.value)}
-                                                    placeholder={getProviderPreset(llmProvider)?.apiKeyRequired ? "Required" : "Optional"}
-                                                    aria-label="LLM API Key"
-                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                />
-                                            </div>
-
-                                            <div className="relative z-0">
-                                                <Dropdown
-                                                    value={llmModel}
-                                                    onChange={(val) => setLlmModel(val)}
-                                                    onOpen={fetchAvailableModels}
-                                                    options={[
-                                                        ...availableModels.map(m => ({ value: m, label: m })),
-                                                        ...(llmModel && !availableModels.includes(llmModel) ? [{ value: llmModel, label: llmModel }] : [])
-                                                    ]}
-                                                    placeholder={`Model (default: ${getProviderPreset(llmProvider)?.defaultModel || "none"})`}
-                                                    searchable
-                                                    searchPlaceholder="Search available models..."
-                                                />
-                                            </div>
-                                        </>
-                                    )}
-
-                                    <div className="flex items-center gap-2 rounded-lg border border-border-secondary bg-surface-elevated px-3 py-2">
-                                        <Info size={12} className="text-content-muted shrink-0" />
-                                        <p className="text-[10px] text-content-muted">
-                                            Removes filler words, fixes repetitions, and cleans up speech disfluencies while preserving your meaning.
-                                        </p>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            </div>
+            <CleanupPanel
+                llmCleanupEnabled={llmCleanupEnabled}
+                setLlmCleanupEnabled={setLlmCleanupEnabled}
+                llmProvider={llmProvider}
+                setLlmProvider={setLlmProvider}
+                llmEndpoint={llmEndpoint}
+                setLlmEndpoint={setLlmEndpoint}
+                llmApiKey={llmApiKey}
+                setLlmApiKey={setLlmApiKey}
+                llmModel={llmModel}
+                setLlmModel={setLlmModel}
+                availableModels={availableModels}
+                fetchAvailableModels={fetchAvailableModels}
+            />
 
             {/* Transcription Engines */}
             <div>
@@ -363,6 +269,7 @@ const ModelRow = ({
     const showError = progress?.status === "error";
     const percent = progress?.percent ?? (installed ? 100 : 0);
     const isRecommended = model.tags.some(t => t.toLowerCase() === "recommended");
+    const visibleTags = model.tags.filter((tag) => tag.toLowerCase() !== "recommended");
 
     return (
         <div className={`rounded-lg px-3 py-2.5 transition-colors ${isActive ? "bg-cloud/10" : "hover:bg-surface-elevated/50"}`}>
@@ -383,11 +290,11 @@ const ModelRow = ({
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <span className={`text-[10px] ${getSizeColor(model.size_mb)}`}>{formatBytes(model.size_mb * 1024 * 1024)}</span>
-                        {model.tags.filter(t => t.toLowerCase() !== "recommended").length > 0 && (
+                        {visibleTags.length > 0 && (
                             <>
                                 <span className="text-[10px] text-content-disabled">·</span>
                                 <span className="text-[10px] text-content-disabled">
-                                    {model.tags.filter(t => t.toLowerCase() !== "recommended").join(", ")}
+                                    {visibleTags.join(", ")}
                                 </span>
                             </>
                         )}

@@ -4,9 +4,15 @@ export type ModelInfo = {
     description: string;
     size_mb: number;
     file_count: number;
+    engine_id: string;
     engine: string;
     variant: string;
     tags: string[];
+    capabilities: string[];
+    supported_languages: {
+        code: string;
+        name: string;
+    }[];
 };
 
 export type ModelStatus = {

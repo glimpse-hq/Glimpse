@@ -14,9 +14,6 @@ import {
     Download,
     Trash2,
     ChevronLeft,
-    Server,
-    Key,
-    Cpu,
     ChevronRight,
     Check,
     ExternalLink,
@@ -27,12 +24,10 @@ import {
     Mail,
 } from "lucide-react";
 import DotMatrix from "./components/DotMatrix";
-import { Dropdown } from "./components/Dropdown";
 import FAQModal from "./components/FAQModal";
-import { LOCAL_PROVIDERS, CLOUD_PROVIDERS, getProviderPreset } from "./lib/llmProviders";
-import type { ModelInfo, ModelStatus, StoredSettings, TranscriptionMode, LlmProvider } from "./types";
+import type { ModelInfo, ModelStatus, StoredSettings, TranscriptionMode } from "./types";
 
- type OnboardingStep = "welcome" | "local-model" | "cleanup" | "local-signin" | "microphone" | "accessibility" | "ready";
+type OnboardingStep = "welcome" | "local-model" | "local-signin" | "microphone" | "accessibility" | "ready";
 
 
 type LocalDownloadStatus = {
@@ -196,9 +191,16 @@ const formatShortcutForDisplay = (shortcut: string): string => {
         .replace(/\+/g, " + ");
 };
 
+const stepTransitionVariants = {
+    enter: (direction: 1 | -1) => ({ opacity: 0, x: direction > 0 ? 28 : -28 }),
+    center: { opacity: 1, x: 0 },
+    exit: (direction: 1 | -1) => ({ opacity: 0, x: direction > 0 ? -28 : 28 }),
+};
+
 const Onboarding = ({ onComplete }: OnboardingProps) => {
     const [step, setStep] = useState<OnboardingStep>("welcome");
-    const skippedFrom = useRef<OnboardingStep | null>(null);
+    const [transitionDirection, setTransitionDirection] = useState<1 | -1>(1);
+    const [hasStepTransitioned, setHasStepTransitioned] = useState(false);
     const [micPermission, setMicPermission] = useState(false);
     const [accessibilityPermission, setAccessibilityPermission] = useState(false);
     const [isCheckingMic, setIsCheckingMic] = useState(true);
@@ -211,11 +213,6 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     });
     const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>({});
     const [modelInfo, setModelInfo] = useState<Record<string, ModelInfo>>({});
-    const [llmCleanupEnabled, setLlmCleanupEnabled] = useState(false);
-    const [llmProvider, setLlmProvider] = useState<LlmProvider>("custom");
-    const [llmEndpoint, setLlmEndpoint] = useState("");
-    const [llmApiKey, setLlmApiKey] = useState("");
-    const [llmModel, setLlmModel] = useState("");
     const [showLocalConfirm, setShowLocalConfirm] = useState(false);
 
     const [showFAQModal, setShowFAQModal] = useState(false);
@@ -225,7 +222,12 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     const pressedModifiers = useRef<Set<string>>(new Set());
     const primaryKey = useRef<string | null>(null);
 
-    const steps: OnboardingStep[] = ["welcome", "local-model", "cleanup", "microphone", "accessibility", "ready"];
+    const steps: OnboardingStep[] = useMemo(
+        () => selectedMode === "cloud"
+            ? ["welcome", "local-signin", "local-model", "microphone", "accessibility", "ready"]
+            : ["welcome", "local-model", "microphone", "accessibility", "ready"],
+        [selectedMode]
+    );
     const currentStepIndex = steps.indexOf(step);
 
     useEffect(() => {
@@ -329,15 +331,15 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                 holdEnabled: false,
                 toggleShortcut: "Control+Alt+Space",
                 toggleEnabled: false,
-                transcriptionMode: selectedMode,
+                transcriptionMode: "local",
                 localModel: localModelChoice,
                 microphoneDevice: null,
                 language: "en",
-                llmCleanupEnabled,
-                llmProvider,
-                llmEndpoint,
-                llmApiKey,
-                llmModel,
+                llmCleanupEnabled: false,
+                llmProvider: "custom",
+                llmEndpoint: "",
+                llmApiKey: "",
+                llmModel: "",
                 editModeEnabled: false,
             });
             await invoke("complete_onboarding");
@@ -351,18 +353,17 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     const goToNextStep = () => {
         const nextIndex = currentStepIndex + 1;
         if (nextIndex < steps.length) {
+            setHasStepTransitioned(true);
+            setTransitionDirection(1);
             setStep(steps[nextIndex]);
         }
     };
 
     const goToPrevStep = () => {
-        if (skippedFrom.current) {
-            setStep(skippedFrom.current);
-            skippedFrom.current = null;
-            return;
-        }
         const prevIndex = currentStepIndex - 1;
         if (prevIndex >= 0) {
+            setHasStepTransitioned(true);
+            setTransitionDirection(-1);
             setStep(steps[prevIndex]);
         }
     };
@@ -498,7 +499,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 message: prev[model]?.message,
                             },
                         }));
-                        refreshModelStatus(model as "parakeet_tdt_int8" | "whisper_small_q5");
+                        refreshModelStatus(model);
                     }),
                     listen<{ model: string; error: string }>("download:error", (event) => {
                         const { model, error } = event.payload;
@@ -634,6 +635,14 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         goToNextStep();
     };
 
+    const stepMotionProps = {
+        custom: transitionDirection,
+        variants: stepTransitionVariants,
+        animate: "center" as const,
+        exit: "exit" as const,
+        transition: { duration: 0.22, ease: "easeOut" as const },
+    };
+
     return (
         <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary text-white select-none relative">
             <div data-tauri-drag-region className="h-7 w-full shrink-0" />
@@ -643,14 +652,12 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
             </div>
 
             <div className="flex-1 flex items-center justify-center px-10 pb-10">
-                <AnimatePresence mode="wait">
+                <AnimatePresence mode="wait" custom={transitionDirection}>
                     {step === "welcome" && (
                         <motion.div
                             key="welcome"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
+                            {...stepMotionProps}
+                            initial={hasStepTransitioned ? "enter" : false}
                             className="flex flex-col items-center text-center w-full max-w-5xl"
                         >
                             <div className="mb-6">
@@ -668,10 +675,13 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                 <button
                                     type="button"
-                                    onClick={() => {}}
                                     disabled
-                                    className={`group relative w-full rounded-2xl border border-border-primary bg-surface-tertiary p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden transition-all opacity-60 cursor-not-allowed`}
-                                    aria-disabled
+                                    className={`group relative w-full rounded-2xl border p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden transition-colors ${selectedMode === "cloud"
+                                        ? "border-cloud-50 bg-surface-tertiary ring-1 ring-cloud-30"
+                                        : "border-border-primary bg-surface-tertiary opacity-70 cursor-not-allowed"
+                                        }`}
+                                    aria-pressed={selectedMode === "cloud"}
+                                    aria-disabled="true"
                                 >
                                     <div className="absolute inset-0 pointer-events-none">
                                         <div className="absolute inset-0 opacity-18">
@@ -758,10 +768,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                     {step === "local-model" && (
                         <motion.div
                             key="local-model"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
+                            {...stepMotionProps}
+                            initial="enter"
                             className="flex flex-col items-center text-center w-full max-w-2xl"
                         >
 
@@ -769,8 +777,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 Choose your local model
                             </h2>
                             <div className="mb-6 flex flex-col gap-1 text-sm text-content-muted">
-                                <p>Pick a model, then download it. You can add more in Settings later.</p>
-                                <p className="text-xs text-content-disabled">Both models work offline; choose one and get it ready.</p>
+                                <p>More models & AI cleanup available in Settings after setup.</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
@@ -798,47 +805,39 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             <DotMatrix rows={6} cols={18} activeDots={[1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65]} dotSize={2} gap={4} color="var(--color-border-primary)" />
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-2">
-                                            <DotMatrix rows={2} cols={2} activeDots={[1, 2]} dotSize={3} gap={2} color="var(--color-local)" />
-                                            <span className="text-[11px] font-semibold text-content-primary">Whisper Large V3 Turbo (Q8)</span>
-                                            {modelInfo[WHISPER_KEY]?.size_mb && (
-                                                <span className="text-[9px] text-content-muted tabular-nums">{modelInfo[WHISPER_KEY].size_mb >= 1000 ? `${(modelInfo[WHISPER_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[WHISPER_KEY].size_mb)} MB`}</span>
-                                            )}
-                                        </div>
-                                        <span
-                                            className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${isWhisperActive
-                                                ? "bg-amber-400/20 text-amber-400 border-amber-400/40"
-                                                : "opacity-0 border-transparent text-transparent pointer-events-none select-none"
-                                                }`}
-                                        >
+                                    {isWhisperActive && (
+                                        <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 text-[8px] font-semibold uppercase tracking-wider text-amber-400">
                                             Active
-                                        </span>
+                                        </p>
+                                    )}
+                                    <div className="relative flex items-center gap-2">
+                                        <DotMatrix rows={2} cols={2} activeDots={[1, 2]} dotSize={3} gap={2} color="var(--color-local)" />
+                                        <span className="text-[11px] font-semibold text-content-primary">Whisper Large V3 Turbo (Q8)</span>
+                                        {modelInfo[WHISPER_KEY]?.size_mb && (
+                                            <span className="text-[9px] text-content-muted tabular-nums">{modelInfo[WHISPER_KEY].size_mb >= 1000 ? `${(modelInfo[WHISPER_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[WHISPER_KEY].size_mb)} MB`}</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border bg-local-15 text-local border-local-40">
-                                            Recommended
-                                        </span>
-                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${whisperInstalled
-                                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                                            : "bg-surface-elevated text-content-tertiary border-border-secondary"
-                                            }`}>
-                                            {whisperInstalled ? "Ready" : "Download needed"}
-                                        </span>
+                                    <div className="relative flex items-center flex-wrap gap-1.5">
+                                        {modelInfo[WHISPER_KEY]?.tags?.map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${
+                                                    tag.toLowerCase() === "recommended"
+                                                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                                        : "bg-local-15 text-local border-local-40"
+                                                }`}
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <div className="relative space-y-1.5 text-[11px] text-content-secondary font-medium">
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-1 w-3 rounded-full bg-content-tertiary" />
-                                            <span>Good quality, balanced speed</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-1 w-3 rounded-full bg-content-tertiary" />
-                                            <span>Supports custom words</span>
-                                        </div>
-                                    </div>
+                                    {modelInfo[WHISPER_KEY]?.description && (
+                                        <p className="relative text-[11px] text-content-muted text-center py-2">
+                                            {modelInfo[WHISPER_KEY].description}
+                                        </p>
+                                    )}
                                     <div className="relative rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-tertiary leading-relaxed space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-semibold text-content-secondary">Download</span>
                                             <button
                                                 aria-label={displayState.whisper.status === "downloading" ? "Stop download" : displayState.whisper.status === "complete" ? "Delete model" : "Download model"}
                                                 onClick={(e) => {
@@ -852,23 +851,26 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                                     }
                                                 }}
                                                 disabled={displayState.whisper.status === "cancelled"}
-                                                className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${displayState.whisper.status === "downloading"
-                                                    ? "border-error/30 text-error hover:bg-error/10"
+                                                className={`flex h-7 w-7 items-center justify-center rounded-md border border-border-secondary transition-colors ${displayState.whisper.status === "downloading"
+                                                    ? "text-error hover:bg-surface-elevated"
                                                     : displayState.whisper.status === "complete"
-                                                        ? "border-error/30 text-error hover:bg-error/10"
+                                                        ? "text-error hover:bg-surface-elevated"
                                                         : displayState.whisper.status === "cancelled"
-                                                            ? "border-border-secondary text-content-disabled cursor-default"
-                                                            : "border-border-secondary text-content-primary hover:border-border-hover"
+                                                            ? "text-content-disabled cursor-default"
+                                                            : "text-content-primary hover:bg-surface-elevated"
                                                     }`}
                                             >
                                                 {displayState.whisper.status === "downloading" ? (
                                                     <Square size={10} className="fill-current" />
                                                 ) : displayState.whisper.status === "complete" ? (
-                                                    <Trash2 size={10} />
+                                                    <Trash2 size={14} />
                                                 ) : (
-                                                    <Download size={10} className={displayState.whisper.status === "cancelled" ? "" : "text-cloud"} />
+                                                    <Download size={14} className={displayState.whisper.status === "cancelled" ? "" : "text-cloud"} />
                                                 )}
                                             </button>
+                                            <span className="text-[11px] font-semibold text-content-secondary">
+                                                {displayState.whisper.status === "complete" ? "Downloaded" : "Download"}
+                                            </span>
                                         </div>
                                         <ModelProgress percent={displayState.whisper.percent} status={displayState.whisper.status} />
                                         <div className="h-4 flex items-center">
@@ -910,49 +912,40 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             : "bg-surface-tertiary hover:border-border-secondary"
                                         }`}
                                 >
-                                    <div className="absolute inset-0 pointer-events-none">
-                                        <div className="absolute inset-0 opacity-12">
-                                            <DotMatrix rows={6} cols={18} activeDots={[0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60, 63, 66]} dotSize={2} gap={4} color="var(--color-border-primary)" />
-                                        </div>
-                                    </div>
-                                    <div className="relative flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-2">
-                                            <DotMatrix rows={2} cols={2} activeDots={[0]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                            <span className="text-[11px] font-semibold text-content-primary">Parakeet (INT8)</span>
-                                            {modelInfo[PARAKEET_KEY]?.size_mb && (
-                                                <span className="text-[9px] text-content-muted tabular-nums">{modelInfo[PARAKEET_KEY].size_mb >= 1000 ? `${(modelInfo[PARAKEET_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[PARAKEET_KEY].size_mb)} MB`}</span>
-                                            )}
-                                        </div>
-                                        <span
-                                            className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${isParakeetActive
-                                                ? "bg-amber-400/20 text-amber-400 border-amber-400/40"
-                                                : "opacity-0 border-transparent text-transparent pointer-events-none select-none"
-                                                }`}
-                                        >
+                                    <div className="absolute inset-0 pointer-events-none" />
+                                    {isParakeetActive && (
+                                        <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 text-[8px] font-semibold uppercase tracking-wider text-amber-400">
                                             Active
-                                        </span>
+                                        </p>
+                                    )}
+                                    <div className="relative flex items-center gap-2">
+                                        <DotMatrix rows={2} cols={2} activeDots={[0]} dotSize={3} gap={2} color="var(--color-local)" />
+                                        <span className="text-[11px] font-semibold text-content-primary">Parakeet V3 (INT8)</span>
+                                        {modelInfo[PARAKEET_KEY]?.size_mb && (
+                                            <span className="text-[9px] text-content-muted tabular-nums">{modelInfo[PARAKEET_KEY].size_mb >= 1000 ? `${(modelInfo[PARAKEET_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[PARAKEET_KEY].size_mb)} MB`}</span>
+                                        )}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${parakeetInstalled
-                                            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
-                                            : "bg-surface-elevated text-content-tertiary border-border-secondary"
-                                            }`}>
-                                            {parakeetInstalled ? "Ready" : "Download needed"}
-                                        </span>
+                                    <div className="relative flex items-center flex-wrap gap-1.5">
+                                        {modelInfo[PARAKEET_KEY]?.tags?.map((tag) => (
+                                            <span
+                                                key={tag}
+                                                className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${
+                                                    tag.toLowerCase() === "recommended"
+                                                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                                        : "bg-local-15 text-local border-local-40"
+                                                }`}
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <div className="relative space-y-1.5 text-[11px] text-content-secondary font-medium">
+                                    {modelInfo[PARAKEET_KEY]?.description && (
+                                        <p className="relative text-[11px] text-content-muted text-center py-2">
+                                            {modelInfo[PARAKEET_KEY].description}
+                                        </p>
+                                    )}
+                                    <div className="relative rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-tertiary leading-relaxed space-y-2">
                                         <div className="flex items-center gap-2">
-                                            <div className="h-1 w-3 rounded-full bg-content-tertiary" />
-                                            <span>Good accuracy, fast</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-1 w-3 rounded-full bg-content-tertiary" />
-                                            <span>Multilingual</span>
-                                        </div>
-                                    </div>
-                                    <div className="relative rounded-lg border border-border-primary bg-surface-elevated px-3 py-2 text-[10px] text-content-tertiary leading-relaxed space-y-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[10px] font-semibold text-content-secondary">Download</span>
                                             <button
                                                 aria-label={displayState.parakeet.status === "downloading" ? "Stop download" : displayState.parakeet.status === "complete" ? "Delete model" : "Download model"}
                                                 onClick={(e) => {
@@ -966,23 +959,26 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                                     }
                                                 }}
                                                 disabled={displayState.parakeet.status === "cancelled"}
-                                                className={`flex h-7 w-7 items-center justify-center rounded-md border transition-colors ${displayState.parakeet.status === "downloading"
-                                                    ? "border-error/30 text-error hover:bg-error/10"
+                                                className={`flex h-7 w-7 items-center justify-center rounded-md border border-border-secondary transition-colors ${displayState.parakeet.status === "downloading"
+                                                    ? "text-error hover:bg-surface-elevated"
                                                     : displayState.parakeet.status === "complete"
-                                                        ? "border-error/30 text-error hover:bg-error/10"
+                                                        ? "text-error hover:bg-surface-elevated"
                                                         : displayState.parakeet.status === "cancelled"
-                                                            ? "border-border-secondary text-content-disabled cursor-default"
-                                                            : "border-border-secondary text-content-primary hover:border-border-hover"
+                                                            ? "text-content-disabled cursor-default"
+                                                            : "text-content-primary hover:bg-surface-elevated"
                                                     }`}
                                             >
                                                 {displayState.parakeet.status === "downloading" ? (
                                                     <Square size={10} className="fill-current" />
                                                 ) : displayState.parakeet.status === "complete" ? (
-                                                    <Trash2 size={10} />
+                                                    <Trash2 size={14} />
                                                 ) : (
-                                                    <Download size={10} className={displayState.parakeet.status === "cancelled" ? "" : "text-cloud"} />
+                                                    <Download size={14} className={displayState.parakeet.status === "cancelled" ? "" : "text-cloud"} />
                                                 )}
                                             </button>
+                                            <span className="text-[11px] font-semibold text-content-secondary">
+                                                {displayState.parakeet.status === "complete" ? "Downloaded" : "Download"}
+                                            </span>
                                         </div>
                                         <ModelProgress percent={displayState.parakeet.percent} status={displayState.parakeet.status} />
                                         <div className="h-4 flex items-center">
@@ -1006,156 +1002,21 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 </div>
                             </div>
 
-                            <p className="mt-4 text-[11px] text-content-muted">
-                                More models available in Settings after setup.
-                            </p>
-
                             <button
                                 onClick={handleLocalModelContinue}
                                 className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 text-sm font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
                             >
                                 Continue
                             </button>
-                        </motion.div>
-                    )}
 
-                    {step === "cleanup" && selectedMode === "local" && (
-                        <motion.div
-                            key="cleanup"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex flex-col items-center text-center w-full max-w-xl"
-                        >
-
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
-                                AI Cleanup (optional)
-                            </h2>
-                            <p className="text-sm text-content-muted mb-6">
-                                Let an LLM tidy transcriptions before delivery. You can adjust later in Settings.
-                            </p>
-
-                            <div className="w-full rounded-2xl border border-border-primary bg-surface-tertiary p-4 space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.25)] text-left">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-elevated border border-border-primary">
-                                            <Wand2 size={14} className="text-content-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="text-[13px] font-medium text-content-primary">AI Cleanup</p>
-                                            <p className="text-[11px] text-content-muted">Uses an LLM to polish text</p>
-                                        </div>
-                                    </div>
-                                    <motion.button
-                                        onClick={() => setLlmCleanupEnabled(!llmCleanupEnabled)}
-                                        className={`relative w-11 h-6 rounded-full transition-colors ${llmCleanupEnabled ? "bg-amber-400" : "bg-border-secondary"}`}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        <motion.div
-                                            className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm"
-                                            animate={{ left: llmCleanupEnabled ? "calc(100% - 22px)" : "2px" }}
-                                            transition={{ type: "spring", stiffness: 500, damping: 32 }}
-                                        />
-                                    </motion.button>
-                                </div>
-
-<div className="space-y-2">
-                                                    <div className="space-y-1.5">
-                                                        <label className="text-[11px] font-medium text-content-muted ml-1">Provider</label>
-                                                        <Dropdown
-                                                            value={llmProvider}
-                                                            onChange={(val) => {
-                                                                setLlmProvider(val);
-                                                                const preset = getProviderPreset(val);
-                                                                if (preset) {
-                                                                    setLlmEndpoint(preset.endpoint);
-                                                                    setLlmModel(preset.defaultModel);
-                                                                }
-                                                            }}
-                                                            options={[
-                                                                { value: "custom" as LlmProvider, label: "Custom" },
-                                                                { value: "_local_header" as LlmProvider, label: "Local", isHeader: true },
-                                                                ...LOCAL_PROVIDERS.filter(p => p.id !== "custom").map(p => ({
-                                                                    value: p.id,
-                                                                    label: p.label
-                                                                })),
-                                                                { value: "_cloud_header" as LlmProvider, label: "Cloud (API Key)", isHeader: true },
-                                                                ...CLOUD_PROVIDERS.map(p => ({
-                                                                    value: p.id,
-                                                                    label: p.label
-                                                                }))
-                                                            ]}
-                                                            placeholder="Select provider..."
-                                                            searchable
-                                                            searchPlaceholder="Search providers..."
-                                                        />
-                                                    </div>
-
-                                                    {llmProvider && (
-                                                        <>
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                                    <Server size={10} />
-                                                                    Endpoint {llmProvider !== "custom" && <span className="text-content-disabled">(auto-filled)</span>}
-                                                                </label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={llmEndpoint}
-                                                                    onChange={(e) => setLlmEndpoint(e.target.value)}
-                                                                    placeholder={getProviderPreset(llmProvider)?.endpoint ?? "https://your-llm-endpoint.com"}
-                                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                                />
-                                                            </div>
-
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                                    <Key size={10} />
-                                                                    API Key {!getProviderPreset(llmProvider)?.apiKeyRequired && <span className="text-content-disabled">(if required)</span>}
-                                                                </label>
-                                                                <input
-                                                                    type="password"
-                                                                    value={llmApiKey}
-                                                                    onChange={(e) => setLlmApiKey(e.target.value)}
-                                                                    placeholder={getProviderPreset(llmProvider)?.apiKeyRequired ? "Required" : "Optional"}
-                                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                                />
-                                                            </div>
-
-                                                            <div className="space-y-1.5">
-                                                                <label className="text-[11px] font-medium text-content-muted ml-1 flex items-center gap-1.5">
-                                                                    <Cpu size={10} />
-                                                                    Model <span className="text-content-disabled">(leave empty for default)</span>
-                                                                </label>
-                                                                <input
-                                                                    type="text"
-                                                                    value={llmModel}
-                                                                    onChange={(e) => setLlmModel(e.target.value)}
-                                                                    placeholder={getProviderPreset(llmProvider)?.defaultModel ?? "model-name"}
-                                                                    className="w-full rounded-lg bg-surface-elevated border border-border-secondary py-2 px-3 text-[12px] text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
-                                                                />
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                            </div>
-
-                            <button
-                                onClick={goToNextStep}
-                                className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 text-sm font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
-                            >
-                                Continue
-                            </button>
                         </motion.div>
                     )}
 
                     {step === "local-signin" && (
                         <motion.div
                             key="local-signin"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
+                            {...stepMotionProps}
+                            initial="enter"
                             className="flex flex-col items-center text-center w-full max-w-sm"
                         >
                             <div className="mb-4 rounded-2xl bg-local/10 p-4">
@@ -1171,14 +1032,12 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
                             <button
                                 type="button"
-                                onClick={() => {
-                                    skippedFrom.current = "local-signin";
-                                    setStep("microphone");
-                                }}
+                                onClick={goToNextStep}
                                 className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-white transition-colors"
                             >
                                 Continue
                             </button>
+
                         </motion.div>
                     )}
 
@@ -1186,10 +1045,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
                         <motion.div
                             key="microphone"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
+                            {...stepMotionProps}
+                            initial="enter"
                             className="flex flex-col items-center text-center max-w-sm"
                         >
                             <div className="mb-5">
@@ -1239,10 +1096,8 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                     {step === "accessibility" && (
                         <motion.div
                             key="accessibility"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
+                            {...stepMotionProps}
+                            initial="enter"
                             className="flex flex-col items-center text-center max-w-sm"
                         >
                             <div className="mb-5">
@@ -1285,24 +1140,20 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 </button>
                             )}
 
-                            {!accessibilityPermission && (
-                                <button
-                                    onClick={goToNextStep}
-                                    className="mt-3 text-xs text-content-disabled hover:text-content-muted transition-colors"
-                                >
-                                    Skip
-                                </button>
-                            )}
+                            <button
+                                onClick={goToNextStep}
+                                className="mt-3 text-xs text-content-muted hover:text-content-muted transition-colors"
+                            >
+                                Skip
+                            </button>
                         </motion.div>
                     )}
 
                     {step === "ready" && (
                         <motion.div
                             key="ready"
-                            initial={{ opacity: 0, y: 16 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -16 }}
-                            transition={{ duration: 0.3 }}
+                            {...stepMotionProps}
+                            initial="enter"
                             className="flex flex-col items-center text-center max-w-md"
                         >
 
@@ -1436,6 +1287,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                     Back
                 </button>
             )}
+
         </div>
     );
 };

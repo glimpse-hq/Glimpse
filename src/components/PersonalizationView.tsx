@@ -1,12 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import DotMatrix from "./DotMatrix";
 import { Dropdown } from "./Dropdown";
 import type { Personality } from "../types";
 
 const normalizeEntry = (value: string) => value.trim();
+const MAX_INSTRUCTIONS_CHARS = 3000;
+const DEFAULT_INSTRUCTIONS_HEIGHT = 128;
+const MIN_INSTRUCTIONS_HEIGHT = Math.round(DEFAULT_INSTRUCTIONS_HEIGHT * 0.8);
+const MAX_INSTRUCTIONS_HEIGHT = Math.round(DEFAULT_INSTRUCTIONS_HEIGHT * 2.5);
+
+const toCodePoints = (value: string) => Array.from(value);
+const countInstructionsChars = (value: string) => toCodePoints(value).length;
+const clampInstructionsText = (value: string) => {
+    const codePoints = toCodePoints(value);
+    if (codePoints.length <= MAX_INSTRUCTIONS_CHARS) {
+        return value;
+    }
+    return codePoints.slice(0, MAX_INSTRUCTIONS_CHARS).join("");
+};
+const clampInstructionsHeight = (value: number) =>
+    Math.min(MAX_INSTRUCTIONS_HEIGHT, Math.max(MIN_INSTRUCTIONS_HEIGHT, value));
 
 const normalizeWebsite = (value: string) => {
     let trimmed = value.trim().toLowerCase();
@@ -59,6 +76,11 @@ type InstalledApp = {
     path: string;
 };
 
+type PendingDeletePersonality = {
+    id: string;
+    name: string;
+};
+
 type PersonalityModalProps = {
     personality: Personality;
     installedApps: InstalledApp[];
@@ -76,6 +98,10 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
     const [websiteInput, setWebsiteInput] = useState("");
     const [websiteError, setWebsiteError] = useState<string | null>(null);
     const [instructionsText, setInstructionsText] = useState("");
+    const [instructionsHeight, setInstructionsHeight] = useState(DEFAULT_INSTRUCTIONS_HEIGHT);
+    const [isResizingInstructions, setIsResizingInstructions] = useState(false);
+    const resizeStartYRef = useRef(0);
+    const resizeStartHeightRef = useRef(DEFAULT_INSTRUCTIONS_HEIGHT);
 
     useEffect(() => {
         setNameDraft(personality.name);
@@ -83,7 +109,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
         setSelectedAppOption(null);
         setWebsiteInput("");
         setWebsiteError(null);
-        setInstructionsText(personality.instructions.join("\n"));
+        setInstructionsText(clampInstructionsText(personality.instructions.join("\n")));
+        setInstructionsHeight(DEFAULT_INSTRUCTIONS_HEIGHT);
     }, [personality.id]);
 
     const commitName = () => {
@@ -164,24 +191,62 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
     };
 
     const parseInstructions = (value: string) => {
-        const seen = new Set<string>();
-        const lines = value
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0)
-            .filter((line) => {
-                const key = line.toLowerCase();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
-            });
-        return lines.slice(0, 64);
+        return value.split(/\r?\n/);
     };
 
     const handleInstructionsChange = (value: string) => {
-        setInstructionsText(value);
-        onUpdate({ instructions: parseInstructions(value) });
+        const nextValue = clampInstructionsText(value);
+        setInstructionsText(nextValue);
+        onUpdate({ instructions: parseInstructions(nextValue) });
     };
+
+    const instructionsCharCount = useMemo(() => countInstructionsChars(instructionsText), [instructionsText]);
+
+    const handleInstructionsResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
+        if (event.button !== 0) {
+            return;
+        }
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        resizeStartYRef.current = event.clientY;
+        resizeStartHeightRef.current = instructionsHeight;
+        setIsResizingInstructions(true);
+    };
+
+    useEffect(() => {
+        if (!isResizingInstructions) {
+            return;
+        }
+
+        const handlePointerMove = (event: PointerEvent) => {
+            const deltaY = event.clientY - resizeStartYRef.current;
+            setInstructionsHeight(clampInstructionsHeight(resizeStartHeightRef.current + deltaY));
+        };
+
+        const handlePointerUp = () => {
+            setIsResizingInstructions(false);
+        };
+
+        const handlePointerCancel = () => {
+            setIsResizingInstructions(false);
+        };
+
+        const handleWindowBlur = () => {
+            setIsResizingInstructions(false);
+        };
+
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", handlePointerUp);
+        window.addEventListener("pointercancel", handlePointerCancel);
+        window.addEventListener("blur", handleWindowBlur);
+
+        return () => {
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+            window.removeEventListener("pointercancel", handlePointerCancel);
+            window.removeEventListener("blur", handleWindowBlur);
+        };
+    }, [isResizingInstructions]);
 
     const handleSaveName = () => {
         commitName();
@@ -254,7 +319,12 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                         </div>
                                     ) : (
                                         <div
-                                            onClick={() => setIsEditingName(true)}
+                                            onClick={() => {
+                                                if (personality.name === "New Mode") {
+                                                    setNameDraft("");
+                                                }
+                                                setIsEditingName(true);
+                                            }}
                                             className="group/title flex items-center gap-2 cursor-pointer"
                                         >
                                             <h2
@@ -289,16 +359,33 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                     </div>
 
                     <div className="flex flex-col gap-4 p-4 flex-1 min-h-0">
-                        <section className="space-y-2">
+                        <section className="space-y-0.5">
                             <p className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Custom instructions</p>
-                            <div className="rounded-xl border border-border-primary bg-surface-surface p-3">
+                            <div className="relative rounded-xl border border-border-primary bg-surface-surface p-2 px-3">
                                 <textarea
                                     value={instructionsText}
                                     onChange={(event) => handleInstructionsChange(event.target.value)}
                                     placeholder="Add custom instructions"
                                     aria-label="Custom instructions"
-                                    className="w-full h-32 resize-none bg-transparent text-[11px] leading-[20px] font-mono text-content-primary placeholder-content-disabled outline-none custom-scrollbar"
+                                    className="w-full resize-none bg-transparent text-[11px] leading-[20px] font-mono text-content-primary placeholder-content-disabled outline-none instructions-scroll"
+                                    style={{ height: `${instructionsHeight}px` }}
                                 />
+                            </div>
+                            <div className="flex items-center justify-end gap-1">
+                                <span className="text-[10px] text-content-disabled tabular-nums">
+                                    {instructionsCharCount}/{MAX_INSTRUCTIONS_CHARS}
+                                </span>
+                                <button
+                                    type="button"
+                                    onPointerDown={handleInstructionsResizeStart}
+                                    className="h-4 w-4 rounded text-content-disabled hover:text-content-primary transition-colors cursor-pointer touch-none"
+                                    aria-label="Resize custom instructions"
+                                    title="Drag to resize"
+                                >
+                                    <svg viewBox="0 0 20 20" className="h-full w-full" aria-hidden="true">
+                                        <path d="M7 13L13 7M9.5 13L13 9.5M12 13L13 12" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+                                    </svg>
+                                </button>
                             </div>
                         </section>
 
@@ -321,7 +408,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                     menuClassName="max-h-[220px]"
                                 />
                                 <div className="relative flex-1 min-h-0">
-                                    <div className="space-y-1 h-full overflow-y-auto custom-scrollbar custom-scrollbar-thin">
+                                    <div className="space-y-1 h-full instructions-scroll pr-2">
                                     {personality.apps.length === 0 ? (
                                         <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 text-[11px] text-content-muted">
                                             No applications selected
@@ -393,7 +480,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                     <p className="text-[10px] text-error">{websiteError}</p>
                                 )}
                                 <div className="relative flex-1 min-h-0">
-                                    <div className="space-y-1 h-full overflow-y-auto custom-scrollbar">
+                                    <div className="space-y-1 h-full instructions-scroll pr-2">
                                     {personality.websites.length === 0 ? (
                                         <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 text-[11px] text-content-muted">
                                             No websites added
@@ -436,6 +523,8 @@ const PersonalizationView = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activePersonalityId, setActivePersonalityId] = useState<string | null>(null);
+    const [shiftHeld, setShiftHeld] = useState(false);
+    const [pendingDeletePersonality, setPendingDeletePersonality] = useState<PendingDeletePersonality | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -458,6 +547,55 @@ const PersonalizationView = () => {
     useEffect(() => {
         load();
     }, [load]);
+
+    useEffect(() => {
+        let cancelled = false;
+        let unlistenFocus: (() => void) | null = null;
+
+        const handleKeyChange = (event: KeyboardEvent) => {
+            setShiftHeld(event.shiftKey);
+        };
+        const handlePointerDown = (event: PointerEvent) => {
+            setShiftHeld(event.shiftKey);
+        };
+        const resetShift = () => setShiftHeld(false);
+        const handleVisibilityChange = () => {
+            if (document.visibilityState !== "visible") {
+                setShiftHeld(false);
+            }
+        };
+
+        getCurrentWindow()
+            .onFocusChanged(() => {
+                setShiftHeld(false);
+            })
+            .then((unlisten) => {
+                if (cancelled) {
+                    unlisten();
+                } else {
+                    unlistenFocus = unlisten;
+                }
+            })
+            .catch(() => {});
+
+        document.addEventListener("keydown", handleKeyChange);
+        document.addEventListener("keyup", handleKeyChange);
+        document.addEventListener("pointerdown", handlePointerDown);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("blur", resetShift);
+        window.addEventListener("focus", resetShift);
+
+        return () => {
+            cancelled = true;
+            document.removeEventListener("keydown", handleKeyChange);
+            document.removeEventListener("keyup", handleKeyChange);
+            document.removeEventListener("pointerdown", handlePointerDown);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("blur", resetShift);
+            window.removeEventListener("focus", resetShift);
+            unlistenFocus?.();
+        };
+    }, []);
 
     const persistPersonalities = useCallback(async (next: Personality[]) => {
         setError(null);
@@ -515,10 +653,23 @@ const PersonalizationView = () => {
         setActivePersonalityId(id);
     };
 
-    const handleDeleteMode = (id: string) => {
+    const handleDeleteMode = useCallback((id: string) => {
         updatePersonalities((prev) => prev.filter((mode) => mode.id !== id));
         setActivePersonalityId(null);
-    };
+    }, [updatePersonalities]);
+
+    const requestDeleteModeConfirm = useCallback((personality: Personality) => {
+        setPendingDeletePersonality({ id: personality.id, name: personality.name });
+    }, []);
+
+    const confirmDeleteMode = useCallback(() => {
+        if (!pendingDeletePersonality) {
+            return;
+        }
+        const targetId = pendingDeletePersonality.id;
+        setPendingDeletePersonality(null);
+        handleDeleteMode(targetId);
+    }, [pendingDeletePersonality, handleDeleteMode]);
 
     const activePersonality = useMemo(() => {
         return personalities.find((personality) => personality.id === activePersonalityId) || null;
@@ -588,18 +739,32 @@ const PersonalizationView = () => {
                         const moreApps = Math.max(0, personality.apps.length - appsPreview.length);
                         const moreSites = Math.max(0, personality.websites.length - sitesPreview.length);
                         return (
-                                <div
+                            <div
                                 key={personality.id}
-                                onClick={() => setActivePersonalityId(personality.id)}
+                                onClick={() => {
+                                    if (shiftHeld) {
+                                        requestDeleteModeConfirm(personality);
+                                        return;
+                                    }
+                                    setActivePersonalityId(personality.id);
+                                }}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter" || e.key === " ") {
                                         e.preventDefault();
+                                        if (shiftHeld) {
+                                            requestDeleteModeConfirm(personality);
+                                            return;
+                                        }
                                         setActivePersonalityId(personality.id);
                                     }
                                 }}
                                 role="button"
                                 tabIndex={0}
-                                className="group relative rounded-xl border border-border-primary bg-surface-secondary p-2.5 text-left transition-colors hover:bg-surface-tertiary cursor-pointer"
+                                className={`group relative rounded-xl border bg-surface-secondary p-2.5 text-left transition-colors cursor-pointer ${
+                                    shiftHeld
+                                        ? "border-red-500/30 hover:border-red-500/60 hover:bg-red-500/5"
+                                        : "border-border-primary hover:bg-surface-tertiary"
+                                }`}
                             >
                                 <div className="relative space-y-2">
                                     <div className="flex items-start justify-between gap-3">
@@ -701,9 +866,57 @@ const PersonalizationView = () => {
                     onClose={() => setActivePersonalityId(null)}
                     onUpdate={(patch) => updatePersonality(activePersonality.id, patch)}
                     onUpdateList={(updater) => updatePersonalityList(activePersonality.id, updater)}
-                    onDelete={() => handleDeleteMode(activePersonality.id)}
+                    onDelete={() => requestDeleteModeConfirm(activePersonality)}
                 />
             )}
+
+            <AnimatePresence>
+                {pendingDeletePersonality && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                        onClick={() => setPendingDeletePersonality(null)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.96, y: 14 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.96, y: 14 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            onClick={(event) => event.stopPropagation()}
+                            className="w-[380px] max-w-[92vw] rounded-2xl border border-border-secondary bg-surface-overlay p-5 shadow-2xl"
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="delete-mode-title"
+                        >
+                            <h3 id="delete-mode-title" className="text-[15px] font-semibold text-content-primary">
+                                Delete mode?
+                            </h3>
+                            <p className="mt-2 text-[12px] text-content-secondary">
+                                Delete <span className="font-semibold text-content-primary">"{pendingDeletePersonality.name}"</span>? This cannot be undone.
+                            </p>
+                            <div className="mt-4 flex items-center justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingDeletePersonality(null)}
+                                    className="rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 text-[11px] text-content-primary hover:bg-surface-elevated transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmDeleteMode}
+                                    className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/15 transition-colors"
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
         </div>
     );

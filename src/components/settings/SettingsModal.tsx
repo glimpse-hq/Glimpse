@@ -1,18 +1,24 @@
-import { useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { motion, AnimatePresence } from "framer-motion";
 import { checkAccessibilityPermission, checkMicrophonePermission } from "tauri-plugin-macos-permissions-api";
-import { Bug, Cpu, Info, Keyboard, Mail, Sliders, User, X } from "lucide-react";
+import { Cpu, Info, Keyboard, Sliders, User, X } from "lucide-react";
 import FAQModal from "../FAQModal";
 import WhatsNewModal from "./WhatsNewModal";
 import AboutTab from "./tabs/AboutTab";
 import AccountTab from "./tabs/AccountTab";
 import AdvancedTab from "./tabs/AdvancedTab";
-import DeveloperTab from "./tabs/DeveloperTab";
 import GeneralTab from "./tabs/GeneralTab";
 import ModelsTab from "./tabs/ModelsTab";
-import { logout, createAccount, type User as AppwriteUser } from "../../lib/auth";
+import { logout, type User as AuthUser } from "../../lib/auth";
+import {
+    buildTranscriptionLanguageView,
+    getActiveTranscriptionEngine,
+    getCatalogTranscriptionEngines,
+    getInstalledTranscriptionEngines,
+    type TranscriptionEngineId,
+} from "../../lib/transcriptionLanguages";
 import type {
     TranscriptionMode,
     StoredSettings,
@@ -27,26 +33,11 @@ import type {
 
 const modifierOrder = ["Control", "Shift", "Alt", "Command"];
 
-const languages = [
-    { code: "", name: "Auto" },
-    { code: "en", name: "English" },
-    { code: "es", name: "Spanish" },
-    { code: "fr", name: "French" },
-    { code: "de", name: "German" },
-    { code: "it", name: "Italian" },
-    { code: "pt", name: "Portuguese" },
-    { code: "nl", name: "Dutch" },
-    { code: "ru", name: "Russian" },
-    { code: "zh", name: "Chinese" },
-    { code: "ja", name: "Japanese" },
-    { code: "ko", name: "Korean" },
-];
-
 interface SettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
     initialTab?: "general" | "account" | "models" | "about";
-    currentUser: AppwriteUser | null;
+    currentUser: AuthUser | null;
     onUpdateUser: () => Promise<void>;
     transcriptionMode: TranscriptionMode;
 }
@@ -75,13 +66,12 @@ const SettingsModal = ({
     const [downloadState, setDownloadState] = useState<Record<string, DownloadEvent>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [authErrorCopied, setAuthErrorCopied] = useState(false);
     const [errorCopied, setErrorCopied] = useState(false);
     const [captureActive, setCaptureActive] = useState<"smart" | "hold" | "toggle" | null>(null);
     const [capturePreview, setCapturePreview] = useState<string>("");
     const pressedModifiers = useRef<Set<string>>(new Set());
     const primaryKey = useRef<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"general" | "models" | "about" | "account" | "advanced" | "developer">("general");
+    const [activeTab, setActiveTab] = useState<"general" | "models" | "about" | "account" | "advanced">("general");
     const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
     const [llmCleanupEnabled, setLlmCleanupEnabled] = useState(false);
     const [llmProvider, setLlmProvider] = useState<LlmProvider>("custom");
@@ -92,21 +82,36 @@ const SettingsModal = ({
     const [editModeEnabled, setEditModeEnabled] = useState(false);
 
     const [authLoading, setAuthLoading] = useState(false);
-    const [authError, setAuthError] = useState<string | null>(null);
-    const [showEmailForm, setShowEmailForm] = useState(false);
     const [showFAQModal, setShowFAQModal] = useState(false);
-    const [showNewAccountConfirm, setShowNewAccountConfirm] = useState(false);
-    const [pendingAuth, setPendingAuth] = useState<{ email: string; password: string } | null>(null);
     const [micPermission, setMicPermission] = useState<boolean | null>(null);
     const [accessibilityPermission, setAccessibilityPermission] = useState<boolean | null>(null);
-    const [authEmail, setAuthEmail] = useState("");
-    const [authPassword, setAuthPassword] = useState("");
-    const [authShowPassword, setAuthShowPassword] = useState(false);
     const [whatsNewOpen, setWhatsNewOpen] = useState(false);
     const didHydrateRef = useRef(false);
 
     const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
-    const isDeveloper = currentUser?.labels?.includes("dev") ?? false;
+    const activeTranscriptionEngine = useMemo(
+        () => getActiveTranscriptionEngine(modelCatalog, localModel),
+        [modelCatalog, localModel]
+    );
+    const installedTranscriptionEngines = useMemo(
+        () => getInstalledTranscriptionEngines(modelCatalog, modelStatus),
+        [modelCatalog, modelStatus]
+    );
+    const catalogTranscriptionEngines = useMemo(
+        () => getCatalogTranscriptionEngines(modelCatalog),
+        [modelCatalog]
+    );
+    const visibleTranscriptionEngines: TranscriptionEngineId[] = useMemo(() => {
+        if (installedTranscriptionEngines.length > 0) return installedTranscriptionEngines;
+        if (activeTranscriptionEngine) return [activeTranscriptionEngine];
+        if (catalogTranscriptionEngines.length > 0) return [catalogTranscriptionEngines[0]];
+        return [];
+    }, [installedTranscriptionEngines, activeTranscriptionEngine, catalogTranscriptionEngines]);
+    const showLanguageSupportBadges = installedTranscriptionEngines.length > 1;
+    const languageView = useMemo(
+        () => buildTranscriptionLanguageView(modelCatalog, activeTranscriptionEngine, visibleTranscriptionEngines),
+        [modelCatalog, activeTranscriptionEngine, visibleTranscriptionEngines]
+    );
 
     const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {
         const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
@@ -309,7 +314,7 @@ const SettingsModal = ({
             await logout();
             await onUpdateUser();
         } catch (err) {
-            setAuthError(err instanceof Error ? err.message : "Sign out failed");
+            console.error("Sign out failed:", err);
         } finally {
             setAuthLoading(false);
         }
@@ -317,8 +322,6 @@ const SettingsModal = ({
 
     const handleCancelAuth = () => {
         setAuthLoading(false);
-        setAuthError(null);
-        setShowEmailForm(false);
     };
 
     const fetchAvailableModels = useCallback(async () => {
@@ -744,18 +747,6 @@ const SettingsModal = ({
                                     )}
                                 </AnimatePresence>
 
-                                {isDeveloper && (
-                                    <div className="space-y-1">
-                                        <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-red-400/60">Developer</p>
-                                        <ModalNavItem
-                                            icon={<Bug size={14} aria-hidden="true" />}
-                                            label="Debug"
-                                            active={activeTab === "developer"}
-                                            onClick={() => setActiveTab("developer")}
-                                        />
-                                    </div>
-                                )}
-
                             </nav>
                         </aside>
 
@@ -765,9 +756,6 @@ const SettingsModal = ({
                                     {activeTab === "account" && (
                                         <AccountTab
                                             variants={tabContentVariants}
-                                            authError={authError}
-                                            authErrorCopied={authErrorCopied}
-                                            setAuthErrorCopied={setAuthErrorCopied}
                                             authLoading={authLoading}
                                             currentUser={currentUser}
                                             cloudSyncEnabled={cloudSyncEnabled}
@@ -775,18 +763,6 @@ const SettingsModal = ({
                                             onUpdateUser={onUpdateUser}
                                             handleSignOut={handleSignOut}
                                             handleCancelAuth={handleCancelAuth}
-                                            showEmailForm={showEmailForm}
-                                            setShowEmailForm={setShowEmailForm}
-                                            authEmail={authEmail}
-                                            setAuthEmail={setAuthEmail}
-                                            authPassword={authPassword}
-                                            setAuthPassword={setAuthPassword}
-                                            authShowPassword={authShowPassword}
-                                            setAuthShowPassword={setAuthShowPassword}
-                                            setAuthError={setAuthError}
-                                            setAuthLoading={setAuthLoading}
-                                            setPendingAuth={setPendingAuth}
-                                            setShowNewAccountConfirm={setShowNewAccountConfirm}
                                         />
                                     )}
 
@@ -805,7 +781,9 @@ const SettingsModal = ({
                                             onMicrophoneDeviceChange={setMicrophoneDevice}
                                             language={language}
                                             onLanguageChange={setLanguage}
-                                            languages={languages}
+                                            languages={languageView.options}
+                                            languageBadgeColumns={languageView.badgeColumns}
+                                            showLanguageSupportBadges={showLanguageSupportBadges}
                                             smartShortcut={smartShortcut}
                                             smartEnabled={smartEnabled}
                                             setSmartEnabled={setSmartEnabled}
@@ -871,10 +849,6 @@ const SettingsModal = ({
                                             onOpenFAQ={() => setShowFAQModal(true)}
                                         />
                                     )}
-
-                                    {activeTab === "developer" && isDeveloper && (
-                                        <DeveloperTab />
-                                    )}
                                 </AnimatePresence>
                             </div>
                         </main>
@@ -884,67 +858,6 @@ const SettingsModal = ({
 
             <FAQModal isOpen={showFAQModal} onClose={() => setShowFAQModal(false)} />
             <WhatsNewModal isOpen={whatsNewOpen} onClose={() => setWhatsNewOpen(false)} />
-
-            <AnimatePresence>
-                {showNewAccountConfirm && pendingAuth && (
-                    <motion.div
-                        key="new-account-confirm"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm px-6"
-                        onClick={() => setShowNewAccountConfirm(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.96, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.96, opacity: 0 }}
-                            transition={{ duration: 0.18 }}
-                            className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center gap-3 mb-3">
-                                <Mail size={20} className="text-cloud shrink-0" />
-                                <div>
-                                    <p className="text-[14px] font-semibold text-content-primary">Create new account?</p>
-                                    <p className="text-[11px] text-content-disabled">No account found for <span className="text-content-muted">{pendingAuth.email}</span>. Would you like to create a new account?</p>
-                                </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                                <button
-                                    onClick={() => {
-                                        setShowNewAccountConfirm(false);
-                                        setPendingAuth(null);
-                                    }}
-                                    className="rounded-lg border border-border-secondary px-4 py-2 text-[12px] font-medium text-content-secondary hover:border-border-hover transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        setShowNewAccountConfirm(false);
-                                        setAuthLoading(true);
-                                        try {
-                                            await createAccount(pendingAuth.email, pendingAuth.password);
-                                            await onUpdateUser();
-                                            setShowEmailForm(false);
-                                            setPendingAuth(null);
-                                        } catch (err) {
-                                            setAuthError(err instanceof Error ? err.message : "Failed to create account");
-                                            setPendingAuth(null);
-                                        } finally {
-                                            setAuthLoading(false);
-                                        }
-                                    }}
-                                    className="rounded-lg bg-cloud px-4 py-2 text-[12px] font-semibold text-black hover:bg-cloud-light transition-colors"
-                                >
-                                    Create Account
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </AnimatePresence>
     );
 

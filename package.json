@@ -1,7 +1,7 @@
 {
   "name": "glimpse",
   "private": true,
-  "version": "0.6.3",
+  "version": "0.6.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,6 @@
     "@tauri-apps/plugin-opener": "^2.5.2",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "^2.9.0",
-    "appwrite": "^21.5.0",
     "framer-motion": "^12.23.24",
     "howler": "^2.2.4",
     "lucide-react": "^0.554.0",

@@ -6,7 +6,6 @@ import ToastOverlay from "./ToastOverlay";
 import Home from "./Home";
 import Onboarding from "./Onboarding";
 import { AuthProvider } from "./hooks/useAuth";
-import { useCloudCredentials } from "./hooks/useCloudCredentials";
 import type { StoredSettings, AppInfo } from "./types";
 import "./App.css";
 
@@ -16,8 +15,6 @@ function App() {
   const [windowLabel, setWindowLabel] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useCloudCredentials();
 
   useEffect(() => {
     const win = getCurrentWindow();

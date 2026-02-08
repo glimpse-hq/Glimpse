@@ -1,32 +1,17 @@
 import { motion, type Variants } from "framer-motion";
 import { Lock, Loader2 } from "lucide-react";
 import AccountView from "../AccountView";
-import type { User as AppwriteUser } from "../../../lib/auth";
+import type { User as AuthUser } from "../../../lib/auth";
 
 type AccountTabProps = {
     variants: Variants;
-    authError: string | null;
-    authErrorCopied: boolean;
-    setAuthErrorCopied: (value: boolean) => void;
     authLoading: boolean;
-    currentUser: AppwriteUser | null;
+    currentUser: AuthUser | null;
     cloudSyncEnabled: boolean;
     setCloudSyncEnabled: (value: boolean) => void;
     onUpdateUser: () => Promise<void>;
     handleSignOut: () => Promise<void>;
     handleCancelAuth: () => void;
-    showEmailForm: boolean;
-    setShowEmailForm: (value: boolean) => void;
-    authEmail: string;
-    setAuthEmail: (value: string) => void;
-    authPassword: string;
-    setAuthPassword: (value: string) => void;
-    authShowPassword: boolean;
-    setAuthShowPassword: (value: boolean) => void;
-    setAuthError: (value: string | null) => void;
-    setAuthLoading: (value: boolean) => void;
-    setPendingAuth: (value: { email: string; password: string } | null) => void;
-    setShowNewAccountConfirm: (value: boolean) => void;
 };
 
 const AccountTab = ({
