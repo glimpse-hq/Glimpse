@@ -1,14 +1,154 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, ArrowRight, BookOpen, Edit3, Loader2, Plus, Replace, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, BookOpen, Edit3, Loader2, Plus, Replace, Trash2, Upload, X, FileText } from "lucide-react";
 import DotMatrix from "./DotMatrix";
 import type { StoredSettings, ModelInfo, Replacement } from "../types";
 
 type ActivePage = "dictionary" | "replacements";
 
 const normalizeEntry = (value: string) => value.trim();
+
+interface ImportModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onImport: (text: string) => void;
+    type: ActivePage;
+}
+
+const ImportModal = ({ isOpen, onClose, onImport, type }: ImportModalProps) => {
+    const [text, setText] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Reset text when modal opens
+    useEffect(() => {
+        if (isOpen) setText("");
+    }, [isOpen]);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const content = await file.text();
+            setText(content);
+        }
+    };
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+                    onClick={onClose}
+                    role="dialog"
+                    aria-modal="true"
+                    // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+                >
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="relative bg-surface-secondary border border-border-primary rounded-2xl overflow-hidden max-w-lg w-full mx-4 shadow-2xl flex flex-col max-h-[85vh]"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-5 border-b border-border-primary shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-surface-tertiary">
+                                    <Upload size={16} className="text-accent" />
+                                </div>
+                                <div>
+                                    <h2 className="text-[15px] font-semibold text-content-primary">
+                                        Import {type === "dictionary" ? "Dictionary" : "Replacements"}
+                                    </h2>
+                                    <p className="text-[11px] text-content-muted">
+                                        {type === "dictionary" 
+                                            ? "Paste words or upload a CSV (one word per line)" 
+                                            : "Paste pairs or upload a CSV (word,replacement)"}
+                                    </p>
+                                </div>
+                            </div>
+                            <button type="button" onClick={onClose} className="p-2 rounded-lg hover:bg-surface-elevated text-content-muted hover:text-content-primary transition-colors">
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-4">
+                            {/* Upload Button */}
+                            <button
+                                type="button"
+                                className="relative w-full rounded-xl border-2 border-dashed border-border-primary bg-surface-tertiary hover:border-border-secondary transition-all duration-200 p-6 flex flex-col items-center justify-center gap-2 text-center cursor-pointer group"
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept=".csv,.txt"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                                <div className="p-3 rounded-full bg-surface-elevated transition-transform duration-200 group-hover:scale-110">
+                                    <FileText size={24} className="text-content-secondary" />
+                                </div>
+                                <div>
+                                    <p className="text-[13px] font-medium text-content-primary">
+                                        Click to upload CSV
+                                    </p>
+                                    <p className="text-[11px] text-content-muted mt-0.5">
+                                        Supported formats: CSV, TXT
+                                    </p>
+                                </div>
+                            </button>
+
+                            <div className="flex items-center gap-3">
+                                <div className="h-px flex-1 bg-border-primary" />
+                                <span className="text-[11px] text-content-muted uppercase tracking-wider font-medium">Or paste text</span>
+                                <div className="h-px flex-1 bg-border-primary" />
+                            </div>
+
+                            <textarea
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                placeholder={type === "dictionary" 
+                                    ? "Apple\nBanana\nCherry..." 
+                                    : "teh,the\nwont,won't..."}
+                                className="flex-1 min-h-[150px] p-3 rounded-xl bg-surface-tertiary border border-border-primary text-[13px] text-content-primary font-mono resize-none focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 placeholder:text-content-disabled"
+                            />
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 border-t border-border-primary bg-surface-primary flex justify-end gap-3 shrink-0">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 rounded-lg text-[13px] font-medium text-content-secondary hover:bg-surface-elevated transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onImport(text);
+                                    onClose();
+                                }}
+                                disabled={!text.trim()}
+                                className="px-4 py-2 rounded-lg bg-accent text-[13px] font-medium text-white hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm shadow-accent/20"
+                            >
+                                Import
+                            </button>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
 
 const PageSwitcher = ({
     activePage,
@@ -26,6 +166,7 @@ const PageSwitcher = ({
         <div className="flex items-center justify-center gap-2 mb-6 -mt-12">
             {pages.map((page) => (
                 <button
+                    type="button"
                     key={page.key}
                     onClick={() => onPageChange(page.key)}
                     className="flex items-center gap-2 group"
@@ -75,6 +216,7 @@ const DictionaryView = () => {
     const [error, setError] = useState<string | null>(null);
     const [settings, setSettings] = useState<StoredSettings | null>(null);
     const [models, setModels] = useState<ModelInfo[]>([]);
+    const [showImportModal, setShowImportModal] = useState(false);
 
     const searchQuery = newEntry.trim().toLowerCase();
     const filteredEntries = searchQuery
@@ -224,6 +366,47 @@ const DictionaryView = () => {
         setEditingTo(replacements[idx].to);
     };
 
+    const handleImport = async (text: string) => {
+        setLoading(true);
+        try {
+            const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+
+            if (activePage === "dictionary") {
+                const newWords = lines
+                    .map((line) => line.split(",")[0].trim())
+                    .filter((word) => word.length > 0);
+                
+                // Merge and deduplicate
+                const uniqueEntries = Array.from(new Set([...entries, ...newWords]));
+                await persistEntries(uniqueEntries);
+            } else {
+                const newReplacements = lines
+                    .map((line) => {
+                        const parts = line.split(",");
+                        if (parts.length < 2) return null;
+                        return {
+                            from: parts[0].trim(),
+                            to: parts[1].trim(),
+                        };
+                    })
+                    .filter((r): r is Replacement => r !== null && r.from.length > 0);
+
+                // Merge (filtering duplicates by 'from' key)
+                const existingFroms = new Set(replacements.map((r) => r.from.toLowerCase()));
+                const uniqueNewReplacements = newReplacements.filter(
+                    (r) => !existingFroms.has(r.from.toLowerCase())
+                );
+                
+                await persistReplacements([...replacements, ...uniqueNewReplacements]);
+            }
+        } catch (err) {
+            console.error("Failed to parse CSV", err);
+            setError("Failed to parse import data");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const currentModel = models.find((m) => m.key === settings?.local_model);
     const isLocal = settings?.transcription_mode === "local";
     const isWhisper =
@@ -232,7 +415,14 @@ const DictionaryView = () => {
     const showWarning = Boolean(isLocal && currentModel && !isWhisper);
 
     return (
-        <div className="w-full text-left">
+        <div className="w-full text-left relative">
+            <ImportModal 
+                isOpen={showImportModal} 
+                onClose={() => setShowImportModal(false)} 
+                onImport={handleImport}
+                type={activePage}
+            />
+
             <PageSwitcher activePage={activePage} onPageChange={setActivePage} />
 
             <AnimatePresence mode="wait" initial={false}>
@@ -289,11 +479,22 @@ const DictionaryView = () => {
                                     className="flex-1 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
                                 {isSearching && entries.length > 0 && (
-                                    <span className="text-[12px] text-content-muted whitespace-nowrap" role="status">
+                                    <output className="text-[12px] text-content-muted whitespace-nowrap">
                                         {filteredEntries.length} of {entries.length}
-                                    </span>
+                                    </output>
                                 )}
+                                <div className="h-4 w-px bg-border-primary mx-1" />
                                 <button
+                                    type="button"
+                                    onClick={() => setShowImportModal(true)}
+                                    className="p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
+                                    title="Import CSV"
+                                    aria-label="Import CSV"
+                                >
+                                    <Upload size={14} />
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={handleAdd}
                                     disabled={!newEntry.trim() || saving || entries.includes(newEntry.trim())}
                                     className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[13px] text-content-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors"
@@ -338,18 +539,17 @@ const DictionaryView = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        {filteredEntries.map((entry, filteredIndex) => {
+                                        {filteredEntries.map((entry) => {
                                             const originalIndex = entries.indexOf(entry);
                                             return (
                                                     <div
-                                                        key={`${entry}-${originalIndex}-${filteredIndex}`}
+                                                        key={entry}
                                                         className="group flex items-center gap-3 border-b border-border-primary px-4 py-2 last:border-none min-h-[64px]"
                                                     >
                                                     {editingIndex === originalIndex ? (
                                                         <input
                                                             value={editingValue}
                                                             onChange={(e) => setEditingValue(e.target.value)}
-                                                            autoFocus
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter") {
                                                                     e.preventDefault();
@@ -365,6 +565,7 @@ const DictionaryView = () => {
                                                         />
                                                     ) : (
                                                         <button
+                                                            type="button"
                                                             onClick={() => startEditing(originalIndex)}
                                                             className="flex-1 min-w-0 text-left"
                                                         >
@@ -383,6 +584,7 @@ const DictionaryView = () => {
                                                                     Click to edit
                                                                 </div>
                                                                 <button
+                                                                    type="button"
                                                                     onClick={() => startEditing(originalIndex)}
                                                                     className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
                                                                     title="Edit"
@@ -393,6 +595,7 @@ const DictionaryView = () => {
                                                             </>
                                                         )}
                                                         <button
+                                                            type="button"
                                                             onClick={() => handleDelete(originalIndex)}
                                                             className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
                                                             title="Delete"
@@ -471,7 +674,18 @@ const DictionaryView = () => {
                                     aria-label="Replace with"
                                     className="flex-1 min-w-0 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
+                                <div className="h-4 w-px bg-border-primary mx-1" />
                                 <button
+                                    type="button"
+                                    onClick={() => setShowImportModal(true)}
+                                    className="p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors shrink-0"
+                                    title="Import CSV"
+                                    aria-label="Import CSV"
+                                >
+                                    <Upload size={14} />
+                                </button>
+                                <button
+                                    type="button"
                                     onClick={handleAddReplacement}
                                     disabled={
                                         !newFrom.trim() ||
@@ -511,7 +725,7 @@ const DictionaryView = () => {
                                     <AnimatePresence mode="popLayout">
                                         {replacements.map((replacement, idx) => (
                                             <motion.div
-                                                key={`${replacement.from}-${idx}`}
+                                                key={replacement.from}
                                                 layout="position"
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
@@ -524,7 +738,6 @@ const DictionaryView = () => {
                                                         <input
                                                             value={editingFrom}
                                                             onChange={(e) => setEditingFrom(e.target.value)}
-                                                            autoFocus
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter") {
                                                                     e.preventDefault();
@@ -570,6 +783,7 @@ const DictionaryView = () => {
                                                     </div>
                                                 ) : (
                                                     <button
+                                                        type="button"
                                                         onClick={() => startEditingReplacement(idx)}
                                                         className="flex flex-1 items-center gap-2 text-left"
                                                     >
@@ -588,6 +802,7 @@ const DictionaryView = () => {
                                                         </div>
                                                     ) : (
                                                     <button
+                                                        type="button"
                                                         onClick={() => startEditingReplacement(idx)}
                                                         className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
                                                         title="Edit"
@@ -597,6 +812,7 @@ const DictionaryView = () => {
                                                     </button>
                                                 )}
                                                 <button
+                                                    type="button"
                                                     onClick={() => handleDeleteReplacement(idx)}
                                                     className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
                                                     title="Delete"
