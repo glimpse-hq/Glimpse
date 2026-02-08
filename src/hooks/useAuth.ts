@@ -55,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
+        mountedRef.current = true;
         refresh();
         return () => {
             mountedRef.current = false;

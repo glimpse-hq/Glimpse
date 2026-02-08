@@ -805,7 +805,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             <DotMatrix rows={6} cols={18} activeDots={[1, 5, 9, 13, 17, 21, 25, 29, 33, 37, 41, 45, 49, 53, 57, 61, 65]} dotSize={2} gap={4} color="var(--color-border-primary)" />
                                         </div>
                                     </div>
-                                    {localModelChoice === WHISPER_KEY && (
+                                    {isWhisperActive && (
                                         <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 text-[8px] font-semibold uppercase tracking-wider text-amber-400">
                                             Active
                                         </p>
@@ -913,7 +913,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                         }`}
                                 >
                                     <div className="absolute inset-0 pointer-events-none" />
-                                    {localModelChoice === PARAKEET_KEY && (
+                                    {isParakeetActive && (
                                         <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 text-[8px] font-semibold uppercase tracking-wider text-amber-400">
                                             Active
                                         </p>
