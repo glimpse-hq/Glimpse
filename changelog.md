@@ -1,3 +1,19 @@
+0.6.5
+
+### Features
+
+- Added the ability to change text size. (Advanced settings)
+
+- Change the backend hotkey manager to allow for more hotkey combinations instead of modifier key plus key. Support for fn/globe key is still in the works.
+
+
+### Changes
+
+- Gently reorganized some text and sizing elements.
+
+---
+
+
 0.6.4
 
 
