@@ -38,7 +38,7 @@ Pre-built releases are available on the [Releases page](https://github.com/Legen
 - [ ] Temporary mode: transcribe without saving
 - [x] Built-in updater
 - [ ] App localization via lingui
-- [x] Personalization & per app context: per-app writing styles (email, messaging, etc.)
+- [x] Personalization & per-app context: per-app writing styles (email, messaging, etc.)
 - [x] Edit mode: rewrite whats selected text with full context
 - [x] Transcribe audio and video files
 - [ ] Ask mode: query what's on your screen
