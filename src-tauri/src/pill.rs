@@ -653,32 +653,9 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
         })?;
     }
 
-    let hold_keys: std::collections::HashSet<&str> = settings
-        .hold_shortcut
-        .split('+')
-        .map(|s| s.trim())
-        .collect();
-    let toggle_keys: std::collections::HashSet<&str> = settings
-        .toggle_shortcut
-        .split('+')
-        .map(|s| s.trim())
-        .collect();
-    let hold_is_subset_of_toggle =
-        settings.hold_enabled && settings.toggle_enabled && hold_keys.is_subset(&toggle_keys);
-
     if settings.hold_enabled {
         let hold_shortcut = settings.hold_shortcut.clone();
-        let check_toggle_overlap = hold_is_subset_of_toggle;
-        let toggle_shortcut_clone = settings.toggle_shortcut.clone();
-
         provider.on_shortcut(hold_shortcut.as_str(), move |app, event| {
-            if check_toggle_overlap {
-                let pressed_shortcut = event.shortcut;
-                if pressed_shortcut.to_lowercase() == toggle_shortcut_clone.to_lowercase() {
-                    return;
-                }
-            }
-
             let state = app.state::<AppState>();
             let pill = state.pill();
             match event.state {

@@ -10,7 +10,7 @@
     "settings"
   ],
   "permissions": [
-    "global-shortcut:default",
+    "user-input:default",
     "updater:default",
     "process:allow-restart",
     "aptabase:allow-track-event"

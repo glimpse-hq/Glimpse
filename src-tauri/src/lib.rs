@@ -105,6 +105,11 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
+    platform::windows::menu::handle_menu_event(app, id);
+}
+
 #[cfg(target_os = "macos")]
 fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::TranscriptionMode) {
     let state = app.state::<AppState>();
@@ -205,6 +210,14 @@ pub(crate) fn set_app_menu(
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+pub(crate) fn set_app_menu(
+    app: &AppHandle<AppRuntime>,
+    settings: &settings::UserSettings,
+) -> tauri::Result<()> {
+    platform::windows::menu::set_app_menu(app, settings)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -215,7 +228,7 @@ pub fn run() {
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build())
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_user_input::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
@@ -229,6 +242,12 @@ pub fn run() {
     let builder = builder.plugin(tauri_nspanel::init());
 
     #[cfg(target_os = "macos")]
+    let builder = builder.on_menu_event(|app, event| {
+        let id = event.id().as_ref();
+        handle_app_menu_event(app, id);
+    });
+
+    #[cfg(target_os = "windows")]
     let builder = builder.on_menu_event(|app, event| {
         let id = event.id().as_ref();
         handle_app_menu_event(app, id);
@@ -257,6 +276,18 @@ pub fn run() {
                 let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = set_app_menu(handle, &settings) {
                     eprintln!("Failed to set app menu: {err}");
+                }
+            }
+
+            #[cfg(target_os = "windows")]
+            {
+                let handle = app.handle();
+                let settings = handle.state::<AppState>().current_settings();
+                if let Err(err) = set_app_menu(handle, &settings) {
+                    eprintln!("Failed to set app menu: {err}");
+                }
+                if let Err(err) = platform::windows::hotkeys::init(handle) {
+                    eprintln!("Failed to initialize Windows hotkey platform stubs: {err}");
                 }
             }
 

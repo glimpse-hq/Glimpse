@@ -19,6 +19,13 @@ import {
     getInstalledTranscriptionEngines,
     type TranscriptionEngineId,
 } from "../../lib/transcriptionLanguages";
+import {
+    buildShortcutString,
+    formatShortcutForDisplay,
+    formatShortcutKey,
+    normalizeShortcutModifier,
+    sortShortcutModifiers,
+} from "../../lib/shortcuts";
 import type {
     TranscriptionMode,
     StoredSettings,
@@ -30,8 +37,6 @@ import type {
     DownloadEvent,
     LlmProvider,
 } from "../../types";
-
-const modifierOrder = ["Control", "Shift", "Alt", "Command"];
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -406,17 +411,15 @@ const SettingsModal = ({
         }
 
         const updatePreview = () => {
-            const mods = Array.from(pressedModifiers.current).sort(
-                (a, b) => ["Control", "Alt", "Shift", "Command"].indexOf(a) - ["Control", "Alt", "Shift", "Command"].indexOf(b)
-            );
-            const key = primaryKey.current ? formatKey(primaryKey.current) : null;
+            const mods = sortShortcutModifiers(pressedModifiers.current);
+            const key = primaryKey.current ? formatShortcutKey(primaryKey.current) : null;
             const parts = [...mods, key].filter(Boolean);
-            setCapturePreview(parts.length > 0 ? parts.join("+") : "");
+            setCapturePreview(parts.length > 0 ? formatShortcutForDisplay(parts.join("+")) : "");
         };
 
         const handleKeyDown = (event: KeyboardEvent) => {
             event.preventDefault();
-            const modifier = normalizeModifier(event);
+            const modifier = normalizeShortcutModifier(event);
             if (modifier) {
                 pressedModifiers.current.add(modifier);
             } else if (event.code) {
@@ -440,7 +443,7 @@ const SettingsModal = ({
                 }
                 setError(null);
             } else {
-                setError("Add a base key to your shortcut");
+                setError("Press at least one key for your shortcut");
             }
             finalizeCapture();
         };
@@ -486,13 +489,7 @@ const SettingsModal = ({
     };
 
     const buildShortcut = () => {
-        if (!primaryKey.current) return null;
-        const orderedMods = Array.from(pressedModifiers.current).sort(
-            (a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b)
-        );
-        const formattedKey = formatKey(primaryKey.current);
-        if (!formattedKey) return null;
-        return [...orderedMods, formattedKey].join("+");
+        return buildShortcutString(pressedModifiers.current, primaryKey.current);
     };
 
     useEffect(() => {
@@ -861,27 +858,6 @@ const SettingsModal = ({
         </AnimatePresence>
     );
 
-    function normalizeModifier(event: KeyboardEvent): string | null {
-        if (event.key === "Control" || event.code === "ControlLeft" || event.code === "ControlRight") return "Control";
-        if (event.key === "Shift" || event.code === "ShiftLeft" || event.code === "ShiftRight") return "Shift";
-        if (event.key === "Alt" || event.key === "Option") return "Alt";
-        if (event.key === "Meta") return "Command";
-        return null;
-    }
-
-    function formatKey(code: string): string | null {
-        if (!code) return null;
-        if (code.startsWith("Key") && code.length > 3) return code.slice(3).toUpperCase();
-        if (code.startsWith("Digit") && code.length > 5) return code.slice(5);
-        const namedKeys: Record<string, string> = {
-            Space: "Space", Enter: "Enter", Tab: "Tab", Backspace: "Backspace",
-            Escape: "Escape", Delete: "Delete", ArrowUp: "ArrowUp", ArrowDown: "ArrowDown",
-            ArrowLeft: "ArrowLeft", ArrowRight: "ArrowRight", Backquote: "`", Minus: "-",
-            Equal: "=", BracketLeft: "[", BracketRight: "]", Backslash: "\\",
-            Semicolon: ";", Quote: "'", Comma: ",", Period: ".", Slash: "/",
-        };
-        return namedKeys[code] ?? code;
-    }
 };
 
 const ModalNavItem = ({ icon, label, active, onClick }: {

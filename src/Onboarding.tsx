@@ -25,6 +25,11 @@ import {
 } from "lucide-react";
 import DotMatrix from "./components/DotMatrix";
 import FAQModal from "./components/FAQModal";
+import {
+    buildShortcutString,
+    formatShortcutForDisplay,
+    normalizeShortcutModifier,
+} from "./lib/shortcuts";
 import type { ModelInfo, ModelStatus, StoredSettings, TranscriptionMode } from "./types";
 
 type OnboardingStep = "welcome" | "local-model" | "local-signin" | "microphone" | "accessibility" | "ready";
@@ -154,41 +159,6 @@ const StatusBadge = ({ granted, checking }: { granted: boolean; checking?: boole
             Not enabled
         </span>
     );
-};
-
-const modifierOrder = ["Control", "Shift", "Alt", "Command"];
-
-const normalizeModifier = (event: KeyboardEvent): string | null => {
-    switch (event.key) {
-        case "Control": return "Control";
-        case "Shift": return "Shift";
-        case "Alt": return "Alt";
-        case "Meta": return "Command";
-        default: return null;
-    }
-};
-
-const formatKey = (code: string): string | null => {
-    if (code.startsWith("Key")) return code.replace("Key", "");
-    if (code.startsWith("Digit")) return code.replace("Digit", "");
-    const specialKeys: Record<string, string> = {
-        Space: "Space", Backspace: "Backspace", Enter: "Enter", Tab: "Tab",
-        ArrowUp: "Up", ArrowDown: "Down", ArrowLeft: "Left", ArrowRight: "Right",
-        Escape: "Escape", Delete: "Delete", Insert: "Insert", Home: "Home", End: "End",
-        PageUp: "PageUp", PageDown: "PageDown", Backquote: "`", Minus: "-", Equal: "=",
-        BracketLeft: "[", BracketRight: "]", Backslash: "\\", Semicolon: ";",
-        Quote: "'", Comma: ",", Period: ".", Slash: "/",
-    };
-    if (specialKeys[code]) return specialKeys[code];
-    if (code.startsWith("F") && !isNaN(Number(code.slice(1)))) return code;
-    return null;
-};
-
-const formatShortcutForDisplay = (shortcut: string): string => {
-    return shortcut
-        .replace(/Control/g, "Ctrl")
-        .replace(/Command/g, "⌘")
-        .replace(/\+/g, " + ");
 };
 
 const stepTransitionVariants = {
@@ -375,13 +345,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     };
 
     const buildShortcut = () => {
-        if (!primaryKey.current) return null;
-        const orderedMods = Array.from(pressedModifiers.current).sort(
-            (a, b) => modifierOrder.indexOf(a) - modifierOrder.indexOf(b)
-        );
-        const formattedKey = formatKey(primaryKey.current);
-        if (!formattedKey) return null;
-        return [...orderedMods, formattedKey].join("+");
+        return buildShortcutString(pressedModifiers.current, primaryKey.current);
     };
 
     useEffect(() => {
@@ -389,7 +353,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
         const handleKeyDown = (event: KeyboardEvent) => {
             event.preventDefault();
-            const modifier = normalizeModifier(event);
+            const modifier = normalizeShortcutModifier(event);
             if (modifier) {
                 pressedModifiers.current.add(modifier);
             } else if (event.code) {
