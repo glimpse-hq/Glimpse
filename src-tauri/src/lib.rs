@@ -788,14 +788,7 @@ fn complete_onboarding(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings();
-    let model = settings.local_model.clone();
-    settings.onboarding_completed = true;
-    state
-        .persist_settings(settings)
-        .map_err(|err| err.to_string())?;
-    analytics::track_onboarding_completed(&app, &model);
-    Ok(())
+    core::settings::complete_onboarding(&app, &state)
 }
 
 #[tauri::command]
@@ -803,12 +796,7 @@ fn reset_onboarding(
     _app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings();
-    settings.onboarding_completed = false;
-    state
-        .persist_settings(settings)
-        .map_err(|err| err.to_string())?;
-    Ok(())
+    core::settings::reset_onboarding(&state)
 }
 
 #[tauri::command]
@@ -833,104 +821,28 @@ fn update_settings(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<UserSettings, String> {
-    if smartEnabled && smartShortcut.trim().is_empty() {
-        return Err("Smart shortcut cannot be empty when enabled".into());
-    }
-
-    if holdEnabled && holdShortcut.trim().is_empty() {
-        return Err("Hold shortcut cannot be empty when enabled".into());
-    }
-
-    if toggleEnabled && toggleShortcut.trim().is_empty() {
-        return Err("Toggle shortcut cannot be empty when enabled".into());
-    }
-
-    if !smartEnabled && !holdEnabled && !toggleEnabled {
-        return Err("At least one recording mode must be enabled".into());
-    }
-
-    let mut enabled_shortcuts: Vec<(&str, &str)> = vec![];
-    if smartEnabled {
-        enabled_shortcuts.push(("Smart", smartShortcut.trim()));
-    }
-    if holdEnabled {
-        enabled_shortcuts.push(("Hold", holdShortcut.trim()));
-    }
-    if toggleEnabled {
-        enabled_shortcuts.push(("Toggle", toggleShortcut.trim()));
-    }
-
-    for i in 0..enabled_shortcuts.len() {
-        for j in (i + 1)..enabled_shortcuts.len() {
-            let (name1, shortcut1) = enabled_shortcuts[i];
-            let (name2, shortcut2) = enabled_shortcuts[j];
-            if shortcut1.to_lowercase() == shortcut2.to_lowercase() {
-                return Err(format!(
-                    "{} and {} shortcuts cannot be the same",
-                    name1, name2
-                ));
-            }
-        }
-    }
-
-    if model_manager::definition(&localModel).is_none() {
-        return Err("Unknown model selection".into());
-    }
-
-    if llmCleanupEnabled && !matches!(llmProvider, LlmProvider::None) {
-        if matches!(llmProvider, LlmProvider::Custom) && llmEndpoint.trim().is_empty() {
-            return Err("Custom LLM endpoint cannot be empty".into());
-        }
-        if matches!(llmProvider, LlmProvider::OpenAI) && llmApiKey.trim().is_empty() {
-            return Err("OpenAI API key is required".into());
-        }
-    }
-
-    let mut next = state.current_settings();
-    let prev = next.clone();
-    next.smart_shortcut = smartShortcut;
-    next.smart_enabled = smartEnabled;
-    next.hold_shortcut = holdShortcut;
-    next.hold_enabled = holdEnabled;
-    next.toggle_shortcut = toggleShortcut;
-    next.toggle_enabled = toggleEnabled;
-    next.transcription_mode = transcriptionMode;
-    next.local_model = localModel;
-    next.microphone_device = microphoneDevice;
-    next.language = language;
-    next.llm_cleanup_enabled = llmCleanupEnabled;
-    next.llm_provider = llmProvider;
-    next.llm_endpoint = llmEndpoint;
-    next.llm_api_key = llmApiKey;
-    next.llm_model = llmModel;
-    next.edit_mode_enabled = editModeEnabled;
-
-    let next = state
-        .persist_settings(next)
-        .map_err(|err| err.to_string())?;
-
-    state.request_preflight_refresh();
-
-    pill::register_shortcuts(&app).map_err(|err| err.to_string())?;
-
-    if prev.transcription_mode != next.transcription_mode
-        || prev.local_model != next.local_model
-        || prev.microphone_device != next.microphone_device
-    {
-        if let Err(err) = tray::refresh_tray_menu(&app, &next) {
-            eprintln!("Failed to refresh tray menu: {err}");
-        }
-        #[cfg(target_os = "macos")]
-        if let Err(err) = set_app_menu(&app, &next) {
-            eprintln!("Failed to refresh app menu: {err}");
-        }
-    }
-
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
-
-    Ok(next)
+    core::settings::update_settings(
+        core::settings::UpdateSettingsArgs {
+            smart_shortcut: smartShortcut,
+            smart_enabled: smartEnabled,
+            hold_shortcut: holdShortcut,
+            hold_enabled: holdEnabled,
+            toggle_shortcut: toggleShortcut,
+            toggle_enabled: toggleEnabled,
+            transcription_mode: transcriptionMode,
+            local_model: localModel,
+            microphone_device: microphoneDevice,
+            language,
+            llm_cleanup_enabled: llmCleanupEnabled,
+            llm_provider: llmProvider,
+            llm_endpoint: llmEndpoint,
+            llm_api_key: llmApiKey,
+            llm_model: llmModel,
+            edit_mode_enabled: editModeEnabled,
+        },
+        &app,
+        &state,
+    )
 }
 
 #[tauri::command]
@@ -939,17 +851,7 @@ fn set_user_name(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings();
-    settings.user_name = name.trim().to_string();
-    let next = state
-        .persist_settings(settings)
-        .map_err(|err| err.to_string())?;
-
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
-
-    Ok(next)
+    core::settings::set_user_name(name, &app, &state)
 }
 
 #[derive(Serialize)]
@@ -1163,37 +1065,7 @@ async fn retry_transcription(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    eprintln!("[retry_transcription] Starting retry for id={}", id);
-
-    let record = state
-        .storage()
-        .get_by_id(&id)
-        .ok_or_else(|| "Transcription not found".to_string())?;
-
-    eprintln!(
-        "[retry_transcription] Found record: audio_path={} speech_model={} synced={}",
-        record.audio_path, record.speech_model, record.synced
-    );
-
-    let audio_path = PathBuf::from(&record.audio_path);
-    if !audio_path.exists() {
-        return Err("Cannot retry this transcription because its source audio is unavailable.".to_string());
-    }
-
-    let saved = RecordingSaved {
-        path: audio_path,
-        started_at: record.timestamp,
-        ended_at: record.timestamp,
-        duration_override_seconds: Some(record.audio_duration_seconds),
-        recording_mode: None,
-    };
-
-    let settings = state.current_settings();
-    let saved_mode = (record.mode_id, record.mode_name);
-    let cancel_token = state.register_retry_transcription(id.clone());
-    transcribe::retry_transcription_async(&app, saved, settings, id, saved_mode, cancel_token);
-
-    Ok(())
+    core::transcriptions::retry_transcription(id, &app, &state)
 }
 
 #[tauri::command]
@@ -1210,73 +1082,7 @@ async fn retry_llm_cleanup(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    let record = state
-        .storage()
-        .get_by_id(&id)
-        .ok_or_else(|| "Transcription not found".to_string())?;
-
-    if record.status != storage::TranscriptionStatus::Success {
-        return Err("Can only apply LLM cleanup to successful transcriptions".to_string());
-    }
-
-    let settings = state.current_settings();
-    if !llm_cleanup::is_cleanup_available(&settings) {
-        return Err("LLM cleanup is not configured".to_string());
-    }
-    let llm_model = llm_cleanup::resolved_model_name(&settings);
-
-    let text_to_clean = record.raw_text.unwrap_or(record.text);
-
-    // Look up the saved personality (if it still exists and is enabled)
-    let saved_personality = record.mode_id.as_ref().and_then(|id| {
-        settings
-            .personalities
-            .iter()
-            .find(|p| &p.id == id && p.enabled)
-            .cloned()
-    });
-
-    let http = state.http();
-    let storage = state.storage();
-    let record_id = id.clone();
-
-    async_runtime::spawn(async move {
-        match llm_cleanup::cleanup_transcription(
-            &http,
-            &text_to_clean,
-            &settings,
-            saved_personality.as_ref(),
-        )
-        .await
-        {
-            Ok(cleaned) => {
-                if let Err(err) =
-                    storage.update_with_llm_cleanup(&record_id, cleaned, llm_model.clone())
-                {
-                    eprintln!("Failed to save LLM cleanup: {err}");
-                }
-                let _ = app.emit(
-                    EVENT_TRANSCRIPTION_COMPLETE,
-                    TranscriptionCompletePayload {
-                        transcript: String::new(),
-                        auto_paste: false,
-                    },
-                );
-            }
-            Err(err) => {
-                eprintln!("LLM cleanup failed: {err}");
-                let _ = app.emit(
-                    EVENT_TRANSCRIPTION_ERROR,
-                    TranscriptionErrorPayload {
-                        message: format!("LLM cleanup failed: {err}"),
-                        stage: "llm_cleanup".to_string(),
-                    },
-                );
-            }
-        }
-    });
-
-    Ok(())
+    core::transcriptions::retry_llm_cleanup(id, &app, &state)
 }
 
 #[tauri::command]
@@ -1285,22 +1091,7 @@ async fn undo_llm_cleanup(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    let storage = state.storage();
-
-    match storage.revert_to_raw(&id) {
-        Ok(Some(_)) => {
-            let _ = app.emit(
-                EVENT_TRANSCRIPTION_COMPLETE,
-                TranscriptionCompletePayload {
-                    transcript: String::new(),
-                    auto_paste: false,
-                },
-            );
-            Ok(())
-        }
-        Ok(None) => Err("No raw text available to revert to".to_string()),
-        Err(err) => Err(format!("Failed to undo LLM cleanup: {err}")),
-    }
+    core::transcriptions::undo_llm_cleanup(id, &app, &state)
 }
 
 pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
