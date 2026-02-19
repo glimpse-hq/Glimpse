@@ -89,8 +89,8 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 elements.push(
                     <ul key={`list-${elements.length}`} className="space-y-2.5 mb-4 ml-1">
                         {listItems.map((item, i) => (
-                            <li key={i} className="flex items-start gap-3 text-[13px] leading-relaxed text-content-secondary">
-                                <span className="text-amber-400 mt-1 text-[10px]">●</span>
+                            <li key={i} className="flex items-start gap-3 ui-text-body leading-relaxed ui-color-secondary">
+                                <span className="ui-color-warning-strong mt-1 ui-text-meta">●</span>
                                 <span>{item}</span>
                             </li>
                         ))}
@@ -116,39 +116,39 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
 
             if (trimmed.startsWith("### ")) {
                 elements.push(
-                    <h4 key={index} className="text-[12px] font-semibold text-content-muted uppercase tracking-wider mt-5 mb-2">
+                    <h4 key={index} className="ui-text-section-label ui-color-muted mt-5 mb-2">
                         {trimmed.slice(4)}
                     </h4>
                 );
             } else if (trimmed.startsWith("## ")) {
                 elements.push(
-                    <h3 key={index} className="text-[14px] font-medium text-content-primary mt-5 mb-2">
+                    <h3 key={index} className="ui-text-body-lg-strong ui-color-primary mt-5 mb-2">
                         {trimmed.slice(3)}
                     </h3>
                 );
             } else if (trimmed.startsWith("# ")) {
                 elements.push(
-                    <h2 key={index} className="text-[15px] font-semibold text-content-primary mt-5 mb-2">
+                    <h2 key={index} className="ui-text-title-strong ui-color-primary mt-5 mb-2">
                         {trimmed.slice(2)}
                     </h2>
                 );
             } else if (trimmed.match(/^\*\*(.+):\*\*$/)) {
                 const match = trimmed.match(/^\*\*(.+):\*\*$/);
                 elements.push(
-                    <p key={index} className="text-[13px] font-semibold text-amber-400 mt-5 mb-2">
+                    <p key={index} className="ui-text-body font-semibold ui-color-warning-strong mt-5 mb-2">
                         {match?.[1]}
                     </p>
                 );
             } else if (trimmed.match(/^(.+):$/)) {
                 const match = trimmed.match(/^(.+):$/);
                 elements.push(
-                    <p key={index} className="text-[13px] font-semibold text-amber-400/90 mt-5 mb-2">
+                    <p key={index} className="ui-text-body font-semibold text-amber-400/90 mt-5 mb-2">
                         {match?.[1]}
                     </p>
                 );
             } else if (!trimmed.startsWith("<!--") && !trimmed.startsWith("**Full Changelog**")) {
                 elements.push(
-                    <p key={index} className="text-[13px] leading-relaxed text-content-secondary mb-3">
+                    <p key={index} className="ui-text-body leading-relaxed ui-color-secondary mb-3">
                         {trimmed}
                     </p>
                 );
@@ -178,7 +178,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                         className="relative w-full max-w-md max-h-[70vh] bg-surface-secondary border border-border-primary rounded-2xl shadow-2xl overflow-hidden"
                     >
                         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-surface-secondary backdrop-blur-sm border-b border-border-primary">
-                            <h2 className="text-[15px] font-semibold text-content-primary">What's New</h2>
+                            <h2 className="ui-text-title-strong ui-color-primary">What's New</h2>
                             <button
                                 onClick={onClose}
                                 className="p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
@@ -197,15 +197,15 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                             {error && (
                                 <div className="flex flex-col items-center gap-3 py-6">
                                     <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 w-full">
-                                        <AlertCircle size={14} className="text-red-400 shrink-0" />
+                                        <AlertCircle size={14} className="ui-color-error-strong shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] text-red-400 font-medium">Couldn't load releases</p>
-                                            <p className="text-[11px] text-red-400/70 mt-0.5">GitHub may be temporarily unavailable. Check your connection and try again.</p>
+                                            <p className="ui-text-body ui-color-error-strong font-medium">Couldn't load releases</p>
+                                            <p className="ui-text-label ui-color-error-subtle mt-0.5">GitHub may be temporarily unavailable. Check your connection and try again.</p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={fetchReleases}
-                                        className="text-[12px] font-medium text-content-secondary hover:text-content-primary transition-colors"
+                                        className="ui-text-body-sm-strong ui-color-secondary hover:text-content-primary transition-colors"
                                     >
                                         Retry
                                     </button>
@@ -219,10 +219,10 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                         return (
                                             <div key={release.version} className={isFeatured ? "pl-3 border-l-2 border-amber-400" : ""}>
                                                 <div className="flex items-center justify-between mb-3">
-                                                    <h3 className={`font-semibold ${isFeatured ? "text-[15px] text-amber-400" : "text-[14px] text-content-primary"}`}>
+                                                    <h3 className={`font-semibold ${isFeatured ? "ui-text-title ui-color-warning-strong" : "ui-text-body-lg-strong ui-color-primary"}`}>
                                                         {release.version}
                                                     </h3>
-                                                    <span className="text-[11px] text-content-muted">
+                                                    <span className="ui-text-label ui-color-muted">
                                                         {formatDate(release.publishedAt)}
                                                     </span>
                                                 </div>
@@ -243,7 +243,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                             <div className="sticky bottom-0 px-5 py-3 bg-surface-secondary backdrop-blur-sm border-t border-border-primary">
                                 <button
                                     onClick={() => openUrl("https://github.com/LegendarySpy/Glimpse/releases")}
-                                    className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] font-medium text-content-secondary hover:text-content-primary hover:border-border-hover transition-colors"
+                                    className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-surface-elevated border border-border-secondary ui-text-button ui-color-secondary hover:text-content-primary hover:border-border-hover transition-colors"
                                 >
                                     <ExternalLink size={12} />
                                     View all releases on GitHub

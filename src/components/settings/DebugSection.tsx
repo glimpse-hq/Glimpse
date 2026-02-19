@@ -40,50 +40,50 @@ function DebugSection() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-2 pb-3 border-b border-border-primary">
-                <Bug size={16} className="text-red-400" />
-                <h3 className="text-[14px] font-semibold text-content-primary">Developer Tools</h3>
-                <span className="ml-auto text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-400 font-mono">
+                <Bug size={16} className="ui-color-error-strong" />
+                <h3 className="ui-text-body-lg font-semibold text-content-primary">Developer Tools</h3>
+                <span className="ml-auto ui-text-meta px-2 py-0.5 rounded bg-red-500/20 ui-color-error-strong font-mono">
                     DEV ONLY
                 </span>
             </div>
 
             <div className="space-y-4">
                 <div>
-                    <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider mb-3">
+                    <p className="ui-text-label font-medium text-content-muted uppercase tracking-wider mb-3">
                         Toast Notifications
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             onClick={() => showToast("success", "This is a success toast!")}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 ui-text-label ui-color-success-strong hover:bg-emerald-500/20 transition-colors"
                         >
                             <CheckCircle size={12} />
                             Success
                         </button>
                         <button
                             onClick={() => showToast("error", "This is an error toast!")}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-[11px] text-red-400 hover:bg-red-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 ui-text-label ui-color-error-strong hover:bg-red-500/20 transition-colors"
                         >
                             <AlertCircle size={12} />
                             Error
                         </button>
                         <button
                             onClick={() => showToast("warning", "This is a warning toast!")}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 hover:bg-amber-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 ui-text-label ui-color-warning-strong hover:bg-amber-500/20 transition-colors"
                         >
                             <AlertTriangle size={12} />
                             Warning
                         </button>
                         <button
                             onClick={() => showToast("info", "This is an info toast!")}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-400 hover:bg-blue-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 ui-text-label ui-color-info-strong hover:bg-blue-500/20 transition-colors"
                         >
                             <Info size={12} />
                             Info
                         </button>
                         <button
                             onClick={() => showToast("celebration", "Welcome to Glimpse Cloud!")}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 hover:bg-amber-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20 ui-text-label ui-color-warning-strong hover:bg-amber-500/20 transition-colors"
                         >
                             <Sparkles size={12} />
                             Celebration
@@ -95,7 +95,7 @@ function DebugSection() {
                                 "open_about_page",
                                 "Update"
                             )}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 ui-text-label ui-color-accent hover:bg-violet-500/20 transition-colors"
                         >
                             <Zap size={12} />
                             Update Toast
@@ -104,34 +104,34 @@ function DebugSection() {
                 </div>
 
                 <div>
-                    <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider mb-3">
+                    <p className="ui-text-label font-medium text-content-muted uppercase tracking-wider mb-3">
                         Update Checker
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                         <button
                             onClick={simulateUpdateAvailable}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 ui-text-label ui-color-accent hover:bg-violet-500/20 transition-colors"
                         >
                             <Download size={12} />
                             Simulate Update
                         </button>
                         <button
                             onClick={showUpdateToastNow}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-[11px] text-violet-400 hover:bg-violet-500/20 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/20 ui-text-label ui-color-accent hover:bg-violet-500/20 transition-colors"
                         >
                             <Zap size={12} />
                             Show Update Toast
                         </button>
                         <button
                             onClick={triggerUpdateCheck}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary ui-text-label text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors"
                         >
                             <RefreshCw size={12} />
                             Check GitHub Now
                         </button>
                         <button
                             onClick={clearUpdateState}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary ui-text-label text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors"
                         >
                             <Trash2 size={12} />
                             Clear Update State
@@ -140,12 +140,12 @@ function DebugSection() {
                 </div>
 
                 <div>
-                    <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider mb-3">
+                    <p className="ui-text-label font-medium text-content-muted uppercase tracking-wider mb-3">
                         Version Tracking
                     </p>
                     <button
                         onClick={resetVersionTracking}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary text-[11px] text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors w-full"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-elevated border border-border-secondary ui-text-label text-content-secondary hover:bg-surface-elevated-hover hover:border-border-hover transition-colors w-full"
                     >
                         <Bell size={12} />
                         Reset Version (trigger "just updated" toast)
@@ -153,7 +153,7 @@ function DebugSection() {
                 </div>
 
                 <div>
-                    <p className="text-[11px] font-medium text-content-muted uppercase tracking-wider mb-3">
+                    <p className="ui-text-label font-medium text-content-muted uppercase tracking-wider mb-3">
                         Storage
                     </p>
                     <div className="space-y-2">
@@ -162,7 +162,7 @@ function DebugSection() {
                                 localStorage.clear();
                                 alert("localStorage cleared. Reload the app.");
                             }}
-                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-[11px] text-red-400 hover:bg-red-500/20 transition-colors w-full"
+                            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 ui-text-label ui-color-error-strong hover:bg-red-500/20 transition-colors w-full"
                         >
                             <AlertTriangle size={12} />
                             Clear localStorage
@@ -171,7 +171,7 @@ function DebugSection() {
                 </div>
 
                 <div className="pt-3 border-t border-border-primary">
-                    <p className="text-[10px] text-content-disabled font-mono">
+                    <p className="ui-text-meta text-content-disabled font-mono">
                         This section is only visible to accounts with the 'dev' label.
                     </p>
                 </div>

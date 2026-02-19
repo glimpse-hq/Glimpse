@@ -38,14 +38,14 @@ const PageSwitcher = ({
                             opacity: activePage === page.key ? 1 : 0.35,
                             boxShadow:
                                 activePage === page.key
-                                    ? "0 0 0.5rem rgba(251, 191, 36, 0.22)"
-                                    : "0 0 0 rgba(251, 191, 36, 0)",
+                                    ? "var(--ui-shadow-cloud-switcher-active)"
+                                    : "var(--ui-shadow-cloud-switcher-inactive)",
                         }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                     />
                     <span
-                        className={`text-[12px] font-medium transition-colors duration-200 ${
-                            activePage === page.key ? "text-content-primary" : "text-content-muted"
+                        className={`ui-text-body-sm-strong transition-colors duration-200 ${
+                            activePage === page.key ? "ui-color-primary" : "ui-color-muted"
                         }`}
                     >
                         {page.label}
@@ -253,8 +253,8 @@ const DictionaryView = () => {
                                 color="var(--color-cloud)"
                             />
                             <div className="flex-1">
-                                <p className="text-2xl font-medium text-content-primary tracking-tight">Word Dictionary</p>
-                                <p className="mt-1 text-[12px] text-content-secondary">
+                                <p className="ui-text-screen-title ui-color-primary tracking-tight">Word Dictionary</p>
+                                <p className="mt-1 ui-text-body-sm ui-color-secondary">
                                     Add custom words or phrases that arent in the default dictionary.
                                 </p>
                             </div>
@@ -263,7 +263,7 @@ const DictionaryView = () => {
                         {showWarning && (
                             <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100">
                                 <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                                <div className="text-[13px] leading-relaxed">
+                                <div className="ui-text-body leading-relaxed">
                                     Dictionary works only for models with dictionary support. Current model{" "}
                                     <span className="font-semibold">{currentModel?.label ?? settings?.local_model}</span>{" "}
                                     will ignore these entries until you switch to a compatible model.
@@ -285,17 +285,17 @@ const DictionaryView = () => {
                                     }}
                                     placeholder="Search or add a word..."
                                     aria-label="Add or search dictionary entry"
-                                    className="flex-1 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
+                                    className="flex-1 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
                                 {isSearching && entries.length > 0 && (
-                                    <span className="text-[12px] text-content-muted whitespace-nowrap" role="status">
+                                    <span className="ui-text-body-sm ui-color-muted whitespace-nowrap" role="status">
                                         {filteredEntries.length} of {entries.length}
                                     </span>
                                 )}
                                 <button
                                     onClick={handleAdd}
                                     disabled={!newEntry.trim() || saving || entries.includes(newEntry.trim())}
-                                    className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[13px] text-content-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors"
+                                    className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 ui-text-body ui-color-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors"
                                     aria-label="Add entry"
                                 >
                                     {saving ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
@@ -321,15 +321,15 @@ const DictionaryView = () => {
                                     <div className="flex flex-col items-start gap-2 px-4 py-6 text-content-muted">
                                         {isSearching ? (
                                             <>
-                                                <p className="text-[14px] font-medium">No matches found</p>
-                                                <p className="text-[12px] text-content-muted">
+                                                <p className="ui-text-body-lg-strong">No matches found</p>
+                                                <p className="ui-text-body-sm ui-color-muted">
                                                     Press Enter to add "{newEntry.trim()}" as a new entry.
                                                 </p>
                                             </>
                                         ) : (
                                             <>
-                                                <p className="text-[14px] font-medium">No entries yet</p>
-                                                <p className="text-[12px] text-content-muted">
+                                                <p className="ui-text-body-lg-strong">No entries yet</p>
+                                                <p className="ui-text-body-sm ui-color-muted">
                                                     Add words, phrases or names that arent in the default dictionary.
                                                 </p>
                                             </>
@@ -360,7 +360,7 @@ const DictionaryView = () => {
                                                                 }
                                                             }}
                                                             onBlur={() => handleEditCommit()}
-                                                            className="flex-1 min-w-0 h-[44px] rounded-md border border-border-primary bg-surface-tertiary pl-1 pr-0 -ml-px text-[14px] text-content-primary outline-none focus:border-border-secondary leading-[44px]"
+                                                            className="flex-1 min-w-0 h-[44px] rounded-md border border-border-primary bg-surface-tertiary pl-1 pr-0 -ml-px ui-text-input-lg ui-color-primary outline-none focus:border-border-secondary leading-[44px]"
                                                         />
                                                     ) : (
                                                         <button
@@ -368,17 +368,17 @@ const DictionaryView = () => {
                                                             className="flex-1 min-w-0 text-left"
                                                         >
                                                             <div className="flex flex-col justify-center h-[44px] pl-1">
-                                                                <p className="text-[14px] text-content-primary leading-tight">{entry}</p>
+                                                                <p className="ui-text-body-lg ui-color-primary leading-tight">{entry}</p>
                                                             </div>
                                                         </button>
                                                     )}
 
                                                     <div className="flex items-center gap-2">
                                                         {editingIndex === originalIndex ? (
-                                                            <div className="text-[11px] text-content-muted">Press Enter to save</div>
+                                                            <div className="ui-text-label ui-color-muted">Press Enter to save</div>
                                                         ) : (
                                                             <>
-                                                                <div className="text-[11px] text-content-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden="true">
+                                                                <div className="ui-text-label ui-color-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden="true">
                                                                     Click to edit
                                                                 </div>
                                                                 <button
@@ -408,13 +408,13 @@ const DictionaryView = () => {
                             </div>
 
                             {error && (
-                                <div className="border-t border-border-primary px-4 py-2 text-[12px] text-red-300">
+                                <div className="border-t border-border-primary px-4 py-2 ui-text-body-sm ui-color-error-soft">
                                     {error}
                                 </div>
                             )}
                         </div>
 
-                        <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-content-disabled">
+                        <p className="mt-3 ui-text-uppercase-micro ui-color-disabled tracking-[0.14em]">
                             {entries.length} {entries.length === 1 ? "entry" : "entries"}
                             {saving ? " · Saving..." : ""}
                         </p>
@@ -439,8 +439,8 @@ const DictionaryView = () => {
                                 color="var(--color-accent)"
                             />
                             <div className="flex-1">
-                                <p className="text-2xl font-medium text-content-primary tracking-tight">Direct Replacements</p>
-                                <p className="mt-1 text-[12px] text-content-secondary">
+                                <p className="ui-text-screen-title ui-color-primary tracking-tight">Direct Replacements</p>
+                                <p className="mt-1 ui-text-body-sm ui-color-secondary">
                                     Automatically replace words in your transcriptions.
                                 </p>
                             </div>
@@ -454,7 +454,7 @@ const DictionaryView = () => {
                                     onChange={(e) => setNewFrom(e.target.value)}
                                     placeholder="Find word..."
                                     aria-label="Find word to replace"
-                                    className="flex-1 min-w-0 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
+                                    className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
                                 <ArrowRight size={14} className="text-content-disabled shrink-0" aria-hidden="true" />
                                 <input
@@ -468,7 +468,7 @@ const DictionaryView = () => {
                                     }}
                                     placeholder="Replace with..."
                                     aria-label="Replace with"
-                                    className="flex-1 min-w-0 bg-transparent text-[14px] text-content-primary placeholder-content-disabled outline-none h-8 leading-8"
+                                    className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-none h-8 leading-8"
                                 />
                                 <button
                                     onClick={handleAddReplacement}
@@ -477,7 +477,7 @@ const DictionaryView = () => {
                                         saving ||
                                         replacements.some((r) => r.from.toLowerCase() === newFrom.trim().toLowerCase())
                                     }
-                                    className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 text-[13px] text-content-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors shrink-0"
+                                    className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 ui-text-body ui-color-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors shrink-0"
                                     aria-label="Add replacement"
                                 >
                                     {saving ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
@@ -501,8 +501,8 @@ const DictionaryView = () => {
                                     </div>
                                 ) : replacements.length === 0 ? (
                                     <div className="flex flex-col items-start gap-2 px-4 py-6 text-content-muted">
-                                        <p className="text-[14px] font-medium">No replacements yet</p>
-                                        <p className="text-[12px] text-content-muted">
+                                        <p className="ui-text-body-lg-strong">No replacements yet</p>
+                                        <p className="ui-text-body-sm ui-color-muted">
                                             Add word pairs to automatically swap in transcriptions. Matches are case-insensitive.
                                         </p>
                                     </div>
@@ -541,7 +541,7 @@ const DictionaryView = () => {
                                                                     handleEditReplacementCommit();
                                                                 }
                                                             }}
-                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 text-[14px] text-content-primary outline-none focus:border-border-secondary"
+                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-none focus:border-border-secondary"
                                                         />
                                                         <ArrowRight size={14} className="text-content-disabled shrink-0" />
                                                         <input
@@ -564,7 +564,7 @@ const DictionaryView = () => {
                                                                     handleEditReplacementCommit();
                                                                 }
                                                             }}
-                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 text-[14px] text-content-primary outline-none focus:border-border-secondary"
+                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-none focus:border-border-secondary"
                                                         />
                                                     </div>
                                                 ) : (
@@ -572,9 +572,9 @@ const DictionaryView = () => {
                                                         onClick={() => startEditingReplacement(idx)}
                                                         className="flex flex-1 items-center gap-2 text-left"
                                                     >
-                                                        <span className="text-[14px] text-content-primary">{replacement.from}</span>
+                                                        <span className="ui-text-body-lg ui-color-primary">{replacement.from}</span>
                                                         <ArrowRight size={14} className="text-content-muted shrink-0" />
-                                                        <span className="text-[14px]" style={{ color: 'var(--color-accent)' }}>
+                                                        <span className="ui-text-body-lg" style={{ color: 'var(--color-accent)' }}>
                                                             {replacement.to || <span className="text-content-muted italic">remove</span>}
                                                         </span>
                                                     </button>
@@ -582,7 +582,7 @@ const DictionaryView = () => {
 
                                                 <div className="flex items-center gap-2">
                                                     {editingReplacementIndex === idx ? (
-                                                        <div className="text-[11px] text-content-muted">
+                                                        <div className="ui-text-label ui-color-muted">
                                                             Press Enter to save
                                                         </div>
                                                     ) : (
@@ -611,13 +611,13 @@ const DictionaryView = () => {
                             </div>
 
                             {error && (
-                                <div className="border-t border-border-primary px-4 py-2 text-[12px] text-red-300">
+                                <div className="border-t border-border-primary px-4 py-2 ui-text-body-sm ui-color-error-soft">
                                     {error}
                                 </div>
                             )}
                         </div>
 
-                        <p className="mt-3 text-[11px] uppercase tracking-[0.14em] text-content-disabled">
+                        <p className="mt-3 ui-text-uppercase-micro ui-color-disabled tracking-[0.14em]">
                             {replacements.length} {replacements.length === 1 ? "replacement" : "replacements"}
                             {saving ? " · Saving..." : ""}
                         </p>

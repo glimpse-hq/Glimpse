@@ -34,9 +34,9 @@ const enginePriority = (engineId: string): number => {
 };
 
 const getSizeColor = (sizeMb: number): string => {
-    if (sizeMb < 500) return "text-green-400";
-    if (sizeMb < 1500) return "text-amber-400";
-    return "text-red-400";
+    if (sizeMb < 500) return "ui-color-success-strong";
+    if (sizeMb < 1500) return "ui-color-warning-strong";
+    return "ui-color-error-strong";
 };
 
 type ModelsTabProps = {
@@ -131,11 +131,11 @@ const ModelsTab = ({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="space-y-5"
-        >
-            <header>
-                <h1 className="text-lg font-medium text-content-primary">Local Models</h1>
-                <p className="mt-1 text-[12px] text-content-muted">Manage transcription engines and AI cleanup.</p>
+        className="space-y-5"
+    >
+        <header>
+                <h1 className="ui-text-title-lg font-medium ui-color-primary">Local Models</h1>
+                <p className="mt-1 ui-text-body-sm ui-color-muted">Manage transcription engines and AI cleanup.</p>
             </header>
 
             <CleanupPanel
@@ -155,7 +155,7 @@ const ModelsTab = ({
 
             {/* Transcription Engines */}
             <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-content-disabled mb-3">Transcription Engines</h3>
+                <h3 className="ui-text-section-label-sm ui-color-disabled mb-3">Transcription Engines</h3>
                 <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden divide-y divide-border-primary">
                     {groupedModels.map((group) => {
                         const isExpanded = expandedEngine === group.id;
@@ -179,15 +179,15 @@ const ModelsTab = ({
                                     </motion.div>
                                     <div className="flex-1 text-left">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[13px] font-medium text-content-primary">{group.label}</span>
+                                            <span className="ui-text-body-strong ui-color-primary">{group.label}</span>
                                             {group.recommended && (
-                                                <span className="text-[10px] text-local">Recommended</span>
+                                                <span className="ui-text-meta ui-color-local">Recommended</span>
                                             )}
                                             {hasActiveModel && activeModel && (
-                                                <span className="text-[10px] text-cloud">{activeModel.label}</span>
+                                                <span className="ui-text-meta ui-color-cloud">{activeModel.label}</span>
                                             )}
                                         </div>
-                                        <p className="text-[11px] text-content-disabled">{group.description}</p>
+                                        <p className="ui-text-label ui-color-disabled">{group.description}</p>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {hasActiveModel && (
@@ -196,7 +196,7 @@ const ModelsTab = ({
                                             </div>
                                         )}
                                         {!hasActiveModel && installedCount > 0 && (
-                                            <span className="text-[10px] text-content-disabled">
+                                            <span className="ui-text-meta ui-color-disabled">
                                                 {installedCount} installed
                                             </span>
                                         )}
@@ -276,24 +276,24 @@ const ModelRow = ({
             <div className="flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                        <span className={`text-[12px] font-medium ${isActive ? "text-cloud" : "text-content-primary"}`}>
+                        <span className={`ui-text-body-sm-strong ${isActive ? "ui-color-cloud" : "ui-color-primary"}`}>
                             {model.label}
                         </span>
                         {isRecommended && (
-                            <span className="text-[10px] text-local">Recommended</span>
+                            <span className="ui-text-meta ui-color-local">Recommended</span>
                         )}
                         {isActive && (
-                            <span className="px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider bg-cloud/20 text-cloud">
+                            <span className="px-1.5 py-0.5 rounded ui-text-nano font-semibold uppercase tracking-wider bg-cloud/20 ui-color-cloud">
                                 Active
                             </span>
                         )}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className={`text-[10px] ${getSizeColor(model.size_mb)}`}>{formatBytes(model.size_mb * 1024 * 1024)}</span>
+                        <span className={`ui-text-meta ${getSizeColor(model.size_mb)}`}>{formatBytes(model.size_mb * 1024 * 1024)}</span>
                         {visibleTags.length > 0 && (
                             <>
-                                <span className="text-[10px] text-content-disabled">·</span>
-                                <span className="text-[10px] text-content-disabled">
+                                <span className="ui-text-meta ui-color-disabled">·</span>
+                                <span className="ui-text-meta ui-color-disabled">
                                     {visibleTags.join(", ")}
                                 </span>
                             </>
@@ -305,7 +305,7 @@ const ModelRow = ({
                     {installed && !isActive && (
                         <button
                             onClick={onUse}
-                            className="px-2.5 py-1 rounded-md text-[10px] font-medium text-content-secondary hover:text-content-primary hover:bg-surface-elevated transition-colors"
+                            className="px-2.5 py-1 rounded-md ui-text-button-sm ui-color-secondary hover:text-content-primary hover:bg-surface-elevated transition-colors"
                         >
                             Use
                         </button>
@@ -351,18 +351,18 @@ const ModelRow = ({
                     <ModelProgress percent={percent} status={progress?.status ?? "idle"} />
                     <div className="h-3 flex items-center mt-1">
                         {isDownloading && (
-                            <p className="text-[9px] text-content-disabled tabular-nums truncate">
+                            <p className="ui-text-micro ui-color-disabled tabular-nums truncate">
                                 {progress?.percent?.toFixed(0)}% · {(progress as Extract<DownloadEvent, { status: "downloading" }>).file}
                             </p>
                         )}
                         {showError && (
-                            <p className="text-[9px] text-error flex items-center gap-1">
+                            <p className="ui-text-micro ui-color-error flex items-center gap-1">
                                 <AlertCircle size={9} />
                                 {(progress as Extract<DownloadEvent, { status: "error" }>).message}
                             </p>
                         )}
                         {isCancelled && (
-                            <p className="text-[9px] text-content-disabled">Cancelled</p>
+                            <p className="ui-text-micro ui-color-disabled">Cancelled</p>
                         )}
                     </div>
                 </div>

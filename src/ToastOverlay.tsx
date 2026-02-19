@@ -243,7 +243,7 @@ const ToastOverlay: React.FC = () => {
           onClick={handleClose}
           aria-label="Close notification"
           className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center 
-                     text-gray-500 hover:text-white text-xs transition-colors z-10"
+                     ui-color-gray-500 ui-hover-on-solid ui-text-body-sm transition-colors z-10"
         >
           <span aria-hidden="true">✕</span>
         </button>
@@ -266,15 +266,15 @@ const ToastOverlay: React.FC = () => {
           )}
           <div className="flex-1 min-w-0">
             {toast.type === "update" && (
-              <p className="text-[11px] text-violet-400 font-medium mb-0.5">GLIMPSE</p>
+              <p className="ui-text-label ui-color-accent font-medium mb-0.5">GLIMPSE</p>
             )}
-            <p className="text-[13px] text-gray-200 leading-relaxed break-words">{toast.message}</p>
+            <p className="ui-text-body ui-color-gray-200 leading-relaxed break-words">{toast.message}</p>
             {showRetry && (
               <button
                 type="button"
                 onClick={handleRetry}
                 disabled={isRetrying}
-                className="mt-2 text-xs text-blue-400 hover:text-white disabled:text-gray-600 transition-colors"
+                className="mt-2 ui-text-body-sm ui-color-info-strong ui-hover-on-solid ui-disabled-gray-600 transition-colors"
               >
                 {isRetrying ? "Retrying…" : "Retry transcription"}
               </button>
@@ -292,7 +292,7 @@ const ToastOverlay: React.FC = () => {
                     console.error("Action failed:", err);
                   }
                 }}
-                className={`mt-2 text-xs ${toast.type === "update" ? "text-violet-400" : "text-blue-400"} hover:text-white transition-colors block font-medium`}
+                className={`mt-2 ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : "ui-color-info-strong"} ui-hover-on-solid transition-colors block font-medium`}
               >
                 {toast.actionLabel} →
               </button>

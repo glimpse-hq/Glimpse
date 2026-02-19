@@ -286,7 +286,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                 aria-hidden="true"
                             />
                             <div>
-                                <p className="text-[12px] uppercase tracking-[0.18em] text-content-disabled">Personalization</p>
+                                <p className="ui-text-section-label ui-color-disabled tracking-[0.18em]">Personalization</p>
                                 <div className="h-[28px] flex items-center">
                                     {isEditingName ? (
                                         <div className="flex items-center gap-2">
@@ -307,11 +307,11 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                                     }
                                                 }}
                                                 onBlur={handleSaveName}
-                                                className="bg-transparent text-[18px] font-semibold text-content-primary outline-none border-b border-border-hover"
+                                                className="bg-transparent ui-text-title-lg font-semibold ui-color-primary outline-none border-b border-border-hover"
                                             />
                                             <button
                                                 onClick={handleSaveName}
-                                                className="h-[28px] w-[28px] flex items-center justify-center rounded hover:bg-border-secondary text-content-primary"
+                                                className="h-[28px] w-[28px] flex items-center justify-center rounded hover:bg-border-secondary ui-color-primary"
                                                 aria-label="Save name"
                                             >
                                                 <Check size={14} aria-hidden="true" />
@@ -329,7 +329,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                         >
                                             <h2
                                                 id="modal-title"
-                                                className="text-[18px] font-semibold text-content-primary group-hover/title:text-content-secondary transition-colors"
+                                                className="ui-text-title-lg font-semibold ui-color-primary group-hover/title:text-content-secondary transition-colors"
                                             >
                                                 {personality.name}
                                             </h2>
@@ -342,7 +342,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={onDelete}
-                                className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+                                className="p-2 rounded-lg ui-color-error-strong hover:bg-red-500/10 transition-colors"
                                 title="Delete mode"
                                 aria-label="Delete mode"
                             >
@@ -360,19 +360,19 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
 
                     <div className="flex flex-col gap-4 p-4 flex-1 min-h-0">
                         <section className="space-y-0.5">
-                            <p className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Custom instructions</p>
+                            <p className="ui-text-section-label-sm ui-color-muted">Custom instructions</p>
                             <div className="relative rounded-xl border border-border-primary bg-surface-surface p-2 px-3">
                                 <textarea
                                     value={instructionsText}
                                     onChange={(event) => handleInstructionsChange(event.target.value)}
                                     placeholder="Add custom instructions"
                                     aria-label="Custom instructions"
-                                    className="w-full resize-none bg-transparent text-[11px] leading-[20px] font-mono text-content-primary placeholder-content-disabled outline-none instructions-scroll"
+                                    className="w-full resize-none bg-transparent ui-text-label leading-[20px] font-mono ui-color-primary placeholder-content-disabled outline-none instructions-scroll"
                                     style={{ height: `${instructionsHeight}px` }}
                                 />
                             </div>
                             <div className="flex items-center justify-end gap-1">
-                                <span className="text-[10px] text-content-disabled tabular-nums">
+                                <span className="ui-text-meta ui-color-disabled tabular-nums">
                                     {instructionsCharCount}/{MAX_INSTRUCTIONS_CHARS}
                                 </span>
                                 <button
@@ -392,8 +392,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
                             <section className="space-y-2 flex flex-col min-h-0">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Applications</p>
-                                    <span className="text-[10px] text-content-disabled">{personality.apps.length} selected</span>
+                                    <p className="ui-text-section-label-sm ui-color-muted">Applications</p>
+                                    <span className="ui-text-meta ui-color-disabled">{personality.apps.length} selected</span>
                                 </div>
                                 <Dropdown
                                     value={selectedAppOption}
@@ -410,7 +410,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                 <div className="relative flex-1 min-h-0">
                                     <div className="space-y-1 h-full instructions-scroll pr-2">
                                     {personality.apps.length === 0 ? (
-                                        <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 text-[11px] text-content-muted">
+                                        <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 ui-text-label ui-color-muted">
                                             No applications selected
                                         </div>
                                     ) : (
@@ -423,9 +423,9 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={3} gap={2} color="var(--color-border-hover)" />
-                                                        <span className="text-[12px] text-content-primary">{app}</span>
+                                                        <span className="ui-text-body-sm ui-color-primary">{app}</span>
                                                         {isMissing && (
-                                                            <span className="text-[10px] text-content-disabled">Not installed</span>
+                                                            <span className="ui-text-meta ui-color-disabled">Not installed</span>
                                                         )}
                                                     </div>
                                                     <button
@@ -446,8 +446,8 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
 
                             <section className="space-y-2 flex flex-col min-h-0">
                                 <div className="flex items-center justify-between">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Websites</p>
-                                    <span className="text-[10px] text-content-disabled">{personality.websites.length} sites</span>
+                                    <p className="ui-text-section-label-sm ui-color-muted">Websites</p>
+                                    <span className="ui-text-meta ui-color-disabled">{personality.websites.length} sites</span>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 min-h-[40px] focus-within:border-border-hover transition-colors">
                                     <input
@@ -466,23 +466,23 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                         }}
                                         placeholder="Add a site like gmail.com"
                                         aria-label="Add website domain"
-                                        className="bg-transparent text-[12px] text-content-primary placeholder-content-disabled outline-none flex-1"
+                                        className="bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-none flex-1"
                                     />
                                     <button
                                         onClick={addWebsite}
-                                        className="flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5 text-[11px] text-content-primary hover:bg-surface-elevated-hover transition-colors"
+                                        className="flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5 ui-text-button ui-color-primary hover:bg-surface-elevated-hover transition-colors"
                                     >
                                         <Plus size={12} aria-hidden="true" />
                                         Add
                                     </button>
                                 </div>
                                 {websiteError && (
-                                    <p className="text-[10px] text-error">{websiteError}</p>
+                                    <p className="ui-text-meta ui-color-error">{websiteError}</p>
                                 )}
                                 <div className="relative flex-1 min-h-0">
                                     <div className="space-y-1 h-full instructions-scroll pr-2">
                                     {personality.websites.length === 0 ? (
-                                        <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 text-[11px] text-content-muted">
+                                        <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 ui-text-label ui-color-muted">
                                             No websites added
                                         </div>
                                     ) : (
@@ -493,7 +493,7 @@ const PersonalityModal = ({ personality, installedApps, onClose, onUpdate, onUpd
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={3} gap={2} color="var(--color-border-hover)" />
-                                                    <span className="text-[11px] font-mono text-content-primary">{site}</span>
+                                                    <span className="ui-text-label font-mono ui-color-primary">{site}</span>
                                                 </div>
                                                 <button
                                                     onClick={() => removeWebsite(site)}
@@ -694,8 +694,8 @@ const PersonalizationView = () => {
                 />
                 <div className="flex-1 flex items-start justify-between gap-4">
                     <div>
-                        <p className="text-2xl font-medium text-content-primary tracking-tight">Personalization</p>
-                        <p className="mt-1 text-[12px] text-content-secondary">
+                        <p className="ui-text-screen-title ui-color-primary tracking-tight">Personalization</p>
+                        <p className="mt-1 ui-text-body-sm ui-color-secondary">
                             Tailor modes to apps, sites, and custom instructions.
                         </p>
                     </div>
@@ -703,7 +703,7 @@ const PersonalizationView = () => {
                         onClick={handleAddMode}
                         aria-label="New mode"
                         title="New mode"
-                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-2.5 py-1.5 text-[11px] font-medium text-content-primary hover:bg-surface-elevated transition-colors"
+                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-2.5 py-1.5 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
                     >
                         <Plus size={12} />
                         New mode
@@ -725,9 +725,9 @@ const PersonalizationView = () => {
                     />
                 </div>
             ) : personalities.length === 0 ? (
-                <div className="rounded-xl border border-border-primary bg-surface-secondary px-6 py-8 text-content-muted">
-                    <p className="text-[14px] font-medium">No modes yet</p>
-                    <p className="text-[12px] text-content-muted">
+                <div className="rounded-xl border border-border-primary bg-surface-secondary px-6 py-8 ui-color-muted">
+                    <p className="ui-text-body-lg-strong">No modes yet</p>
+                    <p className="ui-text-body-sm ui-color-muted">
                         Create a mode to start customizing your apps and websites.
                     </p>
                 </div>
@@ -769,7 +769,7 @@ const PersonalizationView = () => {
                                 <div className="relative space-y-2">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
-                                            <p className="text-[14px] font-medium text-content-primary">{personality.name}</p>
+                                            <p className="ui-text-body-lg-strong ui-color-primary">{personality.name}</p>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
@@ -796,37 +796,37 @@ const PersonalizationView = () => {
 
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <p className="text-[9px] uppercase tracking-wider text-content-disabled">Apps</p>
+                                            <p className="ui-text-uppercase-micro ui-color-disabled">Apps</p>
                                             <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                                                 {appsPreview.length === 0 ? (
-                                                    <span className="text-[10px] text-content-disabled">No apps yet</span>
+                                                    <span className="ui-text-meta ui-color-disabled">No apps yet</span>
                                                 ) : (
                                                     appsPreview.map((app) => (
                                                         <div
                                                             key={app}
                                                             title={app}
-                                                            className="h-7 w-7 rounded-lg border border-border-secondary bg-surface-overlay flex items-center justify-center text-[9px] text-content-secondary"
+                                                            className="h-7 w-7 rounded-lg border border-border-secondary bg-surface-overlay flex items-center justify-center ui-text-micro ui-color-secondary"
                                                         >
                                                             {getInitials(app)}
                                                         </div>
                                                     ))
                                                 )}
                                                 {moreApps > 0 && (
-                                                    <span className="text-[10px] font-mono text-content-muted">+{moreApps}</span>
+                                                    <span className="ui-text-meta font-mono ui-color-muted">+{moreApps}</span>
                                                 )}
                                             </div>
                                         </div>
 
                                         <div>
-                                            <p className="text-[9px] uppercase tracking-wider text-content-disabled">Websites</p>
+                                            <p className="ui-text-uppercase-micro ui-color-disabled">Websites</p>
                                             <div className="mt-1.5 flex items-center gap-1.5 min-w-0 flex-nowrap">
                                                 {sitesPreview.length === 0 ? (
-                                                    <span className="text-[10px] text-content-disabled">No sites yet</span>
+                                                    <span className="ui-text-meta ui-color-disabled">No sites yet</span>
                                                 ) : (
                                                     sitesPreview.map((site) => (
                                                             <span
                                                                 key={site}
-                                                                className="min-w-0 max-w-[110px] truncate rounded-md border border-border-primary bg-surface-overlay px-2.5 py-1 text-[9px] font-mono text-content-secondary"
+                                                                className="min-w-0 max-w-[110px] truncate rounded-md border border-border-primary bg-surface-overlay px-2.5 py-1 ui-text-micro font-mono ui-color-secondary"
                                                             >
                                                                 {formatWebsitePreview(site)}
                                                             </span>
@@ -834,14 +834,14 @@ const PersonalizationView = () => {
                                                     ))
                                                 )}
                                                 {moreSites > 0 && (
-                                                    <span className="shrink-0 text-[10px] font-mono text-content-muted">+{moreSites}</span>
+                                                    <span className="shrink-0 ui-text-meta font-mono ui-color-muted">+{moreSites}</span>
                                                 )}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="mt-2 pt-2 border-t border-border-primary text-[10px] text-content-muted flex items-center gap-2 min-w-0">
-                                        <span className="text-[9px] uppercase tracking-wider text-content-disabled">Notes:</span>
+                                    <div className="mt-2 pt-2 border-t border-border-primary ui-text-meta ui-color-muted flex items-center gap-2 min-w-0">
+                                        <span className="ui-text-uppercase-micro ui-color-disabled">Notes:</span>
                                         <span className="font-mono truncate flex-1">
                                             {personality.instructions.length > 0 ? personality.instructions[0] : "No notes yet"}
                                         </span>
@@ -854,7 +854,7 @@ const PersonalizationView = () => {
             )}
 
             {error && (
-                <div className="mt-4 text-[12px] text-red-300">
+                <div className="mt-4 ui-text-body-sm ui-color-error-soft">
                     {error}
                 </div>
             )}
@@ -891,24 +891,24 @@ const PersonalizationView = () => {
                             aria-modal="true"
                             aria-labelledby="delete-mode-title"
                         >
-                            <h3 id="delete-mode-title" className="text-[15px] font-semibold text-content-primary">
+                            <h3 id="delete-mode-title" className="ui-text-title-strong ui-color-primary">
                                 Delete mode?
                             </h3>
-                            <p className="mt-2 text-[12px] text-content-secondary">
+                            <p className="mt-2 ui-text-body-sm ui-color-secondary">
                                 Delete <span className="font-semibold text-content-primary">"{pendingDeletePersonality.name}"</span>? This cannot be undone.
                             </p>
                             <div className="mt-4 flex items-center justify-end gap-2">
                                 <button
                                     type="button"
                                     onClick={() => setPendingDeletePersonality(null)}
-                                    className="rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 text-[11px] text-content-primary hover:bg-surface-elevated transition-colors"
+                                    className="rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
                                     onClick={confirmDeleteMode}
-                                    className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-300 hover:bg-red-500/15 transition-colors"
+                                    className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 ui-text-button font-semibold ui-color-error-soft hover:bg-red-500/15 transition-colors"
                                 >
                                     Delete
                                 </button>

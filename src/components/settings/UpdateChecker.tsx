@@ -129,14 +129,14 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/10 px-4 py-3 h-[52px]"
             >
-                <CheckCircle size={16} className="text-green-400" />
+                <CheckCircle size={16} className="ui-color-success-strong" />
                 <div className="flex-1">
-                    <p className="text-[12px] font-medium text-green-400">Update installed!</p>
-                    <p className="text-[10px] text-green-400/70">Restart the app to apply changes.</p>
+                    <p className="ui-text-body-sm-strong ui-color-success-strong">Update installed!</p>
+                    <p className="ui-text-meta ui-color-success-subtle">Restart the app to apply changes.</p>
                 </div>
                 <motion.button
                     onClick={handleRelaunch}
-                    className="rounded-lg bg-green-500 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-green-400 transition-colors"
+                    className="rounded-lg bg-green-500 px-3 py-1.5 ui-text-button ui-color-on-solid hover:bg-green-400 transition-colors"
                     whileTap={{ scale: 0.97 }}
                 >
                     Restart Now
@@ -152,14 +152,14 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-3 rounded-lg border border-amber-400/20 bg-amber-400/5 px-4 py-3 h-[52px]"
             >
-                <Download size={16} className="text-amber-400" />
+                <Download size={16} className="ui-color-warning-strong" />
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-[12px] font-medium text-amber-400">
+                        <p className="ui-text-body-sm-strong ui-color-warning-strong">
                             v{update.version} available
                         </p>
                         {downloadError && (
-                            <span className="text-[10px] text-red-400/80 whitespace-pre-wrap break-words">
+                            <span className="ui-text-meta ui-color-error-subtle whitespace-pre-wrap break-words">
                                 {downloadError}
                             </span>
                         )}
@@ -186,7 +186,7 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                                 color="var(--color-accent)"
                                 className="opacity-80"
                             />
-                            <span className="text-[10px] text-content-muted w-8 tabular-nums">
+                            <span className="ui-text-meta ui-color-muted w-8 tabular-nums">
                                 {progress}%
                             </span>
                         </motion.div>
@@ -194,7 +194,7 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                         <motion.button
                             key="update-btn"
                             onClick={handleDownloadAndInstall}
-                            className="rounded-lg bg-amber-400 px-3 py-1.5 text-[11px] font-medium text-black hover:bg-amber-300 transition-colors"
+                            className="rounded-lg bg-amber-400 px-3 py-1.5 ui-text-button ui-color-on-warning hover:bg-amber-300 transition-colors"
                             whileTap={{ scale: 0.97 }}
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -211,14 +211,14 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
     if (error) {
         return (
             <div className="flex items-center gap-3 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 h-[52px]">
-                <AlertCircle size={16} className="text-red-400" />
+                <AlertCircle size={16} className="ui-color-error-strong" />
                 <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-red-400">Update check failed</p>
-                    <p className="text-[10px] text-red-400/70 whitespace-pre-wrap break-words">{error}</p>
+                    <p className="ui-text-body-sm-strong ui-color-error-strong">Update check failed</p>
+                    <p className="ui-text-meta ui-color-error-subtle whitespace-pre-wrap break-words">{error}</p>
                 </div>
                 <motion.button
                     onClick={checkForUpdates}
-                    className="flex items-center gap-1.5 rounded-lg border border-red-500/20 px-2.5 py-1.5 text-[11px] text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="flex items-center gap-1.5 rounded-lg border border-red-500/20 px-2.5 py-1.5 ui-text-button ui-color-error-strong hover:bg-red-500/10 transition-colors"
                     whileTap={{ scale: 0.97 }}
                 >
                     <RefreshCw size={12} />
@@ -234,15 +234,15 @@ export function UpdateChecker({ autoCheck = true }: UpdateCheckerProps) {
                 {checking ? (
                     <>
                         <Loader2 size={16} className="text-content-muted animate-spin shrink-0" />
-                        <p className="flex-1 text-[12px] text-content-muted">Checking for updates...</p>
+                        <p className="flex-1 ui-text-body-sm ui-color-muted">Checking for updates...</p>
                     </>
                 ) : (
                     <>
                         <CheckCircle size={16} className="text-content-disabled shrink-0" />
-                        <p className="flex-1 text-[12px] text-content-primary">You're up to date!</p>
+                        <p className="flex-1 ui-text-body-sm ui-color-primary">You're up to date!</p>
                         <button
                             onClick={() => setWhatsNewOpen(true)}
-                            className="text-[11px] text-content-muted hover:text-content-secondary underline underline-offset-2 transition-colors"
+                            className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors"
                         >
                             What's new?
                         </button>

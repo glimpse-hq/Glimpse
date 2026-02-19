@@ -134,7 +134,7 @@ const StepIndicator = ({ currentStep, total }: { currentStep: number; total: num
 const StatusBadge = ({ granted, checking }: { granted: boolean; checking?: boolean }) => {
     if (checking) {
         return (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-content-muted">
+            <span className="inline-flex items-center gap-1.5 ui-text-label text-content-muted">
                 <Loader2 size={11} className="animate-spin" />
                 Checking...
             </span>
@@ -144,7 +144,7 @@ const StatusBadge = ({ granted, checking }: { granted: boolean; checking?: boole
     if (granted) {
         return (
             <motion.span
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-400"
+                className="inline-flex items-center gap-1 ui-text-label font-medium ui-color-success-strong"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
             >
@@ -155,7 +155,7 @@ const StatusBadge = ({ granted, checking }: { granted: boolean; checking?: boole
     }
 
     return (
-        <span className="text-[11px] text-content-muted">
+        <span className="ui-text-label text-content-muted">
             Not enabled
         </span>
     );
@@ -608,7 +608,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     };
 
     return (
-        <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary text-white select-none relative">
+        <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
             <div data-tauri-drag-region className="h-7 w-full shrink-0" />
 
             <div className="flex justify-center pt-6 pb-6">
@@ -628,11 +628,11 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 <GlimpseLogo size="lg" />
                             </div>
 
-                            <h1 className="text-2xl font-semibold text-content-primary mb-2">
+                            <h1 className="ui-text-screen-title font-semibold text-content-primary mb-2">
                                 Welcome to Glimpse
                             </h1>
 
-                            <p className="text-sm text-content-muted mb-8">
+                            <p className="ui-text-body-lg text-content-muted mb-8">
                                 Build at the speed of speech.
                             </p>
 
@@ -640,7 +640,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 <button
                                     type="button"
                                     disabled
-                                    className={`group relative w-full rounded-2xl border p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.28)] overflow-hidden transition-colors ${selectedMode === "cloud"
+                                    className={`group relative w-full rounded-2xl border p-4 text-left space-y-3 ui-shadow-onboarding-cloud overflow-hidden transition-colors ${selectedMode === "cloud"
                                         ? "border-cloud-50 bg-surface-tertiary ring-1 ring-cloud-30"
                                         : "border-border-primary bg-surface-tertiary opacity-70 cursor-not-allowed"
                                         }`}
@@ -654,10 +654,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     </div>
                                     <div className="relative flex items-center gap-2">
                                         <DotMatrix rows={2} cols={2} activeDots={[0, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                        <span className="text-[10px] font-semibold text-amber-400">Glimpse Cloud</span>
-                                        <span className="ml-2 rounded-lg bg-surface-elevated px-2 py-0.5 text-[9px] font-medium text-content-muted">In development</span>
+                                        <span className="ui-text-meta font-semibold ui-color-warning-strong">Glimpse Cloud</span>
+                                        <span className="ml-2 rounded-lg bg-surface-elevated px-2 py-0.5 ui-text-micro font-medium text-content-muted">In development</span>
                                     </div>
-                                    <div className="relative flex flex-col gap-1.5 text-[11px] text-content-secondary font-medium">
+                                    <div className="relative flex flex-col gap-1.5 ui-text-label text-content-secondary font-medium">
                                         <div className="flex items-center gap-2">
                                             <div className="h-1 w-3 rounded-full bg-amber-400/80" />
                                             <span>Cross-device sync</span>
@@ -671,7 +671,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             <span>Faster cleanup & delivery</span>
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center gap-3 rounded-xl border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-secondary leading-relaxed">
+                                    <div className="relative flex items-center gap-3 rounded-xl border border-border-primary bg-surface-tertiary px-3 py-2 ui-text-meta text-content-secondary leading-relaxed">
                                         <DotMatrix rows={3} cols={5} activeDots={[0, 2, 4, 6, 8, 10, 12, 14]} dotSize={2} gap={2} color="var(--color-border-secondary)" />
                                         <p className="flex-1">Get better models and faster cleanup & delivery ($5.99/mo) with cloud.</p>
                                     </div>
@@ -680,7 +680,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 <button
                                     type="button"
                                     onClick={() => setSelectedMode("local")}
-                                    className={`group relative w-full rounded-2xl border p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.18)] overflow-hidden transition-colors ${selectedMode === "local"
+                                    className={`group relative w-full rounded-2xl border p-4 text-left space-y-3 ui-shadow-onboarding-local overflow-hidden transition-colors ${selectedMode === "local"
                                         ? "border-local-50 bg-surface-tertiary ring-1 ring-local-30"
                                         : "border-border-primary bg-surface-tertiary"
                                         }`}
@@ -694,9 +694,9 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     </div>
                                     <div className="relative flex items-center gap-2">
                                         <DotMatrix rows={2} cols={2} activeDots={[1, 2]} dotSize={3} gap={2} color="var(--color-local)" />
-                                        <span className="text-[10px] font-semibold text-local">Glimpse Local</span>
+                                        <span className="ui-text-meta font-semibold text-local">Glimpse Local</span>
                                     </div>
-                                    <div className="relative flex flex-col gap-1.5 text-[11px] text-content-secondary font-medium">
+                                    <div className="relative flex flex-col gap-1.5 ui-text-label text-content-secondary font-medium">
                                         <div className="flex items-center gap-2">
                                             <div className="h-1 w-3 rounded-full bg-local-80" />
                                             <span>Everything stays on-device for privacy </span>
@@ -710,7 +710,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                             <span>free optional Cloud transcription sync</span>
                                         </div>
                                     </div>
-                                    <div className="relative flex items-center gap-3 rounded-xl border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-muted leading-relaxed">
+                                    <div className="relative flex items-center gap-3 rounded-xl border border-border-primary bg-surface-tertiary px-3 py-2 ui-text-meta text-content-muted leading-relaxed">
                                         <DotMatrix rows={3} cols={5} activeDots={[1, 4, 6, 9, 12, 15, 18, 21]} dotSize={2} gap={2} color="var(--color-local)" />
                                         <p className="flex-1">Best for privacy-first or offline sessions. Cloud remains optional if you want sync and faster responses.</p>
                                     </div>
@@ -719,7 +719,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
                             <button
                                 onClick={goToNextStep}
-                                className="flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 text-sm font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
+                                className="flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
                             >
                                 {selectedMode === "cloud" ? "> Cloud" : "> Local"}
                             </button>
@@ -737,10 +737,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             className="flex flex-col items-center text-center w-full max-w-2xl"
                         >
 
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
+                            <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">
                                 Choose your local model
                             </h2>
-                            <div className="mb-6 flex flex-col gap-1 text-sm text-content-muted">
+                            <div className="mb-6 flex flex-col gap-1 ui-text-body-lg text-content-muted">
                                 <p>More models & AI cleanup available in Settings after setup.</p>
                             </div>
 
@@ -757,7 +757,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     }}
                                     aria-label="Select Whisper Large V3 Turbo model"
                                     aria-pressed={localModelChoice === WHISPER_KEY}
-                                    className={`relative w-full rounded-2xl border p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.16)] overflow-hidden transition-colors cursor-pointer ${isWhisperActive
+                                    className={`relative w-full rounded-2xl border p-4 text-left space-y-3 ui-shadow-onboarding-model overflow-hidden transition-colors cursor-pointer ${isWhisperActive
                                         ? "border-border-primary bg-amber-400/5 ring-1 ring-amber-400/60"
                                         : localModelChoice === WHISPER_KEY
                                             ? "border-border-primary bg-surface-tertiary ring-1 ring-amber-400/30"
@@ -770,24 +770,24 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                         </div>
                                     </div>
                                     {isWhisperActive && (
-                                        <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 text-[8px] font-semibold uppercase tracking-wider text-amber-400">
+                                        <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 ui-text-nano font-semibold uppercase tracking-wider ui-color-warning-strong">
                                             Active
                                         </p>
                                     )}
                                     <div className="relative flex items-center gap-2">
                                         <DotMatrix rows={2} cols={2} activeDots={[1, 2]} dotSize={3} gap={2} color="var(--color-local)" />
-                                        <span className="text-[11px] font-semibold text-content-primary">Whisper Large V3 Turbo (Q8)</span>
+                                        <span className="ui-text-label font-semibold text-content-primary">Whisper Large V3 Turbo (Q8)</span>
                                         {modelInfo[WHISPER_KEY]?.size_mb && (
-                                            <span className="text-[9px] text-content-muted tabular-nums">{modelInfo[WHISPER_KEY].size_mb >= 1000 ? `${(modelInfo[WHISPER_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[WHISPER_KEY].size_mb)} MB`}</span>
+                                            <span className="ui-text-micro text-content-muted tabular-nums">{modelInfo[WHISPER_KEY].size_mb >= 1000 ? `${(modelInfo[WHISPER_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[WHISPER_KEY].size_mb)} MB`}</span>
                                         )}
                                     </div>
                                     <div className="relative flex items-center flex-wrap gap-1.5">
                                         {modelInfo[WHISPER_KEY]?.tags?.map((tag) => (
                                             <span
                                                 key={tag}
-                                                className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${
+                                                className={`px-1.5 py-0.5 rounded ui-text-nano font-semibold uppercase tracking-wider border ${
                                                     tag.toLowerCase() === "recommended"
-                                                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                                        ? "bg-emerald-500/15 ui-color-success-subtle border-emerald-500/30"
                                                         : "bg-local-15 text-local border-local-40"
                                                 }`}
                                             >
@@ -796,11 +796,11 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                         ))}
                                     </div>
                                     {modelInfo[WHISPER_KEY]?.description && (
-                                        <p className="relative text-[11px] text-content-muted text-center py-2">
+                                        <p className="relative ui-text-label text-content-muted text-center py-2">
                                             {modelInfo[WHISPER_KEY].description}
                                         </p>
                                     )}
-                                    <div className="relative rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-tertiary leading-relaxed space-y-2">
+                                    <div className="relative rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 ui-text-meta text-content-tertiary leading-relaxed space-y-2">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 aria-label={displayState.whisper.status === "downloading" ? "Stop download" : displayState.whisper.status === "complete" ? "Delete model" : "Download model"}
@@ -832,24 +832,24 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                                     <Download size={14} className={displayState.whisper.status === "cancelled" ? "" : "text-cloud"} />
                                                 )}
                                             </button>
-                                            <span className="text-[11px] font-semibold text-content-secondary">
+                                            <span className="ui-text-label font-semibold text-content-secondary">
                                                 {displayState.whisper.status === "complete" ? "Downloaded" : "Download"}
                                             </span>
                                         </div>
                                         <ModelProgress percent={displayState.whisper.percent} status={displayState.whisper.status} />
                                         <div className="h-4 flex items-center">
                                             {displayState.whisper.status === "downloading" && (
-                                                <p className="text-[10px] leading-none text-content-muted tabular-nums truncate w-full">
+                                                <p className="ui-text-meta leading-none text-content-muted tabular-nums truncate w-full">
                                                     {displayState.whisper.percent.toFixed(0)}% · {displayState.whisper.file ?? ""}
                                                 </p>
                                             )}
                                             {displayState.whisper.status === "error" && (
-                                                <p className="text-[10px] leading-none text-error truncate w-full">
+                                                <p className="ui-text-meta leading-none text-error truncate w-full">
                                                     {displayState.whisper.message ?? "Download failed"}
                                                 </p>
                                             )}
                                             {displayState.whisper.status === "cancelled" && (
-                                                <p className="text-[10px] leading-none text-content-muted">
+                                                <p className="ui-text-meta leading-none text-content-muted">
                                                     Cancelled
                                                 </p>
                                             )}
@@ -869,7 +869,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                     }}
                                     aria-label="Select Parakeet (INT8) model"
                                     aria-pressed={localModelChoice === PARAKEET_KEY}
-                                    className={`relative w-full rounded-2xl border border-border-primary p-4 text-left space-y-3 shadow-[0_10px_24px_rgba(0,0,0,0.2)] overflow-hidden transition-colors cursor-pointer ${isParakeetActive
+                                    className={`relative w-full rounded-2xl border border-border-primary p-4 text-left space-y-3 ui-shadow-onboarding-model-alt overflow-hidden transition-colors cursor-pointer ${isParakeetActive
                                         ? "bg-amber-400/5 ring-1 ring-amber-400/60"
                                         : localModelChoice === PARAKEET_KEY
                                             ? "bg-surface-tertiary ring-1 ring-amber-400/30"
@@ -878,24 +878,24 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 >
                                     <div className="absolute inset-0 pointer-events-none" />
                                     {isParakeetActive && (
-                                        <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 text-[8px] font-semibold uppercase tracking-wider text-amber-400">
+                                        <p className="pointer-events-none absolute left-1/2 -top-2 z-10 -translate-x-1/2 ui-text-nano font-semibold uppercase tracking-wider ui-color-warning-strong">
                                             Active
                                         </p>
                                     )}
                                     <div className="relative flex items-center gap-2">
                                         <DotMatrix rows={2} cols={2} activeDots={[0]} dotSize={3} gap={2} color="var(--color-local)" />
-                                        <span className="text-[11px] font-semibold text-content-primary">Parakeet V3 (INT8)</span>
+                                        <span className="ui-text-label font-semibold text-content-primary">Parakeet V3 (INT8)</span>
                                         {modelInfo[PARAKEET_KEY]?.size_mb && (
-                                            <span className="text-[9px] text-content-muted tabular-nums">{modelInfo[PARAKEET_KEY].size_mb >= 1000 ? `${(modelInfo[PARAKEET_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[PARAKEET_KEY].size_mb)} MB`}</span>
+                                            <span className="ui-text-micro text-content-muted tabular-nums">{modelInfo[PARAKEET_KEY].size_mb >= 1000 ? `${(modelInfo[PARAKEET_KEY].size_mb / 1000).toFixed(1)} GB` : `${Math.round(modelInfo[PARAKEET_KEY].size_mb)} MB`}</span>
                                         )}
                                     </div>
                                     <div className="relative flex items-center flex-wrap gap-1.5">
                                         {modelInfo[PARAKEET_KEY]?.tags?.map((tag) => (
                                             <span
                                                 key={tag}
-                                                className={`px-1.5 py-0.5 rounded text-[8px] font-semibold uppercase tracking-wider border ${
+                                                className={`px-1.5 py-0.5 rounded ui-text-nano font-semibold uppercase tracking-wider border ${
                                                     tag.toLowerCase() === "recommended"
-                                                        ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                                                        ? "bg-emerald-500/15 ui-color-success-subtle border-emerald-500/30"
                                                         : "bg-local-15 text-local border-local-40"
                                                 }`}
                                             >
@@ -904,11 +904,11 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                         ))}
                                     </div>
                                     {modelInfo[PARAKEET_KEY]?.description && (
-                                        <p className="relative text-[11px] text-content-muted text-center py-2">
+                                        <p className="relative ui-text-label text-content-muted text-center py-2">
                                             {modelInfo[PARAKEET_KEY].description}
                                         </p>
                                     )}
-                                    <div className="relative rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 text-[10px] text-content-tertiary leading-relaxed space-y-2">
+                                    <div className="relative rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 ui-text-meta text-content-tertiary leading-relaxed space-y-2">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 aria-label={displayState.parakeet.status === "downloading" ? "Stop download" : displayState.parakeet.status === "complete" ? "Delete model" : "Download model"}
@@ -940,24 +940,24 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                                     <Download size={14} className={displayState.parakeet.status === "cancelled" ? "" : "text-cloud"} />
                                                 )}
                                             </button>
-                                            <span className="text-[11px] font-semibold text-content-secondary">
+                                            <span className="ui-text-label font-semibold text-content-secondary">
                                                 {displayState.parakeet.status === "complete" ? "Downloaded" : "Download"}
                                             </span>
                                         </div>
                                         <ModelProgress percent={displayState.parakeet.percent} status={displayState.parakeet.status} />
                                         <div className="h-4 flex items-center">
                                             {displayState.parakeet.status === "downloading" && (
-                                                <p className="text-[10px] leading-none text-content-muted tabular-nums truncate w-full">
+                                                <p className="ui-text-meta leading-none text-content-muted tabular-nums truncate w-full">
                                                     {displayState.parakeet.percent.toFixed(0)}% · {displayState.parakeet.file ?? ""}
                                                 </p>
                                             )}
                                             {displayState.parakeet.status === "error" && (
-                                                <p className="text-[10px] leading-none text-error truncate w-full">
+                                                <p className="ui-text-meta leading-none text-error truncate w-full">
                                                     {displayState.parakeet.message ?? "Download failed"}
                                                 </p>
                                             )}
                                             {displayState.parakeet.status === "cancelled" && (
-                                                <p className="text-[10px] leading-none text-content-muted">
+                                                <p className="ui-text-meta leading-none text-content-muted">
                                                     Cancelled
                                                 </p>
                                             )}
@@ -968,7 +968,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
                             <button
                                 onClick={handleLocalModelContinue}
-                                className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 text-sm font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
+                                className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
                             >
                                 Continue
                             </button>
@@ -986,18 +986,18 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             <div className="mb-4 rounded-2xl bg-local/10 p-4">
                                 <Mail size={28} className="text-local" />
                             </div>
-                            <h2 className="text-xl font-semibold text-content-primary mb-2">Transcription Sync</h2>
-                            <p className="text-sm text-content-muted mb-2 leading-relaxed">
+                            <h2 className="ui-text-title-lg font-semibold text-content-primary mb-2">Transcription Sync</h2>
+                            <p className="ui-text-body-lg text-content-muted mb-2 leading-relaxed">
                                 Cloud sync is currently <span className="text-content-primary font-medium">in development</span>.
                             </p>
-                            <p className="text-xs text-content-disabled mb-7 leading-relaxed">
+                            <p className="ui-text-body-sm text-content-disabled mb-7 leading-relaxed">
                                 You can keep using Glimpse locally. This screen will be enabled in a future update.
                             </p>
 
                             <button
                                 type="button"
                                 onClick={goToNextStep}
-                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 text-sm font-semibold text-surface-secondary hover:bg-white transition-colors"
+                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 ui-text-body-lg font-semibold text-surface-secondary hover:bg-white transition-colors"
                             >
                                 Continue
                             </button>
@@ -1014,10 +1014,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             className="flex flex-col items-center text-center max-w-sm"
                         >
                             <div className="mb-5">
-                                <Mic size={32} className="text-amber-400" />
+                                <Mic size={32} className="ui-color-warning-strong" />
                             </div>
 
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
+                            <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">
                                 Microphone Access
                             </h2>
 
@@ -1025,7 +1025,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 <StatusBadge granted={micPermission} checking={isCheckingMic} />
                             </div>
 
-                            <p className="text-sm text-content-muted mb-6">
+                            <p className="ui-text-body-lg text-content-muted mb-6">
                                 Required to capture your voice for transcription.
                             </p>
 
@@ -1033,7 +1033,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 <button
                                     onClick={handleRequestMicrophoneAccess}
                                     disabled={isCheckingMic}
-                                    className="flex items-center gap-2 rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-medium text-black hover:bg-amber-300 transition-colors disabled:opacity-50"
+                                    className="flex items-center gap-2 rounded-lg bg-amber-400 px-5 py-2.5 ui-text-body-lg font-medium ui-color-on-warning hover:bg-amber-300 transition-colors disabled:opacity-50"
                                 >
                                     <Mic size={15} />
                                     Grant Access
@@ -1041,7 +1041,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             ) : (
                                 <button
                                     onClick={goToNextStep}
-                                    className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 transition-colors"
+                                    className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 ui-text-body-lg font-medium ui-color-on-solid hover:bg-emerald-400 transition-colors"
                                 >
                                     Continue
                                     <ChevronRight size={15} />
@@ -1050,7 +1050,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
                             <button
                                 onClick={goToNextStep}
-                                className="mt-3 text-xs text-content-muted hover:text-content-muted transition-colors"
+                                className="mt-3 ui-text-body-sm text-content-muted hover:text-content-muted transition-colors"
                             >
                                 Skip
                             </button>
@@ -1065,10 +1065,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             className="flex flex-col items-center text-center max-w-sm"
                         >
                             <div className="mb-5">
-                                <Accessibility size={32} className="text-violet-400" />
+                                <Accessibility size={32} className="ui-color-accent" />
                             </div>
 
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
+                            <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">
                                 Accessibility
                             </h2>
 
@@ -1076,12 +1076,12 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                 <StatusBadge granted={accessibilityPermission} checking={isCheckingAccessibility} />
                             </div>
 
-                            <p className="text-sm text-content-muted mb-5">
+                            <p className="ui-text-body-lg text-content-muted mb-5">
                                 Enables auto-paste into any application.
                             </p>
 
                             {!accessibilityPermission && (
-                                <p className="text-xs text-content-disabled mb-5">
+                                <p className="ui-text-body-sm text-content-disabled mb-5">
                                     Click below to open System Settings, then toggle on <span className="text-content-muted">Glimpse</span>
                                 </p>
                             )}
@@ -1089,7 +1089,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             {!accessibilityPermission ? (
                                 <button
                                     onClick={handleRequestAccessibilityAccess}
-                                    className="flex items-center gap-2 rounded-lg bg-violet-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-violet-400 transition-colors"
+                                    className="flex items-center gap-2 rounded-lg bg-violet-500 px-5 py-2.5 ui-text-body-lg font-medium ui-color-on-solid hover:bg-violet-400 transition-colors"
                                 >
                                     <ExternalLink size={15} />
                                     Enable in Settings
@@ -1097,7 +1097,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             ) : (
                                 <button
                                     onClick={goToNextStep}
-                                    className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-emerald-400 transition-colors"
+                                    className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 ui-text-body-lg font-medium ui-color-on-solid hover:bg-emerald-400 transition-colors"
                                 >
                                     Continue
                                     <ChevronRight size={15} />
@@ -1106,7 +1106,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
                             <button
                                 onClick={goToNextStep}
-                                className="mt-3 text-xs text-content-muted hover:text-content-muted transition-colors"
+                                className="mt-3 ui-text-body-sm text-content-muted hover:text-content-muted transition-colors"
                             >
                                 Skip
                             </button>
@@ -1121,11 +1121,11 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             className="flex flex-col items-center text-center max-w-md"
                         >
 
-                            <h2 className="text-xl font-semibold text-content-primary mb-1">
+                            <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">
                                 You're ready!
                             </h2>
 
-                            <p className="text-sm text-content-muted mb-6">
+                            <p className="ui-text-body-lg text-content-muted mb-6">
                                 Smart Mode is your default shortcut. Click to customize:
                             </p>
 
@@ -1148,34 +1148,34 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             >
                                 <div className="flex items-center gap-2 mb-2">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-400/20">
-                                        <Wand2 size={14} className="text-amber-400" />
+                                        <Wand2 size={14} className="ui-color-warning-strong" />
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
-                                            <span className="text-[12px] font-medium text-content-primary">Smart Mode</span>
-                                            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400">Default</span>
+                                            <span className="ui-text-body-sm font-medium text-content-primary">Smart Mode</span>
+                                            <span className="ui-text-micro font-medium px-1.5 py-0.5 rounded bg-amber-400/20 ui-color-warning-strong">Default</span>
                                         </div>
-                                        <p className="text-[10px] text-content-muted">Quick tap = hold, long press = toggle</p>
+                                        <p className="ui-text-meta text-content-muted">Quick tap = hold, long press = toggle</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <code className={`text-sm font-mono ${captureActive ? "text-amber-400" : "text-content-primary"}`}>
+                                    <code className={`ui-text-body-lg font-mono ${captureActive ? "ui-color-warning-strong" : "text-content-primary"}`}>
                                         {captureActive ? "Press new shortcut..." : formatShortcutForDisplay(smartShortcut)}
                                     </code>
-                                    <span className="text-[10px] text-content-muted">
+                                    <span className="ui-text-meta text-content-muted">
                                         {captureActive ? "Esc to cancel" : "Click to change"}
                                     </span>
                                 </div>
                             </motion.button>
 
-                            <p className="mt-4 text-[11px] text-content-disabled">
+                            <p className="mt-4 ui-text-label text-content-disabled">
                                 You can add more shortcuts in Settings later.
                             </p>
 
                             <button
                                 onClick={handleComplete}
                                 disabled={captureActive}
-                                className="mt-6 flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-2.5 text-sm font-semibold text-black hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="mt-6 flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-2.5 ui-text-body-lg font-semibold ui-color-on-warning hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Sparkles size={15} />
                                 Get Started
@@ -1188,7 +1188,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
             <div className="flex justify-center pb-5">
                 <div className="flex items-center gap-2 text-content-disabled">
                     <GlimpseLogo size="sm" />
-                    <span className="text-[10px] font-medium">Glimpse</span>
+                    <span className="ui-text-meta font-medium">Glimpse</span>
                 </div>
             </div>
 
@@ -1207,20 +1207,20 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.96, opacity: 0 }}
                             transition={{ duration: 0.18 }}
-                            className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+                            className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="flex items-center gap-3 mb-3">
-                                <AlertTriangle size={20} className="text-amber-400 shrink-0" />
+                                <AlertTriangle size={20} className="ui-color-warning-strong shrink-0" />
                                 <div>
-                                    <p className="text-[14px] font-semibold text-content-primary">Continue without a model?</p>
-                                    <p className="text-[11px] text-content-disabled">You haven't downloaded a local model yet. Transcription will not run offline until you add one in Settings.</p>
+                                    <p className="ui-text-body-lg font-semibold text-content-primary">Continue without a model?</p>
+                                    <p className="ui-text-label text-content-disabled">You haven't downloaded a local model yet. Transcription will not run offline until you add one in Settings.</p>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <button
                                     onClick={() => setShowLocalConfirm(false)}
-                                    className="rounded-lg border border-border-secondary px-4 py-2 text-[12px] font-medium text-content-secondary hover:border-border-hover transition-colors"
+                                    className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary hover:border-border-hover transition-colors"
                                 >
                                     Stay here
                                 </button>
@@ -1229,7 +1229,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
                                         setShowLocalConfirm(false);
                                         goToNextStep();
                                     }}
-                                    className="rounded-lg bg-amber-400 px-4 py-2 text-[12px] font-semibold text-black hover:bg-amber-300 transition-colors"
+                                    className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning hover:bg-amber-300 transition-colors"
                                 >
                                     Continue anyway
                                 </button>
@@ -1245,7 +1245,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
             {currentStepIndex > 0 && (
                 <button
                     onClick={goToPrevStep}
-                    className="absolute left-6 bottom-6 flex items-center gap-1 text-xs text-content-muted hover:text-content-muted transition-colors"
+                    className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-muted transition-colors"
                 >
                     <ChevronLeft size={14} />
                     Back

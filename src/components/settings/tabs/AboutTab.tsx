@@ -21,16 +21,16 @@ const AboutTab = ({ variants, appInfo, formatBytes, onOpenDataDir, onOpenFAQ }: 
         className="space-y-6"
     >
         <div className="space-y-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">App Info</h2>
+            <h2 className="ui-text-section-label-sm ui-color-muted">App Info</h2>
 
             <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3">
-                    <span className="text-[9px] text-content-disabled block">Version</span>
-                    <span className="text-[12px] text-content-primary font-medium">{appInfo?.version ?? "-"}</span>
+                    <span className="ui-text-micro ui-color-disabled block">Version</span>
+                    <span className="ui-text-body-sm-strong ui-color-primary">{appInfo?.version ?? "-"}</span>
                 </div>
                 <div className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3">
-                    <span className="text-[9px] text-content-disabled block">Storage Used</span>
-                    <span className="text-[12px] text-content-primary font-medium">{appInfo ? formatBytes(appInfo.data_dir_size_bytes) : "-"}</span>
+                    <span className="ui-text-micro ui-color-disabled block">Storage Used</span>
+                    <span className="ui-text-body-sm-strong ui-color-primary">{appInfo ? formatBytes(appInfo.data_dir_size_bytes) : "-"}</span>
                 </div>
             </div>
 
@@ -40,18 +40,18 @@ const AboutTab = ({ variants, appInfo, formatBytes, onOpenDataDir, onOpenFAQ }: 
                 disabled={!appInfo?.data_dir_path}
                 className="w-full rounded-lg border border-border-primary bg-surface-surface py-2 px-3 text-left hover:border-border-secondary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-                <span className="text-[9px] text-content-disabled block">Data Location</span>
-                <span className="text-[11px] text-content-muted font-mono truncate block"><span className="border-b border-dotted border-content-disabled pb-[1px]">{appInfo?.data_dir_path ?? "-"}</span></span>
+                <span className="ui-text-micro ui-color-disabled block">Data Location</span>
+                <span className="ui-text-label ui-color-muted font-mono truncate block"><span className="border-b border-dotted border-content-disabled pb-[1px]">{appInfo?.data_dir_path ?? "-"}</span></span>
             </button>
         </div>
 
         <div className="space-y-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Updates</h2>
+            <h2 className="ui-text-section-label-sm ui-color-muted">Updates</h2>
             <UpdateChecker />
         </div>
 
         <div className="space-y-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-content-muted">Setup</h2>
+            <h2 className="ui-text-section-label-sm ui-color-muted">Setup</h2>
 
             <div className="grid grid-cols-2 gap-3">
                 <button
@@ -65,16 +65,16 @@ const AboutTab = ({ variants, appInfo, formatBytes, onOpenDataDir, onOpenFAQ }: 
                     }}
                     className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3 text-left hover:border-border-secondary transition-colors"
                 >
-                    <span className="text-[11px] font-medium text-content-primary block">Restart Onboarding</span>
-                    <span className="text-[9px] text-content-disabled">re-run setup wizard</span>
+                    <span className="ui-text-label-strong ui-color-primary block">Restart Onboarding</span>
+                    <span className="ui-text-micro ui-color-disabled">re-run setup wizard</span>
                 </button>
 
                 <button
                     onClick={onOpenFAQ}
                     className="rounded-lg border border-border-primary bg-surface-surface py-2.5 px-3 text-left hover:border-border-secondary transition-colors"
                 >
-                    <span className="text-[11px] font-medium text-content-primary block">FAQ & Help</span>
-                    <span className="text-[9px] text-content-disabled">common questions</span>
+                    <span className="ui-text-label-strong ui-color-primary block">FAQ & Help</span>
+                    <span className="ui-text-micro ui-color-disabled">common questions</span>
                 </button>
             </div>
         </div>

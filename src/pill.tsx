@@ -32,11 +32,29 @@ const ICONS = {
   ],
 };
 
-const COLORS = {
+interface PillColorPalette {
+  base: string;
+  highlight: string;
+  error: string;
+}
+
+const FALLBACK_PILL_COLOR_PALETTE: PillColorPalette = {
   base: "40, 40, 40",
-  white: "255, 255, 255",
-  red: "239, 68, 68",
+  highlight: "255, 255, 255",
+  error: "239, 68, 68",
 };
+
+const readCssVar = (name: string, fallback: string): string => {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+};
+
+const resolvePillColorPalette = (): PillColorPalette => ({
+  base: readCssVar("--ui-pill-dot-base-rgb", FALLBACK_PILL_COLOR_PALETTE.base),
+  highlight: readCssVar("--ui-pill-dot-highlight-rgb", FALLBACK_PILL_COLOR_PALETTE.highlight),
+  error: readCssVar("--ui-pill-dot-error-rgb", FALLBACK_PILL_COLOR_PALETTE.error),
+});
 
 interface PillOverlayProps {
   className?: string;
@@ -66,6 +84,11 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const [status, setStatus] = useState<PillStatus>("idle");
   const statusRef = useRef<PillStatus>("idle");
   const [isErrorFlashing, setIsErrorFlashing] = useState(false);
+  const colorPaletteRef = useRef<PillColorPalette>(FALLBACK_PILL_COLOR_PALETTE);
+
+  const refreshColorPalette = useCallback(() => {
+    colorPaletteRef.current = resolvePillColorPalette();
+  }, []);
 
   const getMaskOpacity = useCallback((x: number, y: number, width: number, height: number): number => {
     const radius = height / 2;
@@ -109,6 +132,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const width = canvas.width / dpr;
     const height = canvas.height / dpr;
     const { cols, rows, spacing, offsetX, offsetY } = gridRef.current;
+    const colorPalette = colorPaletteRef.current;
 
     ctx.shadowBlur = 0;
     ctx.shadowColor = "transparent";
@@ -138,14 +162,14 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
           const edgeFactor = 1 - (distFromCenterY / (activeRadius + 0.5));
           const brightness = Math.pow(edgeFactor, 1.5) * (0.7 + 0.3 * wave);
 
-          ctx.fillStyle = `rgba(${COLORS.white}, ${brightness * maskAlpha})`;
+          ctx.fillStyle = `rgba(${colorPalette.highlight}, ${brightness * maskAlpha})`;
           if (brightness > 0.7) {
             ctx.shadowBlur = 3;
-            ctx.shadowColor = `rgba(${COLORS.white}, 0.3)`;
+            ctx.shadowColor = `rgba(${colorPalette.highlight}, 0.3)`;
           }
           ctx.arc(cx, cy, DOT_RADIUS.loader, 0, Math.PI * 2);
         } else {
-          ctx.fillStyle = `rgba(${COLORS.base}, ${maskAlpha * 0.4})`;
+          ctx.fillStyle = `rgba(${colorPalette.base}, ${maskAlpha * 0.4})`;
           ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
         }
         ctx.fill();
@@ -169,6 +193,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const { cols, rows, spacing, offsetX, offsetY } = gridRef.current;
     const centerCol = Math.floor(cols / 2);
     const centerRow = Math.floor(rows / 2);
+    const colorPalette = colorPaletteRef.current;
 
     ctx.shadowBlur = 0;
     ctx.shadowColor = "transparent";
@@ -188,12 +213,12 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
         ctx.beginPath();
         if (isIcon) {
-          ctx.fillStyle = `rgba(${COLORS.red}, ${maskAlpha})`;
+          ctx.fillStyle = `rgba(${colorPalette.error}, ${maskAlpha})`;
           ctx.shadowBlur = 6;
-          ctx.shadowColor = `rgba(${COLORS.red}, 0.6)`;
+          ctx.shadowColor = `rgba(${colorPalette.error}, 0.6)`;
           ctx.arc(cx, cy, DOT_RADIUS.icon, 0, Math.PI * 2);
         } else {
-          ctx.fillStyle = `rgba(${COLORS.red}, ${intensity * maskAlpha * 0.6})`;
+          ctx.fillStyle = `rgba(${colorPalette.error}, ${intensity * maskAlpha * 0.6})`;
           ctx.shadowBlur = 0;
           ctx.shadowColor = "transparent";
           ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
@@ -213,6 +238,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const height = canvas.height / dpr;
     const { cols, rows, spacing, offsetX, offsetY } = gridRef.current;
     const centerCol = Math.floor(cols / 2);
+    const colorPalette = colorPaletteRef.current;
 
     if (audioData.length > 0) {
       let framePeak = 0;
@@ -289,12 +315,12 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         if (isWaveActive) {
           const waveEdgeDist = 1 - (distFromCenterY / (activeRadiusPixels + 0.1));
           const brightness = 0.5 + (waveEdgeDist * 0.5);
-          ctx.fillStyle = `rgba(${COLORS.white}, ${brightness * maskAlpha})`;
+          ctx.fillStyle = `rgba(${colorPalette.highlight}, ${brightness * maskAlpha})`;
           ctx.shadowBlur = brightness > 0.8 ? 4 : 0;
-          ctx.shadowColor = brightness > 0.8 ? `rgba(${COLORS.white}, 0.4)` : "transparent";
+          ctx.shadowColor = brightness > 0.8 ? `rgba(${colorPalette.highlight}, 0.4)` : "transparent";
           ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
         } else {
-          ctx.fillStyle = `rgba(${COLORS.base}, ${maskAlpha})`;
+          ctx.fillStyle = `rgba(${colorPalette.base}, ${maskAlpha})`;
           ctx.shadowBlur = 0;
           ctx.shadowColor = "transparent";
           ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
@@ -313,6 +339,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const width = canvas.width / dpr;
     const height = canvas.height / dpr;
     const { cols, rows, spacing, offsetX, offsetY } = gridRef.current;
+    const colorPalette = colorPaletteRef.current;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let c = 0; c < cols; c++) {
@@ -323,7 +350,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         if (maskAlpha <= 0.05) continue;
 
         ctx.beginPath();
-        ctx.fillStyle = `rgba(${COLORS.base}, ${maskAlpha})`;
+        ctx.fillStyle = `rgba(${colorPalette.base}, ${maskAlpha})`;
         ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
         ctx.fill();
       }
@@ -341,6 +368,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const { cols, rows, spacing, offsetX, offsetY } = gridRef.current;
     const centerCol = Math.floor(cols / 2);
     const centerRow = Math.floor(rows / 2);
+    const colorPalette = colorPaletteRef.current;
 
     ctx.shadowBlur = 0;
     ctx.shadowColor = "transparent";
@@ -362,7 +390,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
           ctx.shadowColor = glowColor ? `rgba(${glowColor}, 0.5)` : "transparent";
           ctx.arc(cx, cy, DOT_RADIUS.icon, 0, Math.PI * 2);
         } else {
-          ctx.fillStyle = `rgba(${COLORS.base}, ${maskAlpha})`;
+          ctx.fillStyle = `rgba(${colorPalette.base}, ${maskAlpha})`;
           ctx.shadowBlur = 0;
           ctx.shadowColor = "transparent";
           ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
@@ -464,6 +492,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   }, [runAnimation, stopAllAnimations, drawBaseDots]);
 
   useEffect(() => {
+    refreshColorPalette();
+  }, [refreshColorPalette]);
+
+  useEffect(() => {
     const unlistenPromise = listen<AudioSpectrumPayload>("audio:spectrum", (e) => {
       const bins = e.payload.bins;
       const current = audioDataRef.current;
@@ -521,7 +553,8 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   useEffect(() => {
     if (status === "error" && !isErrorFlashing) {
       stopAllAnimations();
-      drawStaticIcon(ICONS.warning, COLORS.red, COLORS.red);
+      const errorColor = colorPaletteRef.current.error;
+      drawStaticIcon(ICONS.warning, errorColor, errorColor);
     }
   }, [status, isErrorFlashing, drawStaticIcon, stopAllAnimations]);
 
@@ -529,6 +562,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
+    refreshColorPalette();
 
     const dpr = window.devicePixelRatio || 1;
     const rect = container.getBoundingClientRect();
@@ -558,7 +592,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     if (statusRef.current === "idle") {
         drawBaseDots();
     }
-  }, [drawBaseDots]);
+  }, [drawBaseDots, refreshColorPalette]);
 
   useEffect(() => {
     const observer = new ResizeObserver(setupCanvas);
@@ -588,11 +622,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       <div className="relative flex flex-col items-center pb-2">
         <div
           ref={containerRef}
-          className={`relative rounded-full bg-surface-primary overflow-hidden ${isErrorFlashing ? "animate-shake" : ""}`}
+          className={`relative overflow-hidden rounded-full border ${isErrorFlashing ? "animate-shake" : ""}`}
           style={{
             width: PILL_WIDTH,
             height: PILL_HEIGHT,
-            boxShadow: "0 8px 20px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -2px 5px rgba(0,0,0,0.8)",
+            backgroundColor: "var(--ui-pill-shell-bg)",
+            borderColor: "var(--ui-pill-shell-border)",
+            boxShadow: "var(--ui-pill-shell-shadow)",
           }}
         >
           <canvas

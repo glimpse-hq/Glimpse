@@ -1,15 +1,31 @@
 import { useState, useEffect, ComponentType } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import PillOverlay from "./pill";
 import ToastOverlay from "./ToastOverlay";
 import Home from "./Home";
 import Onboarding from "./Onboarding";
 import { AuthProvider } from "./hooks/useAuth";
-import type { StoredSettings, AppInfo } from "./types";
+import type { StoredSettings, AppInfo, TextSizeMode } from "./types";
 import "./App.css";
 
 const VERSION_STORAGE_KEY = "glimpse_last_version";
+const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
+
+const parseTextSizeMode = (value: string | null): TextSizeMode =>
+  value === "small" || value === "default" || value === "large" ? value : "default";
+
+const resolveTextScale = (mode: TextSizeMode): string => {
+  switch (mode) {
+    case "small":
+      return "0.94";
+    case "large":
+      return "1.08";
+    default:
+      return "1";
+  }
+};
 
 function App() {
   const [windowLabel, setWindowLabel] = useState("");
@@ -28,6 +44,36 @@ function App() {
     document.addEventListener("contextmenu", handleContextMenu);
     return () => document.removeEventListener("contextmenu", handleContextMenu);
   }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    // Keep overlay windows stable; text-size animation is only for Settings UI.
+    if (windowLabel !== "settings") {
+      root.classList.remove("text-scale-anim-ready");
+      root.style.setProperty("--ui-text-scale", "1");
+      return;
+    }
+
+    const applyTextScale = (mode: TextSizeMode) => {
+      const scaleValue = resolveTextScale(mode);
+      root.style.setProperty("--ui-text-scale", scaleValue);
+    };
+
+    // Apply persisted value without animation on first paint.
+    applyTextScale(parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)));
+    // Enable smooth transitions for subsequent changes.
+    root.classList.add("text-scale-anim-ready");
+
+    const unlistenPromise = listen<{ mode?: TextSizeMode }>("ui:text_size_changed", (event) => {
+      applyTextScale(parseTextSizeMode(event.payload?.mode ?? null));
+    });
+
+    return () => {
+      root.classList.remove("text-scale-anim-ready");
+      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
+    };
+  }, [windowLabel]);
 
   useEffect(() => {
     if (windowLabel === "settings") {
@@ -74,19 +120,13 @@ function App() {
     const body = document.body;
     const html = document.documentElement;
     if (windowLabel === "settings") {
-      body.classList.add("settings-body");
-      html.classList.add("settings-html");
       html.style.backgroundColor = "var(--color-bg-primary)";
       body.style.backgroundColor = "var(--color-bg-primary)";
     } else {
-      body.classList.remove("settings-body");
-      html.classList.remove("settings-html");
       html.style.backgroundColor = "";
       body.style.backgroundColor = "";
     }
     return () => {
-      body.classList.remove("settings-body");
-      html.classList.remove("settings-html");
       html.style.backgroundColor = "";
       body.style.backgroundColor = "";
     };

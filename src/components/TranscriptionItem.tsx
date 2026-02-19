@@ -11,11 +11,11 @@ const markdownComponents: Components = {
     strong: ({ children }) => <strong className="font-semibold text-content-primary">{children}</strong>,
     em: ({ children }) => <em className="italic">{children}</em>,
     code: ({ children }) => (
-        <code className="px-1 py-0.5 rounded bg-surface-elevated text-[12px] font-mono text-content-primary">{children}</code>
+        <code className="px-1 py-0.5 rounded bg-surface-elevated ui-text-body-sm font-mono ui-color-primary">{children}</code>
     ),
     ul: ({ children }) => <ul className="list-disc list-inside mb-2 last:mb-0 space-y-0.5">{children}</ul>,
     ol: ({ children }) => <ol className="list-decimal list-inside mb-2 last:mb-0 space-y-0.5">{children}</ol>,
-    li: ({ children }) => <li className="text-[13px]">{children}</li>,
+    li: ({ children }) => <li className="ui-text-body">{children}</li>,
 };
 
 interface TranscriptionItemProps {
@@ -244,17 +244,17 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] text-content-muted uppercase tracking-wider font-medium">
+                        <span className="ui-text-uppercase-meta font-medium ui-color-muted">
                             {dateStr}
                         </span>
                         <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                        <span className="text-[10px] text-content-disabled font-mono">
+                        <span className="ui-text-kbd ui-color-disabled">
                             {timeStr}
                         </span>
                         {isError && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider">
+                                <span className="ui-text-uppercase-meta font-medium ui-color-error-strong">
                                     Failed
                                 </span>
                             </>
@@ -262,7 +262,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {isCloudModel && !isError && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="flex items-center gap-1 text-[10px] text-cloud">
+                                <span className="flex items-center gap-1 ui-text-meta ui-color-cloud">
                                     <Cloud size={9} />
                                     Cloud
                                 </span>
@@ -271,7 +271,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {record.llm_cleaned && !isError && !isCloudModel && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="flex items-center gap-1 text-[10px] text-local">
+                                <span className="flex items-center gap-1 ui-text-meta ui-color-local">
                                     <Wand2 size={9} />
                                     Cleaned
                                 </span>
@@ -280,7 +280,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {isRetrying && (
                             <>
                                 <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-border-hover)" />
-                                <span className="text-[10px] text-cloud uppercase tracking-wider font-medium">
+                                <span className="ui-text-uppercase-meta font-medium ui-color-cloud">
                                     Retrying...
                                 </span>
                             </>
@@ -289,14 +289,14 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
 
                     {isError ? (
                         <div className="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/[0.06] px-2.5 py-2">
-                            <p className="text-[12px] text-red-300">
+                            <p className="ui-text-body-sm ui-color-error-soft">
                                 {errorMessage}
                             </p>
                         </div>
                     ) : (
                         <div 
                             ref={textRef}
-                            className={`text-[13px] leading-relaxed text-content-secondary select-text cursor-text ${!isExpanded ? "line-clamp-6" : ""}`}
+                            className={`ui-text-body ui-color-secondary leading-relaxed select-text cursor-text ${!isExpanded ? "line-clamp-6" : ""}`}
                             onMouseUp={() => setSelectionText(captureSelectionText())}
                             onKeyUp={() => setSelectionText(captureSelectionText())}
                         >
@@ -306,7 +306,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-3 mt-1 text-[10px] text-content-disabled">
+                    <div className="flex flex-wrap items-center gap-3 mt-1 ui-text-meta ui-color-disabled">
                         {!isError && (
                             <>
                                 <span>{wordCountLabel}</span>
@@ -332,7 +332,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                         {(isOverflowing || isExpanded) && (
                             <button
                                 onClick={() => setIsExpanded(!isExpanded)}
-                                className="flex items-center gap-1 p-1 -ml-1 text-[10px] text-content-muted hover:text-content-secondary transition-colors"
+                                className="flex items-center gap-1 p-1 -ml-1 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
                                 aria-label={isExpanded ? "Show less" : "Show more"}
                             >
                                 {isExpanded ? (
@@ -416,7 +416,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                         <>
                                             <button
                                                 onClick={handleCopySelection}
-                                                className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors"
+                                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                                             >
                                                 <Copy size={12} className="text-content-muted" />
                                                 <span>Copy selection</span>
@@ -427,7 +427,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                     <button
                                         onClick={handleRetry}
                                         disabled={isRetrying}
-                                        className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
                                     >
                                         <RotateCw size={12} className="text-cloud" />
                                         <span>Retry</span>
@@ -437,7 +437,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                         <button
                                             onClick={handleRetryLlm}
                                             disabled={isRetryingLlm}
-                                            className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
                                         >
                                             <RotateCw size={12} className="text-local" />
                                             <span>{record.llm_cleaned ? "Retry AI cleanup" : "Run AI cleanup"}</span>
@@ -448,7 +448,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                         <button
                                             onClick={handleUndoLlm}
                                             disabled={isUndoingLlm}
-                                            className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
                                         >
                                             <Undo2 size={12} className="text-warning" />
                                             <span>Undo AI cleanup</span>
@@ -460,7 +460,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
                                     <button
                                         onClick={handleDelete}
                                         disabled={isDeleting}
-                                        className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors disabled:opacity-50"
                                     >
                                         <Trash2 size={12} />
                                         <span>Delete</span>
@@ -473,13 +473,13 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
 
                 {/* Loading state indicators */}
                 {isRetryingLlm && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-local">
+                    <div className="flex items-center gap-1.5 ui-text-meta ui-color-local">
                         <RotateCw size={12} className="animate-spin" />
                         <span>Cleaning...</span>
                     </div>
                 )}
                 {isUndoingLlm && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-warning">
+                    <div className="flex items-center gap-1.5 ui-text-meta ui-color-warning">
                         <Undo2 size={12} className="animate-pulse" />
                         <span>Reverting...</span>
                     </div>
@@ -487,7 +487,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({ record, onDelete,
             </div>
 
             {/* Subtle divider */}
-            <div className="h-px bg-gradient-to-r from-transparent via-[#1a1a1e] to-transparent mx-4" />
+            <div className="h-px ui-gradient-divider mx-4" />
         </motion.div>
     );
 };

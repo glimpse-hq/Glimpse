@@ -608,8 +608,8 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         color="var(--color-accent)"
                     />
                     <div className="flex-1">
-                        <p className="text-2xl font-medium text-content-primary tracking-tight">Library</p>
-                        <p className="mt-1 text-[12px] text-content-secondary">
+                        <p className="ui-text-screen-title ui-color-primary tracking-tight">Library</p>
+                        <p className="mt-1 ui-text-body-sm ui-color-secondary">
                             Import audio and video files for transcription.
                         </p>
                     </div>
@@ -617,7 +617,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                 <div className="grid w-full max-w-5xl min-w-0 grid-cols-[auto_minmax(0,1fr)_110px_110px_110px] items-center gap-2">
                     <button
                         onClick={handleImportClick}
-                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 text-[12px] text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
+                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-body-sm ui-color-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
                     >
                         <Plus size={14} />
                         Import
@@ -631,7 +631,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search library..."
                                 aria-label="Search library"
-                                className="w-full min-w-0 bg-transparent text-[11px] text-content-secondary placeholder-content-disabled outline-none"
+                                className="w-full min-w-0 bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-none"
                             />
                         </div>
                     </div>
@@ -670,7 +670,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                 </div>
 
                 {error && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12px] text-red-200">
+                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 ui-text-body-sm ui-color-error-tint">
                         {error}
                     </div>
                 )}
@@ -697,7 +697,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         {!isLoading && items.length === 0 && (
                             <div className="col-span-full rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-8 flex flex-col items-center justify-center text-center">
                                 <FolderOpen size={20} className="text-content-disabled" />
-                                <p className="mt-3 text-[13px] text-content-muted">
+                                <p className="mt-3 ui-text-body ui-color-muted">
                                     Drag files here to build your Library.
                                 </p>
                             </div>
@@ -740,10 +740,10 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         {items.length > 0 && (
                             <button
                                 onClick={handleImportClick}
-                                className="rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-4 flex flex-col items-center justify-center text-center text-content-muted hover:text-content-secondary hover:border-border-hover transition-colors"
+                                className="rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-4 flex flex-col items-center justify-center text-center ui-color-muted hover:text-content-secondary hover:border-border-hover transition-colors"
                             >
                                 <FolderOpen size={18} />
-                                <span className="mt-2 text-[12px]">Drop files to import</span>
+                                <span className="mt-2 ui-text-body-sm">Drop files to import</span>
                             </button>
                         )}
 
@@ -752,7 +752,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                     <button
                                         onClick={loadMore}
                                         disabled={isLoadingMore}
-                                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2 text-[12px] text-content-secondary hover:text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-body-sm ui-color-secondary hover:text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                     >
                                         {isLoadingMore ? (
                                             <>
@@ -955,7 +955,7 @@ const LibraryCard = ({
             }}
             className={`p-1.5 rounded-md transition-colors ${
                 shiftHeld
-                    ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    ? "ui-color-error-strong ui-hover-error-soft hover:bg-red-500/10"
                     : "text-content-muted hover:text-content-primary hover:bg-surface-elevated"
             }`}
             aria-label={shiftHeld ? "Delete" : "More options"}
@@ -1044,25 +1044,25 @@ const LibraryCard = ({
                                 }}
                                 onBlur={onCommitNameEdit}
                                 onClick={(event) => event.stopPropagation()}
-                                className="w-full min-w-0 rounded-md border border-border-primary bg-surface-surface px-2 py-1 text-[13px] font-medium text-content-primary outline-none focus:border-border-hover"
+                                className="w-full min-w-0 rounded-md border border-border-primary bg-surface-surface px-2 py-1 ui-text-body font-medium ui-color-primary outline-none focus:border-border-hover"
                                 autoFocus
                             />
                         ) : (
-                            <h3 className="text-[13px] font-medium text-content-primary truncate">{item.name}</h3>
+                            <h3 className="ui-text-body font-medium ui-color-primary truncate">{item.name}</h3>
                         )}
                     </div>
-                    <div className="mt-2 flex items-center gap-2 text-[11px] text-content-muted tabular-nums">
+                    <div className="mt-2 flex items-center gap-2 ui-text-label ui-color-muted tabular-nums">
                         <span>{formatDuration(item.duration_seconds)}</span>
                         <span className="opacity-50">•</span>
                         {status.type === "complete" ? (
-                            <Check size={12} className="text-emerald-400" aria-label="Done" />
+                            <Check size={12} className="ui-color-success-strong" aria-label="Done" />
                         ) : (
                             <span className="shrink-0 whitespace-nowrap">{statusText}</span>
                         )}
                     </div>
                     <div className="mt-2 min-h-[24px] w-full">
                         {status.type === "error" ? (
-                            <span className="block w-full text-[9px] leading-[12px] text-red-300 line-clamp-2 break-words">
+                            <span className="block w-full ui-text-micro leading-[12px] ui-color-error-soft line-clamp-2 break-words">
                                 {errorDetails?.message}{" "}
                                 {errorDetails?.showFfmpegHelp && (
                                     <button
@@ -1071,7 +1071,7 @@ const LibraryCard = ({
                                             event.stopPropagation();
                                             invoke("open_ffmpeg_install").catch(() => {});
                                         }}
-                                        className="underline decoration-red-400/60 hover:text-red-200"
+                                        className="underline decoration-red-400/60 ui-hover-error-tint"
                                     >
                                         FFmpeg Help
                                     </button>
@@ -1106,7 +1106,7 @@ const LibraryCard = ({
                                 setMenuOpen(false);
                                 onStartNameEdit();
                             }}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors"
+                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                         >
                             <Pencil size={12} className="text-content-muted" />
                             <span>Rename</span>
@@ -1118,7 +1118,7 @@ const LibraryCard = ({
                             || status.type === "importing" ? (
                             <button
                                 onClick={handleCancel}
-                                className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors"
+                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                             >
                                 <X size={12} className="text-warning" />
                                 <span>Cancel</span>
@@ -1126,7 +1126,7 @@ const LibraryCard = ({
                         ) : (
                             <button
                                 onClick={handleRetry}
-                                className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-content-secondary hover:bg-surface-elevated transition-colors"
+                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                             >
                                 <RotateCw size={12} className="text-cloud" />
                                 <span>{status.type === "error" ? "Retry" : "Retranscribe"}</span>
@@ -1137,7 +1137,7 @@ const LibraryCard = ({
 
                         <button
                             onClick={handleDelete}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 text-[11px] text-red-400 hover:bg-red-500/10 transition-colors"
+                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors"
                         >
                             <Trash2 size={12} />
                             <span>Delete</span>
@@ -1186,13 +1186,13 @@ const LibraryCard = ({
                                                             onCommitTagAdd(tag);
                                                             setTagMenuOpen(false);
                                                         }}
-                                                        className="w-full text-left px-2.5 py-1.5 text-[10px] font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
+                                                        className="w-full text-left px-2.5 py-1.5 ui-text-button-sm ui-color-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
                                                     >
                                                         {tag}
                                                     </button>
                                                 ))
                                             ) : (
-                                                <div className="px-2.5 py-2 text-[9px] text-content-muted">
+                                                <div className="px-2.5 py-2 ui-text-micro ui-color-muted">
                                                     {availableTags.length === 0 ? "No tags yet" : "No other tags"}
                                                 </div>
                                             )}
@@ -1216,7 +1216,7 @@ const LibraryCard = ({
                             }}
                             onBlur={onCancelTagEdit}
                             placeholder="New tag..."
-                            className="tag-input-intro flex-1 min-w-0 h-6 box-border bg-transparent border-b border-border-primary px-0.5 py-0 text-[10px] leading-none text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
+                            className="tag-input-intro flex-1 min-w-0 h-6 box-border bg-transparent border-b border-border-primary px-0.5 py-0 ui-text-meta leading-none ui-color-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
                             autoFocus
                         />
                     </div>
@@ -1230,8 +1230,8 @@ const LibraryCard = ({
                                     event.stopPropagation();
                                     void onRemoveTag(tag);
                                 }}
-                                className={`inline-flex items-center px-2 py-1 rounded text-[10px] text-content-muted bg-white/5 border border-white/10 leading-none ${
-                                    shiftHeld ? "cursor-pointer hover:border-red-500/60 hover:text-red-200" : ""
+                                className={`inline-flex items-center px-2 py-1 rounded ui-text-meta ui-color-muted bg-white/5 border border-white/10 leading-none ${
+                                    shiftHeld ? "cursor-pointer hover:border-red-500/60 ui-hover-error-tint" : ""
                                 }`}
                                 title={shiftHeld ? `Remove ${tag}` : undefined}
                             >
@@ -1239,7 +1239,7 @@ const LibraryCard = ({
                             </span>
                         ))}
                         {item.tags.length > 2 && (
-                            <span className="text-[9px] text-content-disabled">+{item.tags.length - 2}</span>
+                            <span className="ui-text-micro ui-color-disabled">+{item.tags.length - 2}</span>
                         )}
                         <button
                             type="button"
@@ -1247,7 +1247,7 @@ const LibraryCard = ({
                                 event.stopPropagation();
                                 onStartTagEdit();
                             }}
-                            className="flex items-center justify-center w-6 h-6 rounded-md bg-transparent text-[14px] text-content-disabled hover:text-content-muted hover:bg-surface-elevated transition-colors border-0 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-hover focus-visible:ring-offset-0"
+                            className="flex items-center justify-center w-6 h-6 rounded-md bg-transparent ui-text-body-lg ui-color-disabled hover:text-content-muted hover:bg-surface-elevated transition-colors border-0 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-hover focus-visible:ring-offset-0"
                         >
                             +
                         </button>
@@ -1960,7 +1960,7 @@ const LibraryModal = ({
                                         handleNameCommit();
                                     }
                                 }}
-                                className="flex-1 min-w-0 bg-surface-surface border border-border-primary rounded px-1.5 py-0.5 text-[13px] text-content-primary focus:border-border-hover outline-none"
+                                className="flex-1 min-w-0 bg-surface-surface border border-border-primary rounded px-1.5 py-0.5 ui-text-body text-content-primary focus:border-border-hover outline-none"
                                 autoFocus
                             />
                             <button onClick={handleNameCommit} className="text-content-muted hover:text-content-primary">
@@ -1969,7 +1969,7 @@ const LibraryModal = ({
                         </div>
                     ) : (
                         <div className="flex items-center gap-1.5 mt-1 group">
-                            <h2 className="text-[13px] font-semibold text-content-primary truncate">{item.name}</h2>
+                            <h2 className="ui-text-body font-semibold text-content-primary truncate">{item.name}</h2>
                             <button
                                 onClick={() => setIsEditingName(true)}
                                 className="opacity-0 group-hover:opacity-100 text-content-muted hover:text-content-primary transition-opacity"
@@ -1978,13 +1978,13 @@ const LibraryModal = ({
                             </button>
                         </div>
                     )}
-                    <p className="text-[10px] text-content-disabled mt-0.5 truncate">{modelLabel}</p>
+                    <p className="ui-text-meta text-content-disabled mt-0.5 truncate">{modelLabel}</p>
                 </div>
 
                 <nav className="flex-1 px-2 py-2 space-y-3 overflow-y-auto custom-scrollbar scrollbar-gutter">
                     {/* Audio player */}
                     <div className="px-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-content-disabled mb-1.5">Audio</p>
+                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled mb-1.5">Audio</p>
                         <div className="rounded-lg border border-border-primary bg-surface-surface px-2.5 py-2.5">
                             <div className="flex items-center justify-between">
                                 <button
@@ -2000,10 +2000,10 @@ const LibraryModal = ({
                                     {isPlaying ? <Pause size={12} /> : <Play size={12} />}
                                 </button>
                                 <div className="flex flex-col items-center justify-center">
-                                    <span className="text-[9px] text-content-disabled tabular-nums leading-none">
+                                    <span className="ui-text-micro text-content-disabled tabular-nums leading-none">
                                         {formatDuration(audioCurrentTime)} / {formatDuration(audioDuration)}
                                     </span>
-                                    <div className="mt-1.5 flex items-center justify-center gap-0.25 text-[8px] leading-none">
+                                    <div className="mt-1.5 flex items-center justify-center gap-0.25 ui-text-nano leading-none">
                                         <button
                                             type="button"
                                             onClick={() => handlePlaybackRateStep(-1)}
@@ -2024,7 +2024,7 @@ const LibraryModal = ({
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 2, scale: 0.92 }}
                                                 transition={{ duration: 0.16, ease: "easeOut" }}
-                                                className="w-[28px] text-center text-[8px] font-medium text-content-secondary tabular-nums"
+                                                className="w-[28px] text-center ui-text-nano font-medium text-content-secondary tabular-nums"
                                             >
                                                 {formatPlaybackRate(playbackRate)}x
                                             </motion.span>
@@ -2070,11 +2070,11 @@ const LibraryModal = ({
 
                     {/* Settings section */}
                     <div className="px-2 space-y-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Settings</p>
+                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">Settings</p>
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="text-[11px] text-content-primary">Timestamps</div>
-                                <div className="text-[9px] text-content-disabled">
+                                <div className="ui-text-label text-content-primary">Timestamps</div>
+                                <div className="ui-text-micro text-content-disabled">
                                     {isTranscribed ? (canShowTimestamps ? "Supported" : "Not supported") : "Available after transcription"}
                                 </div>
                             </div>
@@ -2103,7 +2103,7 @@ const LibraryModal = ({
                         </div>
                         <div className="flex items-center justify-between pl-3">
                             <div>
-                                <div className="flex items-center gap-1.5 text-[10px] text-content-secondary">
+                                <div className="flex items-center gap-1.5 ui-text-meta text-content-secondary">
                                     <CornerDownRight size={10} className="text-content-disabled" aria-hidden="true" />
                                     <span>Follow timestamp</span>
                                 </div>
@@ -2132,9 +2132,9 @@ const LibraryModal = ({
 
                     {/* Tags section */}
                     <div className="px-2 space-y-1.5">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Tags</p>
+                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">Tags</p>
                         <div className="flex flex-wrap gap-2 max-h-20 overflow-auto custom-scrollbar scrollbar-gutter pr-3">
-                            {item.tags.length === 0 && <span className="text-[10px] text-content-disabled italic">None</span>}
+                            {item.tags.length === 0 && <span className="ui-text-meta text-content-disabled italic">None</span>}
                             {item.tags.map((tag, idx) => (
                                 <span
                                     key={`${tag}-${idx}`}
@@ -2143,8 +2143,8 @@ const LibraryModal = ({
                                             handleRemoveTag(tag);
                                         }
                                     }}
-                                    className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded text-[10px] bg-white/5 border transition-colors leading-none text-content-secondary border-white/10 ${
-                                        shiftHeld ? "cursor-pointer hover:text-red-200 hover:border-red-500/60" : ""
+                                    className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded ui-text-meta bg-white/5 border transition-colors leading-none text-content-secondary border-white/10 ${
+                                        shiftHeld ? "cursor-pointer ui-hover-error-tint hover:border-red-500/60" : ""
                                     }`}
                                 >
                                     <span>{tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}</span>
@@ -2153,7 +2153,7 @@ const LibraryModal = ({
                                             event.stopPropagation();
                                             handleRemoveTag(tag);
                                         }}
-                                        className="ml-1 text-content-disabled hover:text-red-300 transition-colors cursor-pointer shrink-0"
+                                        className="ml-1 text-content-disabled ui-hover-error-soft transition-colors cursor-pointer shrink-0"
                                         aria-label={`Remove ${tag}`}
                                     >
                                         <X size={10} />
@@ -2196,13 +2196,13 @@ const LibraryModal = ({
                                                                 handleAddTag(tag);
                                                                 setTagMenuOpen(false);
                                                             }}
-                                                            className="w-full text-left px-2.5 py-1.5 text-[10px] font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
+                                                            className="w-full text-left px-2.5 py-1.5 ui-text-meta font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
                                                         >
                                                             {tag}
                                                         </button>
                                                     ))
                                                 ) : (
-                                                    <div className="px-2.5 py-2 text-[9px] text-content-muted">
+                                                    <div className="px-2.5 py-2 ui-text-micro text-content-muted">
                                                         {availableTags.length === 0 ? "No tags yet" : "No other tags"}
                                                     </div>
                                                 )}
@@ -2221,7 +2221,7 @@ const LibraryModal = ({
                                     }
                                 }}
                                 placeholder="New tag..."
-                                className="flex-1 min-w-0 h-6 bg-transparent border-b border-border-primary px-0.5 py-0 text-[10px] text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
+                                className="flex-1 min-w-0 h-6 bg-transparent border-b border-border-primary px-0.5 py-0 ui-text-meta text-content-secondary outline-none focus:border-border-hover placeholder:text-content-disabled"
                             />
                         </div>
                     </div>
@@ -2233,19 +2233,19 @@ const LibraryModal = ({
                         || item.status.type === "cancelling"
                         || item.status.type === "pending"
                         || item.status.type === "importing") && (
-                        <button onClick={onCancel} className="w-full rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 text-[10px] text-content-primary hover:border-border-secondary">
+                        <button onClick={onCancel} className="w-full rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 ui-text-meta text-content-primary hover:border-border-secondary">
                             Cancel
                         </button>
                     )}
                     {item.status.type === "error" && (
-                        <button onClick={onRetry} className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 text-[10px] text-content-primary hover:border-border-secondary">
+                        <button onClick={onRetry} className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 ui-text-meta text-content-primary hover:border-border-secondary">
                             <RotateCw size={10} />
                             Retry
                         </button>
                     )}
                     <button
                         onClick={() => setShowDeleteConfirm(true)}
-                        className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-2 py-1.5 text-[10px] text-red-300 hover:bg-red-500/10"
+                        className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-2 py-1.5 ui-text-meta ui-color-error-soft hover:bg-red-500/10"
                     >
                         <Trash2 size={10} />
                         Delete
@@ -2263,7 +2263,7 @@ const LibraryModal = ({
                             || item.status.type === "cancelling"
                             || item.status.type === "pending"
                             || item.status.type === "importing"}
-                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] text-content-secondary hover:text-content-primary hover:bg-surface-surface disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 ui-text-meta text-content-secondary hover:text-content-primary hover:bg-surface-surface disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <RotateCw size={11} />
                         Retranscribe
@@ -2289,7 +2289,7 @@ const LibraryModal = ({
                                     }}
                                     placeholder="Search transcript..."
                                     aria-label="Search transcript"
-                                    className="bg-transparent text-[11px] text-content-secondary placeholder-content-disabled outline-none w-full"
+                                    className="bg-transparent ui-text-label text-content-secondary placeholder-content-disabled outline-none w-full"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
                                     {searchQuery && (
@@ -2309,9 +2309,9 @@ const LibraryModal = ({
                         <button
                             onClick={handleCopy}
                             disabled={!transcriptAvailable}
-                            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] disabled:opacity-50 transition-colors ${
+                            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 ui-text-meta disabled:opacity-50 transition-colors ${
                                 copyConfirmed
-                                    ? "text-emerald-200 bg-emerald-400/10"
+                                    ? "ui-color-success-subtle bg-emerald-400/10"
                                     : "text-content-secondary hover:text-content-primary hover:bg-surface-surface"
                             }`}
                         >
@@ -2322,7 +2322,7 @@ const LibraryModal = ({
                             <button
                                 onClick={() => setExportOpen(!exportOpen)}
                                 disabled={isExporting || !transcriptAvailable}
-                                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[10px] text-content-secondary hover:text-content-primary hover:bg-surface-surface disabled:opacity-50"
+                                className="flex items-center gap-1.5 rounded-md px-2.5 py-1 ui-text-meta text-content-secondary hover:text-content-primary hover:bg-surface-surface disabled:opacity-50"
                             >
                                 Export
                                 <ChevronDown size={10} />
@@ -2344,7 +2344,7 @@ const LibraryModal = ({
                                                     key={format}
                                                     onClick={() => handleExport(format)}
                                                     disabled={disabled}
-                                                    className="w-full px-3 py-1.5 text-left text-[10px] text-content-secondary hover:bg-surface-overlay disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className="w-full px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay disabled:opacity-40 disabled:cursor-not-allowed"
                                                 >
                                                     {format.toUpperCase()}
                                                 </button>
@@ -2367,7 +2367,7 @@ const LibraryModal = ({
                 {/* Transcript area */}
                 <div className="flex-1 min-h-0 overflow-hidden px-4 pb-0 pt-0 flex flex-col gap-3">
                     {(item.status.type === "importing" || item.status.type === "pending") && (
-                        <div className="text-[11px] text-content-muted tabular-nums">
+                        <div className="ui-text-label text-content-muted tabular-nums">
                             {importStatusText}
                         </div>
                     )}
@@ -2377,18 +2377,18 @@ const LibraryModal = ({
                                 const details = getLibraryErrorDetails(item.status.message);
                                 return (
                                     <div className="max-w-[240px] rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center">
-                                        <div className="flex items-center justify-center gap-2 text-red-200">
+                                        <div className="flex items-center justify-center gap-2 ui-color-error-tint">
                                             <AlertTriangle size={14} />
-                                            <span className="text-[11px] font-medium">Import failed</span>
+                                            <span className="ui-text-label font-medium">Import failed</span>
                                         </div>
-                                        <p className="mt-2 text-[10px] leading-[14px] text-red-200 select-text cursor-text">
+                                        <p className="mt-2 ui-text-meta leading-[14px] ui-color-error-tint select-text cursor-text">
                                             {details.message}
                                         </p>
                                         {details.showFfmpegHelp && (
                                             <button
                                                 type="button"
                                                 onClick={() => invoke("open_ffmpeg_install").catch(() => {})}
-                                                className="mt-2 text-[10px] text-red-100 underline decoration-red-400/60 hover:text-red-50"
+                                                className="mt-2 ui-text-meta ui-color-error-faint underline decoration-red-400/60 ui-hover-error-50"
                                             >
                                                 FFmpeg Help
                                             </button>
@@ -2405,7 +2405,7 @@ const LibraryModal = ({
                                     style={{ height: "100%" }}
                                     data={item.segments ?? []}
                                     overscan={200}
-                                    className="custom-scrollbar text-[13px] text-content-secondary leading-relaxed"
+                                    className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
                                     computeItemKey={(index: number, segment: TranscriptSegment) =>
                                         `${segment.start_ms}-${index}`
                                     }
@@ -2426,7 +2426,7 @@ const LibraryModal = ({
                                                     }`}
                                                 >
                                                     <span
-                                                        className="text-content-disabled font-mono text-[11px] pt-0.5 select-none cursor-pointer hover:text-content-primary"
+                                                        className="text-content-disabled font-mono ui-text-label pt-0.5 select-none cursor-pointer hover:text-content-primary"
                                                         role="button"
                                                         tabIndex={0}
                                                         onClick={() => handleTimestampClick(segment.start_ms)}
@@ -2452,7 +2452,7 @@ const LibraryModal = ({
                             ) : showStreaming ? (
                                 streamChunks.length === 0 ? (
                                     item.status.type === "transcribing" ? (
-                                        <div className="text-content-disabled text-[12px]">
+                                        <div className="text-content-disabled ui-text-body-sm">
                                             Transcribing...
                                         </div>
                                     ) : null
@@ -2462,7 +2462,7 @@ const LibraryModal = ({
                                     style={{ height: "100%" }}
                                     data={streamChunks}
                                     overscan={200}
-                                    className="custom-scrollbar text-[13px] text-content-secondary leading-relaxed"
+                                    className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
                                     computeItemKey={(index: number) => `${item.id}-chunk-${index}`}
                                     components={{
                                         Header: () => <div className="h-3" />,
@@ -2491,7 +2491,7 @@ const LibraryModal = ({
                                     placeholder={item.status.type === "importing" || item.status.type === "pending"
                                         ? ""
                                         : "Transcript will appear here."}
-                                    className="h-full w-full resize-none bg-transparent text-[13px] text-content-secondary leading-relaxed outline-none disabled:opacity-60 custom-scrollbar select-text pr-4 pt-3 pb-3"
+                                    className="h-full w-full resize-none bg-transparent ui-text-body text-content-secondary leading-relaxed outline-none disabled:opacity-60 custom-scrollbar select-text pr-4 pt-3 pb-3"
                                 />
                             )}
                             <div className="scroll-fade-top" style={{ zIndex: 5 }} aria-hidden="true" />
@@ -2518,22 +2518,22 @@ const LibraryModal = ({
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.96, opacity: 0 }}
                             transition={{ duration: 0.18 }}
-                            className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 shadow-[0_20px_60px_rgba(0,0,0,0.45)]"
+                            className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
                             onClick={(event) => event.stopPropagation()}
                             role="dialog"
                             aria-modal="true"
                         >
                             <div className="flex items-center gap-3 mb-3">
-                                <AlertTriangle size={20} className="text-amber-400 shrink-0" />
+                                <AlertTriangle size={20} className="ui-color-warning-strong shrink-0" />
                                 <div>
-                                    <p className="text-[14px] font-semibold text-content-primary">Delete this item?</p>
-                                    <p className="text-[11px] text-content-disabled">This removes the transcript and audio from your library.</p>
+                                    <p className="ui-text-body-lg font-semibold text-content-primary">Delete this item?</p>
+                                    <p className="ui-text-label text-content-disabled">This removes the transcript and audio from your library.</p>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2">
                                 <button
                                     onClick={() => setShowDeleteConfirm(false)}
-                                    className="rounded-lg border border-border-secondary px-4 py-2 text-[12px] font-medium text-content-secondary hover:border-border-hover transition-colors"
+                                    className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary hover:border-border-hover transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -2542,7 +2542,7 @@ const LibraryModal = ({
                                         setShowDeleteConfirm(false);
                                         onDelete();
                                     }}
-                                    className="rounded-lg bg-red-500/90 px-4 py-2 text-[12px] font-semibold text-white hover:bg-red-500 transition-colors"
+                                    className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid hover:bg-red-500 transition-colors"
                                 >
                                     Delete
                                 </button>

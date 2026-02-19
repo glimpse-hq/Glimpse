@@ -94,7 +94,7 @@ const GeneralTab = ({
     className="space-y-6"
   >
     <div className="space-y-2">
-      <h2 className="text-[12px] font-semibold uppercase tracking-wider text-content-muted">
+      <h2 className="ui-text-section-label ui-color-muted">
         Processing
       </h2>
       <div
@@ -108,7 +108,7 @@ const GeneralTab = ({
           role="radio"
           aria-checked={transcriptionMode === "cloud"}
           aria-label="Cloud processing (Coming soon)"
-          className={`py-3 px-3.5 rounded-lg border text-left transition-all opacity-60 cursor-not-allowed ${
+          className={`py-3 px-3.5 rounded-lg border text-left transition-colors opacity-60 cursor-not-allowed ${
             transcriptionMode === "cloud"
               ? "border-cloud-30 bg-cloud-5"
               : "border-border-primary bg-transparent"
@@ -117,29 +117,29 @@ const GeneralTab = ({
         >
           <div className="flex items-baseline gap-1.5">
             <span
-              className={`text-[13px] font-medium ${
+              className={`ui-text-body-strong ${
                 transcriptionMode === "cloud"
-                  ? "text-cloud"
-                  : "text-content-secondary"
+                  ? "ui-color-cloud"
+                  : "ui-color-secondary"
               }`}
             >
               Cloud
             </span>
             <span
-              className={`text-[11px] ${
+              className={`ui-text-label ${
                 transcriptionMode === "cloud"
                   ? "text-cloud-50"
-                  : "text-content-disabled"
+                  : "ui-color-disabled"
               }`}
             >
               coming soon
             </span>
           </div>
           <p
-            className={`text-[11px] mt-1 ${
+            className={`ui-text-label mt-1 ${
               transcriptionMode === "cloud"
                 ? "text-cloud-50"
-                : "text-content-disabled"
+                : "ui-color-disabled"
             }`}
           >
             In development
@@ -149,7 +149,7 @@ const GeneralTab = ({
           onClick={() => onTranscriptionModeChange("local")}
           role="radio"
           aria-checked={transcriptionMode === "local"}
-          className={`py-3 px-3.5 rounded-lg border text-left transition-all ${
+          className={`py-3 px-3.5 rounded-lg border text-left transition-colors ${
             transcriptionMode === "local"
               ? "border-local-30 bg-local-5"
               : "border-border-primary bg-transparent hover:border-border-secondary"
@@ -157,29 +157,29 @@ const GeneralTab = ({
         >
           <div className="flex items-baseline gap-1.5">
             <span
-              className={`text-[13px] font-medium ${
+              className={`ui-text-body-strong ${
                 transcriptionMode === "local"
-                  ? "text-local"
-                  : "text-content-secondary"
+                  ? "ui-color-local"
+                  : "ui-color-secondary"
               }`}
             >
               Local
             </span>
             <span
-              className={`text-[11px] ${
+              className={`ui-text-label ${
                 transcriptionMode === "local"
                   ? "text-local-50"
-                  : "text-content-disabled"
+                  : "ui-color-disabled"
               }`}
             >
               private
             </span>
           </div>
           <p
-            className={`text-[11px] mt-1 ${
+            className={`ui-text-label mt-1 ${
               transcriptionMode === "local"
                 ? "text-local-50"
-                : "text-content-disabled"
+                : "ui-color-disabled"
             }`}
           >
             Runs entirely on your device
@@ -194,7 +194,7 @@ const GeneralTab = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="text-[11px] text-warning"
+              className="ui-text-label ui-color-warning"
             >
               No model installed.{" "}
               <button
@@ -211,7 +211,7 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-1.5">
-        <label className="text-[11px] font-medium text-content-muted">
+        <label className="ui-text-label-strong ui-color-muted">
           Microphone
         </label>
         <div className="relative z-20">
@@ -235,7 +235,7 @@ const GeneralTab = ({
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <label className="text-[11px] font-medium text-content-muted">
+            <label className="ui-text-label-strong ui-color-muted">
               Transcription Language
             </label>
             <div className="relative group">
@@ -246,7 +246,7 @@ const GeneralTab = ({
                 <Info size={10} aria-hidden="true" />
               </button>
               <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-10">
-                <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 text-[9px] text-content-secondary w-56 shadow-lg leading-tight">
+                <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-56 shadow-lg leading-tight">
                   <p>
                     Language list is filtered to the models you have installed.
                   </p>
@@ -299,7 +299,7 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-2">
-        <h2 className="text-[12px] font-semibold uppercase tracking-wider text-content-muted">
+        <h2 className="ui-text-section-label ui-color-muted">
           Shortcuts
         </h2>
 
@@ -359,12 +359,12 @@ const GeneralTab = ({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-[12px] font-semibold uppercase tracking-wider text-content-muted">
+        <h2 className="ui-text-section-label ui-color-muted">
           Features
         </h2>
 
         <div
-          className={`rounded-lg border transition-all ${
+          className={`rounded-lg border transition-colors ${
             editModeEnabled
               ? "border-border-secondary bg-surface-surface"
               : "border-border-primary bg-transparent"
@@ -372,7 +372,7 @@ const GeneralTab = ({
         >
           <div className="py-2 px-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-content-primary">
+              <span className="ui-text-label-strong ui-color-primary">
                 Edit Mode
               </span>
               <button
@@ -394,7 +394,7 @@ const GeneralTab = ({
               </button>
             </div>
             <div className="flex items-center justify-between mt-0.5">
-              <span className="text-[10px] text-content-disabled">
+              <span className="ui-text-meta ui-color-disabled">
                 transform selected text with voice
               </span>
               <div className="relative group">
@@ -405,7 +405,7 @@ const GeneralTab = ({
                   <Info size={10} aria-hidden="true" />
                 </button>
                 <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block z-10">
-                  <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 text-[9px] text-content-secondary w-44 shadow-lg leading-tight">
+                  <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
                     <p>
                       Select text in any app, and speak a command like "make
                       this formal" or "fix my grammar".
@@ -431,7 +431,7 @@ const GeneralTab = ({
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
         >
-          <div className="flex items-center gap-2 text-[11px] text-error">
+          <div className="flex items-center gap-2 ui-text-label ui-color-error">
             <span className="flex-1">{error}</span>
             <button
               onClick={() => {
@@ -477,7 +477,7 @@ const ShortcutRow = ({
 
   return (
     <div
-      className={`rounded-lg border transition-all ${
+      className={`rounded-lg border transition-colors ${
         enabled
           ? "border-border-secondary bg-surface-surface"
           : "border-border-primary bg-transparent"
@@ -486,10 +486,10 @@ const ShortcutRow = ({
       <div className="py-2 px-2.5 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="text-[11px] font-medium text-content-primary">
+            <span className="ui-text-label-strong ui-color-primary">
               {label}
             </span>
-            <span className="truncate text-[10px] text-content-disabled">
+            <span className="truncate ui-text-meta ui-color-disabled">
               {description}
             </span>
           </div>
@@ -512,12 +512,12 @@ const ShortcutRow = ({
           onClick={onCapture}
           disabled={!enabled}
           aria-label={`Record new shortcut for ${label}, currently ${displayShortcut}`}
-          className={`w-full text-left font-mono text-[10px] px-1.5 py-1 rounded transition-all ${
+          className={`w-full text-left ui-text-kbd px-1.5 py-1 rounded transition-colors ${
             isCapturing
-              ? "text-content-primary border border-border-hover"
+              ? "ui-color-primary border border-border-hover"
               : enabled
-                ? "text-content-secondary hover:text-content-primary hover:bg-surface-elevated"
-                : "text-content-disabled cursor-not-allowed"
+                ? "ui-color-secondary hover:text-content-primary hover:bg-surface-elevated"
+                : "ui-color-disabled cursor-not-allowed"
           }`}
         >
           {isCapturing ? (
@@ -528,7 +528,7 @@ const ShortcutRow = ({
                 transition={{ duration: 1, repeat: Infinity }}
               />
               <span
-                className={`truncate ${capturePreview ? "text-content-primary" : "text-content-muted"}`}
+                className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
               >
                 {capturePreview || "..."}
               </span>

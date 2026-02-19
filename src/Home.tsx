@@ -39,7 +39,7 @@ const SidebarItem = ({
         </div>
         <span
             style={{ width: collapsed ? 0 : 'auto', opacity: collapsed ? 0 : 1 }}
-            className="text-[13px] font-medium whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+            className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
         >
             {label}
         </span>
@@ -271,7 +271,7 @@ const Home = () => {
     };
 
     return (
-        <div className="flex h-screen w-screen overflow-hidden bg-surface-tertiary font-sans text-white select-none">
+        <div className="flex h-screen w-screen overflow-hidden bg-surface-tertiary font-sans ui-color-on-solid select-none">
             <aside
                 data-app-sidebar
                 style={{ width: sidebarWidth }}
@@ -293,7 +293,7 @@ const Home = () => {
                         </div>
                         <span
                             style={{ width: isSidebarCollapsed ? 0 : 'auto', opacity: isSidebarCollapsed ? 0 : 1 }}
-                            className="text-[14px] font-bold tracking-wide text-content-primary whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                            className="ui-text-nav-brand ui-color-primary whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
                         >
                             Glimpse
                         </span>
@@ -366,7 +366,7 @@ const Home = () => {
                             </div>
                             <span
                                 style={{ width: isSidebarCollapsed ? 0 : 'auto', opacity: isSidebarCollapsed ? 0 : 1 }}
-                                className="text-[13px] font-medium whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                                className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
                             >
                                 Support
                             </span>
@@ -384,7 +384,7 @@ const Home = () => {
                                 >
                                     <div className="p-3 border-b border-border-primary">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[12px] font-medium text-content-primary">Get Support</span>
+                                            <span className="ui-text-body-sm-strong ui-color-primary">Get Support</span>
                                             <button
                                                 onClick={() => setShowSupportPopup(false)}
                                                 className="p-1 rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-secondary transition-colors"
@@ -401,10 +401,10 @@ const Home = () => {
                                             }}
                                             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
                                         >
-                                            <HelpCircle size={16} className="text-amber-400" />
+                                            <HelpCircle size={16} className="ui-color-warning-strong" />
                                             <div>
-                                                <div className="text-[12px] font-medium text-content-primary">FAQ</div>
-                                                <div className="text-[10px] text-content-muted">Common questions</div>
+                                                <div className="ui-text-body-sm-strong ui-color-primary">FAQ</div>
+                                                <div className="ui-text-meta ui-color-muted">Common questions</div>
                                             </div>
                                         </button>
                                         <a
@@ -416,8 +416,8 @@ const Home = () => {
                                         >
                                             <Github size={16} className="text-content-secondary" />
                                             <div>
-                                                <div className="text-[12px] font-medium text-content-primary">GitHub Issues</div>
-                                                <div className="text-[10px] text-content-muted">Report bugs & request features</div>
+                                                <div className="ui-text-body-sm-strong ui-color-primary">GitHub Issues</div>
+                                                <div className="ui-text-meta ui-color-muted">Report bugs & request features</div>
                                             </div>
                                         </a>
                                         <button
@@ -428,10 +428,10 @@ const Home = () => {
                                             }}
                                             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
                                         >
-                                            <Info size={16} className="text-[#5865F2]" />
+                                            <Info size={16} className="ui-color-brand" />
                                             <div>
-                                                <div className="text-[12px] font-medium text-content-primary">About</div>
-                                                <div className="text-[10px] text-content-muted">v{appVersion} • {isCloudMode ? "Cloud" : "Local"}</div>
+                                                <div className="ui-text-body-sm-strong ui-color-primary">About</div>
+                                                <div className="ui-text-meta ui-color-muted">v{appVersion} • {isCloudMode ? "Cloud" : "Local"}</div>
                                             </div>
                                         </button>
                                     </div>
@@ -454,7 +454,7 @@ const Home = () => {
                             </div>
                             <span
                                 style={{ width: isSidebarCollapsed ? 0 : 'auto', opacity: isSidebarCollapsed ? 0 : 1 }}
-                                className="text-[13px] font-medium whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                                className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
                             >
                                 Update available
                             </span>
@@ -492,7 +492,7 @@ const Home = () => {
                                 <User size={14} className="text-content-muted" />
                             )}
                         </div>
-                        <span className="text-[10px] text-content-secondary max-w-[100px] truncate">
+                        <span className="ui-text-meta ui-color-secondary max-w-[100px] truncate">
                             {currentUser.name || currentUser.email?.split("@")[0] || "Account"}
                         </span>
                     </button>
@@ -501,10 +501,10 @@ const Home = () => {
                 <div className="flex-1 flex flex-col px-12 pb-16 min-h-0">
                     <div className={`w-full max-w-2xl mx-auto pt-8 ${activeView === "home" ? "" : "hidden"}`}>
                         <div className="mb-8">
-                            <h1 className="text-3xl font-medium text-content-primary tracking-tight">
+                            <h1 className="ui-text-display ui-color-primary tracking-tight">
                                 {getGreeting()}
                             </h1>
-                            <p className="mt-2 text-[15px] text-content-muted pl-[2px]">
+                            <p className="mt-2 ui-text-title ui-color-muted pl-[2px]">
                                 Ready when you are
                             </p>
                         </div>
@@ -546,13 +546,13 @@ const Home = () => {
                             transition={{ duration: 0.2, ease: "easeOut" }}
                             className="flex flex-col items-center justify-center rounded-2xl border border-border-secondary bg-surface-overlay px-8 py-6 shadow-2xl"
                         >
-                            <div className="text-[12px] uppercase tracking-[0.2em] text-content-muted">
+                            <div className="ui-text-section-label ui-color-muted tracking-[0.2em]">
                                 Library Import
                             </div>
-                            <div className="mt-2 text-[16px] font-medium text-content-primary">
+                            <div className="mt-2 ui-text-title font-medium ui-color-primary">
                                 Drop files to transcribe
                             </div>
-                            <div className="mt-1 text-[12px] text-content-disabled">
+                            <div className="mt-1 ui-text-body-sm ui-color-disabled">
                                 MP3, WAV, M4A, MP4, MOV, and more
                             </div>
                         </motion.div>

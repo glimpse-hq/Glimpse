@@ -28,6 +28,7 @@ import {
 } from "../../lib/shortcuts";
 import type {
     TranscriptionMode,
+    TextSizeMode,
     StoredSettings,
     AppInfo,
     ModelInfo,
@@ -37,6 +38,11 @@ import type {
     DownloadEvent,
     LlmProvider,
 } from "../../types";
+
+const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
+
+const parseTextSizeMode = (value: string | null): TextSizeMode =>
+    value === "small" || value === "default" || value === "large" ? value : "default";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -85,6 +91,9 @@ const SettingsModal = ({
     const [llmModel, setLlmModel] = useState("");
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [editModeEnabled, setEditModeEnabled] = useState(false);
+    const [textSizeMode, setTextSizeMode] = useState<TextSizeMode>(() =>
+        parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY))
+    );
 
     const [authLoading, setAuthLoading] = useState(false);
     const [showFAQModal, setShowFAQModal] = useState(false);
@@ -145,6 +154,11 @@ const SettingsModal = ({
         localStorage.setItem("glimpse_cloud_sync_enabled", String(cloudSyncEnabled));
         emit("auth:changed").catch(() => { });
     }, [cloudSyncEnabled]);
+
+    useEffect(() => {
+        localStorage.setItem(TEXT_SIZE_MODE_STORAGE_KEY, textSizeMode);
+        emit("ui:text_size_changed", { mode: textSizeMode }).catch(() => { });
+    }, [textSizeMode]);
 
     useEffect(() => {
         let unlisten: (() => void) | undefined;
@@ -690,11 +704,11 @@ const SettingsModal = ({
                         </motion.button>
                         <aside className="flex w-44 flex-col border-r border-border-primary bg-surface-surface">
                             <div className="px-4 pt-5 pb-4">
-                                <h2 className="text-[13px] font-semibold text-content-primary">Settings</h2>
+                                <h2 className="ui-text-title-strong ui-color-primary">Settings</h2>
                             </div>
                             <nav className="flex-1 px-2 space-y-4">
                                 <div className="space-y-1">
-                                    <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Account</p>
+                                    <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">Account</p>
                                     <ModalNavItem
                                         icon={<User size={14} aria-hidden="true" />}
                                         label="Account"
@@ -704,7 +718,7 @@ const SettingsModal = ({
                                 </div>
 
                                 <div className="space-y-1">
-                                    <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled">General</p>
+                                    <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">General</p>
                                     <ModalNavItem
                                         icon={<Keyboard size={14} aria-hidden="true" />}
                                         label="General"
@@ -733,7 +747,7 @@ const SettingsModal = ({
                                             exit={{ opacity: 0, height: 0 }}
                                             transition={{ duration: 0.15 }}
                                         >
-                                            <p className="px-2.5 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled">Local</p>
+                                            <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">Local</p>
                                             <ModalNavItem
                                                 icon={<Cpu size={14} aria-hidden="true" />}
                                                 label="Models"
@@ -834,6 +848,8 @@ const SettingsModal = ({
                                             variants={tabContentVariants}
                                             micPermission={micPermission}
                                             accessibilityPermission={accessibilityPermission}
+                                            textSizeMode={textSizeMode}
+                                            onTextSizeModeChange={setTextSizeMode}
                                         />
                                     )}
 
@@ -865,7 +881,7 @@ const ModalNavItem = ({ icon, label, active, onClick }: {
 }) => (
     <motion.button
         onClick={onClick}
-        className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-medium transition-all ${active ? "bg-surface-elevated text-content-primary" : "text-content-muted hover:bg-surface-elevated hover:text-content-secondary"
+        className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 ui-text-body-sm-strong transition-colors ${active ? "bg-surface-elevated ui-color-primary" : "ui-color-muted hover:bg-surface-elevated hover:text-content-secondary"
             }`}
         whileTap={{ scale: 0.98 }}
     >

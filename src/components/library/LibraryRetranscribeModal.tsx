@@ -89,8 +89,8 @@ const LibraryRetranscribeModal = ({
             >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
                     <div>
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-content-disabled">Retranscribe</p>
-                        <p className="text-[14px] text-content-primary mt-1 truncate">{item.name}</p>
+                        <p className="ui-text-meta uppercase tracking-[0.2em] text-content-disabled">Retranscribe</p>
+                        <p className="ui-text-body-lg text-content-primary mt-1 truncate">{item.name}</p>
                     </div>
                     <button
                         onClick={onCancel}
@@ -102,12 +102,12 @@ const LibraryRetranscribeModal = ({
 
                 <div className="px-5 py-4 space-y-4">
                     {models.length === 0 && (
-                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[11px] text-amber-200">
+                        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
                             No local models are installed. Download a model in Settings → Models before retranscribing.
                         </div>
                     )}
                     <div>
-                        <label className="text-[11px] font-medium text-content-muted ml-1">Model</label>
+                        <label className="ui-text-label font-medium text-content-muted ml-1">Model</label>
                         <Dropdown
                             value={selectedModelKey || null}
                             onChange={(value) => setSelectedModelKey(value)}
@@ -120,8 +120,8 @@ const LibraryRetranscribeModal = ({
 
                     <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
                         <div>
-                            <div className="text-[12px] text-content-primary font-medium">Show timestamps</div>
-                            <div className="text-[10px] text-content-disabled">
+                            <div className="ui-text-body-sm text-content-primary font-medium">Show timestamps</div>
+                            <div className="ui-text-meta text-content-disabled">
                                 {timestampsSupported ? "Enabled for supported models" : "Not supported by this model"}
                             </div>
                         </div>
@@ -145,14 +145,14 @@ const LibraryRetranscribeModal = ({
                 <div className="px-5 py-3 border-t border-border-primary flex items-center justify-end gap-2">
                     <button
                         onClick={onCancel}
-                        className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2 text-[11px] text-content-muted hover:text-content-secondary"
+                        className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-label text-content-muted hover:text-content-secondary"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isSubmitting || !selectedModelKey}
-                        className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 text-[11px] text-content-primary hover:border-border-secondary disabled:opacity-50"
+                        className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-label text-content-primary hover:border-border-secondary disabled:opacity-50"
                     >
                         {isSubmitting ? "Retranscribing..." : "Retranscribe"}
                     </button>

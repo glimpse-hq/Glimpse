@@ -44,8 +44,8 @@ const CleanupPanel = ({
             <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h3 className="text-[13px] font-medium text-content-primary">AI Cleanup</h3>
-                        <p className="text-[11px] text-content-disabled">Removes filler words, fixes grammar, and cleans up speech.</p>
+                        <h3 className="ui-text-body-strong ui-color-primary">AI Cleanup</h3>
+                        <p className="ui-text-label ui-color-disabled">Removes filler words, fixes grammar, and cleans up speech.</p>
                     </div>
                     <motion.button
                         onClick={() => setLlmCleanupEnabled(!llmCleanupEnabled)}
@@ -74,7 +74,7 @@ const CleanupPanel = ({
                         >
                             <div className="pt-3 border-t border-border-primary space-y-3">
                                 <div className="space-y-1.5">
-                                    <label className="text-[11px] font-medium text-content-muted ml-1">Provider</label>
+                                    <label className="ui-text-label-strong ui-color-muted ml-1">Provider</label>
                                     <Dropdown
                                         value={llmProvider}
                                         onChange={(val) => {
@@ -107,7 +107,7 @@ const CleanupPanel = ({
                                 {hasSelectedProvider && (
                                     <>
                                         <div className="space-y-1.5">
-                                            <label className="text-[11px] font-medium text-content-muted ml-1">
+                                            <label className="ui-text-label-strong ui-color-muted ml-1">
                                                 Endpoint {llmProvider !== "custom" && <span className="text-content-disabled">(auto-filled)</span>}
                                             </label>
                                             <div className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 min-h-[40px] focus-within:border-border-hover transition-colors">
@@ -118,13 +118,13 @@ const CleanupPanel = ({
                                                     onChange={(e) => setLlmEndpoint(e.target.value)}
                                                     placeholder={providerPreset?.endpoint ?? "https://your-llm-endpoint.com"}
                                                     aria-label="LLM Endpoint URL"
-                                                    className="w-full bg-transparent text-[12px] text-content-primary placeholder-content-disabled outline-none"
+                                                    className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-none"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="space-y-1.5">
-                                            <label className="text-[11px] font-medium text-content-muted ml-1">
+                                            <label className="ui-text-label-strong ui-color-muted ml-1">
                                                 API Key {!providerPreset?.apiKeyRequired && <span className="text-content-disabled">(if required)</span>}
                                             </label>
                                             <div className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 min-h-[40px] focus-within:border-border-hover transition-colors">
@@ -135,7 +135,7 @@ const CleanupPanel = ({
                                                     onChange={(e) => setLlmApiKey(e.target.value)}
                                                     placeholder={providerPreset?.apiKeyRequired ? "Required" : "Optional"}
                                                     aria-label="LLM API Key"
-                                                    className="w-full bg-transparent text-[12px] text-content-primary placeholder-content-disabled outline-none"
+                                                    className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-none"
                                                 />
                                             </div>
                                         </div>

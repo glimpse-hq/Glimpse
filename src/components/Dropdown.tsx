@@ -110,7 +110,7 @@ export function Dropdown<T extends string | number>({
 
         if (fixedBadgeSlots) {
             return (
-                <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide">
+                <span className="flex items-center gap-1 ui-text-uppercase-micro font-medium">
                     {badges.map((badge, index) => (
                         <span
                             key={`${badge.label}-${index}`}
@@ -129,7 +129,7 @@ export function Dropdown<T extends string | number>({
         }
 
         return (
-            <span className="flex items-center gap-1 text-[9px] font-medium uppercase tracking-wide">
+            <span className="flex items-center gap-1 ui-text-uppercase-micro font-medium">
                 {badges.map((badge, index) => (
                     badge.visible === false ? null : (
                         <span
@@ -151,7 +151,7 @@ export function Dropdown<T extends string | number>({
                 onClick={() => setIsOpen(!isOpen)}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                className="w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary py-2 px-3 text-xs text-left hover:border-border-secondary focus:border-border-hover focus:outline-none transition-colors"
+                className="w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary py-2 px-3 ui-text-body-sm text-left hover:border-border-secondary focus:border-border-hover focus:outline-none transition-colors"
             >
                 <div className="flex items-center gap-2 min-w-0">
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
@@ -190,7 +190,7 @@ export function Dropdown<T extends string | number>({
                                         placeholder={searchPlaceholder}
                                         aria-label="Search options"
                                         autoFocus
-                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 text-xs text-content-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
+                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </div>
@@ -204,7 +204,7 @@ export function Dropdown<T extends string | number>({
                                         <div
                                             key={option.value}
                                             role="presentation"
-                                            className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-content-disabled border-t border-border-secondary first:border-t-0 mt-1 first:mt-0"
+                                            className="px-3 py-1.5 ui-text-uppercase-meta font-semibold ui-color-disabled border-t border-border-secondary first:border-t-0 mt-1 first:mt-0"
                                         >
                                             {option.label}
                                         </div>
@@ -225,12 +225,12 @@ export function Dropdown<T extends string | number>({
                                                 }`}
                                         >
                                             <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                                <span className="text-[12px] font-medium truncate flex items-center gap-2">
+                                                <span className="ui-text-body-sm-strong truncate flex items-center gap-2">
                                                     {option.icon && <span aria-hidden="true">{option.icon}</span>}
                                                     {option.label}
                                                 </span>
                                                 {option.description && (
-                                                    <span className={`text-[10px] truncate ${value === option.value ? "text-cloud/70" : "text-content-disabled group-hover:text-content-muted"
+                                                    <span className={`ui-text-meta truncate ${value === option.value ? "text-cloud/70" : "ui-color-disabled group-hover:text-content-muted"
                                                         }`}>
                                                         {option.description}
                                                     </span>
@@ -246,7 +246,7 @@ export function Dropdown<T extends string | number>({
                                     )
                                 )
                             ) : (
-                                <div className="px-3 py-4 text-xs text-content-muted text-center">
+                                <div className="px-3 py-4 ui-text-body-sm ui-color-muted text-center">
                                     No options found
                                 </div>
                             )}

@@ -33,17 +33,17 @@ const AccountTab = ({
         className="space-y-4"
     >
         <header>
-            <h1 className="text-lg font-medium text-content-primary">Account</h1>
-            <p className="mt-1 text-[12px] text-content-muted">Manage your profile, sessions, and subscription.</p>
+            <h1 className="ui-text-title-lg font-medium ui-color-primary">Account</h1>
+            <p className="mt-1 ui-text-body-sm ui-color-muted">Manage your profile, sessions, and subscription.</p>
         </header>
 
         {authLoading ? (
             <div className="flex flex-col items-center justify-center py-16">
                 <Loader2 size={24} className="animate-spin text-cloud mb-3" />
-                <p className="text-[12px] text-content-muted mb-3">Loading...</p>
+                <p className="ui-text-body-sm ui-color-muted mb-3">Loading...</p>
                 <button
                     onClick={handleCancelAuth}
-                    className="text-[11px] text-content-disabled hover:text-content-muted transition-colors"
+                    className="ui-text-label ui-color-disabled hover:text-content-muted transition-colors"
                 >
                     Cancel
                 </button>
@@ -65,12 +65,12 @@ const AccountTab = ({
                         <Lock size={16} className="text-content-secondary" />
                     </div>
                     <div className="flex-1">
-                        <h2 className="text-[13px] font-semibold text-content-primary">Glimpse Cloud</h2>
-                        <p className="mt-1 text-[11px] text-content-muted leading-relaxed">
+                        <h2 className="ui-text-body-strong font-semibold ui-color-primary">Glimpse Cloud</h2>
+                        <p className="mt-1 ui-text-label ui-color-muted leading-relaxed">
                             Cloud accounts, subscriptions, and sync are currently{" "}
                             <span className="text-content-primary font-medium">in development</span>.
                         </p>
-                        <div className="mt-3 text-[10px] text-content-disabled">Sign-in is disabled.</div>
+                        <div className="mt-3 ui-text-meta ui-color-disabled">Sign-in is disabled.</div>
                     </div>
                 </div>
             </div>

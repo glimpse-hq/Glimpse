@@ -1,4 +1,5 @@
 export type TranscriptionMode = "cloud" | "local";
+export type TextSizeMode = "small" | "default" | "large";
 
 export type LlmProvider =
     | "none"
