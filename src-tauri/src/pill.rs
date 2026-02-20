@@ -14,11 +14,12 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
+const SHORTCUT_PRESS_DEBOUNCE_MS: u64 = 180;
 
 pub const EVENT_PILL_STATE: &str = "pill:state";
 
@@ -141,6 +142,7 @@ pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
     smart_press_time: Mutex<Option<DateTime<Local>>>,
+    last_shortcut_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
     shortcut_origin: Mutex<Option<ShortcutOrigin>>,
     recorder: Arc<RecorderManager>,
@@ -153,6 +155,7 @@ impl PillController {
             status: Mutex::new(PillStatus::Idle),
             recording_mode: Mutex::new(None),
             smart_press_time: Mutex::new(None),
+            last_shortcut_press_time: Mutex::new(None),
             hold_key_down: Mutex::new(false),
             shortcut_origin: Mutex::new(None),
             recorder,
@@ -329,6 +332,18 @@ impl PillController {
         } else {
             false
         }
+    }
+
+    fn should_ignore_shortcut_press(&self) -> bool {
+        let mut last_press_time = self.last_shortcut_press_time.lock();
+        let now = Instant::now();
+        let should_ignore = last_press_time
+            .as_ref()
+            .is_some_and(|last| now.duration_since(*last) < Duration::from_millis(SHORTCUT_PRESS_DEBOUNCE_MS));
+        if !should_ignore {
+            *last_press_time = Some(now);
+        }
+        should_ignore
     }
 
     /// Returns true if recording started successfully, false if blocked by a check
@@ -647,7 +662,12 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             let state = app.state::<AppState>();
             let pill = state.pill();
             match event.state {
-                HotkeyState::Pressed => pill.handle_smart_press(app),
+                HotkeyState::Pressed => {
+                    if pill.should_ignore_shortcut_press() {
+                        return;
+                    }
+                    pill.handle_smart_press(app)
+                }
                 HotkeyState::Released => pill.handle_smart_release(app),
             }
         })?;
@@ -660,6 +680,9 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             let pill = state.pill();
             match event.state {
                 HotkeyState::Pressed => {
+                    if pill.should_ignore_shortcut_press() {
+                        return;
+                    }
                     let _ = pill.handle_hold_press(app);
                 }
                 HotkeyState::Released => pill.handle_hold_release(app),
@@ -673,6 +696,9 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             if event.state == HotkeyState::Pressed {
                 let state = app.state::<AppState>();
                 let pill = state.pill();
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
                 pill.handle_toggle_press(app);
             }
         })?;
