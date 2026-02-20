@@ -120,7 +120,11 @@ fn side_requirement_matches(requirement: SideRequirement, left: bool, right: boo
 }
 
 impl ShortcutSpec {
-    fn is_active(&self, pressed_modifiers: PressedModifiers, pressed_keys: &HashSet<String>) -> bool {
+    fn is_active(
+        &self,
+        pressed_modifiers: PressedModifiers,
+        pressed_keys: &HashSet<String>,
+    ) -> bool {
         if self.modifiers.control != pressed_modifiers.control_any() {
             return false;
         }
@@ -189,15 +193,14 @@ fn parse_modifier_token(token: &str) -> Option<ModifierToken> {
         "rightshift" | "shiftright" => Some(ModifierToken::ShiftRight),
         "alt" | "option" => Some(ModifierToken::Alt),
         "leftalt" | "altleft" | "leftoption" | "optionleft" => Some(ModifierToken::AltLeft),
-        "rightalt" | "altright" | "rightoption" | "optionright" => {
-            Some(ModifierToken::AltRight)
-        }
+        "rightalt" | "altright" | "rightoption" | "optionright" => Some(ModifierToken::AltRight),
         "command" | "cmd" | "meta" | "super" => Some(ModifierToken::CommandAny),
         "leftcommand" | "commandleft" | "leftcmd" | "cmdleft" | "metaleft" | "superleft" => {
             Some(ModifierToken::CommandLeft)
         }
-        "rightcommand" | "commandright" | "rightcmd" | "cmdright" | "metaright"
-        | "superright" => Some(ModifierToken::CommandRight),
+        "rightcommand" | "commandright" | "rightcmd" | "cmdright" | "metaright" | "superright" => {
+            Some(ModifierToken::CommandRight)
+        }
         "commandorcontrol" | "cmdorctrl" => Some(platform_command_or_control()),
         _ => None,
     }
@@ -293,7 +296,11 @@ fn parse_shortcut_spec(shortcut: &str) -> Result<ShortcutSpec> {
     let mut key: Option<String> = None;
     let mut saw_token = false;
 
-    for token in shortcut.split('+').map(str::trim).filter(|part| !part.is_empty()) {
+    for token in shortcut
+        .split('+')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+    {
         saw_token = true;
 
         if let Some(modifier) = parse_modifier_token(token) {
@@ -414,7 +421,10 @@ fn normalize_event_key_name(key_name: &str) -> Option<String> {
 }
 
 fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
-    if !matches!(event.event_type, EventType::KeyPress | EventType::KeyRelease) {
+    if !matches!(
+        event.event_type,
+        EventType::KeyPress | EventType::KeyRelease
+    ) {
         return;
     }
 
@@ -426,7 +436,9 @@ fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
 
     let mut callbacks: Vec<(ShortcutHandler, HotkeyEvent)> = Vec::new();
     {
-        let mut runtime = RUNTIME_HOTKEY_STATE.lock().expect("hotkey state lock poisoned");
+        let mut runtime = RUNTIME_HOTKEY_STATE
+            .lock()
+            .expect("hotkey state lock poisoned");
 
         if let Some(modifier) = event_modifier_for_key_name(&key_name) {
             runtime.pressed_modifiers.set(modifier, is_press);
@@ -444,7 +456,9 @@ fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
         let pressed_keys = runtime.pressed_keys.clone();
 
         for registration in &mut runtime.registrations {
-            let active_now = registration.spec.is_active(pressed_modifiers, &pressed_keys);
+            let active_now = registration
+                .spec
+                .is_active(pressed_modifiers, &pressed_keys);
             if active_now == registration.active {
                 continue;
             }
@@ -470,7 +484,9 @@ fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
 
 fn ensure_listener_running(app: &AppHandle<AppRuntime>) -> Result<()> {
     let should_start = {
-        let mut runtime = RUNTIME_HOTKEY_STATE.lock().expect("hotkey state lock poisoned");
+        let mut runtime = RUNTIME_HOTKEY_STATE
+            .lock()
+            .expect("hotkey state lock poisoned");
         if runtime.listening {
             false
         } else {
@@ -487,7 +503,9 @@ fn ensure_listener_running(app: &AppHandle<AppRuntime>) -> Result<()> {
         .user_input()
         .set_event_types(vec![EventType::KeyPress, EventType::KeyRelease])
     {
-        let mut runtime = RUNTIME_HOTKEY_STATE.lock().expect("hotkey state lock poisoned");
+        let mut runtime = RUNTIME_HOTKEY_STATE
+            .lock()
+            .expect("hotkey state lock poisoned");
         runtime.listening = false;
         return Err(anyhow!("Failed to configure user-input event types: {err}"));
     }
@@ -506,7 +524,9 @@ fn ensure_listener_running(app: &AppHandle<AppRuntime>) -> Result<()> {
     });
 
     if let Err(err) = app.user_input().start_listening(channel) {
-        let mut runtime = RUNTIME_HOTKEY_STATE.lock().expect("hotkey state lock poisoned");
+        let mut runtime = RUNTIME_HOTKEY_STATE
+            .lock()
+            .expect("hotkey state lock poisoned");
         runtime.listening = false;
         return Err(anyhow!("Failed to start user-input listener: {err}"));
     }
@@ -527,7 +547,9 @@ impl<'a> UserInputHotkeyProvider<'a> {
 impl HotkeyProvider for UserInputHotkeyProvider<'_> {
     fn unregister_all(&self) -> Result<()> {
         let was_listening = {
-            let mut runtime = RUNTIME_HOTKEY_STATE.lock().expect("hotkey state lock poisoned");
+            let mut runtime = RUNTIME_HOTKEY_STATE
+                .lock()
+                .expect("hotkey state lock poisoned");
             runtime.registrations.clear();
             runtime.pressed_keys.clear();
             runtime.pressed_modifiers = PressedModifiers::default();
@@ -551,7 +573,9 @@ impl HotkeyProvider for UserInputHotkeyProvider<'_> {
         let spec = parse_shortcut_spec(shortcut)?;
         ensure_listener_running(self.app)?;
 
-        let mut runtime = RUNTIME_HOTKEY_STATE.lock().expect("hotkey state lock poisoned");
+        let mut runtime = RUNTIME_HOTKEY_STATE
+            .lock()
+            .expect("hotkey state lock poisoned");
         runtime.registrations.push(RegisteredShortcut {
             spec,
             handler: Arc::new(handler),

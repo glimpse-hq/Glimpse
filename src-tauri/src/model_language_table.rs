@@ -112,8 +112,8 @@ const LANGUAGE_NAMES: &[(&str, &str)] = &[
 const MOONSHINE_LANGUAGE_CODES: &[&str] = &["ar", "en", "zh", "ja", "ko", "es", "uk", "vi"];
 
 const NVIDIA_PARAKEET_V3_LANGUAGE_CODES: &[&str] = &[
-    "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt",
-    "mt", "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
+    "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt",
+    "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
 ];
 
 fn language_name(code: &str) -> Option<&'static str> {
