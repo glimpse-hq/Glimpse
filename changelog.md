@@ -1,3 +1,16 @@
+0.6.6
+
+### Fixes
+
+- Fixed Whisper hallucinations where "Thank you." would be added in silent pieces of audio.
+- Fixed "An error occoured" errors from happening when spamming the transcribe button too much
+
+### Changes
+
+- Added a debounce when starting and stopping recordings, this should prevent accidental double taps.
+
+---
+
 0.6.5
 
 ### Features
