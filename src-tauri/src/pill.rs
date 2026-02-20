@@ -244,6 +244,10 @@ impl PillController {
     }
 
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
+        eprintln!("[Pill] {message}");
+        if let Err(err) = self.recorder.stop() {
+            eprintln!("[Pill] Failed to stop recorder during error transition: {err}");
+        }
         self.reset_recording_state();
         *self.hold_key_down.lock() = false;
         self.transition_to(app, PillStatus::Error);
@@ -337,9 +341,9 @@ impl PillController {
     fn should_ignore_shortcut_press(&self) -> bool {
         let mut last_press_time = self.last_shortcut_press_time.lock();
         let now = Instant::now();
-        let should_ignore = last_press_time
-            .as_ref()
-            .is_some_and(|last| now.duration_since(*last) < Duration::from_millis(SHORTCUT_PRESS_DEBOUNCE_MS));
+        let should_ignore = last_press_time.as_ref().is_some_and(|last| {
+            now.duration_since(*last) < Duration::from_millis(SHORTCUT_PRESS_DEBOUNCE_MS)
+        });
         if !should_ignore {
             *last_press_time = Some(now);
         }
