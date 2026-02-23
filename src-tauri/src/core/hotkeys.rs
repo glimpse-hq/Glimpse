@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use monio::state::{MASK_ALT, MASK_CTRL, MASK_META, MASK_SHIFT};
 use monio::{Error as MonioError, Event as MonioEvent, EventType as MonioEventType, Hook};
 use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
@@ -192,12 +193,6 @@ struct ModifierSnapshot {
     alt: bool,
     command: bool,
 }
-
-// Provided by monio::state masks.
-const MASK_SHIFT: u32 = 1 << 0;
-const MASK_CTRL: u32 = 1 << 1;
-const MASK_ALT: u32 = 1 << 2;
-const MASK_META: u32 = 1 << 3;
 
 fn modifier_snapshot_from_mask(mask: u32) -> ModifierSnapshot {
     ModifierSnapshot {
