@@ -228,7 +228,6 @@ pub fn run() {
 
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_aptabase::Builder::new(aptabase_key).build())
-        .plugin(tauri_plugin_user_input::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())

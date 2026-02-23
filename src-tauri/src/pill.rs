@@ -652,13 +652,22 @@ fn check_accessibility_warning(app: &AppHandle<AppRuntime>) {
 
 pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     let state = app.state::<AppState>();
-    let provider = hotkeys::provider(app);
+    let settings = state.current_settings();
 
+    for (enabled, shortcut) in [
+        (settings.smart_enabled, settings.smart_shortcut.as_str()),
+        (settings.hold_enabled, settings.hold_shortcut.as_str()),
+        (settings.toggle_enabled, settings.toggle_shortcut.as_str()),
+    ] {
+        if enabled {
+            hotkeys::validate_shortcut(shortcut)?;
+        }
+    }
+
+    let provider = hotkeys::provider(app);
     if let Err(err) = provider.unregister_all() {
         eprintln!("Failed to clear shortcuts: {err}");
     }
-
-    let settings = state.current_settings();
 
     if settings.smart_enabled {
         let smart_shortcut = settings.smart_shortcut.clone();

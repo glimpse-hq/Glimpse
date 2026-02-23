@@ -1,14 +1,14 @@
 export const shortcutModifierOrder = [
     "Control",
-    "LeftShift",
-    "RightShift",
+    "Command",
     "Shift",
-    "LeftOption",
-    "RightOption",
     "Alt",
     "LeftCommand",
     "RightCommand",
-    "Command",
+    "LeftShift",
+    "RightShift",
+    "LeftOption",
+    "RightOption",
 ] as const;
 
 const displayTokenMap: Record<string, string> = {

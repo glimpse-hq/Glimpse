@@ -1,9 +1,8 @@
 use anyhow::{anyhow, Result};
+use monio::{Error as MonioError, Event as MonioEvent, EventType as MonioEventType, Hook};
 use std::collections::HashSet;
 use std::sync::{Arc, LazyLock, Mutex};
-use tauri::ipc::{Channel, InvokeResponseBody};
 use tauri::AppHandle;
-use tauri_plugin_user_input::{EventType, InputEvent, InputEventData, UserInputExt};
 
 use crate::AppRuntime;
 
@@ -109,12 +108,18 @@ struct ShortcutSpec {
     command_requirement: SideRequirement,
 }
 
-fn side_requirement_matches(requirement: SideRequirement, left: bool, right: bool) -> bool {
+fn side_requirement_matches(
+    requirement: SideRequirement,
+    left: bool,
+    right: bool,
+    modifier_any: bool,
+) -> bool {
     match requirement {
-        SideRequirement::None => !left && !right,
-        SideRequirement::Any => left || right,
-        SideRequirement::LeftOnly => left && !right,
-        SideRequirement::RightOnly => right && !left,
+        SideRequirement::None => !left && !right && !modifier_any,
+        SideRequirement::Any => left || right || modifier_any,
+        // Synthetic events may only provide aggregate modifier mask (no side key events).
+        SideRequirement::LeftOnly => (left && !right) || (modifier_any && !left && !right),
+        SideRequirement::RightOnly => (right && !left) || (modifier_any && !left && !right),
         SideRequirement::Both => left && right,
     }
 }
@@ -124,14 +129,17 @@ impl ShortcutSpec {
         &self,
         pressed_modifiers: PressedModifiers,
         pressed_keys: &HashSet<String>,
+        modifier_snapshot: ModifierSnapshot,
     ) -> bool {
-        if self.modifiers.control != pressed_modifiers.control_any() {
+        let control_any = pressed_modifiers.control_any() || modifier_snapshot.control;
+        if self.modifiers.control != control_any {
             return false;
         }
         if !side_requirement_matches(
             self.modifiers.shift,
             pressed_modifiers.shift_left,
             pressed_modifiers.shift_right,
+            modifier_snapshot.shift,
         ) {
             return false;
         }
@@ -139,6 +147,7 @@ impl ShortcutSpec {
             self.modifiers.alt,
             pressed_modifiers.alt_left,
             pressed_modifiers.alt_right,
+            modifier_snapshot.alt,
         ) {
             return false;
         }
@@ -152,6 +161,7 @@ impl ShortcutSpec {
             self.command_requirement,
             pressed_modifiers.command_left,
             pressed_modifiers.command_right,
+            modifier_snapshot.command,
         )
     }
 }
@@ -173,6 +183,30 @@ struct RuntimeHotkeyState {
 
 static RUNTIME_HOTKEY_STATE: LazyLock<Mutex<RuntimeHotkeyState>> =
     LazyLock::new(|| Mutex::new(RuntimeHotkeyState::default()));
+static RUNTIME_HOTKEY_HOOK: LazyLock<Mutex<Option<Hook>>> = LazyLock::new(|| Mutex::new(None));
+
+#[derive(Debug, Clone, Copy, Default)]
+struct ModifierSnapshot {
+    control: bool,
+    shift: bool,
+    alt: bool,
+    command: bool,
+}
+
+// Provided by monio::state masks.
+const MASK_SHIFT: u32 = 1 << 0;
+const MASK_CTRL: u32 = 1 << 1;
+const MASK_ALT: u32 = 1 << 2;
+const MASK_META: u32 = 1 << 3;
+
+fn modifier_snapshot_from_mask(mask: u32) -> ModifierSnapshot {
+    ModifierSnapshot {
+        control: mask & MASK_CTRL != 0,
+        shift: mask & MASK_SHIFT != 0,
+        alt: mask & MASK_ALT != 0,
+        command: mask & MASK_META != 0,
+    }
+}
 
 fn platform_command_or_control() -> ModifierToken {
     #[cfg(target_os = "macos")]
@@ -356,6 +390,10 @@ fn parse_shortcut_spec(shortcut: &str) -> Result<ShortcutSpec> {
     })
 }
 
+pub(crate) fn validate_shortcut(shortcut: &str) -> Result<()> {
+    parse_shortcut_spec(shortcut).map(|_| ())
+}
+
 fn event_modifier_for_key_name(key_name: &str) -> Option<ModifierKey> {
     match key_name {
         "ControlLeft" => Some(ModifierKey::ControlLeft),
@@ -420,19 +458,19 @@ fn normalize_event_key_name(key_name: &str) -> Option<String> {
     )
 }
 
-fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
-    if !matches!(
-        event.event_type,
-        EventType::KeyPress | EventType::KeyRelease
-    ) {
-        return;
-    }
-
-    let is_press = event.event_type == EventType::KeyPress;
-    let InputEventData::Key(key) = event.data else {
+fn handle_input_event(app: &AppHandle<AppRuntime>, event: &MonioEvent) {
+    let is_press = match event.event_type {
+        MonioEventType::KeyPressed => true,
+        MonioEventType::KeyReleased => false,
+        _ => return,
+    };
+    let Some(keyboard) = &event.keyboard else {
         return;
     };
+    let key = keyboard.key;
+    let event_mask = event.mask;
     let key_name = format!("{key:?}");
+    let modifier_snapshot = modifier_snapshot_from_mask(event_mask);
 
     let mut callbacks: Vec<(ShortcutHandler, HotkeyEvent)> = Vec::new();
     {
@@ -456,9 +494,10 @@ fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
         let pressed_keys = runtime.pressed_keys.clone();
 
         for registration in &mut runtime.registrations {
-            let active_now = registration
-                .spec
-                .is_active(pressed_modifiers, &pressed_keys);
+            let active_now =
+                registration
+                    .spec
+                    .is_active(pressed_modifiers, &pressed_keys, modifier_snapshot);
             if active_now == registration.active {
                 continue;
             }
@@ -482,6 +521,23 @@ fn handle_input_event(app: &AppHandle<AppRuntime>, event: InputEvent) {
     }
 }
 
+fn stop_listener_hook() -> Result<()> {
+    let hook = {
+        let mut hook_slot = RUNTIME_HOTKEY_HOOK
+            .lock()
+            .expect("hotkey hook lock poisoned");
+        hook_slot.take()
+    };
+    if let Some(hook) = hook {
+        if let Err(err) = hook.stop() {
+            if !matches!(err, MonioError::NotRunning) {
+                return Err(anyhow!("Failed to stop input listener: {err}"));
+            }
+        }
+    }
+    Ok(())
+}
+
 fn ensure_listener_running(app: &AppHandle<AppRuntime>) -> Result<()> {
     let should_start = {
         let mut runtime = RUNTIME_HOTKEY_STATE
@@ -499,71 +555,55 @@ fn ensure_listener_running(app: &AppHandle<AppRuntime>) -> Result<()> {
         return Ok(());
     }
 
-    if let Err(err) = app
-        .user_input()
-        .set_event_types(vec![EventType::KeyPress, EventType::KeyRelease])
+    if let Err(err) = stop_listener_hook() {
+        eprintln!("{err}");
+    }
+
+    let hook = Hook::new();
+    let app_handle = app.clone();
+    if let Err(err) =
+        hook.run_async(move |event: &MonioEvent| handle_input_event(&app_handle, event))
     {
         let mut runtime = RUNTIME_HOTKEY_STATE
             .lock()
             .expect("hotkey state lock poisoned");
         runtime.listening = false;
-        return Err(anyhow!("Failed to configure user-input event types: {err}"));
+        return Err(anyhow!("Failed to start input listener: {err}"));
     }
 
-    let app_handle = app.clone();
-    let channel = Channel::new(move |body: InvokeResponseBody| {
-        if let InvokeResponseBody::Json(raw) = body {
-            match serde_json::from_str::<InputEvent>(&raw) {
-                Ok(event) => handle_input_event(&app_handle, event),
-                Err(err) => {
-                    eprintln!("Failed to parse user-input event payload: {err}");
-                }
-            }
-        }
-        Ok(())
-    });
-
-    if let Err(err) = app.user_input().start_listening(channel) {
-        let mut runtime = RUNTIME_HOTKEY_STATE
+    {
+        let mut hook_slot = RUNTIME_HOTKEY_HOOK
             .lock()
-            .expect("hotkey state lock poisoned");
-        runtime.listening = false;
-        return Err(anyhow!("Failed to start user-input listener: {err}"));
+            .expect("hotkey hook lock poisoned");
+        *hook_slot = Some(hook);
     }
 
     Ok(())
 }
 
-struct UserInputHotkeyProvider<'a> {
+struct MonioHotkeyProvider<'a> {
     app: &'a AppHandle<AppRuntime>,
 }
 
-impl<'a> UserInputHotkeyProvider<'a> {
+impl<'a> MonioHotkeyProvider<'a> {
     fn new(app: &'a AppHandle<AppRuntime>) -> Self {
         Self { app }
     }
 }
 
-impl HotkeyProvider for UserInputHotkeyProvider<'_> {
+impl HotkeyProvider for MonioHotkeyProvider<'_> {
     fn unregister_all(&self) -> Result<()> {
-        let was_listening = {
+        {
             let mut runtime = RUNTIME_HOTKEY_STATE
                 .lock()
                 .expect("hotkey state lock poisoned");
             runtime.registrations.clear();
             runtime.pressed_keys.clear();
             runtime.pressed_modifiers = PressedModifiers::default();
-            std::mem::replace(&mut runtime.listening, false)
-        };
-
-        if was_listening {
-            self.app
-                .user_input()
-                .stop_listening()
-                .map_err(|err| anyhow!("Failed to stop user-input listener: {err}"))?;
+            runtime.listening = false;
         }
 
-        Ok(())
+        stop_listener_hook()
     }
 
     fn on_shortcut<F>(&self, shortcut: &str, handler: F) -> Result<()>
@@ -587,5 +627,5 @@ impl HotkeyProvider for UserInputHotkeyProvider<'_> {
 }
 
 pub(crate) fn provider(app: &AppHandle<AppRuntime>) -> impl HotkeyProvider + '_ {
-    UserInputHotkeyProvider::new(app)
+    MonioHotkeyProvider::new(app)
 }

@@ -10,7 +10,6 @@
     "settings"
   ],
   "permissions": [
-    "user-input:default",
     "updater:default",
     "process:allow-restart",
     "aptabase:allow-track-event"
