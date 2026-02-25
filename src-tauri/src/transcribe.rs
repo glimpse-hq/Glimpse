@@ -992,10 +992,7 @@ fn transcribe_local_chunked(
         if !chunk_text.trim().is_empty() {
             let deduped = dedupe_overlap_text(&full_text, &chunk_text);
             if !deduped.trim().is_empty() {
-                if !full_text.is_empty() {
-                    full_text.push('\n');
-                }
-                full_text.push_str(&deduped);
+                append_deduped_chunk(&mut full_text, &deduped);
             }
         }
 
@@ -1046,6 +1043,21 @@ pub(crate) fn dedupe_overlap_text(existing: &str, next: &str) -> String {
     }
 
     next_trim.to_string()
+}
+
+pub(crate) fn append_deduped_chunk(existing: &mut String, next: &str) {
+    let trimmed = next.trim();
+    if trimmed.is_empty() {
+        return;
+    }
+
+    if existing.is_empty() {
+        existing.push_str(trimmed);
+        return;
+    }
+
+    existing.push(' ');
+    existing.push_str(trimmed);
 }
 
 fn maybe_warn_llm_unavailable(app: &AppHandle<AppRuntime>, is_edit_mode: bool) {

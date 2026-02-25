@@ -1,3 +1,8 @@
+0.7.0
+
+### Fixes
+- Text would create newlines at end of chunk.
+---
 0.6.7
 
 ### Fixes

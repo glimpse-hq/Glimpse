@@ -435,11 +435,8 @@ fn transcribe_library_item(
             if !chunk_text.trim().is_empty() {
                 let deduped = transcribe::dedupe_overlap_text(&full_text, &chunk_text);
                 if !deduped.trim().is_empty() {
-                    if !full_text.is_empty() {
-                        full_text.push('\n');
-                    }
-                    full_text.push_str(&deduped);
-                    appended_text = Some(deduped);
+                    let appended = append_library_chunk(&mut full_text, &deduped);
+                    appended_text = Some(appended);
                 }
             }
 
@@ -546,10 +543,7 @@ fn transcribe_library_item(
             if !chunk_text.trim().is_empty() {
                 let deduped = transcribe::dedupe_overlap_text(&full_text, &chunk_text);
                 if !deduped.trim().is_empty() {
-                    if !full_text.is_empty() {
-                        full_text.push('\n');
-                    }
-                    full_text.push_str(&deduped);
+                    append_library_chunk(&mut full_text, &deduped);
                 }
             }
 
@@ -639,10 +633,7 @@ fn transcribe_library_item(
         if !chunk_text.trim().is_empty() {
             let deduped = transcribe::dedupe_overlap_text(&full_text, &chunk_text);
             if !deduped.trim().is_empty() {
-                if !full_text.is_empty() {
-                    full_text.push('\n');
-                }
-                full_text.push_str(&deduped);
+                append_library_chunk(&mut full_text, &deduped);
             }
         }
 
@@ -719,4 +710,38 @@ fn report_progress(
             chunk_segments,
         },
     );
+}
+
+fn append_library_chunk(existing: &mut String, next: &str) -> String {
+    let trimmed = next.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+
+    let mut normalized = trimmed.to_string();
+    let ends_sentence = existing
+        .chars()
+        .rev()
+        .find(|ch| !ch.is_whitespace())
+        .map(|ch| matches!(ch, '.' | '!' | '?' | ':' | ';'))
+        .unwrap_or(true);
+
+    if !ends_sentence {
+        lowercase_first_alpha(&mut normalized);
+    }
+
+    transcribe::append_deduped_chunk(existing, &normalized);
+    normalized
+}
+
+fn lowercase_first_alpha(text: &mut String) {
+    if let Some((idx, ch)) = text.char_indices().find(|(_, ch)| ch.is_alphabetic()) {
+        if ch.is_uppercase() {
+            let mut lowered = String::with_capacity(text.len());
+            lowered.push_str(&text[..idx]);
+            lowered.extend(ch.to_lowercase());
+            lowered.push_str(&text[idx + ch.len_utf8()..]);
+            *text = lowered;
+        }
+    }
 }

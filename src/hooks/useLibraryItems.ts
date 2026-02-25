@@ -203,7 +203,7 @@ export function useLibraryItems(initialFilter: LibraryFilter = {}) {
                             }
                             if (chunk_text && chunk_text.trim().length > 0) {
                                 const base = isReset ? "" : item.transcript ?? "";
-                                const separator = base.trim().length > 0 ? "\n" : "";
+                                const separator = base.trim().length > 0 ? " " : "";
                                 nextTranscript = `${base}${separator}${chunk_text}`;
                                 updateTranscript = true;
                             }
