@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import type { UpdateChannel } from "../../types";
 
 interface WhatsNewModalProps {
     isOpen: boolean;
     onClose: () => void;
+    updateChannel?: UpdateChannel;
 }
 
 interface ReleaseInfo {
@@ -13,6 +15,7 @@ interface ReleaseInfo {
     body: string;
     publishedAt: string;
     htmlUrl: string;
+    prerelease: boolean;
 }
 
 const GITHUB_API_URL = "https://api.github.com/repos/LegendarySpy/Glimpse/releases";
@@ -25,10 +28,14 @@ const isFeatureRelease = (version: string): boolean => {
     return patch === 0;
 };
 
-function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
+function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewModalProps) {
     const [releases, setReleases] = useState<ReleaseInfo[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const visibleReleases = releases.filter((release) => {
+        if (updateChannel === "prerelease") return true;
+        return !release.prerelease;
+    });
 
     useEffect(() => {
         if (isOpen && releases.length === 0) {
@@ -55,12 +62,14 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 body: string;
                 published_at: string;
                 html_url: string;
+                prerelease: boolean;
             }>;
             setReleases(data.map(release => ({
                 version: release.tag_name,
                 body: release.body || "No changelog available.",
                 publishedAt: release.published_at,
                 htmlUrl: release.html_url,
+                prerelease: release.prerelease,
             })));
         } catch (err) {
             console.error("Failed to fetch releases:", err);
@@ -212,9 +221,9 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                 </div>
                             )}
 
-                            {!loading && !error && releases.length > 0 && (
+                            {!loading && !error && visibleReleases.length > 0 && (
                                 <div className="space-y-6">
-                                    {releases.map((release, index) => {
+                                    {visibleReleases.map((release, index) => {
                                         const isFeatured = isFeatureRelease(release.version);
                                         return (
                                             <div key={release.version} className={isFeatured ? "pl-3 border-l-2 border-amber-400" : ""}>
@@ -229,7 +238,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                                 <div className="pb-2">
                                                     {renderMarkdown(release.body)}
                                                 </div>
-                                                {index < releases.length - 1 && (
+                                                {index < visibleReleases.length - 1 && (
                                                     <div className={`border-t border-border-primary mt-4 ${isFeatured ? "-ml-3" : ""}`} />
                                                 )}
                                             </div>
@@ -237,9 +246,10 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                     })}
                                 </div>
                             )}
+
                         </div>
 
-                        {releases.length > 0 && (
+                        {visibleReleases.length > 0 && (
                             <div className="sticky bottom-0 px-5 py-3 bg-surface-secondary backdrop-blur-sm border-t border-border-primary">
                                 <button
                                     onClick={() => openUrl("https://github.com/LegendarySpy/Glimpse/releases")}

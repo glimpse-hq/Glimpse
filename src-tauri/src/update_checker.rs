@@ -30,7 +30,6 @@ struct GitHubReleaseAsset {
 #[derive(Debug, Deserialize)]
 struct GitHubRelease {
     prerelease: bool,
-    draft: bool,
     assets: Vec<GitHubReleaseAsset>,
 }
 
@@ -98,7 +97,7 @@ async fn latest_prerelease_manifest_url() -> anyhow::Result<Option<Url>> {
         .await?;
 
     for release in releases {
-        if release.draft || !release.prerelease {
+        if !release.prerelease {
             continue;
         }
 
@@ -118,7 +117,7 @@ async fn latest_prerelease_manifest_url() -> anyhow::Result<Option<Url>> {
 async fn update_endpoints_for_channel(channel: UpdateChannel) -> anyhow::Result<Vec<Url>> {
     let stable = Url::parse(STABLE_UPDATE_ENDPOINT)?;
 
-    if matches!(channel, UpdateChannel::Beta) {
+    if matches!(channel, UpdateChannel::Prerelease) {
         let mut endpoints = Vec::new();
 
         match latest_prerelease_manifest_url().await {

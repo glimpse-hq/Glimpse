@@ -22,7 +22,7 @@ const UPDATE_CHANNEL_OPTIONS: Array<{ value: UpdateChannel; label: string; descr
         description: "Recommended for most people",
     },
     {
-        value: "beta",
+        value: "prerelease",
         label: "Pre-release",
         description: "Early access to upcoming builds",
     },

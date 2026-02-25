@@ -268,7 +268,7 @@ fn default_transcription_mode() -> TranscriptionMode {
 pub enum UpdateChannel {
     #[default]
     Stable,
-    Beta,
+    Prerelease,
 }
 
 fn default_update_channel() -> UpdateChannel {
@@ -386,8 +386,7 @@ impl SettingsStore {
                 settings.microphone_device.clone(),
             )?;
             settings.language = self.read_value(&conn, KEY_LANGUAGE, settings.language.clone())?;
-            settings.update_channel =
-                self.read_value(&conn, KEY_UPDATE_CHANNEL, settings.update_channel.clone())?;
+            settings.update_channel = self.read_update_channel(&conn)?;
             settings.llm_cleanup_enabled =
                 self.read_value(&conn, KEY_LLM_CLEANUP_ENABLED, settings.llm_cleanup_enabled)?;
             settings.llm_provider =
@@ -543,6 +542,26 @@ impl SettingsStore {
             serde_json::from_str(&raw).context("Malformed setting JSON in DB")
         } else {
             Ok(default)
+        }
+    }
+
+    fn read_update_channel(&self, conn: &Connection) -> Result<UpdateChannel> {
+        let raw: Option<String> = conn
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                params![KEY_UPDATE_CHANNEL],
+                |row| row.get(0),
+            )
+            .optional()
+            .context("Failed to read setting from DB")?;
+
+        if let Some(raw) = raw {
+            match serde_json::from_str::<UpdateChannel>(&raw) {
+                Ok(channel) => Ok(channel),
+                Err(_) => Ok(default_update_channel()),
+            }
+        } else {
+            Ok(default_update_channel())
         }
     }
 
