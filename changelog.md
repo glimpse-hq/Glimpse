@@ -1,7 +1,20 @@
 0.6.7
 
+### Features
+
+- Added the ability to try pre-release builds. (If you like to test things and sending feedback, this would be a big help!)
+
+### Changes
+
+- Reverted back to the previous hotkey system. This should fix using hotkeys with macros.
+
 ### Fixes
-- Fixed an issue where macros and related peripherals' hotkeys weren't being properly registered.
+- Setting hotkeys should be much less finicky now, recording shouldn't trigger when trying to set hotkeys.
+- Many other hyper-niche bug fixes
+
+
+
+
 
 ---
 0.6.6
