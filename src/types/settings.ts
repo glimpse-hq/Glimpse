@@ -1,6 +1,6 @@
 export type TranscriptionMode = "cloud" | "local";
 export type TextSizeMode = "small" | "default" | "large";
-export type UpdateChannel = "stable" | "beta";
+export type UpdateChannel = "stable" | "prerelease";
 
 export type LlmProvider =
     | "none"
