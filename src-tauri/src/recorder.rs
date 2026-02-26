@@ -7,7 +7,7 @@ use cpal::{SampleFormat, Stream};
 use crossbeam_channel::{bounded, unbounded, Sender};
 use parking_lot::Mutex;
 use uuid::Uuid;
-use webrtc_vad::{Vad, VadMode};
+use webrtc_vad::{SampleRate as VadSampleRate, Vad, VadMode};
 
 /// Reason why a recording was rejected
 #[derive(Debug, Clone)]
@@ -189,10 +189,23 @@ impl RecorderCore {
         }
 
         let host = cpal::default_host();
-        let device = if let Some(id) = device_id {
-            host.input_devices()
-                .context("Failed to list input devices")?
-                .find(|d| d.name().map(|n| n == id).unwrap_or(false))
+        let device = if let Some(selected) = device_id {
+            selected
+                .parse::<cpal::DeviceId>()
+                .ok()
+                .and_then(|parsed| host.device_by_id(&parsed))
+                .or_else(|| {
+                    host.input_devices().ok()?.find(|device| {
+                        device
+                            .id()
+                            .map(|id| id.to_string() == selected)
+                            .unwrap_or(false)
+                            || device
+                                .description()
+                                .map(|desc| desc.name() == selected.as_str())
+                                .unwrap_or(false)
+                    })
+                })
                 .or_else(|| host.default_input_device())
                 .context("Selected device not found and no default available")?
         } else {
@@ -204,7 +217,7 @@ impl RecorderCore {
             .context("No supported input configuration found")?;
         let format = config.sample_format();
         let stream_config: cpal::StreamConfig = config.clone().into();
-        let sample_rate = stream_config.sample_rate.0;
+        let sample_rate = stream_config.sample_rate;
         let channels = stream_config.channels;
 
         let buffer = Arc::new(Mutex::new(Vec::with_capacity(
@@ -398,6 +411,21 @@ fn calculate_rms(samples: &[f32]) -> f32 {
     (sum_squares / samples.len() as f32).sqrt()
 }
 
+fn vad_sample_rate(sample_rate: u32) -> Option<VadSampleRate> {
+    match sample_rate {
+        8000 => Some(VadSampleRate::Rate8kHz),
+        16000 => Some(VadSampleRate::Rate16kHz),
+        32000 => Some(VadSampleRate::Rate32kHz),
+        48000 => Some(VadSampleRate::Rate48kHz),
+        _ => None,
+    }
+}
+
+fn create_vad(sample_rate: u32, mode: VadMode) -> Option<Vad> {
+    let rate = vad_sample_rate(sample_rate)?;
+    Some(Vad::new_with_rate_and_mode(rate, mode))
+}
+
 /// Calculate percentage of frames containing speech using VAD
 fn calculate_speech_percentage_with_mode(samples: &[f32], sample_rate: u32, mode: VadMode) -> f32 {
     if samples.is_empty() {
@@ -427,12 +455,9 @@ fn calculate_speech_percentage_with_mode(samples: &[f32], sample_rate: u32, mode
         .map(|s| (s * i16::MAX as f32).round() as i16)
         .collect();
 
-    let mut vad = match Vad::new(vad_rate as i32) {
-        Ok(mut instance) => {
-            let _ = instance.fvad_set_mode(mode);
-            instance
-        }
-        Err(_) => return 100.0, // If VAD fails, assume it's valid
+    let mut vad = match create_vad(vad_rate, mode) {
+        Some(instance) => instance,
+        None => return 100.0, // If VAD fails, assume it's valid
     };
 
     let mut speech_frames = 0;
@@ -491,12 +516,9 @@ fn calculate_speech_percentage_i16_with_mode(
         return 0.0;
     }
 
-    let mut vad = match Vad::new(sample_rate as i32) {
-        Ok(mut instance) => {
-            let _ = instance.fvad_set_mode(mode);
-            instance
-        }
-        Err(_) => return 100.0, // If VAD fails, assume it's valid
+    let mut vad = match create_vad(sample_rate, mode) {
+        Some(instance) => instance,
+        None => return 100.0, // If VAD fails, assume it's valid
     };
 
     let mut speech_frames = 0;
@@ -761,12 +783,9 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> Vec<f32> {
         .map(|s| (s * i16::MAX as f32).round() as i16)
         .collect();
 
-    let mut vad = match Vad::new(vad_rate as i32) {
-        Ok(mut instance) => {
-            let _ = instance.fvad_set_mode(VadMode::LowBitrate);
-            instance
-        }
-        Err(_) => return samples.to_vec(),
+    let mut vad = match create_vad(vad_rate, VadMode::LowBitrate) {
+        Some(instance) => instance,
+        None => return samples.to_vec(),
     };
 
     let mut speech_frames = Vec::new();

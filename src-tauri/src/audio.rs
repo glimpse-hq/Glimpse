@@ -13,7 +13,18 @@ pub struct DeviceInfo {
 pub fn list_input_devices() -> Result<Vec<DeviceInfo>, String> {
     let host = cpal::default_host();
     let default_device = host.default_input_device();
-    let default_name = default_device.as_ref().and_then(|d| d.name().ok());
+    let (default_id, default_name) = default_device
+        .as_ref()
+        .map(|device| {
+            (
+                device.id().ok().map(|id| id.to_string()),
+                device
+                    .description()
+                    .ok()
+                    .map(|description| description.name().to_string()),
+            )
+        })
+        .unwrap_or((None, None));
 
     let devices = host
         .input_devices()
@@ -21,16 +32,23 @@ pub fn list_input_devices() -> Result<Vec<DeviceInfo>, String> {
 
     let mut result = Vec::new();
     for device in devices {
-        if let Ok(name) = device.name() {
-            // Use name as ID since cpal doesn't expose stable IDs across all platforms easily
-            // and names are usually unique enough for this context
-            let is_default = default_name.as_deref() == Some(&name);
-            result.push(DeviceInfo {
-                id: name.clone(),
-                name,
-                is_default,
-            });
-        }
+        let description = match device.description() {
+            Ok(description) => description,
+            Err(_) => continue,
+        };
+        let name = description.name().to_string();
+        let id = device
+            .id()
+            .map(|id| id.to_string())
+            .unwrap_or_else(|_| name.clone());
+
+        let is_default = default_id.as_deref() == Some(id.as_str())
+            || default_name.as_deref() == Some(name.as_str());
+        result.push(DeviceInfo {
+            id,
+            name,
+            is_default,
+        });
     }
 
     // Sort: Default first, then alphabetical

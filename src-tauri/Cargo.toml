@@ -26,14 +26,14 @@ tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
-cpal = "0.15"
+cpal = "0.17"
 anyhow = "1"
 tracing = "0.1"
 symphonia = { version = "0.5.4", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4"] }
 hound = "3.5.1"
 parking_lot = "0.12"
 crossbeam-channel = "0.5"
-webrtc-vad = "0.2"
+webrtc-vad = "0.4"
 rustfft = "6"
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "stream", "rustls-tls"] }
 dotenvy = "0.15"
@@ -41,14 +41,14 @@ dotenvy_macro = "0.15"
 tauri-plugin-aptabase = { git = "https://github.com/aptabase/tauri-plugin-aptabase", rev = "7cc36cc" }
 arboard = "3"
 mime_guess = "2"
-transcribe-rs = { version = "0.2.0", features = ["whisper", "parakeet", "moonshine"] }
-uuid = { version = "1.18.1", features = ["v4"] }
+transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet", "moonshine"] }
+uuid = { version = "1.21.0", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }
 sha2 = "0.10"
 base64 = "0.22"
 rand = "0.8"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.38", features = ["bundled"] }
 regex = "1"
 fs2 = "0.4"
 tauri-plugin-deep-link = "2"
@@ -56,7 +56,7 @@ urlencoding = "2.1.3"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-process = "2.3.1"
-tauri-plugin-updater = "2.9.0"
+tauri-plugin-updater = "2.10.0"
 tauri-plugin-global-shortcut = "2.3.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-util = "0.7"
@@ -64,5 +64,5 @@ tokio-util = "0.7"
 [target.'cfg(target_os = "macos")'.dependencies]
 tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "da9c9a8" }
 tauri-plugin-macos-permissions = "2.3.0"
-core-graphics = "0.23"
-core-foundation = "0.9"
+core-graphics = "0.25"
+core-foundation = "0.10"
