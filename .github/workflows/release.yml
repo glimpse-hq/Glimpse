@@ -26,10 +26,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     
     env:
-      MACOSX_DEPLOYMENT_TARGET: "11.0"
-      CMAKE_OSX_DEPLOYMENT_TARGET: "11.0"
-      CFLAGS: "-U__ARM_FEATURE_MATMUL_INT8"
-      CXXFLAGS: "-U__ARM_FEATURE_MATMUL_INT8"
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
 
     steps:
       - uses: actions/checkout@v4

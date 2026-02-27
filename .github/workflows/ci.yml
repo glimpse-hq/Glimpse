@@ -21,10 +21,8 @@ jobs:
     runs-on: macos-15
 
     env:
-      MACOSX_DEPLOYMENT_TARGET: "11.0"
-      CMAKE_OSX_DEPLOYMENT_TARGET: "11.0"
-      CFLAGS: "-U__ARM_FEATURE_MATMUL_INT8"
-      CXXFLAGS: "-U__ARM_FEATURE_MATMUL_INT8"
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
 
     steps:
       - name: resolve PR
@@ -82,4 +80,4 @@ jobs:
         run: bun run build
 
       - name: cargo check
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml
