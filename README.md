@@ -14,7 +14,7 @@
 
 
 > [!NOTE]
-> **macOS only** — Glimpse currently supports macOS 13+ exclusively. Windows and Linux support may be added in the future.
+> **macOS only** — Glimpse currently supports macOS 14+ exclusively. Windows and Linux support may be added in the future.
 
 ## Download
 
@@ -82,7 +82,7 @@ These are models that can be downloaded in the app from Huggingface (license sho
 
 #### Prerequisites
 
-- macOS 13+
+- macOS 14+
 - [Rust](https://rustup.rs/) 1.74+
 - [Bun](https://bun.sh/) 1.3+
 - Xcode Command Line Tools

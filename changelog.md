@@ -5,6 +5,7 @@
 
 ### Changes
 - Removed Moonshine support, as it didn't serve a purpose.
+- Glimpse now requires MacOS 14+
 
 
 ### Fixes
