@@ -688,9 +688,11 @@ mod tests {
         *store.llm_api_key_ciphertext.lock() = Some(cached_ciphertext.clone());
         write_setting(&store, KEY_LLM_API_KEY, &cached_ciphertext);
 
-        let mut settings = UserSettings::default();
-        settings.personalities_notes_seeded = true;
-        settings.llm_api_key = String::new();
+        let settings = UserSettings {
+            personalities_notes_seeded: true,
+            llm_api_key: String::new(),
+            ..Default::default()
+        };
 
         store
             .save(&settings)
@@ -700,7 +702,10 @@ mod tests {
             store.llm_api_key_ciphertext.lock().clone(),
             Some(cached_ciphertext.clone())
         );
-        assert_eq!(read_string_setting(&store, KEY_LLM_API_KEY), cached_ciphertext);
+        assert_eq!(
+            read_string_setting(&store, KEY_LLM_API_KEY),
+            cached_ciphertext
+        );
     }
 
     #[test]
@@ -709,9 +714,11 @@ mod tests {
 
         write_setting(&store, KEY_LLM_API_KEY, &"stale-value");
 
-        let mut settings = UserSettings::default();
-        settings.personalities_notes_seeded = true;
-        settings.llm_api_key = String::new();
+        let settings = UserSettings {
+            personalities_notes_seeded: true,
+            llm_api_key: String::new(),
+            ..Default::default()
+        };
 
         store
             .save(&settings)

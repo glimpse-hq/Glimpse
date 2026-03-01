@@ -368,7 +368,7 @@ fn transcribe_library_item(
 
     let settings = state.current_settings();
     let ready_model = model_manager::ensure_model_ready(app, &item.speech_model)?;
-    let dictionary_prompt = dictionary::dictionary_prompt_for_model(&ready_model, &settings);
+    let dictionary_terms = dictionary::dictionary_entries_for_model(&ready_model, &settings);
     let language = settings.language.clone();
     let transcriber = state.local_transcriber();
     let use_whisper_chunking =
@@ -385,7 +385,7 @@ fn transcribe_library_item(
         let mut full_text = String::new();
         let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
         let mut last_end_ms: u64 = 0;
-        let mut used_prompt = false;
+        let mut used_dictionary = false;
         let mut chunk_index: u32 = 0;
 
         stream_wav_chunks(&audio_path, chunk_size, overlap, |start_idx, chunk| {
@@ -406,23 +406,23 @@ fn transcribe_library_item(
                 );
                 return Ok(());
             }
-            let prompt = if !used_prompt {
-                dictionary_prompt.as_deref()
+            let chunk_dictionary = if !used_dictionary {
+                dictionary_terms.as_slice()
             } else {
-                None
+                &[]
             };
             let result = transcriber.transcribe_with_segments(
                 &ready_model,
                 chunk,
                 sample_rate,
-                prompt,
+                chunk_dictionary,
                 Some(&language),
             )?;
             if token.is_cancelled() {
                 return Err(anyhow!("Transcription cancelled"));
             }
-            if prompt.is_some() {
-                used_prompt = true;
+            if !chunk_dictionary.is_empty() {
+                used_dictionary = true;
             }
 
             let chunk_text = result.transcript;
@@ -510,7 +510,7 @@ fn transcribe_library_item(
             &ready_model,
             &samples,
             sample_rate,
-            dictionary_prompt.as_deref(),
+            dictionary_terms.as_slice(),
             Some(&language),
         )?;
         if token.is_cancelled() {
@@ -554,7 +554,7 @@ fn transcribe_library_item(
             &ready_model,
             chunk,
             sample_rate,
-            dictionary_prompt.as_deref(),
+            dictionary_terms.as_slice(),
             Some(&language),
         )?;
         if token.is_cancelled() {

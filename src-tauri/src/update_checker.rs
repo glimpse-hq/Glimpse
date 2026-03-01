@@ -336,6 +336,7 @@ pub fn trigger_update_check(app: AppHandle<AppRuntime>) {
     });
 }
 
+#[allow(dead_code)]
 #[tauri::command]
 pub fn simulate_update_available(app: AppHandle<AppRuntime>, version: String) {
     let state = app.state::<AppState>();
@@ -354,6 +355,7 @@ pub fn clear_update_state(app: AppHandle<AppRuntime>) {
     let _ = app.emit("update:cleared", ());
 }
 
+#[allow(dead_code)]
 #[tauri::command]
 pub fn show_update_toast_now(app: AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();

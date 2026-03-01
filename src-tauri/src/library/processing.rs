@@ -1135,7 +1135,7 @@ fn wav_duration_seconds(path: &Path) -> Result<f32> {
 }
 
 pub(crate) fn convert_segments_to_ms(
-    segments: &[transcribe_rs::TranscriptionSegment],
+    segments: &[glimpse_speech::TranscriptionSegment],
 ) -> Vec<TranscriptSegment> {
     segments
         .iter()

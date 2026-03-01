@@ -3,16 +3,16 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
-use parking_lot::{Condvar, Mutex};
-use transcribe_rs::{
+use glimpse_speech::{
     engines::{
         parakeet::{
             ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
         },
         whisper::{WhisperEngine, WhisperInferenceParams},
     },
-    TranscriptionEngine,
+    TranscriptionEngine, TranscriptionResult, TranscriptionSegment,
 };
+use parking_lot::{Condvar, Mutex};
 
 use crate::{
     model_manager::{self, LocalModelEngine, ReadyModel},
@@ -22,7 +22,7 @@ use crate::{
 #[derive(Debug)]
 pub struct TranscriptionSuccessWithSegments {
     pub transcript: String,
-    pub segments: Option<Vec<transcribe_rs::TranscriptionSegment>>,
+    pub segments: Option<Vec<TranscriptionSegment>>,
 }
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
@@ -40,8 +40,8 @@ struct LoadedEngine {
 }
 
 enum EngineInstance {
-    Parakeet { engine: ParakeetEngine },
-    Whisper { engine: WhisperEngine },
+    Parakeet { engine: Box<ParakeetEngine> },
+    Whisper { engine: Box<WhisperEngine> },
 }
 
 struct PreparedAudio {
@@ -150,11 +150,11 @@ impl LocalTranscriber {
         model: &ReadyModel,
         samples: &[i16],
         sample_rate: u32,
-        initial_prompt: Option<&str>,
+        dictionary: &[String],
         language: Option<&str>,
     ) -> Result<TranscriptionSuccess> {
         let (result, model_label) =
-            self.transcribe_internal(model, samples, sample_rate, initial_prompt, language, false)?;
+            self.transcribe_internal(model, samples, sample_rate, dictionary, language, false)?;
 
         Ok(TranscriptionSuccess {
             transcript: normalize_transcript(&result.text),
@@ -167,11 +167,11 @@ impl LocalTranscriber {
         model: &ReadyModel,
         samples: &[i16],
         sample_rate: u32,
-        initial_prompt: Option<&str>,
+        dictionary: &[String],
         language: Option<&str>,
     ) -> Result<TranscriptionSuccessWithSegments> {
         let (result, _) =
-            self.transcribe_internal(model, samples, sample_rate, initial_prompt, language, true)?;
+            self.transcribe_internal(model, samples, sample_rate, dictionary, language, true)?;
 
         Ok(TranscriptionSuccessWithSegments {
             transcript: normalize_transcript(&result.text),
@@ -184,10 +184,10 @@ impl LocalTranscriber {
         model: &ReadyModel,
         samples: &[i16],
         sample_rate: u32,
-        initial_prompt: Option<&str>,
+        dictionary: &[String],
         language: Option<&str>,
         with_segments: bool,
-    ) -> Result<(transcribe_rs::TranscriptionResult, String)> {
+    ) -> Result<(TranscriptionResult, String)> {
         self.ensure_engine(model)?;
         self.touch();
 
@@ -202,22 +202,26 @@ impl LocalTranscriber {
             .ok_or_else(|| anyhow!("Local model not available"))?;
 
         let result = match &mut loaded.engine {
-            EngineInstance::Parakeet { engine, .. } => {
-                let params = if with_segments {
-                    Some(ParakeetInferenceParams {
-                        timestamp_granularity: TimestampGranularity::Segment,
-                    })
+            EngineInstance::Parakeet { engine } => {
+                let timestamp_granularity = if with_segments {
+                    TimestampGranularity::Segment
                 } else {
-                    None
+                    TimestampGranularity::Token
                 };
+                let params = Some(ParakeetInferenceParams {
+                    language: language.map(|s| s.to_string()),
+                    dictionary: dictionary.to_vec(),
+                    timestamp_granularity,
+                    enable_itn: true,
+                });
                 engine
                     .transcribe_samples(prepared.data.clone(), params)
                     .map_err(|err| anyhow!("Parakeet transcription failed: {err}"))?
             }
             EngineInstance::Whisper { engine } => {
-                let params = if initial_prompt.is_some() || language.is_some() {
+                let params = if !dictionary.is_empty() || language.is_some() {
                     Some(WhisperInferenceParams {
-                        initial_prompt: initial_prompt.map(|s| s.to_string()),
+                        dictionary: dictionary.to_vec(),
                         language: language.map(|s| s.to_string()),
                         ..Default::default()
                     })
@@ -245,24 +249,24 @@ impl LocalTranscriber {
         }
 
         let engine = match &model.engine {
-            LocalModelEngine::Parakeet { quantized } => {
+            LocalModelEngine::Parakeet => {
                 let mut engine = ParakeetEngine::new();
-                let params = if *quantized {
-                    ParakeetModelParams::int8()
-                } else {
-                    ParakeetModelParams::fp32()
-                };
+                let params = ParakeetModelParams::tdt_int8();
                 engine
                     .load_model_with_params(model.path.as_path(), params)
                     .map_err(|err| anyhow!("Failed to load Parakeet model: {err}"))?;
-                EngineInstance::Parakeet { engine }
+                EngineInstance::Parakeet {
+                    engine: Box::new(engine),
+                }
             }
             LocalModelEngine::Whisper => {
                 let mut engine = WhisperEngine::new();
                 engine
                     .load_model(model.path.as_path())
                     .map_err(|err| anyhow!("Failed to load Whisper model: {err}"))?;
-                EngineInstance::Whisper { engine }
+                EngineInstance::Whisper {
+                    engine: Box::new(engine),
+                }
             }
         };
 

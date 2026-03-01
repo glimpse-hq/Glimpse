@@ -41,7 +41,7 @@ dotenvy_macro = "0.15"
 tauri-plugin-aptabase = { git = "https://github.com/aptabase/tauri-plugin-aptabase", rev = "7cc36cc" }
 arboard = "3"
 mime_guess = "2"
-transcribe-rs = { version = "0.2.5", features = ["whisper", "parakeet"] }
+glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-speech", tag = "1.0.0", features = ["whisper", "parakeet"] }
 uuid = { version = "1.21.0", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }

@@ -128,6 +128,7 @@ pub fn debug_show_toast(
     );
 }
 
+#[allow(dead_code)]
 #[tauri::command]
 pub fn show_celebration_toast(app: AppHandle<AppRuntime>) {
     emit_toast(

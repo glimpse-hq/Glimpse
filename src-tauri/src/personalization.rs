@@ -1,10 +1,10 @@
+#[cfg(target_os = "macos")]
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 #[cfg(target_os = "macos")]
 use std::process::Command;
-#[cfg(target_os = "macos")]
-use std::collections::hash_map::DefaultHasher;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};

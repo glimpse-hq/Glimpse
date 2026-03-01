@@ -29,46 +29,14 @@ pub fn sanitize_dictionary_entries(entries: &[String]) -> Vec<String> {
     cleaned
 }
 
-pub fn build_dictionary_prompt(entries: &[String]) -> Option<String> {
-    const MAX_PROMPT_BYTES: usize = 600;
-
-    let cleaned = sanitize_dictionary_entries(entries);
-    if cleaned.is_empty() {
-        return None;
-    }
-
-    let mut prompt = String::new();
-    let mut added_any = false;
-
-    for (idx, term) in cleaned.iter().enumerate() {
-        let separator = if idx > 0 { ", " } else { "" };
-        let would_len = prompt.len() + separator.len() + term.len() + 1;
-
-        if would_len > MAX_PROMPT_BYTES {
-            break;
-        }
-
-        prompt.push_str(separator);
-        prompt.push_str(term);
-        added_any = true;
-    }
-
-    if !added_any {
-        return None;
-    }
-
-    prompt.push('.');
-    Some(prompt)
-}
-
-pub fn dictionary_prompt_for_model(model: &ReadyModel, settings: &UserSettings) -> Option<String> {
+pub fn dictionary_entries_for_model(model: &ReadyModel, settings: &UserSettings) -> Vec<String> {
     let supports_dictionary = model_supports_capability(&model.key, MODEL_CAPABILITY_DICTIONARY);
 
     if !supports_dictionary {
-        return None;
+        return Vec::new();
     }
 
-    build_dictionary_prompt(&settings.dictionary)
+    sanitize_dictionary_entries(&settings.dictionary)
 }
 
 pub fn sanitize_replacements(replacements: &[Replacement]) -> Vec<Replacement> {

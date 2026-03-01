@@ -23,7 +23,7 @@ pub enum ModelStorage {
 
 #[derive(Debug, Clone)]
 pub enum LocalModelEngine {
-    Parakeet { quantized: bool },
+    Parakeet,
     Whisper,
 }
 
@@ -48,38 +48,7 @@ pub struct ReadyModel {
     pub engine: LocalModelEngine,
 }
 
-const PARAKEET_TDT_FP32_FILES: [ModelFileDescriptor; 6] = [
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/config.json",
-        name: "config.json",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.onnx",
-        name: "encoder-model.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.onnx.data",
-        name: "encoder-model.onnx.data",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/decoder_joint-model.onnx",
-        name: "decoder_joint-model.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/nemo128.onnx",
-        name: "nemo128.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/vocab.txt",
-        name: "vocab.txt",
-    },
-];
-
-const PARAKEET_TDT_INT8_FILES: [ModelFileDescriptor; 5] = [
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/config.json",
-        name: "config.json",
-    },
+const PARAKEET_TDT_INT8_FILES: [ModelFileDescriptor; 3] = [
     ModelFileDescriptor {
         url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.int8.onnx",
         name: "encoder-model.int8.onnx",
@@ -87,10 +56,6 @@ const PARAKEET_TDT_INT8_FILES: [ModelFileDescriptor; 5] = [
     ModelFileDescriptor {
         url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/decoder_joint-model.int8.onnx",
         name: "decoder_joint-model.int8.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/nemo128.onnx",
-        name: "nemo128.onnx",
     },
     ModelFileDescriptor {
         url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/vocab.txt",
@@ -126,40 +91,28 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
     },
     ModelDefinition {
         key: "parakeet_tdt_int8",
-        label: "Parakeet 0.6B (Int8)",
-        description: "Fast multilingual transcription with NVIDIA's quantized Parakeet model.",
-        size_mb: 700.0,
+        label: "Parakeet TDT 0.6B (Int8)",
+        description: "Fast multilingual Parakeet transcription via ONNX.",
+        size_mb: 670.0,
         files: &PARAKEET_TDT_INT8_FILES,
-        engine: LocalModelEngine::Parakeet { quantized: true },
+        engine: LocalModelEngine::Parakeet,
         variant: "Int8",
         storage: ModelStorage::Directory,
         tags: &["Multilingual", "Fast"],
         capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
     },
     ModelDefinition {
-        key: "parakeet_tdt_fp32",
-        label: "Parakeet 0.6B (FP32)",
-        description: "Highest accuracy Parakeet model with full-precision weights.",
-        size_mb: 2300.0,
-        files: &PARAKEET_TDT_FP32_FILES,
-        engine: LocalModelEngine::Parakeet { quantized: false },
-        variant: "FP32",
-        storage: ModelStorage::Directory,
-        tags: &["Multilingual", "High Accuracy"],
-        capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
-    },
-    ModelDefinition {
         key: "whisper_small_q5",
         label: "Whisper Small",
-        description: "CPU-friendly with dictionary support.",
-        size_mb: 200.0,
+        description: "Small & fast with dictionary support.",
+        size_mb: 190.0,
         files: &WHISPER_SMALL_Q5_FILES,
         engine: LocalModelEngine::Whisper,
         variant: "Q5_1",
         storage: ModelStorage::File {
             artifact: "ggml-small-q5_1.bin",
         },
-        tags: &["English", "Dictionary", "CPU Friendly"],
+        tags: &["English", "Dictionary", "Compute Friendly"],
         capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
     },
 ];
@@ -232,7 +185,7 @@ pub struct ModelStatus {
 fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
     match engine {
         LocalModelEngine::Whisper => whisper_supported_languages(),
-        LocalModelEngine::Parakeet { .. } => parakeet_v3_supported_languages(),
+        LocalModelEngine::Parakeet => parakeet_v3_supported_languages(),
     }
 }
 
@@ -289,14 +242,14 @@ fn calculate_dir_size(dir: &Path) -> Result<u64> {
 
 fn engine_label(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Parakeet { .. } => "Parakeet v3",
+        LocalModelEngine::Parakeet => "Parakeet",
         LocalModelEngine::Whisper => "Whisper",
     }
 }
 
 fn engine_id(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Parakeet { .. } => "parakeet_v3",
+        LocalModelEngine::Parakeet => "parakeet_v3",
         LocalModelEngine::Whisper => "whisper",
     }
 }

@@ -56,8 +56,8 @@ pub(crate) fn queue_transcription(
             let model_key = settings.local_model.clone();
             match model_manager::ensure_model_ready(&app_handle, &model_key) {
                 Ok(ready_model) => {
-                    let dictionary_prompt =
-                        dictionary::dictionary_prompt_for_model(&ready_model, &settings);
+                    let dictionary_terms =
+                        dictionary::dictionary_entries_for_model(&ready_model, &settings);
                     let language = settings.language.clone();
                     let transcriber = app_handle.state::<AppState>().local_transcriber();
                     let local_recording = recording_for_task.clone();
@@ -72,7 +72,7 @@ pub(crate) fn queue_transcription(
                                 &local_recording.samples,
                                 local_recording.sample_rate,
                                 LocalChunkingConfig {
-                                    initial_prompt: dictionary_prompt.as_deref(),
+                                    dictionary: &dictionary_terms,
                                     language: Some(&language),
                                     chunk_seconds: WHISPER_CHUNK_SECONDS,
                                     overlap_seconds: WHISPER_CHUNK_OVERLAP_SECONDS,
@@ -96,7 +96,7 @@ pub(crate) fn queue_transcription(
                                     &ready_model,
                                     &local_recording.samples,
                                     local_recording.sample_rate,
-                                    dictionary_prompt.as_deref(),
+                                    &dictionary_terms,
                                     Some(&language),
                                 )
                             }
@@ -340,8 +340,8 @@ pub(crate) fn retry_transcription_async(
                     let model_key = settings.local_model.clone();
                     match model_manager::ensure_model_ready(&app_handle, &model_key) {
                         Ok(ready_model) => {
-                            let dictionary_prompt =
-                                dictionary::dictionary_prompt_for_model(&ready_model, &settings);
+                            let dictionary_terms =
+                                dictionary::dictionary_entries_for_model(&ready_model, &settings);
                             let language = settings.language.clone();
                             let transcriber = app_handle.state::<AppState>().local_transcriber();
                             let is_whisper = matches!(
@@ -357,7 +357,7 @@ pub(crate) fn retry_transcription_async(
                                         &samples,
                                         sample_rate,
                                         LocalChunkingConfig {
-                                            initial_prompt: dictionary_prompt.as_deref(),
+                                            dictionary: &dictionary_terms,
                                             language: Some(&language),
                                             chunk_seconds: WHISPER_CHUNK_SECONDS,
                                             overlap_seconds: WHISPER_CHUNK_OVERLAP_SECONDS,
@@ -381,7 +381,7 @@ pub(crate) fn retry_transcription_async(
                                             &ready_model,
                                             &samples,
                                             sample_rate,
-                                            dictionary_prompt.as_deref(),
+                                            &dictionary_terms,
                                             Some(&language),
                                         )
                                     }
@@ -872,7 +872,7 @@ fn downmix_interleaved(samples: &[i16], channels: usize) -> Vec<i16> {
 }
 
 struct LocalChunkingConfig<'a> {
-    initial_prompt: Option<&'a str>,
+    dictionary: &'a [String],
     language: Option<&'a str>,
     chunk_seconds: f32,
     overlap_seconds: f32,
@@ -888,7 +888,7 @@ fn transcribe_local_chunked(
     config: LocalChunkingConfig<'_>,
 ) -> Result<transcription_api::TranscriptionSuccess> {
     let LocalChunkingConfig {
-        initial_prompt,
+        dictionary,
         language,
         chunk_seconds,
         overlap_seconds,
@@ -918,7 +918,7 @@ fn transcribe_local_chunked(
     let mut full_text = String::new();
     let mut start = 0usize;
     let mut model_label = None;
-    let mut used_prompt = false;
+    let mut used_dictionary = false;
 
     while start < samples.len() {
         if let Some(token) = cancel_token {
@@ -939,10 +939,11 @@ fn transcribe_local_chunked(
             start += step;
             continue;
         }
-        let prompt = if !used_prompt { initial_prompt } else { None };
-        let result = transcriber.transcribe(model, chunk, sample_rate, prompt, language)?;
-        if prompt.is_some() {
-            used_prompt = true;
+        let chunk_dictionary = if !used_dictionary { dictionary } else { &[] };
+        let result =
+            transcriber.transcribe(model, chunk, sample_rate, chunk_dictionary, language)?;
+        if !chunk_dictionary.is_empty() {
+            used_dictionary = true;
         }
         if model_label.is_none() {
             model_label = result.speech_model.clone();
