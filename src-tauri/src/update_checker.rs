@@ -114,22 +114,23 @@ async fn latest_prerelease_manifest_url() -> anyhow::Result<Option<Url>> {
     Ok(None)
 }
 
-async fn update_endpoints_for_channel(channel: UpdateChannel) -> anyhow::Result<Vec<Url>> {
+async fn update_endpoint_for_channel(channel: UpdateChannel) -> anyhow::Result<Option<Url>> {
     let stable = Url::parse(STABLE_UPDATE_ENDPOINT)?;
 
     if matches!(channel, UpdateChannel::Prerelease) {
-        let mut endpoints = Vec::new();
-
         match latest_prerelease_manifest_url().await {
-            Ok(Some(prerelease_url)) => endpoints.push(prerelease_url),
-            Ok(None) => debug!("no prerelease release manifest found on GitHub"),
-            Err(err) => warn!(error = ?err, "failed to resolve prerelease manifest endpoint"),
+            Ok(Some(endpoint)) => Ok(Some(endpoint)),
+            Ok(None) => {
+                debug!("no prerelease release manifest found on GitHub");
+                Ok(None)
+            }
+            Err(err) => {
+                warn!(error = ?err, "failed to resolve prerelease manifest endpoint");
+                Err(err)
+            }
         }
-
-        endpoints.push(stable);
-        Ok(endpoints)
     } else {
-        Ok(vec![stable])
+        Ok(Some(stable))
     }
 }
 
@@ -152,8 +153,13 @@ async fn check_for_update(
     debug!("checking for updates");
 
     let channel = resolve_channel(app, channel_override);
-    let endpoints = update_endpoints_for_channel(channel.clone()).await?;
-    let updater = app.updater_builder().endpoints(endpoints)?.build()?;
+    let Some(endpoint) = update_endpoint_for_channel(channel.clone()).await? else {
+        debug!(channel = ?channel, "no update endpoint available");
+        state.lock().clear();
+        return Ok(());
+    };
+
+    let updater = app.updater_builder().endpoints(vec![endpoint])?.build()?;
     let update = updater.check().await?;
 
     if let Some(update) = update {
@@ -261,12 +267,15 @@ pub async fn download_and_install_update(
     channel: Option<UpdateChannel>,
 ) -> Result<(), String> {
     let resolved_channel = resolve_channel(&app, channel);
-    let endpoints = update_endpoints_for_channel(resolved_channel.clone())
+    let Some(endpoint) = update_endpoint_for_channel(resolved_channel.clone())
         .await
-        .map_err(|err| err.to_string())?;
+        .map_err(|err| err.to_string())?
+    else {
+        return Err("No update is currently available for this channel.".to_string());
+    };
     let updater = app
         .updater_builder()
-        .endpoints(endpoints)
+        .endpoints(vec![endpoint])
         .map_err(|err| err.to_string())?
         .build()
         .map_err(|err| err.to_string())?;

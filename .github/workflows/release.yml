@@ -37,6 +37,24 @@ jobs:
         with:
           bun-version: latest
 
+      - name: determine release type
+        shell: bash
+        run: |
+          VERSION=$(awk -F'"' '
+            /^\[package\]$/ { in_package = 1; next }
+            /^\[/ { in_package = 0 }
+            in_package && /^version = / { print $2; exit }
+          ' src-tauri/Cargo.toml)
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to resolve app version from src-tauri/Cargo.toml" >&2
+            exit 1
+          fi
+          if [[ "$VERSION" =~ -rc\.[0-9]+$ ]]; then
+            echo "IS_PRERELEASE=true" >> "$GITHUB_ENV"
+          else
+            echo "IS_PRERELEASE=false" >> "$GITHUB_ENV"
+          fi
+
       - name: cache bun
         uses: actions/cache@v4
         with:
@@ -106,5 +124,5 @@ jobs:
           releaseName: 'Glimpse v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
-          prerelease: false
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
           args: ${{ matrix.args }}

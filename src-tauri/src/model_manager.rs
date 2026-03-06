@@ -92,7 +92,8 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
     ModelDefinition {
         key: "parakeet_tdt_int8",
         label: "Parakeet TDT 0.6B (Int8)",
-        description: "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
+        description:
+            "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
         size_mb: 670.0,
         files: &PARAKEET_TDT_INT8_FILES,
         engine: LocalModelEngine::Parakeet,

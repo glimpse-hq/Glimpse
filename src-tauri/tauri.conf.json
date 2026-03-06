@@ -1,7 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Glimpse",
-  "version": "0.7.0",
   "identifier": "com.glimpse.data",
   "build": {
     "beforeDevCommand": "bun run dev",
