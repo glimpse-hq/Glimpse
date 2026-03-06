@@ -209,10 +209,9 @@ impl LocalTranscriber {
                     TimestampGranularity::Token
                 };
                 let params = Some(ParakeetInferenceParams {
-                    language: language.map(|s| s.to_string()),
+                    language: None,
                     dictionary: dictionary.to_vec(),
                     timestamp_granularity,
-                    enable_itn: true,
                 });
                 engine
                     .transcribe_samples(prepared.data.clone(), params)

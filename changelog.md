@@ -6,6 +6,7 @@
 ### Changes
 - Removed Moonshine support, as it didn't serve a purpose.
 - Glimpse now requires MacOS 14+
+- Glimpse now uses Glimpse-Speech as the local transcription backend.
 
 
 ### Fixes
