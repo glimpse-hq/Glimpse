@@ -23,6 +23,9 @@ jobs:
     env:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
       CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
+      # whisper-rs-sys bindgen is brittle against GitHub's moving Xcode SDK image.
+      # Use the crate's bundled bindings in CI and still build the native library.
+      WHISPER_DONT_GENERATE_BINDINGS: "1"
 
     steps:
       - name: resolve PR
