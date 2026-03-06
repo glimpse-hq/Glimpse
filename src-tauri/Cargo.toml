@@ -1,6 +1,6 @@
 [package]
 name = "Glimpse"
-version = "0.6.7"
+version = "0.7.0"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["LegendarySpy"]
 edition = "2021"
