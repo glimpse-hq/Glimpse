@@ -68,7 +68,7 @@ const SettingsModal = ({
     const [toggleShortcut, setToggleShortcut] = useState("Control+Alt+Space");
     const [toggleEnabled, setToggleEnabled] = useState(false);
     const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionMode>(initialTranscriptionMode);
-    const [localModel, setLocalModel] = useState("parakeet_tdt_int8");
+    const [localModel, setLocalModel] = useState("");
     const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
     const [language, setLanguage] = useState("en");
     const [updateChannel, setUpdateChannel] = useState<UpdateChannel>("stable");
@@ -336,6 +336,9 @@ const SettingsModal = ({
                     const models = await invoke<ModelInfo[]>("list_models");
                     setModelCatalog(models);
                     models.forEach((model) => refreshModelStatus(model.key));
+                    setLocalModel((current) =>
+                        models.some((model) => model.key === current) ? current : (models[0]?.key ?? "")
+                    );
                 } catch (err) {
                     console.error("Failed to list models:", err);
                 }
@@ -596,6 +599,8 @@ const SettingsModal = ({
         }
 
         const saveSettings = async () => {
+            if (!localModel) return;
+
             try {
                 await invoke("update_settings", {
                     smartShortcut,

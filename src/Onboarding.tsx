@@ -88,9 +88,6 @@ const pickOnboardingModels = (models: ModelInfo[]) => {
 const pickDefaultOnboardingModel = (models: ModelInfo[]) =>
   pickOnboardingModels(models)[0]?.key ?? "";
 
-// Keep in sync with src-tauri/src/settings.rs default_local_model().
-const DEFAULT_LOCAL_MODEL_KEY = "parakeet_tdt_int8";
-
 const GlimpseLogo = ({ size = "md" }: { size?: "sm" | "md" | "lg" }) => {
   const [pattern, setPattern] = useState(0);
   const intervalRef = useRef<number | null>(null);
@@ -373,8 +370,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
     const resolvedLocalModel =
       localModelChoice ||
       pickDefaultOnboardingModel(modelCatalog) ||
-      persistedLocalModel ||
-      DEFAULT_LOCAL_MODEL_KEY;
+      persistedLocalModel;
 
     setIsCompleting(true);
     setCompletionError(null);
@@ -615,8 +611,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
           setModelCatalog([]);
           setModelCatalogUnavailable(true);
           setLocalModelChoice(
-            (current) =>
-              current || settings?.local_model || DEFAULT_LOCAL_MODEL_KEY,
+            (current) => current || settings?.local_model || "",
           );
         }
 
@@ -628,7 +623,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         if (!isMounted) return;
         setModelCatalog([]);
         setModelCatalogUnavailable(true);
-        setLocalModelChoice((current) => current || DEFAULT_LOCAL_MODEL_KEY);
+        setLocalModelChoice((current) => current || "");
       } finally {
         if (isMounted) {
           setIsLoadingModelCatalog(false);

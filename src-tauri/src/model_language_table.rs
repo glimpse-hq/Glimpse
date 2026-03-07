@@ -109,17 +109,20 @@ const LANGUAGE_NAMES: &[(&str, &str)] = &[
     ("yue", "Cantonese"),
 ];
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 const NVIDIA_PARAKEET_V3_LANGUAGE_CODES: &[&str] = &[
     "bg", "hr", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "hu", "it", "lv", "lt", "mt",
     "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
 ];
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 fn language_name(code: &str) -> Option<&'static str> {
     LANGUAGE_NAMES
         .iter()
         .find_map(|(c, name)| if *c == code { Some(*name) } else { None })
 }
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 fn supported_languages_for_codes(codes: &[&str]) -> Vec<SupportedLanguageInfo> {
     codes
         .iter()
@@ -140,6 +143,7 @@ pub fn whisper_supported_languages() -> Vec<SupportedLanguageInfo> {
         .collect()
 }
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 pub fn parakeet_v3_supported_languages() -> Vec<SupportedLanguageInfo> {
     supported_languages_for_codes(NVIDIA_PARAKEET_V3_LANGUAGE_CODES)
 }

@@ -7,9 +7,9 @@ use serde::Serialize;
 use tauri::{AppHandle, Manager, Runtime};
 
 use crate::downloader::{download_model_files, ModelFileDescriptor};
-use crate::model_language_table::{
-    parakeet_v3_supported_languages, whisper_supported_languages, SupportedLanguageInfo,
-};
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use crate::model_language_table::parakeet_v3_supported_languages;
+use crate::model_language_table::{whisper_supported_languages, SupportedLanguageInfo};
 
 const MODELS_ROOT: &str = "models";
 pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
@@ -17,12 +17,16 @@ pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
 
 #[derive(Debug, Clone)]
 pub enum ModelStorage {
+    #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
     Directory,
-    File { artifact: &'static str },
+    File {
+        artifact: &'static str,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub enum LocalModelEngine {
+    #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
     Parakeet,
     Whisper,
 }
@@ -48,6 +52,7 @@ pub struct ReadyModel {
     pub engine: LocalModelEngine,
 }
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 const PARAKEET_TDT_INT8_FILES: [ModelFileDescriptor; 3] = [
     ModelFileDescriptor {
         url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.int8.onnx",
@@ -89,6 +94,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         tags: &["Recommended", "Dictionary", "Multilingual"],
         capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
     },
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     ModelDefinition {
         key: "parakeet_tdt_int8",
         label: "Parakeet TDT 0.6B (Int8)",
@@ -186,7 +192,17 @@ pub struct ModelStatus {
 fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
     match engine {
         LocalModelEngine::Whisper => whisper_supported_languages(),
-        LocalModelEngine::Parakeet => parakeet_v3_supported_languages(),
+        LocalModelEngine::Parakeet => {
+            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+            {
+                parakeet_v3_supported_languages()
+            }
+
+            #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+            {
+                Vec::new()
+            }
+        }
     }
 }
 

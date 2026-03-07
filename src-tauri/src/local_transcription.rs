@@ -3,13 +3,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use glimpse_speech::engines::parakeet::{
+    ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
+};
 use glimpse_speech::{
-    engines::{
-        parakeet::{
-            ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
-        },
-        whisper::{WhisperEngine, WhisperInferenceParams},
-    },
+    engines::whisper::{WhisperEngine, WhisperInferenceParams},
     TranscriptionEngine, TranscriptionResult, TranscriptionSegment,
 };
 use parking_lot::{Condvar, Mutex};
@@ -40,8 +39,13 @@ struct LoadedEngine {
 }
 
 enum EngineInstance {
-    Parakeet { engine: Box<ParakeetEngine> },
-    Whisper { engine: Box<WhisperEngine> },
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    Parakeet {
+        engine: Box<ParakeetEngine>,
+    },
+    Whisper {
+        engine: Box<WhisperEngine>,
+    },
 }
 
 struct PreparedAudio {
@@ -133,6 +137,7 @@ impl LocalTranscriber {
             .ok_or_else(|| anyhow!("Local model not available"))?;
 
         let warmup_result = match &mut loaded.engine {
+            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             EngineInstance::Parakeet { engine, .. } => engine
                 .transcribe_samples(silence, None)
                 .map_err(|err| anyhow!("Parakeet warmup failed: {err}")),
@@ -188,6 +193,9 @@ impl LocalTranscriber {
         language: Option<&str>,
         with_segments: bool,
     ) -> Result<(TranscriptionResult, String)> {
+        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+        let _ = with_segments;
+
         self.ensure_engine(model)?;
         self.touch();
 
@@ -202,6 +210,7 @@ impl LocalTranscriber {
             .ok_or_else(|| anyhow!("Local model not available"))?;
 
         let result = match &mut loaded.engine {
+            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             EngineInstance::Parakeet { engine } => {
                 let timestamp_granularity = if with_segments {
                     TimestampGranularity::Segment
@@ -249,13 +258,21 @@ impl LocalTranscriber {
 
         let engine = match &model.engine {
             LocalModelEngine::Parakeet => {
-                let mut engine = ParakeetEngine::new();
-                let params = ParakeetModelParams::tdt_int8();
-                engine
-                    .load_model_with_params(model.path.as_path(), params)
-                    .map_err(|err| anyhow!("Failed to load Parakeet model: {err}"))?;
-                EngineInstance::Parakeet {
-                    engine: Box::new(engine),
+                #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+                {
+                    let mut engine = ParakeetEngine::new();
+                    let params = ParakeetModelParams::tdt_int8();
+                    engine
+                        .load_model_with_params(model.path.as_path(), params)
+                        .map_err(|err| anyhow!("Failed to load Parakeet model: {err}"))?;
+                    EngineInstance::Parakeet {
+                        engine: Box::new(engine),
+                    }
+                }
+
+                #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+                {
+                    return Err(anyhow!("Parakeet is not available in Intel macOS builds"));
                 }
             }
             LocalModelEngine::Whisper => {

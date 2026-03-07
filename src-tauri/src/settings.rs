@@ -304,7 +304,15 @@ fn default_llm_provider() -> LlmProvider {
 }
 
 pub fn default_local_model() -> String {
-    "parakeet_tdt_int8".to_string()
+    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+    {
+        "whisper_small_q5".to_string()
+    }
+
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    {
+        "parakeet_tdt_int8".to_string()
+    }
 }
 
 fn default_language() -> String {
