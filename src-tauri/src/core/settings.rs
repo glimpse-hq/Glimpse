@@ -105,7 +105,7 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("AI Cleanup cannot be enabled without an active language model".into());
     }
 
-    if args.llm_enabled && !matches!(args.llm_provider, LlmProvider::None) {
+    if args.llm_enabled {
         if matches!(args.llm_provider, LlmProvider::Custom) && args.llm_endpoint.trim().is_empty() {
             return Err("Custom LLM endpoint cannot be empty".into());
         }

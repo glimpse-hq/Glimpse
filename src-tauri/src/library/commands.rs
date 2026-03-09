@@ -262,6 +262,13 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                         ..Default::default()
                     },
                 );
+                let _ = app.emit(
+                    EVENT_LIBRARY_ERROR,
+                    LibraryErrorPayload {
+                        id: item.id.clone(),
+                        message: "Transcription cancelled".to_string(),
+                    },
+                );
             }
             LibraryItemStatus::Pending
             | LibraryItemStatus::Importing { .. }
