@@ -67,7 +67,7 @@ pub(crate) fn retry_llm_cleanup(
 
     let settings = state.current_settings();
     if !llm_cleanup::is_llm_available(&settings) {
-        return Err("A language model is not configured".to_string());
+        return Err("Choose a language model in Settings -> Models.".to_string());
     }
     let llm_model = llm_cleanup::resolved_model_name(&settings);
 

@@ -442,6 +442,10 @@ const SettingsModal = ({
   }, [llmEndpoint, llmProvider, llmApiKey]);
 
   useEffect(() => {
+    setAvailableModels([]);
+  }, [llmProvider, llmEndpoint, llmApiKey]);
+
+  useEffect(() => {
     if (!isOpen) return;
 
     let cancelled = false;

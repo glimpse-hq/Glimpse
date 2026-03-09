@@ -112,6 +112,9 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         if matches!(args.llm_provider, LlmProvider::OpenAI) && args.llm_api_key.trim().is_empty() {
             return Err("OpenAI API key is required".into());
         }
+        if args.llm_model.trim().is_empty() {
+            return Err("Choose a language model before enabling AI features".into());
+        }
     }
 
     Ok(())
@@ -183,7 +186,7 @@ pub(crate) fn update_settings(
     next.llm_provider = args.llm_provider;
     next.llm_endpoint = args.llm_endpoint;
     next.llm_api_key = args.llm_api_key;
-    next.llm_model = args.llm_model;
+    next.llm_model = args.llm_model.trim().to_string();
     next.edit_mode_enabled = args.edit_mode_enabled;
 
     let next = state
@@ -279,5 +282,16 @@ mod tests {
         let err = validate_update_settings_args(&args).unwrap_err();
 
         assert_eq!(err, "Smart and Hold shortcuts cannot be the same");
+    }
+
+    #[test]
+    fn rejects_enabling_llm_without_explicit_model_selection() {
+        let mut args = base_args();
+        args.llm_enabled = true;
+        args.llm_provider = LlmProvider::Ollama;
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(err, "Choose a language model before enabling AI features");
     }
 }

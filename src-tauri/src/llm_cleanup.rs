@@ -343,28 +343,13 @@ fn get_endpoint(settings: &UserSettings) -> Result<String> {
     Ok(format!("{}/v1/chat/completions", base))
 }
 
-fn resolve_model(settings: &UserSettings) -> String {
-    if !settings.llm_model.is_empty() {
-        return settings.llm_model.clone();
+fn configured_model(settings: &UserSettings) -> Option<String> {
+    let model = settings.llm_model.trim();
+    if model.is_empty() {
+        None
+    } else {
+        Some(model.to_string())
     }
-    match settings.llm_provider {
-        LlmProvider::LmStudio => "local-model",
-        LlmProvider::Ollama => "llama3.2",
-        LlmProvider::OpenAI => "gpt-5-mini",
-        LlmProvider::Anthropic => "claude-3-5-haiku-latest",
-        LlmProvider::Google => "gemini-2.5-flash",
-        LlmProvider::Xai => "grok-4-mini",
-        LlmProvider::Groq => "llama-3.3-70b-versatile",
-        LlmProvider::Cerebras => "llama-3.3-70b",
-        LlmProvider::Sambanova => "Meta-Llama-3.3-70B-Instruct",
-        LlmProvider::OpenRouter => "openai/gpt-4o-mini",
-        LlmProvider::Perplexity => "sonar-pro",
-        LlmProvider::DeepSeek => "deepseek-chat",
-        LlmProvider::Fireworks => "accounts/fireworks/models/llama-v3p1-70b-instruct",
-        LlmProvider::Mistral => "mistral-small-latest",
-        _ => "default",
-    }
-    .to_string()
 }
 
 fn build_user_content(task: TextTaskKind, text: &str, instruction: Option<&str>) -> String {
@@ -444,9 +429,11 @@ async fn run_text_task(
     let prompt_enforced_json_system_prompt =
         build_prompt_enforced_json_system_prompt(task, &system_prompt);
     let use_native_structured_output = supports_native_structured_output(settings);
+    let model = configured_model(settings)
+        .ok_or_else(|| anyhow!("Choose a language model in Settings -> Models"))?;
 
     let mut body = ChatRequest {
-        model: resolve_model(settings),
+        model,
         messages: vec![
             Message {
                 role: "system".into(),
@@ -598,7 +585,9 @@ pub async fn cleanup_transcription(
 }
 
 pub fn is_llm_available(settings: &UserSettings) -> bool {
-    settings.llm_enabled && !matches!(settings.llm_provider, LlmProvider::None)
+    settings.llm_enabled
+        && !matches!(settings.llm_provider, LlmProvider::None)
+        && configured_model(settings).is_some()
 }
 
 pub fn should_refine_transcript(settings: &UserSettings, mode: Option<&Personality>) -> bool {
@@ -609,7 +598,7 @@ pub fn resolved_model_name(settings: &UserSettings) -> Option<String> {
     if !is_llm_available(settings) {
         None
     } else {
-        Some(resolve_model(settings))
+        configured_model(settings)
     }
 }
 
@@ -620,7 +609,9 @@ pub async fn edit_transcription(
     settings: &UserSettings,
 ) -> Result<String> {
     if !is_llm_available(settings) {
-        return Err(anyhow!("Language model not configured for edit mode"));
+        return Err(anyhow!(
+            "Edit mode requires a selected language model in Settings -> Models"
+        ));
     }
 
     eprintln!(

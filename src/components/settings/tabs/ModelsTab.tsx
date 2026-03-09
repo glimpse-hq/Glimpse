@@ -146,7 +146,7 @@ const ModelsTab = ({
           Models
         </h1>
         <p className="mt-1 ui-text-body-sm ui-color-muted">
-          Manage transcription engines and language model access.
+          Manage transcription engines and AI provider settings.
         </p>
       </header>
 

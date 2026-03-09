@@ -49,10 +49,10 @@ const LanguageModelPanel = ({
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="ui-text-body-strong ui-color-primary">
-              Language Model
+              LLM Provider
             </h3>
             <p className="ui-text-label ui-color-disabled">
-              Used for Cleanup, Edit Mode, and Personalization.
+              Shared by Cleanup, Edit Mode, and Personalization.
             </p>
           </div>
           <motion.button
@@ -61,7 +61,7 @@ const LanguageModelPanel = ({
             whileTap={{ scale: 0.95 }}
             role="switch"
             aria-checked={llmEnabled}
-            aria-label="Toggle Language Model"
+            aria-label="Toggle AI features"
           >
             <motion.div
               className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
@@ -193,7 +193,10 @@ const LanguageModelPanel = ({
                           hasSelectedProvider ? fetchAvailableModels : undefined
                         }
                         options={[
-                          ...uniqueModels.map((m) => ({ value: m, label: m })),
+                          ...uniqueModels.map((model) => ({
+                            value: model,
+                            label: model,
+                          })),
                           ...(llmModel && !uniqueModels.includes(llmModel)
                             ? [{ value: llmModel, label: llmModel }]
                             : []),

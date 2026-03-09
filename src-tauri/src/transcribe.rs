@@ -142,7 +142,7 @@ pub(crate) fn queue_transcription(
                 if pending_selected_text.is_some() && !llm_cleanup::is_llm_available(&settings) {
                     emit_transcription_error(
                         &app_handle,
-                        "Edit mode requires a language model. Enable it in Settings → Models."
+                        "Edit mode requires a selected language model. Choose one in Settings -> Models."
                             .to_string(),
                         "edit_mode",
                         saved_for_task.path.display().to_string(),
