@@ -757,6 +757,14 @@ pub fn clear_preflight_cache() {
     state.available = None;
 }
 
+fn preflight_availability_from_models(models: &[String]) -> Option<bool> {
+    if models.is_empty() {
+        None
+    } else {
+        Some(true)
+    }
+}
+
 pub async fn run_preflight(client: Client, settings: UserSettings) {
     let has_personalization = settings.personalities.iter().any(|personality| {
         personality.enabled
@@ -778,7 +786,7 @@ pub async fn run_preflight(client: Client, settings: UserSettings) {
     let api_key = settings.llm_api_key.clone();
 
     let available = match fetch_available_models(&client, &endpoint, &provider, &api_key).await {
-        Ok(models) => Some(!models.is_empty()),
+        Ok(models) => preflight_availability_from_models(&models),
         Err(_err) => None,
     };
 
@@ -837,5 +845,12 @@ mod tests {
             "Here is a polished rewrite with action items and added context.",
             false
         ));
+    }
+
+    #[test]
+    fn empty_model_list_keeps_preflight_availability_unknown() {
+        let models = Vec::<String>::new();
+
+        assert_eq!(preflight_availability_from_models(&models), None);
     }
 }

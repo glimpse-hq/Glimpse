@@ -101,6 +101,10 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("LLM cannot be enabled when provider is None".into());
     }
 
+    if args.cleanup_enabled && !args.llm_enabled {
+        return Err("AI Cleanup cannot be enabled without an active language model".into());
+    }
+
     if args.llm_enabled && !matches!(args.llm_provider, LlmProvider::None) {
         if matches!(args.llm_provider, LlmProvider::Custom) && args.llm_endpoint.trim().is_empty() {
             return Err("Custom LLM endpoint cannot be empty".into());
@@ -251,6 +255,19 @@ mod tests {
         let err = validate_update_settings_args(&args).unwrap_err();
 
         assert_eq!(err, "LLM cannot be enabled when provider is None");
+    }
+
+    #[test]
+    fn rejects_enabling_cleanup_without_llm() {
+        let mut args = base_args();
+        args.cleanup_enabled = true;
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(
+            err,
+            "AI Cleanup cannot be enabled without an active language model"
+        );
     }
 
     #[test]
