@@ -2,18 +2,22 @@
 
 ### Features
 - Apps & websites in personalization now show their icons.
+- AI Cleanup and LLM model providers are now separate, allowing you to use features like personalization without using Cleanup.
+
 
 ### Changes
 - Removed Moonshine support, as it didn't serve a purpose.
 - Glimpse now requires MacOS 14+
 - Parakeet V3 now only supports Auto mode.
 - Glimpse now uses Glimpse-Speech as the local transcription backend. Whisper transcription is now 30% faster.
+- Added a copy button to error toasts
 
 
 ### Fixes
 - Text would create newlines at end of chunk.
 - Capital letters from merged library recordings. 
 - Dictionary would not apply past 30 seconds on transcription & library.
+- Fixed a bug where library item's could be stuck cancelling.
 ---
 0.6.7
 
