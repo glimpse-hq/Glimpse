@@ -32,6 +32,7 @@ const KEY_DICTIONARY: &str = "dictionary";
 const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
+const KEY_CLOUD_SYNC_ENABLED: &str = "cloud_sync_enabled";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Replacement {
@@ -103,6 +104,8 @@ pub struct UserSettings {
     pub personalities: Vec<Personality>,
     #[serde(default)]
     pub edit_mode_enabled: bool,
+    #[serde(default)]
+    pub cloud_sync_enabled: bool,
 }
 
 fn default_smart_shortcut() -> String {
@@ -252,6 +255,7 @@ impl Default for UserSettings {
             replacements: Vec::new(),
             personalities: default_personalities(),
             edit_mode_enabled: false,
+            cloud_sync_enabled: false,
         }
     }
 }
@@ -440,6 +444,8 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_PERSONALITIES, settings.personalities.clone())?;
             settings.edit_mode_enabled =
                 self.read_value(&conn, KEY_EDIT_MODE_ENABLED, settings.edit_mode_enabled)?;
+            settings.cloud_sync_enabled =
+                self.read_value(&conn, KEY_CLOUD_SYNC_ENABLED, settings.cloud_sync_enabled)?;
         }
 
         if !encrypted_key.is_empty() {
@@ -560,6 +566,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_REPLACEMENTS, &settings.replacements)?;
         self.write_value(&conn, KEY_PERSONALITIES, &settings.personalities)?;
         self.write_value(&conn, KEY_EDIT_MODE_ENABLED, &settings.edit_mode_enabled)?;
+        self.write_value(&conn, KEY_CLOUD_SYNC_ENABLED, &settings.cloud_sync_enabled)?;
         Ok(())
     }
 

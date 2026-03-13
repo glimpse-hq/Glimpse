@@ -2,6 +2,7 @@ mod accessibility_context;
 mod analytics;
 mod assistive;
 mod audio;
+mod cloud;
 mod core;
 mod crypto;
 mod data_migration;
@@ -277,6 +278,7 @@ pub fn run() {
             }
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            cloud::register_auth_callback_bridge(handle);
             library::commands::recover_interrupted_library_items(handle);
 
             #[cfg(target_os = "macos")]
@@ -385,7 +387,8 @@ pub fn run() {
             open_about_page,
             update_checker::get_update_status,
             update_checker::check_for_updates,
-            update_checker::download_and_install_update
+            update_checker::download_and_install_update,
+            cloud::take_pending_auth_callback_code
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -468,6 +471,7 @@ pub struct AppState {
     preflight_cancel: CancellationToken,
     preflight_started: AtomicBool,
     preflight_notify: Arc<Notify>,
+    pending_auth_callback_code: parking_lot::Mutex<Option<String>>,
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
 }
@@ -527,6 +531,7 @@ impl AppState {
             preflight_cancel: CancellationToken::new(),
             preflight_started: AtomicBool::new(false),
             preflight_notify: Arc::new(Notify::new()),
+            pending_auth_callback_code: parking_lot::Mutex::new(None),
             session_started_at: Instant::now(),
             session_counters: parking_lot::Mutex::new(SessionCounters {
                 recording_seconds: 0.0,
@@ -560,6 +565,14 @@ impl AppState {
 
     pub fn pill(&self) -> &PillController {
         &self.pill
+    }
+
+    pub fn store_pending_auth_callback_code(&self, code: String) {
+        *self.pending_auth_callback_code.lock() = Some(code);
+    }
+
+    pub fn take_pending_auth_callback_code(&self) -> Option<String> {
+        self.pending_auth_callback_code.lock().take()
     }
 
     pub fn set_shortcut_capture_active(&self, active: bool) {
@@ -895,6 +908,7 @@ fn update_settings(
     llmApiKey: String,
     llmModel: String,
     editModeEnabled: bool,
+    cloudSyncEnabled: bool,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<UserSettings, String> {
@@ -918,6 +932,7 @@ fn update_settings(
             llm_api_key: llmApiKey,
             llm_model: llmModel,
             edit_mode_enabled: editModeEnabled,
+            cloud_sync_enabled: cloudSyncEnabled,
         },
         &app,
         &state,

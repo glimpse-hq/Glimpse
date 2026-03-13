@@ -90,9 +90,11 @@ const Home = () => {
 
   const sidebarWidth = isSidebarCollapsed ? 68 : 200;
   const currentUserAvatar =
-    currentUser && typeof currentUser.prefs.avatar === "string"
-      ? currentUser.prefs.avatar
-      : null;
+    typeof currentUser?.image === "string"
+      ? currentUser.image
+      : typeof currentUser?.prefs?.avatar === "string"
+        ? currentUser.prefs.avatar
+        : null;
 
   useEffect(() => {
     let cancelled = false;

@@ -21,7 +21,8 @@ import AccountTab from "./tabs/AccountTab";
 import AdvancedTab from "./tabs/AdvancedTab";
 import GeneralTab from "./tabs/GeneralTab";
 import ModelsTab from "./tabs/ModelsTab";
-import { logout, type User as AuthUser } from "../../lib/auth";
+import type { User as AuthUser } from "../../lib/auth";
+import { useAuth } from "../../hooks/useAuth";
 import {
   buildTranscriptionLanguageView,
   getActiveTranscriptionEngine,
@@ -129,7 +130,6 @@ const SettingsModal = ({
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
 
-  const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
   const activeTranscriptionEngine = useMemo(
     () => getActiveTranscriptionEngine(modelCatalog, localModel),
     [modelCatalog, localModel],
@@ -174,16 +174,7 @@ const SettingsModal = ({
     [languageForcedAuto, languageView.options],
   );
 
-  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {
-    const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
-    return stored !== null ? stored === "true" : false;
-  });
-
-  useEffect(() => {
-    if (currentUser && !isSubscriber && cloudSyncEnabled) {
-      setCloudSyncEnabled(false);
-    }
-  }, [currentUser, isSubscriber, cloudSyncEnabled]);
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(false);
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -217,13 +208,6 @@ const SettingsModal = ({
     };
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem(
-      "glimpse_cloud_sync_enabled",
-      String(cloudSyncEnabled),
-    );
-    emit("auth:changed").catch(() => {});
-  }, [cloudSyncEnabled]);
 
   useEffect(() => {
     localStorage.setItem(TEXT_SIZE_MODE_STORAGE_KEY, textSizeMode);
@@ -316,6 +300,7 @@ const SettingsModal = ({
         setLlmApiKey(settings.llm_api_key ?? "");
         setLlmModel(settings.llm_model ?? "");
         setEditModeEnabled(settings.edit_mode_enabled ?? false);
+        setCloudSyncEnabled(settings.cloud_sync_enabled ?? false);
       },
     );
 
@@ -368,6 +353,7 @@ const SettingsModal = ({
           setLlmApiKey(settings.llm_api_key ?? "");
           setLlmModel(settings.llm_model ?? "");
           setEditModeEnabled(settings.edit_mode_enabled ?? false);
+          setCloudSyncEnabled(settings.cloud_sync_enabled ?? false);
         } catch (err) {
           console.error("Failed to load settings:", err);
           setError("Failed to load settings");
@@ -412,10 +398,37 @@ const SettingsModal = ({
     }
   }, [isOpen]);
 
+  const {
+    signIn: authSignIn,
+    signOut: authSignOut,
+    cancelSignIn: cancelAuthSignIn,
+    isLoading: authStateLoading,
+  } = useAuth();
+
+  useEffect(() => {
+    if (!authStateLoading) {
+      setAuthLoading(false);
+    }
+  }, [authStateLoading]);
+
+  const handleSignIn = async (
+    provider: string,
+    params?: Record<string, unknown>,
+  ) => {
+    setAuthLoading(true);
+    try {
+      await authSignIn(provider, params);
+    } catch (err) {
+      console.error("Sign in failed:", err);
+      setAuthLoading(false);
+      throw err;
+    }
+  };
+
   const handleSignOut = async () => {
     setAuthLoading(true);
     try {
-      await logout();
+      await authSignOut();
       await onUpdateUser();
     } catch (err) {
       console.error("Sign out failed:", err);
@@ -425,6 +438,7 @@ const SettingsModal = ({
   };
 
   const handleCancelAuth = () => {
+    void cancelAuthSignIn();
     setAuthLoading(false);
   };
 
@@ -708,6 +722,7 @@ const SettingsModal = ({
           llmApiKey,
           llmModel,
           editModeEnabled,
+          cloudSyncEnabled,
         });
         setError(null);
       } catch (err) {
@@ -737,6 +752,7 @@ const SettingsModal = ({
     llmApiKey,
     llmModel,
     editModeEnabled,
+    cloudSyncEnabled,
   ]);
 
   const handleDownload = async (modelKey: string) => {
@@ -988,6 +1004,7 @@ const SettingsModal = ({
                       setCloudSyncEnabled={setCloudSyncEnabled}
                       onUpdateUser={onUpdateUser}
                       handleSignOut={handleSignOut}
+                      handleSignIn={handleSignIn}
                       handleCancelAuth={handleCancelAuth}
                     />
                   )}

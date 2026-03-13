@@ -27,6 +27,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_api_key: String,
     pub llm_model: String,
     pub edit_mode_enabled: bool,
+    pub cloud_sync_enabled: bool,
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> String {
@@ -188,6 +189,7 @@ pub(crate) fn update_settings(
     next.llm_api_key = args.llm_api_key;
     next.llm_model = args.llm_model.trim().to_string();
     next.edit_mode_enabled = args.edit_mode_enabled;
+    next.cloud_sync_enabled = args.cloud_sync_enabled;
 
     let next = state
         .persist_settings(next)
@@ -247,6 +249,7 @@ mod tests {
             llm_api_key: String::new(),
             llm_model: String::new(),
             edit_mode_enabled: false,
+            cloud_sync_enabled: false,
         }
     }
 
