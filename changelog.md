@@ -1,5 +1,7 @@
 0.7.0
 
+**Note:** Glimpse is moving directories from dev.glimpse.glimpse to com.glimpse.data, this will require anyone updating the app to re-enable permissions for Glimpse, an extra system permission is also prompted to request copying files from the old location to the new one.
+
 ### Features
 - Apps & websites in personalization now show their icons.
 - AI Cleanup and LLM model providers are now separate, allowing you to use features like personalization without using Cleanup.
@@ -9,7 +11,9 @@
 - Removed Moonshine support, as it didn't serve a purpose.
 - Glimpse now requires MacOS 14+
 - Parakeet V3 now only supports Auto mode.
-- Glimpse now uses Glimpse-Speech as the local transcription backend. Whisper transcription is now 30% faster.
+- Glimpse now uses Glimpse-Speech as the local transcription backend. Whisper transcription is now ~25% faster.
+- Turning on AI cleanup now requries a LLM configured first.
+- Small UI tweaks across the app.
 - Added a copy button to error toasts
 
 

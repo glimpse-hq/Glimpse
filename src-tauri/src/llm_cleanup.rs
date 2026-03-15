@@ -202,33 +202,56 @@ fn parse_output_tags(response: &str) -> Option<String> {
     (start < end).then(|| response[(start + 8)..end].trim().to_string())
 }
 
+fn parse_structured_text_candidate(candidate: &str) -> Option<String> {
+    if let Ok(parsed) = serde_json::from_str::<StructuredTextResponse>(candidate) {
+        let text = parsed.text.trim();
+        if !text.is_empty() {
+            return Some(text.to_string());
+        }
+    }
+    if let Ok(parsed) = serde_json::from_str::<String>(candidate) {
+        let text = parsed.trim();
+        if !text.is_empty() {
+            return Some(text.to_string());
+        }
+    }
+    None
+}
+
 fn parse_text_response(response: &str) -> Option<String> {
     let trimmed = response.trim();
     let candidates = [Some(trimmed), strip_code_fence(trimmed)];
 
     for candidate in candidates.into_iter().flatten() {
-        if let Ok(parsed) = serde_json::from_str::<StructuredTextResponse>(candidate) {
-            let text = parsed.text.trim();
-            if !text.is_empty() {
-                return Some(text.to_string());
-            }
-        }
-        if let Ok(parsed) = serde_json::from_str::<String>(candidate) {
-            let text = parsed.trim();
-            if !text.is_empty() {
-                return Some(text.to_string());
-            }
+        if let Some(parsed) = parse_structured_text_candidate(candidate) {
+            return Some(parsed);
         }
     }
 
-    parse_output_tags(trimmed).or_else(|| {
-        let cleaned = strip_control_tokens(trimmed);
-        if cleaned.is_empty() {
-            None
-        } else {
-            Some(cleaned)
+    if let Some(output) = parse_output_tags(trimmed) {
+        if let Some(parsed) = parse_structured_text_candidate(&output) {
+            return Some(parsed);
         }
-    })
+
+        let cleaned_output = strip_control_tokens(&output);
+        if let Some(parsed) = parse_structured_text_candidate(&cleaned_output) {
+            return Some(parsed);
+        }
+        if !cleaned_output.is_empty() {
+            return Some(cleaned_output);
+        }
+    }
+
+    let cleaned = strip_control_tokens(trimmed);
+    if let Some(parsed) = parse_structured_text_candidate(&cleaned) {
+        return Some(parsed);
+    }
+
+    if cleaned.is_empty() {
+        None
+    } else {
+        Some(cleaned)
+    }
 }
 
 fn supports_native_structured_output(settings: &UserSettings) -> bool {
@@ -299,48 +322,74 @@ fn build_prompt_enforced_json_system_prompt(task: TextTaskKind, base_prompt: &st
     prompt
 }
 
-fn get_endpoint(settings: &UserSettings) -> Result<String> {
-    if !settings.llm_endpoint.is_empty() && settings.llm_endpoint.contains("/chat/completions") {
-        return Ok(settings.llm_endpoint.clone());
-    }
+#[derive(Clone, Copy)]
+enum ProviderRoute {
+    ChatCompletions,
+    Models,
+}
 
-    let endpoint = match settings.llm_provider {
-        LlmProvider::None => return Err(anyhow!("Language model is disabled")),
-        LlmProvider::LmStudio => {
-            if settings.llm_endpoint.is_empty() {
-                "http://localhost:1234"
-            } else {
-                &settings.llm_endpoint
-            }
-        }
-        LlmProvider::Ollama => {
-            if settings.llm_endpoint.is_empty() {
-                "http://localhost:11434"
-            } else {
-                &settings.llm_endpoint
-            }
-        }
-        LlmProvider::OpenAI => {
-            if settings.llm_endpoint.is_empty() {
-                "https://api.openai.com"
-            } else {
-                &settings.llm_endpoint
-            }
-        }
-        _ => {
-            if settings.llm_endpoint.is_empty() {
-                return Err(anyhow!("Endpoint not configured"));
-            }
-            &settings.llm_endpoint
-        }
+fn provider_default_base_url(provider: &LlmProvider) -> Option<&'static str> {
+    match provider {
+        LlmProvider::LmStudio => Some("http://localhost:1234"),
+        LlmProvider::Ollama => Some("http://localhost:11434"),
+        LlmProvider::OpenAI => Some("https://api.openai.com"),
+        LlmProvider::Google => Some("https://generativelanguage.googleapis.com/v1beta/openai"),
+        LlmProvider::None => None,
+        _ => None,
+    }
+}
+
+fn provider_route_suffix(provider: &LlmProvider, route: ProviderRoute) -> &'static str {
+    match (provider, route) {
+        (LlmProvider::Google, ProviderRoute::ChatCompletions) => "/chat/completions",
+        (LlmProvider::Google, ProviderRoute::Models) => "/models",
+        (_, ProviderRoute::ChatCompletions) => "/v1/chat/completions",
+        (_, ProviderRoute::Models) => "/v1/models",
+    }
+}
+
+fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
+    let base = if endpoint.trim().is_empty() {
+        provider_default_base_url(provider).unwrap_or("")
+    } else {
+        endpoint.trim()
     };
 
-    let base = get_base_url(endpoint, &settings.llm_provider);
+    let mut trimmed = base.trim_end_matches('/').to_string();
+    for suffix in [
+        "/v1/chat/completions",
+        "/chat/completions",
+        "/v1/models",
+        "/models",
+        "/v1",
+    ] {
+        if trimmed.ends_with(suffix) {
+            trimmed.truncate(trimmed.len() - suffix.len());
+            break;
+        }
+    }
+    trimmed.trim_end_matches('/').to_string()
+}
+
+fn build_provider_url(endpoint: &str, provider: &LlmProvider, route: ProviderRoute) -> Result<String> {
+    if matches!(provider, LlmProvider::None) {
+        return Err(anyhow!("Language model is disabled"));
+    }
+
+    let base = get_base_url(endpoint, provider);
     if base.is_empty() {
         return Err(anyhow!("Endpoint not configured"));
     }
 
-    Ok(format!("{}/v1/chat/completions", base))
+    Ok(format!("{}{}", base, provider_route_suffix(provider, route)))
+}
+
+fn get_endpoint(settings: &UserSettings) -> Result<String> {
+    build_provider_url(
+        &settings.llm_endpoint,
+        &settings.llm_provider,
+        ProviderRoute::ChatCompletions,
+    )
 }
 
 fn configured_model(settings: &UserSettings) -> Option<String> {
@@ -645,36 +694,17 @@ struct ModelEntry {
     id: String,
 }
 
-fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
-    let base = if endpoint.is_empty() {
-        match provider {
-            LlmProvider::LmStudio => "http://localhost:1234",
-            LlmProvider::Ollama => "http://localhost:11434",
-            LlmProvider::OpenAI => "https://api.openai.com",
-            _ => "",
-        }
-    } else {
-        endpoint
-    };
-
-    base.trim_end_matches('/')
-        .trim_end_matches("/v1/chat/completions")
-        .trim_end_matches("/v1")
-        .to_string()
-}
-
 pub async fn fetch_available_models(
     client: &Client,
     endpoint: &str,
     provider: &LlmProvider,
     api_key: &str,
 ) -> Result<Vec<String>> {
-    let base = get_base_url(endpoint, provider);
-    if base.is_empty() {
-        return Ok(vec![]);
-    }
-
-    let url = format!("{}/v1/models", base);
+    let url = match build_provider_url(endpoint, provider, ProviderRoute::Models) {
+        Ok(url) => url,
+        Err(err) if err.to_string() == "Endpoint not configured" => return Ok(vec![]),
+        Err(err) => return Err(err),
+    };
     let mut req = client.get(&url);
 
     if !api_key.is_empty() {

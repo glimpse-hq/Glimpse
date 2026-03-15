@@ -114,24 +114,25 @@ async fn latest_prerelease_manifest_url() -> anyhow::Result<Option<Url>> {
     Ok(None)
 }
 
-async fn update_endpoint_for_channel(channel: UpdateChannel) -> anyhow::Result<Option<Url>> {
+async fn update_endpoints_for_channel(channel: UpdateChannel) -> anyhow::Result<Vec<Url>> {
     let stable = Url::parse(STABLE_UPDATE_ENDPOINT)?;
 
-    if matches!(channel, UpdateChannel::Prerelease) {
-        match latest_prerelease_manifest_url().await {
-            Ok(Some(endpoint)) => Ok(Some(endpoint)),
-            Ok(None) => {
-                debug!("no prerelease release manifest found on GitHub");
-                Ok(None)
-            }
-            Err(err) => {
-                warn!(error = ?err, "failed to resolve prerelease manifest endpoint");
-                Err(err)
-            }
-        }
-    } else {
-        Ok(Some(stable))
+    if !matches!(channel, UpdateChannel::Prerelease) {
+        return Ok(vec![stable]);
     }
+
+    let mut endpoints = Vec::new();
+    match latest_prerelease_manifest_url().await {
+        Ok(Some(endpoint)) => endpoints.push(endpoint),
+        Ok(None) => {
+            debug!("no prerelease release manifest found on GitHub");
+        }
+        Err(err) => {
+            warn!(error = ?err, "failed to resolve prerelease manifest endpoint");
+        }
+    }
+    endpoints.push(stable);
+    Ok(endpoints)
 }
 
 fn resolve_channel(
@@ -153,32 +154,31 @@ async fn check_for_update(
     debug!("checking for updates");
 
     let channel = resolve_channel(app, channel_override);
-    let Some(endpoint) = update_endpoint_for_channel(channel.clone()).await? else {
-        debug!(channel = ?channel, "no update endpoint available");
-        state.lock().clear();
-        return Ok(());
-    };
+    let endpoints = update_endpoints_for_channel(channel.clone()).await?;
 
-    let updater = app.updater_builder().endpoints(vec![endpoint])?.build()?;
-    let update = updater.check().await?;
+    for endpoint in endpoints {
+        let updater = app.updater_builder().endpoints(vec![endpoint])?.build()?;
+        let update = updater.check().await?;
 
-    if let Some(update) = update {
-        let version = update.version.clone();
-        info!(version = %version, channel = ?channel, "update available");
+        if let Some(update) = update {
+            let version = update.version.clone();
+            info!(version = %version, channel = ?channel, "update available");
 
-        {
-            let mut guard = state.lock();
-            if guard.available_version.as_ref() != Some(&version) {
-                guard.set_available(version.clone());
-                guard.toast_shown_this_session = false;
+            {
+                let mut guard = state.lock();
+                if guard.available_version.as_ref() != Some(&version) {
+                    guard.set_available(version.clone());
+                    guard.toast_shown_this_session = false;
+                }
             }
-        }
 
-        let _ = app.emit("update:available", version);
-    } else {
-        debug!(channel = ?channel, "no updates available");
-        state.lock().clear();
+            let _ = app.emit("update:available", version);
+            return Ok(());
+        }
     }
+
+    debug!(channel = ?channel, "no updates available");
+    state.lock().clear();
 
     Ok(())
 }
@@ -267,20 +267,26 @@ pub async fn download_and_install_update(
     channel: Option<UpdateChannel>,
 ) -> Result<(), String> {
     let resolved_channel = resolve_channel(&app, channel);
-    let Some(endpoint) = update_endpoint_for_channel(resolved_channel.clone())
+    let endpoints = update_endpoints_for_channel(resolved_channel.clone())
         .await
-        .map_err(|err| err.to_string())?
-    else {
-        return Err("No update is currently available for this channel.".to_string());
-    };
-    let updater = app
-        .updater_builder()
-        .endpoints(vec![endpoint])
-        .map_err(|err| err.to_string())?
-        .build()
         .map_err(|err| err.to_string())?;
 
-    let Some(update) = updater.check().await.map_err(|err| err.to_string())? else {
+    let mut selected_update = None;
+    for endpoint in endpoints {
+        let updater = app
+            .updater_builder()
+            .endpoints(vec![endpoint])
+            .map_err(|err| err.to_string())?
+            .build()
+            .map_err(|err| err.to_string())?;
+
+        if let Some(update) = updater.check().await.map_err(|err| err.to_string())? {
+            selected_update = Some(update);
+            break;
+        }
+    }
+
+    let Some(update) = selected_update else {
         return Err("No update is currently available for this channel.".to_string());
     };
 
