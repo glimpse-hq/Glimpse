@@ -143,11 +143,7 @@ jobs:
           DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
           CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
-          VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
-          VITE_APPWRITE_PROJECT_NAME: ${{ secrets.VITE_APPWRITE_PROJECT_NAME }}
-          VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
-          VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID }}
-          VITE_APPWRITE_TRANSCRIPTIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_TRANSCRIPTIONS_COLLECTION_ID }}
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
           APTABASE_KEY: ${{ secrets.APTABASE_KEY }}
         with:
           tagName: v__VERSION__

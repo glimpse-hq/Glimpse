@@ -28,18 +28,6 @@
         "visible": false
       },
       {
-        "label": "settings",
-        "title": "Glimpse Settings",
-        "width": 900,
-        "height": 750,
-        "minWidth": 625,
-        "minHeight": 400,
-        "resizable": true,
-        "visible": false,
-        "hiddenTitle": true,
-        "titleBarStyle": "Overlay"
-      },
-      {
         "label": "toast",
         "title": "Glimpse Toast",
         "width": 420,

@@ -25,7 +25,7 @@ pub fn register_auth_callback_bridge(app: &AppHandle<AppRuntime>) {
     });
 }
 
-fn process_auth_callback_urls(app: &AppHandle<AppRuntime>, urls: Vec<reqwest::Url>) {
+fn process_auth_callback_urls(app: &AppHandle<AppRuntime>, urls: Vec<url::Url>) {
     for url in urls {
         let Some(code) = extract_auth_callback_code(&url) else {
             continue;
@@ -39,7 +39,7 @@ fn process_auth_callback_urls(app: &AppHandle<AppRuntime>, urls: Vec<reqwest::Ur
     }
 }
 
-fn extract_auth_callback_code(url: &reqwest::Url) -> Option<String> {
+fn extract_auth_callback_code(url: &url::Url) -> Option<String> {
     if url.scheme() != "glimpse" || url.host_str() != Some("callback") {
         return None;
     }
