@@ -1,8 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 
-const isMac = /Mac|iPhone|iPad|iPod/i.test(
-  typeof navigator !== "undefined" ? navigator.platform || "" : "",
-);
+const isMac = navigator.platform?.startsWith("Mac") ?? false;
 
 // On macOS these call through to tauri-plugin-macos-permissions.
 // On other platforms, accessibility is ungated and mic is assumed available.
