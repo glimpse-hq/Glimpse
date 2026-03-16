@@ -80,6 +80,13 @@ jobs:
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
 
+      - name: install Vulkan SDK (Windows)
+        if: runner.os == 'Windows'
+        uses: humbletim/install-vulkan-sdk@v1.2.1
+        with:
+          version: latest
+          cache: true
+
       - name: install Rust stable (Windows)
         if: runner.os == 'Windows'
         uses: dtolnay/rust-toolchain@stable
