@@ -21,7 +21,7 @@ pub(crate) fn get_hwnd(window: &WebviewWindow<AppRuntime>) -> Result<HWND> {
 
 pub(crate) fn show_topmost(hwnd: HWND) -> Result<()> {
     unsafe {
-        ShowWindow(hwnd, SW_SHOWNOACTIVATE);
+        let _ = ShowWindow(hwnd, SW_SHOWNOACTIVATE);
         SetWindowPos(
             hwnd,
             Some(HWND_TOPMOST),
@@ -38,6 +38,6 @@ pub(crate) fn show_topmost(hwnd: HWND) -> Result<()> {
 
 pub(crate) fn hide_window(hwnd: HWND) {
     unsafe {
-        ShowWindow(hwnd, SW_HIDE);
+        let _ = ShowWindow(hwnd, SW_HIDE);
     }
 }
