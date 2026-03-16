@@ -3,8 +3,7 @@ use tauri::{AppHandle, Emitter};
 use super::hotkeys;
 use crate::settings::{LlmProvider, TranscriptionMode, UpdateChannel, UserSettings};
 use crate::{
-    analytics, model_manager, pill, tray, update_checker, AppRuntime, AppState,
-    EVENT_SETTINGS_CHANGED,
+    analytics, model_manager, pill, update_checker, AppRuntime, AppState, EVENT_SETTINGS_CHANGED,
 };
 
 #[derive(Debug)]
@@ -203,13 +202,7 @@ pub(crate) fn update_settings(
         || prev.local_model != next.local_model
         || prev.microphone_device != next.microphone_device
     {
-        if let Err(err) = tray::refresh_tray_menu(app, &next) {
-            eprintln!("Failed to refresh tray menu: {err}");
-        }
-        #[cfg(target_os = "macos")]
-        if let Err(err) = crate::set_app_menu(app, &next) {
-            eprintln!("Failed to refresh app menu: {err}");
-        }
+        crate::desktop::refresh_menus(app, &next);
     }
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {

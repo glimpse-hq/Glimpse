@@ -371,7 +371,11 @@ fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
     trimmed.trim_end_matches('/').to_string()
 }
 
-fn build_provider_url(endpoint: &str, provider: &LlmProvider, route: ProviderRoute) -> Result<String> {
+fn build_provider_url(
+    endpoint: &str,
+    provider: &LlmProvider,
+    route: ProviderRoute,
+) -> Result<String> {
     if matches!(provider, LlmProvider::None) {
         return Err(anyhow!("Language model is disabled"));
     }
@@ -381,7 +385,11 @@ fn build_provider_url(endpoint: &str, provider: &LlmProvider, route: ProviderRou
         return Err(anyhow!("Endpoint not configured"));
     }
 
-    Ok(format!("{}{}", base, provider_route_suffix(provider, route)))
+    Ok(format!(
+        "{}{}",
+        base,
+        provider_route_suffix(provider, route)
+    ))
 }
 
 fn get_endpoint(settings: &UserSettings) -> Result<String> {

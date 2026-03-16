@@ -36,6 +36,9 @@ import type {
   TranscriptionMode,
 } from "./types";
 
+const isMacPlatform =
+  typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
+
 type OnboardingStep =
   | "welcome"
   | "local-model"
@@ -830,7 +833,9 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
-      <div data-tauri-drag-region className="h-7 w-full shrink-0" />
+      {isMacPlatform && (
+        <div data-tauri-drag-region className="h-7 w-full shrink-0" />
+      )}
 
       <div className="flex justify-center pt-6 pb-6">
         <StepIndicator currentStep={currentStepIndex} total={steps.length} />

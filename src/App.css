@@ -933,13 +933,13 @@ body {
   background-color: transparent;
 }
 
-html.settings-html,
-body.settings-body {
+html.glimpse-html,
+body.glimpse-body {
   overflow: hidden;
   background-color: var(--color-bg-primary);
 }
 
-.settings-view {
+.glimpse-view {
   background-color: var(--color-bg-primary);
   color: inherit;
 }

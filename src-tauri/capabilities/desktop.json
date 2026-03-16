@@ -7,7 +7,7 @@
   ],
   "windows": [
     "main",
-    "settings"
+    "glimpse"
   ],
   "permissions": [
     "updater:default",

@@ -4,16 +4,12 @@ use crate::recent_transcriptions::{
 };
 use crate::settings::{TranscriptionMode, UserSettings};
 use crate::{
-    audio, model_manager, AppRuntime, AppState, EVENT_SETTINGS_CHANGED, FEEDBACK_URL,
-    SETTINGS_WINDOW_LABEL,
+    app_windows::glimpse as glimpse_window, audio, desktop, model_manager, AppRuntime, AppState,
+    FEEDBACK_URL,
 };
-use std::sync::atomic::Ordering;
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
-
-#[cfg(target_os = "macos")]
-use tauri::ActivationPolicy;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_opener::OpenerExt;
 
 // On macOS, share constants with the app menu; on other platforms, define locally
@@ -155,10 +151,9 @@ fn build_tray_menu(
     menu = menu.item(&send_feedback);
     menu = menu.separator();
 
-    let open_settings =
-        MenuItem::with_id(app, "open_settings", "Open Glimpse", true, None::<&str>)?;
+    let open_glimpse = MenuItem::with_id(app, "open_glimpse", "Open Glimpse", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit_glimpse", "Quit Glimpse", true, None::<&str>)?;
-    menu = menu.item(&open_settings).item(&quit);
+    menu = menu.item(&open_glimpse).item(&quit);
 
     menu.build()
 }
@@ -175,122 +170,31 @@ pub(crate) fn refresh_tray_menu(
     Ok(())
 }
 
-fn set_transcription_mode_from_menu(app: &AppHandle<AppRuntime>, mode: TranscriptionMode) {
-    let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
-    if settings.transcription_mode == mode {
-        return;
-    }
-    settings.transcription_mode = mode;
-    match state.persist_settings(settings.clone()) {
-        Ok(saved) => {
-            state.request_preflight_refresh();
-            if let Err(err) = refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update transcription mode: {err}"),
-    }
-}
-
-fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) {
-    if model_manager::definition(model_key).is_none() {
-        eprintln!("Ignoring unknown model selection: {model_key}");
-        return;
-    }
-
-    match model_manager::check_model_status(app.clone(), model_key.to_string()) {
-        Ok(status) if status.installed => {}
-        Ok(_) => {
-            eprintln!("Model not installed: {model_key}");
-            return;
-        }
-        Err(err) => {
-            eprintln!("Failed to check model status for {model_key}: {err}");
-            return;
-        }
-    }
-
-    let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
-    if settings.local_model == model_key {
-        return;
-    }
-    settings.local_model = model_key.to_string();
-    match state.persist_settings(settings.clone()) {
-        Ok(saved) => {
-            if let Err(err) = refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update model selection: {err}"),
-    }
-}
-
-fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
-    let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
-    if settings.microphone_device.as_deref() == device_id {
-        return;
-    }
-    settings.microphone_device = device_id.map(|id| id.to_string());
-    match state.persist_settings(settings.clone()) {
-        Ok(saved) => {
-            if let Err(err) = refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update microphone selection: {err}"),
-    }
-}
-
 fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     match id {
-        MENU_ID_MODE_LOCAL => set_transcription_mode_from_menu(app, TranscriptionMode::Local),
+        MENU_ID_MODE_LOCAL => desktop::select_transcription_mode(app, TranscriptionMode::Local),
         MENU_ID_MODE_CLOUD => {
             eprintln!("Cloud mode is coming soon; tray toggle disabled");
         }
-        MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
+        MENU_ID_MIC_DEFAULT => desktop::select_microphone(app, None),
         MENU_ID_FEEDBACK => {
             if let Err(err) = app.opener().open_url(FEEDBACK_URL, None::<&str>) {
                 eprintln!("Failed to open feedback link: {err}");
             }
         }
         MENU_ID_CHECK_UPDATES => {
-            if let Err(err) = toggle_settings_window(app) {
-                eprintln!("Failed to open settings for update check: {err}");
+            if let Err(err) = glimpse_window::show_about(app) {
+                eprintln!("Failed to open Glimpse window for update check: {err}");
             }
-            let _ = app.emit("navigate:about", ());
         }
         _ => {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
                 copy_transcription_to_clipboard(app, transcription_id);
             } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
-                set_local_model_from_menu(app, model_key);
+                desktop::select_local_model(app, model_key);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
-                set_microphone_from_menu(app, Some(device_id));
+                desktop::select_microphone(app, Some(device_id));
             }
         }
     }
@@ -313,16 +217,16 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
                 button_state,
                 ..
             } if button == MouseButton::Left && button_state == MouseButtonState::Up => {
-                if let Err(err) = toggle_settings_window(tray.app_handle()) {
-                    eprintln!("Failed to toggle settings window: {err}");
+                if let Err(err) = glimpse_window::show(tray.app_handle()) {
+                    eprintln!("Failed to show Glimpse window: {err}");
                 }
             }
             _ => {}
         })
         .on_menu_event(|app, event| match event.id().as_ref() {
-            "open_settings" => {
-                if let Err(err) = toggle_settings_window(app) {
-                    eprintln!("Failed to open settings window: {err}");
+            "open_glimpse" => {
+                if let Err(err) = glimpse_window::show(app) {
+                    eprintln!("Failed to open Glimpse window: {err}");
                 }
             }
             "quit_glimpse" => {
@@ -331,62 +235,4 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
             other => handle_tray_menu_event(app, other),
         })
         .build(app)
-}
-
-pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    let state = app.state::<AppState>();
-    let mut reset_close_flag = false;
-
-    let window = if let Some(existing) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
-        existing
-    } else {
-        reset_close_flag = true;
-        let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
-            .title("Glimpse")
-            .inner_size(900.0, 650.0)
-            .min_inner_size(625.0, 400.0)
-            .resizable(true)
-            .visible(false);
-
-        #[cfg(target_os = "macos")]
-        let builder = builder
-            .title_bar_style(tauri::TitleBarStyle::Overlay)
-            .hidden_title(true);
-
-        #[cfg(target_os = "windows")]
-        let builder = builder.decorations(false);
-
-        builder.build()?
-    };
-
-    if reset_close_flag {
-        state
-            .settings_close_handler_registered
-            .store(false, Ordering::SeqCst);
-    }
-
-    #[cfg(target_os = "macos")]
-    let _ = app.set_activation_policy(ActivationPolicy::Regular);
-
-    window.show()?;
-    window.set_focus()?;
-
-    let already_registered = state
-        .settings_close_handler_registered
-        .swap(true, Ordering::SeqCst);
-    if !already_registered {
-        #[cfg(target_os = "macos")]
-        let app_handle = app.clone();
-        let window_clone = window.clone();
-        window.on_window_event(move |event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window_clone.hide();
-                #[cfg(target_os = "macos")]
-                let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
-            }
-        });
-    }
-
-    Ok(())
 }

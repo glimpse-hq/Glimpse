@@ -127,13 +127,7 @@ fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
 
 fn refresh_recent_menus(app: &AppHandle<AppRuntime>) {
     let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = crate::set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
+    crate::desktop::refresh_menus(app, &settings);
 }
 
 fn format_transcription_preview(text: &str, max_len: usize) -> String {

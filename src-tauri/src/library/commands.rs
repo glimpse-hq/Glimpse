@@ -310,8 +310,8 @@ pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> R
     if paths.is_empty() {
         return Ok(());
     }
-    if let Err(err) = crate::tray::toggle_settings_window(app) {
-        eprintln!("Failed to open settings window: {err}");
+    if let Err(err) = crate::app_windows::glimpse::show(app) {
+        eprintln!("Failed to open Glimpse window: {err}");
     }
     let _ = app.emit(EVENT_LIBRARY_OPEN_IMPORT, paths);
     Ok(())

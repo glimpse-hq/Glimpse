@@ -5,7 +5,7 @@
   ],
   "windows": [
     "main",
-    "settings",
+    "glimpse",
     "toast"
   ],
   "permissions": [

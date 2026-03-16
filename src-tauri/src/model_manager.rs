@@ -361,9 +361,7 @@ pub async fn download_model(
     let status = ModelStatus::from_definition(&dir, def);
 
     let settings = state.current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu after download: {err}");
-    }
+    crate::desktop::refresh_menus(&app, &settings);
 
     Ok(status)
 }
@@ -379,9 +377,7 @@ pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelSt
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();
-        if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-            eprintln!("Failed to refresh tray menu after delete: {err}");
-        }
+        crate::desktop::refresh_menus(&app, &settings);
     }
 
     Ok(status)
