@@ -13,7 +13,6 @@
     "dialog:allow-open",
     "dialog:allow-save",
     "dialog:default",
-    "opener:default",
-    "macos-permissions:default"
+    "opener:default"
   ]
 }
