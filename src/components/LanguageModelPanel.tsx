@@ -49,7 +49,7 @@ const LanguageModelPanel = ({
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="ui-text-body-strong ui-color-primary">
-              LLM Provider
+              Language Model Provider
             </h3>
             <p className="ui-text-label ui-color-disabled">
               Shared by Cleanup, Edit Mode, and Personalization.

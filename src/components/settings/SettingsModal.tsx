@@ -21,8 +21,9 @@ import AccountTab from "./tabs/AccountTab";
 import AdvancedTab from "./tabs/AdvancedTab";
 import GeneralTab from "./tabs/GeneralTab";
 import ModelsTab from "./tabs/ModelsTab";
-import type { User as AuthUser } from "../../lib/auth";
 import { useAuth } from "../../hooks/useAuth";
+import { getProviderPreset } from "../../lib/llmProviders";
+import type { User as AuthUser } from "../../lib/auth";
 import {
   buildTranscriptionLanguageView,
   getActiveTranscriptionEngine,
@@ -111,7 +112,7 @@ const SettingsModal = ({
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [llmEnabled, setLlmEnabled] = useState(false);
   const [cleanupEnabled, setCleanupEnabled] = useState(false);
-  const [llmProvider, setLlmProvider] = useState<LlmProvider>("custom");
+  const [llmProvider, setLlmProvider] = useState<LlmProvider>("none");
   const [llmEndpoint, setLlmEndpoint] = useState("");
   const [llmApiKey, setLlmApiKey] = useState("");
   const [llmModel, setLlmModel] = useState("");
@@ -130,6 +131,7 @@ const SettingsModal = ({
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
 
+  const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
   const activeTranscriptionEngine = useMemo(
     () => getActiveTranscriptionEngine(modelCatalog, localModel),
     [modelCatalog, localModel],
@@ -174,7 +176,33 @@ const SettingsModal = ({
     [languageForcedAuto, languageView.options],
   );
 
-  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(false);
+  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {
+    const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
+    return stored !== null ? stored === "true" : false;
+  });
+  const llmProviderPreset = useMemo(
+    () => getProviderPreset(llmProvider),
+    [llmProvider],
+  );
+  const llmConfigReady = Boolean(
+    llmProviderPreset &&
+      (llmProvider !== "custom" || llmEndpoint.trim()) &&
+      (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
+      llmModel.trim(),
+  );
+
+  useEffect(() => {
+    if (currentUser && !isSubscriber && cloudSyncEnabled) {
+      setCloudSyncEnabled(false);
+    }
+  }, [currentUser, isSubscriber, cloudSyncEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "glimpse_cloud_sync_enabled",
+      String(cloudSyncEnabled),
+    );
+  }, [cloudSyncEnabled]);
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -275,6 +303,29 @@ const SettingsModal = ({
       setActiveTab("general");
     }
   }, [transcriptionMode, activeTab]);
+
+  useEffect(() => {
+    if (llmEnabled && !llmConfigReady) {
+      setLlmEnabled(false);
+    }
+  }, [llmEnabled, llmConfigReady]);
+
+  useEffect(() => {
+    if (llmEnabled) return;
+
+    let changed = false;
+    if (cleanupEnabled) {
+      setCleanupEnabled(false);
+      changed = true;
+    }
+    if (editModeEnabled) {
+      setEditModeEnabled(false);
+      changed = true;
+    }
+    if (changed) {
+      setError(null);
+    }
+  }, [llmEnabled, cleanupEnabled, editModeEnabled]);
 
   useEffect(() => {
     const unlistenPromise = listen<StoredSettings>(
@@ -701,6 +752,7 @@ const SettingsModal = ({
 
     const saveSettings = async () => {
       if (!localModel) return;
+      const persistedLlmEnabled = llmEnabled && llmConfigReady;
 
       try {
         await invoke("update_settings", {
@@ -715,13 +767,13 @@ const SettingsModal = ({
           microphoneDevice,
           language,
           updateChannel,
-          llmEnabled,
-          cleanupEnabled,
+          llmEnabled: persistedLlmEnabled,
+          cleanupEnabled: persistedLlmEnabled ? cleanupEnabled : false,
           llmProvider,
           llmEndpoint,
           llmApiKey,
           llmModel,
-          editModeEnabled,
+          editModeEnabled: persistedLlmEnabled ? editModeEnabled : false,
           cloudSyncEnabled,
         });
         setError(null);

@@ -93,6 +93,7 @@ const GeneralTab = ({
 }: GeneralTabProps) => {
   const [openHelpTooltip, setOpenHelpTooltip] =
     useState<HelpTooltipId | null>(null);
+  const aiFeaturesDisabled = transcriptionMode === "local" && !llmEnabled;
 
   const showHelpTooltip = (tooltip: HelpTooltipId) => {
     setOpenHelpTooltip(tooltip);
@@ -389,13 +390,14 @@ const GeneralTab = ({
                   Edit Mode
                 </span>
                 <button
-                  onClick={() => setEditModeEnabled(!editModeEnabled)}
+                  onClick={() => llmEnabled && setEditModeEnabled(!editModeEnabled)}
                   role="switch"
                   aria-checked={editModeEnabled}
                   aria-label="Toggle Edit Mode"
                   className={`w-7 h-4 rounded-full transition-colors relative ${
                     editModeEnabled ? "bg-cloud" : "bg-border-secondary"
-                  }`}
+                  } ${aiFeaturesDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={aiFeaturesDisabled}
                 >
                   <motion.div
                     className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm"
@@ -407,8 +409,28 @@ const GeneralTab = ({
                 </button>
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <span className="ui-text-meta ui-color-disabled">
-                  transform selected text with voice
+                <span
+                  className={`ui-text-meta ${
+                    aiFeaturesDisabled
+                      ? "ui-color-warning-strong"
+                      : "ui-color-disabled"
+                  }`}
+                >
+                  {aiFeaturesDisabled ? (
+                    <>
+                      Turn on and configure a language model in{" "}
+                      <button
+                        type="button"
+                        onClick={onOpenModelsTab}
+                        className="underline underline-offset-2 hover:text-cloud transition-colors"
+                      >
+                        Models
+                      </button>{" "}
+                      to use Edit Mode.
+                    </>
+                  ) : (
+                    "transform selected text with voice"
+                  )}
                 </span>
                 <div
                   className="relative"
@@ -471,13 +493,14 @@ const GeneralTab = ({
                   Cleanup
                 </span>
                 <button
-                  onClick={() => setCleanupEnabled(!cleanupEnabled)}
+                  onClick={() => llmEnabled && setCleanupEnabled(!cleanupEnabled)}
                   role="switch"
                   aria-checked={cleanupEnabled}
                   aria-label="Toggle Cleanup"
                   className={`w-7 h-4 rounded-full transition-colors relative ${
                     cleanupEnabled ? "bg-cloud" : "bg-border-secondary"
-                  }`}
+                  } ${aiFeaturesDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={aiFeaturesDisabled}
                 >
                   <motion.div
                     className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm"
@@ -489,8 +512,28 @@ const GeneralTab = ({
                 </button>
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <span className="ui-text-meta ui-color-disabled">
-                  remove filler words and polish transcripts
+                <span
+                  className={`ui-text-meta ${
+                    aiFeaturesDisabled
+                      ? "ui-color-warning-strong"
+                      : "ui-color-disabled"
+                  }`}
+                >
+                  {aiFeaturesDisabled ? (
+                    <>
+                      Turn on and configure a language model in{" "}
+                      <button
+                        type="button"
+                        onClick={onOpenModelsTab}
+                        className="underline underline-offset-2 hover:text-cloud transition-colors"
+                      >
+                        Models
+                      </button>{" "}
+                      to use Cleanup.
+                    </>
+                  ) : (
+                    "remove filler words and polish transcripts"
+                  )}
                 </span>
                 <div
                   className="relative"
