@@ -1,5 +1,11 @@
 0.7.0
 
+Added very experiemental support for Windows
+
+
+---
+0.7.0
+
 **Note:** Glimpse is moving directories from dev.glimpse.glimpse to com.glimpse.data, this will require anyone updating the app to re-enable permissions for Glimpse, an extra system permission is also prompted to request copying files from the old location to the new one.
 
 ### Features
