@@ -1,7 +1,7 @@
 use crate::{
     assistive,
     core::hotkeys::{self, HotkeyProvider, HotkeyState},
-    emit_event, model_manager, permissions, platform,
+    emit_event, model_manager, platform,
     recorder::RecorderManager,
     settings::UserSettings,
     toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
@@ -633,7 +633,7 @@ fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
 fn check_accessibility_warning(app: &AppHandle<AppRuntime>) {
     #[cfg(target_os = "macos")]
     {
-        let is_trusted = permissions::check_accessibility_permission();
+        let is_trusted = crate::permissions::check_accessibility_permission();
         if !is_trusted {
             toast::show_with_action(
                 app,

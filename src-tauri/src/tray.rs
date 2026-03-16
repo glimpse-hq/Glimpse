@@ -341,14 +341,22 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
         existing
     } else {
         reset_close_flag = true;
-        WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
-            .title("Glimpse Settings")
-            .inner_size(900.0, 650.0)
-            .min_inner_size(625.0, 400.0)
-            .resizable(true)
-            .visible(false)
-            .hidden_title(true)
-            .build()?
+        let mut builder =
+            WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
+                .title("Glimpse Settings")
+                .inner_size(900.0, 650.0)
+                .min_inner_size(625.0, 400.0)
+                .resizable(true)
+                .visible(false);
+
+        #[cfg(target_os = "macos")]
+        {
+            builder = builder
+                .title_bar_style(tauri::TitleBarStyle::Overlay)
+                .hidden_title(true);
+        }
+
+        builder.build()?
     };
 
     if reset_close_flag {

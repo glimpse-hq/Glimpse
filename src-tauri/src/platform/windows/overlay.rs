@@ -25,7 +25,7 @@ pub fn init(
 
         SetWindowPos(
             hwnd,
-            HWND_TOPMOST,
+            Some(HWND_TOPMOST),
             0,
             0,
             0,

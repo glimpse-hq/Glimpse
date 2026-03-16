@@ -184,8 +184,7 @@ fn send_paste_keystroke() -> Result<()> {
 
 #[cfg(target_os = "windows")]
 pub fn paste_text(text: &str) -> Result<()> {
-    let mut clipboard =
-        Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
 
     let backup_text = clipboard.get_text().ok();
     let backup_image = clipboard.get_image().ok().map(|img| img.to_owned());
@@ -225,19 +224,33 @@ fn send_paste_keystroke_windows() -> Result<()> {
 
     inputs[0].r#type = INPUT_KEYBOARD;
     inputs[0].Anonymous = INPUT_0 {
-        ki: KEYBDINPUT { wVk: VK_CONTROL, ..Default::default() },
+        ki: KEYBDINPUT {
+            wVk: VK_CONTROL,
+            ..Default::default()
+        },
     };
     inputs[1].r#type = INPUT_KEYBOARD;
     inputs[1].Anonymous = INPUT_0 {
-        ki: KEYBDINPUT { wVk: VK_V, ..Default::default() },
+        ki: KEYBDINPUT {
+            wVk: VK_V,
+            ..Default::default()
+        },
     };
     inputs[2].r#type = INPUT_KEYBOARD;
     inputs[2].Anonymous = INPUT_0 {
-        ki: KEYBDINPUT { wVk: VK_V, dwFlags: KEYEVENTF_KEYUP, ..Default::default() },
+        ki: KEYBDINPUT {
+            wVk: VK_V,
+            dwFlags: KEYEVENTF_KEYUP,
+            ..Default::default()
+        },
     };
     inputs[3].r#type = INPUT_KEYBOARD;
     inputs[3].Anonymous = INPUT_0 {
-        ki: KEYBDINPUT { wVk: VK_CONTROL, dwFlags: KEYEVENTF_KEYUP, ..Default::default() },
+        ki: KEYBDINPUT {
+            wVk: VK_CONTROL,
+            dwFlags: KEYEVENTF_KEYUP,
+            ..Default::default()
+        },
     };
 
     let sent = unsafe { SendInput(&inputs, mem::size_of::<INPUT>() as i32) };
@@ -250,8 +263,7 @@ fn send_paste_keystroke_windows() -> Result<()> {
 
 #[cfg(not(target_os = "macos"))]
 pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
-    let mut clipboard =
-        Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
     clipboard
         .set_text(text.to_string())
         .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;

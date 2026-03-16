@@ -403,6 +403,7 @@ pub fn run() {
                     eprintln!("Failed to handle opened files: {err}");
                 }
             }
+            #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen {
                 has_visible_windows,
                 ..
