@@ -99,6 +99,11 @@ jobs:
       - name: install frontend dependencies
         run: bun install --frozen-lockfile
 
+      - name: shorten Cargo target dir (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "CARGO_TARGET_DIR=D:/t" >> "$GITHUB_ENV"
+
       - name: import Apple Developer Certificate
         if: runner.os == 'macOS'
         env:
