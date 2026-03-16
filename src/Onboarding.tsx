@@ -6,7 +6,7 @@ import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
   checkMicrophonePermission,
-} from "tauri-plugin-macos-permissions-api";
+} from "./lib/permissions";
 import {
   Mic,
   Accessibility,
@@ -405,6 +405,7 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
         llmApiKey: "",
         llmModel: "",
         editModeEnabled: false,
+        cloudSyncEnabled: false,
       });
       await invoke("complete_onboarding");
       onComplete();

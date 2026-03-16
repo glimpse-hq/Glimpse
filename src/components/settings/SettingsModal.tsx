@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
-} from "tauri-plugin-macos-permissions-api";
+} from "../../lib/permissions";
 import { Cpu, Info, Keyboard, Sliders, User, X } from "lucide-react";
 import FAQModal from "../FAQModal";
 import WhatsNewModal from "./WhatsNewModal";

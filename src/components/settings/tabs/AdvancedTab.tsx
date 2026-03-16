@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { motion, type Variants } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
-import { requestAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
+import { requestAccessibilityPermission } from "../../../lib/permissions";
 import type { TextSizeMode } from "../../../types";
 
 const TEXT_SIZE_OPTIONS: Array<{ id: TextSizeMode; label: string }> = [
@@ -152,8 +152,8 @@ const AdvancedTab = ({
                         <button
                             onClick={async () => {
                                 try {
-                                    const granted = await requestAccessibilityPermission();
-                                    if (!granted) await invoke("open_accessibility_settings");
+                                    await requestAccessibilityPermission();
+                                    await invoke("open_accessibility_settings");
                                 } catch {
                                     await invoke("open_accessibility_settings");
                                 }
