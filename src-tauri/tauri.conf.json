@@ -91,6 +91,11 @@
           "height": 450
         }
       }
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
     }
   },
   "plugins": {

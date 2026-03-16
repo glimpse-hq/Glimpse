@@ -1,4 +1,4 @@
-//! macOS permission checking for microphone and accessibility access.
+//! Platform permission checking for microphone and accessibility access.
 
 #[cfg(target_os = "macos")]
 mod macos {
@@ -69,23 +69,47 @@ mod macos {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+mod win {
+    use std::process::Command;
+
+    pub fn check_accessibility_permission() -> bool {
+        true // Windows doesn't gate accessibility like macOS (Thank you :) )
+    }
+
+    pub fn open_accessibility_settings() -> Result<(), String> {
+        Ok(())
+    }
+
+    pub fn open_microphone_settings() -> Result<(), String> {
+        Command::new("cmd")
+            .args(["/C", "start", "ms-settings:privacy-microphone"])
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open microphone settings: {e}"))
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod other {
     pub fn check_accessibility_permission() -> bool {
         true
     }
 
     pub fn open_accessibility_settings() -> Result<(), String> {
-        Err("Accessibility settings are only available on macOS".to_string())
+        Err("Not available on this platform".to_string())
     }
 
     pub fn open_microphone_settings() -> Result<(), String> {
-        Err("Microphone settings are only available on macOS".to_string())
+        Err("Not available on this platform".to_string())
     }
 }
 
 #[cfg(target_os = "macos")]
 pub use macos::*;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+pub use win::*;
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub use other::*;

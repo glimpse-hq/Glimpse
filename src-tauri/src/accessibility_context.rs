@@ -135,7 +135,73 @@ end tell
 #[cfg(target_os = "macos")]
 pub use macos::get_active_context;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+mod win {
+    use super::ActiveContext;
+    use windows::Win32::Foundation::{CloseHandle, MAX_PATH};
+    use windows::Win32::System::Threading::{
+        OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_FORMAT, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+    };
+
+    pub fn get_active_context() -> Option<ActiveContext> {
+        unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.0.is_null() {
+                return None;
+            }
+
+            // Window title
+            let title_len = GetWindowTextLengthW(hwnd);
+            let window_title = if title_len > 0 {
+                let mut buf = vec![0u16; (title_len + 1) as usize];
+                let copied = GetWindowTextW(hwnd, &mut buf);
+                String::from_utf16_lossy(&buf[..copied as usize])
+            } else {
+                String::new()
+            };
+
+            // Process name
+            let mut pid = 0u32;
+            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+            let app_name = if pid != 0 {
+                process_name_from_pid(pid).unwrap_or_default()
+            } else {
+                String::new()
+            };
+
+            if app_name.is_empty() && window_title.is_empty() {
+                return None;
+            }
+
+            Some(ActiveContext {
+                app_name,
+                window_title,
+                url: None,
+            })
+        }
+    }
+
+    unsafe fn process_name_from_pid(pid: u32) -> Option<String> {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+        let mut buf = [0u16; MAX_PATH as usize];
+        let mut size = buf.len() as u32;
+        let ok = QueryFullProcessImageNameW(handle, PROCESS_NAME_FORMAT(0), &mut buf, &mut size);
+        let _ = CloseHandle(handle);
+        ok.ok()?;
+
+        let path = String::from_utf16_lossy(&buf[..size as usize]);
+        let name = path.rsplit('\\').next().unwrap_or(&path);
+        Some(name.trim_end_matches(".exe").to_string())
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub use win::get_active_context;
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub fn get_active_context() -> Option<ActiveContext> {
     None
 }

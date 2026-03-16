@@ -8,7 +8,7 @@ use arboard::{Clipboard, ImageData, SetExtApple};
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 use std::{thread, time::Duration};
 
 #[cfg(target_os = "macos")]
@@ -182,14 +182,76 @@ fn send_paste_keystroke() -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(target_os = "macos"))]
-pub fn paste_text(_text: &str) -> Result<()> {
-    Err(anyhow!("Assistive paste is only supported on macOS"))
+#[cfg(target_os = "windows")]
+pub fn paste_text(text: &str) -> Result<()> {
+    let mut clipboard =
+        Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+
+    let backup_text = clipboard.get_text().ok();
+    let backup_image = clipboard.get_image().ok().map(|img| img.to_owned());
+
+    clipboard
+        .set_text(text.to_string())
+        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+
+    thread::sleep(Duration::from_millis(10));
+
+    let paste_result = send_paste_keystroke_windows();
+
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(1000));
+        if let Ok(mut cb) = Clipboard::new() {
+            if let Some(image) = backup_image {
+                let _ = cb.set_image(image);
+            } else if let Some(text) = backup_text {
+                let _ = cb.set_text(text);
+            } else {
+                let _ = cb.clear();
+            }
+        }
+    });
+
+    paste_result
+}
+
+#[cfg(target_os = "windows")]
+fn send_paste_keystroke_windows() -> Result<()> {
+    use std::mem;
+    use windows::Win32::UI::Input::KeyboardAndMouse::{
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VK_CONTROL, VK_V,
+    };
+
+    let mut inputs: [INPUT; 4] = unsafe { mem::zeroed() };
+
+    inputs[0].r#type = INPUT_KEYBOARD;
+    inputs[0].Anonymous = INPUT_0 {
+        ki: KEYBDINPUT { wVk: VK_CONTROL, ..Default::default() },
+    };
+    inputs[1].r#type = INPUT_KEYBOARD;
+    inputs[1].Anonymous = INPUT_0 {
+        ki: KEYBDINPUT { wVk: VK_V, ..Default::default() },
+    };
+    inputs[2].r#type = INPUT_KEYBOARD;
+    inputs[2].Anonymous = INPUT_0 {
+        ki: KEYBDINPUT { wVk: VK_V, dwFlags: KEYEVENTF_KEYUP, ..Default::default() },
+    };
+    inputs[3].r#type = INPUT_KEYBOARD;
+    inputs[3].Anonymous = INPUT_0 {
+        ki: KEYBDINPUT { wVk: VK_CONTROL, dwFlags: KEYEVENTF_KEYUP, ..Default::default() },
+    };
+
+    let sent = unsafe { SendInput(&inputs, mem::size_of::<INPUT>() as i32) };
+    if sent != 4 {
+        return Err(anyhow!("SendInput returned {sent}, expected 4"));
+    }
+
+    Ok(())
 }
 
 #[cfg(not(target_os = "macos"))]
 pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
-    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    let mut clipboard =
+        Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
     clipboard
         .set_text(text.to_string())
         .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
@@ -199,4 +261,9 @@ pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
 #[cfg(not(target_os = "macos"))]
 pub fn get_selected_text_ax() -> Option<String> {
     None
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+pub fn paste_text(_text: &str) -> Result<()> {
+    Err(anyhow!("Assistive paste is not supported on this platform"))
 }

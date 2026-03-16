@@ -19,25 +19,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Universal macOS build
           - platform: 'macos-15'
             args: '--target universal-apple-darwin'
+          - platform: 'windows-latest'
+            args: ''
 
     runs-on: ${{ matrix.platform }}
-    
+
     env:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
       CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
-      DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
-      # Apple Clang still defines __ARM_FEATURE_MATMUL_INT8 for ggml's +noi8mm build,
-      # which makes whisper-rs-sys compile the wrong ARM path on GitHub's arm64 runner.
-      CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
-      CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
 
     steps:
       - uses: actions/checkout@v4
 
       - name: verify Xcode
+        if: runner.os == 'macOS'
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
         run: xcodebuild -version
 
       - name: Setup Bun
@@ -70,14 +69,20 @@ jobs:
             ~/.bun/install/cache
             ~/.cache/bun
             ~/Library/Caches/bun
+            ~\AppData\Local\bun
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'bun.lockb') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
-      - name: install Rust stable
+      - name: install Rust stable (macOS)
+        if: runner.os == 'macOS'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: install Rust stable (Windows)
+        if: runner.os == 'Windows'
+        uses: dtolnay/rust-toolchain@stable
 
       - name: cache rust
         uses: Swatinem/rust-cache@v2
@@ -88,6 +93,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: import Apple Developer Certificate
+        if: runner.os == 'macOS'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -103,6 +109,7 @@ jobs:
           security find-identity -v -p codesigning build.keychain
 
       - name: verify certificate
+        if: runner.os == 'macOS'
         run: |
           CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
           CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}')
@@ -121,6 +128,9 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
+          DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
+          CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
+          CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
           VITE_APPWRITE_PROJECT_NAME: ${{ secrets.VITE_APPWRITE_PROJECT_NAME }}
           VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
