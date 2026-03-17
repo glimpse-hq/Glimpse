@@ -71,44 +71,26 @@ mod macos {
 
 #[cfg(target_os = "windows")]
 mod win {
-    use windows::core::{w, HSTRING, PCWSTR};
-    use windows::Win32::UI::Shell::ShellExecuteW;
-    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
+    use std::process::Command;
 
-    const ACCESSIBILITY_URI: &str = "ms-settings:easeofaccess";
-    const MICROPHONE_URI: &str = "ms-settings:privacy-microphone";
-
-    /// Windows does not gate accessibility behind a system permission.
     pub fn check_accessibility_permission() -> bool {
         true
     }
 
     pub fn open_accessibility_settings() -> Result<(), String> {
-        shell_open_uri(ACCESSIBILITY_URI)
+        Command::new("cmd")
+            .args(["/C", "start", "ms-settings:easeofaccess"])
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open settings: {e}"))
     }
 
     pub fn open_microphone_settings() -> Result<(), String> {
-        shell_open_uri(MICROPHONE_URI)
-    }
-
-    fn shell_open_uri(uri: &str) -> Result<(), String> {
-        let uri_value = HSTRING::from(uri);
-        let result = unsafe {
-            ShellExecuteW(
-                None,
-                w!("open"),
-                &uri_value,
-                None::<PCWSTR>,
-                None::<PCWSTR>,
-                SW_SHOWNORMAL,
-            )
-        };
-        let code = result.0 as isize;
-        if code > 32 {
-            return Ok(());
-        }
-
-        Err(format!("ShellExecuteW failed for '{uri}' with code {code}"))
+        Command::new("cmd")
+            .args(["/C", "start", "ms-settings:privacy-microphone"])
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open settings: {e}"))
     }
 }
 

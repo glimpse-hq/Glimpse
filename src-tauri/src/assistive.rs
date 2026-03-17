@@ -53,7 +53,7 @@ impl ClipboardBackup {
             }
             #[cfg(not(target_os = "macos"))]
             {
-                if clipboard.set_html(&html, alt_text.clone()).is_ok() {
+                if clipboard.set_html(&html, alt_text.as_ref()).is_ok() {
                     return;
                 }
             }
