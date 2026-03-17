@@ -26,7 +26,9 @@ pub fn configure_builder<'a, R: Runtime, M: Manager<R>>(
 pub fn configure_window(window: &WebviewWindow<AppRuntime>) -> Result<()> {
     let hwnd = super::get_hwnd(window)?;
     apply_dwm_attributes(hwnd);
-    install_snap_layout_hook(hwnd)?;
+    if let Err(err) = install_snap_layout_hook(hwnd) {
+        eprintln!("Snap layout hook skipped: {err}");
+    }
     Ok(())
 }
 
