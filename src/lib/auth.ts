@@ -43,13 +43,6 @@ export async function updateName(name: string): Promise<User> {
   return await convex.mutation(api.users.updateName, { name });
 }
 
-export async function updatePassword(
-  _newPassword: string,
-  _oldPassword: string
-): Promise<User> {
-  throw new Error("Password auth not supported with Convex Auth OAuth");
-}
-
 export async function listSessions(): Promise<SessionList> {
   const sessions = (await convex.query(api.sessions.listUserSessions, {})) as Array<{
     appVersion?: string;

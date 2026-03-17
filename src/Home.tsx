@@ -26,11 +26,8 @@ import LibraryView from "./components/LibraryView";
 import { useAuth } from "./hooks/useAuth";
 import type { TranscriptionMode, StoredSettings } from "./types";
 import WindowControls from "./components/WindowControls";
+import { isMacPlatform, isWindowsPlatform } from "./lib/platform";
 
-const isMacPlatform =
-  typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
-const isWindowsPlatform =
-  typeof navigator !== "undefined" ? navigator.platform.startsWith("Win") : false;
 const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;
 
 const SidebarItem = ({
@@ -81,7 +78,7 @@ const Home = () => {
   >("home");
   const [transcriptionMode, setTranscriptionMode] =
     useState<TranscriptionMode>("local");
-  const { user: currentUser, refresh: refreshUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [showSupportPopup, setShowSupportPopup] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
   const [appVersion, setAppVersion] = useState("-");
@@ -702,7 +699,7 @@ const Home = () => {
         }}
         initialTab={settingsTab}
         currentUser={currentUser}
-        onUpdateUser={refreshUser}
+        onUpdateUser={async () => {}}
         transcriptionMode={transcriptionMode}
       />
 

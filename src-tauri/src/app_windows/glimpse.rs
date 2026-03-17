@@ -123,7 +123,11 @@ fn show_and_emit_events(
     std::thread::spawn(move || {
         for &(delay_ms, event_name) in events {
             std::thread::sleep(Duration::from_millis(delay_ms));
-            if let Err(err) = app_handle.emit(event_name, ()) {
+            let emit_result = app_handle
+                .get_webview_window(WINDOW_LABEL)
+                .map(|w| w.emit(event_name, ()))
+                .unwrap_or_else(|| app_handle.emit(event_name, ()));
+            if let Err(err) = emit_result {
                 eprintln!("Failed to emit {event_name}: {err}");
             }
         }

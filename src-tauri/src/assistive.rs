@@ -79,10 +79,11 @@ pub fn paste_text(text: &str) -> Result<()> {
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 
+    let temporary_text = text.to_string();
     clipboard
         .set()
         .exclude_from_history()
-        .text(text.to_string())
+        .text(temporary_text.clone())
         .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
 
     thread::sleep(Duration::from_millis(10));
@@ -92,6 +93,10 @@ pub fn paste_text(text: &str) -> Result<()> {
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(1000));
         if let Ok(mut clipboard) = Clipboard::new() {
+            let current = clipboard.get_text().ok();
+            if current.as_deref() != Some(&temporary_text) {
+                return;
+            }
             backup.restore(&mut clipboard);
         }
     });
@@ -189,8 +194,9 @@ pub fn paste_text(text: &str) -> Result<()> {
     let backup_text = clipboard.get_text().ok();
     let backup_image = clipboard.get_image().ok().map(|img| img.to_owned());
 
+    let temporary_text = text.to_string();
     clipboard
-        .set_text(text.to_string())
+        .set_text(temporary_text.clone())
         .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
 
     thread::sleep(Duration::from_millis(10));
@@ -200,6 +206,13 @@ pub fn paste_text(text: &str) -> Result<()> {
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(1000));
         if let Ok(mut cb) = Clipboard::new() {
+            // Only restore if the clipboard still contains our temporary text.
+            // If the user copied something new in the meantime, leave it alone.
+            let current = cb.get_text().ok();
+            if current.as_deref() != Some(&temporary_text) {
+                return;
+            }
+
             if let Some(image) = backup_image {
                 let _ = cb.set_image(image);
             } else if let Some(text) = backup_text {

@@ -59,8 +59,8 @@ pub(crate) fn initialize(app: &mut App<AppRuntime>) {
     }
 
     let app_handle = handle.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_millis(300));
+    tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(300)).await;
         let _ = glimpse_window::show(&app_handle);
     });
 }

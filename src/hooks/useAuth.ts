@@ -24,7 +24,6 @@ interface AuthContextValue {
   signIn: (provider: string, params?: Record<string, unknown>) => Promise<void>;
   signOut: () => Promise<void>;
   cancelSignIn: () => Promise<void>;
-  refresh: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -88,13 +87,19 @@ function AuthInner({ children }: { children: ReactNode }) {
   ) as User | null | undefined;
   const sessionMetadataUserRef = useRef<string | null>(null);
   const processingCallbackCodeRef = useRef<string | null>(null);
+  const signInAttemptRef = useRef(0);
 
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | undefined;
 
+    const attemptId = signInAttemptRef.current;
+
     const completeSignIn = async (code: string) => {
       if (!code || processingCallbackCodeRef.current === code) {
+        return;
+      }
+      if (signInAttemptRef.current !== attemptId) {
         return;
       }
 
@@ -153,10 +158,13 @@ function AuthInner({ children }: { children: ReactNode }) {
     if (sessionMetadataUserRef.current === currentUser._id) {
       return;
     }
-    sessionMetadataUserRef.current = currentUser._id;
-    void registerCurrentSessionMetadata().catch((err) => {
-      console.error("Failed to register session metadata:", err);
-    });
+    void registerCurrentSessionMetadata()
+      .then(() => {
+        sessionMetadataUserRef.current = currentUser._id;
+      })
+      .catch((err) => {
+        console.error("Failed to register session metadata:", err);
+      });
   }, [isAuthenticated, currentUser?._id]);
 
   const value = useMemo(
@@ -174,6 +182,7 @@ function AuthInner({ children }: { children: ReactNode }) {
           throw new Error(`Unsupported auth provider: ${provider}`);
         }
 
+        signInAttemptRef.current += 1;
         setSigningIn(true);
         try {
           const result = await startDesktopOAuthSignIn(
@@ -195,9 +204,9 @@ function AuthInner({ children }: { children: ReactNode }) {
         await signOut();
       },
       cancelSignIn: async () => {
+        signInAttemptRef.current += 1;
         setSigningIn(false);
       },
-      refresh: async () => {},
     }),
     [currentUser, isAuthenticated, isLoading, signIn, signOut, signingIn],
   );

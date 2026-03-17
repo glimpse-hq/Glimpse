@@ -91,6 +91,11 @@ jobs:
         if: runner.os == 'Windows'
         uses: dtolnay/rust-toolchain@stable
 
+      - name: shorten Cargo target dir (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "CARGO_TARGET_DIR=D:/t" >> "$GITHUB_ENV"
+
       - name: cache rust
         uses: Swatinem/rust-cache@v2
         with:
@@ -98,11 +103,6 @@ jobs:
 
       - name: install frontend dependencies
         run: bun install --frozen-lockfile
-
-      - name: shorten Cargo target dir (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: echo "CARGO_TARGET_DIR=D:/t" >> "$GITHUB_ENV"
 
       - name: import Apple Developer Certificate
         if: runner.os == 'macOS'

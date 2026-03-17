@@ -160,7 +160,10 @@ type PackId = "starter" | "standard" | "power";
 async function openCheckout(packId: PackId) {
   const result = await convex.action(api.checkout.createCheckoutSession, {
     packId,
-  }) as { url: string };
+  }) as { url: string } | null;
+  if (!result?.url) {
+    throw new Error("Checkout session did not return a URL");
+  }
   await openUrl(result.url);
 }
 
@@ -177,6 +180,7 @@ const AccountView = ({
   const [sessions, setSessions] = useState<AuthSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
+  const [signingOutOthers, setSigningOutOthers] = useState(false);
   const [usageStats, setUsageStats] = useState<CloudUsageStats>(() => {
     if (!currentUser?._id) {
       return EMPTY_USAGE;
@@ -193,12 +197,16 @@ const AccountView = ({
       return;
     }
 
+    let stale = false;
     const cached = getCachedUsageStats(currentUser._id);
     if (cached) {
       setUsageStats(cached);
     }
     void loadSessions();
-    void loadUsageStats(false);
+    void loadUsageStats(false).then(() => {
+      if (stale) return;
+    });
+    return () => { stale = true; };
   }, [currentUser?._id]);
 
   useEffect(() => {
@@ -277,11 +285,14 @@ const AccountView = ({
   }
 
   async function handleSignOutOtherSessions() {
+    setSigningOutOthers(true);
     try {
       await signOutOtherSessions();
       await loadSessions();
     } catch (err) {
       console.error("Failed to sign out other sessions:", err);
+    } finally {
+      setSigningOutOthers(false);
     }
   }
 
@@ -290,7 +301,9 @@ const AccountView = ({
       ? currentUser.image
       : typeof currentUser.prefs?.avatar === "string"
         ? currentUser.prefs.avatar
-        : null;  return (
+        : null;
+
+  return (
     <div className="space-y-8">
       {/* Profile Section */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
@@ -351,7 +364,7 @@ const AccountView = ({
                 <button
                   onClick={() => setIsEditingName(true)}
                   aria-label="Edit name"
-                  className="rounded p-1 ui-color-muted opacity-0 transition-opacity hover:ui-color-secondary group-hover:opacity-100"
+                  className="rounded p-1 ui-color-muted opacity-0 transition-opacity hover:ui-color-secondary group-hover:opacity-100 focus-visible:opacity-100"
                 >
                   <Pencil size={12} aria-hidden="true" />
                 </button>
@@ -472,8 +485,10 @@ const AccountView = ({
           {sessions.some((session) => !session.current) ? (
             <button
               onClick={() => void handleSignOutOtherSessions()}
-              className="flex items-center gap-2 rounded-lg border border-red-900/30 bg-red-900/10 px-3 py-1.5 ui-text-body-sm ui-color-primary text-red-400 hover:bg-red-900/20 transition-colors"
+              disabled={signingOutOthers}
+              className="flex items-center gap-2 rounded-lg border border-red-900/30 bg-red-900/10 px-3 py-1.5 ui-text-body-sm ui-color-primary text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-50"
             >
+              {signingOutOthers && <Loader2 size={14} className="animate-spin" />}
               Sign out other devices
             </button>
           ) : null}
@@ -518,7 +533,7 @@ const AccountView = ({
                   <button
                     onClick={() => void handleDeleteSession(session.id)}
                     disabled={deletingSession === session.id}
-                    className="flex items-center justify-center rounded-lg border border-transparent px-3 py-1.5 ui-text-body-sm font-medium ui-color-disabled opacity-0 transition-all hover:border-red-900/30 hover:bg-red-900/10 hover:text-red-400 group-hover:opacity-100 disabled:opacity-100"
+                    className="flex items-center justify-center rounded-lg border border-transparent px-3 py-1.5 ui-text-body-sm font-medium ui-color-disabled opacity-0 transition-all hover:border-red-900/30 hover:bg-red-900/10 hover:text-red-400 group-hover:opacity-100 focus-visible:opacity-100 disabled:opacity-100"
                   >
                     {deletingSession === session.id ? (
                       <Loader2 size={16} className="animate-spin text-red-400" />

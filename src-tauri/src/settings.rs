@@ -747,6 +747,16 @@ mod tests {
     }
 
     #[test]
+    fn cloud_sync_enabled_defaults_to_false() {
+        let store = test_store();
+        write_setting(&store, KEY_PERSONALITIES_NOTES_SEEDED, &true);
+
+        let loaded = store.load().expect("load settings");
+
+        assert!(!loaded.cloud_sync_enabled);
+    }
+
+    #[test]
     fn decryptable_api_key_replaces_cached_ciphertext_after_reload() {
         let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() else {
             return;

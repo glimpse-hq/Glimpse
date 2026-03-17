@@ -78,7 +78,11 @@ mod win {
     }
 
     pub fn open_accessibility_settings() -> Result<(), String> {
-        Ok(())
+        Command::new("cmd")
+            .args(["/C", "start", "ms-settings:easeofaccess"])
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open accessibility settings: {e}"))
     }
 
     pub fn open_microphone_settings() -> Result<(), String> {

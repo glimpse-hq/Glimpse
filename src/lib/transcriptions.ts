@@ -53,7 +53,7 @@ export function getCachedUsageStats(userId: string): CloudUsageStats | null {
 }
 
 export async function getCloudUsageStats(userId: string): Promise<CloudUsageStats> {
-  const wallet = (await convex.query(api.wallets.getWallet, {})) as Partial<CloudUsageStats> & {
+  const wallet = ((await convex.query(api.wallets.getWallet, {})) ?? {}) as Partial<CloudUsageStats> & {
     creditSeconds?: number;
     lifetimePurchasedSeconds?: number;
     lifetimeTranscriptionsCount?: number;

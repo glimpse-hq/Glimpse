@@ -1,6 +1,6 @@
-0.7.0
+0.7.1
 
-Added very experiemental support for Windows
+Added very experimental support for Windows
 
 
 ---

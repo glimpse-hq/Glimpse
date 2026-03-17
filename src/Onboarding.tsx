@@ -36,11 +36,8 @@ import type {
   TranscriptionMode,
 } from "./types";
 import WindowControls from "./components/WindowControls";
+import { isMacPlatform, isWindowsPlatform } from "./lib/platform";
 
-const isMacPlatform =
-  typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
-const isWindowsPlatform =
-  typeof navigator !== "undefined" ? navigator.platform.startsWith("Win") : false;
 const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;
 
 type OnboardingStep =

@@ -450,31 +450,9 @@ const SettingsModal = ({
   }, [isOpen]);
 
   const {
-    signIn: authSignIn,
     signOut: authSignOut,
     cancelSignIn: cancelAuthSignIn,
-    isLoading: authStateLoading,
   } = useAuth();
-
-  useEffect(() => {
-    if (!authStateLoading) {
-      setAuthLoading(false);
-    }
-  }, [authStateLoading]);
-
-  const handleSignIn = async (
-    provider: string,
-    params?: Record<string, unknown>,
-  ) => {
-    setAuthLoading(true);
-    try {
-      await authSignIn(provider, params);
-    } catch (err) {
-      console.error("Sign in failed:", err);
-      setAuthLoading(false);
-      throw err;
-    }
-  };
 
   const handleSignOut = async () => {
     setAuthLoading(true);
@@ -1056,7 +1034,6 @@ const SettingsModal = ({
                       setCloudSyncEnabled={setCloudSyncEnabled}
                       onUpdateUser={onUpdateUser}
                       handleSignOut={handleSignOut}
-                      handleSignIn={handleSignIn}
                       handleCancelAuth={handleCancelAuth}
                     />
                   )}

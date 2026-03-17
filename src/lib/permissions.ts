@@ -22,7 +22,17 @@ export async function requestAccessibilityPermission(): Promise<void> {
 }
 
 export async function checkMicrophonePermission(): Promise<boolean> {
-  if (!isMac) return true;
+  if (!isMac) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
   const { checkMicrophonePermission: check } = await import(
     "tauri-plugin-macos-permissions-api"
   );
