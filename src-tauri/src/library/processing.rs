@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Arc;
@@ -26,6 +28,26 @@ use super::types::{
     TARGET_SAMPLE_RATE,
 };
 
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+/// Creates a new library item from a file path, validates prerequisites, and inserts the item into storage in a pending state.
+///
+/// This validates that the selected speech model is installed, that the source file exists and its extension is a supported media format, and then constructs a `LibraryItem` (status set to `Pending`) with derived metadata (id, paths, size, timestamps, original format, and options). The created item is inserted into `storage` and returned.
+///
+/// # Errors
+///
+/// Returns an error if the model is not installed, the source file does not exist, the file format is unsupported, or if filesystem/storage operations fail.
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::sync::Arc;
+/// use std::path::Path;
+/// // assume `app`, `storage`, and `options` are available in scope
+/// let item = create_item_from_path(&app, Arc::clone(&storage), Path::new("/path/to/file.mp3"), &options)?;
+/// assert_eq!(item.status, LibraryItemStatus::Pending);
+/// ```
 pub(crate) fn create_item_from_path(
     app: &AppHandle<AppRuntime>,
     storage: Arc<StorageManager>,
@@ -831,6 +853,28 @@ fn convert_video_to_wav(
     convert_with_ffmpeg(&ffmpeg, input, output, token, duration_ms, progress_cb)
 }
 
+/// Converts the given input media to a WAV file (16-bit PCM, TARGET_SAMPLE_RATE, mono) using FFmpeg.
+///
+/// If `duration_ms` and `progress_cb` are provided, FFmpeg progress is parsed and reported via the callback
+/// (values in range 0.0..=1.0). If a `token` is provided, the operation checks for cancellation and aborts,
+/// removing any partially written output on cancel or on failure.
+///
+/// Errors are returned when FFmpeg is not found, when the conversion fails, or when cancelled.
+///
+/// # Examples
+///
+/// ```ignore
+/// use std::path::Path;
+/// // Convert without progress or cancellation
+/// convert_with_ffmpeg(
+///     Path::new("ffmpeg"),
+///     Path::new("input.mp3"),
+///     Path::new("output.wav"),
+///     None,
+///     None,
+///     None,
+/// )?;
+/// ```
 fn convert_with_ffmpeg(
     ffmpeg: &Path,
     input: &Path,
@@ -846,7 +890,7 @@ fn convert_with_ffmpeg(
     }
 
     if duration_ms.is_some() && progress_cb.is_some() {
-        let mut child = Command::new(ffmpeg)
+        let mut child = media_tool_command(ffmpeg)
             .arg("-y")
             .arg("-nostdin")
             .arg("-loglevel")
@@ -930,7 +974,7 @@ fn convert_with_ffmpeg(
         return Ok(());
     }
 
-    let mut child = Command::new(ffmpeg)
+    let mut child = media_tool_command(ffmpeg)
         .arg("-y")
         .arg("-nostdin")
         .arg("-loglevel")
@@ -980,6 +1024,56 @@ fn convert_with_ffmpeg(
     Ok(())
 }
 
+/// Creates a configured `Command` for invoking an external media tool.
+///
+/// On Windows this sets the process creation flag to suppress transient console window flashes
+/// when running console binaries (e.g., `ffmpeg`/`ffprobe`). On other platforms it returns a
+/// standard `Command`.
+///
+/// # Examples
+///
+/// ```
+/// use std::path::Path;
+/// let cmd = media_tool_command(Path::new("ffmpeg"));
+/// assert!(cmd.get_program().to_string_lossy().contains("ffmpeg"));
+/// ```
+fn media_tool_command(program: &Path) -> Command {
+    #[cfg(target_os = "windows")]
+    {
+        let mut command = Command::new(program);
+        // Suppress terminal flashes when invoking ffmpeg/ffprobe console binaries.
+        command.creation_flags(CREATE_NO_WINDOW);
+        return command;
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Command::new(program)
+    }
+}
+
+/// Locates an executable file by searching the system PATH and then optional fallback directories.
+///
+/// Searches each directory in the `PATH` environment variable for `file_name`, returning the first matching path found. If not found on `PATH`, searches `fallback_dirs` in order.
+///
+/// # Returns
+///
+/// `Some(PathBuf)` with the full path to the first matching file if found, `None` otherwise.
+///
+/// # Examples
+///
+/// ```
+/// use std::path::PathBuf;
+///
+/// // Try to find "ffmpeg" on PATH, then in common fallback locations.
+/// let fallbacks = ["/usr/local/bin", "/usr/bin", "C:\\Program Files\\ffmpeg\\bin"];
+/// if let Some(path) = crate::find_binary_in_path("ffmpeg", &fallbacks) {
+///     // Found an executable at `path`
+///     assert!(path.is_file());
+/// } else {
+///     // Not found
+/// }
+/// ```
 fn find_binary_in_path(file_name: &str, fallback_dirs: &[&str]) -> Option<PathBuf> {
     if let Some(path_var) = env::var_os("PATH") {
         for dir in env::split_paths(&path_var) {
@@ -1036,9 +1130,28 @@ fn find_ffprobe_in_path() -> Option<PathBuf> {
     find_binary_in_path(file_name, fallback_dirs)
 }
 
+/// Determine the media file's duration and return it in milliseconds, or `None` if the duration cannot be determined.
+///
+/// This function attempts to probe the file for its duration; if probing succeeds it returns the duration in milliseconds.
+///
+/// # Returns
+///
+/// `Some(duration_ms)` with the media duration in milliseconds if probing succeeds, `None` otherwise.
+///
+/// # Examples
+///
+/// ```no_run
+/// use std::path::Path;
+/// let path = Path::new("example.mp3");
+/// if let Some(ms) = probe_media_duration_ms(path) {
+///     println!("Duration: {} ms", ms);
+/// } else {
+///     println!("Could not determine duration");
+/// }
+/// ```
 fn probe_media_duration_ms(path: &Path) -> Option<u64> {
     if let Some(ffprobe) = find_ffprobe_in_path() {
-        let output = Command::new(ffprobe)
+        let output = media_tool_command(&ffprobe)
             .arg("-v")
             .arg("error")
             .arg("-show_entries")

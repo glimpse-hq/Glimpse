@@ -540,6 +540,31 @@ pub(crate) fn retry_transcription_async(
     });
 }
 
+/// Finalizes a completed transcription by recording analytics, emitting completion events, persisting results,
+/// refreshing desktop menus, and triggering any available update notifications.
+///
+/// This records transcription completion metrics, resets UI state, and saves the transcription to storage.
+/// If `llm_cleaned` is true the raw and cleaned transcripts are saved together using the cleanup path;
+/// otherwise the final transcript is saved as a successful transcription. After persisting, the desktop menus
+/// are refreshed and an update toast may be shown if appropriate.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Finalize and persist a transcription result.
+/// emit_transcription_complete_with_cleanup(
+///     &app_handle,
+///     raw_text,
+///     final_text,
+///     true,                    // auto_paste
+///     audio_path.to_string(),
+///     false,                   // llm_cleaned
+///     metadata,
+///     "voice",                 // mode
+///     "Ctrl+T",                // keybind
+///     "local-model",           // engine
+/// );
+/// ```
 #[allow(clippy::too_many_arguments)]
 fn emit_transcription_complete_with_cleanup(
     app: &AppHandle<AppRuntime>,
@@ -598,13 +623,7 @@ fn emit_transcription_complete_with_cleanup(
     }
 
     let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = crate::set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
+    crate::desktop::refresh_menus(app, &settings);
 
     let update_state = app.state::<AppState>().update_state().clone();
     update_checker::maybe_show_update_toast(app, &update_state);

@@ -3,8 +3,7 @@ use tauri::{AppHandle, Emitter};
 use super::hotkeys;
 use crate::settings::{LlmProvider, TranscriptionMode, UpdateChannel, UserSettings};
 use crate::{
-    analytics, model_manager, pill, tray, update_checker, AppRuntime, AppState,
-    EVENT_SETTINGS_CHANGED,
+    analytics, model_manager, pill, update_checker, AppRuntime, AppState, EVENT_SETTINGS_CHANGED,
 };
 
 #[derive(Debug)]
@@ -27,8 +26,20 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_api_key: String,
     pub llm_model: String,
     pub edit_mode_enabled: bool,
+    pub cloud_sync_enabled: bool,
 }
 
+/// Normalizes a keyboard shortcut string for storage.
+///
+/// Trims each token, maps `option`, `leftoption`, and `rightoption` (case-insensitive) to `Alt`,
+/// and rejoins tokens with `+`.
+///
+/// # Examples
+///
+/// ```
+/// let s = canonicalize_shortcut_for_storage("Ctrl + option + A");
+/// assert_eq!(s, "Ctrl+Alt+A");
+/// ```
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> String {
     shortcut
         .split('+')
@@ -161,6 +172,23 @@ pub(crate) fn set_user_name(
     Ok(next)
 }
 
+/// Apply updated user settings, persist the changes, and perform related side effects such as re-registering shortcuts, refreshing menus when relevant, emitting a settings-changed event, and triggering update checks if the update channel changed.
+///
+/// Validates the provided arguments before applying them; persists the resulting settings and returns the stored settings on success. Side effects include requesting a preflight refresh, registering shortcuts, refreshing desktop/tray menus when transcription/local model/microphone/cloud sync change, emitting EVENT_SETTINGS_CHANGED (logged on failure), and clearing/triggering update checks when the update channel changes.
+///
+/// # Returns
+///
+/// `Ok(UserSettings)` with the stored settings on success; `Err(String)` with a human-readable error message if validation, persistence, or other precondition checks fail.
+///
+/// # Examples
+///
+/// ```no_run
+/// use crate::core::settings::{update_settings, UpdateSettingsArgs};
+/// use tauri::AppHandle;
+/// // prepare `args`, `app`, and `state` appropriately...
+/// let result = update_settings(args, &app_handle, &app_state);
+/// assert!(result.is_ok());
+/// ```
 pub(crate) fn update_settings(
     args: UpdateSettingsArgs,
     app: &AppHandle<AppRuntime>,
@@ -188,6 +216,7 @@ pub(crate) fn update_settings(
     next.llm_api_key = args.llm_api_key;
     next.llm_model = args.llm_model.trim().to_string();
     next.edit_mode_enabled = args.edit_mode_enabled;
+    next.cloud_sync_enabled = args.cloud_sync_enabled;
 
     let next = state
         .persist_settings(next)
@@ -200,14 +229,9 @@ pub(crate) fn update_settings(
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model
         || prev.microphone_device != next.microphone_device
+        || prev.cloud_sync_enabled != next.cloud_sync_enabled
     {
-        if let Err(err) = tray::refresh_tray_menu(app, &next) {
-            eprintln!("Failed to refresh tray menu: {err}");
-        }
-        #[cfg(target_os = "macos")]
-        if let Err(err) = crate::set_app_menu(app, &next) {
-            eprintln!("Failed to refresh app menu: {err}");
-        }
+        crate::desktop::refresh_menus(app, &next);
     }
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
@@ -227,6 +251,16 @@ mod tests {
     use super::*;
     use crate::settings::default_local_model;
 
+    /// Constructs a baseline `UpdateSettingsArgs` populated with typical default values used by tests.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let args = base_args();
+    /// assert_eq!(args.smart_shortcut, "Control+Space");
+    /// assert!(args.smart_enabled);
+    /// assert_eq!(args.update_channel, UpdateChannel::Stable);
+    /// ```
     fn base_args() -> UpdateSettingsArgs {
         UpdateSettingsArgs {
             smart_shortcut: "Control+Space".to_string(),
@@ -247,6 +281,7 @@ mod tests {
             llm_api_key: String::new(),
             llm_model: String::new(),
             edit_mode_enabled: false,
+            cloud_sync_enabled: false,
         }
     }
 

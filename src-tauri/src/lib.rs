@@ -1,10 +1,13 @@
 mod accessibility_context;
 mod analytics;
+mod app_windows;
 mod assistive;
 mod audio;
+mod cloud;
 mod core;
 mod crypto;
 mod data_migration;
+mod desktop;
 mod dictionary;
 mod downloader;
 mod library;
@@ -51,14 +54,10 @@ use tauri::async_runtime;
 use tauri::tray::TrayIcon;
 use tauri::Emitter;
 use tauri::{AppHandle, Manager, Wry};
-
-#[cfg(target_os = "macos")]
-use tauri::ActivationPolicy;
 use tauri_plugin_aptabase::EventTracker;
 use tauri_plugin_opener::OpenerExt;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
-pub(crate) const SETTINGS_WINDOW_LABEL: &str = "settings";
 pub(crate) const EVENT_RECORDING_START: &str = "recording:start";
 pub(crate) const EVENT_AUDIO_SPECTRUM: &str = "audio:spectrum";
 pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
@@ -67,162 +66,18 @@ pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
 pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-mac";
 
-#[cfg(target_os = "macos")]
-fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
-    use crate::recent_transcriptions::{
-        copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
-    };
-    use platform::macos::menu::{
-        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODEL_PREFIX,
-        MENU_ID_MODE_LOCAL, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
-    };
-    use tauri_plugin_opener::OpenerExt;
-
-    match id {
-        MENU_ID_CHECK_UPDATES => {
-            let _ = app.emit("navigate:about", ());
-        }
-        MENU_ID_WEBSITE => {
-            let _ = app
-                .opener()
-                .open_url("https://github.com/LegendarySpy/Glimpse", None::<&str>);
-        }
-        MENU_ID_REPORT_ISSUE => {
-            let _ = app.opener().open_url(FEEDBACK_URL, None::<&str>);
-        }
-        MENU_ID_MODE_LOCAL => {
-            set_transcription_mode(app, settings::TranscriptionMode::Local);
-        }
-        MENU_ID_MIC_DEFAULT => {
-            set_microphone(app, None);
-        }
-        _ => {
-            if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
-                copy_transcription_to_clipboard(app, transcription_id);
-            } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
-                set_local_model(app, model_key);
-            } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
-                let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
-                set_microphone(app, Some(device_id));
-            }
-        }
-    }
-}
-
-#[cfg(target_os = "windows")]
-fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
-    platform::windows::menu::handle_menu_event(app, id);
-}
-
-#[cfg(target_os = "macos")]
-fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::TranscriptionMode) {
-    let state = app.state::<AppState>();
-    let mut current = state.current_settings();
-    if current.transcription_mode == mode {
-        return;
-    }
-    current.transcription_mode = mode;
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            state.request_preflight_refresh();
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update transcription mode: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
-    if model_manager::definition(model_key).is_none() {
-        eprintln!("Ignoring unknown model selection: {model_key}");
-        return;
-    }
-
-    match model_manager::check_model_status(app.clone(), model_key.to_string()) {
-        Ok(status) if status.installed => {}
-        Ok(_) => {
-            eprintln!("Model not installed: {model_key}");
-            return;
-        }
-        Err(err) => {
-            eprintln!("Failed to check model status for {model_key}: {err}");
-            return;
-        }
-    }
-
-    let state = app.state::<AppState>();
-    let mut current = state.current_settings();
-    if current.local_model == model_key {
-        return;
-    }
-    current.local_model = model_key.to_string();
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update model selection: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
-    let state = app.state::<AppState>();
-    let mut current = state.current_settings();
-    if current.microphone_device.as_deref() == device_id {
-        return;
-    }
-    current.microphone_device = device_id.map(|id| id.to_string());
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update microphone selection: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
-pub(crate) fn set_app_menu(
-    app: &AppHandle<AppRuntime>,
-    settings: &settings::UserSettings,
-) -> tauri::Result<()> {
-    let menu = platform::macos::menu::build_app_menu(app, settings)?;
-    app.set_menu(menu)?;
-    Ok(())
-}
-
-#[cfg(target_os = "windows")]
-pub(crate) fn set_app_menu(
-    app: &AppHandle<AppRuntime>,
-    settings: &settings::UserSettings,
-) -> tauri::Result<()> {
-    platform::windows::menu::set_app_menu(app, settings)
-}
-
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
+/// Start the Tauri application and enter its event loop.
+///
+/// Initializes application-wide services, state, plugins, command handlers, and background tasks, then runs the Tauri event loop until the application exits.
+///
+/// # Examples
+///
+/// ```no_run
+/// fn main() {
+///     // Starts the desktop application (blocks until exit).
+///     crate::run();
+/// }
+/// ```
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let _guard = rt.enter();
@@ -245,29 +100,15 @@ pub fn run() {
 
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
-
-    #[cfg(target_os = "macos")]
-    let builder = builder.on_menu_event(|app, event| {
-        let id = event.id().as_ref();
-        handle_app_menu_event(app, id);
-    });
-
-    #[cfg(target_os = "windows")]
-    let builder = builder.on_menu_event(|app, event| {
-        let id = event.id().as_ref();
-        handle_app_menu_event(app, id);
-    });
+    let builder = desktop::attach_menu_handlers(builder);
 
     builder
         .setup(|app| {
-            #[cfg(target_os = "macos")]
-            app.set_activation_policy(ActivationPolicy::Accessory);
-
-            let handle = app.handle();
-            if let Err(err) = data_migration::migrate_legacy_app_dirs(handle) {
+            let handle = app.handle().clone();
+            if let Err(err) = data_migration::migrate_legacy_app_dirs(&handle) {
                 eprintln!("Failed to migrate legacy app directories: {err}");
             }
-            let settings_store = Arc::new(SettingsStore::new(handle)?);
+            let settings_store = Arc::new(SettingsStore::new(&handle)?);
             let mut settings = settings_store.load().unwrap_or_default();
             if model_manager::definition(&settings.local_model).is_none() {
                 settings.local_model = default_local_model();
@@ -276,53 +117,14 @@ pub fn run() {
                 }
             }
 
-            app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
-            library::commands::recover_interrupted_library_items(handle);
-
-            #[cfg(target_os = "macos")]
-            {
-                let handle = app.handle();
-                let settings = handle.state::<AppState>().current_settings();
-                if let Err(err) = set_app_menu(handle, &settings) {
-                    eprintln!("Failed to set app menu: {err}");
-                }
-            }
-
-            #[cfg(target_os = "windows")]
-            {
-                let handle = app.handle();
-                let settings = handle.state::<AppState>().current_settings();
-                if let Err(err) = set_app_menu(handle, &settings) {
-                    eprintln!("Failed to set app menu: {err}");
-                }
-                if let Err(err) = platform::windows::hotkeys::init(handle) {
-                    eprintln!("Failed to initialize Windows hotkey platform stubs: {err}");
-                }
-            }
-
-            if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
-                let _ = window.hide();
-                platform::overlay::init(handle, &window);
-            }
-
-            if let Some(toast_window) = handle.get_webview_window(toast::WINDOW_LABEL) {
-                let _ = toast_window.hide();
-                platform::toast::init(handle, &toast_window);
-            }
-
-            if let Ok(tray) = tray::build_tray(handle) {
-                handle.state::<AppState>().store_tray(tray);
-            }
-
-            if let Err(err) = pill::register_shortcuts(handle) {
-                eprintln!("Failed to register shortcuts: {err}");
-            }
-
-            let h = handle.clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(Duration::from_millis(300));
-                let _ = tray::toggle_settings_window(&h);
-            });
+            app.manage(AppState::new(
+                Arc::clone(&settings_store),
+                settings,
+                &handle,
+            ));
+            cloud::register_auth_callback_bridge(&handle);
+            library::commands::recover_interrupted_library_items(&handle);
+            desktop::initialize(app);
 
             let update_handle = handle.clone();
             let update_state = handle.state::<AppState>().update_state().clone();
@@ -385,7 +187,8 @@ pub fn run() {
             open_about_page,
             update_checker::get_update_status,
             update_checker::check_for_updates,
-            update_checker::download_and_install_update
+            update_checker::download_and_install_update,
+            cloud::take_pending_auth_callback_code
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
@@ -400,12 +203,13 @@ pub fn run() {
                     eprintln!("Failed to handle opened files: {err}");
                 }
             }
+            #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen {
                 has_visible_windows,
                 ..
             } => {
                 if !has_visible_windows {
-                    let _ = tray::toggle_settings_window(handler);
+                    let _ = app_windows::glimpse::show(handler);
                 }
             }
             tauri::RunEvent::Exit => {
@@ -453,7 +257,7 @@ pub struct AppState {
     settings: parking_lot::Mutex<UserSettings>,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
-    pub(crate) settings_close_handler_registered: AtomicBool,
+    pub(crate) glimpse_window_close_handler_registered: AtomicBool,
     transcription_cancelled: AtomicBool,
     transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
@@ -468,6 +272,7 @@ pub struct AppState {
     preflight_cancel: CancellationToken,
     preflight_started: AtomicBool,
     preflight_notify: Arc<Notify>,
+    pending_auth_callback_code: parking_lot::Mutex<Option<String>>,
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
 }
@@ -479,6 +284,24 @@ struct SessionCounters {
 }
 
 impl AppState {
+    /// Creates a fully initialized AppState containing runtime clients, managers, and default application state.
+    ///
+    /// The returned AppState includes an HTTP client, persistent storage manager (located under the app data
+    /// directory as `transcriptions.db`), a recorder manager, a local transcriber (with idle monitoring started),
+    /// and all internal synchronization primitives, cancellation tokens, queues, and session counters initialized to
+    /// their default values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use tauri::AppHandle;
+    /// # use crate::settings::SettingsStore;
+    /// # use crate::AppState;
+    /// # use crate::core::settings::UserSettings;
+    /// // Assume `settings_store`, `settings`, and `app_handle` are available in scope:
+    /// // let state = AppState::new(Arc::new(settings_store), settings, &app_handle);
+    /// ```
     pub fn new(
         settings_store: Arc<SettingsStore>,
         settings: UserSettings,
@@ -512,7 +335,7 @@ impl AppState {
             settings: parking_lot::Mutex::new(settings),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
-            settings_close_handler_registered: AtomicBool::new(false),
+            glimpse_window_close_handler_registered: AtomicBool::new(false),
             transcription_cancelled: AtomicBool::new(false),
             transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
@@ -527,6 +350,7 @@ impl AppState {
             preflight_cancel: CancellationToken::new(),
             preflight_started: AtomicBool::new(false),
             preflight_notify: Arc::new(Notify::new()),
+            pending_auth_callback_code: parking_lot::Mutex::new(None),
             session_started_at: Instant::now(),
             session_counters: parking_lot::Mutex::new(SessionCounters {
                 recording_seconds: 0.0,
@@ -558,10 +382,68 @@ impl AppState {
         Ok(next)
     }
 
+    /// Access the `PillController` used to control the recording overlay and related actions.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let pill = app_state.pill();
+    /// // e.g. call pill.cancel(app_handle) or pill.reset(app_handle)
+    /// ```
     pub fn pill(&self) -> &PillController {
         &self.pill
     }
 
+    /// Stores an OAuth-style authentication callback code for later retrieval.
+    ///
+    /// The provided `code` is placed into the state's internal slot and will be returned
+    /// by the state's corresponding retrieval method when requested.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # // Example usage (no-run): the surrounding `app_state` value is assumed to exist.
+    /// # #[allow(unused_variables)]
+    /// # fn example(app_state: &crate::AppState) {
+    /// app_state.store_pending_auth_callback_code("auth-code-123".to_string());
+    /// # }
+    /// ```
+    pub fn store_pending_auth_callback_code(&self, code: String) {
+        *self.pending_auth_callback_code.lock() = Some(code);
+    }
+
+    /// Removes and returns the pending authentication callback code, if one is stored.
+    ///
+    /// The stored code is taken (removed) from the internal storage so subsequent calls will return `None` until a new code is stored.
+    ///
+    /// # Returns
+    ///
+    /// `Some(code)` containing the pending callback code if present, `None` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Assuming `state` is an `AppState` with a pending auth callback code:
+    /// let code = state.take_pending_auth_callback_code();
+    /// if let Some(code) = code {
+    ///     // use the code once; subsequent calls will not return the same code
+    ///     println!("Received auth callback code: {}", code);
+    /// }
+    /// ```
+    pub fn take_pending_auth_callback_code(&self) -> Option<String> {
+        self.pending_auth_callback_code.lock().take()
+    }
+
+    /// Toggle whether the application should capture global shortcuts for recording.
+    ///
+    /// `true` enables shortcut capture; `false` disables it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// // Assume `state` is an instance of the application's AppState.
+    /// state.set_shortcut_capture_active(true);
+    /// ```
     pub fn set_shortcut_capture_active(&self, active: bool) {
         self.shortcut_capture_active.store(active, Ordering::SeqCst);
     }
@@ -832,20 +714,26 @@ fn open_microphone_settings() -> Result<(), String> {
     permissions::open_microphone_settings()
 }
 
+/// Opens the Glimpse Models window in the desktop application.
+///
+/// Attempts to display the models UI and reports a user-facing error message if the window cannot be opened.
+///
+/// # Returns
+///
+/// `Ok(())` if the Glimpse Models window was shown successfully, `Err(String)` with an error message otherwise.
+///
+/// # Examples
+///
+/// ```no_run
+/// // `app` is the Tauri `AppHandle` provided to command handlers.
+/// let _ = open_llm_cleanup_settings(app);
+/// ```
 #[tauri::command]
 fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    if let Err(err) = tray::toggle_settings_window(&app) {
-        eprintln!("Failed to open settings window: {err}");
+    if let Err(err) = app_windows::glimpse::show_models(&app) {
+        eprintln!("Failed to open Glimpse window: {err}");
         return Err(err.to_string());
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(err) = app_clone.emit("navigate:models", ()) {
-            eprintln!("Failed to emit navigate:models: {err}");
-        }
-    });
 
     Ok(())
 }
@@ -874,6 +762,30 @@ fn reset_onboarding(
     core::settings::reset_onboarding(&state)
 }
 
+/// Updates multiple user settings with the provided values and persists the changes.
+///
+/// Applies the supplied configuration values (shortcuts, transcription and LLM options, device and language choices, update channel, edit/cloud sync flags, etc.) and returns the persisted, up-to-date user settings.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Called as a Tauri command with `app` and `state` provided by the runtime.
+/// // Example invocation (simplified):
+/// // let res = update_settings(
+/// //     "Cmd+Shift+R".into(), true,
+/// //     "Ctrl".into(), false,
+/// //     "Alt+T".into(), true,
+/// //     TranscriptionMode::Local, "small-model".into(),
+/// //     Some("Built-in Microphone".into()), "en".into(),
+/// //     UpdateChannel::Stable, true, true,
+/// //     LlmProvider::OpenAI, "https://api.openai.com".into(),
+/// //     "sk-...".into(), "gpt-4".into(), false, true,
+/// //     app, state,
+/// // );
+/// ```
+///
+/// # Returns
+/// `Ok(UserSettings)` with the updated settings on success, `Err(String)` with an error message on failure.
 #[tauri::command]
 #[allow(non_snake_case, clippy::too_many_arguments)]
 fn update_settings(
@@ -895,6 +807,7 @@ fn update_settings(
     llmApiKey: String,
     llmModel: String,
     editModeEnabled: bool,
+    cloudSyncEnabled: bool,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<UserSettings, String> {
@@ -918,6 +831,7 @@ fn update_settings(
             llm_api_key: llmApiKey,
             llm_model: llmModel,
             edit_mode_enabled: editModeEnabled,
+            cloud_sync_enabled: cloudSyncEnabled,
         },
         &app,
         &state,
@@ -972,40 +886,41 @@ async fn fetch_llm_models(
         .map_err(|e| e.to_string())
 }
 
+/// Shows the Glimpse "What's New" window.
+///
+/// Attempts to open the application's "What's New" view; if the window cannot be created or shown,
+/// the error is printed to stderr.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// # use tauri::AppHandle;
+/// # use crate::AppRuntime;
+/// // `app` is the current Tauri `AppHandle` in a command or runtime context.
+/// // open_whats_new(app);
+/// ```
 #[tauri::command]
 fn open_whats_new(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::toggle_settings_window(&app) {
-        eprintln!("Failed to open settings window: {err}");
-        return;
+    if let Err(err) = app_windows::glimpse::show_whats_new(&app) {
+        eprintln!("Failed to open Glimpse window: {err}");
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        if let Err(e) = app_clone.emit("navigate:about", ()) {
-            eprintln!("Failed to emit navigate:about: {e}");
-        }
-        std::thread::sleep(std::time::Duration::from_millis(400));
-        if let Err(e) = app_clone.emit("open_whats_new", ()) {
-            eprintln!("Failed to emit open_whats_new: {e}");
-        }
-    });
 }
 
+/// Opens the Glimpse "About" window.
+///
+/// If the Glimpse window cannot be opened, an error message is written to stderr.
+///
+/// # Examples
+///
+/// ```no_run
+/// // inside a Tauri command handler context
+/// open_about_page(app.handle());
+/// ```
 #[tauri::command]
 fn open_about_page(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::toggle_settings_window(&app) {
-        eprintln!("Failed to open settings window: {err}");
-        return;
+    if let Err(err) = app_windows::glimpse::show_about(&app) {
+        eprintln!("Failed to open Glimpse window: {err}");
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(e) = app_clone.emit("navigate:about", ()) {
-            eprintln!("Failed to emit navigate:about: {e}");
-        }
-    });
 }
 
 #[tauri::command]
@@ -1072,6 +987,24 @@ fn get_transcriptions(
         .map_err(|err| format!("Failed to get transcriptions: {err}"))
 }
 
+/// Deletes the transcription record identified by `id` and removes its associated audio file if one exists.
+///
+/// On success, desktop menus are refreshed to reflect the change.
+///
+/// # Returns
+///
+/// `true` if a transcription record (and its audio file) was deleted, `false` if no record existed for the given `id`.
+/// `Err` contains a human-readable error message when deletion fails.
+///
+/// # Examples
+///
+/// ```no_run
+/// // As a Tauri command this is normally invoked from the renderer; shown here for illustrative purposes.
+/// # use tauri::AppHandle;
+/// # use tauri::State;
+/// # use std::sync::Arc;
+/// // delete_transcription("some-id".into(), app_handle, state).unwrap();
+/// ```
 #[tauri::command]
 fn delete_transcription(
     id: String,
@@ -1091,17 +1024,28 @@ fn delete_transcription(
     }?;
 
     let settings = state.current_settings();
-    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = set_app_menu(&app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
+    desktop::refresh_menus(&app, &settings);
 
     Ok(result)
 }
 
+/// Deletes all stored transcription records and their associated audio files.
+///
+/// This removes every transcription entry from persistent storage, attempts to delete
+/// each associated audio file from disk, refreshes desktop menus, and returns the
+/// number of transcriptions that were removed.
+///
+/// # Returns
+///
+/// The number of transcription records deleted.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Called from a Tauri command context:
+/// // let result = delete_all_transcriptions(app_handle, state);
+/// // assert!(result.is_ok());
+/// ```
 #[tauri::command]
 fn delete_all_transcriptions(
     app: AppHandle<AppRuntime>,
@@ -1118,13 +1062,7 @@ fn delete_all_transcriptions(
     }
 
     let settings = state.current_settings();
-    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = set_app_menu(&app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
+    desktop::refresh_menus(&app, &settings);
 
     Ok(deleted_count)
 }

@@ -1,7 +1,7 @@
 use crate::{
     assistive,
     core::hotkeys::{self, HotkeyProvider, HotkeyState},
-    emit_event, model_manager, permissions, platform,
+    emit_event, model_manager, platform,
     recorder::RecorderManager,
     settings::UserSettings,
     toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
@@ -630,10 +630,27 @@ fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
     true
 }
 
+/// Shows a platform-specific accessibility permission warning to the user when permissions are missing.
+///
+/// On macOS this checks whether the app is trusted for accessibility; if not, it displays a warning toast
+/// offering to open the Accessibility settings. On non-macOS targets this function does nothing.
+///
+/// # Arguments
+///
+/// * `app` - A Tauri application handle used to display the toast.
+///
+/// # Examples
+///
+/// ```no_run
+/// use tauri::AppHandle;
+///
+/// // Assume `app` is an existing AppHandle obtained in your application context.
+/// // check_accessibility_warning(&app);
+/// ```
 fn check_accessibility_warning(app: &AppHandle<AppRuntime>) {
     #[cfg(target_os = "macos")]
     {
-        let is_trusted = permissions::check_accessibility_permission();
+        let is_trusted = crate::permissions::check_accessibility_permission();
         if !is_trusted {
             toast::show_with_action(
                 app,

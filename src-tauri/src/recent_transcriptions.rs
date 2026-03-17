@@ -125,17 +125,33 @@ fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
     );
 }
 
+/// Refreshes the application's menus to reflect the current settings.
+///
+/// This reads the current settings from the application's state and updates the desktop menus via the centralized menu refresh routine.
+///
+/// # Examples
+///
+/// ```no_run
+/// // Given an existing `app: AppHandle<AppRuntime>`
+/// refresh_recent_menus(&app);
+/// ```
 fn refresh_recent_menus(app: &AppHandle<AppRuntime>) {
     let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = crate::set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
+    crate::desktop::refresh_menus(app, &settings);
 }
 
+/// Produces a cleaned, possibly truncated preview of a transcription.
+///
+/// Whitespace is normalized by collapsing runs of whitespace to single spaces. If the cleaned text is empty, returns `"Empty transcription"`. If the cleaned text is longer than `max_len`, returns a preview truncated so the final length is at most `max_len`, with the last three characters replaced by `"..."`; otherwise returns the full cleaned text.
+///
+/// # Examples
+///
+/// ```
+/// let s = "  Hello   world! This is a test.  ";
+/// assert_eq!(format_transcription_preview(s, 10), "Hello w...");
+/// assert_eq!(format_transcription_preview(s, 100), "Hello world! This is a test.");
+/// assert_eq!(format_transcription_preview("", 10), "Empty transcription");
+/// ```
 fn format_transcription_preview(text: &str, max_len: usize) -> String {
     let cleaned = text.split_whitespace().collect::<Vec<_>>().join(" ");
     if cleaned.is_empty() {

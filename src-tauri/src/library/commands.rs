@@ -10,10 +10,11 @@ use super::processing::{
     build_export_content, create_item_from_path, library_root, stored_original_path,
 };
 use super::queue::{release_library_slot, schedule_library_job};
+#[cfg(target_os = "macos")]
+use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
     ExportFormat, LibraryErrorPayload, LibraryFilter, LibraryImportOptions, LibraryItem,
     LibraryItemPatch, LibraryItemStatus, LibraryItemsPage, EVENT_LIBRARY_ERROR,
-    EVENT_LIBRARY_OPEN_IMPORT,
 };
 
 enum LibraryDeleteScope {
@@ -241,6 +242,21 @@ pub fn get_library_tags(state: tauri::State<'_, AppState>) -> Result<Vec<String>
         .map_err(|err| format!("Failed to load tags: {err}"))
 }
 
+/// Recovers library items that were interrupted while the application was not running.
+///
+/// Loads recoverable items from storage and for each item either schedules a recovery job,
+/// marks a cancelling item as cancelled and emits an error event, or records an error when
+/// a recovery job cannot be built.
+///
+/// # Examples
+///
+/// ```no_run
+/// # use tauri::AppHandle;
+/// # use crate::AppRuntime;
+/// # fn example(app: &AppHandle<AppRuntime>) {
+/// recover_interrupted_library_items(app);
+/// # }
+/// ```
 pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
     let storage = state.storage();
@@ -299,6 +315,21 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     }
 }
 
+/// Filters the given file URLs, opens the Glimpse window if possible, and emits an import event with the file paths.
+///
+/// If none of the provided URLs point to regular files, the function returns immediately without emitting an event.
+/// Returns `Ok(())` on completion.
+///
+/// # Examples
+///
+/// ```no_run
+/// # use tauri::AppHandle;
+/// # use std::path::PathBuf;
+/// // let app: AppHandle<_> = /* obtain app handle from Tauri runtime */;
+/// // let urls = vec![PathBuf::from("/Users/alice/Music/song.mp3")];
+/// // handle_opened_paths(&app, urls)?;
+/// ```
+#[cfg(target_os = "macos")]
 pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> Result<()> {
     let paths: Vec<String> = urls
         .into_iter()
@@ -308,8 +339,8 @@ pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> R
     if paths.is_empty() {
         return Ok(());
     }
-    if let Err(err) = crate::tray::toggle_settings_window(app) {
-        eprintln!("Failed to open settings window: {err}");
+    if let Err(err) = crate::app_windows::glimpse::show(app) {
+        eprintln!("Failed to open Glimpse window: {err}");
     }
     let _ = app.emit(EVENT_LIBRARY_OPEN_IMPORT, paths);
     Ok(())

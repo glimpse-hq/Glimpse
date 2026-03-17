@@ -32,6 +32,7 @@ const KEY_DICTIONARY: &str = "dictionary";
 const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
+const KEY_CLOUD_SYNC_ENABLED: &str = "cloud_sync_enabled";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Replacement {
@@ -103,8 +104,18 @@ pub struct UserSettings {
     pub personalities: Vec<Personality>,
     #[serde(default)]
     pub edit_mode_enabled: bool,
+    #[serde(default)]
+    pub cloud_sync_enabled: bool,
 }
 
+/// Default key combination used for the "smart" shortcut.
+///
+/// # Examples
+///
+/// ```
+/// let s = default_smart_shortcut();
+/// assert_eq!(s, "Control+Space");
+/// ```
 fn default_smart_shortcut() -> String {
     "Control+Space".to_string()
 }
@@ -226,6 +237,20 @@ fn seed_personality_notes(personalities: &mut [Personality]) {
 }
 
 impl Default for UserSettings {
+    /// Creates a UserSettings instance populated with the application's default values.
+    ///
+    /// The defaults reflect the initial configuration used when no persisted settings exist,
+    /// including default shortcuts, feature flags, model and localization defaults, and an
+    /// empty LLM configuration.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let settings = UserSettings::default();
+    /// assert!(!settings.onboarding_completed);
+    /// assert!(!settings.cloud_sync_enabled);
+    /// assert!(settings.smart_enabled);
+    /// ```
     fn default() -> Self {
         Self {
             onboarding_completed: false,
@@ -252,6 +277,7 @@ impl Default for UserSettings {
             replacements: Vec::new(),
             personalities: default_personalities(),
             edit_mode_enabled: false,
+            cloud_sync_enabled: false,
         }
     }
 }
@@ -360,7 +386,27 @@ impl SettingsStore {
         Ok(())
     }
 
-    /// Load settings from DB, falling back to defaults if empty.
+    /// Load user settings from the database, applying defaults and performing any required migrations.
+    ///
+    /// This will:
+    /// - Read persisted settings and fall back to the default `UserSettings` for missing values.
+    /// - Attempt to decrypt a stored LLM API key when a hardware UUID is available; if decryption fails or no hardware UUID is available,
+    ///   the stored ciphertext may be preserved and the plaintext field left empty or preserved as appropriate.
+    /// - Seed default personality notes when they are not already present.
+    /// - Backfill legacy `llm_cleanup_enabled` into `llm_enabled` and `cleanup_enabled` when those keys are missing, and remove the legacy key after load.
+    /// - Validate and correct `local_model` and `transcription_mode` to safe defaults when needed.
+    /// - Persist any migrations or corrections back to the database.
+    ///
+    /// # Returns
+    ///
+    /// `UserSettings` with values loaded from storage and any automatic migrations applied.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// // Given a `SettingsStore` instance named `store`:
+    /// // let settings = store.load().unwrap();
+    /// ```
     pub fn load(&self) -> Result<UserSettings> {
         let mut settings = UserSettings::default();
         let mut should_persist = false;
@@ -440,6 +486,8 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_PERSONALITIES, settings.personalities.clone())?;
             settings.edit_mode_enabled =
                 self.read_value(&conn, KEY_EDIT_MODE_ENABLED, settings.edit_mode_enabled)?;
+            settings.cloud_sync_enabled =
+                self.read_value(&conn, KEY_CLOUD_SYNC_ENABLED, settings.cloud_sync_enabled)?;
         }
 
         if !encrypted_key.is_empty() {
@@ -504,7 +552,26 @@ impl SettingsStore {
         Ok(settings)
     }
 
-    /// Persist settings into DB immediately.
+    /// Persist the provided user settings to the application's settings database.
+    ///
+    /// The function writes every field of `UserSettings` into the settings table and ensures the
+    /// LLM API key is stored appropriately: if a hardware UUID is available the API key is encrypted
+    /// before storage; if not, the key may be stored as plaintext or the existing cached ciphertext
+    /// may be reused.
+    ///
+    /// # Returns
+    ///
+    /// `Ok(())` if the settings were written successfully, otherwise an error describing the failure.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # use crate::settings::{SettingsStore, UserSettings};
+    /// # fn example(store: &SettingsStore, settings: &UserSettings) -> anyhow::Result<()> {
+    /// store.save(settings)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn save(&self, settings: &UserSettings) -> Result<()> {
         let stored_key = {
             let mut llm_api_key_ciphertext = self.llm_api_key_ciphertext.lock();
@@ -560,6 +627,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_REPLACEMENTS, &settings.replacements)?;
         self.write_value(&conn, KEY_PERSONALITIES, &settings.personalities)?;
         self.write_value(&conn, KEY_EDIT_MODE_ENABLED, &settings.edit_mode_enabled)?;
+        self.write_value(&conn, KEY_CLOUD_SYNC_ENABLED, &settings.cloud_sync_enabled)?;
         Ok(())
     }
 
@@ -737,6 +805,16 @@ mod tests {
             store.llm_api_key_ciphertext.lock().clone(),
             Some(ciphertext)
         );
+    }
+
+    #[test]
+    fn cloud_sync_enabled_defaults_to_false() {
+        let store = test_store();
+        write_setting(&store, KEY_PERSONALITIES_NOTES_SEEDED, &true);
+
+        let loaded = store.load().expect("load settings");
+
+        assert!(!loaded.cloud_sync_enabled);
     }
 
     #[test]

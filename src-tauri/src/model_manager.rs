@@ -338,6 +338,25 @@ pub fn check_model_status<R: Runtime>(
     Ok(ModelStatus::from_definition(&dir, def))
 }
 
+/// Downloads and installs the specified model's files into the application's models directory and returns the model's resulting status.
+///
+/// On error, returns a string describing the failure (for example: unknown model key, failure creating the models root directory, or failure during file download).
+///
+/// # Parameters
+///
+/// - `model` — The model key identifying which model to download (must match one of the defined model keys).
+///
+/// # Returns
+///
+/// The `ModelStatus` for the model after the download attempt, reflecting installation state, bytes on disk, and any missing files.
+///
+/// # Examples
+///
+/// ```
+/// // As an example of intended use (executed within an async Tauri command context):
+/// // let status = download_model(app_handle, app_state, "whisper_small_q5".to_string()).await.unwrap();
+/// // assert!(status.installed);
+/// ```
 #[tauri::command]
 pub async fn download_model(
     app: AppHandle<AppRuntime>,
@@ -361,13 +380,30 @@ pub async fn download_model(
     let status = ModelStatus::from_definition(&dir, def);
 
     let settings = state.current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu after download: {err}");
-    }
+    crate::desktop::refresh_menus(&app, &settings);
 
     Ok(status)
 }
 
+/// Deletes a model's files from the application's models directory and returns the model's current installation status.
+///
+/// This removes the model directory (if present), computes the resulting ModelStatus, and triggers a desktop menu refresh when application state is available.
+///
+/// # Parameters
+///
+/// - `model`: The model key identifying which model to delete (e.g., `"whisper_small_q5"`).
+///
+/// # Returns
+///
+/// The `ModelStatus` for the given model reflecting whether it is installed, bytes on disk, and any missing files.
+///
+/// # Examples
+///
+/// ```no_run
+/// // `app` is an `AppHandle<AppRuntime>` available in a Tauri command context.
+/// let status = delete_model(app, "whisper_small_q5".to_string()).unwrap();
+/// assert_eq!(status.key, "whisper_small_q5");
+/// ```
 #[tauri::command]
 pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelStatus, String> {
     let def = definition(&model).ok_or_else(|| "Unknown model".to_string())?;
@@ -379,9 +415,7 @@ pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelSt
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();
-        if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-            eprintln!("Failed to refresh tray menu after delete: {err}");
-        }
+        crate::desktop::refresh_menus(&app, &settings);
     }
 
     Ok(status)

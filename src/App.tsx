@@ -27,6 +27,13 @@ const resolveTextScale = (mode: TextSizeMode): string => {
   }
 };
 
+/**
+ * Root React component that renders either the Glimpse app UI or a window-specific overlay based on the current window label.
+ *
+ * Renders the Glimpse app (shows onboarding or the home view) when the window label is "glimpse"; for other window labels it renders a centered overlay component.
+ *
+ * @returns The component's rendered JSX element. 
+ */
 function App() {
   const [windowLabel, setWindowLabel] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -48,8 +55,8 @@ function App() {
   useEffect(() => {
     const root = document.documentElement;
 
-    // Keep overlay windows stable; text-size animation is only for Settings UI.
-    if (windowLabel !== "settings") {
+    // Keep overlay windows stable; text-size animation is only for the Glimpse app window.
+    if (windowLabel !== "glimpse") {
       root.classList.remove("text-scale-anim-ready");
       root.style.setProperty("--ui-text-scale", "1");
       return;
@@ -76,7 +83,7 @@ function App() {
   }, [windowLabel]);
 
   useEffect(() => {
-    if (windowLabel === "settings") {
+    if (windowLabel === "glimpse") {
       const checkOnboarding = async () => {
         try {
           const settings = await invoke<StoredSettings>("get_settings");
@@ -119,7 +126,7 @@ function App() {
   useEffect(() => {
     const body = document.body;
     const html = document.documentElement;
-    if (windowLabel === "settings") {
+    if (windowLabel === "glimpse") {
       html.style.backgroundColor = "var(--color-bg-primary)";
       body.style.backgroundColor = "var(--color-bg-primary)";
     } else {
@@ -136,10 +143,10 @@ function App() {
     setShowOnboarding(false);
   };
 
-  if (windowLabel === "settings") {
+  if (windowLabel === "glimpse") {
     if (isLoading) {
       return (
-        <div className="settings-view h-screen w-screen overflow-hidden bg-surface-secondary" />
+        <div className="glimpse-view h-screen w-screen overflow-hidden bg-surface-secondary" />
       );
     }
 
@@ -151,7 +158,7 @@ function App() {
 
     return (
       <AuthProvider>
-        <div className="settings-view h-screen w-screen overflow-hidden">
+        <div className="glimpse-view h-screen w-screen overflow-hidden">
           {settingsContent}
         </div>
       </AuthProvider>

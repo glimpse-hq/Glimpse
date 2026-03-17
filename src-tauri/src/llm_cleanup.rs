@@ -348,6 +348,20 @@ fn provider_route_suffix(provider: &LlmProvider, route: ProviderRoute) -> &'stat
     }
 }
 
+/// Derives the service base URL from a provided endpoint or the provider's default, removing known LLM API route suffixes and trailing slashes.
+///
+/// If `endpoint` is empty or whitespace, the provider's default base URL is used when available. Known suffixes such as `/v1/chat/completions`, `/chat/completions`, `/v1/models`, `/models`, and `/v1` are removed from the end of the resulting URL; any trailing slashes are also trimmed.
+///
+/// # Examples
+///
+/// ```
+/// // Assuming `LlmProvider::OpenAI` is in scope
+/// let url = get_base_url(
+///     "https://api.openai.com/v1/chat/completions",
+///     &LlmProvider::OpenAI,
+/// );
+/// assert_eq!(url, "https://api.openai.com");
+/// ```
 fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
     let base = if endpoint.trim().is_empty() {
         provider_default_base_url(provider).unwrap_or("")
@@ -371,7 +385,24 @@ fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
     trimmed.trim_end_matches('/').to_string()
 }
 
-fn build_provider_url(endpoint: &str, provider: &LlmProvider, route: ProviderRoute) -> Result<String> {
+/// Constructs the full provider URL by combining a normalized base derived from `endpoint`
+/// with the route suffix for `provider` and `route`.
+///
+/// Returns an error if the language model provider is `None` or if the endpoint yields
+/// an empty base URL (i.e., the endpoint is not configured).
+///
+/// # Examples
+///
+/// ```
+/// // Example usage (types must be in scope):
+/// // let url = build_provider_url("https://api.example.com/v1", &LlmProvider::OpenAI, ProviderRoute::ChatCompletions).unwrap();
+/// // assert!(url.ends_with("/chat/completions"));
+/// ```
+fn build_provider_url(
+    endpoint: &str,
+    provider: &LlmProvider,
+    route: ProviderRoute,
+) -> Result<String> {
     if matches!(provider, LlmProvider::None) {
         return Err(anyhow!("Language model is disabled"));
     }
@@ -381,9 +412,23 @@ fn build_provider_url(endpoint: &str, provider: &LlmProvider, route: ProviderRou
         return Err(anyhow!("Endpoint not configured"));
     }
 
-    Ok(format!("{}{}", base, provider_route_suffix(provider, route)))
+    Ok(format!(
+        "{}{}",
+        base,
+        provider_route_suffix(provider, route)
+    ))
 }
 
+/// Builds the full chat completions endpoint URL from the provided user settings.
+///
+/// On success returns the complete URL for the provider's chat completions route.
+/// Returns an `Err` if the LLM provider or endpoint is not configured or the provider is disabled.
+///
+/// # Examples
+///
+/// ```no_run
+/// let url = get_endpoint(&settings)?;
+/// ```
 fn get_endpoint(settings: &UserSettings) -> Result<String> {
     build_provider_url(
         &settings.llm_endpoint,
