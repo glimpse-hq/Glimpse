@@ -71,41 +71,44 @@ mod macos {
 
 #[cfg(target_os = "windows")]
 mod win {
-    use std::process::Command;
+    use windows::core::{w, HSTRING, PCWSTR};
+    use windows::Win32::UI::Shell::ShellExecuteW;
+    use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
-    pub fn check_accessibility_permission() -> bool {
-        true // Windows doesn't gate accessibility like macOS (Thank you :) )
-    }
+    const ACCESSIBILITY_URI: &str = "ms-settings:easeofaccess";
+    const MICROPHONE_URI: &str = "ms-settings:privacy-microphone";
 
-    pub fn open_accessibility_settings() -> Result<(), String> {
-        Command::new("cmd")
-            .args(["/C", "start", "ms-settings:easeofaccess"])
-            .spawn()
-            .map(|_| ())
-            .map_err(|e| format!("Failed to open accessibility settings: {e}"))
-    }
-
-    pub fn open_microphone_settings() -> Result<(), String> {
-        Command::new("cmd")
-            .args(["/C", "start", "ms-settings:privacy-microphone"])
-            .spawn()
-            .map(|_| ())
-            .map_err(|e| format!("Failed to open microphone settings: {e}"))
-    }
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-mod other {
+    /// Windows does not gate accessibility behind a system permission.
     pub fn check_accessibility_permission() -> bool {
         true
     }
 
     pub fn open_accessibility_settings() -> Result<(), String> {
-        Err("Not available on this platform".to_string())
+        shell_open_uri(ACCESSIBILITY_URI)
     }
 
     pub fn open_microphone_settings() -> Result<(), String> {
-        Err("Not available on this platform".to_string())
+        shell_open_uri(MICROPHONE_URI)
+    }
+
+    fn shell_open_uri(uri: &str) -> Result<(), String> {
+        let uri_value = HSTRING::from(uri);
+        let result = unsafe {
+            ShellExecuteW(
+                None,
+                w!("open"),
+                &uri_value,
+                None::<PCWSTR>,
+                None::<PCWSTR>,
+                SW_SHOWNORMAL,
+            )
+        };
+        let code = result.0 as isize;
+        if code > 32 {
+            return Ok(());
+        }
+
+        Err(format!("ShellExecuteW failed for '{uri}' with code {code}"))
     }
 }
 
@@ -114,6 +117,3 @@ pub use macos::*;
 
 #[cfg(target_os = "windows")]
 pub use win::*;
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-pub use other::*;

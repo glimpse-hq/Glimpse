@@ -87,19 +87,19 @@ function AuthInner({ children }: { children: ReactNode }) {
   ) as User | null | undefined;
   const sessionMetadataUserRef = useRef<string | null>(null);
   const processingCallbackCodeRef = useRef<string | null>(null);
-  const signInAttemptRef = useRef(0);
+  const attemptSequenceRef = useRef(0);
+  const activeAttemptRef = useRef<number | null>(null);
 
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | undefined;
 
-    const attemptId = signInAttemptRef.current;
-
     const completeSignIn = async (code: string) => {
       if (!code || processingCallbackCodeRef.current === code) {
         return;
       }
-      if (signInAttemptRef.current !== attemptId) {
+      const attemptId = activeAttemptRef.current;
+      if (attemptId === null) {
         return;
       }
 
@@ -111,7 +111,11 @@ function AuthInner({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error("OAuth callback failed:", err);
       } finally {
-        if (!disposed) {
+        const isActiveAttempt = activeAttemptRef.current === attemptId;
+        if (isActiveAttempt) {
+          activeAttemptRef.current = null;
+        }
+        if (!disposed && isActiveAttempt) {
           setSigningIn(false);
         }
         if (processingCallbackCodeRef.current === code) {
@@ -182,7 +186,9 @@ function AuthInner({ children }: { children: ReactNode }) {
           throw new Error(`Unsupported auth provider: ${provider}`);
         }
 
-        signInAttemptRef.current += 1;
+        const attemptId = attemptSequenceRef.current + 1;
+        attemptSequenceRef.current = attemptId;
+        activeAttemptRef.current = attemptId;
         setSigningIn(true);
         try {
           const result = await startDesktopOAuthSignIn(
@@ -190,12 +196,19 @@ function AuthInner({ children }: { children: ReactNode }) {
             provider,
             params,
           );
+          if (activeAttemptRef.current !== attemptId) {
+            return;
+          }
           if (result.redirect) {
             await openUrl(result.redirect.toString());
             return;
           }
+          activeAttemptRef.current = null;
           setSigningIn(false);
         } catch (err) {
+          if (activeAttemptRef.current === attemptId) {
+            activeAttemptRef.current = null;
+          }
           setSigningIn(false);
           throw err;
         }
@@ -204,7 +217,8 @@ function AuthInner({ children }: { children: ReactNode }) {
         await signOut();
       },
       cancelSignIn: async () => {
-        signInAttemptRef.current += 1;
+        attemptSequenceRef.current += 1;
+        activeAttemptRef.current = null;
         setSigningIn(false);
       },
     }),

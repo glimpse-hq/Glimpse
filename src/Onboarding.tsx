@@ -36,9 +36,7 @@ import type {
   TranscriptionMode,
 } from "./types";
 import WindowControls from "./components/WindowControls";
-import { isMacPlatform, isWindowsPlatform } from "./lib/platform";
-
-const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;
+import { isWindowsPlatform, needsWindowTopSpacer } from "./lib/platform";
 
 type OnboardingStep =
   | "welcome"

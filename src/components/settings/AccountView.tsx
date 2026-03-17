@@ -1,14 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { motion } from "framer-motion";
 import {
-  Activity,
   Loader2,
   LogOut,
   Monitor,
   Pencil,
-  RefreshCw,
   Smartphone,
 } from "lucide-react";
 import {
@@ -19,13 +15,6 @@ import {
   type Session as AuthSession,
   type User as AuthUser,
 } from "../../lib/auth";
-import {
-  getCachedUsageStats,
-  getCloudUsageStats,
-  type CloudUsageStats,
-} from "../../lib";
-import { convex } from "../../lib/convex";
-import { api } from "../../lib/convexApi";
 
 const AppleIcon = ({ className }: { className?: string }) => (
   <svg
@@ -69,37 +58,6 @@ interface AccountViewProps {
   onCloudSyncToggle: () => void;
   onUserUpdate: () => void;
   onSignOut: () => void;
-}
-
-const EMPTY_USAGE: CloudUsageStats = {
-  availableSeconds: 0,
-  creditSeconds: 0,
-  lifetimePurchasedSeconds: 0,
-  lifetimeTranscriptionsCount: 0,
-  lifetimeUsedSeconds: 0,
-  monthTranscriptionsCount: 0,
-  monthUsedSeconds: 0,
-  reservedSeconds: 0,
-  updatedAt: null,
-};
-
-function formatHours(seconds: number) {
-  const hours = seconds / 3600;
-  if (hours >= 100) {
-    return `${hours.toFixed(0)}h`;
-  }
-  if (hours >= 10) {
-    return `${hours.toFixed(1)}h`;
-  }
-  if (hours >= 1) {
-    return `${hours.toFixed(2).replace(/\.?0+$/, "")}h`;
-  }
-
-  const minutes = seconds / 60;
-  if (minutes >= 1) {
-    return `${minutes.toFixed(0)}m`;
-  }
-  return `${Math.max(0, Math.round(seconds))}s`;
 }
 
 function formatTimestamp(timestamp?: number | null) {
@@ -155,22 +113,8 @@ function formatSessionDetails(session: AuthSession) {
   return parts.join(" • ");
 }
 
-type PackId = "starter" | "standard" | "power";
-
-async function openCheckout(packId: PackId) {
-  const result = await convex.action(api.checkout.createCheckoutSession, {
-    packId,
-  }) as { url: string } | null;
-  if (!result?.url) {
-    throw new Error("Checkout session did not return a URL");
-  }
-  await openUrl(result.url);
-}
-
 const AccountView = ({
   currentUser,
-  cloudSyncEnabled,
-  onCloudSyncToggle,
   onUserUpdate,
   onSignOut,
 }: AccountViewProps) => {
@@ -181,32 +125,22 @@ const AccountView = ({
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
   const [signingOutOthers, setSigningOutOthers] = useState(false);
-  const [usageStats, setUsageStats] = useState<CloudUsageStats>(() => {
-    if (!currentUser?._id) {
-      return EMPTY_USAGE;
-    }
-    return getCachedUsageStats(currentUser._id) ?? EMPTY_USAGE;
-  });
-  const [usageStatsLoading, setUsageStatsLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState<PackId | null>(null);
+  const requestTokenRef = useRef<string | null>(currentUser?._id ?? null);
 
   useEffect(() => {
-    if (!currentUser) {
+    const token = currentUser?._id ?? null;
+    const changed = requestTokenRef.current !== token;
+    requestTokenRef.current = token;
+
+    if (!token || changed) {
       setSessions([]);
-      setUsageStats(EMPTY_USAGE);
+    }
+    if (!token) {
+      setSessionsLoading(false);
       return;
     }
 
-    let stale = false;
-    const cached = getCachedUsageStats(currentUser._id);
-    if (cached) {
-      setUsageStats(cached);
-    }
-    void loadSessions();
-    void loadUsageStats(false).then(() => {
-      if (stale) return;
-    });
-    return () => { stale = true; };
+    void loadSessions(token);
   }, [currentUser?._id]);
 
   useEffect(() => {
@@ -224,31 +158,20 @@ const AccountView = ({
   const userId = currentUser._id;
   const currentName = currentUser.name ?? "";
 
-  async function loadUsageStats(showLoading = true) {
-    if (showLoading) {
-      setUsageStatsLoading(true);
-    }
-    try {
-      const stats = await getCloudUsageStats(userId);
-      setUsageStats(stats);
-    } catch (err) {
-      console.error("Failed to load cloud wallet:", err);
-    } finally {
-      if (showLoading) {
-        setUsageStatsLoading(false);
-      }
-    }
-  }
-
-  async function loadSessions() {
+  async function loadSessions(requestToken: string) {
     setSessionsLoading(true);
     try {
       const result = await listSessions();
+      if (requestTokenRef.current !== requestToken) {
+        return;
+      }
       setSessions(result.sessions);
     } catch (err) {
       console.error("Failed to load sessions:", err);
     } finally {
-      setSessionsLoading(false);
+      if (requestTokenRef.current === requestToken) {
+        setSessionsLoading(false);
+      }
     }
   }
 
@@ -288,7 +211,7 @@ const AccountView = ({
     setSigningOutOthers(true);
     try {
       await signOutOtherSessions();
-      await loadSessions();
+      await loadSessions(userId);
     } catch (err) {
       console.error("Failed to sign out other sessions:", err);
     } finally {
@@ -387,92 +310,6 @@ const AccountView = ({
           <LogOut size={16} />
           Sign out
         </button>
-      </div>
-
-      {/* Cloud Wallet Section */}
-      <div className="space-y-4">
-        <header className="flex items-center justify-between">
-          <div>
-            <h3 className="ui-text-title-sm font-medium ui-color-primary">Cloud Wallet</h3>
-            <p className="mt-1 ui-text-body-sm ui-color-secondary">Your available cloud processing time.</p>
-          </div>
-          <button
-            onClick={() => void loadUsageStats(true)}
-            disabled={usageStatsLoading}
-            className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 ui-text-body-sm ui-color-secondary hover:bg-surface-elevated/50 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw size={14} className={usageStatsLoading ? "animate-spin" : ""} />
-            {usageStatsLoading ? "Refreshing..." : "Refresh"}
-          </button>
-        </header>
-
-        <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden divide-y divide-border-primary">
-          <div className="p-8 flex flex-col items-center justify-center gap-2 bg-gradient-to-b from-surface-elevated/10 to-transparent">
-            <span className="text-4xl sm:text-5xl font-mono font-medium ui-color-primary tracking-tight">
-              {formatHours(usageStats.availableSeconds)}
-            </span>
-            <span className="ui-text-body-sm ui-color-secondary uppercase tracking-wider font-medium">
-              Available Time
-            </span>
-          </div>
-
-          <div className="bg-surface-elevated/30 p-4">
-            <div className="flex flex-col sm:flex-row gap-3">
-              {(["starter", "standard", "power"] as const).map((packId) => (
-                <button
-                  key={packId}
-                  disabled={checkoutLoading !== null}
-                  onClick={() => {
-                    setCheckoutLoading(packId);
-                    openCheckout(packId)
-                      .catch((err) => console.error("Checkout failed:", err))
-                      .finally(() => setCheckoutLoading(null));
-                  }}
-                  className={`flex flex-1 items-center justify-center gap-2 px-3 py-2.5 rounded-lg border transition-colors ${
-                    packId === "standard"
-                      ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500"
-                      : "border-border-primary bg-surface-surface hover:bg-surface-elevated ui-color-primary"
-                  }`}
-                >
-                  {checkoutLoading === packId ? (
-                    <Loader2 size={16} className="animate-spin" />
-                  ) : (
-                    <span className="ui-text-body-sm-strong">
-                      Add {packId === "starter" ? "28h ($12)" : packId === "standard" ? "75h ($29)" : "160h ($55)"}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex size-8 items-center justify-center rounded-lg border border-border-primary bg-surface-elevated/50">
-                <Activity size={16} className="ui-color-primary" />
-              </div>
-              <div>
-                <div className="ui-text-body-sm-strong ui-color-primary">History Sync</div>
-                <div className="ui-text-body-sm ui-color-secondary">Keep cloud transcripts visible across devices.</div>
-              </div>
-            </div>
-            <button
-              onClick={onCloudSyncToggle}
-              role="switch"
-              aria-checked={cloudSyncEnabled}
-              aria-label="Toggle History Sync"
-              className={`w-7 h-4 rounded-full transition-colors relative ${
-                cloudSyncEnabled ? "bg-cloud" : "bg-border-secondary"
-              }`}
-            >
-              <motion.div
-                className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm"
-                animate={{ left: cloudSyncEnabled ? "calc(100% - 14px)" : "2px" }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-              />
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* Active Sessions Section */}

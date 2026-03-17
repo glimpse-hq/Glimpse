@@ -1,12 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
-
-const isMac = navigator.platform?.startsWith("Mac") ?? false;
+import { isMacPlatform } from "./platform";
 
 // On macOS these call through to tauri-plugin-macos-permissions.
-// On other platforms, accessibility is ungated and mic is assumed available.
+// On other platforms, accessibility is ungated and mic is probed via getUserMedia.
 
 export async function checkAccessibilityPermission(): Promise<boolean> {
-  if (!isMac) return true;
+  if (!isMacPlatform) return true;
   const { checkAccessibilityPermission: check } = await import(
     "tauri-plugin-macos-permissions-api"
   );
@@ -14,7 +13,7 @@ export async function checkAccessibilityPermission(): Promise<boolean> {
 }
 
 export async function requestAccessibilityPermission(): Promise<void> {
-  if (!isMac) return;
+  if (!isMacPlatform) return;
   const { requestAccessibilityPermission: request } = await import(
     "tauri-plugin-macos-permissions-api"
   );
@@ -22,15 +21,27 @@ export async function requestAccessibilityPermission(): Promise<void> {
 }
 
 export async function checkMicrophonePermission(): Promise<boolean> {
-  if (!isMac) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      for (const track of stream.getTracks()) {
-        track.stop();
-      }
-      return true;
-    } catch {
+  if (!isMacPlatform) {
+    if (typeof navigator === "undefined") {
       return false;
+    }
+    try {
+      const result = await navigator.permissions.query({
+        name: "microphone" as PermissionName,
+      });
+      return result.state === "granted";
+    } catch {
+      // permissions.query may not support "microphone" in all webviews;
+      // fall back to probing getUserMedia.
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        for (const track of stream.getTracks()) {
+          track.stop();
+        }
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
   const { checkMicrophonePermission: check } = await import(

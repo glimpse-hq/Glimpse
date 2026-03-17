@@ -53,6 +53,15 @@ import type {
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const decimals = i >= 3 ? 1 : 0;
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + " " + sizes[i];
+}
+
 const parseTextSizeMode = (value: string | null): TextSizeMode =>
   value === "small" || value === "default" || value === "large"
     ? value
@@ -131,7 +140,7 @@ const SettingsModal = ({
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
 
-  const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
+
   const activeTranscriptionEngine = useMemo(
     () => getActiveTranscriptionEngine(modelCatalog, localModel),
     [modelCatalog, localModel],
@@ -176,10 +185,6 @@ const SettingsModal = ({
     [languageForcedAuto, languageView.options],
   );
 
-  const [cloudSyncEnabled, setCloudSyncEnabled] = useState(() => {
-    const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
-    return stored !== null ? stored === "true" : false;
-  });
   const llmProviderPreset = useMemo(
     () => getProviderPreset(llmProvider),
     [llmProvider],
@@ -190,19 +195,6 @@ const SettingsModal = ({
       (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
       llmModel.trim(),
   );
-
-  useEffect(() => {
-    if (currentUser && !isSubscriber && cloudSyncEnabled) {
-      setCloudSyncEnabled(false);
-    }
-  }, [currentUser, isSubscriber, cloudSyncEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem(
-      "glimpse_cloud_sync_enabled",
-      String(cloudSyncEnabled),
-    );
-  }, [cloudSyncEnabled]);
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -260,19 +252,7 @@ const SettingsModal = ({
     if (activeTab === "advanced" && isOpen) {
       const checkPermissions = async () => {
         try {
-          const nativeMic = await checkMicrophonePermission();
-          if (nativeMic) {
-            setMicPermission(true);
-          } else {
-            try {
-              const result = await navigator.permissions.query({
-                name: "microphone" as PermissionName,
-              });
-              setMicPermission(result.state === "granted");
-            } catch {
-              setMicPermission(false);
-            }
-          }
+          setMicPermission(await checkMicrophonePermission());
         } catch {
           setMicPermission(false);
         }
@@ -351,7 +331,7 @@ const SettingsModal = ({
         setLlmApiKey(settings.llm_api_key ?? "");
         setLlmModel(settings.llm_model ?? "");
         setEditModeEnabled(settings.edit_mode_enabled ?? false);
-        setCloudSyncEnabled(settings.cloud_sync_enabled ?? false);
+
       },
     );
 
@@ -404,7 +384,7 @@ const SettingsModal = ({
           setLlmApiKey(settings.llm_api_key ?? "");
           setLlmModel(settings.llm_model ?? "");
           setEditModeEnabled(settings.edit_mode_enabled ?? false);
-          setCloudSyncEnabled(settings.cloud_sync_enabled ?? false);
+  
         } catch (err) {
           console.error("Failed to load settings:", err);
           setError("Failed to load settings");
@@ -752,7 +732,6 @@ const SettingsModal = ({
           llmApiKey,
           llmModel,
           editModeEnabled: persistedLlmEnabled ? editModeEnabled : false,
-          cloudSyncEnabled,
         });
         setError(null);
       } catch (err) {
@@ -782,7 +761,6 @@ const SettingsModal = ({
     llmApiKey,
     llmModel,
     editModeEnabled,
-    cloudSyncEnabled,
   ]);
 
   const handleDownload = async (modelKey: string) => {
@@ -882,17 +860,6 @@ const SettingsModal = ({
     } catch (err) {
       console.error("Failed to cancel download:", err);
     }
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    const decimals = i >= 3 ? 1 : 0;
-    return (
-      parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + " " + sizes[i]
-    );
   };
 
   const backdropVariants = {
@@ -1030,8 +997,6 @@ const SettingsModal = ({
                       variants={tabContentVariants}
                       authLoading={authLoading}
                       currentUser={currentUser}
-                      cloudSyncEnabled={cloudSyncEnabled}
-                      setCloudSyncEnabled={setCloudSyncEnabled}
                       onUpdateUser={onUpdateUser}
                       handleSignOut={handleSignOut}
                       handleCancelAuth={handleCancelAuth}

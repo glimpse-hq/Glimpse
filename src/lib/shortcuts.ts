@@ -1,5 +1,4 @@
-const platform = typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
-const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(platform);
+import { isMacPlatform } from "./platform";
 
 const displayTokenMap: Record<string, string> = {
     Command: "Command",

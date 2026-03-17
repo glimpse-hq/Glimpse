@@ -96,10 +96,17 @@ jobs:
         shell: bash
         run: echo "CARGO_TARGET_DIR=D:/t" >> "$GITHUB_ENV"
 
-      - name: cache rust
+      - name: cache rust (macOS)
+        if: runner.os == 'macOS'
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+
+      - name: cache rust (Windows)
+        if: runner.os == 'Windows'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> D:/t
 
       - name: install frontend dependencies
         run: bun install --frozen-lockfile
@@ -128,7 +135,8 @@ jobs:
           echo "CERT_ID=$CERT_ID" >> $GITHUB_ENV
           echo "Certificate imported."
 
-      - name: build and publish
+      - name: build and publish (macOS)
+        if: runner.os == 'macOS'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -143,6 +151,23 @@ jobs:
           DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
           CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
+          VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
+          APTABASE_KEY: ${{ secrets.APTABASE_KEY }}
+        with:
+          tagName: v__VERSION__
+          releaseName: "Glimpse v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
+          releaseDraft: true
+          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          args: ${{ matrix.args }}
+
+      - name: build and publish (non-macOS)
+        if: runner.os != 'macOS'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_CONVEX_URL: ${{ secrets.VITE_CONVEX_URL }}
           APTABASE_KEY: ${{ secrets.APTABASE_KEY }}
         with:

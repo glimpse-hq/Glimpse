@@ -26,9 +26,7 @@ import LibraryView from "./components/LibraryView";
 import { useAuth } from "./hooks/useAuth";
 import type { TranscriptionMode, StoredSettings } from "./types";
 import WindowControls from "./components/WindowControls";
-import { isMacPlatform, isWindowsPlatform } from "./lib/platform";
-
-const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;
+import { isWindowsPlatform, needsWindowTopSpacer } from "./lib/platform";
 
 const SidebarItem = ({
   icon,
@@ -110,6 +108,13 @@ const Home = () => {
     let unlistenDragLeave: UnlistenFn | null = null;
     let unlistenDragDrop: UnlistenFn | null = null;
     let unlistenOpenImport: UnlistenFn | null = null;
+    let navigationListenersReady = 0;
+    const markNavigationReady = () => {
+      navigationListenersReady += 1;
+      if (navigationListenersReady === 2 && !cancelled) {
+        void emit("glimpse-ready").catch(() => {});
+      }
+    };
 
     const loadSettings = async () => {
       try {
@@ -149,6 +154,7 @@ const Home = () => {
         fn();
       } else {
         unlistenNavigate = fn;
+        markNavigationReady();
       }
     });
 
@@ -160,6 +166,7 @@ const Home = () => {
         fn();
       } else {
         unlistenModels = fn;
+        markNavigationReady();
       }
     });
 

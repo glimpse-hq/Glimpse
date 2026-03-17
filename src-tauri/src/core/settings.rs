@@ -201,7 +201,6 @@ pub(crate) fn update_settings(
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model
         || prev.microphone_device != next.microphone_device
-        || prev.cloud_sync_enabled != next.cloud_sync_enabled
     {
         crate::desktop::refresh_menus(app, &next);
     }

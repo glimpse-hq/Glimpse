@@ -7,8 +7,6 @@ type AccountTabProps = {
   variants: Variants;
   authLoading: boolean;
   currentUser: AuthUser | null;
-  cloudSyncEnabled: boolean;
-  setCloudSyncEnabled: (value: boolean) => void;
   onUpdateUser: () => Promise<void>;
   handleSignOut: () => Promise<void>;
   handleCancelAuth: () => void;
@@ -18,8 +16,6 @@ const AccountTab = ({
   variants,
   authLoading,
   currentUser,
-  cloudSyncEnabled,
-  setCloudSyncEnabled,
   onUpdateUser,
   handleSignOut,
   handleCancelAuth,
@@ -39,7 +35,7 @@ const AccountTab = ({
             Account
           </h1>
           <p className="mt-1 ui-text-body-sm ui-color-muted">
-            Manage your profile, sessions, and subscription.
+            Manage your profile and sessions.
           </p>
         </header>
       )}
@@ -58,11 +54,9 @@ const AccountTab = ({
       ) : currentUser ? (
         <AccountView
           currentUser={currentUser}
-          cloudSyncEnabled={cloudSyncEnabled}
-          onCloudSyncToggle={() => setCloudSyncEnabled(!cloudSyncEnabled)}
-          onUserUpdate={async () => {
-            await onUpdateUser();
-          }}
+          cloudSyncEnabled={false}
+          onCloudSyncToggle={() => {}}
+          onUserUpdate={onUpdateUser}
           onSignOut={handleSignOut}
         />
       ) : (

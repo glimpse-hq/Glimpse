@@ -17,7 +17,11 @@ pub fn init(_app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntim
             return Err(anyhow!("GetWindowLongW failed: {:?}", GetLastError()));
         }
         let new_style = ex_style as u32 | WS_EX_TOOLWINDOW.0 | WS_EX_TOPMOST.0 | WS_EX_NOACTIVATE.0;
-        SetWindowLongW(hwnd, GWL_EXSTYLE, new_style as i32);
+        SetLastError(WIN32_ERROR(0));
+        let updated = SetWindowLongW(hwnd, GWL_EXSTYLE, new_style as i32);
+        if updated == 0 && GetLastError() != WIN32_ERROR(0) {
+            return Err(anyhow!("SetWindowLongW failed: {:?}", GetLastError()));
+        }
 
         SetWindowPos(
             hwnd,

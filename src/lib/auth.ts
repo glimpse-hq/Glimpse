@@ -35,10 +35,6 @@ export async function signOutOtherSessions(): Promise<void> {
   await convex.mutation(api.sessions.revokeOtherSessions, {});
 }
 
-export async function getCurrentUser(): Promise<User | null> {
-  return (await convex.query(api.users.currentUser, {})) ?? null;
-}
-
 export async function updateName(name: string): Promise<User> {
   return await convex.mutation(api.users.updateName, { name });
 }

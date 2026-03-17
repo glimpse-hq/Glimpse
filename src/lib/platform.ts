@@ -8,3 +8,4 @@ const platform = detectPlatform();
 
 export const isMacPlatform = platform.startsWith("Mac") || platform === "macOS";
 export const isWindowsPlatform = platform.startsWith("Win") || platform === "Windows";
+export const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;

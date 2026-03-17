@@ -1,9 +1,10 @@
 use crate::{AppRuntime, AppState};
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Condvar, Mutex};
 use std::time::Duration;
 use tauri::{
-    AppHandle, Emitter, Manager, Runtime, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
-    WindowEvent,
+    AppHandle, Emitter, Listener, Manager, Runtime, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder, WindowEvent,
 };
 
 pub(crate) const WINDOW_LABEL: &str = "glimpse";
@@ -12,9 +13,13 @@ const DEFAULT_WIDTH: f64 = 900.0;
 const DEFAULT_HEIGHT: f64 = 720.0;
 const MIN_WIDTH: f64 = 625.0;
 const MIN_HEIGHT: f64 = 500.0;
-const ABOUT_EVENTS: &[(u64, &str)] = &[(150, "navigate:about")];
-const MODELS_EVENTS: &[(u64, &str)] = &[(150, "navigate:models")];
-const WHATS_NEW_EVENTS: &[(u64, &str)] = &[(500, "navigate:about"), (400, "open_whats_new")];
+const ABOUT_EVENTS: &[(u64, &str)] = &[(0, "navigate:about")];
+const MODELS_EVENTS: &[(u64, &str)] = &[(0, "navigate:models")];
+const WHATS_NEW_EVENTS: &[(u64, &str)] = &[(0, "navigate:about"), (100, "open_whats_new")];
+const READY_EVENT: &str = "glimpse-ready";
+const READY_TIMEOUT: Duration = Duration::from_secs(3);
+static GLIMPSE_READY: (Mutex<bool>, Condvar) = (Mutex::new(false), Condvar::new());
+static GLIMPSE_READY_LISTENER_REGISTERED: AtomicBool = AtomicBool::new(false);
 
 pub(crate) fn show(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
     let state = app.state::<AppState>();
@@ -32,6 +37,8 @@ pub(crate) fn show(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
             .glimpse_window_close_handler_registered
             .store(false, Ordering::SeqCst);
     }
+
+    ensure_ready_listener(&window);
 
     prepare_to_show(app);
     window.show()?;
@@ -78,6 +85,9 @@ fn build_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppR
     );
 
     let window = builder.build()?;
+    *GLIMPSE_READY.0.lock().unwrap() = false;
+    GLIMPSE_READY_LISTENER_REGISTERED.store(false, Ordering::SeqCst);
+    ensure_ready_listener(&window);
 
     #[cfg(target_os = "windows")]
     if let Err(err) = crate::platform::windows::glimpse_window::configure_window(&window) {
@@ -119,19 +129,50 @@ fn show_and_emit_events(
 ) -> tauri::Result<()> {
     show(app)?;
 
-    let app_handle = app.clone();
+    let Some(window) = app.get_webview_window(WINDOW_LABEL) else {
+        return Ok(());
+    };
+
+    let window = window.clone();
     std::thread::spawn(move || {
+        if !wait_for_glimpse_ready(READY_TIMEOUT) {
+            eprintln!("Timed out waiting for {WINDOW_LABEL} readiness signal");
+            return;
+        }
+
         for &(delay_ms, event_name) in events {
             std::thread::sleep(Duration::from_millis(delay_ms));
-            let emit_result = app_handle
-                .get_webview_window(WINDOW_LABEL)
-                .map(|w| w.emit(event_name, ()))
-                .unwrap_or_else(|| app_handle.emit(event_name, ()));
-            if let Err(err) = emit_result {
+            if let Err(err) = window.emit(event_name, ()) {
                 eprintln!("Failed to emit {event_name}: {err}");
+                break;
             }
         }
     });
 
     Ok(())
+}
+
+fn ensure_ready_listener(window: &WebviewWindow<AppRuntime>) {
+    if GLIMPSE_READY_LISTENER_REGISTERED
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        return;
+    }
+
+    let _ = window.listen(READY_EVENT, |_| {
+        let mut ready = GLIMPSE_READY.0.lock().unwrap();
+        *ready = true;
+        GLIMPSE_READY.1.notify_all();
+    });
+}
+
+fn wait_for_glimpse_ready(timeout: Duration) -> bool {
+    let (lock, cvar) = &GLIMPSE_READY;
+    let guard = lock.lock().unwrap();
+    if *guard {
+        return true;
+    }
+    let (guard, _) = cvar.wait_timeout(guard, timeout).unwrap();
+    *guard
 }

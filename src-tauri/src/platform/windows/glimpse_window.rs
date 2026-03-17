@@ -1,13 +1,10 @@
-use std::mem::{size_of, size_of_val};
+use std::mem::size_of;
 
 use crate::AppRuntime;
 use anyhow::{anyhow, Result};
 use tauri::{Manager, Runtime, Theme, WebviewWindow, WebviewWindowBuilder};
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
-use windows::Win32::Graphics::Dwm::{
-    DwmSetWindowAttribute, DWMWA_USE_IMMERSIVE_DARK_MODE, DWMWA_WINDOW_CORNER_PREFERENCE,
-    DWMWCP_ROUND,
-};
+use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_USE_IMMERSIVE_DARK_MODE};
 use windows::Win32::UI::HiDpi::GetDpiForWindow;
 use windows::Win32::UI::Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -41,16 +38,6 @@ fn apply_dwm_attributes(hwnd: HWND) {
             DWMWA_USE_IMMERSIVE_DARK_MODE,
             &dark_mode as *const _ as _,
             size_of::<i32>() as u32,
-        )
-    };
-
-    let rounded_corners = DWMWCP_ROUND;
-    let _ = unsafe {
-        DwmSetWindowAttribute(
-            hwnd,
-            DWMWA_WINDOW_CORNER_PREFERENCE,
-            &rounded_corners as *const _ as _,
-            size_of_val(&rounded_corners) as u32,
         )
     };
 }

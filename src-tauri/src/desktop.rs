@@ -58,6 +58,7 @@ pub(crate) fn initialize(app: &mut App<AppRuntime>) {
         eprintln!("Failed to register shortcuts: {err}");
     }
 
+    // Brief delay so the webview has time to render before the window appears.
     let app_handle = handle.clone();
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_millis(300)).await;

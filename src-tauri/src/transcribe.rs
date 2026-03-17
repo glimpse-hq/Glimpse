@@ -227,7 +227,10 @@ pub(crate) fn queue_transcription(
                 let mut pasted = false;
                 if auto_paste && !final_transcript.trim().is_empty() {
                     let text = final_transcript.clone();
-                    match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await
+                    match async_runtime::spawn_blocking(move || {
+                        assistive::paste_text(&text)
+                    })
+                    .await
                     {
                         Ok(Ok(())) => pasted = true,
                         Ok(Err(err)) => {
