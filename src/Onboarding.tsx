@@ -35,6 +35,7 @@ import type {
   StoredSettings,
   TranscriptionMode,
 } from "./types";
+import WindowControls from "./components/WindowControls";
 
 const isMacPlatform =
   typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
@@ -839,8 +840,10 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
       {needsWindowTopSpacer && (
         <div
           data-tauri-drag-region
-          className={`${isWindowsPlatform ? "h-8" : "h-7"} w-full shrink-0`}
-        />
+          className={`${isWindowsPlatform ? "h-8" : "h-7"} w-full shrink-0 flex`}
+        >
+          {isWindowsPlatform && <WindowControls />}
+        </div>
       )}
 
       <div className="flex justify-center pt-6 pb-6">

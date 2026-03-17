@@ -25,6 +25,7 @@ import PersonalizationView from "./components/PersonalizationView";
 import LibraryView from "./components/LibraryView";
 import { useAuth } from "./hooks/useAuth";
 import type { TranscriptionMode, StoredSettings } from "./types";
+import WindowControls from "./components/WindowControls";
 
 const isMacPlatform =
   typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
@@ -591,7 +592,9 @@ const Home = () => {
 
       <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
         {needsWindowTopSpacer && (
-          <div data-tauri-drag-region className="h-8 w-full shrink-0" />
+          <div data-tauri-drag-region className="h-8 w-full shrink-0 flex">
+            {isWindowsPlatform && <WindowControls />}
+          </div>
         )}
 
         {currentUser && (
