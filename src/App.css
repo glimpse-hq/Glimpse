@@ -1116,7 +1116,7 @@ body {
 }
 
 .scrollbar-gutter {
-  scrollbar-gutter: stable both-edges;
+  scrollbar-gutter: stable;
 }
 
 .settings-scroll::-webkit-scrollbar {
