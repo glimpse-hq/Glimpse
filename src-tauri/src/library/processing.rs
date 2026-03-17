@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::Arc;
@@ -25,6 +27,9 @@ use super::types::{
     EVENT_LIBRARY_IMPORT_PROGRESS, SUPPORTED_AUDIO_FORMATS, SUPPORTED_VIDEO_FORMATS,
     TARGET_SAMPLE_RATE,
 };
+
+#[cfg(target_os = "windows")]
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 pub(crate) fn create_item_from_path(
     app: &AppHandle<AppRuntime>,
@@ -846,7 +851,7 @@ fn convert_with_ffmpeg(
     }
 
     if duration_ms.is_some() && progress_cb.is_some() {
-        let mut child = Command::new(ffmpeg)
+        let mut child = media_tool_command(ffmpeg)
             .arg("-y")
             .arg("-nostdin")
             .arg("-loglevel")
@@ -930,7 +935,7 @@ fn convert_with_ffmpeg(
         return Ok(());
     }
 
-    let mut child = Command::new(ffmpeg)
+    let mut child = media_tool_command(ffmpeg)
         .arg("-y")
         .arg("-nostdin")
         .arg("-loglevel")
@@ -978,6 +983,21 @@ fn convert_with_ffmpeg(
         return Err(anyhow!("ffmpeg conversion failed"));
     }
     Ok(())
+}
+
+fn media_tool_command(program: &Path) -> Command {
+    #[cfg(target_os = "windows")]
+    {
+        let mut command = Command::new(program);
+        // Suppress terminal flashes when invoking ffmpeg/ffprobe console binaries.
+        command.creation_flags(CREATE_NO_WINDOW);
+        return command;
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        Command::new(program)
+    }
 }
 
 fn find_binary_in_path(file_name: &str, fallback_dirs: &[&str]) -> Option<PathBuf> {
@@ -1038,7 +1058,7 @@ fn find_ffprobe_in_path() -> Option<PathBuf> {
 
 fn probe_media_duration_ms(path: &Path) -> Option<u64> {
     if let Some(ffprobe) = find_ffprobe_in_path() {
-        let output = Command::new(ffprobe)
+        let output = media_tool_command(&ffprobe)
             .arg("-v")
             .arg("error")
             .arg("-show_entries")

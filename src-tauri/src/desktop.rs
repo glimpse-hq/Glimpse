@@ -1,17 +1,20 @@
 use std::time::Duration;
 
 use crate::app_windows::glimpse as glimpse_window;
+#[cfg(target_os = "macos")]
 use crate::recent_transcriptions::{
     copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
 };
 use crate::settings::{TranscriptionMode, UserSettings};
+#[cfg(target_os = "macos")]
+use crate::FEEDBACK_URL;
 use crate::{
-    pill, platform, toast, tray, AppRuntime, AppState, EVENT_SETTINGS_CHANGED, FEEDBACK_URL,
-    MAIN_WINDOW_LABEL,
+    pill, platform, toast, tray, AppRuntime, AppState, EVENT_SETTINGS_CHANGED, MAIN_WINDOW_LABEL,
 };
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
 use tauri::{App, AppHandle, Emitter, Manager};
+#[cfg(target_os = "macos")]
 use tauri_plugin_opener::OpenerExt;
 
 pub(crate) fn attach_menu_handlers(

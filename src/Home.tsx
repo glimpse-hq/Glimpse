@@ -28,6 +28,9 @@ import type { TranscriptionMode, StoredSettings } from "./types";
 
 const isMacPlatform =
   typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
+const isWindowsPlatform =
+  typeof navigator !== "undefined" ? navigator.platform.startsWith("Win") : false;
+const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;
 
 const SidebarItem = ({
   icon,
@@ -362,7 +365,7 @@ const Home = () => {
         style={{ width: sidebarWidth }}
         className="relative flex flex-col border-r border-border-primary bg-surface-secondary shrink-0 transition-[width] duration-200 ease-out will-change-[width]"
       >
-        {isMacPlatform && (
+        {needsWindowTopSpacer && (
           <div data-tauri-drag-region className="h-8 w-full shrink-0" />
         )}
 
@@ -587,7 +590,7 @@ const Home = () => {
       </aside>
 
       <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
-        {isMacPlatform && (
+        {needsWindowTopSpacer && (
           <div data-tauri-drag-region className="h-8 w-full shrink-0" />
         )}
 

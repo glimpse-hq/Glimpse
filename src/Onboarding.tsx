@@ -38,6 +38,9 @@ import type {
 
 const isMacPlatform =
   typeof navigator !== "undefined" ? navigator.platform.startsWith("Mac") : false;
+const isWindowsPlatform =
+  typeof navigator !== "undefined" ? navigator.platform.startsWith("Win") : false;
+const needsWindowTopSpacer = isMacPlatform || isWindowsPlatform;
 
 type OnboardingStep =
   | "welcome"
@@ -833,8 +836,11 @@ const Onboarding = ({ onComplete }: OnboardingProps) => {
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
-      {isMacPlatform && (
-        <div data-tauri-drag-region className="h-7 w-full shrink-0" />
+      {needsWindowTopSpacer && (
+        <div
+          data-tauri-drag-region
+          className={`${isWindowsPlatform ? "h-8" : "h-7"} w-full shrink-0`}
+        />
       )}
 
       <div className="flex justify-center pt-6 pb-6">

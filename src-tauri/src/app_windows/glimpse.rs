@@ -77,7 +77,14 @@ fn build_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppR
             .visible(false),
     );
 
-    builder.build()
+    let window = builder.build()?;
+
+    #[cfg(target_os = "windows")]
+    if let Err(err) = crate::platform::windows::glimpse_window::configure_window(&window) {
+        eprintln!("Failed to initialize Windows Glimpse window: {err}");
+    }
+
+    Ok(window)
 }
 
 fn configure_builder<'a, R: Runtime, M: Manager<R>>(
@@ -86,19 +93,22 @@ fn configure_builder<'a, R: Runtime, M: Manager<R>>(
     #[cfg(target_os = "macos")]
     let builder = crate::platform::macos::glimpse_window::configure_builder(builder);
 
+    #[cfg(target_os = "windows")]
+    let builder = crate::platform::windows::glimpse_window::configure_builder(builder);
+
     builder
 }
 
-fn prepare_to_show(app: &AppHandle<AppRuntime>) {
+fn prepare_to_show(_app: &AppHandle<AppRuntime>) {
     #[cfg(target_os = "macos")]
-    if let Err(err) = crate::platform::macos::glimpse_window::prepare_to_show(app) {
+    if let Err(err) = crate::platform::macos::glimpse_window::prepare_to_show(_app) {
         eprintln!("Failed to prepare Glimpse window for display: {err}");
     }
 }
 
-fn prepare_to_hide(app: &AppHandle<AppRuntime>) {
+fn prepare_to_hide(_app: &AppHandle<AppRuntime>) {
     #[cfg(target_os = "macos")]
-    if let Err(err) = crate::platform::macos::glimpse_window::prepare_to_hide(app) {
+    if let Err(err) = crate::platform::macos::glimpse_window::prepare_to_hide(_app) {
         eprintln!("Failed to prepare Glimpse window for hiding: {err}");
     }
 }
