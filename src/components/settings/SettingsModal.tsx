@@ -119,7 +119,12 @@ const SettingsModal = ({
     "general" | "models" | "about" | "account" | "advanced"
   >("general");
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
-  const [llmEnabled, setLlmEnabled] = useState(false);
+  const [llmEnabled, _setLlmEnabled] = useState(false);
+  const llmEnabledRef = useRef(false);
+  const setLlmEnabled = useCallback((value: boolean) => {
+    llmEnabledRef.current = value;
+    _setLlmEnabled(value);
+  }, []);
   const [cleanupEnabled, setCleanupEnabled] = useState(false);
   const [llmProvider, setLlmProvider] = useState<LlmProvider>("none");
   const [llmEndpoint, setLlmEndpoint] = useState("");
@@ -285,12 +290,6 @@ const SettingsModal = ({
   }, [transcriptionMode, activeTab]);
 
   useEffect(() => {
-    if (llmEnabled && !llmConfigReady) {
-      setLlmEnabled(false);
-    }
-  }, [llmEnabled, llmConfigReady]);
-
-  useEffect(() => {
     if (llmEnabled) return;
 
     let changed = false;
@@ -324,7 +323,9 @@ const SettingsModal = ({
         setMicrophoneDevice(settings.microphone_device);
         setLanguage(settings.language);
         setUpdateChannel(settings.update_channel ?? "stable");
-        setLlmEnabled(settings.llm_enabled ?? false);
+        if (!llmEnabledRef.current) {
+          setLlmEnabled(settings.llm_enabled ?? false);
+        }
         setCleanupEnabled(settings.cleanup_enabled ?? false);
         setLlmProvider(settings.llm_provider ?? "none");
         setLlmEndpoint(settings.llm_endpoint ?? "");
