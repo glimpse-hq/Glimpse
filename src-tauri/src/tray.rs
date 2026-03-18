@@ -326,8 +326,6 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
                 }
             }
             "quit_glimpse" => {
-                let state = app.state::<AppState>();
-                state.local_transcriber.unload();
                 app.exit(0);
             }
             other => handle_tray_menu_event(app, other),
