@@ -410,6 +410,7 @@ pub fn run() {
             }
             tauri::RunEvent::Exit => {
                 let state = handler.state::<AppState>();
+                state.local_transcriber.unload();
                 state.stop_preflight_loop();
                 let now = Instant::now();
                 let counters = state.session_counters.lock();
@@ -447,7 +448,7 @@ pub enum LibraryJobKind {
 pub struct AppState {
     pill: Arc<PillController>,
     http: Client,
-    local_transcriber: Arc<local_transcription::LocalTranscriber>,
+    pub(crate) local_transcriber: Arc<local_transcription::LocalTranscriber>,
     storage: Arc<storage::StorageManager>,
     settings_store: Arc<SettingsStore>,
     settings: parking_lot::Mutex<UserSettings>,

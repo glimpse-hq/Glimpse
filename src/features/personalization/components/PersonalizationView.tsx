@@ -1,0 +1,618 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { Plus } from "lucide-react";
+import DotMatrix from "../../../shared/ui/DotMatrix";
+import type { Personality } from "../../../types";
+import {
+  buildWebsiteIconMap,
+  createId,
+  formatWebsitePreview,
+  normalizeWebsite,
+  type InstalledApp,
+  type WebsiteIcon,
+} from "./personalization-utils";
+import PersonalityModal, {
+  AppIconBadge,
+  WebsiteFavicon,
+  type PendingDeletePersonality,
+} from "./PersonalityModal";
+
+const PersonalizationView = () => {
+  const [personalities, setPersonalities] = useState<Personality[]>([]);
+  const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
+  const [websiteIconBySite, setWebsiteIconBySite] = useState<
+    Record<string, string>
+  >({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activePersonalityId, setActivePersonalityId] = useState<string | null>(
+    null,
+  );
+  const [shiftHeld, setShiftHeld] = useState(false);
+  const [pendingDeletePersonality, setPendingDeletePersonality] =
+    useState<PendingDeletePersonality | null>(null);
+  const hasRequestedIconRefreshRef = useRef(false);
+  const websiteIconRefreshKeyRef = useRef<string | null>(null);
+  const persistVersionRef = useRef(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [personalityResp, appsResp] = await Promise.all([
+        invoke<Personality[]>("get_personalities"),
+        invoke<InstalledApp[]>("list_installed_apps"),
+      ]);
+      setPersonalities(personalityResp ?? []);
+      setInstalledApps(appsResp ?? []);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const websiteDomains = useMemo(() => {
+    const seen = new Set<string>();
+    for (const personality of personalities) {
+      for (const site of personality.websites) {
+        const normalized = normalizeWebsite(site);
+        if (normalized) {
+          seen.add(normalized);
+        }
+      }
+    }
+    return Array.from(seen).sort();
+  }, [personalities]);
+
+  const loadWebsiteIcons = useCallback(async (sites: string[]) => {
+    if (sites.length === 0) {
+      setWebsiteIconBySite({});
+      return;
+    }
+    try {
+      const iconsResp = await invoke<WebsiteIcon[]>("list_website_icons", {
+        sites,
+      });
+      setWebsiteIconBySite(buildWebsiteIconMap(iconsResp ?? []));
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadWebsiteIcons(websiteDomains);
+  }, [websiteDomains, loadWebsiteIcons]);
+
+  useEffect(() => {
+    if (websiteDomains.length === 0) {
+      websiteIconRefreshKeyRef.current = null;
+      return;
+    }
+
+    const hasMissingIcons = websiteDomains.some(
+      (site) => !websiteIconBySite[site],
+    );
+    if (!hasMissingIcons) {
+      websiteIconRefreshKeyRef.current = websiteDomains.join("|");
+      return;
+    }
+
+    const currentKey = websiteDomains.join("|");
+    if (websiteIconRefreshKeyRef.current === currentKey) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      websiteIconRefreshKeyRef.current = currentKey;
+      try {
+        const iconsResp = await invoke<WebsiteIcon[]>("list_website_icons", {
+          sites: websiteDomains,
+        });
+        setWebsiteIconBySite(buildWebsiteIconMap(iconsResp ?? []));
+      } catch {
+        // Keep current icon map; website icon refresh is best-effort only.
+      }
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [websiteDomains, websiteIconBySite]);
+
+  useEffect(() => {
+    if (
+      hasRequestedIconRefreshRef.current ||
+      loading ||
+      installedApps.length === 0
+    ) {
+      return;
+    }
+
+    const hasMissingIcons = installedApps.some((app) => !app.icon_path);
+    if (!hasMissingIcons) {
+      hasRequestedIconRefreshRef.current = true;
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      hasRequestedIconRefreshRef.current = true;
+      try {
+        const appsResp = await invoke<InstalledApp[]>("list_installed_apps");
+        setInstalledApps(appsResp ?? []);
+      } catch {
+        // Keep current app list; icon refresh is best-effort only.
+      }
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [installedApps, loading]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let unlistenFocus: (() => void) | null = null;
+
+    const handleKeyChange = (event: KeyboardEvent) => {
+      setShiftHeld(event.shiftKey);
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      setShiftHeld(event.shiftKey);
+    };
+    const resetShift = () => setShiftHeld(false);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        setShiftHeld(false);
+      }
+    };
+
+    getCurrentWindow()
+      .onFocusChanged(() => {
+        setShiftHeld(false);
+      })
+      .then((unlisten) => {
+        if (cancelled) {
+          unlisten();
+        } else {
+          unlistenFocus = unlisten;
+        }
+      })
+      .catch(() => {});
+
+    document.addEventListener("keydown", handleKeyChange);
+    document.addEventListener("keyup", handleKeyChange);
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", resetShift);
+    window.addEventListener("focus", resetShift);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("keydown", handleKeyChange);
+      document.removeEventListener("keyup", handleKeyChange);
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", resetShift);
+      window.removeEventListener("focus", resetShift);
+      unlistenFocus?.();
+    };
+  }, []);
+
+  const persistPersonalities = useCallback(async (next: Personality[]) => {
+    const persistVersion = persistVersionRef.current + 1;
+    persistVersionRef.current = persistVersion;
+    setError(null);
+    try {
+      const cleaned = await invoke<Personality[]>("set_personalities", {
+        personalities: next,
+      });
+      if (persistVersion !== persistVersionRef.current) {
+        return;
+      }
+      setPersonalities(cleaned ?? next);
+    } catch (err) {
+      if (persistVersion !== persistVersionRef.current) {
+        return;
+      }
+      console.error(err);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, []);
+
+  const updatePersonalities = useCallback(
+    (updater: (prev: Personality[]) => Personality[]) => {
+      setPersonalities((prev) => {
+        const next = updater(prev);
+        void persistPersonalities(next);
+        return next;
+      });
+    },
+    [persistPersonalities],
+  );
+
+  const updatePersonality = useCallback(
+    (id: string, patch: Partial<Personality>) => {
+      updatePersonalities((prev) =>
+        prev.map((personality) =>
+          personality.id === id ? { ...personality, ...patch } : personality,
+        ),
+      );
+    },
+    [updatePersonalities],
+  );
+
+  const updatePersonalityList = useCallback(
+    (id: string, updater: (current: Personality) => Personality) => {
+      updatePersonalities((prev) =>
+        prev.map((personality) =>
+          personality.id === id ? updater(personality) : personality,
+        ),
+      );
+    },
+    [updatePersonalities],
+  );
+
+  const handleAddMode = () => {
+    const id = createId();
+    const nextMode: Personality = {
+      id,
+      name: "New Mode",
+      enabled: true,
+      apps: [],
+      websites: [],
+      instructions: [],
+    };
+    updatePersonalities((prev) => [...prev, nextMode]);
+    setActivePersonalityId(id);
+  };
+
+  const handleDeleteMode = useCallback(
+    (id: string) => {
+      updatePersonalities((prev) => prev.filter((mode) => mode.id !== id));
+      setActivePersonalityId(null);
+    },
+    [updatePersonalities],
+  );
+
+  const requestDeleteModeConfirm = useCallback((personality: Personality) => {
+    setPendingDeletePersonality({ id: personality.id, name: personality.name });
+  }, []);
+
+  const confirmDeleteMode = useCallback(() => {
+    if (!pendingDeletePersonality) {
+      return;
+    }
+    const targetId = pendingDeletePersonality.id;
+    setPendingDeletePersonality(null);
+    handleDeleteMode(targetId);
+  }, [pendingDeletePersonality, handleDeleteMode]);
+
+  const activePersonality = useMemo(() => {
+    return (
+      personalities.find(
+        (personality) => personality.id === activePersonalityId,
+      ) || null
+    );
+  }, [personalities, activePersonalityId]);
+
+  const installedAppByName = useMemo(() => {
+    const entries = installedApps.map(
+      (app) => [app.name.toLowerCase(), app] as const,
+    );
+    return new Map(entries);
+  }, [installedApps]);
+
+  useEffect(() => {
+    if (activePersonalityId && !activePersonality) {
+      setActivePersonalityId(null);
+    }
+  }, [activePersonalityId, activePersonality]);
+
+  return (
+    <div className="w-full text-left">
+      <div className="flex items-start gap-3 mb-4">
+        <DotMatrix
+          rows={2}
+          cols={3}
+          activeDots={[0, 1, 4, 5]}
+          dotSize={3}
+          gap={3}
+          color="var(--color-accent)"
+        />
+        <div className="flex-1 flex items-start justify-between gap-4">
+          <div>
+            <p className="ui-text-screen-title ui-color-primary tracking-tight">
+              Personalization
+            </p>
+            <p className="mt-1 ui-text-body-sm ui-color-secondary">
+              Tailor language model behavior to apps, sites, and custom
+              instructions.
+            </p>
+          </div>
+          <button
+            onClick={handleAddMode}
+            aria-label="New mode"
+            title="New mode"
+            className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-2.5 py-1.5 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
+          >
+            <Plus size={12} />
+            New mode
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <DotMatrix
+            rows={2}
+            cols={6}
+            activeDots={[0, 1, 2, 3, 4, 5]}
+            dotSize={3}
+            gap={3}
+            color="var(--color-content-muted)"
+            animated
+            className="opacity-60"
+          />
+        </div>
+      ) : personalities.length === 0 ? (
+        <div className="rounded-xl border border-border-primary bg-surface-secondary px-6 py-8 ui-color-muted">
+          <p className="ui-text-body-lg-strong">No modes yet</p>
+          <p className="ui-text-body-sm ui-color-muted">
+            Create a mode to start customizing your apps and websites.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+          {personalities.map((personality) => {
+            const appsPreview = personality.apps.slice(0, 3);
+            const sitesPreview = personality.websites.slice(0, 2);
+            const moreApps = Math.max(
+              0,
+              personality.apps.length - appsPreview.length,
+            );
+            const moreSites = Math.max(
+              0,
+              personality.websites.length - sitesPreview.length,
+            );
+            return (
+              <div
+                key={personality.id}
+                onClick={() => {
+                  if (shiftHeld) {
+                    requestDeleteModeConfirm(personality);
+                    return;
+                  }
+                  setActivePersonalityId(personality.id);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    if (shiftHeld) {
+                      requestDeleteModeConfirm(personality);
+                      return;
+                    }
+                    setActivePersonalityId(personality.id);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                className={`group relative rounded-xl border bg-surface-secondary p-2.5 text-left transition-colors cursor-pointer ${
+                  shiftHeld
+                    ? "border-red-500/30 hover:border-red-500/60 hover:bg-red-500/5"
+                    : "border-border-primary hover:bg-surface-tertiary"
+                }`}
+              >
+                <div className="relative space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="ui-text-body-lg-strong ui-color-primary">
+                        {personality.name}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          updatePersonality(personality.id, {
+                            enabled: !personality.enabled,
+                          });
+                        }}
+                        aria-label={
+                          personality.enabled ? "Disable mode" : "Enable mode"
+                        }
+                        role="switch"
+                        aria-checked={personality.enabled}
+                        className={`relative h-4 w-7 rounded-full transition-colors ${
+                          personality.enabled
+                            ? "bg-cloud"
+                            : "bg-border-secondary"
+                        }`}
+                      >
+                        <motion.div
+                          className="absolute top-[2px] h-3 w-3 rounded-full bg-white shadow-sm"
+                          animate={{
+                            left: personality.enabled
+                              ? "calc(100% - 14px)"
+                              : "2px",
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 500,
+                            damping: 30,
+                          }}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <p className="ui-text-uppercase-micro ui-color-disabled">
+                        Apps
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                        {appsPreview.length === 0 ? (
+                          <span className="ui-text-meta ui-color-disabled">
+                            No apps yet
+                          </span>
+                        ) : (
+                          appsPreview.map((app) => (
+                            <div key={app} title={app}>
+                              <AppIconBadge
+                                appName={app}
+                                iconPath={
+                                  installedAppByName.get(app.toLowerCase())
+                                    ?.icon_path
+                                }
+                                size="chip"
+                              />
+                            </div>
+                          ))
+                        )}
+                        {moreApps > 0 && (
+                          <span className="ui-text-meta font-mono ui-color-muted">
+                            +{moreApps}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="ui-text-uppercase-micro ui-color-disabled">
+                        Websites
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-1.5 min-w-0 flex-nowrap">
+                        {sitesPreview.length === 0 ? (
+                          <span className="ui-text-meta ui-color-disabled">
+                            No sites yet
+                          </span>
+                        ) : (
+                          sitesPreview.map((site) => (
+                            <span
+                              key={site}
+                              className="min-w-0 max-w-[118px] rounded-md border border-border-primary bg-surface-overlay px-2 py-1 ui-text-micro ui-color-secondary inline-flex items-center gap-1"
+                            >
+                              <WebsiteFavicon
+                                site={site}
+                                iconPath={
+                                  websiteIconBySite[normalizeWebsite(site)]
+                                }
+                                size="chip"
+                              />
+                              <span className="min-w-0 truncate font-mono">
+                                {formatWebsitePreview(site)}
+                              </span>
+                            </span>
+                          ))
+                        )}
+                        {moreSites > 0 && (
+                          <span className="shrink-0 ui-text-meta font-mono ui-color-muted">
+                            +{moreSites}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-border-primary ui-text-meta ui-color-muted flex items-center gap-2 min-w-0">
+                    <span className="ui-text-uppercase-micro ui-color-disabled">
+                      Notes:
+                    </span>
+                    <span className="font-mono truncate flex-1">
+                      {personality.instructions.length > 0
+                        ? personality.instructions[0]
+                        : "No notes yet"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 ui-text-body-sm ui-color-error-soft">{error}</div>
+      )}
+
+      {activePersonality && (
+        <PersonalityModal
+          personality={activePersonality}
+          installedApps={installedApps}
+          websiteIconBySite={websiteIconBySite}
+          onClose={() => setActivePersonalityId(null)}
+          onUpdate={(patch) => updatePersonality(activePersonality.id, patch)}
+          onUpdateList={(updater) =>
+            updatePersonalityList(activePersonality.id, updater)
+          }
+          onDelete={() => requestDeleteModeConfirm(activePersonality)}
+        />
+      )}
+
+      <AnimatePresence>
+        {pendingDeletePersonality && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            onClick={() => setPendingDeletePersonality(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 14 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 14 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              onClick={(event) => event.stopPropagation()}
+              className="w-[380px] max-w-[92vw] rounded-2xl border border-border-secondary bg-surface-overlay p-5 shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-mode-title"
+            >
+              <h3
+                id="delete-mode-title"
+                className="ui-text-title-strong ui-color-primary"
+              >
+                Delete mode?
+              </h3>
+              <p className="mt-2 ui-text-body-sm ui-color-secondary">
+                Delete{" "}
+                <span className="font-semibold text-content-primary">
+                  "{pendingDeletePersonality.name}"
+                </span>
+                ? This cannot be undone.
+              </p>
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingDeletePersonality(null)}
+                  className="rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteMode}
+                  className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 ui-text-button font-semibold ui-color-error-soft hover:bg-red-500/15 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+export default PersonalizationView;

@@ -1,23 +1,26 @@
 {
   "name": "glimpse",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.7.1",
   "type": "module",
   "packageManager": "bun@1.3.2",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "lint": "eslint src/"
   },
   "dependencies": {
     "@aptabase/tauri": "^0.4.1",
+    "@tanstack/react-query": "^5.91.0",
     "@tauri-apps/api": "2.10.1",
     "@tauri-apps/plugin-deep-link": "^2.4.5",
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-opener": "^2.5.2",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-updater": "2.10.0",
+    "@xstate/react": "^6.1.0",
     "browserslist": "^4.28.1",
     "framer-motion": "^12.23.24",
     "howler": "^2.2.4",
@@ -27,18 +30,24 @@
     "react-markdown": "^10.1.0",
     "react-virtuoso": "^4.17.0",
     "remark-breaks": "^4.0.0",
-    "tauri-plugin-macos-permissions-api": "^2.3.0"
+    "tauri-plugin-macos-permissions-api": "^2.3.0",
+    "xstate": "^5.28.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@tauri-apps/cli": "^2",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
     "autoprefixer": "^10.4.22",
     "baseline-browser-mapping": "^2.10.0",
+    "eslint": "^10.0.3",
+    "eslint-plugin-boundaries": "^6.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4",
     "typescript": "~5.8.3",
+    "typescript-eslint": "^8.57.1",
     "vite": "^7.0.4"
   }
 }

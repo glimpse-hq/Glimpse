@@ -56,15 +56,14 @@ pub fn show(
     let _ = app.run_on_main_thread(move || {
         if let Ok(panel) = app_clone.get_webview_panel(crate::MAIN_WINDOW_LABEL) {
             panel.show();
+            panel.set_ignores_mouse_events(true);
         }
     });
     Ok(())
 }
 
-pub fn hide(
-    app: &AppHandle<AppRuntime>,
-    _overlay_window: &WebviewWindow<AppRuntime>,
-) -> Result<()> {
+pub fn hide(app: &AppHandle<AppRuntime>, overlay_window: &WebviewWindow<AppRuntime>) -> Result<()> {
+    let _ = overlay_window.set_position(tauri::PhysicalPosition::new(-9999, -9999)); // If panel hide doesn't work, we also just throw it really far off screen.
     let app_clone = app.clone();
     let _ = app.run_on_main_thread(move || {
         if let Ok(panel) = app_clone.get_webview_panel(crate::MAIN_WINDOW_LABEL) {

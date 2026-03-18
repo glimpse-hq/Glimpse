@@ -14,17 +14,18 @@ import {
   ArrowUpCircle,
   Library,
 } from "lucide-react";
-import { invoke } from "@tauri-apps/api/core";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
-import SettingsModal from "./components/settings/SettingsModal";
-import FAQModal from "./components/FAQModal";
-import DotMatrix from "./components/DotMatrix";
-import TranscriptionList from "./components/TranscriptionList";
-import DictionaryView from "./components/DictionaryView";
-import PersonalizationView from "./components/PersonalizationView";
-import LibraryView from "./components/LibraryView";
-import { useAuth } from "./hooks/useAuth";
-import type { TranscriptionMode, StoredSettings } from "./types";
+import SettingsModal from "./features/settings/components/SettingsModal";
+import FAQModal from "./shared/ui/FAQModal";
+import DotMatrix from "./shared/ui/DotMatrix";
+import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
+import DictionaryView from "./features/dictionary/components/DictionaryView";
+import PersonalizationView from "./features/personalization/components/PersonalizationView";
+import LibraryView from "./features/library/components/LibraryView";
+import { useCurrentUser } from "./features/auth/queries";
+import { useSettings, useAppInfo } from "./features/settings/queries";
+import { useUpdateStatus } from "./features/updates/queries";
+import type { TranscriptionMode } from "./types";
 
 const SidebarItem = ({
   icon,
@@ -72,21 +73,26 @@ const Home = () => {
   const [activeView, setActiveView] = useState<
     "home" | "dictionary" | "brain" | "library"
   >("home");
-  const [transcriptionMode, setTranscriptionMode] =
-    useState<TranscriptionMode>("local");
-  const { user: currentUser, refresh: refreshUser } = useAuth();
+  const { user: currentUser, refresh: refreshUser } = useCurrentUser();
   const [showSupportPopup, setShowSupportPopup] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
-  const [appVersion, setAppVersion] = useState("-");
   const popupRef = useRef<HTMLDivElement>(null);
   const supportButtonRef = useRef<HTMLButtonElement>(null);
-  const [updateAvailable, setUpdateAvailable] = useState(false);
 
-  const [llmEnabled, setLlmEnabled] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [pendingImportPaths, setPendingImportPaths] = useState<string[] | null>(
     null,
   );
+
+  // Query-based state
+  const { data: settings } = useSettings();
+  const { data: updateStatus } = useUpdateStatus();
+  const { data: appInfoData } = useAppInfo();
+
+  const transcriptionMode: TranscriptionMode = settings?.transcription_mode ?? "local";
+  const llmEnabled = settings?.llm_enabled ?? false;
+  const appVersion = appInfoData?.version ?? "-";
+  const updateAvailable = updateStatus?.available ?? false;
 
   const sidebarWidth = isSidebarCollapsed ? 68 : 200;
   const currentUserAvatar =
@@ -94,9 +100,9 @@ const Home = () => {
       ? currentUser.prefs.avatar
       : null;
 
+  // Navigation + drag-drop event listeners (settings data now comes from useSettings query)
   useEffect(() => {
     let cancelled = false;
-    let unlistenSettings: UnlistenFn | null = null;
     let unlistenNavigate: UnlistenFn | null = null;
     let unlistenModels: UnlistenFn | null = null;
     let unlistenDragEnter: UnlistenFn | null = null;
@@ -104,33 +110,7 @@ const Home = () => {
     let unlistenDragLeave: UnlistenFn | null = null;
     let unlistenDragDrop: UnlistenFn | null = null;
     let unlistenOpenImport: UnlistenFn | null = null;
-
-    const loadSettings = async () => {
-      try {
-        const settings = await invoke<StoredSettings>("get_settings");
-        setTranscriptionMode(settings.transcription_mode);
-        setLlmEnabled(settings.llm_enabled);
-      } catch (err) {
-        console.error("Failed to load settings:", err);
-      }
-    };
-
-    loadSettings();
-
-    invoke<{ version: string }>("get_app_info")
-      .then((info) => setAppVersion(info.version))
-      .catch((err) => console.error("Failed to load app version:", err));
-
-    listen<StoredSettings>("settings:changed", (event) => {
-      setTranscriptionMode(event.payload.transcription_mode);
-      setLlmEnabled(event.payload.llm_enabled);
-    }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenSettings = fn;
-      }
-    });
+    let unlistenSignIn: UnlistenFn | null = null;
 
     listen("navigate:about", () => {
       setSettingsTab("about");
@@ -139,56 +119,37 @@ const Home = () => {
         emit("updater:check");
       }, 100);
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenNavigate = fn;
-      }
+      if (cancelled) fn();
+      else unlistenNavigate = fn;
     });
 
     listen("navigate:models", () => {
       setSettingsTab("models");
       setIsSettingsOpen(true);
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenModels = fn;
-      }
+      if (cancelled) fn();
+      else unlistenModels = fn;
     });
 
     listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
-      if (event.payload?.paths?.length) {
-        setDragActive(true);
-      }
+      if (event.payload?.paths?.length) setDragActive(true);
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenDragEnter = fn;
-      }
+      if (cancelled) fn();
+      else unlistenDragEnter = fn;
     });
 
     listen<{ paths?: string[] }>("tauri://drag-over", (event) => {
-      if (event.payload?.paths?.length) {
-        setDragActive(true);
-      }
+      if (event.payload?.paths?.length) setDragActive(true);
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenDragOver = fn;
-      }
+      if (cancelled) fn();
+      else unlistenDragOver = fn;
     });
 
     listen("tauri://drag-leave", () => {
       setDragActive(false);
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenDragLeave = fn;
-      }
+      if (cancelled) fn();
+      else unlistenDragLeave = fn;
     });
 
     listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
@@ -198,11 +159,8 @@ const Home = () => {
         setActiveView("library");
       }
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenDragDrop = fn;
-      }
+      if (cancelled) fn();
+      else unlistenDragDrop = fn;
     });
 
     listen<string[]>("library:open_import", (event) => {
@@ -211,28 +169,20 @@ const Home = () => {
         setActiveView("library");
       }
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenOpenImport = fn;
-      }
+      if (cancelled) fn();
+      else unlistenOpenImport = fn;
     });
 
-    let unlistenSignIn: UnlistenFn | null = null;
     listen("navigate:sign-in", () => {
       setSettingsTab("account");
       setIsSettingsOpen(true);
     }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenSignIn = fn;
-      }
+      if (cancelled) fn();
+      else unlistenSignIn = fn;
     });
 
     return () => {
       cancelled = true;
-      unlistenSettings?.();
       unlistenNavigate?.();
       unlistenModels?.();
       unlistenDragEnter?.();
@@ -244,51 +194,7 @@ const Home = () => {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    let unlistenUpdate: UnlistenFn | null = null;
-    let unlistenCleared: UnlistenFn | null = null;
-
-    const checkUpdateStatus = async () => {
-      try {
-        const status = await invoke<{
-          available: boolean;
-          version: string | null;
-        }>("get_update_status");
-        setUpdateAvailable(status.available);
-      } catch (err) {
-        console.error("Failed to check update status:", err);
-      }
-    };
-
-    checkUpdateStatus();
-
-    listen<string>("update:available", () => {
-      setUpdateAvailable(true);
-    }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenUpdate = fn;
-      }
-    });
-
-    listen("update:cleared", () => {
-      setUpdateAvailable(false);
-    }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenCleared = fn;
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      unlistenUpdate?.();
-      unlistenCleared?.();
-    };
-  }, []);
+  // Update status now comes from useUpdateStatus() query hook
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
