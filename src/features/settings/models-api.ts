@@ -24,9 +24,10 @@ export async function cancelDownload(model: string): Promise<void> {
 
 export async function fetchLlmModels(
   endpoint: string,
+  provider: string,
   apiKey: string,
 ): Promise<string[]> {
-  return invoke<string[]>("fetch_llm_models", { endpoint, apiKey });
+  return invoke<string[]>("fetch_llm_models", { endpoint, provider, apiKey });
 }
 
 export function onDownloadProgress(

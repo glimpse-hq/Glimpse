@@ -54,7 +54,7 @@ export function Dropdown<T extends string | number>({
         if (isOpen) {
             onOpen?.();
         }
-    }, [isOpen]);
+    }, [isOpen, onOpen]);
 
     useEffect(() => {
         if (!isOpen) return;

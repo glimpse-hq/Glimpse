@@ -5,8 +5,8 @@ export const modelKeys = {
   all: ["models"] as const,
   catalog: () => [...modelKeys.all, "catalog"] as const,
   status: (key: string) => [...modelKeys.all, "status", key] as const,
-  llmModels: (endpoint: string) =>
-    [...modelKeys.all, "llm", endpoint] as const,
+  llmModels: (endpoint: string, provider: string, apiKey: string) =>
+    [...modelKeys.all, "llm", endpoint, provider, apiKey] as const,
 };
 
 export function useModelCatalog() {
@@ -50,10 +50,10 @@ export function useDeleteModel() {
   });
 }
 
-export function useFetchLlmModels(endpoint: string, apiKey: string) {
+export function useFetchLlmModels(endpoint: string, provider: string, apiKey: string) {
   return useQuery({
-    queryKey: modelKeys.llmModels(endpoint),
-    queryFn: () => modelsApi.fetchLlmModels(endpoint, apiKey),
+    queryKey: modelKeys.llmModels(endpoint, provider, apiKey),
+    queryFn: () => modelsApi.fetchLlmModels(endpoint, provider, apiKey),
     enabled: false,
   });
 }
