@@ -1,0 +1,59 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as modelsApi from "./models-api";
+
+export const modelKeys = {
+  all: ["models"] as const,
+  catalog: () => [...modelKeys.all, "catalog"] as const,
+  status: (key: string) => [...modelKeys.all, "status", key] as const,
+  llmModels: (endpoint: string) =>
+    [...modelKeys.all, "llm", endpoint] as const,
+};
+
+export function useModelCatalog() {
+  return useQuery({
+    queryKey: modelKeys.catalog(),
+    queryFn: modelsApi.listModels,
+  });
+}
+
+export function useModelStatus(key: string) {
+  return useQuery({
+    queryKey: modelKeys.status(key),
+    queryFn: () => modelsApi.checkModelStatus(key),
+    enabled: !!key,
+  });
+}
+
+export function useDownloadModel() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: modelsApi.downloadModel,
+    onSuccess: (_data, model) => {
+      queryClient.invalidateQueries({
+        queryKey: modelKeys.status(model),
+      });
+    },
+  });
+}
+
+export function useDeleteModel() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: modelsApi.deleteModel,
+    onSuccess: (_data, model) => {
+      queryClient.invalidateQueries({
+        queryKey: modelKeys.status(model),
+      });
+    },
+  });
+}
+
+export function useFetchLlmModels(endpoint: string, apiKey: string) {
+  return useQuery({
+    queryKey: modelKeys.llmModels(endpoint),
+    queryFn: () => modelsApi.fetchLlmModels(endpoint, apiKey),
+    enabled: false,
+  });
+}

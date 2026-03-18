@@ -1,3 +1,9 @@
+0.7.1
+Spring Cleaning 🌱 update. This update was focused on cleaning up internal files and overhauling the organizing of the app, this is mainly in preperation for windows, which is coming soon!
+
+### Fixes
+- A bug where the Language Model dropdown wouldn't open.
+
 0.7.0
 
 **Note:** Glimpse is moving directories from dev.glimpse.glimpse to com.glimpse.data, this will require anyone updating the app to re-enable permissions for Glimpse, an extra system permission is also prompted to request copying files from the old location to the new one.
