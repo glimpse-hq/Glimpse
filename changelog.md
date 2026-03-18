@@ -1,5 +1,6 @@
 0.7.1
-Spring Cleaning 🌱 update. This update was focused on cleaning up internal files and overhauling the organizing of the app, this is mainly in preparation for windows, which is coming soon!
+
+Spring Cleaning update 🌱. This update was focused on cleaning up internal files and overhauling the organizing of the app, this is mainly in preparation for windows, which is coming soon!
 
 ### Fixes
 - A bug where the Language Model dropdown wouldn't open.
