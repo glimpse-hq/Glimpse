@@ -229,8 +229,8 @@ const AdvancedTab = ({
         </div>
 
         <p className="ui-text-micro ui-color-disabled px-0.5">
-          After changing permissions or analytics, restart Glimpse for changes
-          to take effect.
+          Disabling analytics takes effect immediately. Re-enabling or changing
+          permissions requires a restart.
         </p>
       </div>
     </div>

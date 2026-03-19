@@ -38,7 +38,7 @@ rustfft = "6"
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "stream", "rustls-tls", "blocking"] }
 dotenvy = "0.15"
 dotenvy_macro = "0.15"
-posthog-rs = "0.4"
+posthog-rs = "0.4" # NOTE: pulls reqwest 0.11 (duplicates our 0.12 TLS/HTTP stack). Replace when upstream supports 0.12.
 arboard = "3"
 mime_guess = "2"
 glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.0.3", features = ["whisper", "parakeet"] }
