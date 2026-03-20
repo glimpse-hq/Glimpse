@@ -99,6 +99,8 @@ type AppTabProps = {
   onTextSizeModeChange: (mode: TextSizeMode) => void;
   mediaControlEnabled: boolean;
   onMediaControlEnabledChange: (enabled: boolean) => void;
+  autoUpdateEnabled: boolean;
+  onAutoUpdateEnabledChange: (enabled: boolean) => void;
   analyticsEnabled: boolean;
   onAnalyticsEnabledChange: (enabled: boolean) => void;
 };
@@ -111,6 +113,8 @@ const AppTab = ({
   onTextSizeModeChange,
   mediaControlEnabled,
   onMediaControlEnabledChange,
+  autoUpdateEnabled,
+  onAutoUpdateEnabledChange,
   analyticsEnabled,
   onAnalyticsEnabledChange,
 }: AppTabProps) => (
@@ -251,6 +255,24 @@ const AppTab = ({
             <span className="ui-text-micro ui-color-disabled block mt-0.5">
               pauses the active Now Playing app while recording, then resumes it
               when done.
+            </span>
+          </div>
+
+          <div className="px-2 py-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="ui-text-label-strong ui-color-primary">
+                Auto-update
+              </span>
+              <ToggleSwitch
+                enabled={autoUpdateEnabled}
+                onToggle={() =>
+                  onAutoUpdateEnabledChange(!autoUpdateEnabled)
+                }
+                ariaLabel="Toggle auto-update"
+              />
+            </div>
+            <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              automatically downloads and installs updates when idle.
             </span>
           </div>
         </div>

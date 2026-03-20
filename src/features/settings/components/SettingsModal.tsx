@@ -260,6 +260,8 @@ const SettingsModal = ({
                       onMediaControlEnabledChange={
                         form.setMediaControlEnabled
                       }
+                      autoUpdateEnabled={form.autoUpdateEnabled}
+                      onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
                       analyticsEnabled={form.analyticsEnabled}
                       onAnalyticsEnabledChange={form.setAnalyticsEnabled}
                     />

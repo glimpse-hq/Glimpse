@@ -33,6 +33,7 @@ const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
 const KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
+const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
 const KEY_ANALYTICS_ENABLED: &str = "analytics_enabled";
 const KEY_ANALYTICS_INSTALL_ID: &str = "analytics_install_id";
 
@@ -108,6 +109,8 @@ pub struct UserSettings {
     pub edit_mode_enabled: bool,
     #[serde(default = "default_true")]
     pub media_control_enabled: bool,
+    #[serde(default = "default_true")]
+    pub auto_update_enabled: bool,
     #[serde(default = "default_true")]
     pub analytics_enabled: bool,
     #[serde(default)]
@@ -262,6 +265,7 @@ impl Default for UserSettings {
             personalities: default_personalities(),
             edit_mode_enabled: false,
             media_control_enabled: true,
+            auto_update_enabled: true,
             analytics_enabled: true,
             analytics_install_id: String::new(),
         }
@@ -457,6 +461,11 @@ impl SettingsStore {
                 KEY_MEDIA_CONTROL_ENABLED,
                 settings.media_control_enabled,
             )?;
+            settings.auto_update_enabled = self.read_value(
+                &conn,
+                KEY_AUTO_UPDATE_ENABLED,
+                settings.auto_update_enabled,
+            )?;
             settings.analytics_enabled =
                 self.read_value(&conn, KEY_ANALYTICS_ENABLED, settings.analytics_enabled)?;
             settings.analytics_install_id = self.read_value(
@@ -593,6 +602,11 @@ impl SettingsStore {
             &conn,
             KEY_MEDIA_CONTROL_ENABLED,
             &settings.media_control_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_UPDATE_ENABLED,
+            &settings.auto_update_enabled,
         )?;
         self.write_value(&conn, KEY_ANALYTICS_ENABLED, &settings.analytics_enabled)?;
         self.write_value(

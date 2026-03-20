@@ -60,7 +60,7 @@ Glimpse collects **anonymous usage telemetry** via [PostHog EU](https://posthog.
 - **Collected:** app launches/exits, uptime, recording count, transcription engine and keybind mode, model downloads, onboarding completion
 - **Never collected:** transcripts, audio, API keys, prompts, or any personally identifiable information
 
-Telemetry is tied to a random install ID (not your identity) and stored in the EU. You can **opt out** at any time in **Settings → Advanced**. For complete transparency, see [`src-tauri/src/analytics.rs`](src-tauri/src/analytics.rs) and the [Glimpse Wiki](https://github.com/LegendarySpy/Glimpse/wiki/Analytics).
+Telemetry is tied to a random install ID (not your identity) and stored in the EU. You can **opt out** at any time in **Settings → App**. For complete transparency, see [`src-tauri/src/analytics.rs`](src-tauri/src/analytics.rs) and the [Glimpse Wiki](https://github.com/LegendarySpy/Glimpse/wiki/Analytics).
 
 ## License
 

@@ -225,7 +225,7 @@ export function ReadyStep({
 
       <p className="mt-3 ui-text-micro ui-color-disabled text-center">
         Glimpse sends anonymous usage analytics to help improve the app. You can
-        disable this anytime in Settings &rarr; Advanced.
+        disable this anytime in Settings &rarr; App.
       </p>
 
       {completionError && (

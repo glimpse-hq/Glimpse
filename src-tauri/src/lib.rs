@@ -46,7 +46,7 @@ use recorder::{
 use reqwest::Client;
 use serde::Serialize;
 use settings::{
-    default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UpdateChannel, UserSettings,
+    default_local_model, LlmProvider, SettingsStore, TranscriptionMode, UserSettings,
 };
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
@@ -321,6 +321,8 @@ pub fn run() {
                 let _ = tray::toggle_settings_window(&h);
             });
 
+            update_checker::check_post_auto_update(handle);
+
             let update_handle = handle.clone();
             let update_state = handle.state::<AppState>().update_state().clone();
             update_checker::start_background_checker(update_handle, update_state);
@@ -467,6 +469,7 @@ pub struct AppState {
     library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     update_state: update_checker::SharedUpdateState,
+    auto_update_completed: AtomicBool,
     preflight_cancel: CancellationToken,
     preflight_started: AtomicBool,
     preflight_notify: Arc<Notify>,
@@ -525,6 +528,7 @@ impl AppState {
             library_active: parking_lot::Mutex::new(None),
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
             update_state: update_checker::create_state(),
+            auto_update_completed: AtomicBool::new(false),
             preflight_cancel: CancellationToken::new(),
             preflight_started: AtomicBool::new(false),
             preflight_notify: Arc::new(Notify::new()),
@@ -539,6 +543,19 @@ impl AppState {
     pub fn analytics_state(&self) -> (bool, String) {
         let s = self.settings.lock();
         (s.analytics_enabled, s.analytics_install_id.clone())
+    }
+
+    /// Read auto-update setting from the in-memory cache (no DB hit).
+    pub fn is_auto_update_enabled(&self) -> bool {
+        self.settings.lock().auto_update_enabled
+    }
+
+    pub fn set_auto_update_completed(&self) {
+        self.auto_update_completed.store(true, Ordering::SeqCst);
+    }
+
+    pub fn take_auto_update_completed(&self) -> bool {
+        self.auto_update_completed.swap(false, Ordering::SeqCst)
     }
 
     pub fn current_settings(&self) -> UserSettings {
@@ -875,57 +892,12 @@ fn reset_onboarding(
 }
 
 #[tauri::command]
-#[allow(non_snake_case, clippy::too_many_arguments)]
 fn update_settings(
-    smartShortcut: String,
-    smartEnabled: bool,
-    holdShortcut: String,
-    holdEnabled: bool,
-    toggleShortcut: String,
-    toggleEnabled: bool,
-    transcriptionMode: TranscriptionMode,
-    localModel: String,
-    microphoneDevice: Option<String>,
-    language: String,
-    updateChannel: UpdateChannel,
-    llmEnabled: bool,
-    cleanupEnabled: bool,
-    llmProvider: LlmProvider,
-    llmEndpoint: String,
-    llmApiKey: String,
-    llmModel: String,
-    editModeEnabled: bool,
-    mediaControlEnabled: bool,
-    analyticsEnabled: bool,
+    args: core::settings::UpdateSettingsArgs,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<UserSettings, String> {
-    core::settings::update_settings(
-        core::settings::UpdateSettingsArgs {
-            smart_shortcut: smartShortcut,
-            smart_enabled: smartEnabled,
-            hold_shortcut: holdShortcut,
-            hold_enabled: holdEnabled,
-            toggle_shortcut: toggleShortcut,
-            toggle_enabled: toggleEnabled,
-            transcription_mode: transcriptionMode,
-            local_model: localModel,
-            microphone_device: microphoneDevice,
-            language,
-            update_channel: updateChannel,
-            llm_enabled: llmEnabled,
-            cleanup_enabled: cleanupEnabled,
-            llm_provider: llmProvider,
-            llm_endpoint: llmEndpoint,
-            llm_api_key: llmApiKey,
-            llm_model: llmModel,
-            edit_mode_enabled: editModeEnabled,
-            media_control_enabled: mediaControlEnabled,
-            analytics_enabled: analyticsEnabled,
-        },
-        &app,
-        &state,
-    )
+    core::settings::update_settings(args, &app, &state)
 }
 
 #[tauri::command]

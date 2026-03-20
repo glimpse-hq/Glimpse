@@ -1,3 +1,4 @@
+use serde::Deserialize;
 use tauri::{AppHandle, Emitter};
 
 use super::hotkeys;
@@ -7,7 +8,8 @@ use crate::{
     EVENT_SETTINGS_CHANGED,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct UpdateSettingsArgs {
     pub smart_shortcut: String,
     pub smart_enabled: bool,
@@ -28,6 +30,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_model: String,
     pub edit_mode_enabled: bool,
     pub media_control_enabled: bool,
+    pub auto_update_enabled: bool,
     pub analytics_enabled: bool,
 }
 
@@ -190,6 +193,7 @@ pub(crate) fn update_settings(
     next.llm_model = args.llm_model.trim().to_string();
     next.edit_mode_enabled = args.edit_mode_enabled;
     next.media_control_enabled = args.media_control_enabled;
+    next.auto_update_enabled = args.auto_update_enabled;
     next.analytics_enabled = args.analytics_enabled;
 
     let next = state
@@ -251,6 +255,7 @@ mod tests {
             llm_model: String::new(),
             edit_mode_enabled: false,
             media_control_enabled: true,
+            auto_update_enabled: true,
             analytics_enabled: true,
         }
     }

@@ -107,6 +107,7 @@ export function useSettingsForm({
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(true);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
@@ -167,6 +168,30 @@ export function useSettingsForm({
   const setLlmApiKey = useCallback((value: string) => {
     setLlmApiKeyRaw(value);
     setAvailableModels([]);
+  }, []);
+
+  const hydrateFromSettings = useCallback((s: StoredSettings) => {
+    setSmartShortcut(s.smart_shortcut);
+    setSmartEnabled(s.smart_enabled);
+    setHoldShortcut(s.hold_shortcut);
+    setHoldEnabled(s.hold_enabled);
+    setToggleShortcut(s.toggle_shortcut);
+    setToggleEnabled(s.toggle_enabled);
+    setTranscriptionModeRaw(s.transcription_mode);
+    setLocalModel(s.local_model);
+    setMicrophoneDevice(s.microphone_device);
+    setLanguage(s.language);
+    setUpdateChannel(s.update_channel ?? "stable");
+    setLlmEnabledRaw(s.llm_enabled ?? false);
+    setCleanupEnabled(s.cleanup_enabled ?? false);
+    setLlmProviderRaw(s.llm_provider ?? "none");
+    setLlmEndpointRaw(s.llm_endpoint ?? "");
+    setLlmApiKeyRaw(s.llm_api_key ?? "");
+    setLlmModel(s.llm_model ?? "");
+    setEditModeEnabled(s.edit_mode_enabled ?? false);
+    setMediaControlEnabled(s.media_control_enabled ?? true);
+    setAutoUpdateEnabled(s.auto_update_enabled ?? true);
+    setAnalyticsEnabled(s.analytics_enabled ?? true);
   }, []);
 
   const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
@@ -317,32 +342,13 @@ export function useSettingsForm({
         if (!s) return;
         // Skip the echo if we're in the middle of an auto-save
         if (isSavingRef.current) return;
-        setSmartShortcut(s.smart_shortcut);
-        setSmartEnabled(s.smart_enabled);
-        setHoldShortcut(s.hold_shortcut);
-        setHoldEnabled(s.hold_enabled);
-        setToggleShortcut(s.toggle_shortcut);
-        setToggleEnabled(s.toggle_enabled);
-        setTranscriptionModeRaw(s.transcription_mode);
-        setLocalModel(s.local_model);
-        setMicrophoneDevice(s.microphone_device);
-        setLanguage(s.language);
-        setUpdateChannel(s.update_channel ?? "stable");
-        setLlmEnabledRaw(s.llm_enabled ?? false);
-        setCleanupEnabled(s.cleanup_enabled ?? false);
-        setLlmProviderRaw(s.llm_provider ?? "none");
-        setLlmEndpointRaw(s.llm_endpoint ?? "");
-        setLlmApiKeyRaw(s.llm_api_key ?? "");
-        setLlmModel(s.llm_model ?? "");
-        setEditModeEnabled(s.edit_mode_enabled ?? false);
-        setMediaControlEnabled(s.media_control_enabled ?? true);
-        setAnalyticsEnabled(s.analytics_enabled ?? true);
+        hydrateFromSettings(s);
       },
     );
     return () => {
       unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
     };
-  }, []);
+  }, [hydrateFromSettings]);
 
   const refreshModelStatus = useCallback((modelKey: string) => {
     invoke<ModelStatus>("check_model_status", { model: modelKey })
@@ -370,26 +376,7 @@ export function useSettingsForm({
       setLoading(true);
       try {
         const settings = await invoke<StoredSettings>("get_settings");
-        setSmartShortcut(settings.smart_shortcut);
-        setSmartEnabled(settings.smart_enabled);
-        setHoldShortcut(settings.hold_shortcut);
-        setHoldEnabled(settings.hold_enabled);
-        setToggleShortcut(settings.toggle_shortcut);
-        setToggleEnabled(settings.toggle_enabled);
-        setTranscriptionModeRaw(settings.transcription_mode);
-        setLocalModel(settings.local_model);
-        setMicrophoneDevice(settings.microphone_device);
-        setLanguage(settings.language);
-        setUpdateChannel(settings.update_channel ?? "stable");
-        setLlmEnabledRaw(settings.llm_enabled ?? false);
-        setCleanupEnabled(settings.cleanup_enabled ?? false);
-        setLlmProviderRaw(settings.llm_provider ?? "none");
-        setLlmEndpointRaw(settings.llm_endpoint ?? "");
-        setLlmApiKeyRaw(settings.llm_api_key ?? "");
-        setLlmModel(settings.llm_model ?? "");
-        setEditModeEnabled(settings.edit_mode_enabled ?? false);
-        setMediaControlEnabled(settings.media_control_enabled ?? true);
-        setAnalyticsEnabled(settings.analytics_enabled ?? true);
+        hydrateFromSettings(settings);
       } catch (err) {
         console.error("Failed to load settings:", err);
         setError("Failed to load settings");
@@ -427,7 +414,7 @@ export function useSettingsForm({
       setLoading(false);
     };
     loadData();
-  }, [isOpen, refreshModelStatus]);
+  }, [isOpen, refreshModelStatus, hydrateFromSettings]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -650,26 +637,29 @@ export function useSettingsForm({
       isSavingRef.current = true;
       try {
         await invoke("update_settings", {
-          smartShortcut,
-          smartEnabled,
-          holdShortcut,
-          holdEnabled,
-          toggleShortcut,
-          toggleEnabled,
-          transcriptionMode,
-          localModel,
-          microphoneDevice,
-          language,
-          updateChannel,
-          llmEnabled,
-          cleanupEnabled: effectiveLlm ? cleanupEnabled : false,
-          llmProvider,
-          llmEndpoint,
-          llmApiKey,
-          llmModel,
-          editModeEnabled: effectiveLlm ? editModeEnabled : false,
-          mediaControlEnabled,
-          analyticsEnabled,
+          args: {
+            smartShortcut,
+            smartEnabled,
+            holdShortcut,
+            holdEnabled,
+            toggleShortcut,
+            toggleEnabled,
+            transcriptionMode,
+            localModel,
+            microphoneDevice,
+            language,
+            updateChannel,
+            llmEnabled,
+            cleanupEnabled: effectiveLlm ? cleanupEnabled : false,
+            llmProvider,
+            llmEndpoint,
+            llmApiKey,
+            llmModel,
+            editModeEnabled: effectiveLlm ? editModeEnabled : false,
+            mediaControlEnabled,
+            autoUpdateEnabled,
+            analyticsEnabled,
+          },
         });
         setError(null);
       } catch (err) {
@@ -702,6 +692,7 @@ export function useSettingsForm({
     llmModel,
     editModeEnabled,
     mediaControlEnabled,
+    autoUpdateEnabled,
     analyticsEnabled,
     llmConfigReady,
   ]);
@@ -937,6 +928,8 @@ export function useSettingsForm({
     setEditModeEnabled,
     mediaControlEnabled,
     setMediaControlEnabled,
+    autoUpdateEnabled,
+    setAutoUpdateEnabled,
     analyticsEnabled,
     setAnalyticsEnabled,
 

@@ -363,6 +363,25 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
     window.show()?;
     window.set_focus()?;
 
+    // Show a toast if the app just restarted via auto-update
+    if state.take_auto_update_completed() {
+        let current_version = env!("CARGO_PKG_VERSION");
+        crate::toast::emit_toast(
+            app,
+            crate::toast::Payload {
+                toast_type: "success".to_string(),
+                title: None,
+                message: format!("Glimpse updated to v{current_version}."),
+                auto_dismiss: Some(true),
+                duration: Some(5000),
+                retry_id: None,
+                mode: None,
+                action: None,
+                action_label: None,
+            },
+        );
+    }
+
     let already_registered = state
         .settings_close_handler_registered
         .swap(true, Ordering::SeqCst);
