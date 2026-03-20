@@ -1,15 +1,15 @@
 0.7.3
 
 ### Features
-- Added auto pause media to Settings > App, allowing you to pausing music playing when transcribing
-- Added an auto updat Settings > App, when idle for 10+ min Glimpse will auto update
+- Added Auto-pause media in Settings > App to pause playback during transcription.
+- Added auto-update in Settings > App — when idle for 10+ minutes Glimpse will auto-update.
 
 ### Changes
-- Advanced tab as been renamed to App and now includes automations.
-- Gently redesign some settings menus.
-- Updated toast only shows from auto-updates no longer manual updates
-- Shrunk the caret size in personalization
-- Added blank spaces in preset personalization
+- Advanced tab has been renamed to App and now includes automations.
+- Subtly redesigned some settings menus.
+- Toasts now appear for auto-updates only, not manual updates.
+- Shrunk the caret size in personalization.
+- Added blank spaces in preset personalization.
 
 
 0.7.2

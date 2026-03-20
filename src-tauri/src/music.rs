@@ -16,6 +16,7 @@ mod imp {
     use serde::Deserialize;
     use std::process::Command;
     use std::sync::OnceLock;
+    use tauri::async_runtime;
 
     const MEDIA_REMOTE_SCRIPT: &str = r#"
 ObjC.import('Foundation');
@@ -178,13 +179,19 @@ function run(argv) {
     }
 
     pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-        let newly_paused = pause_active_now_playing();
-        let target = newly_paused?;
+        let session = {
+            let mut shared = state().lock();
+            let session = shared.alloc_session();
+            shared.active_session = Some(session);
+            shared.paused_target = None;
+            session
+        };
 
-        let mut shared = state().lock();
-        let session = shared.alloc_session();
-        shared.active_session = Some(session);
-        shared.paused_target = Some(target);
+        let _ = async_runtime::spawn_blocking(move || {
+            let target = pause_active_now_playing();
+            finish_pause_attempt(session, target);
+        });
+
         Some(session)
     }
 
@@ -203,6 +210,33 @@ function run(argv) {
         };
 
         if let Some(target) = target {
+            let _ = async_runtime::spawn_blocking(move || {
+                let _ = resume_if_matching_target(&target);
+            });
+        }
+    }
+
+    fn finish_pause_attempt(session: PauseSession, target: Option<PausedTarget>) {
+        let target_to_resume = {
+            let mut shared = state().lock();
+
+            if shared.active_session != Some(session) {
+                target
+            } else {
+                match target {
+                    Some(target) => {
+                        shared.paused_target = Some(target);
+                        None
+                    }
+                    None => {
+                        shared.active_session = None;
+                        None
+                    }
+                }
+            }
+        };
+
+        if let Some(target) = target_to_resume {
             let _ = resume_if_matching_target(&target);
         }
     }
@@ -221,6 +255,8 @@ function run(argv) {
             .is_some_and(|result| result == "played")
     }
 
+    /// Blocks until the `osascript` child process exits.
+    /// Keep `run_script` on a blocking worker thread and out of latency-sensitive paths.
     fn run_script(args: &[&str]) -> Option<String> {
         use std::io::Read;
         use std::time::{Duration, Instant};

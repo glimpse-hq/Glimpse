@@ -471,11 +471,8 @@ impl SettingsStore {
                 KEY_MEDIA_CONTROL_ENABLED,
                 settings.media_control_enabled,
             )?;
-            settings.auto_update_enabled = self.read_value(
-                &conn,
-                KEY_AUTO_UPDATE_ENABLED,
-                settings.auto_update_enabled,
-            )?;
+            settings.auto_update_enabled =
+                self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.analytics_enabled =
                 self.read_value(&conn, KEY_ANALYTICS_ENABLED, settings.analytics_enabled)?;
             settings.analytics_install_id = self.read_value(

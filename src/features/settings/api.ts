@@ -9,7 +9,7 @@ export async function getSettings(): Promise<StoredSettings> {
 export async function updateSettings(
   args: Record<string, unknown>,
 ): Promise<void> {
-  await invoke("update_settings", args);
+  await invoke("update_settings", { args });
 }
 
 export async function setUserName(name: string): Promise<void> {

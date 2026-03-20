@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_updater::UpdaterExt;
-use tracing::{debug, info, warn};
+use tracing::{debug, error, info, warn};
 
 use crate::pill::PillStatus;
 use crate::settings::UpdateChannel;
@@ -86,13 +86,32 @@ fn marker_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
         .map(|d| d.join(AUTO_UPDATE_MARKER_FILE))
 }
 
-fn write_marker(app: &AppHandle<AppRuntime>) {
-    if let Some(path) = marker_path(app) {
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+fn write_marker(app: &AppHandle<AppRuntime>) -> bool {
+    let Some(path) = marker_path(app) else {
+        warn!("auto-update: failed to resolve restart marker path");
+        return false;
+    };
+
+    if let Some(parent) = path.parent() {
+        if let Err(err) = std::fs::create_dir_all(parent) {
+            warn!(
+                path = %parent.display(),
+                error = %err,
+                "auto-update: failed to create marker directory"
+            );
         }
-        let _ = std::fs::write(&path, "auto_update_completed\n");
     }
+
+    if let Err(err) = std::fs::write(&path, "auto_update_completed\n") {
+        error!(
+            path = %path.display(),
+            error = %err,
+            "auto-update: failed to write restart marker"
+        );
+        return false;
+    }
+
+    true
 }
 
 /// Called on startup: if a marker file exists, the app was just auto-updated.
@@ -100,9 +119,21 @@ fn write_marker(app: &AppHandle<AppRuntime>) {
 pub fn check_post_auto_update(app: &AppHandle<AppRuntime>) {
     if let Some(path) = marker_path(app) {
         if path.is_file() {
-            let _ = std::fs::remove_file(&path);
-            app.state::<AppState>().set_auto_update_completed();
-            info!("auto-update: detected post-restart marker, will show toast on next settings open");
+            match std::fs::remove_file(&path) {
+                Ok(()) => {
+                    app.state::<AppState>().set_auto_update_completed();
+                    info!(
+                        "auto-update: detected post-restart marker, will show toast on next settings open"
+                    );
+                }
+                Err(err) => {
+                    warn!(
+                        path = %path.display(),
+                        error = %err,
+                        "auto-update: failed to clear post-restart marker"
+                    );
+                }
+            }
         }
     }
 }
@@ -161,31 +192,41 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
         }
 
         // Re-check all conditions after the idle wait
-        if !app.state::<AppState>().is_auto_update_enabled()
-            || !state.lock().is_available()
-            || is_settings_window_visible(&app)
-            || !app.state::<AppState>().is_backend_idle()
-        {
+        if !should_restart_for_auto_update(&app, &state) {
             continue;
         }
 
         info!("auto-update: app is idle and window hidden, downloading update");
 
         match resolve_available_update(&app, None).await {
-            Ok((update, channel)) => {
-                match update.download_and_install(|_, _| {}, || {}).await {
-                    Ok(()) => {
-                        state.lock().clear();
-                        write_marker(&app);
-                        info!(channel = ?channel, "auto-update: installed, restarting");
-                        app.request_restart();
-                        return;
+            Ok(Some((update, channel))) => match update.download_and_install(|_, _| {}, || {}).await {
+                Ok(()) => {
+                    if !should_restart_for_auto_update(&app, &state) {
+                        info!(
+                            channel = ?channel,
+                            "auto-update: installed, but restart deferred because app is no longer idle"
+                        );
+                        continue;
                     }
-                    Err(err) => {
-                        warn!(error = %err, "auto-update: download/install failed");
+
+                    if !write_marker(&app) {
+                        warn!(
+                            channel = ?channel,
+                            "auto-update: installed, but restart deferred because marker write failed"
+                        );
+                        continue;
                     }
+
+                    state.lock().clear();
+                    info!(channel = ?channel, "auto-update: installed, restarting");
+                    app.request_restart();
+                    return;
                 }
-            }
+                Err(err) => {
+                    warn!(error = %err, "auto-update: download/install failed");
+                }
+            },
+            Ok(None) => {}
             Err(err) => {
                 warn!(error = %err, "auto-update: failed to resolve update");
             }
@@ -195,8 +236,9 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
     }
 }
 
-/// Returns true if the pill has been idle for the entire `required` duration
-/// and all other auto-update conditions remain satisfied throughout.
+/// Returns true only if the pill stays idle for the entire `required` duration
+/// while auto-update remains enabled, the backend stays idle, and the settings
+/// window stays hidden throughout the wait.
 async fn wait_for_idle(app: &AppHandle<AppRuntime>, required: Duration) -> bool {
     let poll = Duration::from_secs(10);
     let mut elapsed = Duration::ZERO;
@@ -228,6 +270,13 @@ async fn wait_for_idle(app: &AppHandle<AppRuntime>, required: Duration) -> bool 
     true
 }
 
+fn should_restart_for_auto_update(app: &AppHandle<AppRuntime>, state: &SharedUpdateState) -> bool {
+    app.state::<AppState>().is_auto_update_enabled()
+        && state.lock().is_available()
+        && !is_settings_window_visible(app)
+        && app.state::<AppState>().is_backend_idle()
+}
+
 fn is_settings_window_visible(app: &AppHandle<AppRuntime>) -> bool {
     app.get_webview_window(crate::SETTINGS_WINDOW_LABEL)
         .and_then(|w| w.is_visible().ok())
@@ -239,26 +288,68 @@ fn is_settings_window_visible(app: &AppHandle<AppRuntime>) -> bool {
 async fn resolve_available_update(
     app: &AppHandle<AppRuntime>,
     channel_override: Option<UpdateChannel>,
-) -> Result<(tauri_plugin_updater::Update, UpdateChannel), String> {
+) -> Result<Option<(tauri_plugin_updater::Update, UpdateChannel)>, String> {
     let channel = resolve_channel(app, channel_override);
     let endpoints = update_endpoints_for_channel(channel.clone())
         .await
         .map_err(|err| err.to_string())?;
+    let mut last_error = None;
+    let mut checked_endpoint = false;
 
     for endpoint in endpoints {
-        let updater = app
-            .updater_builder()
-            .endpoints(vec![endpoint])
-            .map_err(|err| err.to_string())?
-            .build()
-            .map_err(|err| err.to_string())?;
+        let endpoint_for_log = endpoint.clone();
+        let updater_builder = match app.updater_builder().endpoints(vec![endpoint]) {
+            Ok(builder) => builder,
+            Err(err) => {
+                warn!(
+                    endpoint = %endpoint_for_log,
+                    channel = ?channel,
+                    error = %err,
+                    "update: failed to configure updater endpoint"
+                );
+                last_error = Some(err.to_string());
+                continue;
+            }
+        };
 
-        if let Some(update) = updater.check().await.map_err(|err| err.to_string())? {
-            return Ok((update, channel));
+        let updater = match updater_builder.build() {
+            Ok(updater) => updater,
+            Err(err) => {
+                warn!(
+                    endpoint = %endpoint_for_log,
+                    channel = ?channel,
+                    error = %err,
+                    "update: failed to build updater"
+                );
+                last_error = Some(err.to_string());
+                continue;
+            }
+        };
+
+        match updater.check().await {
+            Ok(Some(update)) => return Ok(Some((update, channel))),
+            Ok(None) => {
+                checked_endpoint = true;
+            }
+            Err(err) => {
+                warn!(
+                    endpoint = %endpoint_for_log,
+                    channel = ?channel,
+                    error = %err,
+                    "update: failed to check endpoint"
+                );
+                last_error = Some(err.to_string());
+            }
         }
     }
 
-    Err("No update is currently available for this channel.".to_string())
+    if !checked_endpoint {
+        if let Some(err) = last_error {
+            return Err(err);
+        }
+    }
+
+    Ok(None)
 }
 
 async fn latest_prerelease_manifest_url() -> anyhow::Result<Option<Url>> {
@@ -330,13 +421,11 @@ async fn check_for_update(
     debug!("checking for updates");
 
     let channel = resolve_channel(app, channel_override);
-    let endpoints = update_endpoints_for_channel(channel.clone()).await?;
-
-    for endpoint in endpoints {
-        let updater = app.updater_builder().endpoints(vec![endpoint])?.build()?;
-        let update = updater.check().await?;
-
-        if let Some(update) = update {
+    match resolve_available_update(app, Some(channel.clone()))
+        .await
+        .map_err(|err| anyhow::anyhow!(err))?
+    {
+        Some((update, _)) => {
             let version = update.version.clone();
             info!(version = %version, channel = ?channel, "update available");
 
@@ -349,12 +438,12 @@ async fn check_for_update(
             }
 
             let _ = app.emit("update:available", version);
-            return Ok(());
+        }
+        None => {
+            debug!(channel = ?channel, "no updates available");
+            state.lock().clear();
         }
     }
-
-    debug!(channel = ?channel, "no updates available");
-    state.lock().clear();
 
     Ok(())
 }
@@ -442,7 +531,9 @@ pub async fn download_and_install_update(
     app: AppHandle<AppRuntime>,
     channel: Option<UpdateChannel>,
 ) -> Result<(), String> {
-    let (update, resolved_channel) = resolve_available_update(&app, channel).await?;
+    let (update, resolved_channel) = resolve_available_update(&app, channel)
+        .await?
+        .ok_or_else(|| "No update is currently available for this channel.".to_string())?;
 
     let mut downloaded = 0_u64;
     let mut total: Option<u64> = None;
