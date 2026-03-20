@@ -1,4 +1,4 @@
-name: 'publish'
+name: "publish"
 
 on:
   push:
@@ -20,11 +20,11 @@ jobs:
       matrix:
         include:
           # Universal macOS build
-          - platform: 'macos-15'
-            args: '--target universal-apple-darwin'
+          - platform: "macos-15"
+            args: "--target universal-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
-    
+
     env:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
       CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
@@ -121,16 +121,12 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
-          VITE_APPWRITE_PROJECT_ID: ${{ secrets.VITE_APPWRITE_PROJECT_ID }}
-          VITE_APPWRITE_PROJECT_NAME: ${{ secrets.VITE_APPWRITE_PROJECT_NAME }}
-          VITE_APPWRITE_ENDPOINT: ${{ secrets.VITE_APPWRITE_ENDPOINT }}
-          VITE_APPWRITE_DATABASE_ID: ${{ secrets.VITE_APPWRITE_DATABASE_ID }}
-          VITE_APPWRITE_TRANSCRIPTIONS_COLLECTION_ID: ${{ secrets.VITE_APPWRITE_TRANSCRIPTIONS_COLLECTION_ID }}
-          APTABASE_KEY: ${{ secrets.APTABASE_KEY }}
+          POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
         with:
           tagName: v__VERSION__
-          releaseName: 'Glimpse v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseName: "Glimpse v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
           args: ${{ matrix.args }}
