@@ -21,7 +21,6 @@ type GeneralTabProps = {
   variants: Variants;
   transcriptionMode: TranscriptionMode;
   onTranscriptionModeChange: (mode: TranscriptionMode) => void;
-  loading: boolean;
   modelStatus: Record<string, ModelStatus>;
   localModel: string;
   onOpenModelsTab: () => void;
@@ -59,7 +58,6 @@ const GeneralTab = ({
   variants,
   transcriptionMode,
   onTranscriptionModeChange,
-  loading,
   modelStatus,
   localModel,
   onOpenModelsTab,
@@ -209,8 +207,7 @@ const GeneralTab = ({
         </button>
       </div>
       <AnimatePresence>
-        {!loading &&
-          transcriptionMode === "local" &&
+        {transcriptionMode === "local" &&
           !modelStatus[localModel]?.installed && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}

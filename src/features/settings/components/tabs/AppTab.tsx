@@ -90,7 +90,6 @@ const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
   return <span className="ui-text-meta ui-color-warning">off</span>;
 };
 
-
 type AppTabProps = {
   variants: Variants;
   micPermission: boolean | null;

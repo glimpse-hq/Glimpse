@@ -99,7 +99,7 @@ Window labels and behavior must stay aligned across:
   `src/features/library/components/LibraryModal.tsx`: main library frontend
   owners.
 - Frontend patterns are intentionally mixed by feature:
-  - `library` and `transcriptions` are React Query + event driven
+  - `library` and `transcriptions` are React Query + event-driven
   - `dictionary` and `personalization` are mostly local state + direct invoke
   - `pill` is XState + canvas
   - `toast` is an event-driven window

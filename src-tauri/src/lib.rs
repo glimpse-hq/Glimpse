@@ -1224,12 +1224,9 @@ fn emit_complete(
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {
-    let state = app.state::<AppState>();
-    let status = state.pill().status();
-    if status == pill::PillStatus::Listening || status == pill::PillStatus::Processing {
-        return;
-    }
-    state.pill().transition_to_error(app, &message);
+    app.state::<AppState>()
+        .pill()
+        .transition_to_error(app, &message);
 }
 
 pub(crate) fn emit_event<T: Serialize + Clone>(

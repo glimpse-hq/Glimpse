@@ -168,6 +168,7 @@ const SettingsModal = ({
                 className="flex-1 min-h-0 overflow-y-scroll px-6 pt-8 pb-5 settings-scroll"
                 style={{ scrollbarGutter: "stable" }}
               >
+                {form.loading ? null : (
                 <AnimatePresence mode="wait">
                   {form.activeTab === "account" && (
                     <AccountTab
@@ -187,7 +188,6 @@ const SettingsModal = ({
                       variants={tabContentVariants}
                       transcriptionMode={form.transcriptionMode}
                       onTranscriptionModeChange={form.setTranscriptionMode}
-                      loading={form.loading}
                       modelStatus={form.modelStatus}
                       localModel={form.localModel}
                       onOpenModelsTab={() => form.setActiveTab("models")}
@@ -279,6 +279,7 @@ const SettingsModal = ({
                     />
                   )}
                 </AnimatePresence>
+                )}
               </div>
             </main>
           </motion.div>

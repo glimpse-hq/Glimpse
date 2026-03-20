@@ -107,7 +107,7 @@ export function useSettingsForm({
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(true);
-  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
