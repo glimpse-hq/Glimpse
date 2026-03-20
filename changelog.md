@@ -1,3 +1,15 @@
+0.7.3
+
+### Features
+- Added auto pause media to Settings > App, allowing you to pausing music playing when transcribing
+- Added an auto updat Settings > App, when idle for 10+ min Glimpse will auto update
+
+### Changes
+- Advanced tab as been renamed to App and now includes automations.
+- Gently redesign some settings menus.
+- Updated toast only shows from auto-updates no longer manual updates
+
+
 0.7.2
 
 ### Changes

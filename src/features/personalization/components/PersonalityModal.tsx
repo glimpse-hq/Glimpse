@@ -440,7 +440,7 @@ const PersonalityModal = ({
                   }
                   placeholder="Add custom instructions"
                   aria-label="Custom instructions"
-                  className="w-full resize-none bg-transparent ui-text-label leading-[20px] font-mono ui-color-primary placeholder-content-disabled outline-none instructions-scroll"
+                  className="w-full resize-none bg-transparent ui-text-label font-mono ui-color-primary placeholder-content-disabled outline-none instructions-scroll"
                   style={{ height: `${instructionsHeight}px` }}
                 />
               </div>

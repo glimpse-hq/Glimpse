@@ -101,13 +101,13 @@
   --ui-text-size-title: 0.9375rem;
   --ui-text-line-title: 1.5rem;
   --ui-text-size-body-lg: 0.875rem;
-  --ui-text-line-body-lg: 1.5rem;
+  --ui-text-line-body-lg: 1.25rem;
   --ui-text-size-body: 0.8125rem;
-  --ui-text-line-body: 1.5rem;
+  --ui-text-line-body: 1.1875rem;
   --ui-text-size-body-sm: 0.75rem;
-  --ui-text-line-body-sm: 1.5rem;
+  --ui-text-line-body-sm: 1.125rem;
   --ui-text-size-label: 0.6875rem;
-  --ui-text-line-label: 1.5rem;
+  --ui-text-line-label: 1rem;
   --ui-text-size-meta: 0.625rem;
   --ui-text-line-meta: 1.25rem;
   --ui-text-size-micro: 0.5625rem;
