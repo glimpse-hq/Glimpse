@@ -373,7 +373,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         </p>
                     </div>
                 </header>
-                <div className="grid w-full max-w-5xl min-w-0 grid-cols-[auto_minmax(0,1fr)_110px_110px_110px] items-center gap-2">
+                <div className="grid w-full max-w-5xl min-w-0 grid-cols-[auto_minmax(0,1fr)_132px_132px_120px] items-center gap-2">
                     <button
                         onClick={handleImportClick}
                         className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-body-sm ui-color-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
@@ -406,6 +406,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             { value: "error", label: "Failed" },
                         ]}
                         className="w-full min-w-0"
+                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
                     />
                     <Dropdown
                         value={dateFilter}
@@ -416,6 +417,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             { value: "last30", label: "Last 30 days" },
                         ]}
                         className="w-full min-w-0"
+                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
                     />
                     <Dropdown
                         value={tagFilter}
@@ -425,6 +427,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             ...availableTags.map((tag) => ({ value: tag, label: tag })),
                         ]}
                         className="w-full min-w-0"
+                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
                     />
                 </div>
 

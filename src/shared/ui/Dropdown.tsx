@@ -225,9 +225,9 @@ export function Dropdown<T extends string | number>({
                                                 }`}
                                         >
                                             <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                                <span className="ui-text-body-sm-strong truncate flex items-center gap-2">
-                                                    {option.icon && <span aria-hidden="true">{option.icon}</span>}
-                                                    {option.label}
+                                                <span className="ui-text-body-sm-strong flex min-w-0 items-center gap-2">
+                                                    {option.icon && <span aria-hidden="true" className="shrink-0">{option.icon}</span>}
+                                                    <span className="truncate">{option.label}</span>
                                                 </span>
                                                 {option.description && (
                                                     <span className={`ui-text-meta truncate ${value === option.value ? "text-cloud/70" : "ui-color-disabled group-hover:text-content-muted"

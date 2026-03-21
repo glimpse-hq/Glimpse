@@ -1,7 +1,8 @@
 0.7.4
 
 ### Fixes
-- Fixed a bug where sometimes auto music pausing would not work.
+- Sometimes auto music pausing would not work.
+- Text was cut off in some drop down menus.
 ---
 0.7.3
 
