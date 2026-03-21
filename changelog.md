@@ -1,5 +1,8 @@
 0.7.4
 
+### Changes
+- Small UI tweaks.
+
 ### Fixes
 - Sometimes auto music pausing would not work.
 - Text was cut off in some drop down menus.

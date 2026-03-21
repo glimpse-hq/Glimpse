@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
+import ActionCardButton from "../../../../shared/ui/ActionCardButton";
 import type { AppInfo, UpdateChannel } from "../../../../types";
 
 type AboutTabProps = {
@@ -216,7 +217,7 @@ const AboutTab = ({
           <h2 className="ui-text-section-label-sm ui-color-muted">Setup</h2>
 
           <div className="space-y-3">
-            <button
+            <ActionCardButton
               onClick={async () => {
                 try {
                   await invoke("reset_onboarding");
@@ -225,27 +226,15 @@ const AboutTab = ({
                   console.error("Failed to restart onboarding:", err);
                 }
               }}
-              className="w-full rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5 text-left shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-amber-400/30 hover:bg-amber-400/10 hover:shadow-[0_2px_0_-1px_rgba(251,191,36,0.4),inset_0_1px_0_0_rgba(251,191,36,0.1)] hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none transition-all duration-100"
-            >
-              <span className="ui-text-label-strong ui-color-primary block">
-                Restart Onboarding
-              </span>
-              <span className="ui-text-micro ui-color-disabled">
-                re-run setup wizard
-              </span>
-            </button>
+              title="Restart Onboarding"
+              description="re-run setup wizard"
+            />
 
-            <button
+            <ActionCardButton
               onClick={onOpenFAQ}
-              className="w-full rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5 text-left shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-amber-400/30 hover:bg-amber-400/10 hover:shadow-[0_2px_0_-1px_rgba(251,191,36,0.4),inset_0_1px_0_0_rgba(251,191,36,0.1)] hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none transition-all duration-100"
-            >
-              <span className="ui-text-label-strong ui-color-primary block">
-                FAQ & Help
-              </span>
-              <span className="ui-text-micro ui-color-disabled">
-                common questions
-              </span>
-            </button>
+              title="FAQ & Help"
+              description="common questions"
+            />
           </div>
         </div>
       </div>
