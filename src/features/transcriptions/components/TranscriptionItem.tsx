@@ -621,7 +621,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       >
                         <Undo2 size={12} className="text-warning" />
                         <span>Restore original transcript</span>
-                      </button>
+                  {(canRetryFromAudio || (!isError && onRetryLlm)) && (
+                    <div className="h-px bg-border-secondary mx-2" />
+                  )}
+                  <button
+                    onClick={handleDelete}
                     )}
 
                   <button
