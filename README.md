@@ -25,6 +25,18 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 
 Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/Glimpse/releases/latest) and drag Glimpse to your Applications folder.
 
+## Screenshots
+
+<p align="center">
+  <img src="./assets/readme/home.png" width="49%" alt="Glimpse home screen showing recent transcriptions" />
+  <img src="./assets/readme/dictionary.png" width="49%" alt="Glimpse dictionary screen" />
+</p>
+
+<p align="center">
+  <img src="./assets/readme/personalization.png" width="49%" alt="Glimpse personalization screen" />
+  <img src="./assets/readme/library.png" width="49%" alt="Glimpse library screen for imported audio and video files" />
+</p>
+
 ## Features
 
 - **Local transcription** — Runs entirely on-device using Whisper or Parakeet. Your audio and transcripts stay on-device.
