@@ -39,13 +39,12 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/
 
 ## Features
 
-- **Local transcription** — Runs entirely on-device using Whisper or Parakeet. Your audio and transcripts stay on-device.
-- **Assistive text insertion** — Transcribed text is inserted directly where you're typing, in any app.
+- **Local transcription** — Runs entirely on-device. Your audio and transcripts stay on-device.
 - **Edit mode** — Highlight any text, speak your changes, and Glimpse rewrites it in context.
-- **Personalization** — Set per-app writing styles so Glimpse knows the difference between an email and a Slack message.
+- **Personalization** — Set per-app writing styles so Glimpse can format and respond to emails or slack messages.
 - **Custom dictionary** — Add names, jargon, or domain-specific words for more accurate transcription.
-- **Replacements** — Define shortcuts that automatically expand into words, phrases, or anything else.
-- **Library** — Transcribe audio and video files with synced playback and multi-format export.
+- **Replacements** — Define shortcuts that automatically change words ("my address" → 221B Baker Street )
+- **Library** — Import audio and video files with synced playback and multi-format exports.
 
 ## Roadmap
 
@@ -54,14 +53,14 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/
 - [x] Per-app personalization
 - [x] Edit mode
 - [x] Audio & video transcription
+- [x] Auto media pausing
+- [x] Recording auto deletion
 - [ ] Temporary mode (transcribe without saving)
 - [ ] App localization
 - [ ] Better customizable keybinds
 - [ ] Auto-dictionary
-- [ ] Auto media pausing
 - [ ] Personalization snippets
-- [ ] Windows
-- [ ] Recording auto deletion
+- [ ] Windows support
 
 ## Privacy
 
