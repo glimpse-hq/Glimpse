@@ -809,6 +809,7 @@ export function useSettingsForm({
     llmModel,
     setLlmModel,
     llmConfigReady,
+    aiFeaturesReady,
     availableModels,
     fetchAvailableModels,
     cleanupEnabled,

@@ -175,7 +175,7 @@ fn extract_plain_text(response: &str) -> Option<String> {
     }
 
     if let Some(output) = parse_output_tags(trimmed) {
-        return extract_plain_text(&output).or(Some(output));
+        return extract_plain_text(&output);
     }
 
     if let Some(inner) = strip_code_fence(trimmed) {

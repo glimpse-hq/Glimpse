@@ -51,7 +51,7 @@ type GeneralTabProps = {
   setEditModeEnabled: (value: boolean) => void;
   cleanupEnabled: boolean;
   setCleanupEnabled: (value: boolean) => void;
-  llmConfigReady: boolean;
+  aiFeaturesReady: boolean;
 };
 
 const GeneralTab = ({
@@ -88,11 +88,11 @@ const GeneralTab = ({
   setEditModeEnabled,
   cleanupEnabled,
   setCleanupEnabled,
-  llmConfigReady,
+  aiFeaturesReady,
 }: GeneralTabProps) => {
   const [openHelpTooltip, setOpenHelpTooltip] =
     useState<HelpTooltipId | null>(null);
-  const aiFeaturesDisabled = transcriptionMode === "local" && !llmConfigReady;
+  const aiFeaturesDisabled = transcriptionMode === "local" && !aiFeaturesReady;
 
   const showHelpTooltip = (tooltip: HelpTooltipId) => {
     setOpenHelpTooltip(tooltip);
@@ -389,9 +389,7 @@ const GeneralTab = ({
                 </span>
                 <ToggleSwitch
                   enabled={editModeEnabled}
-                  onToggle={() =>
-                    llmConfigReady && setEditModeEnabled(!editModeEnabled)
-                  }
+                  onToggle={() => aiFeaturesReady && setEditModeEnabled(!editModeEnabled)}
                   ariaLabel="Toggle Edit Mode"
                   disabled={aiFeaturesDisabled}
                 />
@@ -406,7 +404,7 @@ const GeneralTab = ({
                 >
                   {aiFeaturesDisabled ? (
                     <>
-                      Configure a language model in{" "}
+                      Enable and configure a language model in{" "}
                       <button
                         type="button"
                         onClick={onOpenModelsTab}
@@ -458,10 +456,10 @@ const GeneralTab = ({
                         Select text in any app, and speak a command like "make
                         this formal" or "fix my grammar".
                       </p>
-                      {transcriptionMode === "local" && !llmConfigReady && (
+                      {transcriptionMode === "local" && !aiFeaturesReady && (
                         <p className="text-warning mt-1">
-                          Requires a fully configured language model in the
-                          Models tab.
+                          Requires an enabled and configured language model in
+                          the Models tab.
                         </p>
                       )}
                     </div>
@@ -483,9 +481,7 @@ const GeneralTab = ({
                 </span>
                 <ToggleSwitch
                   enabled={cleanupEnabled}
-                  onToggle={() =>
-                    llmConfigReady && setCleanupEnabled(!cleanupEnabled)
-                  }
+                  onToggle={() => aiFeaturesReady && setCleanupEnabled(!cleanupEnabled)}
                   ariaLabel="Toggle Cleanup"
                   disabled={aiFeaturesDisabled}
                 />
@@ -500,7 +496,7 @@ const GeneralTab = ({
                 >
                   {aiFeaturesDisabled ? (
                     <>
-                      Configure a language model in{" "}
+                      Enable and configure a language model in{" "}
                       <button
                         type="button"
                         onClick={onOpenModelsTab}
@@ -552,10 +548,10 @@ const GeneralTab = ({
                         Cleans up transcripts after transcription while keeping
                         the original meaning intact.
                       </p>
-                      {transcriptionMode === "local" && !llmConfigReady && (
+                      {transcriptionMode === "local" && !aiFeaturesReady && (
                         <p className="text-warning mt-1">
-                          Requires a fully configured language model in the
-                          Models tab.
+                          Requires an enabled and configured language model in
+                          the Models tab.
                         </p>
                       )}
                     </div>
