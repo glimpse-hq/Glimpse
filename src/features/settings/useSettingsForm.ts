@@ -7,6 +7,7 @@ import {
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   checkAccessibilityPermission,
   checkMicrophonePermission,
@@ -254,6 +255,7 @@ export function useSettingsForm({
       (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
       llmModel.trim(),
   );
+  const aiFeaturesReady = llmEnabled && llmConfigReady;
 
   // Guard: non-subscribers can't have cloud sync
   useEffect(() => {
@@ -261,6 +263,12 @@ export function useSettingsForm({
       setCloudSyncEnabled(false);
     }
   }, [currentUser, isSubscriber, cloudSyncEnabled, setCloudSyncEnabled]);
+
+  useEffect(() => {
+    if (aiFeaturesReady) return;
+    setCleanupEnabled(false);
+    setEditModeEnabled(false);
+  }, [aiFeaturesReady]);
 
   useEffect(() => {
     if (isOpen && initialTab) {
@@ -308,6 +316,10 @@ export function useSettingsForm({
 
   useEffect(() => {
     if (activeTab !== "app" || !isOpen) return;
+
+    let cancelled = false;
+    let unlistenFocus: UnlistenFn | null = null;
+
     const checkPermissions = async () => {
       try {
         const nativeMic = await checkMicrophonePermission();
@@ -333,9 +345,45 @@ export function useSettingsForm({
         setAccessibilityPermission(false);
       }
     };
-    checkPermissions();
-    const interval = setInterval(checkPermissions, 1500);
-    return () => clearInterval(interval);
+
+    const refreshPermissions = () => {
+      if (!cancelled) {
+        void checkPermissions();
+      }
+    };
+
+    refreshPermissions();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshPermissions();
+      }
+    };
+
+    window.addEventListener("focus", refreshPermissions);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    getCurrentWindow()
+      .onFocusChanged(({ payload: focused }) => {
+        if (focused) {
+          refreshPermissions();
+        }
+      })
+      .then((fn) => {
+        if (cancelled) {
+          fn();
+        } else {
+          unlistenFocus = fn;
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refreshPermissions);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      unlistenFocus?.();
+    };
   }, [activeTab, isOpen]);
 
   useEffect(() => {
@@ -636,8 +684,6 @@ export function useSettingsForm({
     const saveSettings = async () => {
       if (!localModel) return;
 
-      const effectiveLlm = llmEnabled && llmConfigReady;
-
       isSavingRef.current = true;
       try {
         await invoke("update_settings", {
@@ -653,13 +699,13 @@ export function useSettingsForm({
             microphoneDevice,
             language,
 
-            llmEnabled,
-            cleanupEnabled: effectiveLlm ? cleanupEnabled : false,
+            llmEnabled: aiFeaturesReady,
+            cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
             llmProvider,
             llmEndpoint,
             llmApiKey,
             llmModel,
-            editModeEnabled: effectiveLlm ? editModeEnabled : false,
+            editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
             mediaControlEnabled,
             autoUpdateEnabled,
             recordingPrunePolicy,
@@ -700,7 +746,7 @@ export function useSettingsForm({
     autoUpdateEnabled,
     recordingPrunePolicy,
     analyticsEnabled,
-    llmConfigReady,
+    aiFeaturesReady,
   ]);
 
   const handleOpenDataDir = useCallback(async () => {
@@ -925,6 +971,7 @@ export function useSettingsForm({
     setLlmApiKey,
     llmModel,
     setLlmModel,
+    llmConfigReady,
     availableModels,
     fetchAvailableModels,
     cleanupEnabled,

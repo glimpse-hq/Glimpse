@@ -218,7 +218,7 @@ const SettingsModal = ({
                       setEditModeEnabled={form.setEditModeEnabled}
                       cleanupEnabled={form.cleanupEnabled}
                       setCleanupEnabled={form.setCleanupEnabled}
-                      llmEnabled={form.llmEnabled}
+                      llmConfigReady={form.llmConfigReady}
                     />
                   )}
 

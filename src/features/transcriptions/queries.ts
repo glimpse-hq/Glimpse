@@ -8,10 +8,15 @@ export const transcriptionKeys = {
   list: (search: string) => [...transcriptionKeys.all, "list", search] as const,
 };
 
-export function useTranscriptionList(searchQuery: string = "") {
+export function useTranscriptionList(
+  searchQuery: string = "",
+  enabled: boolean = true,
+) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!enabled) return;
+
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
 
@@ -37,12 +42,14 @@ export function useTranscriptionList(searchQuery: string = "") {
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, [queryClient]);
+  }, [enabled, queryClient]);
 
   return useQuery({
     queryKey: transcriptionKeys.list(searchQuery),
     queryFn: () =>
       transcriptionsApi.getTranscriptions(searchQuery || null),
+    enabled,
+    gcTime: 60_000,
   });
 }
 
@@ -57,16 +64,19 @@ export function useDeleteTranscription() {
   });
 }
 
-export function useRetryTranscription() {
+export function useRetryTranscription(enabled: boolean = true) {
   const [retryingIds, setRetryingIds] = useState<string[]>([]);
   const retryingIdsRef = useRef<string[]>([]);
   const queryClient = useQueryClient();
+  const shouldListen = enabled || retryingIds.length > 0;
 
   useEffect(() => {
     retryingIdsRef.current = retryingIds;
   }, [retryingIds]);
 
   useEffect(() => {
+    if (!shouldListen) return;
+
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
 
@@ -94,7 +104,7 @@ export function useRetryTranscription() {
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, []);
+  }, [shouldListen]);
 
   const mutation = useMutation({
     mutationFn: transcriptionsApi.retryTranscription,

@@ -134,9 +134,9 @@ export function ModelSelectionStep({
                     </span>
                   </div>
                   <div className="flex items-center flex-wrap gap-1.5">
-                    {model.tags.map((tag) => (
+                    {model.tags.map((tag, index) => (
                       <span
-                        key={tag}
+                        key={`model-tag-${index}-${tag || "empty"}`}
                         className={`px-1.5 py-0.5 rounded-sm ui-text-nano font-semibold uppercase tracking-wider border ${
                           tag.toLowerCase() === "recommended"
                             ? "bg-emerald-500/15 ui-color-success-subtle border-emerald-500/30"

@@ -17,9 +17,13 @@ import DotMatrix from "../../../shared/ui/DotMatrix";
 
 interface TranscriptionListProps {
     showLlmButtons?: boolean;
+    isActive?: boolean;
 }
 
-const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = false }) => {
+const TranscriptionList: React.FC<TranscriptionListProps> = ({
+    showLlmButtons = false,
+    isActive = true,
+}) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedQuery, setDebouncedQuery] = useState("");
     const [isClearing, setIsClearing] = useState(false);
@@ -28,10 +32,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
     const hasLoadedOnce = useRef(false);
 
     // TanStack Query hooks
-    const { data: transcriptions = [], isLoading } = useTranscriptionList(debouncedQuery);
+    const { data: transcriptions = [], isLoading } = useTranscriptionList(debouncedQuery, isActive);
     const totalCount = transcriptions.length;
     const deleteMutation = useDeleteTranscription();
-    const { retry: retryMutation, cancelRetry: cancelRetryMutation, retryingIds } = useRetryTranscription();
+    const { retry: retryMutation, cancelRetry: cancelRetryMutation, retryingIds } = useRetryTranscription(isActive);
     const retryLlmMutation = useRetryLlmCleanup();
     const undoLlmMutation = useUndoLlmCleanup();
     const deleteAllMutation = useDeleteAllTranscriptions();
@@ -56,6 +60,8 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
         await undoLlmMutation.mutateAsync(id);
     }, [undoLlmMutation]);
     useEffect(() => {
+        if (!isActive) return;
+
         let cancelled = false;
         let unlistenFocus: UnlistenFn | null = null;
 
@@ -97,7 +103,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({ showLlmButtons = 
             window.removeEventListener("focus", resetShift);
             unlistenFocus?.();
         };
-    }, []);
+    }, [isActive]);
 
     useEffect(() => {
         if (transcriptions.length > 0 && !hasLoadedOnce.current) {

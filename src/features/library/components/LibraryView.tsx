@@ -47,9 +47,15 @@ type LibraryViewProps = {
     pendingImportPaths: string[] | null;
     onSetImportPaths: (paths: string[] | null) => void;
     sidebarWidth: number;
+    isActive: boolean;
 };
 
-const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: LibraryViewProps) => {
+const LibraryView = ({
+    pendingImportPaths,
+    onSetImportPaths,
+    sidebarWidth,
+    isActive,
+}: LibraryViewProps) => {
     const queryClient = useQueryClient();
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -90,9 +96,9 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
         hasNextPage,
         fetchNextPage,
         error: queryError,
-    } = useLibraryItemsQuery(filter);
+    } = useLibraryItemsQuery(filter, isActive);
 
-    const { data: availableTags = [] } = useLibraryTags();
+    const { data: availableTags = [] } = useLibraryTags(isActive);
 
     const items = useMemo(
         () => data?.pages.flatMap((page) => page.items) ?? [],
@@ -156,6 +162,8 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
     }, []);
 
     useEffect(() => {
+        if (!isActive) return;
+
         invoke<ModelInfo[]>("list_models")
             .then((models) => {
                 setModelCatalog(models);
@@ -168,9 +176,11 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                 setDefaultModelKey(settings.local_model);
             })
             .catch((err) => console.error("Failed to load settings:", err));
-    }, [refreshModelStatus]);
+    }, [isActive, refreshModelStatus]);
 
     useEffect(() => {
+        if (!isActive) return;
+
         let cancelled = false;
         let unlistenFocus: UnlistenFn | null = null;
 
@@ -217,9 +227,11 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
             window.removeEventListener("focus", resetShift);
             unlistenFocus?.();
         };
-    }, []);
+    }, [isActive]);
 
     useEffect(() => {
+        if (!isActive) return;
+
         let cancelled = false;
         let unlistenComplete: UnlistenFn | null = null;
         let unlistenError: UnlistenFn | null = null;
@@ -250,7 +262,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
             unlistenComplete?.();
             unlistenError?.();
         };
-    }, [refreshModelStatus]);
+    }, [isActive, refreshModelStatus]);
 
     useEffect(() => {
         if (!selectedItem) return;

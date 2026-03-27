@@ -56,7 +56,7 @@ const PageSwitcher = ({
     );
 };
 
-const DictionaryView = () => {
+const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     const [activePage, setActivePage] = useState<ActivePage>("dictionary");
 
     const [entries, setEntries] = useState<string[]>([]);
@@ -105,10 +105,14 @@ const DictionaryView = () => {
     }, []);
 
     useEffect(() => {
+        if (!isActive) return;
         load();
-    }, [load]);
+    }, [isActive, load]);
 
     useEffect(() => {
+        if (!isActive) return;
+
+        let cancelled = false;
         let unlistenSettings: UnlistenFn | null = null;
 
         listen<StoredSettings>("settings:changed", (event) => {
@@ -116,15 +120,18 @@ const DictionaryView = () => {
             if (!nextSettings) return;
             setSettings(nextSettings);
         }).then((fn) => {
-            unlistenSettings = fn;
+            if (cancelled) {
+                fn();
+            } else {
+                unlistenSettings = fn;
+            }
         });
 
         return () => {
-            if (unlistenSettings) {
-                unlistenSettings();
-            }
+            cancelled = true;
+            unlistenSettings?.();
         };
-    }, []);
+    }, [isActive]);
 
     const persistEntries = useCallback(async (next: string[]) => {
         setSaving(true);

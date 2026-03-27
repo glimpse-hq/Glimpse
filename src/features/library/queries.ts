@@ -53,10 +53,15 @@ function patchItemInCache(
   );
 }
 
-export function useLibraryItems(filter: LibraryFilter = {}) {
+export function useLibraryItems(
+  filter: LibraryFilter = {},
+  enabled: boolean = true,
+) {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!enabled) return;
+
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
 
@@ -180,12 +185,14 @@ export function useLibraryItems(filter: LibraryFilter = {}) {
       cancelled = true;
       unlisteners.forEach((fn) => fn());
     };
-  }, [queryClient, filter]);
+  }, [enabled, queryClient, filter]);
 
   return useInfiniteQuery({
     queryKey: libraryKeys.list(filter),
     queryFn: ({ pageParam = 0 }) =>
       libraryApi.getLibraryItemsPage(filter, PAGE_SIZE, pageParam),
+    enabled,
+    gcTime: 60_000,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.has_more) return undefined;
@@ -270,9 +277,11 @@ export function useExportLibraryItem() {
   });
 }
 
-export function useLibraryTags() {
+export function useLibraryTags(enabled: boolean = true) {
   return useQuery({
     queryKey: libraryKeys.tags(),
     queryFn: libraryApi.getLibraryTags,
+    enabled,
+    gcTime: 60_000,
   });
 }

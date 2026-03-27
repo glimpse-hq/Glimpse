@@ -528,19 +528,22 @@ const Home = () => {
               </p>
             </div>
 
-            <TranscriptionList showLlmButtons={showCleanupButtons} />
+            <TranscriptionList
+              showLlmButtons={showCleanupButtons}
+              isActive={activeView === "home"}
+            />
           </div>
 
           <div
             className={`w-full max-w-3xl mx-auto pt-8 ${activeView === "dictionary" ? "" : "hidden"}`}
           >
-            <DictionaryView />
+            <DictionaryView isActive={activeView === "dictionary"} />
           </div>
 
           <div
             className={`w-full max-w-5xl mx-auto pt-8 ${activeView === "brain" ? "" : "hidden"}`}
           >
-            <PersonalizationView />
+            <PersonalizationView isActive={activeView === "brain"} />
           </div>
 
           <div
@@ -550,6 +553,7 @@ const Home = () => {
               pendingImportPaths={pendingImportPaths}
               onSetImportPaths={setPendingImportPaths}
               sidebarWidth={sidebarWidth}
+              isActive={activeView === "library"}
             />
           </div>
         </div>

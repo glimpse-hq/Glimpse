@@ -20,7 +20,7 @@ import PersonalityModal, {
   type PendingDeletePersonality,
 } from "./PersonalityModal";
 
-const PersonalizationView = () => {
+const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const [personalities, setPersonalities] = useState<Personality[]>([]);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [websiteIconBySite, setWebsiteIconBySite] = useState<
@@ -57,8 +57,9 @@ const PersonalizationView = () => {
   }, []);
 
   useEffect(() => {
+    if (!isActive) return;
     load();
-  }, [load]);
+  }, [isActive, load]);
 
   const websiteDomains = useMemo(() => {
     const seen = new Set<string>();
@@ -89,10 +90,13 @@ const PersonalizationView = () => {
   }, []);
 
   useEffect(() => {
+    if (!isActive) return;
     void loadWebsiteIcons(websiteDomains);
-  }, [websiteDomains, loadWebsiteIcons]);
+  }, [isActive, websiteDomains, loadWebsiteIcons]);
 
   useEffect(() => {
+    if (!isActive) return;
+
     if (websiteDomains.length === 0) {
       websiteIconRefreshKeyRef.current = null;
       return;
@@ -126,9 +130,11 @@ const PersonalizationView = () => {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [websiteDomains, websiteIconBySite]);
+  }, [isActive, websiteDomains, websiteIconBySite]);
 
   useEffect(() => {
+    if (!isActive) return;
+
     if (
       hasRequestedIconRefreshRef.current ||
       loading ||
@@ -156,9 +162,11 @@ const PersonalizationView = () => {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [installedApps, loading]);
+  }, [isActive, installedApps, loading]);
 
   useEffect(() => {
+    if (!isActive) return;
+
     let cancelled = false;
     let unlistenFocus: (() => void) | null = null;
 
@@ -205,7 +213,7 @@ const PersonalizationView = () => {
       window.removeEventListener("focus", resetShift);
       unlistenFocus?.();
     };
-  }, []);
+  }, [isActive]);
 
   const persistPersonalities = useCallback(async (next: Personality[]) => {
     const persistVersion = persistVersionRef.current + 1;
@@ -446,8 +454,11 @@ const PersonalizationView = () => {
                             No apps yet
                           </span>
                         ) : (
-                          appsPreview.map((app) => (
-                            <div key={app} title={app}>
+                          appsPreview.map((app, index) => (
+                            <div
+                              key={`app-preview-${index}-${app || "empty"}`}
+                              title={app}
+                            >
                               <AppIconBadge
                                 appName={app}
                                 iconPath={
@@ -477,9 +488,9 @@ const PersonalizationView = () => {
                             No sites yet
                           </span>
                         ) : (
-                          sitesPreview.map((site) => (
+                          sitesPreview.map((site, index) => (
                             <span
-                              key={site}
+                              key={`site-preview-${index}-${site || "empty"}`}
                               className="min-w-0 max-w-[118px] rounded-md border border-border-primary bg-surface-overlay px-2 py-1 ui-text-micro ui-color-secondary inline-flex items-center gap-1"
                             >
                               <WebsiteFavicon

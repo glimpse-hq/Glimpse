@@ -15,6 +15,7 @@ const CHECK_INTERVAL_HOURS: u64 = 6;
 const INITIAL_DELAY_SECS: u64 = 30;
 const AUTO_UPDATE_IDLE_MINS: u64 = 10;
 const AUTO_UPDATE_POLL_SECS: u64 = 30;
+const AUTO_UPDATE_IDLE_POLL_SECS: u64 = 5 * 60;
 const AUTO_UPDATE_MARKER_FILE: &str = ".auto_updated";
 const STABLE_UPDATE_ENDPOINT: &str =
     "https://github.com/LegendarySpy/Glimpse/releases/latest/download/latest.json";
@@ -159,17 +160,19 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
     let idle_duration = Duration::from_secs(AUTO_UPDATE_IDLE_MINS * 60);
 
     loop {
-        tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
-
         // Check if auto-update is enabled (in-memory cache, no DB hit)
         if !app.state::<AppState>().is_auto_update_enabled() {
+            tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_IDLE_POLL_SECS)).await;
             continue;
         }
 
         // Check if an update is available
         if !state.lock().is_available() {
+            tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_IDLE_POLL_SECS)).await;
             continue;
         }
+
+        tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
 
         // Only auto-update when the settings window is not visible
         if is_settings_window_visible(&app) {
@@ -473,50 +476,4 @@ pub async fn download_and_install_update(
 
     info!("update downloaded and installed");
     Ok(())
-}
-
-
-#[tauri::command]
-pub fn trigger_update_check(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    let update_state = state.update_state().clone();
-    tauri::async_runtime::spawn(async move {
-        if let Err(err) = check_for_update(&app, &update_state).await {
-            warn!(error = ?err, "manual update check failed");
-        }
-    });
-}
-
-#[allow(dead_code)]
-#[tauri::command]
-pub fn simulate_update_available(app: AppHandle<AppRuntime>, version: String) {
-    let state = app.state::<AppState>();
-    {
-        let mut guard = state.update_state().lock();
-        guard.set_available(version.clone());
-        guard.toast_shown_this_session = false;
-    }
-    let _ = app.emit("update:available", version);
-}
-
-#[tauri::command]
-pub fn clear_update_state(app: AppHandle<AppRuntime>) {
-    clear_update_state_and_emit(&app);
-}
-
-#[allow(dead_code)]
-#[tauri::command]
-pub fn show_update_toast_now(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    let update_state = state.update_state().clone();
-
-    {
-        let mut guard = update_state.lock();
-        if !guard.is_available() {
-            guard.set_available("99.0.0".to_string());
-        }
-        guard.toast_shown_this_session = false;
-    }
-
-    maybe_show_update_toast(&app, &update_state);
 }

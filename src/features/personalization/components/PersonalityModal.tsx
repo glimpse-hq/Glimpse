@@ -500,7 +500,7 @@ const PersonalityModal = ({
                         No applications selected
                       </div>
                     ) : (
-                      personality.apps.map((app) => {
+                      personality.apps.map((app, index) => {
                         const installedApp = installedAppByName.get(
                           app.toLowerCase(),
                         );
@@ -509,7 +509,7 @@ const PersonalityModal = ({
                         );
                         return (
                           <div
-                            key={app}
+                            key={`app-${index}-${app || "empty"}`}
                             className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-3 py-2"
                           >
                             <div className="flex items-center gap-2">
@@ -590,9 +590,9 @@ const PersonalityModal = ({
                         No websites added
                       </div>
                     ) : (
-                      personality.websites.map((site) => (
+                      personality.websites.map((site, index) => (
                         <div
-                          key={site}
+                          key={`site-${index}-${site || "empty"}`}
                           className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-3 py-2"
                         >
                           <div className="flex items-center gap-2">

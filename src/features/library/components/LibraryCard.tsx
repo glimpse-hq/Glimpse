@@ -349,9 +349,9 @@ const LibraryCard = ({
                                     >
                                         <div className="max-h-36 overflow-y-auto">
                                             {filteredTagOptions.length > 0 ? (
-                                                filteredTagOptions.map((tag) => (
+                                                filteredTagOptions.map((tag, index) => (
                                                     <button
-                                                        key={tag}
+                                                        key={`tag-option-${index}-${tag || "empty"}`}
                                                         type="button"
                                                         onMouseDown={(event) => event.preventDefault()}
                                                         onClick={() => {
