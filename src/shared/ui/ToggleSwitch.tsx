@@ -13,15 +13,13 @@ type ToggleSwitchProps = {
 const sizeConfig = {
   sm: {
     track: "w-7 h-4",
-    thumb: "top-[2px] w-3 h-3",
-    onLeft: "calc(100% - 14px)",
-    offLeft: "2px",
+    thumb: "left-[2px] top-[2px] w-3 h-3",
+    travelX: 12,
   },
   md: {
     track: "w-10 h-5",
-    thumb: "top-0.5 w-4 h-4",
-    onLeft: "calc(100% - 18px)",
-    offLeft: "2px",
+    thumb: "left-[2px] top-0.5 w-4 h-4",
+    travelX: 20,
   },
 } as const;
 
@@ -42,14 +40,14 @@ const ToggleSwitch = ({
       aria-checked={enabled}
       aria-label={ariaLabel}
       disabled={disabled}
-      className={`${config.track} rounded-full transition-colors relative ${
+      className={`${config.track} rounded-full transition-colors relative overflow-hidden ${
         enabled ? "bg-cloud" : "bg-border-secondary"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       <motion.div
-        className={`absolute ${config.thumb} rounded-full bg-white shadow-sm`}
+        className={`absolute ${config.thumb} rounded-full bg-white shadow-xs`}
         initial={false}
-        animate={{ left: enabled ? config.onLeft : config.offLeft }}
+        animate={{ x: enabled ? config.travelX : 0 }}
         transition={{ type: "spring", stiffness: 500, damping: 30 }}
       />
     </button>

@@ -3,12 +3,12 @@ import { useMachine } from "@xstate/react";
 import { AnimatePresence } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
+import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { onboardingMachine, getSteps, type LocalDownloadStatus } from "./machine";
 import { WelcomeStep } from "./steps/WelcomeStep";
 import { ModelSelectionStep } from "./steps/ModelSelectionStep";
@@ -124,60 +124,37 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     return () => { isMounted = false; };
   }, [send]);
 
-  // Download event listeners
-  useEffect(() => {
-    let active = true;
-    const disposers: UnlistenFn[] = [];
-
-    const setup = async () => {
-      const results = await Promise.allSettled([
-        listen<{ model: string; percent: number; downloaded: number; total: number; file: string }>(
-          "download:progress",
-          (event) => {
-            const p = event.payload;
-            send({
-              type: "SET_DOWNLOAD_STATUS",
-              key: p.model,
-              status: { status: "downloading", percent: Math.min(100, p.percent), file: p.file },
-            });
-          },
-        ),
-        listen<{ model: string }>("download:complete", (event) => {
-          const model = event.payload.model;
-          send({
-            type: "SET_DOWNLOAD_STATUS",
-            key: model,
-            status: { status: "complete", percent: 100 },
-          });
-          invoke<ModelStatus>("check_model_status", { model })
-            .then((status) => send({ type: "SET_MODEL_STATUS", key: model, status }))
-            .catch((err) => console.error("Failed to check model status", err));
-        }),
-        listen<{ model: string; error: string }>("download:error", (event) => {
-          const { model, error } = event.payload;
-          if (error.toLowerCase().includes("cancelled")) return;
-          send({
-            type: "SET_DOWNLOAD_STATUS",
-            key: model,
-            status: { status: "error", percent: 0, message: error },
-          });
-        }),
-      ]);
-
-      results.forEach((res) => {
-        if (res.status === "fulfilled") {
-          if (!active) res.value();
-          else disposers.push(res.value);
-        }
+  useModelDownloadEvents({
+    onProgress: (payload) => {
+      send({
+        type: "SET_DOWNLOAD_STATUS",
+        key: payload.model,
+        status: {
+          status: "downloading",
+          percent: Math.min(100, payload.percent),
+          file: payload.file,
+        },
       });
-    };
-
-    setup();
-    return () => {
-      active = false;
-      disposers.forEach((fn) => fn());
-    };
-  }, [send]);
+    },
+    onComplete: ({ model }) => {
+      send({
+        type: "SET_DOWNLOAD_STATUS",
+        key: model,
+        status: { status: "complete", percent: 100 },
+      });
+      invoke<ModelStatus>("check_model_status", { model })
+        .then((status) => send({ type: "SET_MODEL_STATUS", key: model, status }))
+        .catch((err) => console.error("Failed to check model status", err));
+    },
+    onError: ({ model, error }) => {
+      if (error.toLowerCase().includes("cancelled")) return;
+      send({
+        type: "SET_DOWNLOAD_STATUS",
+        key: model,
+        status: { status: "error", percent: 0, message: error },
+      });
+    },
+  });
 
   // Shortcut capture cleanup
   useEffect(() => {
@@ -289,24 +266,29 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           localModel: resolvedLocalModel,
           microphoneDevice: null,
           language: "en",
-          updateChannel: "stable",
           llmEnabled: false,
           cleanupEnabled: false,
-          llmProvider: "custom",
+          llmProvider: "none",
           llmEndpoint: "",
           llmApiKey: "",
           llmModel: "",
           editModeEnabled: false,
           mediaControlEnabled: true,
           autoUpdateEnabled: true,
+          recordingPrunePolicy: "never",
           analyticsEnabled: true,
         },
       });
       await invoke("complete_onboarding");
       send({ type: "COMPLETE_SUCCESS" });
       onComplete();
-    } catch {
-      send({ type: "COMPLETE_ERROR", error: "Could not finish setup. Check your settings and try again." });
+    } catch (err) {
+      console.error("Failed to finish onboarding", err);
+      const message = typeof err === "string" ? err : String(err);
+      send({
+        type: "COMPLETE_ERROR",
+        error: message || "Could not finish setup. Check your settings and try again.",
+      });
     }
   }, [ctx, send, onComplete]);
 
@@ -403,7 +385,6 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             onSetPreview={(preview) => send({ type: "SET_CAPTURE_PREVIEW", preview })}
             onSetShortcut={(shortcut) => send({ type: "SET_SHORTCUT", shortcut })}
             onComplete={handleComplete}
-            send={send}
           />
         );
       default:

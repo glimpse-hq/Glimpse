@@ -18,7 +18,7 @@ const KEY_TRANSCRIPTION_MODE: &str = "transcription_mode";
 const KEY_LOCAL_MODEL: &str = "local_model";
 const KEY_MICROPHONE_DEVICE: &str = "microphone_device";
 const KEY_LANGUAGE: &str = "language";
-const KEY_UPDATE_CHANNEL: &str = "update_channel";
+
 const LEGACY_KEY_LLM_CLEANUP_ENABLED: &str = "llm_cleanup_enabled";
 const KEY_LLM_ENABLED: &str = "llm_enabled";
 const KEY_CLEANUP_ENABLED: &str = "cleanup_enabled";
@@ -82,8 +82,7 @@ pub struct UserSettings {
     pub microphone_device: Option<String>,
     #[serde(default = "default_language")]
     pub language: String,
-    #[serde(default = "default_update_channel")]
-    pub update_channel: UpdateChannel,
+
     #[serde(default)]
     pub llm_enabled: bool,
     #[serde(default)]
@@ -264,7 +263,7 @@ impl Default for UserSettings {
             local_model: default_local_model(),
             microphone_device: None,
             language: default_language(),
-            update_channel: default_update_channel(),
+
             llm_enabled: false,
             cleanup_enabled: false,
             llm_provider: default_llm_provider(),
@@ -298,17 +297,7 @@ fn default_transcription_mode() -> TranscriptionMode {
     TranscriptionMode::Local
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum UpdateChannel {
-    #[default]
-    Stable,
-    Prerelease,
-}
 
-fn default_update_channel() -> UpdateChannel {
-    UpdateChannel::Stable
-}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
@@ -449,7 +438,7 @@ impl SettingsStore {
                 settings.microphone_device.clone(),
             )?;
             settings.language = self.read_value(&conn, KEY_LANGUAGE, settings.language.clone())?;
-            settings.update_channel = self.read_update_channel(&conn)?;
+
             let legacy_llm_cleanup_enabled =
                 self.read_optional_value::<bool>(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)?;
             let llm_enabled = self.read_optional_value::<bool>(&conn, KEY_LLM_ENABLED)?;
@@ -613,7 +602,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_LOCAL_MODEL, &settings.local_model)?;
         self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
         self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
-        self.write_value(&conn, KEY_UPDATE_CHANNEL, &settings.update_channel)?;
+
         self.write_value(&conn, KEY_LLM_ENABLED, &settings.llm_enabled)?;
         self.write_value(&conn, KEY_CLEANUP_ENABLED, &settings.cleanup_enabled)?;
         self.write_value(&conn, KEY_LLM_PROVIDER, &settings.llm_provider)?;
@@ -689,25 +678,7 @@ impl SettingsStore {
         .context("Failed to read setting from DB")
     }
 
-    fn read_update_channel(&self, conn: &Connection) -> Result<UpdateChannel> {
-        let raw: Option<String> = conn
-            .query_row(
-                "SELECT value FROM settings WHERE key = ?1",
-                params![KEY_UPDATE_CHANNEL],
-                |row| row.get(0),
-            )
-            .optional()
-            .context("Failed to read setting from DB")?;
 
-        if let Some(raw) = raw {
-            match serde_json::from_str::<UpdateChannel>(&raw) {
-                Ok(channel) => Ok(channel),
-                Err(_) => Ok(default_update_channel()),
-            }
-        } else {
-            Ok(default_update_channel())
-        }
-    }
 
     fn write_value<T>(&self, conn: &Connection, key: &str, value: &T) -> Result<()>
     where

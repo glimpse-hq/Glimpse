@@ -75,7 +75,7 @@ const SettingsModal = ({
           exit="hidden"
         >
           <motion.div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-xs"
             variants={backdropVariants}
             onClick={onClose}
           />
@@ -218,7 +218,7 @@ const SettingsModal = ({
                       setEditModeEnabled={form.setEditModeEnabled}
                       cleanupEnabled={form.cleanupEnabled}
                       setCleanupEnabled={form.setCleanupEnabled}
-                      llmEnabled={form.llmEnabled}
+                      aiFeaturesReady={form.aiFeaturesReady}
                     />
                   )}
 
@@ -276,9 +276,8 @@ const SettingsModal = ({
                       formatBytes={form.formatBytes}
                       onOpenDataDir={form.handleOpenDataDir}
                       onOpenFAQ={() => form.setShowFAQModal(true)}
-                      updateChannel={form.updateChannel}
-                      onUpdateChannelChange={form.setUpdateChannel}
                     />
+
                   )}
                 </AnimatePresence>
                 )}
@@ -295,8 +294,8 @@ const SettingsModal = ({
       <WhatsNewModal
         isOpen={form.whatsNewOpen}
         onClose={() => form.setWhatsNewOpen(false)}
-        updateChannel={form.updateChannel}
       />
+
     </AnimatePresence>
   );
 };

@@ -9,10 +9,11 @@ export const modelKeys = {
     [...modelKeys.all, "llm", endpoint, provider, apiKey] as const,
 };
 
-export function useModelCatalog() {
+export function useModelCatalog(enabled: boolean = true) {
   return useQuery({
     queryKey: modelKeys.catalog(),
     queryFn: modelsApi.listModels,
+    enabled,
   });
 }
 

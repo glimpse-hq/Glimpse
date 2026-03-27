@@ -3,21 +3,18 @@ import { invoke } from "@tauri-apps/api/core"
 import { getVersion } from "@tauri-apps/api/app"
 import { relaunch } from "@tauri-apps/plugin-process"
 import { listen, type UnlistenFn } from "@tauri-apps/api/event"
+import { useQueryClient } from "@tanstack/react-query"
 import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import type { UpdateChannel } from "../../../types"
 import WhatsNewModal from "./WhatsNewModal"
 import DotMatrix from "../../../shared/ui/DotMatrix"
+import { updateKeys, useUpdateStatus } from "../queries"
+
 
 interface UpdateCheckerProps {
     autoCheck?: boolean
-    updateChannel: UpdateChannel
 }
 
-interface UpdateStatusPayload {
-    available: boolean
-    version: string | null
-}
 
 interface UpdateDownloadProgressPayload {
     downloaded: number
@@ -43,9 +40,9 @@ const formatError = (err: unknown): string => {
 
 export function UpdateChecker({
     autoCheck = true,
-    updateChannel,
 }: UpdateCheckerProps) {
-    const [availableVersion, setAvailableVersion] = useState<string | null>(null)
+    const queryClient = useQueryClient()
+    const { data: updateStatus } = useUpdateStatus()
     const [checking, setChecking] = useState(false)
     const [downloading, setDownloading] = useState(false)
     const [progress, setProgress] = useState(0)
@@ -53,6 +50,8 @@ export function UpdateChecker({
     const [downloadError, setDownloadError] = useState<string | null>(null)
     const [installed, setInstalled] = useState(false)
     const [whatsNewOpen, setWhatsNewOpen] = useState(false)
+    const availableVersion =
+        installed || !updateStatus?.available ? null : updateStatus.version
 
     useEffect(() => {
         const pendingVersion = localStorage.getItem(PENDING_RESTART_KEY)
@@ -72,32 +71,31 @@ export function UpdateChecker({
         })
     }, [])
 
-    const checkForUpdates = useCallback(async (channel: UpdateChannel) => {
+    const checkForUpdates = useCallback(async () => {
         setChecking(true)
         setError(null)
         setDownloadError(null)
         try {
-            const result = await invoke<UpdateStatusPayload>("check_for_updates", { channel })
-            setAvailableVersion(result.available ? result.version : null)
+            await invoke("check_for_updates")
+            await queryClient.invalidateQueries({ queryKey: updateKeys.status() })
         } catch (err) {
             console.error("Update check failed:", err)
             setError(formatError(err))
         } finally {
             setChecking(false)
         }
-    }, [])
+    }, [queryClient])
 
-    useEffect(() => {
-        if (autoCheck) {
-            checkForUpdates(updateChannel)
-        }
-    }, [autoCheck, checkForUpdates, updateChannel])
 
     useEffect(() => {
         let unlistenCheck: UnlistenFn | undefined
 
+        if (autoCheck) {
+            void checkForUpdates()
+        }
+
         listen("updater:check", () => {
-            checkForUpdates(updateChannel)
+            void checkForUpdates()
         }).then((fn) => {
             unlistenCheck = fn
         })
@@ -105,12 +103,11 @@ export function UpdateChecker({
         return () => {
             unlistenCheck?.()
         }
-    }, [checkForUpdates, updateChannel])
+    }, [checkForUpdates])
+
 
     useEffect(() => {
         let unlistenProgress: UnlistenFn | undefined
-        let unlistenAvailable: UnlistenFn | undefined
-        let unlistenCleared: UnlistenFn | undefined
 
         listen<UpdateDownloadProgressPayload>("update:download-progress", (event) => {
             const payload = event.payload
@@ -129,22 +126,8 @@ export function UpdateChecker({
             unlistenProgress = fn
         })
 
-        listen<string>("update:available", (event) => {
-            setAvailableVersion(event.payload)
-        }).then((fn) => {
-            unlistenAvailable = fn
-        })
-
-        listen("update:cleared", () => {
-            setAvailableVersion(null)
-        }).then((fn) => {
-            unlistenCleared = fn
-        })
-
         return () => {
             unlistenProgress?.()
-            unlistenAvailable?.()
-            unlistenCleared?.()
         }
     }, [])
 
@@ -156,9 +139,13 @@ export function UpdateChecker({
 
         try {
             const pendingVersion = availableVersion
-            await invoke("download_and_install_update", { channel: updateChannel })
+            await invoke("download_and_install_update")
+
             setInstalled(true)
-            setAvailableVersion(null)
+            queryClient.setQueryData(updateKeys.status(), {
+                available: false,
+                version: null,
+            })
             if (pendingVersion) {
                 localStorage.setItem(PENDING_RESTART_KEY, pendingVersion)
             }
@@ -264,7 +251,8 @@ export function UpdateChecker({
                     <p className="ui-text-meta ui-color-error-subtle truncate" title={error}>{error}</p>
                 </div>
                 <motion.button
-                    onClick={() => checkForUpdates(updateChannel)}
+                    onClick={() => checkForUpdates()}
+
                     className="flex items-center gap-1.5 rounded-lg border border-red-500/20 px-2.5 py-1.5 ui-text-button ui-color-error-strong hover:bg-red-500/10 transition-colors shrink-0"
                     whileTap={{ scale: 0.97 }}
                 >
@@ -296,7 +284,8 @@ export function UpdateChecker({
                     What&apos;s new?
                 </button>
                 <motion.button
-                    onClick={() => checkForUpdates(updateChannel)}
+                    onClick={() => checkForUpdates()}
+
                     disabled={checking}
                     className="p-1.5 rounded-md text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     whileTap={{ scale: 0.95 }}
@@ -309,8 +298,8 @@ export function UpdateChecker({
             <WhatsNewModal
                 isOpen={whatsNewOpen}
                 onClose={() => setWhatsNewOpen(false)}
-                updateChannel={updateChannel}
             />
+
         </>
     )
 }

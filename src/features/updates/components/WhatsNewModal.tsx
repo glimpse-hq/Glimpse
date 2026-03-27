@@ -2,21 +2,21 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import type { UpdateChannel } from "../../../types";
+
 
 interface WhatsNewModalProps {
     isOpen: boolean;
     onClose: () => void;
-    updateChannel?: UpdateChannel;
 }
+
 
 interface ReleaseInfo {
     version: string;
     body: string;
     publishedAt: string;
     htmlUrl: string;
-    prerelease: boolean;
 }
+
 
 const GITHUB_API_URL = "https://api.github.com/repos/LegendarySpy/Glimpse/releases";
 const MAX_RELEASES = 10;
@@ -28,14 +28,11 @@ const isFeatureRelease = (version: string): boolean => {
     return patch === 0;
 };
 
-function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewModalProps) {
+function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
     const [releases, setReleases] = useState<ReleaseInfo[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const visibleReleases = releases.filter((release) => {
-        if (updateChannel === "prerelease") return true;
-        return !release.prerelease;
-    });
+
 
     useEffect(() => {
         if (isOpen && releases.length === 0) {
@@ -64,13 +61,16 @@ function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewMo
                 html_url: string;
                 prerelease: boolean;
             }>;
-            setReleases(data.map(release => ({
-                version: release.tag_name,
-                body: release.body || "No changelog available.",
-                publishedAt: release.published_at,
-                htmlUrl: release.html_url,
-                prerelease: release.prerelease,
-            })));
+
+            setReleases(data
+                .filter(release => !release.prerelease)
+                .map(release => ({
+                    version: release.tag_name,
+                    body: release.body || "No changelog available.",
+                    publishedAt: release.published_at,
+                    htmlUrl: release.html_url,
+                })));
+
         } catch (err) {
             console.error("Failed to fetch releases:", err);
             setError(err instanceof Error ? err.message : "Failed to load changelog");
@@ -175,7 +175,7 @@ function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewMo
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
                     onClick={onClose}
                 >
                     <motion.div
@@ -186,7 +186,7 @@ function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewMo
                         onClick={(e) => e.stopPropagation()}
                         className="relative w-full max-w-md max-h-[70vh] bg-surface-secondary border border-border-primary rounded-2xl shadow-2xl overflow-hidden"
                     >
-                        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-surface-secondary backdrop-blur-sm border-b border-border-primary">
+                        <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-surface-secondary backdrop-blur-xs border-b border-border-primary">
                             <h2 className="ui-text-title-strong ui-color-primary">What's New</h2>
                             <button
                                 onClick={onClose}
@@ -221,9 +221,11 @@ function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewMo
                                 </div>
                             )}
 
-                            {!loading && !error && visibleReleases.length > 0 && (
+                            {!loading && !error && releases.length > 0 && (
+
                                 <div className="space-y-6">
-                                    {visibleReleases.map((release, index) => {
+                                    {releases.map((release: ReleaseInfo, index: number) => {
+
                                         const isFeatured = isFeatureRelease(release.version);
                                         return (
                                             <div key={release.version} className={isFeatured ? "pl-3 border-l-2 border-amber-400" : ""}>
@@ -238,7 +240,8 @@ function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewMo
                                                 <div className="pb-2">
                                                     {renderMarkdown(release.body)}
                                                 </div>
-                                                {index < visibleReleases.length - 1 && (
+                                                {index < releases.length - 1 && (
+
                                                     <div className={`border-t border-border-primary mt-4 ${isFeatured ? "-ml-3" : ""}`} />
                                                 )}
                                             </div>
@@ -249,8 +252,9 @@ function WhatsNewModal({ isOpen, onClose, updateChannel = "stable" }: WhatsNewMo
 
                         </div>
 
-                        {visibleReleases.length > 0 && (
-                            <div className="sticky bottom-0 px-5 py-3 bg-surface-secondary backdrop-blur-sm border-t border-border-primary">
+                        {releases.length > 0 && (
+
+                            <div className="sticky bottom-0 px-5 py-3 bg-surface-secondary backdrop-blur-xs border-t border-border-primary">
                                 <button
                                     onClick={() => openUrl("https://github.com/LegendarySpy/Glimpse/releases")}
                                     className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-surface-elevated border border-border-secondary ui-text-button ui-color-secondary hover:text-content-primary hover:border-border-hover transition-colors"

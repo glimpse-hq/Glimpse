@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Plus } from "lucide-react";
+import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import type { Personality } from "../../../types";
@@ -20,7 +20,7 @@ import PersonalityModal, {
   type PendingDeletePersonality,
 } from "./PersonalityModal";
 
-const PersonalizationView = () => {
+const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const [personalities, setPersonalities] = useState<Personality[]>([]);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [websiteIconBySite, setWebsiteIconBySite] = useState<
@@ -31,12 +31,12 @@ const PersonalizationView = () => {
   const [activePersonalityId, setActivePersonalityId] = useState<string | null>(
     null,
   );
-  const [shiftHeld, setShiftHeld] = useState(false);
   const [pendingDeletePersonality, setPendingDeletePersonality] =
     useState<PendingDeletePersonality | null>(null);
   const hasRequestedIconRefreshRef = useRef(false);
   const websiteIconRefreshKeyRef = useRef<string | null>(null);
   const persistVersionRef = useRef(0);
+  const shiftHeld = useShiftHeld(isActive);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,8 +57,9 @@ const PersonalizationView = () => {
   }, []);
 
   useEffect(() => {
+    if (!isActive) return;
     load();
-  }, [load]);
+  }, [isActive, load]);
 
   const websiteDomains = useMemo(() => {
     const seen = new Set<string>();
@@ -89,10 +90,13 @@ const PersonalizationView = () => {
   }, []);
 
   useEffect(() => {
+    if (!isActive) return;
     void loadWebsiteIcons(websiteDomains);
-  }, [websiteDomains, loadWebsiteIcons]);
+  }, [isActive, websiteDomains, loadWebsiteIcons]);
 
   useEffect(() => {
+    if (!isActive) return;
+
     if (websiteDomains.length === 0) {
       websiteIconRefreshKeyRef.current = null;
       return;
@@ -126,9 +130,11 @@ const PersonalizationView = () => {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [websiteDomains, websiteIconBySite]);
+  }, [isActive, websiteDomains, websiteIconBySite]);
 
   useEffect(() => {
+    if (!isActive) return;
+
     if (
       hasRequestedIconRefreshRef.current ||
       loading ||
@@ -156,56 +162,7 @@ const PersonalizationView = () => {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [installedApps, loading]);
-
-  useEffect(() => {
-    let cancelled = false;
-    let unlistenFocus: (() => void) | null = null;
-
-    const handleKeyChange = (event: KeyboardEvent) => {
-      setShiftHeld(event.shiftKey);
-    };
-    const handlePointerDown = (event: PointerEvent) => {
-      setShiftHeld(event.shiftKey);
-    };
-    const resetShift = () => setShiftHeld(false);
-    const handleVisibilityChange = () => {
-      if (document.visibilityState !== "visible") {
-        setShiftHeld(false);
-      }
-    };
-
-    getCurrentWindow()
-      .onFocusChanged(() => {
-        setShiftHeld(false);
-      })
-      .then((unlisten) => {
-        if (cancelled) {
-          unlisten();
-        } else {
-          unlistenFocus = unlisten;
-        }
-      })
-      .catch(() => {});
-
-    document.addEventListener("keydown", handleKeyChange);
-    document.addEventListener("keyup", handleKeyChange);
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", resetShift);
-    window.addEventListener("focus", resetShift);
-
-    return () => {
-      cancelled = true;
-      document.removeEventListener("keydown", handleKeyChange);
-      document.removeEventListener("keyup", handleKeyChange);
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", resetShift);
-      window.removeEventListener("focus", resetShift);
-      unlistenFocus?.();
-    };
-  }, []);
+  }, [isActive, installedApps, loading]);
 
   const persistPersonalities = useCallback(async (next: Personality[]) => {
     const persistVersion = persistVersionRef.current + 1;
@@ -446,8 +403,11 @@ const PersonalizationView = () => {
                             No apps yet
                           </span>
                         ) : (
-                          appsPreview.map((app) => (
-                            <div key={app} title={app}>
+                          appsPreview.map((app, index) => (
+                            <div
+                              key={`app-preview-${index}-${app || "empty"}`}
+                              title={app}
+                            >
                               <AppIconBadge
                                 appName={app}
                                 iconPath={
@@ -477,9 +437,9 @@ const PersonalizationView = () => {
                             No sites yet
                           </span>
                         ) : (
-                          sitesPreview.map((site) => (
+                          sitesPreview.map((site, index) => (
                             <span
-                              key={site}
+                              key={`site-preview-${index}-${site || "empty"}`}
                               className="min-w-0 max-w-[118px] rounded-md border border-border-primary bg-surface-overlay px-2 py-1 ui-text-micro ui-color-secondary inline-flex items-center gap-1"
                             >
                               <WebsiteFavicon
@@ -546,7 +506,7 @@ const PersonalizationView = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xs"
             onClick={() => setPendingDeletePersonality(null)}
           >
             <motion.div

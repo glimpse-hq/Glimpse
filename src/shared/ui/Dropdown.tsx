@@ -1,7 +1,7 @@
-
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Search, Check } from "lucide-react";
+import { useClickOutside } from "../hooks/useClickOutside";
 
 export interface DropdownOption<T extends string | number> {
     value: T;
@@ -51,37 +51,27 @@ export function Dropdown<T extends string | number>({
     const containerRef = useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find((opt) => opt.value === value);
+    const closeDropdown = useCallback(() => {
+        setIsOpen(false);
+        setSearchQuery("");
+    }, []);
 
-    useEffect(() => {
-        if (isOpen) {
-            onOpen?.();
-        }
-    }, [isOpen, onOpen]);
+    useClickOutside(containerRef, closeDropdown, isOpen);
 
     useEffect(() => {
         if (!isOpen) return;
 
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-                setSearchQuery("");
-            }
-        };
-
         const handleEscape = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
-                setIsOpen(false);
-                setSearchQuery("");
+                closeDropdown();
             }
         };
 
-        document.addEventListener("mousedown", handleClickOutside);
         document.addEventListener("keydown", handleEscape);
         return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
             document.removeEventListener("keydown", handleEscape);
         };
-    }, [isOpen]);
+    }, [closeDropdown, isOpen]);
 
     const query = searchQuery.trim().toLowerCase();
 
@@ -150,10 +140,17 @@ export function Dropdown<T extends string | number>({
         <div className={`relative ${className}`} ref={containerRef}>
             <button
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => {
+                    if (isOpen) {
+                        closeDropdown();
+                    } else {
+                        onOpen?.();
+                        setIsOpen(true);
+                    }
+                }}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-none transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
+                className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
             >
                 <div className="flex items-center gap-2 min-w-0">
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
@@ -192,7 +189,7 @@ export function Dropdown<T extends string | number>({
                                         placeholder={searchPlaceholder}
                                         aria-label="Search options"
                                         autoFocus
-                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:border-content-disabled focus:outline-none transition-colors"
+                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:border-content-disabled focus:outline-hidden transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </div>
@@ -218,8 +215,7 @@ export function Dropdown<T extends string | number>({
                                             aria-selected={value === option.value}
                                             onClick={() => {
                                                 onChange(option.value);
-                                                setIsOpen(false);
-                                                setSearchQuery("");
+                                                closeDropdown();
                                             }}
                                             className={`w-full text-left px-3 py-2 transition-colors flex items-center justify-between group ${value === option.value
                                                 ? "bg-cloud/10 text-cloud"

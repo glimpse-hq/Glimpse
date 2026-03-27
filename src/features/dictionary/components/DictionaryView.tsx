@@ -56,7 +56,7 @@ const PageSwitcher = ({
     );
 };
 
-const DictionaryView = () => {
+const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     const [activePage, setActivePage] = useState<ActivePage>("dictionary");
 
     const [entries, setEntries] = useState<string[]>([]);
@@ -105,10 +105,14 @@ const DictionaryView = () => {
     }, []);
 
     useEffect(() => {
+        if (!isActive) return;
         load();
-    }, [load]);
+    }, [isActive, load]);
 
     useEffect(() => {
+        if (!isActive) return;
+
+        let cancelled = false;
         let unlistenSettings: UnlistenFn | null = null;
 
         listen<StoredSettings>("settings:changed", (event) => {
@@ -116,15 +120,18 @@ const DictionaryView = () => {
             if (!nextSettings) return;
             setSettings(nextSettings);
         }).then((fn) => {
-            unlistenSettings = fn;
+            if (cancelled) {
+                fn();
+            } else {
+                unlistenSettings = fn;
+            }
         });
 
         return () => {
-            if (unlistenSettings) {
-                unlistenSettings();
-            }
+            cancelled = true;
+            unlistenSettings?.();
         };
-    }, []);
+    }, [isActive]);
 
     const persistEntries = useCallback(async (next: string[]) => {
         setSaving(true);
@@ -285,7 +292,7 @@ const DictionaryView = () => {
                                     }}
                                     placeholder="Search or add a word..."
                                     aria-label="Add or search dictionary entry"
-                                    className="flex-1 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-none h-8 leading-8"
+                                    className="flex-1 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
                                 {isSearching && entries.length > 0 && (
                                     <span className="ui-text-body-sm ui-color-muted whitespace-nowrap" role="status">
@@ -360,7 +367,7 @@ const DictionaryView = () => {
                                                                 }
                                                             }}
                                                             onBlur={() => handleEditCommit()}
-                                                            className="flex-1 min-w-0 h-[44px] rounded-md border border-border-primary bg-surface-tertiary pl-1 pr-0 -ml-px ui-text-input-lg ui-color-primary outline-none focus:border-border-secondary leading-[44px]"
+                                                            className="flex-1 min-w-0 h-[44px] rounded-md border border-border-primary bg-surface-tertiary pl-1 pr-0 -ml-px ui-text-input-lg ui-color-primary outline-hidden focus:border-border-secondary leading-[44px]"
                                                         />
                                                     ) : (
                                                         <button
@@ -454,7 +461,7 @@ const DictionaryView = () => {
                                     onChange={(e) => setNewFrom(e.target.value)}
                                     placeholder="Find word..."
                                     aria-label="Find word to replace"
-                                    className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-none h-8 leading-8"
+                                    className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
                                 <ArrowRight size={14} className="text-content-disabled shrink-0" aria-hidden="true" />
                                 <input
@@ -468,7 +475,7 @@ const DictionaryView = () => {
                                     }}
                                     placeholder="Replace with..."
                                     aria-label="Replace with"
-                                    className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-none h-8 leading-8"
+                                    className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
                                 <button
                                     onClick={handleAddReplacement}
@@ -541,7 +548,7 @@ const DictionaryView = () => {
                                                                     handleEditReplacementCommit();
                                                                 }
                                                             }}
-                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-none focus:border-border-secondary"
+                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-hidden focus:border-border-secondary"
                                                         />
                                                         <ArrowRight size={14} className="text-content-disabled shrink-0" />
                                                         <input
@@ -564,7 +571,7 @@ const DictionaryView = () => {
                                                                     handleEditReplacementCommit();
                                                                 }
                                                             }}
-                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-none focus:border-border-secondary"
+                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-hidden focus:border-border-secondary"
                                                         />
                                                     </div>
                                                 ) : (

@@ -1,6 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import * as settingsApi from "./api";
 import type { StoredSettings } from "../../types";
 
@@ -13,30 +11,13 @@ export const settingsKeys = {
 
 export function useSettings<TSelect = StoredSettings>(
   select?: (data: StoredSettings) => TSelect,
+  enabled: boolean = true,
 ) {
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    let unlisten: UnlistenFn | null = null;
-    let cancelled = false;
-
-    listen<StoredSettings>("settings:changed", (e) => {
-      queryClient.setQueryData(settingsKeys.detail(), e.payload);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlisten = fn;
-    });
-
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, [queryClient]);
-
   return useQuery({
     queryKey: settingsKeys.detail(),
     queryFn: settingsApi.getSettings,
     select,
+    enabled,
   });
 }
 
@@ -52,17 +33,19 @@ export function useUpdateSettings() {
   });
 }
 
-export function useAppInfo() {
+export function useAppInfo(enabled: boolean = true) {
   return useQuery({
     queryKey: settingsKeys.appInfo(),
     queryFn: settingsApi.getAppInfo,
+    enabled,
     staleTime: Infinity,
   });
 }
 
-export function useInputDevices() {
+export function useInputDevices(enabled: boolean = true) {
   return useQuery({
     queryKey: settingsKeys.devices(),
     queryFn: settingsApi.listInputDevices,
+    enabled,
   });
 }

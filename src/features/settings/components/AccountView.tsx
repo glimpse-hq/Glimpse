@@ -269,7 +269,7 @@ const AccountView = ({
                                         onChange={(e) => setEditName(e.target.value)}
                                         autoFocus
                                         aria-label="Edit name"
-                                        className="bg-surface-surface border border-border-primary rounded-lg px-2 py-0 ui-text-title-lg font-medium ui-color-on-solid focus:border-amber-400/50 outline-none w-48 h-full"
+                                        className="bg-surface-surface border border-border-primary rounded-lg px-2 py-0 ui-text-title-lg font-medium ui-color-on-solid focus:border-amber-400/50 outline-hidden w-48 h-full"
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") handleSaveName();
                                             if (e.key === "Escape") {
@@ -282,7 +282,7 @@ const AccountView = ({
                                         onClick={handleSaveName}
                                         disabled={nameLoading}
                                         aria-label="Save name"
-                                        className="h-[28px] w-[28px] flex items-center justify-center rounded hover:bg-border-secondary ui-color-warning-strong"
+                                        className="h-[28px] w-[28px] flex items-center justify-center rounded-sm hover:bg-border-secondary ui-color-warning-strong"
                                     >
                                         <Check size={16} aria-hidden="true" />
                                     </button>
@@ -479,7 +479,7 @@ const AccountView = ({
                                                 {session.clientName || "Unknown Device"}
                                             </span>
                                             {session.current && (
-                                                <span className="ui-text-micro font-semibold ui-color-warning-strong bg-amber-400/10 px-1.5 py-0.5 rounded">
+                                                <span className="ui-text-micro font-semibold ui-color-warning-strong bg-amber-400/10 px-1.5 py-0.5 rounded-sm">
                                                     Current
                                                 </span>
                                             )}
@@ -514,7 +514,7 @@ const AccountView = ({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs"
                         onClick={closePasswordModal}
                     >
                         <motion.div
@@ -554,7 +554,7 @@ const AccountView = ({
                                                     setPasswordErrorCopied(true);
                                                     setTimeout(() => setPasswordErrorCopied(false), 1500);
                                                 }}
-                                                className="shrink-0 p-0.5 rounded hover:bg-red-500/20 transition-colors"
+                                                className="shrink-0 p-0.5 rounded-sm hover:bg-red-500/20 transition-colors"
                                                 title="Copy error"
                                             >
                                                 {passwordErrorCopied ? <Check size={11} /> : <Copy size={11} />}
@@ -571,7 +571,7 @@ const AccountView = ({
                                                     onChange={(e) => setCurrentPassword(e.target.value)}
                                                     placeholder="Current password"
                                                     aria-label="Current password"
-                                                    className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-none transition-colors"
+                                                    className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-hidden transition-colors"
                                                 />
                                                 <button
                                                     type="button"
@@ -592,7 +592,7 @@ const AccountView = ({
                                                     onChange={(e) => setNewPassword(e.target.value)}
                                                     placeholder="New password"
                                                     aria-label="New password"
-                                                    className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-none transition-colors"
+                                                    className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-hidden transition-colors"
                                                 />
                                                 <button
                                                     type="button"
@@ -612,7 +612,7 @@ const AccountView = ({
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 placeholder="Confirm new password"
                                                 aria-label="Confirm new password"
-                                                className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-none transition-colors"
+                                                className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-hidden transition-colors"
                                             />
                                         </div>
                                     </div>

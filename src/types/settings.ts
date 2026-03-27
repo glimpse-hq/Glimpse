@@ -1,6 +1,6 @@
 export type TranscriptionMode = "cloud" | "local";
 export type TextSizeMode = "small" | "default" | "large";
-export type UpdateChannel = "stable" | "prerelease";
+
 export type RecordingPrunePolicy =
     | "never"
     | "immediately"
@@ -55,7 +55,6 @@ export type StoredSettings = {
     local_model: string;
     microphone_device: string | null;
     language: string;
-    update_channel: UpdateChannel;
     llm_enabled: boolean;
     cleanup_enabled: boolean;
     llm_provider: LlmProvider;

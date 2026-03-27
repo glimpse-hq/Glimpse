@@ -1,14 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
-import {
-  buildShortcutPreviewString,
-  buildShortcutString,
-  formatShortcutForDisplay,
-  normalizeShortcutModifier,
-} from "../../../shared/lib/shortcuts";
+import { formatShortcutForDisplay } from "../../../shared/lib/shortcuts";
+import { useShortcutCapture } from "../../../shared/hooks/useShortcutCapture";
 import type { StepMotionProps } from "./shared";
-import type { OnboardingEvent } from "../machine";
 
 interface ReadyStepProps {
   stepMotionProps: StepMotionProps;
@@ -22,7 +17,6 @@ interface ReadyStepProps {
   onSetPreview: (preview: string) => void;
   onSetShortcut: (shortcut: string) => void;
   onComplete: () => void;
-  send: (event: OnboardingEvent) => void;
 }
 
 export function ReadyStep({
@@ -38,111 +32,25 @@ export function ReadyStep({
   onSetShortcut,
   onComplete,
 }: ReadyStepProps) {
-  const pressedModifiers = useRef<Set<string>>(new Set());
-  const primaryKey = useRef<string | null>(null);
-
-  const finalizeCapture = () => {
+  const finalizeCapture = useCallback(() => {
     invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
     onEndCapture();
-    pressedModifiers.current.clear();
-    primaryKey.current = null;
-  };
+  }, [onEndCapture]);
 
-  const buildShortcut = () => {
-    return buildShortcutString(pressedModifiers.current, primaryKey.current);
-  };
+  const { resetCaptureState } = useShortcutCapture({
+    active: captureActive,
+    onCancel: finalizeCapture,
+    onPreviewChange: onSetPreview,
+    onShortcutCaptured: onSetShortcut,
+  });
 
   const startCapture = () => {
-    pressedModifiers.current.clear();
-    primaryKey.current = null;
+    resetCaptureState();
     onStartCapture();
     invoke("set_shortcut_capture_active", { active: true }).catch((err) => {
       console.error("Failed to disable shortcuts for capture", err);
     });
   };
-
-  useEffect(() => {
-    if (!captureActive) return;
-
-    const updatePreview = () => {
-      const preview = buildShortcutPreviewString(
-        pressedModifiers.current,
-        primaryKey.current,
-      );
-      onSetPreview(preview ? formatShortcutForDisplay(preview) : "");
-    };
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        finalizeCapture();
-        return;
-      }
-      event.preventDefault();
-      const modifier = normalizeShortcutModifier(event);
-      if (modifier) {
-        pressedModifiers.current.add(modifier);
-        updatePreview();
-        return;
-      }
-      if (event.code) {
-        primaryKey.current = event.code;
-        updatePreview();
-        const combo = buildShortcut();
-        if (combo) {
-          onSetShortcut(combo);
-          finalizeCapture();
-        } else {
-          pressedModifiers.current.clear();
-          primaryKey.current = null;
-        }
-      }
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        finalizeCapture();
-        return;
-      }
-      event.preventDefault();
-      const modifier = normalizeShortcutModifier(event);
-      if (modifier) {
-        pressedModifiers.current.delete(modifier);
-        updatePreview();
-        return;
-      }
-      if (event.code && !primaryKey.current) {
-        primaryKey.current = event.code;
-        updatePreview();
-        const combo = buildShortcut();
-        if (combo) {
-          onSetShortcut(combo);
-          finalizeCapture();
-        } else {
-          pressedModifiers.current.clear();
-          primaryKey.current = null;
-        }
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !event.defaultPrevented) {
-        event.preventDefault();
-        finalizeCapture();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, true);
-    window.addEventListener("keyup", handleKeyUp, true);
-    window.addEventListener("keydown", handleEscape, true);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown, true);
-      window.removeEventListener("keyup", handleKeyUp, true);
-      window.removeEventListener("keydown", handleEscape, true);
-    };
-  }, [captureActive]);
 
   return (
     <motion.div

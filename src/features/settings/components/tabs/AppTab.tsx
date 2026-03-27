@@ -53,7 +53,7 @@ const SegmentedControl = <T extends string>({
     <div className="relative h-6 rounded-full border border-border-primary bg-surface-secondary p-0.5">
       <div className="absolute inset-0.5" aria-hidden="true">
         <div
-          className="absolute top-0 bottom-0 rounded-full border border-border-secondary bg-surface-elevated shadow-sm motion-reduce:transition-none"
+          className="absolute top-0 bottom-0 rounded-full border border-border-secondary bg-surface-elevated shadow-xs motion-reduce:transition-none"
           style={{
             width: `${segmentWidth}%`,
             left: `${activeIndex * segmentWidth}%`,
@@ -346,7 +346,7 @@ const AppTab = ({
                         "--action-card-rest-shadow": LOCAL_ACTION_SHADOW,
                       } as React.CSSProperties
                     }
-                    className="group rounded-lg border border-border-primary bg-surface-surface px-3 py-0.5 outline-none transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--action-card-border)] hover:bg-[var(--action-card-background)] hover:[box-shadow:var(--action-card-shadow)] hover:-translate-y-[1px] active:translate-y-[2px] active:[box-shadow:none] [box-shadow:var(--action-card-rest-shadow)] ui-text-meta font-medium ui-color-primary"
+                    className="group rounded-lg border border-border-primary bg-surface-surface px-3 py-0.5 outline-hidden transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--action-card-border)] hover:bg-[var(--action-card-background)] hover:[box-shadow:var(--action-card-shadow)] hover:-translate-y-[1px] active:translate-y-[2px] active:[box-shadow:none] [box-shadow:var(--action-card-rest-shadow)] ui-text-meta font-medium ui-color-primary"
                   >
                     Confirm
                   </button>

@@ -1,6 +1,6 @@
 use parking_lot::Mutex;
 use reqwest::Url;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -9,34 +9,20 @@ use tauri_plugin_updater::UpdaterExt;
 use tracing::{debug, error, info, warn};
 
 use crate::pill::PillStatus;
-use crate::settings::UpdateChannel;
 use crate::{toast, AppRuntime, AppState};
 
 const CHECK_INTERVAL_HOURS: u64 = 6;
 const INITIAL_DELAY_SECS: u64 = 30;
 const AUTO_UPDATE_IDLE_MINS: u64 = 10;
 const AUTO_UPDATE_POLL_SECS: u64 = 30;
+const AUTO_UPDATE_IDLE_POLL_SECS: u64 = 5 * 60;
 const AUTO_UPDATE_MARKER_FILE: &str = ".auto_updated";
 const STABLE_UPDATE_ENDPOINT: &str =
     "https://github.com/LegendarySpy/Glimpse/releases/latest/download/latest.json";
-const GITHUB_RELEASES_API_ENDPOINT: &str =
-    "https://api.github.com/repos/LegendarySpy/Glimpse/releases?per_page=20";
-const GITHUB_API_ACCEPT: &str = "application/vnd.github+json";
-const GITHUB_API_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
-const RELEASE_MANIFEST_FILE_NAME: &str = "latest.json";
 const EVENT_UPDATE_DOWNLOAD_PROGRESS: &str = "update:download-progress";
 
-#[derive(Debug, Deserialize)]
-struct GitHubReleaseAsset {
-    name: String,
-    browser_download_url: String,
-}
 
-#[derive(Debug, Deserialize)]
-struct GitHubRelease {
-    prerelease: bool,
-    assets: Vec<GitHubReleaseAsset>,
-}
+
 
 #[derive(Default)]
 pub struct UpdateState {
@@ -151,7 +137,7 @@ pub fn start_background_checker(app: AppHandle<AppRuntime>, state: SharedUpdateS
         tokio::time::sleep(Duration::from_secs(INITIAL_DELAY_SECS)).await;
 
         loop {
-            if let Err(err) = check_for_update(&app, &state, None).await {
+            if let Err(err) = check_for_update(&app, &state).await {
                 warn!(error = ?err, "background update check failed");
             }
             tokio::time::sleep(Duration::from_secs(CHECK_INTERVAL_HOURS * 60 * 60)).await;
@@ -174,17 +160,19 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
     let idle_duration = Duration::from_secs(AUTO_UPDATE_IDLE_MINS * 60);
 
     loop {
-        tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
-
         // Check if auto-update is enabled (in-memory cache, no DB hit)
         if !app.state::<AppState>().is_auto_update_enabled() {
+            tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_IDLE_POLL_SECS)).await;
             continue;
         }
 
         // Check if an update is available
         if !state.lock().is_available() {
+            tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_IDLE_POLL_SECS)).await;
             continue;
         }
+
+        tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
 
         // Only auto-update when the settings window is not visible
         if is_settings_window_visible(&app) {
@@ -203,20 +191,20 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
 
         info!("auto-update: app is idle and window hidden, downloading update");
 
-        match resolve_available_update(&app, None).await {
-            Ok(Some((update, channel))) => {
+        match resolve_available_update(&app).await {
+            Ok(Some(update)) => {
                 match update.download_and_install(|_, _| {}, || {}).await {
                     Ok(()) => {
                         if should_restart_for_auto_update(&app, &state) {
                             if write_marker(&app) {
                                 state.lock().clear();
-                                info!(channel = ?channel, "auto-update: installed, restarting");
+                                info!("auto-update: installed, restarting");
                                 app.request_restart();
                                 return;
                             }
-                            warn!(channel = ?channel, "auto-update: installed, but marker write failed");
+                            warn!("auto-update: installed, but marker write failed");
                         } else {
-                            info!(channel = ?channel, "auto-update: installed, waiting for restart conditions");
+                            info!("auto-update: installed, waiting for restart conditions");
                         }
 
                         // Update is already installed — wait for restart conditions
@@ -229,7 +217,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                             if should_restart_for_auto_update(&app, &state) {
                                 if write_marker(&app) {
                                     state.lock().clear();
-                                    info!(channel = ?channel, "auto-update: restarting (deferred)");
+                                    info!("auto-update: restarting (deferred)");
                                     app.request_restart();
                                     return;
                                 }
@@ -301,151 +289,39 @@ fn is_settings_window_visible(app: &AppHandle<AppRuntime>) -> bool {
         .unwrap_or(false)
 }
 
-/// Resolves the update channel, checks all endpoints, and returns the first
-/// available update object (if any). Shared by both interactive and silent update paths.
 async fn resolve_available_update(
     app: &AppHandle<AppRuntime>,
-    channel_override: Option<UpdateChannel>,
-) -> Result<Option<(tauri_plugin_updater::Update, UpdateChannel)>, String> {
-    let channel = resolve_channel(app, channel_override);
-    let endpoints = update_endpoints_for_channel(channel.clone())
-        .await
+) -> Result<Option<tauri_plugin_updater::Update>, String> {
+    let endpoint = Url::parse(STABLE_UPDATE_ENDPOINT).map_err(|err| err.to_string())?;
+    let updater_builder = app
+        .updater_builder()
+        .endpoints(vec![endpoint])
         .map_err(|err| err.to_string())?;
-    let mut last_error = None;
-    let mut checked_endpoint = false;
+    let updater = updater_builder.build().map_err(|err| err.to_string())?;
 
-    for endpoint in endpoints {
-        let endpoint_for_log = endpoint.clone();
-        let updater_builder = match app.updater_builder().endpoints(vec![endpoint]) {
-            Ok(builder) => builder,
-            Err(err) => {
-                warn!(
-                    endpoint = %endpoint_for_log,
-                    channel = ?channel,
-                    error = %err,
-                    "update: failed to configure updater endpoint"
-                );
-                last_error = Some(err.to_string());
-                continue;
-            }
-        };
-
-        let updater = match updater_builder.build() {
-            Ok(updater) => updater,
-            Err(err) => {
-                warn!(
-                    endpoint = %endpoint_for_log,
-                    channel = ?channel,
-                    error = %err,
-                    "update: failed to build updater"
-                );
-                last_error = Some(err.to_string());
-                continue;
-            }
-        };
-
-        match updater.check().await {
-            Ok(Some(update)) => return Ok(Some((update, channel))),
-            Ok(None) => {
-                checked_endpoint = true;
-            }
-            Err(err) => {
-                warn!(
-                    endpoint = %endpoint_for_log,
-                    channel = ?channel,
-                    error = %err,
-                    "update: failed to check endpoint"
-                );
-                last_error = Some(err.to_string());
-            }
-        }
-    }
-
-    if !checked_endpoint {
-        if let Some(err) = last_error {
-            return Err(err);
-        }
-    }
-
-    Ok(None)
-}
-
-async fn latest_prerelease_manifest_url() -> anyhow::Result<Option<Url>> {
-    let releases = reqwest::Client::new()
-        .get(GITHUB_RELEASES_API_ENDPOINT)
-        .header(reqwest::header::ACCEPT, GITHUB_API_ACCEPT)
-        .header(reqwest::header::USER_AGENT, GITHUB_API_USER_AGENT)
-        .send()
-        .await?
-        .error_for_status()?
-        .json::<Vec<GitHubRelease>>()
-        .await?;
-
-    for release in releases {
-        if !release.prerelease {
-            continue;
-        }
-
-        if let Some(asset) = release
-            .assets
-            .iter()
-            .find(|asset| asset.name == RELEASE_MANIFEST_FILE_NAME)
-        {
-            let url = Url::parse(&asset.browser_download_url)?;
-            return Ok(Some(url));
-        }
-    }
-
-    Ok(None)
-}
-
-async fn update_endpoints_for_channel(channel: UpdateChannel) -> anyhow::Result<Vec<Url>> {
-    let stable = Url::parse(STABLE_UPDATE_ENDPOINT)?;
-
-    if !matches!(channel, UpdateChannel::Prerelease) {
-        return Ok(vec![stable]);
-    }
-
-    let mut endpoints = Vec::new();
-    match latest_prerelease_manifest_url().await {
-        Ok(Some(endpoint)) => endpoints.push(endpoint),
-        Ok(None) => {
-            debug!("no prerelease release manifest found on GitHub");
-        }
-        Err(err) => {
-            warn!(error = ?err, "failed to resolve prerelease manifest endpoint");
-        }
-    }
-    endpoints.push(stable);
-    Ok(endpoints)
-}
-
-fn resolve_channel(
-    app: &AppHandle<AppRuntime>,
-    override_channel: Option<UpdateChannel>,
-) -> UpdateChannel {
-    if let Some(channel) = override_channel {
-        channel
-    } else {
-        app.state::<AppState>().current_settings().update_channel
+    match updater.check().await {
+        Ok(Some(update)) => Ok(Some(update)),
+        Ok(None) => Ok(None),
+        Err(err) => Err(err.to_string()),
     }
 }
+
+
+
 
 async fn check_for_update(
     app: &AppHandle<AppRuntime>,
     state: &SharedUpdateState,
-    channel_override: Option<UpdateChannel>,
 ) -> anyhow::Result<()> {
     debug!("checking for updates");
 
-    let channel = resolve_channel(app, channel_override);
-    match resolve_available_update(app, Some(channel.clone()))
+    match resolve_available_update(app)
         .await
         .map_err(|err| anyhow::anyhow!(err))?
     {
-        Some((update, _)) => {
+        Some(update) => {
             let version = update.version.clone();
-            info!(version = %version, channel = ?channel, "update available");
+            info!(version = %version, "update available");
 
             {
                 let mut guard = state.lock();
@@ -458,13 +334,14 @@ async fn check_for_update(
             let _ = app.emit("update:available", version);
         }
         None => {
-            debug!(channel = ?channel, "no updates available");
+            debug!("no updates available");
             clear_update_state_and_emit(app);
         }
     }
 
     Ok(())
 }
+
 
 pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdateState) {
     let (should_show, new_version) = {
@@ -530,10 +407,9 @@ pub fn get_update_status(app: AppHandle<AppRuntime>) -> UpdateStatus {
 #[tauri::command]
 pub async fn check_for_updates(
     app: AppHandle<AppRuntime>,
-    channel: Option<UpdateChannel>,
 ) -> Result<UpdateStatus, String> {
     let update_state = app.state::<AppState>().update_state().clone();
-    check_for_update(&app, &update_state, channel)
+    check_for_update(&app, &update_state)
         .await
         .map_err(|err| err.to_string())?;
 
@@ -544,14 +420,14 @@ pub async fn check_for_updates(
     })
 }
 
+
 #[tauri::command]
 pub async fn download_and_install_update(
     app: AppHandle<AppRuntime>,
-    channel: Option<UpdateChannel>,
 ) -> Result<(), String> {
-    let (update, resolved_channel) = resolve_available_update(&app, channel)
+    let update = resolve_available_update(&app)
         .await?
-        .ok_or_else(|| "No update is currently available for this channel.".to_string())?;
+        .ok_or_else(|| "No update is currently available.".to_string())?;
 
     let mut downloaded = 0_u64;
     let mut total: Option<u64> = None;
@@ -598,51 +474,6 @@ pub async fn download_and_install_update(
 
     clear_update_state_and_emit(&app);
 
-    info!(channel = ?resolved_channel, "update downloaded and installed");
+    info!("update downloaded and installed");
     Ok(())
-}
-
-#[tauri::command]
-pub fn trigger_update_check(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    let update_state = state.update_state().clone();
-    tauri::async_runtime::spawn(async move {
-        if let Err(err) = check_for_update(&app, &update_state, None).await {
-            warn!(error = ?err, "manual update check failed");
-        }
-    });
-}
-
-#[allow(dead_code)]
-#[tauri::command]
-pub fn simulate_update_available(app: AppHandle<AppRuntime>, version: String) {
-    let state = app.state::<AppState>();
-    {
-        let mut guard = state.update_state().lock();
-        guard.set_available(version.clone());
-        guard.toast_shown_this_session = false;
-    }
-    let _ = app.emit("update:available", version);
-}
-
-#[tauri::command]
-pub fn clear_update_state(app: AppHandle<AppRuntime>) {
-    clear_update_state_and_emit(&app);
-}
-
-#[allow(dead_code)]
-#[tauri::command]
-pub fn show_update_toast_now(app: AppHandle<AppRuntime>) {
-    let state = app.state::<AppState>();
-    let update_state = state.update_state().clone();
-
-    {
-        let mut guard = update_state.lock();
-        if !guard.is_available() {
-            guard.set_available("99.0.0".to_string());
-        }
-        guard.toast_shown_this_session = false;
-    }
-
-    maybe_show_update_toast(&app, &update_state);
 }

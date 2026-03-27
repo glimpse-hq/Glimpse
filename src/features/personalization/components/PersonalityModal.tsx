@@ -82,7 +82,7 @@ const WebsiteFavicon = ({
   if (!iconPath) {
     return (
       <span
-        className={`${sizeClass} shrink-0 rounded-sm border border-border-secondary bg-surface-overlay flex items-center justify-center ui-color-secondary ${fallbackTextClass}`}
+        className={`${sizeClass} shrink-0 rounded-xs border border-border-secondary bg-surface-overlay flex items-center justify-center ui-color-secondary ${fallbackTextClass}`}
         aria-hidden="true"
       >
         {getWebsiteFallback(site)}
@@ -94,7 +94,7 @@ const WebsiteFavicon = ({
     <img
       src={convertFileSrc(iconPath)}
       alt=""
-      className={`${sizeClass} shrink-0 rounded-sm`}
+      className={`${sizeClass} shrink-0 rounded-xs`}
       loading="lazy"
       aria-hidden="true"
     />
@@ -323,7 +323,7 @@ const PersonalityModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-xs"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
@@ -372,11 +372,11 @@ const PersonalityModal = ({
                           }
                         }}
                         onBlur={handleSaveName}
-                        className="bg-transparent ui-text-title-lg font-semibold ui-color-primary outline-none border-b border-border-hover"
+                        className="bg-transparent ui-text-title-lg font-semibold ui-color-primary outline-hidden border-b border-border-hover"
                       />
                       <button
                         onClick={handleSaveName}
-                        className="h-[28px] w-[28px] flex items-center justify-center rounded hover:bg-border-secondary ui-color-primary"
+                        className="h-[28px] w-[28px] flex items-center justify-center rounded-sm hover:bg-border-secondary ui-color-primary"
                         aria-label="Save name"
                       >
                         <Check size={14} aria-hidden="true" />
@@ -440,7 +440,7 @@ const PersonalityModal = ({
                   }
                   placeholder="Add custom instructions"
                   aria-label="Custom instructions"
-                  className="w-full resize-none bg-transparent ui-text-label font-mono ui-color-primary placeholder-content-disabled outline-none instructions-scroll"
+                  className="w-full resize-none bg-transparent ui-text-label font-mono ui-color-primary placeholder-content-disabled outline-hidden instructions-scroll"
                   style={{ height: `${instructionsHeight}px` }}
                 />
               </div>
@@ -451,7 +451,7 @@ const PersonalityModal = ({
                 <button
                   type="button"
                   onPointerDown={handleInstructionsResizeStart}
-                  className="h-4 w-4 rounded text-content-disabled hover:text-content-primary transition-colors cursor-pointer touch-none"
+                  className="h-4 w-4 rounded-sm text-content-disabled hover:text-content-primary transition-colors cursor-pointer touch-none"
                   aria-label="Resize custom instructions"
                   title="Drag to resize"
                 >
@@ -500,7 +500,7 @@ const PersonalityModal = ({
                         No applications selected
                       </div>
                     ) : (
-                      personality.apps.map((app) => {
+                      personality.apps.map((app, index) => {
                         const installedApp = installedAppByName.get(
                           app.toLowerCase(),
                         );
@@ -509,7 +509,7 @@ const PersonalityModal = ({
                         );
                         return (
                           <div
-                            key={app}
+                            key={`app-${index}-${app || "empty"}`}
                             className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-3 py-2"
                           >
                             <div className="flex items-center gap-2">
@@ -570,7 +570,7 @@ const PersonalityModal = ({
                     }}
                     placeholder="Add a site like gmail.com"
                     aria-label="Add website domain"
-                    className="bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-none flex-1"
+                    className="bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden flex-1"
                   />
                   <button
                     onClick={addWebsite}
@@ -590,9 +590,9 @@ const PersonalityModal = ({
                         No websites added
                       </div>
                     ) : (
-                      personality.websites.map((site) => (
+                      personality.websites.map((site, index) => (
                         <div
-                          key={site}
+                          key={`site-${index}-${site || "empty"}`}
                           className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-3 py-2"
                         >
                           <div className="flex items-center gap-2">

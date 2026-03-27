@@ -26,19 +26,14 @@ const resolveTextScale = (mode: TextSizeMode): string => {
 };
 
 function App() {
-  const [windowLabel, setWindowLabel] = useState("");
-  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [windowLabel] = useState(() => getCurrentWindow().label);
 
   const isSettingsWindow = windowLabel === "settings";
 
   const { data: settings, isLoading: settingsLoading } = useSettings(
     undefined,
+    isSettingsWindow,
   );
-
-  useEffect(() => {
-    const win = getCurrentWindow();
-    setWindowLabel(win.label);
-  }, []);
 
   useEffect(() => {
     const handleContextMenu = (event: MouseEvent) => {
@@ -75,17 +70,6 @@ function App() {
     };
   }, [windowLabel]);
 
-  // Determine onboarding state from settings query
-  useEffect(() => {
-    if (!isSettingsWindow) {
-      setShowOnboarding(false);
-      return;
-    }
-    if (settings) {
-      setShowOnboarding(!settings.onboarding_completed);
-    }
-  }, [isSettingsWindow, settings]);
-
   useEffect(() => {
     const body = document.body;
     const html = document.documentElement;
@@ -102,12 +86,11 @@ function App() {
     };
   }, [windowLabel]);
 
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-  };
+  const showOnboarding =
+    isSettingsWindow && !!settings && !settings.onboarding_completed;
 
   if (windowLabel === "settings") {
-    if (settingsLoading || showOnboarding === null) {
+    if (settingsLoading) {
       return (
         <div className="settings-view h-screen w-screen overflow-hidden bg-surface-secondary" />
       );
@@ -116,7 +99,7 @@ function App() {
     return (
       <div className="settings-view h-screen w-screen overflow-hidden">
         {showOnboarding ? (
-          <OnboardingScreen onComplete={handleOnboardingComplete} />
+          <OnboardingScreen onComplete={() => {}} />
         ) : (
           <Home />
         )}

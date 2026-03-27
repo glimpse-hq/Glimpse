@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+    useCallback,
+    useEffect,
+    useMemo,
+    useState,
+} from "react";
 import { AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
     FolderOpen,
     Loader2,
@@ -12,7 +15,12 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
+import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
+import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEvents";
 import { Dropdown } from "../../../shared/ui/Dropdown";
+import { useSettings } from "../../settings/queries";
+import { useModelCatalog } from "../../settings/models-queries";
 import LibraryImportModal from "./LibraryImportModal";
 import LibraryCard from "./LibraryCard";
 import LibraryModal from "./LibraryModal";
@@ -38,50 +46,47 @@ import type {
     LibraryFilter,
     LibraryItem,
     LibraryItemPatch,
-    ModelInfo,
     ModelStatus,
-    StoredSettings,
 } from "../../../types";
 
 type LibraryViewProps = {
     pendingImportPaths: string[] | null;
     onSetImportPaths: (paths: string[] | null) => void;
     sidebarWidth: number;
+    isActive: boolean;
 };
 
-const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: LibraryViewProps) => {
+const LibraryView = ({
+    pendingImportPaths,
+    onSetImportPaths,
+    sidebarWidth,
+    isActive,
+}: LibraryViewProps) => {
     const queryClient = useQueryClient();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [tagFilter, setTagFilter] = useState<string>("all");
     const [dateFilter, setDateFilter] = useState<string>("all");
-    const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
-    const [modelCatalog, setModelCatalog] = useState<ModelInfo[]>([]);
+    const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>({});
-    const [defaultModelKey, setDefaultModelKey] = useState<string>("");
-    const [shiftHeld, setShiftHeld] = useState(false);
     const [editingNameId, setEditingNameId] = useState<string | null>(null);
     const [editingNameDraft, setEditingNameDraft] = useState("");
     const [editingTagId, setEditingTagId] = useState<string | null>(null);
     const [tagDraft, setTagDraft] = useState("");
     const [followTimestamps, setFollowTimestamps] = useState(true);
-
-    const [filter, setFilter] = useState<LibraryFilter>({});
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            const sinceDays =
-                dateFilter === "last7" ? 7 : dateFilter === "last30" ? 30 : null;
-            setFilter({
-                search: searchQuery || null,
-                status: statusFilter === "all" ? null : statusFilter,
-                tag: tagFilter === "all" ? null : tagFilter,
-                since_days: sinceDays,
-            });
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [searchQuery, statusFilter, tagFilter, dateFilter]);
+    const shiftHeld = useShiftHeld(isActive);
+    const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+    const filter = useMemo<LibraryFilter>(() => {
+        const sinceDays =
+            dateFilter === "last7" ? 7 : dateFilter === "last30" ? 30 : null;
+        return {
+            search: debouncedSearchQuery || null,
+            status: statusFilter === "all" ? null : statusFilter,
+            tag: tagFilter === "all" ? null : tagFilter,
+            since_days: sinceDays,
+        };
+    }, [dateFilter, debouncedSearchQuery, statusFilter, tagFilter]);
 
     const {
         data,
@@ -90,13 +95,22 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
         hasNextPage,
         fetchNextPage,
         error: queryError,
-    } = useLibraryItemsQuery(filter);
+    } = useLibraryItemsQuery(filter, isActive);
 
-    const { data: availableTags = [] } = useLibraryTags();
+    const { data: availableTags = [] } = useLibraryTags(isActive);
+    const { data: modelCatalog = [] } = useModelCatalog(isActive);
+    const { data: defaultModelKey = "" } = useSettings(
+        (settings) => settings.local_model,
+        isActive,
+    );
 
     const items = useMemo(
         () => data?.pages.flatMap((page) => page.items) ?? [],
         [data],
+    );
+    const selectedItem = useMemo(
+        () => items.find((item) => item.id === selectedItemId) ?? null,
+        [items, selectedItemId],
     );
     const error = queryError ? (queryError instanceof Error ? queryError.message : String(queryError)) : null;
 
@@ -156,112 +170,20 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
     }, []);
 
     useEffect(() => {
-        invoke<ModelInfo[]>("list_models")
-            .then((models) => {
-                setModelCatalog(models);
-                models.forEach((model) => refreshModelStatus(model.key));
-            })
-            .catch((err) => console.error("Failed to list models:", err));
+        if (!isActive || modelCatalog.length === 0) return;
 
-        invoke<StoredSettings>("get_settings")
-            .then((settings) => {
-                setDefaultModelKey(settings.local_model);
-            })
-            .catch((err) => console.error("Failed to load settings:", err));
-    }, [refreshModelStatus]);
+        modelCatalog.forEach((model) => refreshModelStatus(model.key));
+    }, [isActive, modelCatalog, refreshModelStatus]);
 
-    useEffect(() => {
-        let cancelled = false;
-        let unlistenFocus: UnlistenFn | null = null;
-
-        const handleKeyChange = (event: KeyboardEvent) => {
-            setShiftHeld(event.shiftKey);
-        };
-        const handlePointerDown = (event: PointerEvent) => {
-            setShiftHeld(event.shiftKey);
-        };
-        const resetShift = () => setShiftHeld(false);
-        const handleVisibilityChange = () => {
-            if (document.visibilityState !== "visible") {
-                setShiftHeld(false);
-            }
-        };
-
-        getCurrentWindow()
-            .onFocusChanged(() => {
-                setShiftHeld(false);
-            })
-            .then((unlisten) => {
-                if (cancelled) {
-                    unlisten();
-                } else {
-                    unlistenFocus = unlisten;
-                }
-            })
-            .catch(() => {});
-
-        document.addEventListener("keydown", handleKeyChange);
-        document.addEventListener("keyup", handleKeyChange);
-        document.addEventListener("pointerdown", handlePointerDown);
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        window.addEventListener("blur", resetShift);
-        window.addEventListener("focus", resetShift);
-
-        return () => {
-            cancelled = true;
-            document.removeEventListener("keydown", handleKeyChange);
-            document.removeEventListener("keyup", handleKeyChange);
-            document.removeEventListener("pointerdown", handlePointerDown);
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
-            window.removeEventListener("blur", resetShift);
-            window.removeEventListener("focus", resetShift);
-            unlistenFocus?.();
-        };
-    }, []);
-
-    useEffect(() => {
-        let cancelled = false;
-        let unlistenComplete: UnlistenFn | null = null;
-        let unlistenError: UnlistenFn | null = null;
-
-        const setup = async () => {
-            const [complete, error] = await Promise.all([
-                listen<{ model: string }>("download:complete", (event) => {
-                    refreshModelStatus(event.payload.model);
-                }),
-                listen<{ model: string }>("download:error", (event) => {
-                    refreshModelStatus(event.payload.model);
-                }),
-            ]);
-
-            if (cancelled) {
-                complete();
-                error();
-            } else {
-                unlistenComplete = complete;
-                unlistenError = error;
-            }
-        };
-
-        setup();
-
-        return () => {
-            cancelled = true;
-            unlistenComplete?.();
-            unlistenError?.();
-        };
-    }, [refreshModelStatus]);
-
-    useEffect(() => {
-        if (!selectedItem) return;
-        const updated = items.find((item) => item.id === selectedItem.id);
-        if (updated && updated !== selectedItem) {
-            setSelectedItem(updated);
-        }
-        if (!updated) {
-            setSelectedItem(null);
-        }
-    }, [items, selectedItem]);
+    useModelDownloadEvents({
+        enabled: isActive,
+        onComplete: ({ model }) => {
+            refreshModelStatus(model);
+        },
+        onError: ({ model }) => {
+            refreshModelStatus(model);
+        },
+    });
 
     useEffect(() => {
         if (!selectedItem) return;
@@ -269,7 +191,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
         const handleSidebarClick = (event: MouseEvent) => {
             const sidebar = document.querySelector("[data-app-sidebar]");
             if (sidebar && sidebar.contains(event.target as Node)) {
-                setSelectedItem(null);
+                setSelectedItemId(null);
             }
         };
 
@@ -390,7 +312,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search library..."
                                 aria-label="Search library"
-                                className="w-full min-w-0 bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-none"
+                                className="w-full min-w-0 bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-hidden"
                             />
                         </div>
                     </div>
@@ -469,7 +391,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                             <LibraryCard
                                 key={item.id}
                                 item={item}
-                                onOpen={() => setSelectedItem(item)}
+                                onOpen={() => setSelectedItemId(item.id)}
                                 onRemoveTag={async (tag) => {
                                     const nextTags = item.tags.filter((entry) => entry !== tag);
                                     await updateItemWithTags(item.id, { tags: nextTags });
@@ -485,7 +407,7 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                                 onDelete={async () => {
                                     await deleteItemAndRefreshTags(item.id);
                                     if (selectedItem?.id === item.id) {
-                                        setSelectedItem(null);
+                                        setSelectedItemId(null);
                                     }
                                 }}
                                 editingTagId={editingTagId}
@@ -538,19 +460,20 @@ const LibraryView = ({ pendingImportPaths, onSetImportPaths, sidebarWidth }: Lib
                         key="library-detail"
                         className="fixed top-0 right-0 bottom-0 z-20 flex items-center justify-center p-6 transition-[left] duration-200 ease-out"
                         style={{ left: sidebarWidth, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
-                        onClick={() => setSelectedItem(null)}
+                        onClick={() => setSelectedItemId(null)}
                     >
                         <div className="w-full h-full min-h-0" onClick={(e) => e.stopPropagation()}>
                             <LibraryModal
+                                key={selectedItem.id}
                                 item={selectedItem}
                                 models={installedModels}
                                 shiftHeld={shiftHeld}
                                 followTimestamps={followTimestamps}
                                 onFollowTimestampsChange={setFollowTimestamps}
-                                onClose={() => setSelectedItem(null)}
+                                onClose={() => setSelectedItemId(null)}
                                 onDelete={async () => {
                                     await deleteItemAndRefreshTags(selectedItem.id);
-                                    setSelectedItem(null);
+                                    setSelectedItemId(null);
                                 }}
                                 onRetry={() => retryMutation.mutateAsync(selectedItem.id)}
                                 onCancel={() => cancelMutation.mutateAsync(selectedItem.id)}

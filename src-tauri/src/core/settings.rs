@@ -3,10 +3,11 @@ use tauri::{AppHandle, Emitter};
 
 use super::hotkeys;
 use crate::settings::{
-    LlmProvider, RecordingPrunePolicy, TranscriptionMode, UpdateChannel, UserSettings,
+    LlmProvider, RecordingPrunePolicy, TranscriptionMode, UserSettings,
 };
+
 use crate::{
-    analytics, model_manager, pill, tray, update_checker, AppRuntime, AppState,
+    analytics, model_manager, pill, tray, AppRuntime, AppState,
     EVENT_SETTINGS_CHANGED,
 };
 
@@ -23,8 +24,8 @@ pub(crate) struct UpdateSettingsArgs {
     pub local_model: String,
     pub microphone_device: Option<String>,
     pub language: String,
-    pub update_channel: UpdateChannel,
     pub llm_enabled: bool,
+
     pub cleanup_enabled: bool,
     pub llm_provider: LlmProvider,
     pub llm_endpoint: String,
@@ -134,19 +135,32 @@ pub(crate) fn complete_onboarding(
 ) -> Result<(), String> {
     let mut settings = state.current_settings();
     settings.onboarding_completed = true;
-    state
+    let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
+
+    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
+        eprintln!("Failed to emit settings change: {err}");
+    }
+
     analytics::track_onboarding_completed(app);
     Ok(())
 }
 
-pub(crate) fn reset_onboarding(state: &AppState) -> Result<(), String> {
+pub(crate) fn reset_onboarding(
+    app: &AppHandle<AppRuntime>,
+    state: &AppState,
+) -> Result<(), String> {
     let mut settings = state.current_settings();
     settings.onboarding_completed = false;
-    state
+    let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
+
+    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
+        eprintln!("Failed to emit settings change: {err}");
+    }
+
     Ok(())
 }
 
@@ -187,8 +201,8 @@ pub(crate) fn update_settings(
     next.local_model = args.local_model;
     next.microphone_device = args.microphone_device;
     next.language = args.language;
-    next.update_channel = args.update_channel;
     next.llm_enabled = args.llm_enabled;
+
     next.cleanup_enabled = args.cleanup_enabled;
     next.llm_provider = args.llm_provider;
     next.llm_endpoint = args.llm_endpoint;
@@ -225,10 +239,7 @@ pub(crate) fn update_settings(
         eprintln!("Failed to emit settings change: {err}");
     }
 
-    if prev.update_channel != next.update_channel {
-        update_checker::clear_update_state(app.clone());
-        update_checker::trigger_update_check(app.clone());
-    }
+
 
     if prev.recording_prune_policy != next.recording_prune_policy {
         crate::schedule_recording_prune(app.clone(), next.clone());
@@ -254,8 +265,8 @@ mod tests {
             local_model: default_local_model(),
             microphone_device: None,
             language: "en".to_string(),
-            update_channel: UpdateChannel::Stable,
             llm_enabled: false,
+
             cleanup_enabled: false,
             llm_provider: LlmProvider::None,
             llm_endpoint: String::new(),

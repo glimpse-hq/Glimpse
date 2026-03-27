@@ -143,7 +143,7 @@ const LanguageModelPanel = ({
                             "https://your-llm-endpoint.com"
                           }
                           aria-label="LLM Endpoint URL"
-                          className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-none"
+                          className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden"
                         />
                       </div>
                     </div>
@@ -173,7 +173,7 @@ const LanguageModelPanel = ({
                               : "Optional"
                           }
                           aria-label="LLM API Key"
-                          className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-none"
+                          className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden"
                         />
                       </div>
                     </div>

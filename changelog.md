@@ -1,3 +1,11 @@
+0.7.5
+
+### Changes
+- Changed Github icon to a bug in (i)
+- Simplified LLM cleanup, this should make it more consistant.
+- Removed pre-release from updater settings (in prep for Windows)
+- Many performance optimizations, less ram usage.
+---
 0.7.4
 
 ### Features

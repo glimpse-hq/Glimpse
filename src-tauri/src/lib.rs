@@ -896,10 +896,10 @@ fn complete_onboarding(
 
 #[tauri::command]
 fn reset_onboarding(
-    _app: AppHandle<AppRuntime>,
+    app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
-    core::settings::reset_onboarding(&state)
+    core::settings::reset_onboarding(&app, &state)
 }
 
 #[tauri::command]

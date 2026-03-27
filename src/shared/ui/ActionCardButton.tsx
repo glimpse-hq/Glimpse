@@ -91,7 +91,7 @@ const ActionCardButton = ({
     <button
       type={type}
       className={joinClasses(
-        "group w-full rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5 text-left [box-shadow:var(--action-card-rest-shadow)] outline-none transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--action-card-border)] hover:bg-[var(--action-card-background)] hover:[box-shadow:var(--action-card-shadow)] hover:-translate-y-[1px] active:translate-y-[2px] active:[box-shadow:none] focus-visible:ring-2 focus-visible:ring-border-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-border-primary disabled:hover:bg-surface-surface disabled:hover:[box-shadow:var(--action-card-rest-shadow)]",
+        "group w-full rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5 text-left [box-shadow:var(--action-card-rest-shadow)] outline-hidden transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--action-card-border)] hover:bg-[var(--action-card-background)] hover:[box-shadow:var(--action-card-shadow)] hover:-translate-y-[1px] active:translate-y-[2px] active:[box-shadow:none] focus-visible:ring-2 focus-visible:ring-border-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-border-primary disabled:hover:bg-surface-surface disabled:hover:[box-shadow:var(--action-card-rest-shadow)]",
         className,
       )}
       style={actionStyle}

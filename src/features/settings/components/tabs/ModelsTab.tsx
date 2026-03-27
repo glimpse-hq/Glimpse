@@ -219,9 +219,11 @@ const ModelsTab = ({
                   </div>
                   <div className="flex items-center gap-2">
                     {hasActiveModel && (
-                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-cloud/20">
-                        <Check size={12} className="text-cloud" />
-                      </div>
+                      <Check
+                        size={12}
+                        aria-hidden="true"
+                        className="ui-color-cloud"
+                      />
                     )}
                     {!hasActiveModel && installedCount > 0 && (
                       <span className="ui-text-meta ui-color-disabled">
@@ -308,23 +310,19 @@ const ModelRow = ({
 
   return (
     <div
-      className={`rounded-lg px-3 py-2.5 transition-colors ${isActive ? "bg-cloud/10" : "hover:bg-surface-elevated/50"}`}
+      className="rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-elevated/50"
     >
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span
-              className={`ui-text-body-sm-strong ${isActive ? "ui-color-cloud" : "ui-color-primary"}`}
-            >
+            <span className="ui-text-body-sm-strong ui-color-primary">
               {model.label}
             </span>
             {isRecommended && (
               <span className="ui-text-meta ui-color-local">Recommended</span>
             )}
             {isActive && (
-              <span className="px-1.5 py-0.5 rounded ui-text-nano font-semibold uppercase tracking-wider bg-cloud/20 ui-color-cloud">
-                Active
-              </span>
+              <span className="ui-text-meta ui-color-cloud">Active</span>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">

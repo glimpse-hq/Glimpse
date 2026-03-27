@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const TranscriptionModeSchema = z.enum(["cloud", "local"]);
 export const TextSizeModeSchema = z.enum(["small", "default", "large"]);
-export const UpdateChannelSchema = z.enum(["stable", "prerelease"]);
+
 export const RecordingPrunePolicySchema = z.enum([
   "never",
   "immediately",
@@ -61,8 +61,8 @@ export const StoredSettingsSchema = z.object({
   local_model: z.string(),
   microphone_device: z.string().nullable(),
   language: z.string(),
-  update_channel: UpdateChannelSchema,
   llm_enabled: z.boolean(),
+
   cleanup_enabled: z.boolean(),
   llm_provider: LlmProviderSchema,
   llm_endpoint: z.string(),
