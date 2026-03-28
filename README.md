@@ -51,6 +51,14 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/
 - [ ] Windows
 - [ ] Recording auto deletion
 
+## Translations
+
+Want to help translate Glimpse? Translation contributors are currently added by invite only.
+
+Apply here: [Translation contributor form](https://tally.so/r/EkLeyL)
+
+If accepted, you'll receive a Lokalise invite by email. Applications are reviewed manually, and contributors may not be approved for every requested language.
+
 ## Privacy
 
 Glimpse runs fully on-device. Your transcriptions, audio, API keys, and prompts are **never** collected or transmitted.
