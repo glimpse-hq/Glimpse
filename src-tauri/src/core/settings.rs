@@ -3,13 +3,11 @@ use tauri::{AppHandle, Emitter};
 
 use super::hotkeys;
 use crate::settings::{
-    LlmProvider, RecordingPrunePolicy, TranscriptionMode, UserSettings,
+    canonicalize_app_locale, canonicalize_app_locale_or_default, LlmProvider, RecordingPrunePolicy,
+    TranscriptionMode, UserSettings,
 };
 
-use crate::{
-    analytics, model_manager, pill, tray, AppRuntime, AppState,
-    EVENT_SETTINGS_CHANGED,
-};
+use crate::{analytics, model_manager, pill, tray, AppRuntime, AppState, EVENT_SETTINGS_CHANGED};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -107,7 +105,7 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("Unknown model selection".into());
     }
 
-    if !matches!(args.app_locale.as_str(), "system" | "en" | "fr") {
+    if canonicalize_app_locale(&args.app_locale).is_none() {
         return Err("Unknown app language selection".into());
     }
 
@@ -206,7 +204,7 @@ pub(crate) fn update_settings(
     next.local_model = args.local_model;
     next.microphone_device = args.microphone_device;
     next.language = args.language;
-    next.app_locale = args.app_locale;
+    next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
     next.llm_enabled = args.llm_enabled;
 
     next.cleanup_enabled = args.cleanup_enabled;
@@ -244,8 +242,6 @@ pub(crate) fn update_settings(
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
         eprintln!("Failed to emit settings change: {err}");
     }
-
-
 
     if prev.recording_prune_policy != next.recording_prune_policy {
         crate::schedule_recording_prune(app.clone(), next.clone());
@@ -333,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_unknown_app_locale_selection() {
+    fn rejects_invalid_app_locale_selection() {
         let mut args = base_args();
         args.app_locale = "de".to_string();
 

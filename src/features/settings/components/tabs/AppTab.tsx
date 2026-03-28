@@ -6,6 +6,7 @@ import { Check, Loader2 } from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { requestAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
+import { buildAppLocaleOptions } from "../../../../shared/lib/appLocales";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { ACTION_CARD_BUTTON_ACCENTS } from "../../../../shared/ui/ActionCardButton";
 import type {
@@ -168,32 +169,12 @@ const AppTab = ({
     { value: "year", label: t({ id: "settings.app.prune.year", message: "1 Year" }) },
   ];
 
-  const appLanguageOptions: Array<{
-    value: AppLocaleSetting;
-    label: string;
-  }> = [
-    {
-      value: "system",
-      label: t({
-        id: "settings.app.language.system",
-        message: "System",
-      }),
-    },
-    {
-      value: "en",
-      label: t({
-        id: "settings.app.language.english",
-        message: "English",
-      }),
-    },
-    {
-      value: "fr",
-      label: t({
-        id: "settings.app.language.french",
-        message: "French",
-      }),
-    },
-  ];
+  const appLanguageOptions = buildAppLocaleOptions(
+    t({
+      id: "settings.app.language.system",
+      message: "System",
+    }),
+  );
 
   useEffect(() => {
     setDraftPolicy(recordingPrunePolicy);
@@ -226,7 +207,7 @@ const AppTab = ({
           })}
         </h2>
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="ui-text-label-strong ui-color-primary">

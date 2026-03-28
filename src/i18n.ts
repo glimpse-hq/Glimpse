@@ -1,23 +1,35 @@
 import { i18n, type Messages } from "@lingui/core";
 import type { AppLocaleSetting } from "./types";
-import { messages as enMessages } from "./locales/en/messages.po";
-import { messages as frMessages } from "./locales/fr/messages.po";
+import {
+  DEFAULT_APP_LOCALE,
+  DEFAULT_LOCALE,
+  SUPPORTED_APP_LOCALES,
+  normalizeSupportedAppLocale,
+} from "./shared/lib/appLocales";
 
-export const DEFAULT_LOCALE = "en";
-export const SUPPORTED_LOCALES = [DEFAULT_LOCALE, "fr"] as const;
-export const DEFAULT_APP_LOCALE: AppLocaleSetting = "system";
+const localeCatalogs = import.meta.glob<Messages>("./locales/*/messages.po", {
+  eager: true,
+  import: "messages",
+});
 
-export type AppLocale = (typeof SUPPORTED_LOCALES)[number];
+function extractLocaleCode(path: string): string | null {
+  const match = path.match(/^\.\/locales\/([^/]+)\/messages\.po$/);
+  return match?.[1]?.trim().toLowerCase() || null;
+}
 
-const catalogs: Record<AppLocale, Messages> = {
-  en: enMessages,
-  fr: frMessages,
-};
+export type AppLocale = string;
 
-function normalizeLocale(locale?: string | null): AppLocale {
-  const baseLocale = locale?.toLowerCase().split("-")[0];
-  if (baseLocale === "fr") return "fr";
-  return DEFAULT_LOCALE;
+const catalogs = Object.fromEntries(
+  Object.entries(localeCatalogs).flatMap(([path, messages]) => {
+    const locale = extractLocaleCode(path);
+    return locale ? [[locale, messages]] : [];
+  }),
+) as Record<string, Messages>;
+
+for (const locale of SUPPORTED_APP_LOCALES) {
+  if (!catalogs[locale]) {
+    throw new Error(`Missing locale catalog for ${locale}`);
+  }
 }
 
 function resolveRequestedLocale(
@@ -32,7 +44,9 @@ function resolveRequestedLocale(
 export function activateLocale(
   localeSetting?: AppLocaleSetting | string | null,
 ): AppLocale {
-  const nextLocale = normalizeLocale(resolveRequestedLocale(localeSetting));
+  const nextLocale = normalizeSupportedAppLocale(
+    resolveRequestedLocale(localeSetting),
+  );
 
   i18n.loadAndActivate({
     locale: nextLocale,

@@ -21,9 +21,6 @@ const STABLE_UPDATE_ENDPOINT: &str =
     "https://github.com/LegendarySpy/Glimpse/releases/latest/download/latest.json";
 const EVENT_UPDATE_DOWNLOAD_PROGRESS: &str = "update:download-progress";
 
-
-
-
 #[derive(Default)]
 pub struct UpdateState {
     available_version: Option<String>,
@@ -306,9 +303,6 @@ async fn resolve_available_update(
     }
 }
 
-
-
-
 async fn check_for_update(
     app: &AppHandle<AppRuntime>,
     state: &SharedUpdateState,
@@ -341,7 +335,6 @@ async fn check_for_update(
 
     Ok(())
 }
-
 
 pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdateState) {
     let (should_show, new_version) = {
@@ -405,9 +398,7 @@ pub fn get_update_status(app: AppHandle<AppRuntime>) -> UpdateStatus {
 }
 
 #[tauri::command]
-pub async fn check_for_updates(
-    app: AppHandle<AppRuntime>,
-) -> Result<UpdateStatus, String> {
+pub async fn check_for_updates(app: AppHandle<AppRuntime>) -> Result<UpdateStatus, String> {
     let update_state = app.state::<AppState>().update_state().clone();
     check_for_update(&app, &update_state)
         .await
@@ -420,11 +411,8 @@ pub async fn check_for_updates(
     })
 }
 
-
 #[tauri::command]
-pub async fn download_and_install_update(
-    app: AppHandle<AppRuntime>,
-) -> Result<(), String> {
+pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(), String> {
     let update = resolve_available_update(&app)
         .await?
         .ok_or_else(|| "No update is currently available.".to_string())?;

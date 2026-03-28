@@ -1,6 +1,6 @@
 export type TranscriptionMode = "cloud" | "local";
 export type TextSizeMode = "small" | "default" | "large";
-export type AppLocaleSetting = "system" | "en" | "fr";
+export type AppLocaleSetting = "system" | string;
 
 export type RecordingPrunePolicy =
     | "never"

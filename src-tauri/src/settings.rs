@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{collections::HashSet, fs, path::PathBuf, sync::OnceLock};
 
 use anyhow::{Context, Result};
 use parking_lot::Mutex;
@@ -301,8 +301,6 @@ fn default_transcription_mode() -> TranscriptionMode {
     TranscriptionMode::Local
 }
 
-
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum RecordingPrunePolicy {
@@ -366,6 +364,63 @@ fn default_language() -> String {
 
 fn default_app_locale() -> String {
     "system".to_string()
+}
+
+const SUPPORTED_APP_LOCALES_JSON: &str = include_str!("../../supported-app-locales.json");
+static SUPPORTED_APP_LOCALES: OnceLock<Vec<String>> = OnceLock::new();
+
+fn supported_app_locales() -> &'static [String] {
+    SUPPORTED_APP_LOCALES
+        .get_or_init(|| {
+            // Main source of truth for shipped app translations.
+            let locales: Vec<String> = serde_json::from_str(SUPPORTED_APP_LOCALES_JSON)
+                .expect("supported-app-locales.json must be a JSON array of locale strings");
+
+            if locales.is_empty() {
+                panic!("supported-app-locales.json must not be empty");
+            }
+
+            let mut seen = HashSet::new();
+            for locale in &locales {
+                if locale.is_empty()
+                    || locale.trim() != locale
+                    || locale.to_ascii_lowercase() != *locale
+                {
+                    panic!("supported-app-locales.json must use lowercase, trimmed locale codes");
+                }
+
+                if !seen.insert(locale.clone()) {
+                    panic!("supported-app-locales.json cannot contain duplicate locale codes");
+                }
+            }
+
+            locales
+        })
+        .as_slice()
+}
+
+pub fn canonicalize_app_locale(value: &str) -> Option<String> {
+    let normalized = value.trim().replace('_', "-").to_ascii_lowercase();
+    if normalized.is_empty() {
+        return None;
+    }
+
+    if normalized == default_app_locale() {
+        return Some(normalized);
+    }
+
+    if supported_app_locales()
+        .iter()
+        .any(|locale| locale == &normalized)
+    {
+        return Some(normalized);
+    }
+
+    None
+}
+
+pub fn canonicalize_app_locale_or_default(value: &str) -> String {
+    canonicalize_app_locale(value).unwrap_or_else(default_app_locale)
 }
 
 pub struct SettingsStore {
@@ -562,8 +617,9 @@ impl SettingsStore {
             should_persist = true;
         }
 
-        if !matches!(settings.app_locale.as_str(), "system" | "en" | "fr") {
-            settings.app_locale = default_app_locale();
+        let canonical_locale = canonicalize_app_locale_or_default(&settings.app_locale);
+        if settings.app_locale != canonical_locale {
+            settings.app_locale = canonical_locale;
             should_persist = true;
         }
 
@@ -581,6 +637,7 @@ impl SettingsStore {
 
     /// Persist settings into DB immediately.
     pub fn save(&self, settings: &UserSettings) -> Result<()> {
+        let stored_app_locale = canonicalize_app_locale_or_default(&settings.app_locale);
         let stored_key = {
             let mut llm_api_key_ciphertext = self.llm_api_key_ciphertext.lock();
             if settings.llm_api_key.is_empty() {
@@ -617,7 +674,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_LOCAL_MODEL, &settings.local_model)?;
         self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
         self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
-        self.write_value(&conn, KEY_APP_LOCALE, &settings.app_locale)?;
+        self.write_value(&conn, KEY_APP_LOCALE, &stored_app_locale)?;
 
         self.write_value(&conn, KEY_LLM_ENABLED, &settings.llm_enabled)?;
         self.write_value(&conn, KEY_CLEANUP_ENABLED, &settings.cleanup_enabled)?;
@@ -693,8 +750,6 @@ impl SettingsStore {
         .optional()
         .context("Failed to read setting from DB")
     }
-
-
 
     fn write_value<T>(&self, conn: &Connection, key: &str, value: &T) -> Result<()>
     where
@@ -816,6 +871,34 @@ mod tests {
             store.llm_api_key_ciphertext.lock().clone(),
             Some(ciphertext)
         );
+    }
+
+    #[test]
+    fn canonicalizes_locale_codes() {
+        assert_eq!(canonicalize_app_locale("fr"), Some("fr".to_string()));
+        assert_eq!(canonicalize_app_locale("FR"), Some("fr".to_string()));
+        assert_eq!(
+            canonicalize_app_locale("SYSTEM"),
+            Some("system".to_string())
+        );
+        assert_eq!(canonicalize_app_locale("it"), None);
+    }
+
+    #[test]
+    fn invalid_app_locale_resets_to_system() {
+        let store = test_store();
+        write_setting(&store, KEY_APP_LOCALE, &"it");
+        write_setting(&store, KEY_PERSONALITIES_NOTES_SEEDED, &true);
+
+        let loaded = store.load().expect("load settings");
+
+        let conn = store.conn.lock();
+        let stored_locale = store
+            .read_value(&conn, KEY_APP_LOCALE, String::new())
+            .expect("read stored app locale");
+
+        assert_eq!(loaded.app_locale, "system");
+        assert_eq!(stored_locale, "system");
     }
 
     #[test]
