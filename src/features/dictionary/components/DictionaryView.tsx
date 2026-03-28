@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
@@ -18,9 +19,22 @@ const PageSwitcher = ({
     activePage: ActivePage;
     onPageChange: (page: ActivePage) => void;
 }) => {
+    const { t } = useLingui();
     const pages: { key: ActivePage; label: string }[] = [
-        { key: "dictionary", label: "Dictionary" },
-        { key: "replacements", label: "Replacements" },
+        {
+            key: "dictionary",
+            label: t({
+                id: "dictionary.page.dictionary",
+                message: "Dictionary",
+            }),
+        },
+        {
+            key: "replacements",
+            label: t({
+                id: "dictionary.page.replacements",
+                message: "Replacements",
+            }),
+        },
     ];
 
     return (
@@ -57,6 +71,7 @@ const PageSwitcher = ({
 };
 
 const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
+    const { t } = useLingui();
     const [activePage, setActivePage] = useState<ActivePage>("dictionary");
 
     const [entries, setEntries] = useState<string[]>([]);
@@ -260,9 +275,17 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 color="var(--color-cloud)"
                             />
                             <div className="flex-1">
-                                <p className="ui-text-screen-title ui-color-primary tracking-tight">Word Dictionary</p>
+                                <p className="ui-text-screen-title ui-color-primary tracking-tight">
+                                    {t({
+                                        id: "dictionary.word_dictionary.title",
+                                        message: "Word Dictionary",
+                                    })}
+                                </p>
                                 <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                                    Add custom words or phrases that arent in the default dictionary.
+                                    {t({
+                                        id: "dictionary.word_dictionary.description",
+                                        message: "Add custom words or phrases that arent in the default dictionary.",
+                                    })}
                                 </p>
                             </div>
                         </div>
@@ -271,9 +294,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                             <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100">
                                 <AlertTriangle size={16} className="mt-0.5 shrink-0" />
                                 <div className="ui-text-body leading-relaxed">
-                                    Dictionary works only for models with dictionary support. Current model{" "}
-                                    <span className="font-semibold">{currentModel?.label ?? settings?.local_model}</span>{" "}
-                                    will ignore these entries until you switch to a compatible model.
+                                    {t({
+                                        id: "dictionary.warning",
+                                        message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
+                                    })}
                                 </div>
                             </div>
                         )}
@@ -290,23 +314,38 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                             handleAdd();
                                         }
                                     }}
-                                    placeholder="Search or add a word..."
-                                    aria-label="Add or search dictionary entry"
+                                    placeholder={t({
+                                        id: "dictionary.search_or_add",
+                                        message: "Search or add a word...",
+                                    })}
+                                    aria-label={t({
+                                        id: "dictionary.search_or_add_aria",
+                                        message: "Add or search dictionary entry",
+                                    })}
                                     className="flex-1 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
                                 {isSearching && entries.length > 0 && (
                                     <span className="ui-text-body-sm ui-color-muted whitespace-nowrap" role="status">
-                                        {filteredEntries.length} of {entries.length}
+                                        {t({
+                                            id: "dictionary.search_count",
+                                            message: `${filteredEntries.length} of ${entries.length}`,
+                                        })}
                                     </span>
                                 )}
                                 <button
                                     onClick={handleAdd}
                                     disabled={!newEntry.trim() || saving || entries.includes(newEntry.trim())}
                                     className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 ui-text-body ui-color-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors"
-                                    aria-label="Add entry"
+                                    aria-label={t({
+                                        id: "dictionary.add_entry_aria",
+                                        message: "Add entry",
+                                    })}
                                 >
                                     {saving ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
-                                    Add
+                                    {t({
+                                        id: "dictionary.add",
+                                        message: "Add",
+                                    })}
                                 </button>
                             </div>
 
@@ -328,16 +367,32 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                     <div className="flex flex-col items-start gap-2 px-4 py-6 text-content-muted">
                                         {isSearching ? (
                                             <>
-                                                <p className="ui-text-body-lg-strong">No matches found</p>
+                                                <p className="ui-text-body-lg-strong">
+                                                    {t({
+                                                        id: "dictionary.no_matches",
+                                                        message: "No matches found",
+                                                    })}
+                                                </p>
                                                 <p className="ui-text-body-sm ui-color-muted">
-                                                    Press Enter to add "{newEntry.trim()}" as a new entry.
+                                                    {t({
+                                                        id: "dictionary.add_prompt",
+                                                        message: `Press Enter to add "${newEntry.trim()}" as a new entry.`,
+                                                    })}
                                                 </p>
                                             </>
                                         ) : (
                                             <>
-                                                <p className="ui-text-body-lg-strong">No entries yet</p>
+                                                <p className="ui-text-body-lg-strong">
+                                                    {t({
+                                                        id: "dictionary.no_entries",
+                                                        message: "No entries yet",
+                                                    })}
+                                                </p>
                                                 <p className="ui-text-body-sm ui-color-muted">
-                                                    Add words, phrases or names that arent in the default dictionary.
+                                                    {t({
+                                                        id: "dictionary.no_entries.description",
+                                                        message: "Add words, phrases or names that arent in the default dictionary.",
+                                                    })}
                                                 </p>
                                             </>
                                         )}
@@ -382,17 +437,31 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
 
                                                     <div className="flex items-center gap-2">
                                                         {editingIndex === originalIndex ? (
-                                                            <div className="ui-text-label ui-color-muted">Press Enter to save</div>
+                                                            <div className="ui-text-label ui-color-muted">
+                                                                {t({
+                                                                    id: "dictionary.press_enter_to_save",
+                                                                    message: "Press Enter to save",
+                                                                })}
+                                                            </div>
                                                         ) : (
                                                             <>
                                                                 <div className="ui-text-label ui-color-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden="true">
-                                                                    Click to edit
+                                                                    {t({
+                                                                        id: "dictionary.click_to_edit",
+                                                                        message: "Click to edit",
+                                                                    })}
                                                                 </div>
                                                                 <button
                                                                     onClick={() => startEditing(originalIndex)}
                                                                     className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                                    title="Edit"
-                                                                    aria-label={`Edit ${entry}`}
+                                                                    title={t({
+                                                                        id: "dictionary.edit",
+                                                                        message: "Edit",
+                                                                    })}
+                                                                    aria-label={t({
+                                                                        id: "dictionary.edit_entry",
+                                                                        message: `Edit ${entry}`,
+                                                                    })}
                                                                 >
                                                                     <Edit3 size={14} aria-hidden="true" />
                                                                 </button>
@@ -401,8 +470,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                         <button
                                                             onClick={() => handleDelete(originalIndex)}
                                                             className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                            title="Delete"
-                                                            aria-label={`Delete ${entry}`}
+                                                            title={t({
+                                                                id: "dictionary.delete",
+                                                                message: "Delete",
+                                                            })}
+                                                            aria-label={t({
+                                                                id: "dictionary.delete_entry",
+                                                                message: `Delete ${entry}`,
+                                                            })}
                                                         >
                                                             <Trash2 size={14} aria-hidden="true" />
                                                         </button>
@@ -422,8 +497,21 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                         </div>
 
                         <p className="mt-3 ui-text-uppercase-micro ui-color-disabled tracking-[0.14em]">
-                            {entries.length} {entries.length === 1 ? "entry" : "entries"}
-                            {saving ? " · Saving..." : ""}
+                            {entries.length === 1
+                                ? t({
+                                    id: "dictionary.entry_count.single",
+                                    message: "1 entry",
+                                })
+                                : t({
+                                    id: "dictionary.entry_count.multiple",
+                                    message: `${entries.length} entries`,
+                                })}
+                            {saving
+                                ? t({
+                                    id: "dictionary.saving_suffix",
+                                    message: " · Saving...",
+                                })
+                                : ""}
                         </p>
                     </motion.div>
                 )}
@@ -446,9 +534,17 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 color="var(--color-accent)"
                             />
                             <div className="flex-1">
-                                <p className="ui-text-screen-title ui-color-primary tracking-tight">Direct Replacements</p>
+                                <p className="ui-text-screen-title ui-color-primary tracking-tight">
+                                    {t({
+                                        id: "dictionary.replacements.title",
+                                        message: "Direct Replacements",
+                                    })}
+                                </p>
                                 <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                                    Automatically replace words in your transcriptions.
+                                    {t({
+                                        id: "dictionary.replacements.description",
+                                        message: "Automatically replace words in your transcriptions.",
+                                    })}
                                 </p>
                             </div>
                         </div>
@@ -459,8 +555,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 <input
                                     value={newFrom}
                                     onChange={(e) => setNewFrom(e.target.value)}
-                                    placeholder="Find word..."
-                                    aria-label="Find word to replace"
+                                    placeholder={t({
+                                        id: "dictionary.replacements.find",
+                                        message: "Find word...",
+                                    })}
+                                    aria-label={t({
+                                        id: "dictionary.replacements.find_aria",
+                                        message: "Find word to replace",
+                                    })}
                                     className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
                                 <ArrowRight size={14} className="text-content-disabled shrink-0" aria-hidden="true" />
@@ -473,8 +575,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                             handleAddReplacement();
                                         }
                                     }}
-                                    placeholder="Replace with..."
-                                    aria-label="Replace with"
+                                    placeholder={t({
+                                        id: "dictionary.replacements.replace_with",
+                                        message: "Replace with...",
+                                    })}
+                                    aria-label={t({
+                                        id: "dictionary.replacements.replace_with_aria",
+                                        message: "Replace with",
+                                    })}
                                     className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
                                 <button
@@ -485,10 +593,16 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                         replacements.some((r) => r.from.toLowerCase() === newFrom.trim().toLowerCase())
                                     }
                                     className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 ui-text-body ui-color-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors shrink-0"
-                                    aria-label="Add replacement"
+                                    aria-label={t({
+                                        id: "dictionary.replacements.add_aria",
+                                        message: "Add replacement",
+                                    })}
                                 >
                                     {saving ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
-                                    Add
+                                    {t({
+                                        id: "dictionary.add",
+                                        message: "Add",
+                                    })}
                                 </button>
                             </div>
 
@@ -508,9 +622,17 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                     </div>
                                 ) : replacements.length === 0 ? (
                                     <div className="flex flex-col items-start gap-2 px-4 py-6 text-content-muted">
-                                        <p className="ui-text-body-lg-strong">No replacements yet</p>
+                                        <p className="ui-text-body-lg-strong">
+                                            {t({
+                                                id: "dictionary.replacements.none",
+                                                message: "No replacements yet",
+                                            })}
+                                        </p>
                                         <p className="ui-text-body-sm ui-color-muted">
-                                            Add word pairs to automatically swap in transcriptions. Matches are case-insensitive.
+                                            {t({
+                                                id: "dictionary.replacements.none_description",
+                                                message: "Add word pairs to automatically swap in transcriptions. Matches are case-insensitive.",
+                                            })}
                                         </p>
                                     </div>
                                 ) : (
@@ -582,7 +704,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                         <span className="ui-text-body-lg ui-color-primary">{replacement.from}</span>
                                                         <ArrowRight size={14} className="text-content-muted shrink-0" />
                                                         <span className="ui-text-body-lg" style={{ color: 'var(--color-accent)' }}>
-                                                            {replacement.to || <span className="text-content-muted italic">remove</span>}
+                                                            {replacement.to || (
+                                                                <span className="text-content-muted italic">
+                                                                    {t({
+                                                                        id: "dictionary.replacements.remove_value",
+                                                                        message: "remove",
+                                                                    })}
+                                                                </span>
+                                                            )}
                                                         </span>
                                                     </button>
                                                 )}
@@ -590,14 +719,23 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                 <div className="flex items-center gap-2">
                                                     {editingReplacementIndex === idx ? (
                                                         <div className="ui-text-label ui-color-muted">
-                                                            Press Enter to save
+                                                            {t({
+                                                                id: "dictionary.press_enter_to_save",
+                                                                message: "Press Enter to save",
+                                                            })}
                                                         </div>
                                                     ) : (
                                                     <button
                                                         onClick={() => startEditingReplacement(idx)}
                                                         className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                        title="Edit"
-                                                        aria-label={`Edit replacement for ${replacement.from}`}
+                                                        title={t({
+                                                            id: "dictionary.edit",
+                                                            message: "Edit",
+                                                        })}
+                                                        aria-label={t({
+                                                            id: "dictionary.replacements.edit",
+                                                            message: `Edit replacement for ${replacement.from}`,
+                                                        })}
                                                     >
                                                         <Edit3 size={14} aria-hidden="true" />
                                                     </button>
@@ -605,8 +743,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                 <button
                                                     onClick={() => handleDeleteReplacement(idx)}
                                                     className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                    title="Delete"
-                                                    aria-label={`Delete replacement for ${replacement.from}`}
+                                                    title={t({
+                                                        id: "dictionary.delete",
+                                                        message: "Delete",
+                                                    })}
+                                                    aria-label={t({
+                                                        id: "dictionary.replacements.delete",
+                                                        message: `Delete replacement for ${replacement.from}`,
+                                                    })}
                                                 >
                                                     <Trash2 size={14} aria-hidden="true" />
                                                 </button>
@@ -625,8 +769,21 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                         </div>
 
                         <p className="mt-3 ui-text-uppercase-micro ui-color-disabled tracking-[0.14em]">
-                            {replacements.length} {replacements.length === 1 ? "replacement" : "replacements"}
-                            {saving ? " · Saving..." : ""}
+                            {replacements.length === 1
+                                ? t({
+                                    id: "dictionary.replacements.count.single",
+                                    message: "1 replacement",
+                                })
+                                : t({
+                                    id: "dictionary.replacements.count.multiple",
+                                    message: `${replacements.length} replacements`,
+                                })}
+                            {saving
+                                ? t({
+                                    id: "dictionary.saving_suffix",
+                                    message: " · Saving...",
+                                })
+                                : ""}
                         </p>
                     </motion.div>
                 )}

@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
@@ -100,11 +101,16 @@ export const StatusBadge = ({
   granted: boolean;
   checking?: boolean;
 }) => {
+  const { t } = useLingui();
+
   if (checking) {
     return (
       <span className="inline-flex items-center gap-1.5 ui-text-label text-content-muted">
         <Loader2 size={11} className="animate-spin" />
-        Checking...
+        {t({
+          id: "onboarding.status.checking",
+          message: "Checking...",
+        })}
       </span>
     );
   }
@@ -117,12 +123,22 @@ export const StatusBadge = ({
         animate={{ opacity: 1, scale: 1 }}
       >
         <Check size={12} />
-        Enabled
+        {t({
+          id: "onboarding.status.enabled",
+          message: "Enabled",
+        })}
       </motion.span>
     );
   }
 
-  return <span className="ui-text-label text-content-muted">Not enabled</span>;
+  return (
+    <span className="ui-text-label text-content-muted">
+      {t({
+        id: "onboarding.status.not_enabled",
+        message: "Not enabled",
+      })}
+    </span>
+  );
 };
 
 export const ModelProgress = ({

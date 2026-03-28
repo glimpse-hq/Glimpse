@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
 import { Mic, ChevronRight } from "lucide-react";
 import { StatusBadge, type StepMotionProps } from "./shared";
@@ -17,6 +18,8 @@ export function MicrophoneStep({
   onRequestAccess,
   onNext,
 }: MicrophoneStepProps) {
+  const { t } = useLingui();
+
   return (
     <motion.div
       key="microphone"
@@ -29,7 +32,10 @@ export function MicrophoneStep({
       </div>
 
       <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">
-        Microphone Access
+        {t({
+          id: "onboarding.microphone.title",
+          message: "Microphone Access",
+        })}
       </h2>
 
       <div className="mb-3">
@@ -37,7 +43,10 @@ export function MicrophoneStep({
       </div>
 
       <p className="ui-text-body-lg text-content-muted mb-6">
-        Required to capture your voice for transcription.
+        {t({
+          id: "onboarding.microphone.subtitle",
+          message: "Required to capture your voice for transcription.",
+        })}
       </p>
 
       {!micPermission ? (
@@ -47,14 +56,20 @@ export function MicrophoneStep({
           className="flex items-center gap-2 rounded-lg bg-amber-400 px-5 py-2.5 ui-text-body-lg font-medium ui-color-on-warning hover:bg-amber-300 transition-colors disabled:opacity-50"
         >
           <Mic size={15} />
-          Grant Access
+          {t({
+            id: "onboarding.microphone.grant",
+            message: "Grant Access",
+          })}
         </button>
       ) : (
         <button
           onClick={onNext}
           className="flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 ui-text-body-lg font-medium ui-color-on-solid hover:bg-emerald-400 transition-colors"
         >
-          Continue
+          {t({
+            id: "onboarding.microphone.continue",
+            message: "Continue",
+          })}
           <ChevronRight size={15} />
         </button>
       )}
@@ -63,7 +78,10 @@ export function MicrophoneStep({
         onClick={onNext}
         className="mt-3 ui-text-body-sm text-content-muted hover:text-content-muted transition-colors"
       >
-        Skip
+        {t({
+          id: "onboarding.microphone.skip",
+          message: "Skip",
+        })}
       </button>
     </motion.div>
   );

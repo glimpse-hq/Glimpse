@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
@@ -9,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import DotMatrix from "../../../../shared/ui/DotMatrix";
+import { i18n } from "../../../../i18n";
 import LanguageModelPanel from "../LanguageModelPanel";
 import type {
   DownloadEvent,
@@ -27,12 +30,28 @@ type EngineGroup = {
 
 const engineDescription = (engineId: string, engineLabel: string) => {
   if (engineId === "whisper") {
-    return "OpenAI's speech recognition with custom vocabulary support.";
+    return i18n._(
+      msg({
+        id: "settings.models.engine.whisper.description",
+        message: "OpenAI's speech recognition with custom vocabulary support.",
+      }),
+    );
   }
   if (engineId === "parakeet_v3") {
-    return "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.";
+    return i18n._(
+      msg({
+        id: "settings.models.engine.parakeet.description",
+        message:
+          "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
+      }),
+    );
   }
-  return `${engineLabel} transcription engine.`;
+  return i18n._(
+    msg({
+      id: "settings.models.engine.generic.description",
+      message: `${engineLabel} transcription engine.`,
+    }),
+  );
 };
 
 const enginePriority = (engineId: string): number => {
@@ -96,6 +115,7 @@ const ModelsTab = ({
   handleCancelDownload,
   formatBytes,
 }: ModelsTabProps) => {
+  const { t } = useLingui();
   const [expandedEngine, setExpandedEngine] = useState<string | null>(null);
 
   const groupedMap = new Map<string, ModelInfo[]>();
@@ -143,10 +163,16 @@ const ModelsTab = ({
     >
       <header>
         <h1 className="ui-text-title-lg font-medium ui-color-primary">
-          Models
+          {t({
+            id: "settings.models.title",
+            message: "Models",
+          })}
         </h1>
         <p className="mt-1 ui-text-body-sm ui-color-muted">
-          Manage transcription engines and AI provider settings.
+          {t({
+            id: "settings.models.description",
+            message: "Manage transcription engines and AI provider settings.",
+          })}
         </p>
       </header>
 
@@ -168,10 +194,13 @@ const ModelsTab = ({
       {/* Transcription Engines */}
       <div>
         <h3 className="ui-text-section-label-sm ui-color-disabled mb-3">
-          Transcription Engines
+          {t({
+            id: "settings.models.transcription_engines",
+            message: "Transcription Engines",
+          })}
         </h3>
         <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden divide-y divide-border-primary shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-          {groupedModels.map((group) => {
+          {groupedModels.map((group, groupIndex) => {
             const isExpanded = expandedEngine === group.id;
             const installedCount = group.models.filter(
               (m) => modelStatus[m.key]?.installed,
@@ -184,7 +213,7 @@ const ModelsTab = ({
             );
 
             return (
-              <div key={group.id}>
+              <div key={group.id || `model-group-${groupIndex}`}>
                 <button
                   onClick={() => toggleEngine(group.id)}
                   className="w-full px-4 py-3 flex items-center gap-3 hover:bg-surface-elevated/50 transition-colors"
@@ -204,7 +233,10 @@ const ModelsTab = ({
                       </span>
                       {group.recommended && (
                         <span className="ui-text-meta ui-color-local">
-                          Recommended
+                          {t({
+                            id: "settings.models.recommended",
+                            message: "Recommended",
+                          })}
                         </span>
                       )}
                       {hasActiveModel && activeModel && (
@@ -227,7 +259,10 @@ const ModelsTab = ({
                     )}
                     {!hasActiveModel && installedCount > 0 && (
                       <span className="ui-text-meta ui-color-disabled">
-                        {installedCount} installed
+                        {t({
+                          id: "settings.models.installed_count",
+                          message: `${installedCount} installed`,
+                        })}
                       </span>
                     )}
                   </div>
@@ -243,9 +278,9 @@ const ModelsTab = ({
                       className="overflow-hidden bg-surface-elevated/30"
                     >
                       <div className="px-4 py-2 space-y-1">
-                        {group.models.map((model) => (
+                        {group.models.map((model, modelIndex) => (
                           <ModelRow
-                            key={model.key}
+                            key={model.key || `group-model-${groupIndex}-${modelIndex}`}
                             model={model}
                             modelStatus={modelStatus[model.key]}
                             downloadState={downloadState[model.key]}
@@ -296,6 +331,7 @@ const ModelRow = ({
   onCancel,
   formatBytes,
 }: ModelRowProps) => {
+  const { t } = useLingui();
   const installed = status?.installed;
   const isDownloading = progress?.status === "downloading";
   const isCancelled = progress?.status === "cancelled";
@@ -319,10 +355,20 @@ const ModelRow = ({
               {model.label}
             </span>
             {isRecommended && (
-              <span className="ui-text-meta ui-color-local">Recommended</span>
+              <span className="ui-text-meta ui-color-local">
+                {t({
+                  id: "settings.models.recommended",
+                  message: "Recommended",
+                })}
+              </span>
             )}
             {isActive && (
-              <span className="ui-text-meta ui-color-cloud">Active</span>
+              <span className="ui-text-meta ui-color-cloud">
+                {t({
+                  id: "settings.models.active",
+                  message: "Active",
+                })}
+              </span>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
@@ -346,15 +392,24 @@ const ModelRow = ({
               onClick={onUse}
               className="px-2.5 py-1 rounded-md border border-border-primary bg-surface-surface ui-text-button-sm ui-color-secondary shadow-[0_2px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-local-30 hover:bg-local-5 hover:text-local hover:shadow-[0_1px_0_-1px_rgba(165,179,254,0.4),inset_0_1px_0_0_rgba(165,179,254,0.1)] hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none transition-all duration-100"
             >
-              Use
+              {t({
+                id: "settings.models.use",
+                message: "Use",
+              })}
             </button>
           )}
           {isDownloading ? (
             <button
               onClick={onCancel}
               className="flex h-6 w-6 items-center justify-center rounded-md text-error hover:bg-error/10 transition-colors"
-              title="Cancel"
-              aria-label="Cancel download"
+              title={t({
+                id: "settings.models.cancel",
+                message: "Cancel",
+              })}
+              aria-label={t({
+                id: "settings.models.cancel_download",
+                message: "Cancel download",
+              })}
             >
               <Square size={10} fill="currentColor" aria-hidden="true" />
             </button>
@@ -362,8 +417,14 @@ const ModelRow = ({
             <button
               onClick={onDelete}
               className="flex h-6 w-6 items-center justify-center rounded-md text-content-disabled hover:text-error hover:bg-error/10 transition-colors"
-              title="Delete"
-              aria-label="Delete model"
+              title={t({
+                id: "settings.models.delete",
+                message: "Delete",
+              })}
+              aria-label={t({
+                id: "settings.models.delete_model",
+                message: "Delete model",
+              })}
             >
               <Trash2 size={12} aria-hidden="true" />
             </button>
@@ -376,8 +437,14 @@ const ModelRow = ({
                   ? "text-content-disabled cursor-default"
                   : "text-content-muted hover:text-content-primary hover:bg-surface-elevated"
               }`}
-              title="Download"
-              aria-label="Download model"
+              title={t({
+                id: "settings.models.download",
+                message: "Download",
+              })}
+              aria-label={t({
+                id: "settings.models.download_model",
+                message: "Download model",
+              })}
             >
               <Download size={12} aria-hidden="true" />
             </button>
@@ -415,7 +482,12 @@ const ModelRow = ({
               </p>
             )}
             {isCancelled && (
-              <p className="ui-text-micro ui-color-disabled">Cancelled</p>
+              <p className="ui-text-micro ui-color-disabled">
+                {t({
+                  id: "settings.models.cancelled",
+                  message: "Cancelled",
+                })}
+              </p>
             )}
           </div>
         </div>

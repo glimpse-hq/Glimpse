@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
 import { Key, Server } from "lucide-react";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
@@ -38,6 +39,7 @@ const LanguageModelPanel = ({
   availableModels,
   fetchAvailableModels,
 }: LanguageModelPanelProps) => {
+  const { t } = useLingui();
   const providerPreset = getProviderPreset(llmProvider);
   const hasSelectedProvider = Boolean(providerPreset);
   const uniqueModels = Array.from(
@@ -50,16 +52,25 @@ const LanguageModelPanel = ({
         <div className="flex items-center justify-between mb-3">
           <div>
             <h3 className="ui-text-body-strong ui-color-primary">
-              Language Model Provider
+              {t({
+                id: "settings.language_model.title",
+                message: "Language Model Provider",
+              })}
             </h3>
             <p className="ui-text-label ui-color-disabled">
-              Shared by Cleanup, Edit Mode, and Personalization.
+              {t({
+                id: "settings.language_model.description",
+                message: "Shared by Cleanup, Edit Mode, and Personalization.",
+              })}
             </p>
           </div>
           <ToggleSwitch
             enabled={llmEnabled}
             onToggle={() => setLlmEnabled(!llmEnabled)}
-            ariaLabel="Toggle AI features"
+            ariaLabel={t({
+              id: "settings.language_model.toggle",
+              message: "Toggle AI features",
+            })}
             size="md"
           />
         </div>
@@ -76,7 +87,10 @@ const LanguageModelPanel = ({
               <div className="pt-3 border-t border-border-primary space-y-3">
                 <div className="space-y-1.5">
                   <label className="ui-text-label-strong ui-color-muted ml-1">
-                    Provider
+                    {t({
+                      id: "settings.language_model.provider",
+                      message: "Provider",
+                    })}
                   </label>
                   <Dropdown
                     value={llmProvider}
@@ -89,10 +103,19 @@ const LanguageModelPanel = ({
                       }
                     }}
                     options={[
-                      { value: "custom" as LlmProvider, label: "Custom" },
+                      {
+                        value: "custom" as LlmProvider,
+                        label: t({
+                          id: "settings.language_model.provider.custom",
+                          message: "Custom",
+                        }),
+                      },
                       {
                         value: "_local_header" as LlmProvider,
-                        label: "Local",
+                        label: t({
+                          id: "settings.language_model.provider.local",
+                          message: "Local",
+                        }),
                         isHeader: true,
                       },
                       ...LOCAL_PROVIDERS.filter((p) => p.id !== "custom").map(
@@ -103,7 +126,10 @@ const LanguageModelPanel = ({
                       ),
                       {
                         value: "_cloud_header" as LlmProvider,
-                        label: "Cloud (API Key)",
+                        label: t({
+                          id: "settings.language_model.provider.cloud",
+                          message: "Cloud (API Key)",
+                        }),
                         isHeader: true,
                       },
                       ...CLOUD_PROVIDERS.map((p) => ({
@@ -111,9 +137,15 @@ const LanguageModelPanel = ({
                         label: p.label,
                       })),
                     ]}
-                    placeholder="Select provider..."
+                    placeholder={t({
+                      id: "settings.language_model.provider.select",
+                      message: "Select provider...",
+                    })}
                     searchable
-                    searchPlaceholder="Search providers..."
+                    searchPlaceholder={t({
+                      id: "settings.language_model.provider.search",
+                      message: "Search providers...",
+                    })}
                   />
                 </div>
 
@@ -121,10 +153,16 @@ const LanguageModelPanel = ({
                   <>
                     <div className="space-y-1.5">
                       <label className="ui-text-label-strong ui-color-muted ml-1">
-                        Endpoint{" "}
+                        {t({
+                          id: "settings.language_model.endpoint",
+                          message: "Endpoint",
+                        })}{" "}
                         {llmProvider !== "custom" && (
                           <span className="text-content-disabled">
-                            (auto-filled)
+                            {t({
+                              id: "settings.language_model.endpoint.autofilled",
+                              message: "(auto-filled)",
+                            })}
                           </span>
                         )}
                       </label>
@@ -140,9 +178,15 @@ const LanguageModelPanel = ({
                           onChange={(e) => setLlmEndpoint(e.target.value)}
                           placeholder={
                             providerPreset?.endpoint ??
-                            "https://your-llm-endpoint.com"
+                            t({
+                              id: "settings.language_model.endpoint.placeholder",
+                              message: "https://your-llm-endpoint.com",
+                            })
                           }
-                          aria-label="LLM Endpoint URL"
+                          aria-label={t({
+                            id: "settings.language_model.endpoint.aria",
+                            message: "LLM Endpoint URL",
+                          })}
                           className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden"
                         />
                       </div>
@@ -150,10 +194,16 @@ const LanguageModelPanel = ({
 
                     <div className="space-y-1.5">
                       <label className="ui-text-label-strong ui-color-muted ml-1">
-                        API Key{" "}
+                        {t({
+                          id: "settings.language_model.api_key",
+                          message: "API Key",
+                        })}{" "}
                         {!providerPreset?.apiKeyRequired && (
                           <span className="text-content-disabled">
-                            (if required)
+                            {t({
+                              id: "settings.language_model.api_key.optional_hint",
+                              message: "(if required)",
+                            })}
                           </span>
                         )}
                       </label>
@@ -169,10 +219,19 @@ const LanguageModelPanel = ({
                           onChange={(e) => setLlmApiKey(e.target.value)}
                           placeholder={
                             providerPreset?.apiKeyRequired
-                              ? "Required"
-                              : "Optional"
+                              ? t({
+                                  id: "settings.language_model.api_key.required",
+                                  message: "Required",
+                                })
+                              : t({
+                                  id: "settings.language_model.api_key.optional",
+                                  message: "Optional",
+                                })
                           }
-                          aria-label="LLM API Key"
+                          aria-label={t({
+                            id: "settings.language_model.api_key.aria",
+                            message: "LLM API Key",
+                          })}
                           className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden"
                         />
                       </div>
@@ -194,9 +253,15 @@ const LanguageModelPanel = ({
                             ? [{ value: llmModel, label: llmModel }]
                             : []),
                         ]}
-                        placeholder={`Model (default: ${providerPreset?.defaultModel || "none"})`}
+                        placeholder={t({
+                          id: "settings.language_model.model.placeholder",
+                          message: `Model (default: ${providerPreset?.defaultModel || "none"})`,
+                        })}
                         searchable
-                        searchPlaceholder="Search available models..."
+                        searchPlaceholder={t({
+                          id: "settings.language_model.model.search",
+                          message: "Search available models...",
+                        })}
                       />
                     </div>
                   </>

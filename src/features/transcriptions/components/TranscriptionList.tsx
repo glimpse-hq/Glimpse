@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import React, {
     useState,
     useCallback,
@@ -27,6 +28,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     showLlmButtons = false,
     isActive = true,
 }) => {
+    const { t } = useLingui();
     const [searchQuery, setSearchQuery] = useState("");
     const [isClearing, setIsClearing] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -116,7 +118,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                         aria-hidden="true"
                     />
                     <h2 className="ui-text-section-label ui-color-muted">
-                        Recent Transcriptions
+                        {t({
+                            id: "transcriptions.list.title",
+                            message: "Recent Transcriptions",
+                        })}
                     </h2>
                 </div>
 
@@ -127,15 +132,24 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search..."
-                            aria-label="Search transcriptions"
+                            placeholder={t({
+                                id: "transcriptions.list.search.placeholder",
+                                message: "Search...",
+                            })}
+                            aria-label={t({
+                                id: "transcriptions.list.search.aria",
+                                message: "Search transcriptions",
+                            })}
                             className="bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-hidden w-28 focus:w-36 transition-all pr-4"
                         />
                         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
                             {searchQuery && (
                                 <button
                                     onClick={() => setSearchQuery("")}
-                                    aria-label="Clear search"
+                                    aria-label={t({
+                                        id: "transcriptions.list.search.clear",
+                                        message: "Clear search",
+                                    })}
                                     className="text-content-disabled hover:text-content-muted transition-colors"
                                 >
                                     <X size={12} aria-hidden="true" />
@@ -161,7 +175,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                             aria-hidden="true"
                         />
                         <p className="ui-text-body ui-color-muted text-center max-w-xs">
-                            Your recent transcriptions will appear here
+                            {t({
+                                id: "transcriptions.list.empty",
+                                message: "Your recent transcriptions will appear here",
+                            })}
                         </p>
                     </div>
                 ) : transcriptions.length > 0 || isLoading ? (
@@ -203,7 +220,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                         <div className="flex flex-col items-center justify-center py-8 px-4">
                             <Search size={20} className="text-border-hover mb-2" />
                             <p className="ui-text-body-sm ui-color-disabled text-center">
-                                No results for "{searchQuery}"
+                                {t({
+                                    id: "transcriptions.list.no_results",
+                                    message: `No results for "${searchQuery}"`,
+                                })}
                             </p>
                         </div>
                     </div>
@@ -213,9 +233,25 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
             <div className="flex items-center justify-between px-4 pt-2">
                 <span className="ui-text-uppercase-meta text-border-hover">
                     {searchQuery ? (
-                        `${transcriptions.length} result${transcriptions.length === 1 ? '' : 's'}`
+                        (transcriptions.length === 1
+                            ? t({
+                                id: "transcriptions.list.results.single",
+                                message: "1 result",
+                            })
+                            : t({
+                                id: "transcriptions.list.results.multiple",
+                                message: `${transcriptions.length} results`,
+                            }))
                     ) : (
-                        `${totalCount} ${totalCount === 1 ? 'transcription' : 'transcriptions'}`
+                        (totalCount === 1
+                            ? t({
+                                id: "transcriptions.list.count.single",
+                                message: "1 transcription",
+                            })
+                            : t({
+                                id: "transcriptions.list.count.multiple",
+                                message: `${totalCount} transcriptions`,
+                            }))
                     )}
                 </span>
                 {transcriptions.length > 0 && (
@@ -226,14 +262,25 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                                 disabled={isClearing}
                                 className="ui-text-uppercase-meta ui-color-error-soft hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {isClearing ? 'Clearing...' : 'Confirm'}
+                                {isClearing
+                                    ? t({
+                                        id: "transcriptions.list.clearing",
+                                        message: "Clearing...",
+                                    })
+                                    : t({
+                                        id: "transcriptions.list.confirm",
+                                        message: "Confirm",
+                                    })}
                             </button>
                             <button
                                 onClick={() => setShowConfirm(false)}
                                 disabled={isClearing}
                                 className="ui-text-uppercase-meta ui-color-muted hover:text-content-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Cancel
+                                {t({
+                                    id: "transcriptions.list.cancel",
+                                    message: "Cancel",
+                                })}
                             </button>
                         </div>
                     ) : (
@@ -241,7 +288,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                             onClick={() => setShowConfirm(true)}
                             className="ui-text-uppercase-meta ui-color-muted hover:text-red-400 transition-colors"
                         >
-                            Clear All
+                            {t({
+                                id: "transcriptions.list.clear_all",
+                                message: "Clear All",
+                            })}
                         </button>
                     )
                 )}

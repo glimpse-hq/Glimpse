@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -66,6 +67,7 @@ const SidebarItem = ({
 );
 
 const Home = () => {
+  const { t } = useLingui();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<
     "general" | "account" | "models" | "about" | "app"
@@ -235,12 +237,34 @@ const Home = () => {
   const logoActiveDots = isCloudMode ? [0, 3] : [1, 2];
 
   const showCleanupButtons = isCloudMode || llmEnabled;
+  const currentModeLabel = isCloudMode
+    ? t({
+        id: "home.mode.cloud",
+        message: "Cloud",
+      })
+    : t({
+        id: "home.mode.local",
+        message: "Local",
+      });
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
+    if (hour < 12) {
+      return t({
+        id: "home.greeting.morning",
+        message: "Good morning",
+      });
+    }
+    if (hour < 17) {
+      return t({
+        id: "home.greeting.afternoon",
+        message: "Good afternoon",
+      });
+    }
+    return t({
+      id: "home.greeting.evening",
+      message: "Good evening",
+    });
   };
 
   return (
@@ -279,21 +303,30 @@ const Home = () => {
         <nav className="flex-1 px-2 space-y-1">
           <SidebarItem
             icon={<HomeIcon size={18} />}
-            label="Home"
+            label={t({
+              id: "home.sidebar.home",
+              message: "Home",
+            })}
             active={activeView === "home"}
             collapsed={isSidebarCollapsed}
             onClick={() => setActiveView("home")}
           />
           <SidebarItem
             icon={<Book size={18} />}
-            label="Dictionary"
+            label={t({
+              id: "home.sidebar.dictionary",
+              message: "Dictionary",
+            })}
             active={activeView === "dictionary"}
             collapsed={isSidebarCollapsed}
             onClick={() => setActiveView("dictionary")}
           />
           <SidebarItem
             icon={<Brain size={18} />}
-            label="Personalization"
+            label={t({
+              id: "home.sidebar.personalization",
+              message: "Personalization",
+            })}
             active={activeView === "brain"}
             collapsed={isSidebarCollapsed}
             onClick={() => setActiveView("brain")}
@@ -303,7 +336,10 @@ const Home = () => {
             <div className="h-px bg-border-primary mx-4 mb-3" />
             <SidebarItem
               icon={<Library size={18} />}
-              label="Library"
+              label={t({
+                id: "home.sidebar.library",
+                message: "Library",
+              })}
               active={activeView === "library"}
               collapsed={isSidebarCollapsed}
               onClick={() => setActiveView("library")}
@@ -316,7 +352,15 @@ const Home = () => {
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="flex w-full items-center rounded-lg h-9 pl-[17px] text-content-disabled hover:text-content-muted"
             aria-label={
-              isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+              isSidebarCollapsed
+                ? t({
+                    id: "home.sidebar.expand",
+                    message: "Expand sidebar",
+                  })
+                : t({
+                    id: "home.sidebar.collapse",
+                    message: "Collapse sidebar",
+                  })
             }
           >
             <div className="flex items-center justify-center w-[18px]">
@@ -337,7 +381,10 @@ const Home = () => {
               }`}
               aria-expanded={showSupportPopup}
               aria-haspopup="menu"
-              aria-label="Support menu"
+              aria-label={t({
+                id: "home.support.menu_aria",
+                message: "Support menu",
+              })}
             >
               <div className="flex items-center justify-center w-[18px] shrink-0 group-hover:text-content-secondary">
                 <Info size={18} />
@@ -349,7 +396,10 @@ const Home = () => {
                 }}
                 className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
               >
-                Support
+                {t({
+                  id: "home.support.label",
+                  message: "Support",
+                })}
               </span>
             </button>
 
@@ -365,7 +415,10 @@ const Home = () => {
                   <div className="p-3 border-b border-border-primary">
                     <div className="flex items-center justify-between">
                       <span className="ui-text-body-sm-strong ui-color-primary">
-                        Get Support
+                        {t({
+                          id: "home.support.title",
+                          message: "Get Support",
+                        })}
                       </span>
                       <button
                         onClick={() => setShowSupportPopup(false)}
@@ -389,10 +442,16 @@ const Home = () => {
                       />
                       <div>
                         <div className="ui-text-body-sm-strong ui-color-primary">
-                          FAQ
+                          {t({
+                            id: "home.support.faq.title",
+                            message: "FAQ",
+                          })}
                         </div>
                         <div className="ui-text-meta ui-color-muted">
-                          Common questions
+                          {t({
+                            id: "home.support.faq.subtitle",
+                            message: "Common questions",
+                          })}
                         </div>
                       </div>
                     </button>
@@ -406,10 +465,16 @@ const Home = () => {
                       <Bug size={16} className="text-content-secondary" />
                       <div>
                         <div className="ui-text-body-sm-strong ui-color-primary">
-                          GitHub Issues
+                          {t({
+                            id: "home.support.github.title",
+                            message: "GitHub Issues",
+                          })}
                         </div>
                         <div className="ui-text-meta ui-color-muted">
-                          Report bugs & request features
+                          {t({
+                            id: "home.support.github.subtitle",
+                            message: "Report bugs & request features",
+                          })}
                         </div>
                       </div>
                     </a>
@@ -424,10 +489,16 @@ const Home = () => {
                       <Info size={16} className="ui-color-brand" />
                       <div>
                         <div className="ui-text-body-sm-strong ui-color-primary">
-                          About
+                          {t({
+                            id: "home.support.about.title",
+                            message: "About",
+                          })}
                         </div>
                         <div className="ui-text-meta ui-color-muted">
-                          v{appVersion} • {isCloudMode ? "Cloud" : "Local"}
+                          {t({
+                            id: "home.support.about.version_mode",
+                            message: `v${appVersion} • ${currentModeLabel}`,
+                          })}
                         </div>
                       </div>
                     </button>
@@ -456,14 +527,20 @@ const Home = () => {
                 }}
                 className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
               >
-                Update available
+                {t({
+                  id: "home.update_available",
+                  message: "Update available",
+                })}
               </span>
             </button>
           )}
 
           <SidebarItem
             icon={<Settings size={18} />}
-            label="Settings"
+            label={t({
+              id: "home.sidebar.settings",
+              message: "Settings",
+            })}
             collapsed={isSidebarCollapsed}
             onClick={() => setIsSettingsOpen(true)}
           />
@@ -495,7 +572,10 @@ const Home = () => {
             <span className="ui-text-meta ui-color-secondary max-w-[100px] truncate">
               {currentUser.name ||
                 currentUser.email?.split("@")[0] ||
-                "Account"}
+                t({
+                  id: "home.account.fallback",
+                  message: "Account",
+                })}
             </span>
           </button>
         )}
@@ -509,7 +589,10 @@ const Home = () => {
                 {getGreeting()}
               </h1>
               <p className="mt-2 ui-text-title ui-color-muted pl-[2px]">
-                Ready when you are
+                {t({
+                  id: "home.ready_subtitle",
+                  message: "Ready when you are",
+                })}
               </p>
             </div>
 
@@ -561,13 +644,22 @@ const Home = () => {
               className="flex flex-col items-center justify-center rounded-2xl border border-border-secondary bg-surface-overlay px-8 py-6 shadow-2xl"
             >
               <div className="ui-text-section-label ui-color-muted tracking-[0.2em]">
-                Library Import
+                {t({
+                  id: "home.drag_import.eyebrow",
+                  message: "Library Import",
+                })}
               </div>
               <div className="mt-2 ui-text-title font-medium ui-color-primary">
-                Drop files to transcribe
+                {t({
+                  id: "home.drag_import.title",
+                  message: "Drop files to transcribe",
+                })}
               </div>
               <div className="mt-1 ui-text-body-sm ui-color-disabled">
-                MP3, WAV, M4A, MP4, MOV, and more
+                {t({
+                  id: "home.drag_import.subtitle",
+                  message: "MP3, WAV, M4A, MP4, MOV, and more",
+                })}
               </div>
             </motion.div>
           </motion.div>

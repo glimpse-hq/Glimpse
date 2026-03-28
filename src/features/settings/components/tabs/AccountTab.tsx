@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
 import { Lock, Loader2 } from "lucide-react";
 import AccountView from "../AccountView";
@@ -23,7 +24,14 @@ const AccountTab = ({
     onUpdateUser,
     handleSignOut,
     handleCancelAuth,
-}: AccountTabProps) => (
+}: AccountTabProps) => {
+    const { t } = useLingui();
+    const cloudStatus = t({
+        id: "settings.account.cloud.status",
+        message: "in development",
+    });
+
+    return (
     <motion.div
         key="account"
         variants={variants}
@@ -33,19 +41,37 @@ const AccountTab = ({
         className="space-y-4"
     >
         <header>
-            <h1 className="ui-text-title-lg font-medium ui-color-primary">Account</h1>
-            <p className="mt-1 ui-text-body-sm ui-color-muted">Manage your profile, sessions, and subscription.</p>
+            <h1 className="ui-text-title-lg font-medium ui-color-primary">
+                {t({
+                    id: "settings.account.title",
+                    message: "Account",
+                })}
+            </h1>
+            <p className="mt-1 ui-text-body-sm ui-color-muted">
+                {t({
+                    id: "settings.account.subtitle",
+                    message: "Manage your profile, sessions, and subscription.",
+                })}
+            </p>
         </header>
 
         {authLoading ? (
             <div className="flex flex-col items-center justify-center py-16">
                 <Loader2 size={24} className="animate-spin text-cloud mb-3" />
-                <p className="ui-text-body-sm ui-color-muted mb-3">Loading...</p>
+                <p className="ui-text-body-sm ui-color-muted mb-3">
+                    {t({
+                        id: "settings.account.loading",
+                        message: "Loading...",
+                    })}
+                </p>
                 <button
                     onClick={handleCancelAuth}
                     className="ui-text-label ui-color-disabled hover:text-content-muted transition-colors"
                 >
-                    Cancel
+                    {t({
+                        id: "settings.account.cancel",
+                        message: "Cancel",
+                    })}
                 </button>
             </div>
         ) : currentUser ? (
@@ -65,17 +91,30 @@ const AccountTab = ({
                         <Lock size={16} className="text-content-secondary" />
                     </div>
                     <div className="flex-1">
-                        <h2 className="ui-text-body-strong font-semibold ui-color-primary">Glimpse Cloud</h2>
+                        <h2 className="ui-text-body-strong font-semibold ui-color-primary">
+                            {t({
+                                id: "settings.account.cloud.title",
+                                message: "Glimpse Cloud",
+                            })}
+                        </h2>
                         <p className="mt-1 ui-text-label ui-color-muted leading-relaxed">
-                            Cloud accounts, subscriptions, and sync are currently{" "}
-                            <span className="text-content-primary font-medium">in development</span>.
+                            {t({
+                                id: "settings.account.cloud.body",
+                                message: `Cloud accounts, subscriptions, and sync are currently ${cloudStatus}.`,
+                            })}
                         </p>
-                        <div className="mt-3 ui-text-meta ui-color-disabled">Sign-in is disabled.</div>
+                        <div className="mt-3 ui-text-meta ui-color-disabled">
+                            {t({
+                                id: "settings.account.cloud.disabled",
+                                message: "Sign-in is disabled.",
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
         )}
     </motion.div>
 );
+};
 
 export default AccountTab;

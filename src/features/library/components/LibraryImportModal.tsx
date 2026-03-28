@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -23,6 +24,7 @@ const LibraryImportModal = ({
     onCancel,
     onConfirm,
 }: LibraryImportModalProps) => {
+    const { t } = useLingui();
     const [storeOriginal, setStoreOriginal] = useState(true);
     const [selectedModelKey, setSelectedModelKey] = useState<string>(defaultModelKey || "");
     const [showTimestamps, setShowTimestamps] = useState(true);
@@ -50,7 +52,15 @@ const LibraryImportModal = ({
     }, [timestampsSupported]);
 
     const importPaths = paths.length > 0 ? paths : [];
-    const summary = importPaths.length === 1 ? "1 file" : `${importPaths.length} files`;
+    const summary = importPaths.length === 1
+        ? t({
+            id: "library.import.summary.single",
+            message: "1 file",
+        })
+        : t({
+            id: "library.import.summary.multiple",
+            message: `${importPaths.length} files`,
+        });
 
     const handleConfirm = async () => {
         if (!selectedModelKey) return;
@@ -86,7 +96,12 @@ const LibraryImportModal = ({
             >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
                     <div>
-                        <p className="ui-text-meta uppercase tracking-[0.2em] text-content-disabled">Import to Library</p>
+                        <p className="ui-text-meta uppercase tracking-[0.2em] text-content-disabled">
+                            {t({
+                                id: "library.import.title",
+                                message: "Import to Library",
+                            })}
+                        </p>
                         <p className="ui-text-body-lg text-content-primary mt-1">{summary}</p>
                     </div>
                     <button
@@ -100,11 +115,19 @@ const LibraryImportModal = ({
                 <div className="px-5 py-4 space-y-4">
                     {models.length === 0 && (
                         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
-                            No local models are installed. Download a model in Settings → Models before importing.
+                            {t({
+                                id: "library.import.no_models",
+                                message: "No local models are installed. Download a model in Settings -> Models before importing.",
+                            })}
                         </div>
                     )}
                     <div className="rounded-lg border border-border-primary bg-surface-surface p-3">
-                        <div className="ui-text-label text-content-muted mb-2">Files</div>
+                        <div className="ui-text-label text-content-muted mb-2">
+                            {t({
+                                id: "library.import.files",
+                                message: "Files",
+                            })}
+                        </div>
                         <div className="max-h-28 overflow-auto custom-scrollbar ui-text-body-sm text-content-secondary space-y-1">
                             {importPaths.map((path, idx) => (
                                 <div key={`${path}-${idx}`} className="truncate">{path}</div>
@@ -113,14 +136,25 @@ const LibraryImportModal = ({
                     </div>
 
                     <div>
-                        <label className="ui-text-label font-medium text-content-muted ml-1">Model</label>
+                        <label className="ui-text-label font-medium text-content-muted ml-1">
+                            {t({
+                                id: "library.import.model",
+                                message: "Model",
+                            })}
+                        </label>
                         <Dropdown
                             value={selectedModelKey || null}
                             onChange={(value) => setSelectedModelKey(value)}
                             options={modelOptions}
-                            placeholder="Select a model"
+                            placeholder={t({
+                                id: "library.import.select_model",
+                                message: "Select a model",
+                            })}
                             searchable
-                            searchPlaceholder="Search installed models..."
+                            searchPlaceholder={t({
+                                id: "library.import.search_models",
+                                message: "Search installed models...",
+                            })}
                         />
                         <div className="mt-2 flex items-start gap-2 ui-text-meta text-content-disabled ml-1">
                         </div>
@@ -128,8 +162,18 @@ const LibraryImportModal = ({
 
                     <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
                         <div>
-                            <div className="ui-text-body-sm text-content-primary font-medium">Store original file</div>
-                            <div className="ui-text-meta text-content-disabled">Keep a copy inside the library folder</div>
+                            <div className="ui-text-body-sm text-content-primary font-medium">
+                                {t({
+                                    id: "library.import.store_original",
+                                    message: "Store original file",
+                                })}
+                            </div>
+                            <div className="ui-text-meta text-content-disabled">
+                                {t({
+                                    id: "library.import.store_original.description",
+                                    message: "Keep a copy inside the library folder",
+                                })}
+                            </div>
                         </div>
                         <button
                             onClick={() => setStoreOriginal(!storeOriginal)}
@@ -147,9 +191,22 @@ const LibraryImportModal = ({
 
                     <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
                         <div>
-                            <div className="ui-text-body-sm text-content-primary font-medium">Show timestamps</div>
+                            <div className="ui-text-body-sm text-content-primary font-medium">
+                                {t({
+                                    id: "library.import.show_timestamps",
+                                    message: "Show timestamps",
+                                })}
+                            </div>
                             <div className="ui-text-meta text-content-disabled">
-                                {timestampsSupported ? "Enabled for supported models" : "Not supported by this model"}
+                                {timestampsSupported
+                                    ? t({
+                                        id: "library.import.timestamps_supported",
+                                        message: "Enabled for supported models",
+                                    })
+                                    : t({
+                                        id: "library.import.timestamps_unsupported",
+                                        message: "Not supported by this model",
+                                    })}
                             </div>
                         </div>
                         <button
@@ -174,14 +231,25 @@ const LibraryImportModal = ({
                         onClick={onCancel}
                         className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-label text-content-muted hover:text-content-secondary"
                     >
-                        Cancel
+                        {t({
+                            id: "library.import.cancel",
+                            message: "Cancel",
+                        })}
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isImporting || importPaths.length === 0 || !selectedModelKey}
                         className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-label text-content-primary hover:border-border-secondary disabled:opacity-50"
                     >
-                        {isImporting ? "Importing..." : "Import"}
+                        {isImporting
+                            ? t({
+                                id: "library.import.importing",
+                                message: "Importing...",
+                            })
+                            : t({
+                                id: "library.import.confirm",
+                                message: "Import",
+                            })}
                     </button>
                 </div>
             </motion.div>

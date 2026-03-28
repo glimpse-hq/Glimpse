@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import React, { useRef, useEffect, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -143,6 +144,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   sensitivity = 3,
   decay = 0.85,
 }) => {
+  const { t } = useLingui();
   const [state, send] = useMachine(pillMachine);
   const pillStatus = state.value as PillStatus;
   const { spectrumBins, lastSpectrumAt, isErrorFlashing, isExpanded, expandedText } = state.context;
@@ -598,9 +600,21 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
   const getStatusMessage = (s: PillStatus) => {
     switch (s) {
-      case "listening": return "Listening...";
-      case "processing": return "Processing...";
-      case "error": return "Error occurred";
+      case "listening":
+        return t({
+          id: "pill.status.listening",
+          message: "Listening...",
+        });
+      case "processing":
+        return t({
+          id: "pill.status.processing",
+          message: "Processing...",
+        });
+      case "error":
+        return t({
+          id: "pill.status.error",
+          message: "Error occurred",
+        });
       default: return "";
     }
   };
@@ -683,7 +697,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 ref={bgCanvasRef}
                 className="absolute inset-0 w-full h-full block"
                 role="img"
-                aria-label="Background audio visualizer"
+                aria-label={t({
+                  id: "pill.background_visualizer",
+                  message: "Background audio visualizer",
+                })}
               />
             </div>
           </div>
@@ -705,7 +722,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 ref={canvasRef}
                 className="absolute inset-0 w-full h-full block"
                 role="img"
-                aria-label="Audio visualizer"
+                aria-label={t({
+                  id: "pill.visualizer",
+                  message: "Audio visualizer",
+                })}
               />
             </div>
           </div>

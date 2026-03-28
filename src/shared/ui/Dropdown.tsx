@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Search, Check } from "lucide-react";
@@ -36,19 +37,29 @@ export function Dropdown<T extends string | number>({
     value,
     onChange,
     options,
-    placeholder = "Select...",
+    placeholder,
     label,
     icon,
     searchable = false,
-    searchPlaceholder = "Search...",
+    searchPlaceholder,
     className = "",
     buttonClassName,
     menuClassName = "",
     onOpen,
 }: DropdownProps<T>) {
+    const { t } = useLingui();
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const resolvedPlaceholder = placeholder ?? t({
+        id: "dropdown.placeholder",
+        message: "Select...",
+    });
+    const resolvedSearchPlaceholder = searchPlaceholder ?? t({
+        id: "dropdown.search_placeholder",
+        message: "Search...",
+    });
 
     const selectedOption = options.find((opt) => opt.value === value);
     const closeDropdown = useCallback(() => {
@@ -156,7 +167,7 @@ export function Dropdown<T extends string | number>({
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
                     {label && <span className="text-content-muted shrink-0">{label}</span>}
                     <span className={`truncate ${selectedOption ? "text-content-primary" : "text-content-muted"}`}>
-                        {selectedOption ? selectedOption.label : placeholder}
+                        {selectedOption ? selectedOption.label : resolvedPlaceholder}
                     </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -186,8 +197,11 @@ export function Dropdown<T extends string | number>({
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={searchPlaceholder}
-                                        aria-label="Search options"
+                                        placeholder={resolvedSearchPlaceholder}
+                                        aria-label={t({
+                                            id: "dropdown.search_aria",
+                                            message: "Search options",
+                                        })}
                                         autoFocus
                                         className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:border-content-disabled focus:outline-hidden transition-colors"
                                         onClick={(e) => e.stopPropagation()}
@@ -245,7 +259,10 @@ export function Dropdown<T extends string | number>({
                                 )
                             ) : (
                                 <div className="px-3 py-4 ui-text-body-sm ui-color-muted text-center">
-                                    No options found
+                                    {t({
+                                        id: "dropdown.no_options",
+                                        message: "No options found",
+                                    })}
                                 </div>
                             )}
                         </div>

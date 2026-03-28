@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import {
     useCallback,
     useEffect,
@@ -62,6 +63,7 @@ const LibraryView = ({
     sidebarWidth,
     isActive,
 }: LibraryViewProps) => {
+    const { t } = useLingui();
     const queryClient = useQueryClient();
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -205,7 +207,10 @@ const LibraryView = ({
                 multiple: true,
                 filters: [
                     {
-                        name: "Audio & Video",
+                        name: t({
+                            id: "library.view.file_filter",
+                            message: "Audio & Video",
+                        }),
                         extensions: SUPPORTED_EXTENSIONS,
                     },
                 ],
@@ -221,7 +226,10 @@ const LibraryView = ({
             console.error("Failed to open import dialog:", err);
             invoke("debug_show_toast", {
                 toastType: "error",
-                message: "Could not open the import dialog.",
+                message: t({
+                    id: "library.view.import_dialog_error",
+                    message: "Could not open the import dialog.",
+                }),
             }).catch(() => { });
         }
     };
@@ -289,9 +297,17 @@ const LibraryView = ({
                         color="var(--color-accent)"
                     />
                     <div className="flex-1">
-                        <p className="ui-text-screen-title ui-color-primary tracking-tight">Library</p>
+                        <p className="ui-text-screen-title ui-color-primary tracking-tight">
+                            {t({
+                                id: "library.view.title",
+                                message: "Library",
+                            })}
+                        </p>
                         <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                            Import audio and video files for transcription.
+                            {t({
+                                id: "library.view.description",
+                                message: "Import audio and video files for transcription.",
+                            })}
                         </p>
                     </div>
                 </header>
@@ -301,7 +317,10 @@ const LibraryView = ({
                         className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-body-sm ui-color-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
                     >
                         <Plus size={14} />
-                        Import
+                        {t({
+                            id: "library.view.import_button",
+                            message: "Import",
+                        })}
                     </button>
                     <div className="relative min-w-0">
                         <div className="relative flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-2 focus-within:border-border-secondary transition-colors">
@@ -310,8 +329,14 @@ const LibraryView = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search library..."
-                                aria-label="Search library"
+                                placeholder={t({
+                                    id: "library.view.search_placeholder",
+                                    message: "Search library...",
+                                })}
+                                aria-label={t({
+                                    id: "library.view.search_aria",
+                                    message: "Search library",
+                                })}
                                 className="w-full min-w-0 bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-hidden"
                             />
                         </div>
@@ -320,12 +345,48 @@ const LibraryView = ({
                         value={statusFilter}
                         onChange={(value) => setStatusFilter(value)}
                         options={[
-                            { value: "all", label: "All" },
-                            { value: "importing", label: "Converting" },
-                            { value: "pending", label: "Queued" },
-                            { value: "transcribing", label: "Transcribing" },
-                            { value: "complete", label: "Done" },
-                            { value: "error", label: "Failed" },
+                            {
+                                value: "all",
+                                label: t({
+                                    id: "library.view.filter.status.all",
+                                    message: "All",
+                                }),
+                            },
+                            {
+                                value: "importing",
+                                label: t({
+                                    id: "library.view.filter.status.converting",
+                                    message: "Converting",
+                                }),
+                            },
+                            {
+                                value: "pending",
+                                label: t({
+                                    id: "library.view.filter.status.queued",
+                                    message: "Queued",
+                                }),
+                            },
+                            {
+                                value: "transcribing",
+                                label: t({
+                                    id: "library.view.filter.status.transcribing",
+                                    message: "Transcribing",
+                                }),
+                            },
+                            {
+                                value: "complete",
+                                label: t({
+                                    id: "library.view.filter.status.done",
+                                    message: "Done",
+                                }),
+                            },
+                            {
+                                value: "error",
+                                label: t({
+                                    id: "library.view.filter.status.failed",
+                                    message: "Failed",
+                                }),
+                            },
                         ]}
                         className="w-full min-w-0"
                         menuClassName="right-auto min-w-full w-max max-w-[20rem]"
@@ -334,9 +395,27 @@ const LibraryView = ({
                         value={dateFilter}
                         onChange={(value) => setDateFilter(value)}
                         options={[
-                            { value: "all", label: "All time" },
-                            { value: "last7", label: "Last 7 days" },
-                            { value: "last30", label: "Last 30 days" },
+                            {
+                                value: "all",
+                                label: t({
+                                    id: "library.view.filter.date.all_time",
+                                    message: "All time",
+                                }),
+                            },
+                            {
+                                value: "last7",
+                                label: t({
+                                    id: "library.view.filter.date.last7",
+                                    message: "Last 7 days",
+                                }),
+                            },
+                            {
+                                value: "last30",
+                                label: t({
+                                    id: "library.view.filter.date.last30",
+                                    message: "Last 30 days",
+                                }),
+                            },
                         ]}
                         className="w-full min-w-0"
                         menuClassName="right-auto min-w-full w-max max-w-[20rem]"
@@ -345,7 +424,13 @@ const LibraryView = ({
                         value={tagFilter}
                         onChange={(value) => setTagFilter(value)}
                         options={[
-                            { value: "all", label: "All tags" },
+                            {
+                                value: "all",
+                                label: t({
+                                    id: "library.view.filter.tags.all",
+                                    message: "All tags",
+                                }),
+                            },
                             ...availableTags.map((tag) => ({ value: tag, label: tag })),
                         ]}
                         className="w-full min-w-0"
@@ -382,14 +467,17 @@ const LibraryView = ({
                             <div className="col-span-full rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-8 flex flex-col items-center justify-center text-center">
                                 <FolderOpen size={20} className="text-content-disabled" />
                                 <p className="mt-3 ui-text-body ui-color-muted">
-                                    Drag files here to build your Library.
+                                    {t({
+                                        id: "library.view.empty_state",
+                                        message: "Drag files here to build your Library.",
+                                    })}
                                 </p>
                             </div>
                         )}
 
-                        {items.map((item) => (
+                        {items.map((item, index) => (
                             <LibraryCard
-                                key={item.id}
+                                key={item.id || `library-item-${index}`}
                                 item={item}
                                 onOpen={() => setSelectedItemId(item.id)}
                                 onRemoveTag={async (tag) => {
@@ -427,7 +515,12 @@ const LibraryView = ({
                                 className="rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-4 flex flex-col items-center justify-center text-center ui-color-muted hover:text-content-secondary hover:border-border-hover transition-colors"
                             >
                                 <FolderOpen size={18} />
-                                <span className="mt-2 ui-text-body-sm">Drop files to import</span>
+                                <span className="mt-2 ui-text-body-sm">
+                                    {t({
+                                        id: "library.view.dropzone",
+                                        message: "Drop files to import",
+                                    })}
+                                </span>
                             </button>
                         )}
 
@@ -441,10 +534,20 @@ const LibraryView = ({
                                         {isFetchingNextPage ? (
                                             <>
                                                 <Loader2 size={14} className="animate-spin" />
-                                                <span>Loading...</span>
+                                                <span>
+                                                    {t({
+                                                        id: "library.view.loading_more",
+                                                        message: "Loading...",
+                                                    })}
+                                                </span>
                                             </>
                                         ) : (
-                                            <span>Load more</span>
+                                            <span>
+                                                {t({
+                                                    id: "library.view.load_more",
+                                                    message: "Load more",
+                                                })}
+                                            </span>
                                         )}
                                     </button>
                                 </div>
@@ -464,7 +567,7 @@ const LibraryView = ({
                     >
                         <div className="w-full h-full min-h-0" onClick={(e) => e.stopPropagation()}>
                             <LibraryModal
-                                key={selectedItem.id}
+                                key={selectedItem.id || "selected-library-item"}
                                 item={selectedItem}
                                 models={installedModels}
                                 shiftHeld={shiftHeld}
@@ -504,7 +607,10 @@ const LibraryView = ({
                             if (unsupported.length > 0) {
                                 invoke("debug_show_toast", {
                                     toastType: "warning",
-                                    message: `${unsupported.length} file(s) skipped due to unsupported format.`,
+                                    message: t({
+                                        id: "library.view.unsupported_files",
+                                        message: `${unsupported.length} file(s) skipped due to unsupported format.`,
+                                    }),
                                 }).catch(() => { });
                             }
 

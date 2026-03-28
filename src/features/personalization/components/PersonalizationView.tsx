@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
@@ -21,6 +22,7 @@ import PersonalityModal, {
 } from "./PersonalityModal";
 
 const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
+  const { t } = useLingui();
   const [personalities, setPersonalities] = useState<Personality[]>([]);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [websiteIconBySite, setWebsiteIconBySite] = useState<
@@ -222,7 +224,10 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
     const id = createId();
     const nextMode: Personality = {
       id,
-      name: "New Mode",
+      name: t({
+        id: "personalization.new_mode.default_name",
+        message: "New Mode",
+      }),
       enabled: true,
       apps: [],
       websites: [],
@@ -288,21 +293,35 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         <div className="flex-1 flex items-start justify-between gap-4">
           <div>
             <p className="ui-text-screen-title ui-color-primary tracking-tight">
-              Personalization
+              {t({
+                id: "personalization.title",
+                message: "Personalization",
+              })}
             </p>
             <p className="mt-1 ui-text-body-sm ui-color-secondary">
-              Tailor language model behavior to apps, sites, and custom
-              instructions.
+              {t({
+                id: "personalization.description",
+                message: "Tailor language model behavior to apps, sites, and custom instructions.",
+              })}
             </p>
           </div>
           <button
             onClick={handleAddMode}
-            aria-label="New mode"
-            title="New mode"
+            aria-label={t({
+              id: "personalization.new_mode",
+              message: "New mode",
+            })}
+            title={t({
+              id: "personalization.new_mode",
+              message: "New mode",
+            })}
             className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-2.5 py-1.5 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
           >
             <Plus size={12} />
-            New mode
+            {t({
+              id: "personalization.new_mode",
+              message: "New mode",
+            })}
           </button>
         </div>
       </div>
@@ -322,14 +341,22 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         </div>
       ) : personalities.length === 0 ? (
         <div className="rounded-xl border border-border-primary bg-surface-secondary px-6 py-8 ui-color-muted">
-          <p className="ui-text-body-lg-strong">No modes yet</p>
+          <p className="ui-text-body-lg-strong">
+            {t({
+              id: "personalization.empty.title",
+              message: "No modes yet",
+            })}
+          </p>
           <p className="ui-text-body-sm ui-color-muted">
-            Create a mode to start customizing your apps and websites.
+            {t({
+              id: "personalization.empty.description",
+              message: "Create a mode to start customizing your apps and websites.",
+            })}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-          {personalities.map((personality) => {
+          {personalities.map((personality, index) => {
             const appsPreview = personality.apps.slice(0, 3);
             const sitesPreview = personality.websites.slice(0, 2);
             const moreApps = Math.max(
@@ -342,7 +369,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
             );
             return (
               <div
-                key={personality.id}
+                key={personality.id || `personality-${index}`}
                 onClick={() => {
                   if (shiftHeld) {
                     requestDeleteModeConfirm(personality);
@@ -385,7 +412,15 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                             })
                           }
                           ariaLabel={
-                            personality.enabled ? "Disable mode" : "Enable mode"
+                            personality.enabled
+                              ? t({
+                                  id: "personalization.disable_mode",
+                                  message: "Disable mode",
+                                })
+                              : t({
+                                  id: "personalization.enable_mode",
+                                  message: "Enable mode",
+                                })
                           }
                         />
                       </div>
@@ -395,12 +430,18 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="ui-text-uppercase-micro ui-color-disabled">
-                        Apps
+                        {t({
+                          id: "personalization.apps",
+                          message: "Apps",
+                        })}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
                         {appsPreview.length === 0 ? (
                           <span className="ui-text-meta ui-color-disabled">
-                            No apps yet
+                            {t({
+                              id: "personalization.no_apps",
+                              message: "No apps yet",
+                            })}
                           </span>
                         ) : (
                           appsPreview.map((app, index) => (
@@ -429,12 +470,18 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
                     <div>
                       <p className="ui-text-uppercase-micro ui-color-disabled">
-                        Websites
+                        {t({
+                          id: "personalization.websites",
+                          message: "Websites",
+                        })}
                       </p>
                       <div className="mt-1.5 flex items-center gap-1.5 min-w-0 flex-nowrap">
                         {sitesPreview.length === 0 ? (
                           <span className="ui-text-meta ui-color-disabled">
-                            No sites yet
+                            {t({
+                              id: "personalization.no_sites",
+                              message: "No sites yet",
+                            })}
                           </span>
                         ) : (
                           sitesPreview.map((site, index) => (
@@ -466,12 +513,18 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
                   <div className="mt-2 pt-2 border-t border-border-primary ui-text-meta ui-color-muted flex items-center gap-2 min-w-0">
                     <span className="ui-text-uppercase-micro ui-color-disabled">
-                      Notes:
+                      {t({
+                        id: "personalization.notes",
+                        message: "Notes:",
+                      })}
                     </span>
                     <span className="font-mono truncate flex-1">
                       {personality.instructions.length > 0
                         ? personality.instructions[0]
-                        : "No notes yet"}
+                        : t({
+                            id: "personalization.no_notes",
+                            message: "No notes yet",
+                          })}
                     </span>
                   </div>
                 </div>
@@ -524,14 +577,16 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                 id="delete-mode-title"
                 className="ui-text-title-strong ui-color-primary"
               >
-                Delete mode?
+                {t({
+                  id: "personalization.delete_mode.title",
+                  message: "Delete mode?",
+                })}
               </h3>
               <p className="mt-2 ui-text-body-sm ui-color-secondary">
-                Delete{" "}
-                <span className="font-semibold text-content-primary">
-                  "{pendingDeletePersonality.name}"
-                </span>
-                ? This cannot be undone.
+                {t({
+                  id: "personalization.delete_mode.description",
+                  message: `Delete "${pendingDeletePersonality.name}"? This cannot be undone.`,
+                })}
               </p>
               <div className="mt-4 flex items-center justify-end gap-2">
                 <button
@@ -539,14 +594,20 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                   onClick={() => setPendingDeletePersonality(null)}
                   className="rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 ui-text-button ui-color-primary hover:bg-surface-elevated transition-colors"
                 >
-                  Cancel
+                  {t({
+                    id: "personalization.cancel",
+                    message: "Cancel",
+                  })}
                 </button>
                 <button
                   type="button"
                   onClick={confirmDeleteMode}
                   className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 ui-text-button font-semibold ui-color-error-soft hover:bg-red-500/15 transition-colors"
                 >
-                  Delete
+                  {t({
+                    id: "personalization.delete",
+                    message: "Delete",
+                  })}
                 </button>
               </div>
             </motion.div>

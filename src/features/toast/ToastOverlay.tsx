@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -62,6 +63,7 @@ const TwinklingGrid = React.memo(({ variant = "cloud" }: { variant?: "cloud" | "
 });
 
 const ToastOverlay: React.FC = () => {
+  const { t } = useLingui();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -136,7 +138,12 @@ const ToastOverlay: React.FC = () => {
       setIsRetrying(false);
       setToast(prev => prev ? {
         ...prev,
-        message: typeof err === "string" ? err : "Retry failed. Please try again.",
+        message: typeof err === "string"
+          ? err
+          : t({
+              id: "toast.retry_failed",
+              message: "Retry failed. Please try again.",
+            }),
         type: "error",
       } : null);
     }
@@ -286,7 +293,10 @@ const ToastOverlay: React.FC = () => {
           <button
             type="button"
             onClick={handleClose}
-            aria-label="Close notification"
+            aria-label={t({
+              id: "toast.close",
+              message: "Close notification",
+            })}
             className="w-5 h-5 flex items-center justify-center ui-color-gray-500 ui-hover-on-solid ui-text-body-sm transition-colors"
           >
             <span aria-hidden="true">✕</span>
@@ -296,8 +306,24 @@ const ToastOverlay: React.FC = () => {
               type="button"
               onClick={handleCopy}
               className="w-5 h-5 flex items-center justify-center rounded-md ui-color-gray-500 ui-hover-on-solid transition-colors"
-              title={copied ? "Copied" : "Copy message"}
-              aria-label={copied ? "Copied" : "Copy message"}
+              title={copied
+                ? t({
+                    id: "toast.copied",
+                    message: "Copied",
+                  })
+                : t({
+                    id: "toast.copy_message",
+                    message: "Copy message",
+                  })}
+              aria-label={copied
+                ? t({
+                    id: "toast.copied",
+                    message: "Copied",
+                  })
+                : t({
+                    id: "toast.copy_message",
+                    message: "Copy message",
+                  })}
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
             </button>
@@ -332,7 +358,15 @@ const ToastOverlay: React.FC = () => {
                 disabled={isRetrying}
                 className="mt-2 ui-text-body-sm ui-color-info-strong ui-hover-on-solid ui-disabled-gray-600 transition-colors"
               >
-                {isRetrying ? "Retrying…" : "Retry transcription"}
+                {isRetrying
+                  ? t({
+                      id: "toast.retrying",
+                      message: "Retrying...",
+                    })
+                  : t({
+                      id: "toast.retry_transcription",
+                      message: "Retry transcription",
+                    })}
               </button>
             )}
             {toast.action && toast.actionLabel && (

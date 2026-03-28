@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
@@ -64,6 +65,7 @@ const LibraryCard = ({
     shiftHeld: boolean;
     availableTags: string[];
 }) => {
+    const { t } = useLingui();
     const status = item.status;
     const tagPreview = item.tags.slice(0, 2);
     const showImportProgress = status.type === "importing" && shouldShowImportProgress(status.progress);
@@ -134,8 +136,24 @@ const LibraryCard = ({
                     ? "ui-color-error-strong ui-hover-error-soft hover:bg-red-500/10"
                     : "text-content-muted hover:text-content-primary hover:bg-surface-elevated"
             }`}
-            aria-label={shiftHeld ? "Delete" : "More options"}
-            title={shiftHeld ? "Delete" : "More options"}
+            aria-label={shiftHeld
+                ? t({
+                    id: "library.card.delete",
+                    message: "Delete",
+                })
+                : t({
+                    id: "library.card.more_options",
+                    message: "More options",
+                })}
+            title={shiftHeld
+                ? t({
+                    id: "library.card.delete",
+                    message: "Delete",
+                })
+                : t({
+                    id: "library.card.more_options",
+                    message: "More options",
+                })}
         >
             {shiftHeld ? <Trash2 size={14} /> : <MoreVertical size={14} />}
         </button>
@@ -204,7 +222,14 @@ const LibraryCard = ({
                         <span>{formatDuration(item.duration_seconds)}</span>
                         <span className="opacity-50">&bull;</span>
                         {status.type === "complete" ? (
-                            <Check size={12} className="ui-color-success-strong" aria-label="Done" />
+                            <Check
+                                size={12}
+                                className="ui-color-success-strong"
+                                aria-label={t({
+                                    id: "library.card.done",
+                                    message: "Done",
+                                })}
+                            />
                         ) : (
                             <span className="shrink-0 whitespace-nowrap">{statusText}</span>
                         )}
@@ -222,7 +247,10 @@ const LibraryCard = ({
                                         }}
                                         className="underline decoration-red-400/60 ui-hover-error-tint"
                                     >
-                                        FFmpeg Help
+                                        {t({
+                                            id: "library.card.ffmpeg_help",
+                                            message: "FFmpeg Help",
+                                        })}
                                     </button>
                                 )}
                             </span>
@@ -258,7 +286,12 @@ const LibraryCard = ({
                             className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                         >
                             <Pencil size={12} className="text-content-muted" />
-                            <span>Rename</span>
+                            <span>
+                                {t({
+                                    id: "library.card.rename",
+                                    message: "Rename",
+                                })}
+                            </span>
                         </button>
 
                         {status.type === "transcribing"
@@ -270,7 +303,12 @@ const LibraryCard = ({
                                 className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                             >
                                 <X size={12} className="text-warning" />
-                                <span>Cancel</span>
+                                <span>
+                                    {t({
+                                        id: "library.card.cancel",
+                                        message: "Cancel",
+                                    })}
+                                </span>
                             </button>
                         ) : (
                             <button
@@ -278,7 +316,17 @@ const LibraryCard = ({
                                 className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                             >
                                 <RotateCw size={12} className="text-cloud" />
-                                <span>{status.type === "error" ? "Retry" : "Retranscribe"}</span>
+                                <span>
+                                    {status.type === "error"
+                                        ? t({
+                                            id: "library.card.retry",
+                                            message: "Retry",
+                                        })
+                                        : t({
+                                            id: "library.card.retranscribe",
+                                            message: "Retranscribe",
+                                        })}
+                                </span>
                             </button>
                         )}
 
@@ -289,7 +337,12 @@ const LibraryCard = ({
                             className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors"
                         >
                             <Trash2 size={12} />
-                            <span>Delete</span>
+                            <span>
+                                {t({
+                                    id: "library.card.delete",
+                                    message: "Delete",
+                                })}
+                            </span>
                         </button>
                     </motion.div>
                 )}
@@ -307,8 +360,14 @@ const LibraryCard = ({
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => setTagMenuOpen((prev) => !prev)}
                                 className="flex items-center justify-center w-6 h-6 rounded-sm text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors"
-                                aria-label="Select existing tag"
-                                title="Select existing tag"
+                                aria-label={t({
+                                    id: "library.card.select_existing_tag",
+                                    message: "Select existing tag",
+                                })}
+                                title={t({
+                                    id: "library.card.select_existing_tag",
+                                    message: "Select existing tag",
+                                })}
                             >
                                 <ChevronDown
                                     size={12}
@@ -342,7 +401,15 @@ const LibraryCard = ({
                                                 ))
                                             ) : (
                                                 <div className="px-2.5 py-2 ui-text-micro ui-color-muted">
-                                                    {availableTags.length === 0 ? "No tags yet" : "No other tags"}
+                                                    {availableTags.length === 0
+                                                        ? t({
+                                                            id: "library.card.no_tags_yet",
+                                                            message: "No tags yet",
+                                                        })
+                                                        : t({
+                                                            id: "library.card.no_other_tags",
+                                                            message: "No other tags",
+                                                        })}
                                                 </div>
                                             )}
                                         </div>
@@ -364,7 +431,10 @@ const LibraryCard = ({
                                 }
                             }}
                             onBlur={onCancelTagEdit}
-                            placeholder="New tag..."
+                            placeholder={t({
+                                id: "library.card.new_tag",
+                                message: "New tag...",
+                            })}
                             className="tag-input-intro flex-1 min-w-0 h-6 box-border bg-transparent border-b border-border-primary px-0.5 py-0 ui-text-meta leading-none ui-color-secondary outline-hidden focus:border-border-hover placeholder:text-content-disabled"
                             autoFocus
                         />
@@ -382,7 +452,12 @@ const LibraryCard = ({
                                 className={`inline-flex items-center px-2 py-1 rounded-sm ui-text-meta ui-color-muted bg-white/5 border border-white/10 leading-none ${
                                     shiftHeld ? "cursor-pointer hover:border-red-500/60 ui-hover-error-tint" : ""
                                 }`}
-                                title={shiftHeld ? `Remove ${tag}` : undefined}
+                                title={shiftHeld
+                                    ? t({
+                                        id: "library.card.remove_tag",
+                                        message: `Remove ${tag}`,
+                                    })
+                                    : undefined}
                             >
                                 <span>{tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}</span>
                             </span>

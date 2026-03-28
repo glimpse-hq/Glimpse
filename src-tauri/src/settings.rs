@@ -18,6 +18,7 @@ const KEY_TRANSCRIPTION_MODE: &str = "transcription_mode";
 const KEY_LOCAL_MODEL: &str = "local_model";
 const KEY_MICROPHONE_DEVICE: &str = "microphone_device";
 const KEY_LANGUAGE: &str = "language";
+const KEY_APP_LOCALE: &str = "app_locale";
 
 const LEGACY_KEY_LLM_CLEANUP_ENABLED: &str = "llm_cleanup_enabled";
 const KEY_LLM_ENABLED: &str = "llm_enabled";
@@ -82,6 +83,8 @@ pub struct UserSettings {
     pub microphone_device: Option<String>,
     #[serde(default = "default_language")]
     pub language: String,
+    #[serde(default = "default_app_locale")]
+    pub app_locale: String,
 
     #[serde(default)]
     pub llm_enabled: bool,
@@ -263,6 +266,7 @@ impl Default for UserSettings {
             local_model: default_local_model(),
             microphone_device: None,
             language: default_language(),
+            app_locale: default_app_locale(),
 
             llm_enabled: false,
             cleanup_enabled: false,
@@ -360,6 +364,10 @@ fn default_language() -> String {
     "en".to_string()
 }
 
+fn default_app_locale() -> String {
+    "system".to_string()
+}
+
 pub struct SettingsStore {
     conn: Mutex<Connection>,
     llm_api_key_ciphertext: Mutex<Option<String>>,
@@ -438,6 +446,8 @@ impl SettingsStore {
                 settings.microphone_device.clone(),
             )?;
             settings.language = self.read_value(&conn, KEY_LANGUAGE, settings.language.clone())?;
+            settings.app_locale =
+                self.read_value(&conn, KEY_APP_LOCALE, settings.app_locale.clone())?;
 
             let legacy_llm_cleanup_enabled =
                 self.read_optional_value::<bool>(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)?;
@@ -552,6 +562,11 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        if !matches!(settings.app_locale.as_str(), "system" | "en" | "fr") {
+            settings.app_locale = default_app_locale();
+            should_persist = true;
+        }
+
         if should_persist {
             self.save(&settings)?;
         }
@@ -602,6 +617,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_LOCAL_MODEL, &settings.local_model)?;
         self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
         self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
+        self.write_value(&conn, KEY_APP_LOCALE, &settings.app_locale)?;
 
         self.write_value(&conn, KEY_LLM_ENABLED, &settings.llm_enabled)?;
         self.write_value(&conn, KEY_CLEANUP_ENABLED, &settings.cleanup_enabled)?;
