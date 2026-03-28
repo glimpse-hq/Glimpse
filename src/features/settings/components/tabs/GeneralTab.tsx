@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { Check, Copy, Info } from "lucide-react";
@@ -90,9 +91,16 @@ const GeneralTab = ({
   setCleanupEnabled,
   aiFeaturesReady,
 }: GeneralTabProps) => {
+  const { t } = useLingui();
   const [openHelpTooltip, setOpenHelpTooltip] =
     useState<HelpTooltipId | null>(null);
   const aiFeaturesDisabled = transcriptionMode === "local" && !aiFeaturesReady;
+  const localModelStatus = localModel ? modelStatus[localModel] : undefined;
+  const shouldShowMissingModelWarning =
+    transcriptionMode === "local" &&
+    Boolean(localModel) &&
+    localModelStatus !== undefined &&
+    !localModelStatus.installed;
 
   const showHelpTooltip = (tooltip: HelpTooltipId) => {
     setOpenHelpTooltip(tooltip);
@@ -116,18 +124,29 @@ const GeneralTab = ({
     className="space-y-6"
   >
     <div className="space-y-2">
-      <h2 className="ui-text-section-label ui-color-muted">Processing</h2>
+      <h2 className="ui-text-section-label ui-color-muted">
+        {t({
+          id: "settings.general.processing",
+          message: "Processing",
+        })}
+      </h2>
       <div
         className="grid grid-cols-2 gap-3"
         role="radiogroup"
-        aria-label="Processing Mode"
+        aria-label={t({
+          id: "settings.general.processing_mode",
+          message: "Processing Mode",
+        })}
       >
         <button
           onClick={() => {}}
           disabled
           role="radio"
           aria-checked={transcriptionMode === "cloud"}
-          aria-label="Cloud processing (Coming soon)"
+          aria-label={t({
+            id: "settings.general.cloud.aria",
+            message: "Cloud processing (Coming soon)",
+          })}
           className={`py-3 px-3.5 rounded-lg border text-left transition-all duration-100 opacity-60 cursor-not-allowed ${
             transcriptionMode === "cloud"
               ? "border-cloud-30 bg-cloud-5 shadow-[0_3px_0_-1px_rgba(251,191,36,0.4),inset_0_1px_0_0_rgba(251,191,36,0.1)]"
@@ -143,7 +162,10 @@ const GeneralTab = ({
                   : "ui-color-secondary"
               }`}
             >
-              Cloud
+              {t({
+                id: "settings.general.cloud.label",
+                message: "Cloud",
+              })}
             </span>
             <span
               className={`ui-text-label ${
@@ -152,7 +174,10 @@ const GeneralTab = ({
                   : "ui-color-disabled"
               }`}
             >
-              coming soon
+              {t({
+                id: "settings.general.cloud.badge",
+                message: "coming soon",
+              })}
             </span>
           </div>
           <p
@@ -162,7 +187,10 @@ const GeneralTab = ({
                 : "ui-color-disabled"
             }`}
           >
-            In development
+            {t({
+              id: "settings.general.cloud.description",
+              message: "In development",
+            })}
           </p>
         </button>
         <button
@@ -183,7 +211,10 @@ const GeneralTab = ({
                   : "ui-color-secondary"
               }`}
             >
-              Local
+              {t({
+                id: "settings.general.local.label",
+                message: "Local",
+              })}
             </span>
             <span
               className={`ui-text-label ${
@@ -192,7 +223,10 @@ const GeneralTab = ({
                   : "ui-color-disabled"
               }`}
             >
-              private
+              {t({
+                id: "settings.general.local.badge",
+                message: "private",
+              })}
             </span>
           </div>
           <p
@@ -202,27 +236,38 @@ const GeneralTab = ({
                 : "ui-color-disabled"
             }`}
           >
-            Runs entirely on your device
+            {t({
+              id: "settings.general.local.description",
+              message: "Runs entirely on your device",
+            })}
           </p>
         </button>
       </div>
       <AnimatePresence>
-        {transcriptionMode === "local" &&
-          !modelStatus[localModel]?.installed && (
+        {shouldShowMissingModelWarning && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               className="ui-text-label ui-color-warning"
             >
-              No model installed.{" "}
+              {t({
+                id: "settings.general.no_model",
+                message: "No model installed.",
+              })}{" "}
               <button
                 onClick={onOpenModelsTab}
                 className="underline hover:text-cloud transition-colors"
               >
-                Download one
+                {t({
+                  id: "settings.general.download_one",
+                  message: "Download one",
+                })}
               </button>{" "}
-              to use local.
+              {t({
+                id: "settings.general.to_use_local",
+                message: "to use local.",
+              })}
             </motion.p>
           )}
       </AnimatePresence>
@@ -230,9 +275,14 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-1.5">
-        <label className="ui-text-label-strong ui-color-muted">
-          Microphone
-        </label>
+        <div className="flex h-5 items-center">
+          <label className="ui-text-label-strong ui-color-muted leading-none">
+            {t({
+              id: "settings.general.microphone",
+              message: "Microphone",
+            })}
+          </label>
+        </div>
         <div className="relative z-20">
           <Dropdown
             value={microphoneDevice || ""}
@@ -240,38 +290,62 @@ const GeneralTab = ({
               onMicrophoneDeviceChange(val === "" ? null : val)
             }
             options={[
-              { value: "", label: "System Default" },
+              {
+                value: "",
+                label: t({
+                  id: "settings.general.system_default",
+                  message: "System Default",
+                }),
+              },
               ...inputDevices.map((device) => ({
                 value: device.id,
                 label: device.name,
               })),
             ]}
-            placeholder="Select microphone..."
+            placeholder={t({
+              id: "settings.general.select_microphone",
+              message: "Select microphone...",
+            })}
           />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
+        <div className="flex h-5 items-center">
           <div className="flex items-center gap-1">
-            <label className="ui-text-label-strong ui-color-muted">
-              Transcription Language
+            <label className="ui-text-label-strong ui-color-muted leading-none">
+              {t({
+                id: "settings.general.transcription_language",
+                message: "Transcription Language",
+              })}
             </label>
             <div className="relative group">
               <button
-                className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
-                aria-label="More information about transcription language support badges"
+                className="flex h-4 w-4 items-center justify-center text-content-disabled hover:text-content-muted transition-colors"
+                aria-label={t({
+                  id: "settings.general.language_info_aria",
+                  message:
+                    "More information about transcription language support badges",
+                })}
               >
                 <Info size={10} aria-hidden="true" />
               </button>
               <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-10">
                 <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-56 shadow-lg leading-tight">
                   <p>
-                    Language list is filtered to the models you have installed.
+                    {t({
+                      id: "settings.general.language_info.installed",
+                      message:
+                        "Language list is filtered to the models you have installed.",
+                    })}
                   </p>
                   {showLanguageSupportBadges && (
                     <p className="mt-1">
-                      Badges show which installed engine supports each language.
+                      {t({
+                        id: "settings.general.language_info.badges",
+                        message:
+                          "Badges show which installed engine supports each language.",
+                      })}
                     </p>
                   )}
                 </div>
@@ -308,7 +382,10 @@ const GeneralTab = ({
               };
             })}
             searchable
-            searchPlaceholder="Search language..."
+            searchPlaceholder={t({
+              id: "settings.general.search_language",
+              message: "Search language...",
+            })}
           />
         </div>
       </div>
@@ -316,12 +393,23 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-2">
-        <h2 className="ui-text-section-label ui-color-muted">Shortcuts</h2>
+        <h2 className="ui-text-section-label ui-color-muted">
+          {t({
+            id: "settings.general.shortcuts",
+            message: "Shortcuts",
+          })}
+        </h2>
 
         <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
           <ShortcutRow
-            label="Smart"
-            description="tap to toggle, hold to talk"
+            label={t({
+              id: "settings.general.shortcuts.smart",
+              message: "Smart",
+            })}
+            description={t({
+              id: "settings.general.shortcuts.smart_description",
+              message: "tap to toggle, hold to talk",
+            })}
             shortcut={smartShortcut}
             enabled={smartEnabled}
             isCapturing={captureActive === "smart"}
@@ -337,8 +425,14 @@ const GeneralTab = ({
             canDisable={holdEnabled || toggleEnabled}
           />
           <ShortcutRow
-            label="Hold"
-            description="hold to talk, release to stop"
+            label={t({
+              id: "settings.general.shortcuts.hold",
+              message: "Hold",
+            })}
+            description={t({
+              id: "settings.general.shortcuts.hold_description",
+              message: "hold to talk, release to stop",
+            })}
             shortcut={holdShortcut}
             enabled={holdEnabled}
             isCapturing={captureActive === "hold"}
@@ -354,8 +448,14 @@ const GeneralTab = ({
             canDisable={smartEnabled || toggleEnabled}
           />
           <ShortcutRow
-            label="Toggle"
-            description="tap to start, tap to stop"
+            label={t({
+              id: "settings.general.shortcuts.toggle",
+              message: "Toggle",
+            })}
+            description={t({
+              id: "settings.general.shortcuts.toggle_description",
+              message: "tap to start, tap to stop",
+            })}
             shortcut={toggleShortcut}
             enabled={toggleEnabled}
             isCapturing={captureActive === "toggle"}
@@ -374,7 +474,12 @@ const GeneralTab = ({
       </div>
 
       <div className="space-y-2">
-        <h2 className="ui-text-section-label ui-color-muted">Features</h2>
+        <h2 className="ui-text-section-label ui-color-muted">
+          {t({
+            id: "settings.general.features",
+            message: "Features",
+          })}
+        </h2>
 
         <div className="space-y-3">
           <div
@@ -385,12 +490,18 @@ const GeneralTab = ({
             <div className="py-2 px-2.5">
               <div className="flex items-center justify-between">
                 <span className="ui-text-label-strong ui-color-primary">
-                  Edit Mode
+                  {t({
+                    id: "settings.general.edit_mode",
+                    message: "Edit Mode",
+                  })}
                 </span>
                 <ToggleSwitch
                   enabled={editModeEnabled}
                   onToggle={() => aiFeaturesReady && setEditModeEnabled(!editModeEnabled)}
-                  ariaLabel="Toggle Edit Mode"
+                  ariaLabel={t({
+                    id: "settings.general.edit_mode.toggle_aria",
+                    message: "Toggle Edit Mode",
+                  })}
                   disabled={aiFeaturesDisabled}
                 />
               </div>
@@ -410,12 +521,21 @@ const GeneralTab = ({
                         onClick={onOpenModelsTab}
                         className="underline underline-offset-2 hover:text-cloud transition-colors"
                       >
-                        Models
+                        {t({
+                          id: "settings.general.models_tab",
+                          message: "Models",
+                        })}
                       </button>{" "}
-                      to use Edit Mode.
+                      {t({
+                        id: "settings.general.edit_mode.models_suffix",
+                        message: "to use Edit Mode.",
+                      })}
                     </>
                   ) : (
-                    "transform selected text with voice"
+                    t({
+                      id: "settings.general.edit_mode.body",
+                      message: "transform selected text with voice",
+                    })
                   )}
                 </span>
                 <div
@@ -426,7 +546,10 @@ const GeneralTab = ({
                   <button
                     type="button"
                     className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
-                    aria-label="More information about Edit Mode"
+                    aria-label={t({
+                      id: "settings.general.edit_mode.info_aria",
+                      message: "More information about Edit Mode",
+                    })}
                     aria-expanded={openHelpTooltip === "edit-mode"}
                     aria-controls="edit-mode-help-tooltip"
                     onFocus={() => showHelpTooltip("edit-mode")}
@@ -453,13 +576,19 @@ const GeneralTab = ({
                   >
                     <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
                       <p>
-                        Select text in any app, and speak a command like "make
-                        this formal" or "fix my grammar".
+                        {t({
+                          id: "settings.general.edit_mode.help",
+                          message:
+                            'Select text in any app, and speak a command like "make this formal" or "fix my grammar".',
+                        })}
                       </p>
                       {transcriptionMode === "local" && !aiFeaturesReady && (
                         <p className="text-warning mt-1">
-                          Requires an enabled and configured language model in
-                          the Models tab.
+                          {t({
+                            id: "settings.general.edit_mode.help_requirement",
+                            message:
+                              "Requires an enabled and configured language model in the Models tab.",
+                          })}
                         </p>
                       )}
                     </div>
@@ -477,12 +606,18 @@ const GeneralTab = ({
             <div className="py-2 px-2.5">
               <div className="flex items-center justify-between">
                 <span className="ui-text-label-strong ui-color-primary">
-                  Cleanup
+                  {t({
+                    id: "settings.general.cleanup",
+                    message: "Cleanup",
+                  })}
                 </span>
                 <ToggleSwitch
                   enabled={cleanupEnabled}
                   onToggle={() => aiFeaturesReady && setCleanupEnabled(!cleanupEnabled)}
-                  ariaLabel="Toggle Cleanup"
+                  ariaLabel={t({
+                    id: "settings.general.cleanup.toggle_aria",
+                    message: "Toggle Cleanup",
+                  })}
                   disabled={aiFeaturesDisabled}
                 />
               </div>
@@ -502,12 +637,21 @@ const GeneralTab = ({
                         onClick={onOpenModelsTab}
                         className="underline underline-offset-2 hover:text-cloud transition-colors"
                       >
-                        Models
+                        {t({
+                          id: "settings.general.models_tab",
+                          message: "Models",
+                        })}
                       </button>{" "}
-                      to use Cleanup.
+                      {t({
+                        id: "settings.general.cleanup.models_suffix",
+                        message: "to use Cleanup.",
+                      })}
                     </>
                   ) : (
-                    "remove filler words and polish transcripts"
+                    t({
+                      id: "settings.general.cleanup.body",
+                      message: "remove filler words and polish transcripts",
+                    })
                   )}
                 </span>
                 <div
@@ -518,7 +662,10 @@ const GeneralTab = ({
                   <button
                     type="button"
                     className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
-                    aria-label="More information about Cleanup"
+                    aria-label={t({
+                      id: "settings.general.cleanup.info_aria",
+                      message: "More information about Cleanup",
+                    })}
                     aria-expanded={openHelpTooltip === "cleanup"}
                     aria-controls="cleanup-help-tooltip"
                     onFocus={() => showHelpTooltip("cleanup")}
@@ -545,13 +692,19 @@ const GeneralTab = ({
                   >
                     <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
                       <p>
-                        Cleans up transcripts after transcription while keeping
-                        the original meaning intact.
+                        {t({
+                          id: "settings.general.cleanup.help",
+                          message:
+                            "Cleans up transcripts after transcription while keeping the original meaning intact.",
+                        })}
                       </p>
                       {transcriptionMode === "local" && !aiFeaturesReady && (
                         <p className="text-warning mt-1">
-                          Requires an enabled and configured language model in
-                          the Models tab.
+                          {t({
+                            id: "settings.general.cleanup.help_requirement",
+                            message:
+                              "Requires an enabled and configured language model in the Models tab.",
+                          })}
                         </p>
                       )}
                     </div>
@@ -614,6 +767,7 @@ const ShortcutRow = ({
   onCapture,
   canDisable,
 }: ShortcutRowProps) => {
+  const { t } = useLingui();
   const displayShortcut = formatShortcutForDisplay(shortcut);
 
   return (
@@ -632,14 +786,20 @@ const ShortcutRow = ({
         <ToggleSwitch
           enabled={enabled}
           onToggle={onToggle}
-          ariaLabel={`Toggle ${label} shortcut`}
+          ariaLabel={t({
+            id: "settings.general.shortcut.toggle_aria",
+            message: `Toggle ${label} shortcut`,
+          })}
           disabled={enabled && !canDisable}
         />
       </div>
       <motion.button
         onClick={onCapture}
         disabled={!enabled}
-        aria-label={`Record new shortcut for ${label}, currently ${displayShortcut}`}
+        aria-label={t({
+          id: "settings.general.shortcut.record_aria",
+          message: `Record new shortcut for ${label}, currently ${displayShortcut}`,
+        })}
         className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors ${
           isCapturing
             ? "ui-color-primary border-border-hover"
@@ -658,7 +818,10 @@ const ShortcutRow = ({
             <span
               className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
             >
-              {capturePreview || "..."}
+              {capturePreview || t({
+                id: "settings.general.shortcut.capture_placeholder",
+                message: "...",
+              })}
             </span>
           </span>
         ) : (

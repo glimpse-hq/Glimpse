@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
 import { Mail } from "lucide-react";
 import type { StepMotionProps } from "./shared";
@@ -8,6 +9,12 @@ interface SigninStepProps {
 }
 
 export function SigninStep({ stepMotionProps, onNext }: SigninStepProps) {
+  const { t } = useLingui();
+  const syncStatus = t({
+    id: "onboarding.signin.status",
+    message: "in development",
+  });
+
   return (
     <motion.div
       key="local-signin"
@@ -19,14 +26,23 @@ export function SigninStep({ stepMotionProps, onNext }: SigninStepProps) {
         <Mail size={28} className="text-local" />
       </div>
       <h2 className="ui-text-title-lg font-semibold text-content-primary mb-2">
-        Transcription Sync
+        {t({
+          id: "onboarding.signin.title",
+          message: "Transcription Sync",
+        })}
       </h2>
       <p className="ui-text-body-lg text-content-muted mb-2 leading-relaxed">
-        Cloud sync is currently{" "}
-        <span className="text-content-primary font-medium">in development</span>.
+        {t({
+          id: "onboarding.signin.subtitle",
+          message: `Cloud sync is currently ${syncStatus}.`,
+        })}
       </p>
       <p className="ui-text-body-sm text-content-disabled mb-7 leading-relaxed">
-        You can keep using Glimpse locally. This screen will be enabled in a future update.
+        {t({
+          id: "onboarding.signin.body",
+          message:
+            "You can keep using Glimpse locally. This screen will be enabled in a future update.",
+        })}
       </p>
 
       <button
@@ -34,7 +50,10 @@ export function SigninStep({ stepMotionProps, onNext }: SigninStepProps) {
         onClick={onNext}
         className="w-full flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-3 ui-text-body-lg font-semibold text-surface-secondary hover:bg-white transition-colors"
       >
-        Continue
+        {t({
+          id: "onboarding.signin.continue",
+          message: "Continue",
+        })}
       </button>
     </motion.div>
   );

@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo } from "react";
 import { useMachine } from "@xstate/react";
 import { AnimatePresence } from "framer-motion";
@@ -60,6 +61,7 @@ const stepTransitionVariants = {
 };
 
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+  const { t } = useLingui();
   const [state, send] = useMachine(onboardingMachine);
   const ctx = state.context;
 
@@ -164,15 +166,37 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   }, []);
 
   const handleDownload = useCallback(async (modelKey: string) => {
-    send({ type: "SET_DOWNLOAD_STATUS", key: modelKey, status: { status: "downloading", percent: 0, file: "starting..." } });
+    send({
+      type: "SET_DOWNLOAD_STATUS",
+      key: modelKey,
+      status: {
+        status: "downloading",
+        percent: 0,
+        file: t({
+          id: "onboarding.download.starting",
+          message: "starting...",
+        }),
+      },
+    });
     try {
       await invoke("download_model", { model: modelKey });
     } catch (err) {
       const errorMsg = String(err);
       if (errorMsg.toLowerCase().includes("cancelled")) return;
-      send({ type: "SET_DOWNLOAD_STATUS", key: modelKey, status: { status: "error", percent: 0, message: "Download failed" } });
+      send({
+        type: "SET_DOWNLOAD_STATUS",
+        key: modelKey,
+        status: {
+          status: "error",
+          percent: 0,
+          message: t({
+            id: "onboarding.download.failed",
+            message: "Download failed",
+          }),
+        },
+      });
     }
-  }, [send]);
+  }, [send, t]);
 
   const handleDelete = useCallback(async (modelKey: string) => {
     try {
@@ -248,7 +272,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     send({ type: "COMPLETING" });
 
     if (!resolvedLocalModel) {
-      send({ type: "COMPLETE_ERROR", error: "Could not load a local model selection. Try reopening onboarding." });
+      send({
+        type: "COMPLETE_ERROR",
+        error: t({
+          id: "onboarding.complete.no_model",
+          message:
+            "Could not load a local model selection. Try reopening onboarding.",
+        }),
+      });
       return;
     }
 
@@ -266,6 +297,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           localModel: resolvedLocalModel,
           microphoneDevice: null,
           language: "en",
+          appLocale: "system",
           llmEnabled: false,
           cleanupEnabled: false,
           llmProvider: "none",
@@ -287,10 +319,15 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       const message = typeof err === "string" ? err : String(err);
       send({
         type: "COMPLETE_ERROR",
-        error: message || "Could not finish setup. Check your settings and try again.",
+        error: message ||
+          t({
+            id: "onboarding.complete.failed",
+            message:
+              "Could not finish setup. Check your settings and try again.",
+          }),
       });
     }
-  }, [ctx, send, onComplete]);
+  }, [ctx, send, onComplete, t]);
 
   const goNext = useCallback(() => {
     send({ type: "NEXT" });
@@ -409,7 +446,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       <div className="flex justify-center pb-5">
         <div className="flex items-center gap-2 text-content-disabled">
           <GlimpseLogo size="sm" />
-          <span className="ui-text-meta font-medium">Glimpse</span>
+          <span className="ui-text-meta font-medium">
+            {t({
+              id: "onboarding.brand",
+              message: "Glimpse",
+            })}
+          </span>
         </div>
       </div>
 
@@ -421,7 +463,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-muted transition-colors"
         >
           <ChevronLeft size={14} />
-          Back
+          {t({
+            id: "onboarding.back",
+            message: "Back",
+          })}
         </button>
       )}
     </div>

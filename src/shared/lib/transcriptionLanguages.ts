@@ -178,6 +178,9 @@ export function buildTranscriptionLanguageView(
         if (!languages) continue;
 
         for (const [code, name] of languages.entries()) {
+            if (!code.trim()) {
+                continue;
+            }
             if (!languageNames.has(code)) {
                 languageNames.set(code, name);
                 orderedCodes.push(code);

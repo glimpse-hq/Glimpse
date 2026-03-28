@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, HelpCircle } from "lucide-react";
 import DotMatrix from "./DotMatrix";
@@ -7,30 +8,62 @@ interface FAQModalProps {
     onClose: () => void;
 }
 
-const faqItems = [
-    {
-        question: "How is Glimpse free?",
-        answer: "Glimpse uses on-device OSS AI models for transcription, so there are no ongoing costs for the core experience.",
-    },
-    {
-        question: "Is my data private?",
-        answer: "Yes. In local mode, all your audio and transcriptions stay on your device. We never collect or transmit your recordings. Cloud sync is optional.",
-    },
-    {
-        question: "What's Glimpse Cloud?",
-        answer: "An optional paid upgrade with cross-device sync, faster cloud processing, and better AI models.",
-    },
-    {
-        question: "How is my data used?",
-        answer: "Your data, is your data. Not ours to share. We will never sell or share your data with third parties. ",
-    },
-    {
-        question: "What if I want to delete my data?",
-        answer: "Delete recordings locally to remove them. Synced data is flagged for removal immediately when you delete it.",
-    },
-];
-
 const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
+    const { t } = useLingui();
+
+    const faqItems = [
+        {
+            question: t({
+                id: "faq.free.question",
+                message: "How is Glimpse free?",
+            }),
+            answer: t({
+                id: "faq.free.answer",
+                message: "Glimpse uses on-device OSS AI models for transcription, so there are no ongoing costs for the core experience.",
+            }),
+        },
+        {
+            question: t({
+                id: "faq.privacy.question",
+                message: "Is my data private?",
+            }),
+            answer: t({
+                id: "faq.privacy.answer",
+                message: "Yes. In local mode, all your audio and transcriptions stay on your device. We never collect or transmit your recordings. Cloud sync is optional.",
+            }),
+        },
+        {
+            question: t({
+                id: "faq.cloud.question",
+                message: "What's Glimpse Cloud?",
+            }),
+            answer: t({
+                id: "faq.cloud.answer",
+                message: "An optional paid upgrade with cross-device sync, faster cloud processing, and better AI models.",
+            }),
+        },
+        {
+            question: t({
+                id: "faq.data_use.question",
+                message: "How is my data used?",
+            }),
+            answer: t({
+                id: "faq.data_use.answer",
+                message: "Your data is your data. Not ours to share. We will never sell or share your data with third parties.",
+            }),
+        },
+        {
+            question: t({
+                id: "faq.delete.question",
+                message: "What if I want to delete my data?",
+            }),
+            answer: t({
+                id: "faq.delete.answer",
+                message: "Delete recordings locally to remove them. Synced data is flagged for removal immediately when you delete it.",
+            }),
+        },
+    ];
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -59,14 +92,27 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                                     <HelpCircle size={16} className="ui-color-warning-strong" aria-hidden="true" />
                                 </div>
                                 <div>
-                                    <h2 id="faq-title" className="ui-text-title-strong ui-color-on-solid">Frequently Asked Questions</h2>
-                                    <p className="ui-text-label ui-color-muted">Common questions about Glimpse</p>
+                                    <h2 id="faq-title" className="ui-text-title-strong ui-color-on-solid">
+                                        {t({
+                                            id: "faq.title",
+                                            message: "Frequently Asked Questions",
+                                        })}
+                                    </h2>
+                                    <p className="ui-text-label ui-color-muted">
+                                        {t({
+                                            id: "faq.subtitle",
+                                            message: "Common questions about Glimpse",
+                                        })}
+                                    </p>
                                 </div>
                             </div>
                             <button
                                 onClick={onClose}
                                 className="p-2 rounded-lg hover:bg-surface-elevated text-content-disabled ui-hover-on-solid transition-colors"
-                                aria-label="Close FAQ"
+                                aria-label={t({
+                                    id: "faq.close_aria",
+                                    message: "Close FAQ",
+                                })}
                             >
                                 <X size={16} aria-hidden="true" />
                             </button>
@@ -91,13 +137,21 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                         <div className="relative flex items-center justify-between p-4 border-t border-border-primary bg-surface-primary">
                             <div className="flex items-center gap-2">
                                 <DotMatrix rows={2} cols={2} activeDots={[0, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                <span className="ui-text-meta ui-color-disabled">Glimpse</span>
+                                <span className="ui-text-meta ui-color-disabled">
+                                    {t({
+                                        id: "faq.brand",
+                                        message: "Glimpse",
+                                    })}
+                                </span>
                             </div>
                             <button
                                 onClick={onClose}
                                 className="px-4 py-2 rounded-lg bg-surface-elevated border border-border-secondary ui-text-body-sm-strong ui-color-secondary ui-hover-on-solid hover:border-border-hover transition-colors"
                             >
-                                Got it
+                                {t({
+                                    id: "faq.confirm",
+                                    message: "Got it",
+                                })}
                             </button>
                         </div>
                     </motion.div>

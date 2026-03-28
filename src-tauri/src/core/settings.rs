@@ -24,6 +24,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub local_model: String,
     pub microphone_device: Option<String>,
     pub language: String,
+    pub app_locale: String,
     pub llm_enabled: bool,
 
     pub cleanup_enabled: bool,
@@ -104,6 +105,10 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
 
     if model_manager::definition(&args.local_model).is_none() {
         return Err("Unknown model selection".into());
+    }
+
+    if !matches!(args.app_locale.as_str(), "system" | "en" | "fr") {
+        return Err("Unknown app language selection".into());
     }
 
     if args.llm_enabled && matches!(args.llm_provider, LlmProvider::None) {
@@ -201,6 +206,7 @@ pub(crate) fn update_settings(
     next.local_model = args.local_model;
     next.microphone_device = args.microphone_device;
     next.language = args.language;
+    next.app_locale = args.app_locale;
     next.llm_enabled = args.llm_enabled;
 
     next.cleanup_enabled = args.cleanup_enabled;
@@ -265,6 +271,7 @@ mod tests {
             local_model: default_local_model(),
             microphone_device: None,
             language: "en".to_string(),
+            app_locale: "system".to_string(),
             llm_enabled: false,
 
             cleanup_enabled: false,
@@ -323,5 +330,15 @@ mod tests {
         let err = validate_update_settings_args(&args).unwrap_err();
 
         assert_eq!(err, "Choose a language model before enabling AI features");
+    }
+
+    #[test]
+    fn rejects_unknown_app_locale_selection() {
+        let mut args = base_args();
+        args.app_locale = "de".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(err, "Unknown app language selection");
     }
 }

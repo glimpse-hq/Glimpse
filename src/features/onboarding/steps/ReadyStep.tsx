@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback } from "react";
 import { motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
@@ -32,6 +33,8 @@ export function ReadyStep({
   onSetShortcut,
   onComplete,
 }: ReadyStepProps) {
+  const { t } = useLingui();
+
   const finalizeCapture = useCallback(() => {
     invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
     onEndCapture();
@@ -60,11 +63,17 @@ export function ReadyStep({
       className="flex w-full max-w-sm flex-col items-center text-center"
     >
       <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">
-        You're ready!
+        {t({
+          id: "onboarding.ready.title",
+          message: "You're ready!",
+        })}
       </h2>
 
       <p className="ui-text-body-lg text-content-muted mb-6">
-        Smart is on by default, others available in settings.
+        {t({
+          id: "onboarding.ready.subtitle",
+          message: "Smart is on by default, others available in settings.",
+        })}
       </p>
 
       <div className="w-full rounded-lg bg-surface-surface p-2.5 text-left">
@@ -72,14 +81,23 @@ export function ReadyStep({
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <span className="ui-text-label-strong ui-color-primary">
-                Smart
+                {t({
+                  id: "onboarding.ready.smart.label",
+                  message: "Smart",
+                })}
               </span>
               <span className="truncate ui-text-meta ui-color-disabled">
-                tap to toggle, hold to talk
+                {t({
+                  id: "onboarding.ready.smart.description",
+                  message: "tap to toggle, hold to talk",
+                })}
               </span>
             </div>
             <span className="shrink-0 rounded-md bg-amber-400/20 px-1.5 py-0.5 ui-text-micro font-medium ui-color-warning-strong">
-              Default
+              {t({
+                id: "onboarding.ready.smart.badge",
+                message: "Default",
+              })}
             </span>
           </div>
 
@@ -88,7 +106,10 @@ export function ReadyStep({
             onClick={() => {
               if (!captureActive) startCapture();
             }}
-            aria-label={`Record new shortcut for Smart, currently ${formatShortcutForDisplay(smartShortcut)}`}
+            aria-label={t({
+              id: "onboarding.ready.smart.capture_aria",
+              message: `Record new shortcut for Smart, currently ${formatShortcutForDisplay(smartShortcut)}`,
+            })}
             className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors ${
               captureActive
                 ? "ui-color-primary border-border-hover"
@@ -105,7 +126,10 @@ export function ReadyStep({
                 <span
                   className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
                 >
-                  {capturePreview || "Press new shortcut..."}
+                  {capturePreview || t({
+                    id: "onboarding.ready.smart.capture_prompt",
+                    message: "Press new shortcut...",
+                  })}
                 </span>
               </span>
             ) : (
@@ -117,8 +141,14 @@ export function ReadyStep({
 
           <p className="ui-text-meta text-content-muted">
             {captureActive
-              ? "Press your new shortcut, or hit Esc to cancel."
-              : "Click the shortcut to change it."}
+              ? t({
+                  id: "onboarding.ready.smart.capture_help_active",
+                  message: "Press your new shortcut, or hit Esc to cancel.",
+                })
+              : t({
+                  id: "onboarding.ready.smart.capture_help_idle",
+                  message: "Click the shortcut to change it.",
+                })}
           </p>
         </div>
       </div>
@@ -128,12 +158,23 @@ export function ReadyStep({
         disabled={captureActive || isCompleting}
         className="mt-6 flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-2.5 ui-text-body-lg font-semibold ui-color-on-warning hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isCompleting ? "Saving..." : "Get Started"}
+        {isCompleting
+          ? t({
+              id: "onboarding.ready.saving",
+              message: "Saving...",
+            })
+          : t({
+              id: "onboarding.ready.get_started",
+              message: "Get Started",
+            })}
       </button>
 
       <p className="mt-3 ui-text-micro ui-color-disabled text-center">
-        Glimpse sends anonymous usage analytics to help improve the app. You can
-        disable this anytime in Settings &rarr; App.
+        {t({
+          id: "onboarding.ready.analytics_notice",
+          message:
+            "Glimpse sends anonymous usage analytics to help improve the app. You can disable this anytime in Settings -> App.",
+        })}
       </p>
 
       {completionError && (

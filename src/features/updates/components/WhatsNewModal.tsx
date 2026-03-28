@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ExternalLink, Loader2, AlertCircle } from "lucide-react";
@@ -29,6 +30,7 @@ const isFeatureRelease = (version: string): boolean => {
 };
 
 function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
+    const { t } = useLingui();
     const [releases, setReleases] = useState<ReleaseInfo[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -66,14 +68,20 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 .filter(release => !release.prerelease)
                 .map(release => ({
                     version: release.tag_name,
-                    body: release.body || "No changelog available.",
+                    body: release.body || t({
+                        id: "updates.whats_new.no_changelog",
+                        message: "No changelog available.",
+                    }),
                     publishedAt: release.published_at,
                     htmlUrl: release.html_url,
                 })));
 
         } catch (err) {
             console.error("Failed to fetch releases:", err);
-            setError(err instanceof Error ? err.message : "Failed to load changelog");
+            setError(err instanceof Error ? err.message : t({
+                id: "updates.whats_new.load_failed",
+                message: "Failed to load changelog",
+            }));
         } finally {
             setLoading(false);
         }
@@ -187,7 +195,12 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                         className="relative w-full max-w-md max-h-[70vh] bg-surface-secondary border border-border-primary rounded-2xl shadow-2xl overflow-hidden"
                     >
                         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 bg-surface-secondary backdrop-blur-xs border-b border-border-primary">
-                            <h2 className="ui-text-title-strong ui-color-primary">What's New</h2>
+                            <h2 className="ui-text-title-strong ui-color-primary">
+                                {t({
+                                    id: "updates.whats_new.title",
+                                    message: "What's New",
+                                })}
+                            </h2>
                             <button
                                 onClick={onClose}
                                 className="p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
@@ -208,15 +221,28 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                     <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20 w-full">
                                         <AlertCircle size={14} className="ui-color-error-strong shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="ui-text-body ui-color-error-strong font-medium">Couldn't load releases</p>
-                                            <p className="ui-text-label ui-color-error-subtle mt-0.5">GitHub may be temporarily unavailable. Check your connection and try again.</p>
+                                            <p className="ui-text-body ui-color-error-strong font-medium">
+                                                {t({
+                                                    id: "updates.whats_new.couldnt_load",
+                                                    message: "Couldn't load releases",
+                                                })}
+                                            </p>
+                                            <p className="ui-text-label ui-color-error-subtle mt-0.5">
+                                                {t({
+                                                    id: "updates.whats_new.github_unavailable",
+                                                    message: "GitHub may be temporarily unavailable. Check your connection and try again.",
+                                                })}
+                                            </p>
                                         </div>
                                     </div>
                                     <button
                                         onClick={fetchReleases}
                                         className="ui-text-body-sm-strong ui-color-secondary hover:text-content-primary transition-colors"
                                     >
-                                        Retry
+                                        {t({
+                                            id: "updates.whats_new.retry",
+                                            message: "Retry",
+                                        })}
                                     </button>
                                 </div>
                             )}
@@ -228,7 +254,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
 
                                         const isFeatured = isFeatureRelease(release.version);
                                         return (
-                                            <div key={release.version} className={isFeatured ? "pl-3 border-l-2 border-amber-400" : ""}>
+                                            <div key={release.version || `release-${index}`} className={isFeatured ? "pl-3 border-l-2 border-amber-400" : ""}>
                                                 <div className="flex items-center justify-between mb-3">
                                                     <h3 className={`font-semibold ${isFeatured ? "ui-text-title ui-color-warning-strong" : "ui-text-body-lg-strong ui-color-primary"}`}>
                                                         {release.version}
@@ -260,7 +286,10 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                     className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-lg bg-surface-elevated border border-border-secondary ui-text-button ui-color-secondary hover:text-content-primary hover:border-border-hover transition-colors"
                                 >
                                     <ExternalLink size={12} />
-                                    View all releases on GitHub
+                                    {t({
+                                        id: "updates.whats_new.view_all",
+                                        message: "View all releases on GitHub",
+                                    })}
                                 </button>
                             </div>
                         )}

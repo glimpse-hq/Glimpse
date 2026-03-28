@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
@@ -67,6 +68,7 @@ const LibraryModal = ({
     onExport: (format: ExportFormat, outputPath: string) => Promise<void>;
     availableTags: string[];
 }) => {
+    const { t } = useLingui();
     const [nameDraft, setNameDraft] = useState(item.name);
     const [isEditingName, setIsEditingName] = useState(false);
     const [transcriptDraft, setTranscriptDraft] = useState(item.transcript ?? "");
@@ -113,9 +115,18 @@ const LibraryModal = ({
     const importStatusText =
         item.status.type === "importing"
             ? (shouldShowImportProgress(item.status.progress)
-                ? `Converting audio... ${Math.round(clampProgress(item.status.progress) * 100)}%`
-                : "Converting audio...")
-            : "Queued for transcription...";
+                ? t({
+                    id: "library.modal.import_status.converting_progress",
+                    message: `Converting audio... ${Math.round(clampProgress(item.status.progress) * 100)}%`,
+                })
+                : t({
+                    id: "library.modal.import_status.converting",
+                    message: "Converting audio...",
+                }))
+            : t({
+                id: "library.modal.import_status.queued",
+                message: "Queued for transcription...",
+            });
 
     const audioUrl = useMemo(() => convertFileSrc(item.audio_path), [item.audio_path]);
 
@@ -200,12 +211,18 @@ const LibraryModal = ({
             },
             onloaderror: (_id: number | string, err: unknown) => {
                 console.error("Audio load error:", err);
-                setAudioError("Audio unavailable");
+                setAudioError(t({
+                    id: "library.modal.audio_unavailable",
+                    message: "Audio unavailable",
+                }));
                 setAudioReady(false);
             },
             onplayerror: (_id: number | string, err: unknown) => {
                 console.error("Audio play error:", err);
-                setAudioError("Audio unavailable");
+                setAudioError(t({
+                    id: "library.modal.audio_unavailable",
+                    message: "Audio unavailable",
+                }));
                 setAudioReady(false);
                 updateIsPlaying(false);
                 stopSeekLoop();
@@ -352,7 +369,10 @@ const LibraryModal = ({
             const safeName = sanitizeFileName(item.name || "transcript") || "transcript";
             const suggested = `${safeName}.${ext}`;
             const outputPath = await save({
-                title: "Export transcription",
+                title: t({
+                    id: "library.modal.export.title",
+                    message: "Export transcription",
+                }),
                 defaultPath: suggested,
                 filters: [{ name: ext.toUpperCase(), extensions: [ext] }],
             });
@@ -365,13 +385,25 @@ const LibraryModal = ({
             const message = err instanceof Error ? err.message : String(err);
             console.error("Export failed:", message);
             const lower = message.toLowerCase();
-            let toastMessage = message || "Export failed. Try again.";
+            let toastMessage = message || t({
+                id: "library.modal.export.failed",
+                message: "Export failed. Try again.",
+            });
             if (lower.includes("no timestamp segments")) {
-                toastMessage = "This item doesn't have timestamps. Retranscribe with timestamps to export subtitles.";
+                toastMessage = t({
+                    id: "library.modal.export.no_timestamps",
+                    message: "This item doesn't have timestamps. Retranscribe with timestamps to export subtitles.",
+                });
             } else if (lower.includes("failed to write export file")) {
-                toastMessage = "Couldn't write the export file. Try a different location.";
+                toastMessage = t({
+                    id: "library.modal.export.write_failed",
+                    message: "Couldn't write the export file. Try a different location.",
+                });
             } else if (lower.includes("library item not found")) {
-                toastMessage = "Couldn't find this library item. Try reopening it.";
+                toastMessage = t({
+                    id: "library.modal.export.item_not_found",
+                    message: "Couldn't find this library item. Try reopening it.",
+                });
             }
             invoke("debug_show_toast", {
                 toastType: "error",
@@ -444,7 +476,10 @@ const LibraryModal = ({
                 sound.play();
             } catch (err) {
                 console.error("Failed to resume audio:", err);
-                setAudioError("Audio unavailable");
+                setAudioError(t({
+                    id: "library.modal.audio_unavailable",
+                    message: "Audio unavailable",
+                }));
             }
         }
         scrubWasPlayingRef.current = false;
@@ -461,7 +496,10 @@ const LibraryModal = ({
                 sound.play();
             } catch (err) {
                 console.error("Failed to play audio:", err);
-                setAudioError("Audio unavailable");
+                setAudioError(t({
+                    id: "library.modal.audio_unavailable",
+                    message: "Audio unavailable",
+                }));
             }
         }
     };
@@ -733,7 +771,12 @@ const LibraryModal = ({
                 <nav className="flex-1 px-2 py-2 space-y-3 overflow-y-auto custom-scrollbar scrollbar-gutter">
                     {/* Audio player */}
                     <div className="px-2">
-                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled mb-1.5">Audio</p>
+                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled mb-1.5">
+                            {t({
+                                id: "library.modal.audio",
+                                message: "Audio",
+                            })}
+                        </p>
                         <div className="rounded-lg border border-border-primary bg-surface-surface px-2.5 py-2.5">
                             <div className="flex items-center justify-between">
                                 <button
@@ -744,7 +787,15 @@ const LibraryModal = ({
                                             ? "border-border-primary/60 text-content-disabled"
                                             : "border-border-primary hover:border-border-secondary"
                                     }`}
-                                    aria-label={isPlaying ? "Pause audio" : "Play audio"}
+                                    aria-label={isPlaying
+                                        ? t({
+                                            id: "library.modal.pause_audio",
+                                            message: "Pause audio",
+                                        })
+                                        : t({
+                                            id: "library.modal.play_audio",
+                                            message: "Play audio",
+                                        })}
                                 >
                                     {isPlaying ? <Pause size={12} /> : <Play size={12} />}
                                 </button>
@@ -757,7 +808,10 @@ const LibraryModal = ({
                                             type="button"
                                             onClick={() => handlePlaybackRateStep(-1)}
                                             disabled={!audioReady || !!audioError || !canDecreasePlaybackRate}
-                                            aria-label="Decrease playback speed"
+                                            aria-label={t({
+                                                id: "library.modal.playback.decrease",
+                                                message: "Decrease playback speed",
+                                            })}
                                             className={`flex h-3 w-3 items-center justify-center rounded-sm transition-colors ${
                                                 !audioReady || audioError || !canDecreasePlaybackRate
                                                     ? "text-content-disabled"
@@ -782,7 +836,10 @@ const LibraryModal = ({
                                             type="button"
                                             onClick={() => handlePlaybackRateStep(1)}
                                             disabled={!audioReady || !!audioError || !canIncreasePlaybackRate}
-                                            aria-label="Increase playback speed"
+                                            aria-label={t({
+                                                id: "library.modal.playback.increase",
+                                                message: "Increase playback speed",
+                                            })}
                                             className={`flex h-3 w-3 items-center justify-center rounded-sm transition-colors ${
                                                 !audioReady || audioError || !canIncreasePlaybackRate
                                                     ? "text-content-disabled"
@@ -811,7 +868,10 @@ const LibraryModal = ({
                                     style={{
                                         background: `linear-gradient(to right, var(--color-cloud) 0%, var(--color-cloud) ${scrubberPercent}%, var(--color-border-secondary) ${scrubberPercent}%, var(--color-border-secondary) 100%)`,
                                     }}
-                                    aria-label="Audio scrubber"
+                                    aria-label={t({
+                                        id: "library.modal.audio_scrubber",
+                                        message: "Audio scrubber",
+                                    })}
                                 />
                             </div>
                         </div>
@@ -819,12 +879,35 @@ const LibraryModal = ({
 
                     {/* Settings section */}
                     <div className="px-2 space-y-2">
-                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">Settings</p>
+                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">
+                            {t({
+                                id: "library.modal.settings",
+                                message: "Settings",
+                            })}
+                        </p>
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="ui-text-label text-content-primary">Timestamps</div>
+                                <div className="ui-text-label text-content-primary">
+                                    {t({
+                                        id: "library.modal.timestamps",
+                                        message: "Timestamps",
+                                    })}
+                                </div>
                                 <div className="ui-text-micro text-content-disabled">
-                                    {isTranscribed ? (canShowTimestamps ? "Supported" : "Not supported") : "Available after transcription"}
+                                    {isTranscribed
+                                        ? (canShowTimestamps
+                                            ? t({
+                                                id: "library.modal.timestamps.supported",
+                                                message: "Supported",
+                                            })
+                                            : t({
+                                                id: "library.modal.timestamps.unsupported",
+                                                message: "Not supported",
+                                            }))
+                                        : t({
+                                            id: "library.modal.timestamps.available_later",
+                                            message: "Available after transcription",
+                                        })}
                                 </div>
                             </div>
                             <button
@@ -851,12 +934,17 @@ const LibraryModal = ({
                             </button>
                         </div>
                         <div className="flex items-center justify-between pl-3">
-                            <div>
-                                <div className="flex items-center gap-1.5 ui-text-meta text-content-secondary">
-                                    <CornerDownRight size={10} className="text-content-disabled" aria-hidden="true" />
-                                    <span>Follow timestamp</span>
+                                <div>
+                                    <div className="flex items-center gap-1.5 ui-text-meta text-content-secondary">
+                                        <CornerDownRight size={10} className="text-content-disabled" aria-hidden="true" />
+                                        <span>
+                                            {t({
+                                                id: "library.modal.follow_timestamp",
+                                                message: "Follow timestamp",
+                                            })}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
                             <button
                                 onClick={() => {
                                     if (!showSegmentView) return;
@@ -881,9 +969,21 @@ const LibraryModal = ({
 
                     {/* Tags section */}
                     <div className="px-2 space-y-1.5">
-                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">Tags</p>
+                        <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">
+                            {t({
+                                id: "library.modal.tags",
+                                message: "Tags",
+                            })}
+                        </p>
                         <div className="flex flex-wrap gap-2 max-h-20 overflow-auto custom-scrollbar scrollbar-gutter pr-3">
-                            {item.tags.length === 0 && <span className="ui-text-meta text-content-disabled italic">None</span>}
+                            {item.tags.length === 0 && (
+                                <span className="ui-text-meta text-content-disabled italic">
+                                    {t({
+                                        id: "library.modal.tags.none",
+                                        message: "None",
+                                    })}
+                                </span>
+                            )}
                             {item.tags.map((tag, idx) => (
                                 <span
                                     key={`${tag}-${idx}`}
@@ -903,7 +1003,10 @@ const LibraryModal = ({
                                             handleRemoveTag(tag);
                                         }}
                                         className="ml-1 text-content-disabled ui-hover-error-soft transition-colors cursor-pointer shrink-0"
-                                        aria-label={`Remove ${tag}`}
+                                        aria-label={t({
+                                            id: "library.modal.tags.remove",
+                                            message: `Remove ${tag}`,
+                                        })}
                                     >
                                         <X size={10} />
                                     </button>
@@ -917,8 +1020,14 @@ const LibraryModal = ({
                                     onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => setTagMenuOpen((prev) => !prev)}
                                     className="flex items-center justify-center w-6 h-6 rounded-sm text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors"
-                                    aria-label="Select existing tag"
-                                    title="Select existing tag"
+                                    aria-label={t({
+                                        id: "library.modal.tags.select_existing",
+                                        message: "Select existing tag",
+                                    })}
+                                    title={t({
+                                        id: "library.modal.tags.select_existing",
+                                        message: "Select existing tag",
+                                    })}
                                 >
                                 <ChevronDown
                                     size={12}
@@ -952,7 +1061,15 @@ const LibraryModal = ({
                                                     ))
                                                 ) : (
                                                     <div className="px-2.5 py-2 ui-text-micro text-content-muted">
-                                                        {availableTags.length === 0 ? "No tags yet" : "No other tags"}
+                                                        {availableTags.length === 0
+                                                            ? t({
+                                                                id: "library.modal.tags.no_tags_yet",
+                                                                message: "No tags yet",
+                                                            })
+                                                            : t({
+                                                                id: "library.modal.tags.no_other_tags",
+                                                                message: "No other tags",
+                                                            })}
                                                     </div>
                                                 )}
                                             </div>
@@ -969,7 +1086,10 @@ const LibraryModal = ({
                                         handleAddTag();
                                     }
                                 }}
-                                placeholder="New tag..."
+                                placeholder={t({
+                                    id: "library.modal.tags.new_tag",
+                                    message: "New tag...",
+                                })}
                                 className="flex-1 min-w-0 h-6 bg-transparent border-b border-border-primary px-0.5 py-0 ui-text-meta text-content-secondary outline-hidden focus:border-border-hover placeholder:text-content-disabled"
                             />
                         </div>
@@ -983,13 +1103,19 @@ const LibraryModal = ({
                         || item.status.type === "pending"
                         || item.status.type === "importing") && (
                         <button onClick={onCancel} className="w-full rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 ui-text-meta text-content-primary hover:border-border-secondary">
-                            Cancel
+                            {t({
+                                id: "library.modal.cancel",
+                                message: "Cancel",
+                            })}
                         </button>
                     )}
                     {item.status.type === "error" && (
                         <button onClick={onRetry} className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 ui-text-meta text-content-primary hover:border-border-secondary">
                             <RotateCw size={10} />
-                            Retry
+                            {t({
+                                id: "library.modal.retry",
+                                message: "Retry",
+                            })}
                         </button>
                     )}
                     <button
@@ -997,7 +1123,10 @@ const LibraryModal = ({
                         className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-2 py-1.5 ui-text-meta ui-color-error-soft hover:bg-red-500/10"
                     >
                         <Trash2 size={10} />
-                        Delete
+                        {t({
+                            id: "library.modal.delete",
+                            message: "Delete",
+                        })}
                     </button>
                 </div>
             </aside>
@@ -1015,7 +1144,10 @@ const LibraryModal = ({
                         className="flex items-center gap-1.5 rounded-md px-2.5 py-1 ui-text-meta text-content-secondary hover:text-content-primary hover:bg-surface-surface disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         <RotateCw size={11} />
-                        Retranscribe
+                        {t({
+                            id: "library.modal.retranscribe",
+                            message: "Retranscribe",
+                        })}
                     </button>
                     <div className="flex-1 flex justify-center">
                         <div className="relative w-full max-w-[240px]">
@@ -1035,15 +1167,24 @@ const LibraryModal = ({
                                             handleSearchChange("");
                                         }
                                     }}
-                                    placeholder="Search transcript..."
-                                    aria-label="Search transcript"
+                                    placeholder={t({
+                                        id: "library.modal.search.placeholder",
+                                        message: "Search transcript...",
+                                    })}
+                                    aria-label={t({
+                                        id: "library.modal.search.aria",
+                                        message: "Search transcript",
+                                    })}
                                     className="bg-transparent ui-text-label text-content-secondary placeholder-content-disabled outline-hidden w-full"
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
                                     {searchQuery && (
                                         <button
                                             onClick={() => handleSearchChange("")}
-                                            aria-label="Clear search"
+                                            aria-label={t({
+                                                id: "library.modal.search.clear",
+                                                message: "Clear search",
+                                            })}
                                             className="text-content-disabled hover:text-content-muted transition-colors"
                                         >
                                             <X size={12} aria-hidden="true" />
@@ -1064,7 +1205,15 @@ const LibraryModal = ({
                             }`}
                         >
                             {copyConfirmed ? <Check size={10} /> : <Copy size={10} />}
-                            {copyConfirmed ? "Copied" : "Copy"}
+                            {copyConfirmed
+                                ? t({
+                                    id: "library.modal.copy.copied",
+                                    message: "Copied",
+                                })
+                                : t({
+                                    id: "library.modal.copy",
+                                    message: "Copy",
+                                })}
                         </button>
                         <div className="relative">
                             <button
@@ -1072,7 +1221,10 @@ const LibraryModal = ({
                                 disabled={isExporting || !transcriptAvailable}
                                 className="flex items-center gap-1.5 rounded-md px-2.5 py-1 ui-text-meta text-content-secondary hover:text-content-primary hover:bg-surface-surface disabled:opacity-50"
                             >
-                                Export
+                                {t({
+                                    id: "library.modal.export",
+                                    message: "Export",
+                                })}
                                 <ChevronDown size={10} />
                             </button>
                             <AnimatePresence>
@@ -1105,7 +1257,10 @@ const LibraryModal = ({
                         <button
                             onClick={onClose}
                             className="flex items-center justify-center rounded-md p-1.5 text-content-muted hover:text-content-primary hover:bg-surface-surface"
-                            aria-label="Close"
+                            aria-label={t({
+                                id: "library.modal.close",
+                                message: "Close",
+                            })}
                         >
                             <X size={12} />
                         </button>
@@ -1127,7 +1282,12 @@ const LibraryModal = ({
                                     <div className="max-w-[240px] rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-center">
                                         <div className="flex items-center justify-center gap-2 ui-color-error-tint">
                                             <AlertTriangle size={14} />
-                                            <span className="ui-text-label font-medium">Import failed</span>
+                                            <span className="ui-text-label font-medium">
+                                                {t({
+                                                    id: "library.modal.import_failed",
+                                                    message: "Import failed",
+                                                })}
+                                            </span>
                                         </div>
                                         <p className="mt-2 ui-text-meta leading-[14px] ui-color-error-tint select-text cursor-text">
                                             {details.message}
@@ -1138,7 +1298,10 @@ const LibraryModal = ({
                                                 onClick={() => invoke("open_ffmpeg_install").catch(() => {})}
                                                 className="mt-2 ui-text-meta ui-color-error-faint underline decoration-red-400/60 ui-hover-error-50"
                                             >
-                                                FFmpeg Help
+                                                {t({
+                                                    id: "library.modal.ffmpeg_help",
+                                                    message: "FFmpeg Help",
+                                                })}
                                             </button>
                                         )}
                                     </div>
@@ -1201,7 +1364,10 @@ const LibraryModal = ({
                                 streamChunks.length === 0 ? (
                                     item.status.type === "transcribing" ? (
                                         <div className="text-content-disabled ui-text-body-sm">
-                                            Transcribing...
+                                            {t({
+                                                id: "library.modal.transcribing",
+                                                message: "Transcribing...",
+                                            })}
                                         </div>
                                     ) : null
                                 ) : (
@@ -1238,7 +1404,10 @@ const LibraryModal = ({
                                     disabled={!transcriptAvailable}
                                     placeholder={item.status.type === "importing" || item.status.type === "pending"
                                         ? ""
-                                        : "Transcript will appear here."}
+                                        : t({
+                                            id: "library.modal.transcript_placeholder",
+                                            message: "Transcript will appear here.",
+                                        })}
                                     className="h-full w-full resize-none bg-transparent ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 custom-scrollbar select-text pr-4 pt-3 pb-3"
                                 />
                             )}
@@ -1274,8 +1443,18 @@ const LibraryModal = ({
                             <div className="flex items-center gap-3 mb-3">
                                 <AlertTriangle size={20} className="ui-color-warning-strong shrink-0" />
                                 <div>
-                                    <p className="ui-text-body-lg font-semibold text-content-primary">Delete this item?</p>
-                                    <p className="ui-text-label text-content-disabled">This removes the transcript and audio from your library.</p>
+                                    <p className="ui-text-body-lg font-semibold text-content-primary">
+                                        {t({
+                                            id: "library.modal.delete_confirm.title",
+                                            message: "Delete this item?",
+                                        })}
+                                    </p>
+                                    <p className="ui-text-label text-content-disabled">
+                                        {t({
+                                            id: "library.modal.delete_confirm.description",
+                                            message: "This removes the transcript and audio from your library.",
+                                        })}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex justify-end gap-2">
@@ -1283,7 +1462,10 @@ const LibraryModal = ({
                                     onClick={() => setShowDeleteConfirm(false)}
                                     className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary hover:border-border-hover transition-colors"
                                 >
-                                    Cancel
+                                    {t({
+                                        id: "library.modal.cancel",
+                                        message: "Cancel",
+                                    })}
                                 </button>
                                 <button
                                     onClick={() => {
@@ -1292,7 +1474,10 @@ const LibraryModal = ({
                                     }}
                                     className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid hover:bg-red-500 transition-colors"
                                 >
-                                    Delete
+                                    {t({
+                                        id: "library.modal.delete",
+                                        message: "Delete",
+                                    })}
                                 </button>
                             </div>
                         </motion.div>

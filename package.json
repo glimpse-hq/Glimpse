@@ -7,11 +7,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lingui:extract": "lingui extract",
+    "lingui:compile": "lingui compile",
     "preview": "vite preview",
     "tauri": "tauri",
     "lint": "eslint src/"
   },
   "dependencies": {
+    "@lingui/core": "^5.9.4",
+    "@lingui/macro": "^5.9.4",
+    "@lingui/react": "^5.9.4",
     "@tanstack/react-query": "^5.95.2",
     "@tauri-apps/api": "2.10.1",
     "@tauri-apps/plugin-deep-link": "^2.4.7",
@@ -34,7 +39,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
     "@eslint/js": "^10.0.1",
+    "@lingui/babel-plugin-lingui-macro": "^5.9.4",
+    "@lingui/cli": "^5.9.4",
+    "@lingui/vite-plugin": "^5.9.4",
+    "@rolldown/plugin-babel": "^0.2.2",
     "@tailwindcss/vite": "^4.2.2",
     "@tauri-apps/cli": "^2.10.1",
     "@types/react": "^19.2.14",

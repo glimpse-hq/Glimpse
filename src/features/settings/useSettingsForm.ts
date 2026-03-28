@@ -1,3 +1,4 @@
+import { msg } from "@lingui/core/macro";
 import {
   useState,
   useEffect,
@@ -23,6 +24,7 @@ import {
   type TranscriptionEngineId,
 } from "../../shared/lib/transcriptionLanguages";
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
+import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
 import { useModelCatalog } from "./models-queries";
 import type {
@@ -33,6 +35,7 @@ import type {
   DownloadEvent,
   LlmProvider,
   RecordingPrunePolicy,
+  AppLocaleSetting,
 } from "../../types";
 
 
@@ -73,6 +76,7 @@ export function useSettingsForm({
   const [localModel, setLocalModel] = useState("");
   const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
   const [language, setLanguage] = useState("en");
+  const [appLocale, setAppLocale] = useState<AppLocaleSetting>("system");
   const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>(
     {},
   );
@@ -185,6 +189,7 @@ export function useSettingsForm({
     setLocalModel(s.local_model);
     setMicrophoneDevice(s.microphone_device);
     setLanguage(s.language);
+    setAppLocale(s.app_locale ?? "system");
 
     setLlmEnabledRaw(s.llm_enabled ?? false);
     setCleanupEnabled(s.cleanup_enabled ?? false);
@@ -279,7 +284,13 @@ export function useSettingsForm({
     },
     onInvalidShortcut: () => {
       setError(
-        "Shortcut must include a non-modifier key (for example, Control+Space).",
+        i18n._(
+          msg({
+            id: "settings.shortcuts.invalid_non_modifier",
+            message:
+              "Shortcut must include a non-modifier key (for example, Control+Space).",
+          }),
+        ),
       );
     },
     onCaptureInput: () => setError(null),
@@ -536,6 +547,7 @@ export function useSettingsForm({
             localModel,
             microphoneDevice,
             language,
+            appLocale,
 
             llmEnabled: aiFeaturesReady,
             cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
@@ -572,6 +584,7 @@ export function useSettingsForm({
     localModel,
     microphoneDevice,
     language,
+    appLocale,
 
     llmEnabled,
     cleanupEnabled,
@@ -783,6 +796,8 @@ export function useSettingsForm({
     setMicrophoneDevice,
     language: displayedLanguage,
     setLanguage,
+    appLocale,
+    setAppLocale,
     languages: displayedLanguageOptions,
     languageBadgeColumns: languageView.badgeColumns,
     showLanguageSupportBadges,

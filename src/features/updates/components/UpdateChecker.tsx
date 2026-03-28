@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro"
 import { useState, useEffect, useCallback } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { getVersion } from "@tauri-apps/api/app"
@@ -41,6 +42,7 @@ const formatError = (err: unknown): string => {
 export function UpdateChecker({
     autoCheck = true,
 }: UpdateCheckerProps) {
+    const { t } = useLingui()
     const queryClient = useQueryClient()
     const { data: updateStatus } = useUpdateStatus()
     const [checking, setChecking] = useState(false)
@@ -76,7 +78,7 @@ export function UpdateChecker({
         setError(null)
         setDownloadError(null)
         try {
-            await invoke("check_for_updates")
+                    await invoke("check_for_updates")
             await queryClient.invalidateQueries({ queryKey: updateKeys.status() })
         } catch (err) {
             console.error("Update check failed:", err)
@@ -171,15 +173,28 @@ export function UpdateChecker({
             >
                 <CheckCircle size={16} className="ui-color-success-strong shrink-0" />
                 <div className="flex-1 min-w-0">
-                    <p className="ui-text-body-sm-strong ui-color-success-strong">Update installed</p>
-                    <p className="ui-text-meta ui-color-success-subtle">Restart to apply</p>
+                    <p className="ui-text-body-sm-strong ui-color-success-strong">
+                        {t({
+                            id: "updates.installed",
+                            message: "Update installed",
+                        })}
+                    </p>
+                    <p className="ui-text-meta ui-color-success-subtle">
+                        {t({
+                            id: "updates.restart_to_apply",
+                            message: "Restart to apply",
+                        })}
+                    </p>
                 </div>
                 <motion.button
                     onClick={handleRelaunch}
                     className="rounded-lg bg-green-500 px-2.5 py-1.5 ui-text-button ui-color-on-solid hover:bg-green-400 transition-colors shrink-0"
                     whileTap={{ scale: 0.97 }}
                 >
-                    Restart
+                    {t({
+                        id: "updates.restart",
+                        message: "Restart",
+                    })}
                 </motion.button>
             </motion.div>
         )
@@ -194,11 +209,21 @@ export function UpdateChecker({
             >
                 <Download size={16} className="ui-color-warning-strong shrink-0" />
                 <div className="flex-1 min-w-0">
-                    <p className="ui-text-body-sm-strong ui-color-warning-strong truncate">v{availableVersion} available</p>
+                    <p className="ui-text-body-sm-strong ui-color-warning-strong truncate">
+                        {t({
+                            id: "updates.available_version",
+                            message: `v${availableVersion} available`,
+                        })}
+                    </p>
                     {downloadError ? (
                         <p className="ui-text-meta ui-color-error-subtle truncate" title={downloadError}>{downloadError}</p>
                     ) : (
-                        <p className="ui-text-meta ui-color-warning-subtle">Ready to install</p>
+                        <p className="ui-text-meta ui-color-warning-subtle">
+                            {t({
+                                id: "updates.ready_to_install",
+                                message: "Ready to install",
+                            })}
+                        </p>
                     )}
                 </div>
                 <AnimatePresence mode="wait">
@@ -234,7 +259,10 @@ export function UpdateChecker({
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                         >
-                            Update
+                            {t({
+                                id: "updates.update",
+                                message: "Update",
+                            })}
                         </motion.button>
                     )}
                 </AnimatePresence>
@@ -247,7 +275,12 @@ export function UpdateChecker({
             <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 h-[52px]">
                 <AlertCircle size={16} className="ui-color-error-strong shrink-0" />
                 <div className="flex-1 min-w-0">
-                    <p className="ui-text-body-sm-strong ui-color-error-strong">Update check failed</p>
+                    <p className="ui-text-body-sm-strong ui-color-error-strong">
+                        {t({
+                            id: "updates.check_failed",
+                            message: "Update check failed",
+                        })}
+                    </p>
                     <p className="ui-text-meta ui-color-error-subtle truncate" title={error}>{error}</p>
                 </div>
                 <motion.button
@@ -257,7 +290,10 @@ export function UpdateChecker({
                     whileTap={{ scale: 0.97 }}
                 >
                     <RefreshCw size={12} />
-                    Retry
+                    {t({
+                        id: "updates.retry",
+                        message: "Retry",
+                    })}
                 </motion.button>
             </div>
         )
@@ -269,19 +305,32 @@ export function UpdateChecker({
                 {checking ? (
                     <>
                         <Loader2 size={16} className="text-content-muted animate-spin shrink-0" />
-                        <p className="flex-1 ui-text-body-sm ui-color-muted">Checking for updates...</p>
+                        <p className="flex-1 ui-text-body-sm ui-color-muted">
+                            {t({
+                                id: "updates.checking",
+                                message: "Checking for updates...",
+                            })}
+                        </p>
                     </>
                 ) : (
                     <>
                         <CheckCircle size={16} className="text-content-disabled shrink-0" />
-                        <p className="flex-1 ui-text-body-sm ui-color-primary">You&apos;re up to date</p>
+                        <p className="flex-1 ui-text-body-sm ui-color-primary">
+                            {t({
+                                id: "updates.up_to_date",
+                                message: "You're up to date",
+                            })}
+                        </p>
                     </>
                 )}
                 <button
                     onClick={() => setWhatsNewOpen(true)}
                     className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors shrink-0"
                 >
-                    What&apos;s new?
+                    {t({
+                        id: "updates.whats_new",
+                        message: "What's new?",
+                    })}
                 </button>
                 <motion.button
                     onClick={() => checkForUpdates()}
@@ -289,8 +338,14 @@ export function UpdateChecker({
                     disabled={checking}
                     className="p-1.5 rounded-md text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                     whileTap={{ scale: 0.95 }}
-                    title="Check for updates"
-                    aria-label="Check for updates"
+                    title={t({
+                        id: "updates.check_title",
+                        message: "Check for updates",
+                    })}
+                    aria-label={t({
+                        id: "updates.check_aria",
+                        message: "Check for updates",
+                    })}
                 >
                     <RefreshCw size={14} />
                 </motion.button>
