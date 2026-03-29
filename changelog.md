@@ -1,3 +1,9 @@
+0.8.0
+
+### Changes
+- Edit mode is now signifcantly more consistant in working.
+- Further refined UI elements
+---
 0.7.5
 
 ### Changes
