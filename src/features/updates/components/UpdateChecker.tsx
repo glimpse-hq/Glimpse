@@ -212,7 +212,7 @@ export function UpdateChecker({
                     <p className="ui-text-body-sm-strong ui-color-warning-strong truncate">
                         {t({
                             id: "updates.available_version",
-                            message: `v${availableVersion} available`,
+                            message: `v${{ version: availableVersion }} available`,
                         })}
                     </p>
                     {downloadError ? (
