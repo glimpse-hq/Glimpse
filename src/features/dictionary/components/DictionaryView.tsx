@@ -2,77 +2,15 @@ import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ArrowRight, BookOpen, Edit3, Loader2, Plus, Replace, Trash2 } from "lucide-react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { hasModelCapability, MODEL_CAPABILITY_DICTIONARY } from "../../../shared/lib/modelCapabilities";
 import type { StoredSettings, ModelInfo, Replacement } from "../../../types";
 
-type ActivePage = "dictionary" | "replacements";
-
 const normalizeEntry = (value: string) => value.trim();
-
-const PageSwitcher = ({
-    activePage,
-    onPageChange,
-}: {
-    activePage: ActivePage;
-    onPageChange: (page: ActivePage) => void;
-}) => {
-    const { t } = useLingui();
-    const pages: { key: ActivePage; label: string }[] = [
-        {
-            key: "dictionary",
-            label: t({
-                id: "dictionary.page.dictionary",
-                message: "Dictionary",
-            }),
-        },
-        {
-            key: "replacements",
-            label: t({
-                id: "dictionary.page.replacements",
-                message: "Replacements",
-            }),
-        },
-    ];
-
-    return (
-        <div className="flex items-center justify-center gap-2 mb-6 -mt-12">
-            {pages.map((page) => (
-                <button
-                    key={page.key}
-                    onClick={() => onPageChange(page.key)}
-                    className="flex items-center gap-2 group"
-                >
-                    <motion.div
-                        className="h-2 rounded-full bg-cloud"
-                        animate={{
-                            width: activePage === page.key ? 24 : 8,
-                            opacity: activePage === page.key ? 1 : 0.35,
-                            boxShadow:
-                                activePage === page.key
-                                    ? "var(--ui-shadow-cloud-switcher-active)"
-                                    : "var(--ui-shadow-cloud-switcher-inactive)",
-                        }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                    />
-                    <span
-                        className={`ui-text-body-sm-strong transition-colors duration-200 ${
-                            activePage === page.key ? "ui-color-primary" : "ui-color-muted"
-                        }`}
-                    >
-                        {page.label}
-                    </span>
-                </button>
-            ))}
-        </div>
-    );
-};
 
 const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     const { t } = useLingui();
-    const [activePage, setActivePage] = useState<ActivePage>("dictionary");
 
     const [entries, setEntries] = useState<string[]>([]);
     const [newEntry, setNewEntry] = useState("");
@@ -253,58 +191,51 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     const showWarning = Boolean(isLocal && currentModel && !supportsDictionary);
 
     return (
-        <div className="w-full text-left">
-            <PageSwitcher activePage={activePage} onPageChange={setActivePage} />
+        <div className="w-full text-left max-w-7xl mx-auto pl-2 pr-6">
+            <div className="flex items-start gap-3 mb-6 mt-2 md:-mt-6">
+                <DotMatrix
+                    rows={2}
+                    cols={3}
+                    activeDots={[0, 1, 2, 3]}
+                    dotSize={3}
+                    gap={3}
+                    color="var(--color-cloud)"
+                />
+                <div className="flex-1">
+                    <p className="ui-text-screen-title ui-color-primary tracking-tight">
+                        {t({
+                            id: "dictionary.combined.title",
+                            message: "Dictionary & Replacements",
+                        })}
+                    </p>
+                    <p className="mt-1 ui-text-body-sm ui-color-secondary">
+                        {t({
+                            id: "dictionary.combined.description",
+                            message: "Add custom words the system should recognize, and set automatic word replacements.",
+                        })}
+                    </p>
+                </div>
+            </div>
 
-            <AnimatePresence mode="wait" initial={false}>
-                {activePage === "dictionary" && (
-                    <motion.div
-                        key="dictionary"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                    >
-                        <div className="flex items-start gap-3 mb-4">
-                            <DotMatrix
-                                rows={2}
-                                cols={3}
-                                activeDots={[0, 1, 2, 3]}
-                                dotSize={3}
-                                gap={3}
-                                color="var(--color-cloud)"
-                            />
-                            <div className="flex-1">
-                                <p className="ui-text-screen-title ui-color-primary tracking-tight">
-                                    {t({
-                                        id: "dictionary.word_dictionary.title",
-                                        message: "Word Dictionary",
-                                    })}
-                                </p>
-                                <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                                    {t({
-                                        id: "dictionary.word_dictionary.description",
-                                        message: "Add custom words or phrases that arent in the default dictionary.",
-                                    })}
-                                </p>
-                            </div>
-                        </div>
+            {showWarning && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100">
+                    <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                    <div className="ui-text-body leading-relaxed">
+                        {t({
+                            id: "dictionary.warning",
+                            message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
+                        })}
+                    </div>
+                </div>
+            )}
 
-                        {showWarning && (
-                            <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100">
-                                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-                                <div className="ui-text-body leading-relaxed">
-                                    {t({
-                                        id: "dictionary.warning",
-                                        message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="rounded-xl border border-border-primary bg-surface-secondary">
-                            <div className="flex items-center gap-2 border-b border-border-primary px-4 py-3">
-                                <BookOpen size={16} className="text-content-primary" />
+            <div className="grid grid-cols-5 gap-8 md:gap-12 w-full">
+                
+                {/* Dictionary Column */}
+                <div className="flex flex-col min-w-0 col-span-2">
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2 border-b border-[var(--color-border-secondary)] pb-3">
+                                <BookOpen size={16} className="text-content-muted" />
                                 <input
                                     value={newEntry}
                                     onChange={(e) => setNewEntry(e.target.value)}
@@ -335,7 +266,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 <button
                                     onClick={handleAdd}
                                     disabled={!newEntry.trim() || saving || entries.includes(newEntry.trim())}
-                                    className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 ui-text-body ui-color-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors"
+                                    className="flex items-center gap-1 rounded-md px-3 py-1.5 ui-text-body ui-color-primary bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] disabled:opacity-40 transition-colors"
                                     aria-label={t({
                                         id: "dictionary.add_entry_aria",
                                         message: "Add entry",
@@ -349,7 +280,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 </button>
                             </div>
 
-                            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                            <div className="max-h-[calc(100vh-220px)] overflow-y-scroll overflow-x-hidden custom-scrollbar flex flex-col gap-0.5 mt-2">
                                 {loading ? (
                                     <div className="flex items-center justify-center py-10">
                                         <DotMatrix
@@ -364,7 +295,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                         />
                                     </div>
                                 ) : filteredEntries.length === 0 ? (
-                                    <div className="flex flex-col items-start gap-2 px-4 py-6 text-content-muted">
+                                    <div className="flex flex-col items-start gap-2 py-6 text-content-muted">
                                         {isSearching ? (
                                             <>
                                                 <p className="ui-text-body-lg-strong">
@@ -404,13 +335,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                             return (
                                                     <div
                                                         key={`${entry}-${originalIndex}-${filteredIndex}`}
-                                                        className="group flex items-center gap-3 border-b border-border-primary px-4 py-2 last:border-none min-h-[64px]"
+                                                        className="group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-[var(--color-bg-hover)] transition-colors min-h-[32px]"
                                                     >
                                                     {editingIndex === originalIndex ? (
                                                         <input
                                                             value={editingValue}
                                                             onChange={(e) => setEditingValue(e.target.value)}
                                                             autoFocus
+                                                            onFocus={(e) => e.target.select()}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter") {
                                                                     e.preventDefault();
@@ -422,22 +354,22 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                                 }
                                                             }}
                                                             onBlur={() => handleEditCommit()}
-                                                            className="flex-1 min-w-0 h-[44px] rounded-md border border-border-primary bg-surface-tertiary pl-1 pr-0 -ml-px ui-text-input-lg ui-color-primary outline-hidden focus:border-border-secondary leading-[44px]"
+                                                            className="flex-1 min-w-0 bg-transparent leading-tight border-0 border-b border-[var(--color-accent)] px-0 py-0 rounded-none ui-text-body-lg ui-color-primary font-medium outline-hidden focus:ring-0"
                                                         />
                                                     ) : (
                                                         <button
                                                             onClick={() => startEditing(originalIndex)}
                                                             className="flex-1 min-w-0 text-left"
                                                         >
-                                                            <div className="flex flex-col justify-center h-[44px] pl-1">
-                                                                <p className="ui-text-body-lg ui-color-primary leading-tight">{entry}</p>
+                                                            <div className="flex flex-col">
+                                                                <p className="ui-text-body-lg ui-color-primary leading-tight font-medium truncate">{entry}</p>
                                                             </div>
                                                         </button>
                                                     )}
 
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1">
                                                         {editingIndex === originalIndex ? (
-                                                            <div className="ui-text-label ui-color-muted">
+                                                            <div className="ui-text-nano ui-color-muted pr-1">
                                                                 {t({
                                                                     id: "dictionary.press_enter_to_save",
                                                                     message: "Press Enter to save",
@@ -445,7 +377,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <div className="ui-text-label ui-color-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100" aria-hidden="true">
+                                                                <div className="ui-text-nano ui-color-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 pr-1" aria-hidden="true">
                                                                     {t({
                                                                         id: "dictionary.click_to_edit",
                                                                         message: "Click to edit",
@@ -453,7 +385,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                                 </div>
                                                                 <button
                                                                     onClick={() => startEditing(originalIndex)}
-                                                                    className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
+                                                                    className="rounded bg-transparent p-1 text-content-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-[var(--color-bg-elevated)] hover:text-content-primary"
                                                                     title={t({
                                                                         id: "dictionary.edit",
                                                                         message: "Edit",
@@ -469,7 +401,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                         )}
                                                         <button
                                                             onClick={() => handleDelete(originalIndex)}
-                                                            className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
+                                                            className="rounded bg-transparent p-1 text-content-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-error"
                                                             title={t({
                                                                 id: "dictionary.delete",
                                                                 message: "Delete",
@@ -490,7 +422,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                             </div>
 
                             {error && (
-                                <div className="border-t border-border-primary px-4 py-2 ui-text-body-sm ui-color-error-soft">
+                                <div className="border-t border-border-primary py-2 mt-2 ui-text-body-sm ui-color-error-soft">
                                     {error}
                                 </div>
                             )}
@@ -513,45 +445,13 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 })
                                 : ""}
                         </p>
-                    </motion.div>
-                )}
+                    </div>
 
-                {activePage === "replacements" && (
-                    <motion.div
-                        key="replacements"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.15 }}
-                    >
-                        <div className="flex items-start gap-3 mb-4">
-                            <DotMatrix
-                                rows={2}
-                                cols={3}
-                                activeDots={[1, 2, 4, 5]}
-                                dotSize={3}
-                                gap={3}
-                                color="var(--color-accent)"
-                            />
-                            <div className="flex-1">
-                                <p className="ui-text-screen-title ui-color-primary tracking-tight">
-                                    {t({
-                                        id: "dictionary.replacements.title",
-                                        message: "Direct Replacements",
-                                    })}
-                                </p>
-                                <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                                    {t({
-                                        id: "dictionary.replacements.description",
-                                        message: "Automatically replace words in your transcriptions.",
-                                    })}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="rounded-xl border border-border-primary bg-surface-secondary">
-                            <div className="flex items-center gap-2 border-b border-border-primary px-4 py-3">
-                                <Replace size={16} className="shrink-0" style={{ color: 'var(--color-accent)' }} />
+                    {/* Replacements Column */}
+                    <div className="flex flex-col min-w-0 col-span-3">
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2 border-b border-[var(--color-border-secondary)] pb-3">
+                                <Replace size={16} className="shrink-0 text-content-muted" />
                                 <input
                                     value={newFrom}
                                     onChange={(e) => setNewFrom(e.target.value)}
@@ -565,7 +465,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                     })}
                                     className="flex-1 min-w-0 bg-transparent ui-text-input-lg ui-color-primary placeholder-content-disabled outline-hidden h-8 leading-8"
                                 />
-                                <ArrowRight size={14} className="text-content-disabled shrink-0" aria-hidden="true" />
+                                <ArrowRight size={14} className="text-content-disabled shrink-0 mx-2" aria-hidden="true" />
                                 <input
                                     value={newTo}
                                     onChange={(e) => setNewTo(e.target.value)}
@@ -592,7 +492,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                         saving ||
                                         replacements.some((r) => r.from.toLowerCase() === newFrom.trim().toLowerCase())
                                     }
-                                    className="flex items-center gap-1 rounded-lg bg-surface-elevated px-3 py-1.5 ui-text-body ui-color-primary hover:bg-surface-elevated-hover disabled:opacity-40 transition-colors shrink-0"
+                                    className="flex items-center gap-1 rounded-md bg-[var(--color-bg-elevated)] hover:bg-[var(--color-bg-hover)] px-3 py-1.5 ui-text-body ui-color-primary disabled:opacity-40 transition-colors shrink-0"
                                     aria-label={t({
                                         id: "dictionary.replacements.add_aria",
                                         message: "Add replacement",
@@ -606,7 +506,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 </button>
                             </div>
 
-                            <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                            <div className="max-h-[calc(100vh-220px)] overflow-y-scroll overflow-x-hidden custom-scrollbar flex flex-col gap-0.5 mt-2">
                                 {loading ? (
                                     <div className="flex items-center justify-center py-10">
                                         <DotMatrix
@@ -621,7 +521,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                         />
                                     </div>
                                 ) : replacements.length === 0 ? (
-                                    <div className="flex flex-col items-start gap-2 px-4 py-6 text-content-muted">
+                                    <div className="flex flex-col items-start gap-2 py-6 text-content-muted">
                                         <p className="ui-text-body-lg-strong">
                                             {t({
                                                 id: "dictionary.replacements.none",
@@ -636,23 +536,19 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                         </p>
                                     </div>
                                 ) : (
-                                    <AnimatePresence mode="popLayout">
+                                    <>
                                         {replacements.map((replacement, idx) => (
-                                            <motion.div
+                                            <div
                                                 key={`${replacement.from}-${idx}`}
-                                                layout="position"
-                                                initial={{ opacity: 0 }}
-                                                animate={{ opacity: 1 }}
-                                                exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.18, ease: "easeOut" }}
-                                                className="group flex items-center gap-3 border-b border-border-primary px-4 py-3 last:border-none"
+                                                className="group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-[var(--color-bg-hover)] transition-colors min-h-[32px]"
                                             >
                                                 {editingReplacementIndex === idx ? (
-                                                    <div className="flex flex-1 items-center gap-2" data-replacement-edit>
+                                                    <div className="flex flex-1 items-center" data-replacement-edit>
                                                         <input
                                                             value={editingFrom}
                                                             onChange={(e) => setEditingFrom(e.target.value)}
                                                             autoFocus
+                                                            onFocus={(e) => e.target.select()}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter") {
                                                                     e.preventDefault();
@@ -670,12 +566,13 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                                     handleEditReplacementCommit();
                                                                 }
                                                             }}
-                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-hidden focus:border-border-secondary"
+                                                            className="flex-1 min-w-0 bg-transparent border-0 border-b border-[var(--color-accent)] px-0 py-0 rounded-none ui-text-body-lg ui-color-primary font-medium outline-hidden focus:ring-0"
                                                         />
-                                                        <ArrowRight size={14} className="text-content-disabled shrink-0" />
+                                                        <ArrowRight size={14} className="text-content-disabled shrink-0 mx-2" />
                                                         <input
                                                             value={editingTo}
                                                             onChange={(e) => setEditingTo(e.target.value)}
+                                                            onFocus={(e) => e.target.select()}
                                                             onKeyDown={(e) => {
                                                                 if (e.key === "Enter") {
                                                                     e.preventDefault();
@@ -693,17 +590,17 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                                     handleEditReplacementCommit();
                                                                 }
                                                             }}
-                                                            className="flex-1 min-w-0 rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1.5 ui-text-input-lg ui-color-primary outline-hidden focus:border-border-secondary"
+                                                            className="flex-1 min-w-0 bg-transparent border-0 border-b border-[var(--color-accent)] px-0 py-0 rounded-none ui-text-body-lg ui-color-primary font-medium outline-hidden focus:ring-0"
                                                         />
                                                     </div>
                                                 ) : (
                                                     <button
                                                         onClick={() => startEditingReplacement(idx)}
-                                                        className="flex flex-1 items-center gap-2 text-left"
+                                                        className="flex flex-1 items-center text-left min-w-0"
                                                     >
-                                                        <span className="ui-text-body-lg ui-color-primary">{replacement.from}</span>
-                                                        <ArrowRight size={14} className="text-content-muted shrink-0" />
-                                                        <span className="ui-text-body-lg" style={{ color: 'var(--color-accent)' }}>
+                                                        <span className="ui-text-body-lg ui-color-primary font-medium truncate">{replacement.from}</span>
+                                                        <ArrowRight size={14} className="text-content-muted shrink-0 mx-2" />
+                                                        <span className="ui-text-body-lg truncate" style={{ color: 'var(--color-accent)' }}>
                                                             {replacement.to || (
                                                                 <span className="text-content-muted italic">
                                                                     {t({
@@ -716,33 +613,41 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                     </button>
                                                 )}
 
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1">
                                                     {editingReplacementIndex === idx ? (
-                                                        <div className="ui-text-label ui-color-muted">
+                                                        <div className="ui-text-nano ui-color-muted pr-1">
                                                             {t({
                                                                 id: "dictionary.press_enter_to_save",
                                                                 message: "Press Enter to save",
                                                             })}
                                                         </div>
                                                     ) : (
-                                                    <button
-                                                        onClick={() => startEditingReplacement(idx)}
-                                                        className="rounded-md bg-surface-overlay p-1.5 text-content-secondary opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
-                                                        title={t({
-                                                            id: "dictionary.edit",
-                                                            message: "Edit",
-                                                        })}
-                                                        aria-label={t({
-                                                            id: "dictionary.replacements.edit",
-                                                            message: `Edit replacement for ${replacement.from}`,
-                                                        })}
-                                                    >
-                                                        <Edit3 size={14} aria-hidden="true" />
-                                                    </button>
+                                                    <>
+                                                        <div className="ui-text-nano ui-color-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 pr-1" aria-hidden="true">
+                                                            {t({
+                                                                id: "dictionary.click_to_edit",
+                                                                message: "Click to edit",
+                                                            })}
+                                                        </div>
+                                                        <button
+                                                            onClick={() => startEditingReplacement(idx)}
+                                                            className="rounded bg-transparent p-1 text-content-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-[var(--color-bg-elevated)] hover:text-content-primary"
+                                                            title={t({
+                                                                id: "dictionary.edit",
+                                                                message: "Edit",
+                                                            })}
+                                                            aria-label={t({
+                                                                id: "dictionary.replacements.edit",
+                                                                message: `Edit replacement for ${replacement.from}`,
+                                                            })}
+                                                        >
+                                                            <Edit3 size={14} aria-hidden="true" />
+                                                        </button>
+                                                    </>
                                                 )}
                                                 <button
                                                     onClick={() => handleDeleteReplacement(idx)}
-                                                    className="rounded-md bg-surface-overlay p-1.5 text-error opacity-0 transition-all group-hover:opacity-100 hover:bg-surface-elevated"
+                                                    className="rounded bg-transparent p-1 text-content-muted opacity-0 transition-all group-hover:opacity-100 hover:bg-red-500/10 hover:text-error"
                                                     title={t({
                                                         id: "dictionary.delete",
                                                         message: "Delete",
@@ -755,14 +660,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                                     <Trash2 size={14} aria-hidden="true" />
                                                 </button>
                                                 </div>
-                                            </motion.div>
+                                            </div>
                                         ))}
-                                    </AnimatePresence>
+                                    </>
                                 )}
                             </div>
 
                             {error && (
-                                <div className="border-t border-border-primary px-4 py-2 ui-text-body-sm ui-color-error-soft">
+                                <div className="border-t border-border-primary py-2 mt-2 ui-text-body-sm ui-color-error-soft">
                                     {error}
                                 </div>
                             )}
@@ -785,10 +690,8 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                                 })
                                 : ""}
                         </p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
+                </div>
+            </div>
         </div>
     );
 };

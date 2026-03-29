@@ -2,6 +2,7 @@
 
 ### Changes
 - Library views have had a small redesign.
+- Dictionary & Replacements have been merged into one view.
 - Edit mode is now signifcantly more consistant in working.
 - Further refined UI elements
 ---
