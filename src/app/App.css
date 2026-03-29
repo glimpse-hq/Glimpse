@@ -1339,3 +1339,8 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.mask-fade-right {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}

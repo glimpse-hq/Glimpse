@@ -275,6 +275,41 @@ const LibraryModal = ({
         setPlaybackRateValue(PLAYBACK_RATES[nextIndex]);
     }, [playbackRate, setPlaybackRateValue]);
 
+    const handleRateScrubStart = useCallback((event: React.MouseEvent<HTMLSpanElement> | React.TouchEvent<HTMLSpanElement>) => {
+        event.preventDefault();
+        const startX = "touches" in event ? event.touches[0].clientX : event.clientX;
+        const startIndex = PLAYBACK_RATES.indexOf(playbackRateRef.current);
+        const initialIndex = startIndex === -1 ? PLAYBACK_RATES.indexOf(1) : startIndex;
+
+        const handleMove = (e: MouseEvent | TouchEvent) => {
+            const currentX = "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+            const diffX = currentX - startX;
+            // Every 15px dragged horizontally equals one step in PLAYBACK_RATES
+            const steps = Math.round(diffX / 15);
+            
+            const nextIndex = Math.min(
+                PLAYBACK_RATES.length - 1,
+                Math.max(0, initialIndex + steps)
+            );
+            
+            if (PLAYBACK_RATES[nextIndex] !== playbackRateRef.current) {
+                setPlaybackRateValue(PLAYBACK_RATES[nextIndex]);
+            }
+        };
+
+        const handleEnd = () => {
+            window.removeEventListener("mousemove", handleMove);
+            window.removeEventListener("mouseup", handleEnd);
+            window.removeEventListener("touchmove", handleMove);
+            window.removeEventListener("touchend", handleEnd);
+        };
+
+        window.addEventListener("mousemove", handleMove);
+        window.addEventListener("mouseup", handleEnd);
+        window.addEventListener("touchmove", handleMove, { passive: false });
+        window.addEventListener("touchend", handleEnd);
+    }, [setPlaybackRateValue]);
+
     useEffect(() => {
         setTranscriptDraft(item.transcript ?? "");
     }, [item.transcript]);
@@ -731,9 +766,9 @@ const LibraryModal = ({
     }, [activeSegmentIndex, followTimestampsActive]);
 
     return (
-        <div className="flex h-full w-full min-h-0 overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50">
+        <div className="flex h-full w-full min-h-0 overflow-hidden rounded-2xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-surface)] shadow-2xl shadow-black/50">
             {/* Sidebar */}
-            <aside className="flex w-48 shrink-0 flex-col border-r border-border-primary bg-surface-surface">
+            <aside className="flex w-48 shrink-0 flex-col border-r border-[var(--color-border-primary)]">
                 <div className="px-4 pt-5 pb-3">
                     {isEditingName ? (
                         <div className="flex items-center gap-1.5 mt-1">
@@ -747,7 +782,7 @@ const LibraryModal = ({
                                         handleNameCommit();
                                     }
                                 }}
-                                className="flex-1 min-w-0 bg-surface-surface border border-border-primary rounded-sm px-1.5 py-0.5 ui-text-body text-content-primary focus:border-border-hover outline-hidden"
+                                className="flex-1 min-w-0 bg-transparent border-b border-[var(--color-border-primary)] px-1.5 py-0.5 ui-text-body text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
                                 autoFocus
                             />
                             <button onClick={handleNameCommit} className="text-content-muted hover:text-content-primary">
@@ -777,48 +812,61 @@ const LibraryModal = ({
                                 message: "Audio",
                             })}
                         </p>
-                        <div className="rounded-lg border border-border-primary bg-surface-surface px-2.5 py-2.5">
-                            <div className="flex items-center justify-between">
-                                <button
-                                    onClick={handleTogglePlayback}
-                                    disabled={!audioReady || !!audioError}
-                                    className={`flex h-6 w-6 items-center justify-center rounded-md border text-content-primary transition-colors ${
-                                        !audioReady || audioError
-                                            ? "border-border-primary/60 text-content-disabled"
-                                            : "border-border-primary hover:border-border-secondary"
-                                    }`}
-                                    aria-label={isPlaying
-                                        ? t({
-                                            id: "library.modal.pause_audio",
-                                            message: "Pause audio",
-                                        })
-                                        : t({
-                                            id: "library.modal.play_audio",
-                                            message: "Play audio",
-                                        })}
-                                >
-                                    {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-                                </button>
-                                <div className="flex flex-col items-center justify-center">
-                                    <span className="ui-text-micro text-content-disabled tabular-nums leading-none">
-                                        {formatDuration(audioCurrentTime)} / {formatDuration(audioDuration)}
-                                    </span>
-                                    <div className="mt-1.5 flex items-center justify-center gap-0.25 ui-text-nano leading-none">
+                        <div className="px-1 pt-1 pb-2">
+                            <div className="flex flex-col gap-1.5">
+                                <div className="px-1">
+                                    <input
+                                        type="range"
+                                        min={0}
+                                        max={scrubberMax}
+                                        step={0.01}
+                                        value={scrubberValue}
+                                        onChange={(event) => handleScrubChange(event.target.value)}
+                                        onMouseDown={handleScrubStart}
+                                        onTouchStart={handleScrubStart}
+                                        onMouseUp={handleScrubEnd}
+                                        onTouchEnd={handleScrubEnd}
+                                        className="library-scrubber w-full"
+                                        disabled={!audioReady || !!audioError}
+                                        style={{
+                                            background: `linear-gradient(to right, var(--color-cloud) 0%, var(--color-cloud) ${scrubberPercent}%, var(--color-border-secondary) ${scrubberPercent}%, var(--color-border-secondary) 100%)`,
+                                        }}
+                                        aria-label={t({ id: "library.modal.audio_scrubber", message: "Audio scrubber" })}
+                                    />
+                                </div>
+                                
+                                <div className="flex items-center justify-between px-1">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleTogglePlayback}
+                                            disabled={!audioReady || !!audioError}
+                                            className={`text-content-primary hover:text-content-secondary transition-colors ${
+                                                !audioReady || audioError ? "opacity-50 cursor-not-allowed" : ""
+                                            }`}
+                                            aria-label={isPlaying
+                                                ? t({ id: "library.modal.pause_audio", message: "Pause audio" })
+                                                : t({ id: "library.modal.play_audio", message: "Play audio" })}
+                                        >
+                                            {isPlaying ? <Pause size={14} className="fill-current" /> : <Play size={14} className="fill-current" />}
+                                        </button>
+                                        <span className="ui-text-micro tabular-nums text-content-disabled font-medium tracking-wide">
+                                            {formatDuration(audioCurrentTime)} <span className="opacity-50">/ {formatDuration(audioDuration)}</span>
+                                        </span>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-0.5 ui-text-micro leading-none">
                                         <button
                                             type="button"
                                             onClick={() => handlePlaybackRateStep(-1)}
                                             disabled={!audioReady || !!audioError || !canDecreasePlaybackRate}
-                                            aria-label={t({
-                                                id: "library.modal.playback.decrease",
-                                                message: "Decrease playback speed",
-                                            })}
-                                            className={`flex h-3 w-3 items-center justify-center rounded-sm transition-colors ${
+                                            aria-label={t({ id: "library.modal.playback.decrease", message: "Decrease speed" })}
+                                            className={`transition-colors p-0.5 ${
                                                 !audioReady || audioError || !canDecreasePlaybackRate
                                                     ? "text-content-disabled"
                                                     : "text-content-muted hover:text-content-primary"
                                             }`}
                                         >
-                                            <ChevronLeft size={9} />
+                                            <ChevronLeft size={10} />
                                         </button>
                                         <AnimatePresence mode="popLayout" initial={false}>
                                             <motion.span
@@ -827,7 +875,9 @@ const LibraryModal = ({
                                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                                 exit={{ opacity: 0, y: 2, scale: 0.92 }}
                                                 transition={{ duration: 0.16, ease: "easeOut" }}
-                                                className="w-[28px] text-center ui-text-nano font-medium text-content-secondary tabular-nums"
+                                                onMouseDown={handleRateScrubStart}
+                                                onTouchStart={handleRateScrubStart}
+                                                className="w-[26px] min-w-[26px] text-center font-medium text-content-secondary tabular-nums cursor-ew-resize select-none"
                                             >
                                                 {formatPlaybackRate(playbackRate)}x
                                             </motion.span>
@@ -836,43 +886,17 @@ const LibraryModal = ({
                                             type="button"
                                             onClick={() => handlePlaybackRateStep(1)}
                                             disabled={!audioReady || !!audioError || !canIncreasePlaybackRate}
-                                            aria-label={t({
-                                                id: "library.modal.playback.increase",
-                                                message: "Increase playback speed",
-                                            })}
-                                            className={`flex h-3 w-3 items-center justify-center rounded-sm transition-colors ${
+                                            aria-label={t({ id: "library.modal.playback.increase", message: "Increase speed" })}
+                                            className={`transition-colors p-0.5 ${
                                                 !audioReady || audioError || !canIncreasePlaybackRate
                                                     ? "text-content-disabled"
                                                     : "text-content-muted hover:text-content-primary"
                                             }`}
                                         >
-                                            <ChevronRight size={9} />
+                                            <ChevronRight size={10} />
                                         </button>
                                     </div>
                                 </div>
-                            </div>
-                            <div className="mt-2">
-                                <input
-                                    type="range"
-                                    min={0}
-                                    max={scrubberMax}
-                                    step={0.01}
-                                    value={scrubberValue}
-                                    onChange={(event) => handleScrubChange(event.target.value)}
-                                    onMouseDown={handleScrubStart}
-                                    onTouchStart={handleScrubStart}
-                                    onMouseUp={handleScrubEnd}
-                                    onTouchEnd={handleScrubEnd}
-                                    className="library-scrubber"
-                                    disabled={!audioReady || !!audioError}
-                                    style={{
-                                        background: `linear-gradient(to right, var(--color-cloud) 0%, var(--color-cloud) ${scrubberPercent}%, var(--color-border-secondary) ${scrubberPercent}%, var(--color-border-secondary) 100%)`,
-                                    }}
-                                    aria-label={t({
-                                        id: "library.modal.audio_scrubber",
-                                        message: "Audio scrubber",
-                                    })}
-                                />
                             </div>
                         </div>
                     </div>
@@ -992,24 +1016,20 @@ const LibraryModal = ({
                                             handleRemoveTag(tag);
                                         }
                                     }}
-                                    className={`inline-flex items-center pl-3 pr-1.5 py-1.5 rounded-sm ui-text-meta bg-white/5 border transition-colors leading-none text-content-secondary border-white/10 ${
-                                        shiftHeld ? "cursor-pointer ui-hover-error-tint hover:border-red-500/60" : ""
+                                    title={
+                                        shiftHeld
+                                            ? t({
+                                                  id: "library.modal.tags.remove",
+                                                  message: `Remove ${tag}`,
+                                              })
+                                            : undefined
+                                    }
+                                    className={`inline-flex items-center cursor-pointer ui-text-meta transition-colors duration-100 ease-out whitespace-nowrap text-content-secondary hover:text-content-primary ${
+                                        shiftHeld ? "hover:!text-red-500 hover:line-through" : ""
                                     }`}
                                 >
+                                    <span className="opacity-40 mr-[1px]">#</span>
                                     <span>{tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}</span>
-                                    <button
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            handleRemoveTag(tag);
-                                        }}
-                                        className="ml-1 text-content-disabled ui-hover-error-soft transition-colors cursor-pointer shrink-0"
-                                        aria-label={t({
-                                            id: "library.modal.tags.remove",
-                                            message: `Remove ${tag}`,
-                                        })}
-                                    >
-                                        <X size={10} />
-                                    </button>
                                 </span>
                             ))}
                         </div>
@@ -1019,7 +1039,7 @@ const LibraryModal = ({
                                     type="button"
                                     onMouseDown={(event) => event.preventDefault()}
                                     onClick={() => setTagMenuOpen((prev) => !prev)}
-                                    className="flex items-center justify-center w-6 h-6 rounded-sm text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors"
+                                    className="flex items-center justify-center w-[16px] h-[16px] shrink-0 ui-color-primary hover:text-[var(--color-text-secondary)] transition-colors"
                                     aria-label={t({
                                         id: "library.modal.tags.select_existing",
                                         message: "Select existing tag",
@@ -1097,12 +1117,12 @@ const LibraryModal = ({
                 </nav>
 
                 {/* Sidebar footer actions */}
-                <div className="px-2 py-3 border-t border-border-primary space-y-1.5">
+                <div className="px-2 py-3 border-t border-[var(--color-border-primary)] space-y-1.5">
                     {(item.status.type === "transcribing"
                         || item.status.type === "cancelling"
                         || item.status.type === "pending"
                         || item.status.type === "importing") && (
-                        <button onClick={onCancel} className="w-full rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 ui-text-meta text-content-primary hover:border-border-secondary">
+                        <button onClick={onCancel} className="w-full flex justify-center rounded-lg px-2 py-1.5 ui-text-meta text-content-secondary hover:text-content-primary hover:bg-surface-elevated transition-colors">
                             {t({
                                 id: "library.modal.cancel",
                                 message: "Cancel",
@@ -1110,7 +1130,7 @@ const LibraryModal = ({
                         </button>
                     )}
                     {item.status.type === "error" && (
-                        <button onClick={onRetry} className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-border-primary bg-surface-surface px-2 py-1.5 ui-text-meta text-content-primary hover:border-border-secondary">
+                        <button onClick={onRetry} className="w-full flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 ui-text-meta text-content-secondary hover:text-content-primary hover:bg-surface-elevated transition-colors">
                             <RotateCw size={10} />
                             {t({
                                 id: "library.modal.retry",
@@ -1120,7 +1140,7 @@ const LibraryModal = ({
                     )}
                     <button
                         onClick={() => setShowDeleteConfirm(true)}
-                        className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/5 px-2 py-1.5 ui-text-meta ui-color-error-soft hover:bg-red-500/10"
+                        className="w-full flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 ui-text-meta ui-color-error-soft hover:bg-[var(--color-error)]/10 transition-colors"
                     >
                         <Trash2 size={10} />
                         {t({
@@ -1132,9 +1152,9 @@ const LibraryModal = ({
             </aside>
 
             {/* Main content */}
-            <main className="flex flex-1 flex-col min-h-0 min-w-0 bg-surface-overlay">
+            <main className="flex flex-1 flex-col min-h-0 min-w-0 bg-transparent">
                 {/* Header */}
-                <div className="flex items-center gap-3 px-4 py-2 border-b border-border-primary shrink-0 bg-surface-surface/40">
+                <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border-primary)] shrink-0 bg-transparent">
                     <button
                         onClick={() => setShowRetranscribe(true)}
                         disabled={item.status.type === "transcribing"
@@ -1151,7 +1171,7 @@ const LibraryModal = ({
                     </button>
                     <div className="flex-1 flex justify-center">
                         <div className="relative w-full max-w-[240px]">
-                            <div className="relative flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-1.5 focus-within:border-border-secondary transition-colors">
+                            <div className="relative flex items-center gap-2 bg-transparent border-b border-[var(--color-border-primary)] px-2.5 py-1.5 focus-within:border-[var(--color-border-hover)] transition-colors">
                                 <Search size={12} className="text-content-disabled shrink-0" aria-hidden="true" />
                                 <input
                                     type="text"
@@ -1234,7 +1254,7 @@ const LibraryModal = ({
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: 4 }}
                                         transition={{ duration: 0.1 }}
-                                        className="absolute right-0 top-full mt-1 w-32 rounded-lg border border-border-primary bg-surface-surface shadow-xl overflow-hidden z-10"
+                                        className="absolute right-0 top-full mt-1 w-32 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120]"
                                     >
                                         {(["txt", "md", "srt", "vtt"] as ExportFormat[]).map((format) => {
                                             const requiresSegments = format === "srt" || format === "vtt";
@@ -1332,8 +1352,8 @@ const LibraryModal = ({
                                                     initial={{ opacity: 0, y: 6 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className={`grid w-full grid-cols-[auto_1fr] gap-3 rounded-md border px-2 py-1 transition-colors select-none ${
-                                                        isActive ? "border-cloud-30 bg-cloud-10" : "border-transparent"
+                                                    className={`grid w-full grid-cols-[auto_1fr] gap-3 rounded-md px-2 py-1 transition-colors select-none ${
+                                                        isActive ? "bg-cloud-10 border border-cloud-30" : "border border-transparent"
                                                     }`}
                                                 >
                                                     <span
@@ -1411,8 +1431,8 @@ const LibraryModal = ({
                                     className="h-full w-full resize-none bg-transparent ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 custom-scrollbar select-text pr-4 pt-3 pb-3"
                                 />
                             )}
-                            <div className="scroll-fade-top" style={{ zIndex: 5 }} aria-hidden="true" />
-                            <div className="scroll-fade-bottom" style={{ zIndex: 5 }} aria-hidden="true" />
+                            <div className="absolute left-0 right-0 top-0 h-[18px] pointer-events-none z-[5]" style={{ background: 'linear-gradient(180deg, var(--color-bg-surface), transparent)' }} aria-hidden="true" />
+                            <div className="absolute left-0 right-0 bottom-0 h-[18px] pointer-events-none z-[5]" style={{ background: 'linear-gradient(180deg, transparent, var(--color-bg-surface))' }} aria-hidden="true" />
                         </div>
                     )}
                 </div>

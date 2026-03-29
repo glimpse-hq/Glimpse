@@ -1,31 +1,69 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { invoke } from "@tauri-apps/api/core";
 import {
-    Check,
+    AlertCircle,
     ChevronDown,
-    MoreVertical,
+    MoreHorizontal,
     Pencil,
     RotateCw,
     Trash2,
     X,
 } from "lucide-react";
-import LibraryProgressDots from "./LibraryProgressDots";
 import {
     clampProgress,
     formatDuration,
     getLibraryErrorDetails,
     shouldShowImportProgress,
-    statusLabel,
 } from "./library-utils";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import type { LibraryItem } from "../../../types";
+
+const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
+const IntelligencePixel = ({ active, statusType }: { active: boolean; statusType: string }) => {
+    const isError = statusType === "error";
+    const isComplete = statusType === "complete";
+
+    return (
+        <div className="grid grid-cols-2 gap-[2px] w-[10px] h-[10px] shrink-0 mt-[2px]">
+            {[0, 1, 2, 3].map((i) => (
+                <motion.div
+                    key={i}
+                    animate={
+                        active
+                            ? { opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }
+                            : { opacity: isComplete ? 0.8 : 0.3, scale: 1 }
+                    }
+                    transition={
+                        active
+                            ? { duration: 1.5, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }
+                            : { duration: 0.3 }
+                    }
+                    className={`w-[4px] h-[4px] rounded-[1px] ${
+                        isError
+                            ? "bg-[var(--color-error)]"
+                            : active
+                              ? "bg-[var(--color-accent)] shadow-[0_0_8px_var(--color-accent-30)]"
+                              : "bg-[var(--color-text-muted)]"
+                    }`}
+                />
+            ))}
+        </div>
+    );
+};
 
 const LibraryCard = ({
     item,
     onOpen,
     onRemoveTag,
+    onClickTag,
     editingNameId,
     editingNameDraft,
     onStartNameEdit,
@@ -47,6 +85,7 @@ const LibraryCard = ({
     item: LibraryItem;
     onOpen: () => void;
     onRemoveTag: (tag: string) => Promise<void>;
+    onClickTag?: (tag: string) => void;
     editingNameId: string | null;
     editingNameDraft: string;
     onStartNameEdit: () => void;
@@ -67,18 +106,23 @@ const LibraryCard = ({
 }) => {
     const { t } = useLingui();
     const status = item.status;
-    const tagPreview = item.tags.slice(0, 2);
+
     const showImportProgress = status.type === "importing" && shouldShowImportProgress(status.progress);
-    const showProgressBar = status.type === "transcribing" || showImportProgress;
+    const isTranscribing = status.type === "transcribing" || showImportProgress;
+    const isComplete = status.type === "complete";
+    const isError = status.type === "error";
+
+    const showProgressBar = isTranscribing;
     const progress = showProgressBar ? clampProgress(status.progress) : 0;
+
     const isEditingName = editingNameId === item.id;
     const isAddingTag = editingTagId === item.id;
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const [tagMenuOpen, setTagMenuOpen] = useState(false);
     const tagMenuRef = useRef<HTMLDivElement>(null);
-    const statusText = statusLabel(status);
     const errorDetails = status.type === "error" ? getLibraryErrorDetails(status.message) : null;
+
     const normalizedDraft = tagDraft.trim().toLowerCase();
     const filteredTagOptions = availableTags.filter((tag) => {
         const tagLower = tag.toLowerCase();
@@ -119,52 +163,6 @@ const LibraryCard = ({
         }
     };
 
-
-    const renderStatusControl = () => (
-        <button
-            type="button"
-            onClick={(event) => {
-                event.stopPropagation();
-                if (shiftHeld) {
-                    handleDelete();
-                } else {
-                    setMenuOpen((prev) => !prev);
-                }
-            }}
-            className={`p-1.5 rounded-md transition-colors ${
-                shiftHeld
-                    ? "ui-color-error-strong ui-hover-error-soft hover:bg-red-500/10"
-                    : "text-content-muted hover:text-content-primary hover:bg-surface-elevated"
-            }`}
-            aria-label={shiftHeld
-                ? t({
-                    id: "library.card.delete",
-                    message: "Delete",
-                })
-                : t({
-                    id: "library.card.more_options",
-                    message: "More options",
-                })}
-            title={shiftHeld
-                ? t({
-                    id: "library.card.delete",
-                    message: "Delete",
-                })
-                : t({
-                    id: "library.card.more_options",
-                    message: "More options",
-                })}
-        >
-            {shiftHeld ? <Trash2 size={14} /> : <MoreVertical size={14} />}
-        </button>
-    );
-
-    useEffect(() => {
-        if (!isAddingTag) {
-            setTagMenuOpen(false);
-        }
-    }, [isAddingTag]);
-
     return (
         <div
             onClick={() => {
@@ -190,293 +188,344 @@ const LibraryCard = ({
             }}
             role="button"
             tabIndex={0}
-            className="group text-left rounded-xl border border-border-primary bg-surface-secondary p-4 hover:bg-surface-surface transition-colors outline-hidden focus-visible:ring-2 focus-visible:ring-border-hover"
+            className={`group relative flex flex-col rounded-xl cursor-pointer h-[220px] outline-none transition-colors duration-100 ease-out border ${
+                shiftHeld
+                    ? "border-[var(--color-error)]/30 hover:border-[var(--color-error)]/60 bg-[var(--color-error)]/5"
+                    : "border-[var(--color-border-primary)] hover:border-[var(--color-border-secondary)]"
+            } bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-overlay)]`}
         >
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        {isEditingName ? (
-                            <input
-                                value={editingNameDraft}
-                                onChange={(event) => onChangeNameDraft(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Enter") {
-                                        event.preventDefault();
-                                        onCommitNameEdit();
-                                    }
-                                    if (event.key === "Escape") {
-                                        event.preventDefault();
-                                        onCancelNameEdit();
+            <div className="px-4 pt-2.5 pb-2.5 flex flex-col h-full relative z-10 w-full min-w-0">
+                <div className="flex justify-between items-start mb-1">
+                    <div className="flex items-start gap-2.5">
+                        <IntelligencePixel active={isTranscribing} statusType={item.status.type} />
+
+                        <div className="flex flex-col gap-1.5 pt-[1px] min-h-[28px]">
+                            <div className="flex items-center gap-1.5 h-3">
+                                <span
+                                    className={`ui-text-label-strong ${
+                                        isError
+                                            ? "ui-color-error-strong font-semibold"
+                                            : isTranscribing
+                                              ? "ui-color-accent font-semibold"
+                                              : isComplete
+                                                ? "ui-color-secondary"
+                                                : "ui-color-muted"
+                                    }`}
+                                >
+                                    {isTranscribing
+                                        ? status.type === "importing"
+                                            ? `Converting ${(progress * 100).toFixed(0)}%`
+                                            : `Thinking ${(progress * 100).toFixed(0)}%`
+                                        : isError
+                                          ? "Failed"
+                                          : isComplete
+                                            ? "Ready"
+                                            : "Queued"}
+                                </span>
+
+                                {isError && errorDetails && (
+                                    <div
+                                        className="relative group/tooltip flex items-center cursor-default min-w-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <AlertCircle size={12} className="ui-color-error-strong" />
+                                        <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] w-56 p-3 bg-[var(--color-bg-overlay)] border border-[var(--color-border-hover)] rounded-lg shadow-xl opacity-0 -translate-x-2 group-hover/tooltip:opacity-100 group-hover/tooltip:translate-x-0 transition-all duration-150 ease-out pointer-events-none z-[100]">
+                                            <p className="ui-text-body-sm ui-color-primary normal-case tracking-normal">
+                                                {errorDetails.message}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {isTranscribing && (
+                                <div className="w-16 h-[2px] bg-[var(--color-border-hover)] rounded-full overflow-hidden flex">
+                                    <motion.div
+                                        className="h-full bg-[var(--color-accent)]"
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progress * 100}%` }}
+                                        transition={{ ease: "linear", duration: 0.5 }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="flex items-center -mr-1 -mt-1 overflow-visible h-6">
+                        <div ref={menuRef} className="flex relative items-center justify-center">
+                            <button
+                                onPointerDown={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    if (shiftHeld) {
+                                        handleDelete();
+                                    } else {
+                                        setMenuOpen((prev) => !prev);
                                     }
                                 }}
-                                onBlur={onCommitNameEdit}
-                                onClick={(event) => event.stopPropagation()}
-                                className="w-full min-w-0 rounded-md border border-border-primary bg-surface-surface px-2 py-1 ui-text-body font-medium ui-color-primary outline-hidden focus:border-border-hover"
-                                autoFocus
-                            />
-                        ) : (
-                            <h3 className="ui-text-body font-medium ui-color-primary truncate">{item.name}</h3>
-                        )}
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 ui-text-label ui-color-muted tabular-nums">
-                        <span>{formatDuration(item.duration_seconds)}</span>
-                        <span className="opacity-50">&bull;</span>
-                        {status.type === "complete" ? (
-                            <Check
-                                size={12}
-                                className="ui-color-success-strong"
-                                aria-label={t({
-                                    id: "library.card.done",
-                                    message: "Done",
-                                })}
-                            />
-                        ) : (
-                            <span className="shrink-0 whitespace-nowrap">{statusText}</span>
-                        )}
-                    </div>
-                    <div className="mt-2 min-h-[24px] w-full">
-                        {status.type === "error" ? (
-                            <span className="block w-full ui-text-micro leading-[12px] ui-color-error-soft line-clamp-2 break-words">
-                                {errorDetails?.message}{" "}
-                                {errorDetails?.showFfmpegHelp && (
-                                    <button
-                                        type="button"
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            invoke("open_ffmpeg_install").catch(() => {});
-                                        }}
-                                        className="underline decoration-red-400/60 ui-hover-error-tint"
-                                    >
-                                        {t({
-                                            id: "library.card.ffmpeg_help",
-                                            message: "FFmpeg Help",
-                                        })}
-                                    </button>
-                                )}
-                            </span>
-                        ) : showProgressBar ? (
-                            <LibraryProgressDots
-                                progress={progress}
-                                status={status.type === "importing" ? "importing" : "transcribing"}
-                            />
-                        ) : null}
-                    </div>
-                </div>
-                <div ref={menuRef}>{renderStatusControl()}</div>
-            </div>
-            <AnimatePresence>
-                {menuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                        transition={{ duration: 0.12 }}
-                        className="fixed z-[100] min-w-[160px] rounded-lg border border-border-secondary bg-surface-overlay shadow-xl shadow-black/50"
-                        onClick={(event) => event.stopPropagation()}
-                        style={{
-                            top: menuRef.current ? menuRef.current.getBoundingClientRect().bottom + 4 : 0,
-                            right: menuRef.current ? window.innerWidth - menuRef.current.getBoundingClientRect().right : 0,
-                        }}
-                    >
-                        <button
-                            onClick={() => {
-                                setMenuOpen(false);
-                                onStartNameEdit();
-                            }}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
-                        >
-                            <Pencil size={12} className="text-content-muted" />
-                            <span>
-                                {t({
-                                    id: "library.card.rename",
-                                    message: "Rename",
-                                })}
-                            </span>
-                        </button>
-
-                        {status.type === "transcribing"
-                            || status.type === "cancelling"
-                            || status.type === "pending"
-                            || status.type === "importing" ? (
-                            <button
-                                onClick={handleCancel}
-                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
+                                className={`p-1 ml-1 rounded transition-colors duration-200 outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-hover)] flex items-center justify-center ${
+                                    shiftHeld
+                                        ? "ui-color-error hover:bg-[var(--color-error)]/10"
+                                        : menuOpen
+                                          ? "ui-color-primary bg-[var(--color-bg-elevated)]"
+                                          : "ui-color-muted hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-elevated)]"
+                                }`}
+                                aria-label="More options"
                             >
-                                <X size={12} className="text-warning" />
-                                <span>
-                                    {t({
-                                        id: "library.card.cancel",
-                                        message: "Cancel",
-                                    })}
-                                </span>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleRetry}
-                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
-                            >
-                                <RotateCw size={12} className="text-cloud" />
-                                <span>
-                                    {status.type === "error"
-                                        ? t({
-                                            id: "library.card.retry",
-                                            message: "Retry",
-                                        })
-                                        : t({
-                                            id: "library.card.retranscribe",
-                                            message: "Retranscribe",
-                                        })}
-                                </span>
-                            </button>
-                        )}
-
-                        <div className="h-px bg-border-secondary mx-2" />
-
-                        <button
-                            onClick={handleDelete}
-                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors"
-                        >
-                            <Trash2 size={12} />
-                            <span>
-                                {t({
-                                    id: "library.card.delete",
-                                    message: "Delete",
-                                })}
-                            </span>
-                        </button>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            <div className="mt-3 min-h-[24px]">
-                {isAddingTag ? (
-                    <div
-                        className="flex items-center gap-1.5 min-h-[24px]"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <div ref={tagMenuRef} className="relative flex items-center">
-                            <button
-                                type="button"
-                                onMouseDown={(event) => event.preventDefault()}
-                                onClick={() => setTagMenuOpen((prev) => !prev)}
-                                className="flex items-center justify-center w-6 h-6 rounded-sm text-content-muted hover:text-content-secondary hover:bg-surface-elevated transition-colors"
-                                aria-label={t({
-                                    id: "library.card.select_existing_tag",
-                                    message: "Select existing tag",
-                                })}
-                                title={t({
-                                    id: "library.card.select_existing_tag",
-                                    message: "Select existing tag",
-                                })}
-                            >
-                                <ChevronDown
-                                    size={12}
-                                    className={`translate-y-[1px] transition-transform duration-150 ${tagMenuOpen ? "rotate-180" : ""}`}
-                                />
+                                {shiftHeld ? <Trash2 size={14} /> : <MoreHorizontal size={14} />}
                             </button>
                             <AnimatePresence>
-                                {tagMenuOpen && (
+                                {menuOpen && (
                                     <motion.div
-                                        initial={{ opacity: 0, scale: 0.98, y: -4 }}
+                                        initial={{ opacity: 0, scale: 0.95, y: -4 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 0.98, y: -4 }}
+                                        exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                         transition={{ duration: 0.12 }}
-                                        className="absolute left-0 top-full mt-1 z-[120] w-36 rounded-md border border-border-secondary/80 bg-surface-overlay shadow-lg shadow-black/40 overflow-hidden"
+                                        className="absolute right-0 top-full mt-2 z-[100] min-w-[160px] rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl shadow-[var(--color-shadow-soft-50)] overflow-hidden"
+                                        onClick={(event) => event.stopPropagation()}
                                     >
-                                        <div className="max-h-36 overflow-y-auto">
-                                            {filteredTagOptions.length > 0 ? (
-                                                filteredTagOptions.map((tag, index) => (
-                                                    <button
-                                                        key={`tag-option-${index}-${tag || "empty"}`}
-                                                        type="button"
-                                                        onMouseDown={(event) => event.preventDefault()}
-                                                        onClick={() => {
-                                                            onCommitTagAdd(tag);
-                                                            setTagMenuOpen(false);
-                                                        }}
-                                                        className="w-full text-left px-2.5 py-1.5 ui-text-button-sm ui-color-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
-                                                    >
-                                                        {tag}
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <div className="px-2.5 py-2 ui-text-micro ui-color-muted">
-                                                    {availableTags.length === 0
+                                        <button
+                                            onClick={() => {
+                                                setMenuOpen(false);
+                                                onStartNameEdit();
+                                            }}
+                                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors"
+                                        >
+                                            <Pencil size={12} className="ui-color-muted" />
+                                            <span>
+                                                {t({ id: "library.card.rename", message: "Rename" })}
+                                            </span>
+                                        </button>
+
+                                        {status.type === "transcribing" ||
+                                        status.type === "cancelling" ||
+                                        status.type === "pending" ||
+                                        status.type === "importing" ? (
+                                            <button
+                                                onClick={handleCancel}
+                                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors"
+                                            >
+                                                <X size={12} className="ui-color-warning" />
+                                                <span>
+                                                    {t({ id: "library.card.cancel", message: "Cancel" })}
+                                                </span>
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleRetry}
+                                                className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors"
+                                            >
+                                                <RotateCw size={12} className="ui-color-cloud" />
+                                                <span>
+                                                    {status.type === "error"
                                                         ? t({
-                                                            id: "library.card.no_tags_yet",
-                                                            message: "No tags yet",
-                                                        })
+                                                              id: "library.card.retry",
+                                                              message: "Retry",
+                                                          })
                                                         : t({
-                                                            id: "library.card.no_other_tags",
-                                                            message: "No other tags",
-                                                        })}
-                                                </div>
-                                            )}
-                                        </div>
+                                                              id: "library.card.retranscribe",
+                                                              message: "Retranscribe",
+                                                          })}
+                                                </span>
+                                            </button>
+                                        )}
+
+                                        <div className="h-px bg-[var(--color-border-secondary)] mx-2 my-1" />
+
+                                        <button
+                                            onClick={handleDelete}
+                                            className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-[var(--color-error)]/10 transition-colors"
+                                        >
+                                            <Trash2 size={12} />
+                                            <span>
+                                                {t({ id: "library.card.delete", message: "Delete" })}
+                                            </span>
+                                        </button>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
                         </div>
+                    </div>
+                </div>
+
+                <div className="flex-1 flex flex-col justify-start overflow-hidden w-full relative">
+                    {isEditingName ? (
                         <input
-                            value={tagDraft}
-                            onChange={(event) => onChangeTagDraft(event.target.value)}
+                            value={editingNameDraft}
+                            onChange={(event) => onChangeNameDraft(event.target.value)}
                             onKeyDown={(event) => {
                                 if (event.key === "Enter") {
                                     event.preventDefault();
-                                    onCommitTagAdd();
+                                    onCommitNameEdit();
                                 }
                                 if (event.key === "Escape") {
                                     event.preventDefault();
-                                    onCancelTagEdit();
+                                    onCancelNameEdit();
                                 }
                             }}
-                            onBlur={onCancelTagEdit}
-                            placeholder={t({
-                                id: "library.card.new_tag",
-                                message: "New tag...",
-                            })}
-                            className="tag-input-intro flex-1 min-w-0 h-6 box-border bg-transparent border-b border-border-primary px-0.5 py-0 ui-text-meta leading-none ui-color-secondary outline-hidden focus:border-border-hover placeholder:text-content-disabled"
+                            onBlur={onCommitNameEdit}
+                            onClick={(event) => event.stopPropagation()}
+                            className="w-full min-w-0 rounded-md border border-[var(--color-border-hover)] bg-[var(--color-bg-surface)] px-2 py-1 ui-text-title-lg ui-color-primary outline-hidden focus:border-[var(--color-accent)]"
                             autoFocus
                         />
-                    </div>
-                ) : (
-                    <div className="flex items-center gap-1.5 flex-wrap gap-y-2">
-                        {tagPreview.map((tag, idx) => (
-                            <span
-                                key={`${tag}-${idx}`}
-                                onClick={(event) => {
-                                    if (!shiftHeld) return;
-                                    event.stopPropagation();
-                                    void onRemoveTag(tag);
-                                }}
-                                className={`inline-flex items-center px-2 py-1 rounded-sm ui-text-meta ui-color-muted bg-white/5 border border-white/10 leading-none ${
-                                    shiftHeld ? "cursor-pointer hover:border-red-500/60 ui-hover-error-tint" : ""
-                                }`}
-                                title={shiftHeld
-                                    ? t({
-                                        id: "library.card.remove_tag",
-                                        message: `Remove ${tag}`,
-                                    })
-                                    : undefined}
-                            >
-                                <span>{tag.length > 12 ? `${tag.slice(0, 12)}...` : tag}</span>
-                            </span>
-                        ))}
-                        {item.tags.length > 2 && (
-                            <span className="ui-text-micro ui-color-disabled">+{item.tags.length - 2}</span>
+                    ) : (
+                        <h3 className="ui-text-title-lg font-medium leading-snug ui-color-primary line-clamp-3 break-words">
+                            {item.name}
+                        </h3>
+                    )}
+                </div>
+
+                <div className="mt-auto shrink-0 flex flex-col gap-2 pt-2.5 border-t border-[var(--color-border-primary)]">
+                    <div className="flex items-center gap-1.5 ui-text-label ui-color-muted">
+                        <span>{formatDuration(item.duration_seconds)}</span>
+                        <span className="opacity-40">&bull;</span>
+                        <span>{formatBytes(item.file_size_bytes)}</span>
+                        {item.source_path && (
+                            <>
+                                <span className="opacity-40">&bull;</span>
+                                <span>Imported</span>
+                            </>
                         )}
-                        <button
-                            type="button"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onStartTagEdit();
-                            }}
-                            className="flex items-center justify-center w-6 h-6 rounded-md bg-transparent ui-text-body-lg ui-color-disabled hover:text-content-muted hover:bg-surface-elevated transition-colors border-0 outline-hidden focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-border-hover focus-visible:ring-offset-0"
-                        >
-                            +
-                        </button>
                     </div>
-                )}
+
+                    <div className="relative w-full h-6 overflow-visible">
+                        {isAddingTag ? (
+                            <div
+                                className="flex items-center gap-1.5 h-6"
+                                onClick={(event) => event.stopPropagation()}
+                            >
+                                <div ref={tagMenuRef} className="relative flex items-center">
+                                    <button
+                                        type="button"
+                                        onMouseDown={(event) => event.preventDefault()}
+                                        onClick={() => setTagMenuOpen((prev) => !prev)}
+                                        className="flex items-center justify-center w-[16px] h-[16px] shrink-0 ui-color-primary hover:text-[var(--color-text-secondary)] transition-colors"
+                                        aria-label={t({
+                                            id: "library.card.select_existing_tag",
+                                            message: "Select existing tag",
+                                        })}
+                                        title={t({
+                                            id: "library.card.select_existing_tag",
+                                            message: "Select existing tag",
+                                        })}
+                                    >
+                                        <ChevronDown
+                                            size={12}
+                                            className={`translate-y-[1px] transition-transform duration-150 ${tagMenuOpen ? "rotate-180" : ""}`}
+                                        />
+                                    </button>
+                                    <AnimatePresence>
+                                        {tagMenuOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.98, y: -4 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.98, y: -4 }}
+                                                transition={{ duration: 0.12 }}
+                                                className="absolute left-0 top-full mt-1 z-[120] w-36 rounded-md border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-lg shadow-[var(--color-shadow-soft-40)] overflow-hidden"
+                                            >
+                                                <div className="max-h-36 overflow-y-auto custom-scrollbar">
+                                                    {filteredTagOptions.length > 0 ? (
+                                                        filteredTagOptions.map((tag, index) => (
+                                                            <button
+                                                                key={`tag-option-${index}-${tag || "empty"}`}
+                                                                type="button"
+                                                                onMouseDown={(event) =>
+                                                                    event.preventDefault()
+                                                                }
+                                                                onClick={() => {
+                                                                    onCommitTagAdd(tag);
+                                                                    setTagMenuOpen(false);
+                                                                }}
+                                                                className="w-full text-left px-2.5 py-1.5 ui-text-button-sm ui-color-secondary hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] transition-colors"
+                                                            >
+                                                                {tag}
+                                                            </button>
+                                                        ))
+                                                    ) : (
+                                                        <div className="px-2.5 py-2 ui-text-micro ui-color-muted">
+                                                            {availableTags.length === 0
+                                                                ? t({
+                                                                      id: "library.card.no_tags_yet",
+                                                                      message: "No tags yet",
+                                                                  })
+                                                                : t({
+                                                                      id: "library.card.no_other_tags",
+                                                                      message: "No other tags",
+                                                                  })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                                <input
+                                    value={tagDraft}
+                                    onChange={(event) => onChangeTagDraft(event.target.value)}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter") {
+                                            event.preventDefault();
+                                            onCommitTagAdd();
+                                        }
+                                        if (event.key === "Escape") {
+                                            event.preventDefault();
+                                            onCancelTagEdit();
+                                        }
+                                    }}
+                                    onBlur={onCancelTagEdit}
+                                    placeholder={t({
+                                        id: "library.card.new_tag",
+                                        message: "New tag...",
+                                    })}
+                                    className="tag-input-intro flex-1 min-w-0 h-6 box-border bg-transparent border-b border-[var(--color-border-primary)] px-0.5 py-0 ui-text-meta leading-none ui-color-secondary outline-hidden focus:border-[var(--color-border-hover)] placeholder:text-[var(--color-text-disabled)]"
+                                    autoFocus
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 absolute inset-0 mask-fade-right w-[95%]">
+                                <button
+                                    type="button"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onStartTagEdit();
+                                    }}
+                                    className="flex items-center justify-center w-[16px] h-[16px] shrink-0 ui-color-primary hover:text-[var(--color-text-secondary)] transition-colors text-[14px] leading-none"
+                                >
+                                    +
+                                </button>
+                                {item.tags.map((tag) => (
+                                    <span
+                                        key={tag}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            if (shiftHeld) {
+                                                void onRemoveTag(tag);
+                                            } else if (onClickTag) {
+                                                onClickTag(tag);
+                                            }
+                                        }}
+                                        className={`ui-color-secondary hover:text-[var(--color-text-primary)] cursor-pointer ui-text-meta transition-colors duration-100 ease-out whitespace-nowrap ${
+                                            shiftHeld ? "hover:!text-[var(--color-error)] hover:line-through" : ""
+                                        }`}
+                                        title={
+                                            shiftHeld
+                                                ? t({
+                                                      id: "library.card.remove_tag",
+                                                      message: `Remove ${tag}`,
+                                                  })
+                                                : undefined
+                                        }
+                                    >
+                                        <span className="opacity-40 mr-[1px]">#</span>{tag}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         </div>
     );

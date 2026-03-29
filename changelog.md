@@ -1,6 +1,7 @@
 0.8.0
 
 ### Changes
+- Library views have had a small redesign.
 - Edit mode is now signifcantly more consistant in working.
 - Further refined UI elements
 ---

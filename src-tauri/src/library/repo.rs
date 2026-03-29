@@ -298,17 +298,44 @@ fn serialize_tags(tags: &[String]) -> Result<String> {
     Ok(serde_json::to_string(tags)?)
 }
 
+fn extract_search_terms(search: &str) -> (String, Vec<String>) {
+    let mut tag_terms = Vec::new();
+    let mut text_terms = Vec::new();
+
+    for token in search.split_whitespace() {
+        if let Some(tag) = token.strip_prefix('#') {
+            let trimmed = tag.trim();
+            if !trimmed.is_empty() {
+                tag_terms.push(trimmed.to_string());
+            }
+            continue;
+        }
+
+        text_terms.push(token);
+    }
+
+    (text_terms.join(" ").trim().to_string(), tag_terms)
+}
+
 fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut clauses: Vec<String> = Vec::new();
     let mut params: Vec<Box<dyn ToSql>> = Vec::new();
 
     if let Some(search) = filter.search.as_ref() {
         if !search.trim().is_empty() {
-            let like = format!("%{}%", search.trim());
-            clauses.push("(name LIKE ? OR transcript LIKE ? OR tags LIKE ?)".to_string());
-            params.push(Box::new(like.clone()));
-            params.push(Box::new(like.clone()));
-            params.push(Box::new(like));
+            let (text_search, tag_terms) = extract_search_terms(search.trim());
+
+            if !text_search.is_empty() {
+                let like = format!("%{}%", text_search);
+                clauses.push("(name LIKE ? OR transcript LIKE ?)".to_string());
+                params.push(Box::new(like.clone()));
+                params.push(Box::new(like));
+            }
+
+            for tag in tag_terms {
+                clauses.push("tags LIKE ?".to_string());
+                params.push(Box::new(format!("%\"{}\"%", tag)));
+            }
         }
     }
 

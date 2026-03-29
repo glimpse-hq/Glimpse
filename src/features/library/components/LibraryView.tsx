@@ -5,7 +5,7 @@ import {
     useMemo,
     useState,
 } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
@@ -19,7 +19,6 @@ import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEvents";
-import { Dropdown } from "../../../shared/ui/Dropdown";
 import { useSettings } from "../../settings/queries";
 import { useModelCatalog } from "../../settings/models-queries";
 import LibraryImportModal from "./LibraryImportModal";
@@ -68,8 +67,7 @@ const LibraryView = ({
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [tagFilter, setTagFilter] = useState<string>("all");
-    const [dateFilter, setDateFilter] = useState<string>("all");
+    // dateFilter was removed in redesign
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>({});
     const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -80,15 +78,13 @@ const LibraryView = ({
     const shiftHeld = useShiftHeld(isActive);
     const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
     const filter = useMemo<LibraryFilter>(() => {
-        const sinceDays =
-            dateFilter === "last7" ? 7 : dateFilter === "last30" ? 30 : null;
         return {
             search: debouncedSearchQuery || null,
             status: statusFilter === "all" ? null : statusFilter,
-            tag: tagFilter === "all" ? null : tagFilter,
-            since_days: sinceDays,
+            tag: null,
+            since_days: null,
         };
-    }, [dateFilter, debouncedSearchQuery, statusFilter, tagFilter]);
+    }, [debouncedSearchQuery, statusFilter]);
 
     const {
         data,
@@ -286,160 +282,88 @@ const LibraryView = ({
 
     return (
         <div className="relative flex flex-1 flex-col min-h-0 h-full">
-            <div className="w-full max-w-5xl mx-auto flex flex-col gap-4 pb-4 text-left">
-                <header className="flex items-start gap-3 mb-4">
-                    <DotMatrix
-                        rows={2}
-                        cols={3}
-                        activeDots={[0, 1, 2, 4]}
-                        dotSize={3}
-                        gap={3}
-                        color="var(--color-accent)"
-                    />
-                    <div className="flex-1">
-                        <p className="ui-text-screen-title ui-color-primary tracking-tight">
-                            {t({
-                                id: "library.view.title",
-                                message: "Library",
-                            })}
-                        </p>
-                        <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                            {t({
-                                id: "library.view.description",
-                                message: "Import audio and video files for transcription.",
-                            })}
-                        </p>
+            <div className="w-full max-w-6xl mx-auto flex flex-col gap-4 pb-4 px-4 text-left">
+                <header className="flex flex-col gap-4 mb-4 mt-4">
+                    <div className="flex items-center gap-4">
+                        <DotMatrix
+                            rows={2}
+                            cols={3}
+                            activeDots={[0, 1, 2, 4]}
+                            dotSize={3}
+                            gap={3}
+                            color="var(--color-accent)"
+                        />
+                        <h2 className="ui-text-screen-title ui-color-primary">
+                            {t({ id: "library.view.title", message: "Library" })}
+                        </h2>
                     </div>
-                </header>
-                <div className="grid w-full max-w-5xl min-w-0 grid-cols-[auto_minmax(0,1fr)_132px_132px_120px] items-center gap-2">
-                    <button
-                        onClick={handleImportClick}
-                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-body-sm ui-color-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
-                    >
-                        <Plus size={14} />
-                        {t({
-                            id: "library.view.import_button",
-                            message: "Import",
-                        })}
-                    </button>
-                    <div className="relative min-w-0">
-                        <div className="relative flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-2 focus-within:border-border-secondary transition-colors">
-                            <Search size={12} className="text-content-disabled shrink-0" aria-hidden="true" />
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        <button
+                            onClick={handleImportClick}
+                            className="flex items-center gap-2 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-surface)] px-3 py-1.5 ui-text-body-sm ui-color-primary hover:border-[var(--color-border-secondary)] hover:bg-[var(--color-bg-overlay)] transition-colors shrink-0"
+                        >
+                            <Plus size={14} />
+                            {t({ id: "library.view.import_button", message: "Import" })}
+                        </button>
+
+                        <div className="relative w-full sm:w-64 group">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted group-focus-within:text-[var(--color-accent)] transition-colors" />
                             <input
                                 type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={t({
                                     id: "library.view.search_placeholder",
-                                    message: "Search library...",
+                                    message: "Search library... or use #tag",
                                 })}
-                                aria-label={t({
-                                    id: "library.view.search_aria",
-                                    message: "Search library",
-                                })}
-                                className="w-full min-w-0 bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-hidden"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-primary)] rounded-lg focus:border-[var(--color-border-hover)] pl-9 pr-4 py-1.5 ui-text-input ui-color-primary placeholder-[var(--color-text-muted)] outline-none transition-all duration-100 ease-out"
                             />
                         </div>
+
+                        <div className="flex items-center bg-[var(--color-bg-secondary)] p-1 rounded-lg border border-[var(--color-border-primary)] relative">
+                            {[
+                                { value: "all", label: t({ id: "library.filter.all", message: "All" }) },
+                                { value: "active", label: t({ id: "library.filter.active", message: "Active" }) },
+                                { value: "complete", label: t({ id: "library.filter.done", message: "Done" }) },
+                                { value: "error", label: t({ id: "library.filter.failed", message: "Failed" }) },
+                            ].map((f) => {
+                                const isActive =
+                                    (f.value === "all" && statusFilter === "all") ||
+                                    (f.value === "active" &&
+                                        ["transcribing", "importing", "pending"].includes(statusFilter)) ||
+                                    (f.value === "complete" && statusFilter === "complete") ||
+                                    (f.value === "error" && statusFilter === "error");
+                                return (
+                                    <button
+                                        key={f.value}
+                                        onClick={() =>
+                                            setStatusFilter(f.value === "active" ? "transcribing" : f.value)
+                                        }
+                                        className={`relative px-3 py-1 rounded-md ui-text-body-sm-strong capitalize transition-colors duration-200 z-10 ${
+                                            isActive
+                                                ? "ui-color-primary"
+                                                : "ui-color-secondary hover:text-[var(--color-text-primary)]"
+                                        }`}
+                                    >
+                                        {isActive && (
+                                            <motion.div
+                                                layoutId="activeFilter"
+                                                className="absolute inset-0 bg-[var(--color-bg-elevated)] shadow-sm border border-[var(--color-border-primary)] rounded-md z-[-1]"
+                                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10">{f.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
                     </div>
-                    <Dropdown
-                        value={statusFilter}
-                        onChange={(value) => setStatusFilter(value)}
-                        options={[
-                            {
-                                value: "all",
-                                label: t({
-                                    id: "library.view.filter.status.all",
-                                    message: "All",
-                                }),
-                            },
-                            {
-                                value: "importing",
-                                label: t({
-                                    id: "library.view.filter.status.converting",
-                                    message: "Converting",
-                                }),
-                            },
-                            {
-                                value: "pending",
-                                label: t({
-                                    id: "library.view.filter.status.queued",
-                                    message: "Queued",
-                                }),
-                            },
-                            {
-                                value: "transcribing",
-                                label: t({
-                                    id: "library.view.filter.status.transcribing",
-                                    message: "Transcribing",
-                                }),
-                            },
-                            {
-                                value: "complete",
-                                label: t({
-                                    id: "library.view.filter.status.done",
-                                    message: "Done",
-                                }),
-                            },
-                            {
-                                value: "error",
-                                label: t({
-                                    id: "library.view.filter.status.failed",
-                                    message: "Failed",
-                                }),
-                            },
-                        ]}
-                        className="w-full min-w-0"
-                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
-                    />
-                    <Dropdown
-                        value={dateFilter}
-                        onChange={(value) => setDateFilter(value)}
-                        options={[
-                            {
-                                value: "all",
-                                label: t({
-                                    id: "library.view.filter.date.all_time",
-                                    message: "All time",
-                                }),
-                            },
-                            {
-                                value: "last7",
-                                label: t({
-                                    id: "library.view.filter.date.last7",
-                                    message: "Last 7 days",
-                                }),
-                            },
-                            {
-                                value: "last30",
-                                label: t({
-                                    id: "library.view.filter.date.last30",
-                                    message: "Last 30 days",
-                                }),
-                            },
-                        ]}
-                        className="w-full min-w-0"
-                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
-                    />
-                    <Dropdown
-                        value={tagFilter}
-                        onChange={(value) => setTagFilter(value)}
-                        options={[
-                            {
-                                value: "all",
-                                label: t({
-                                    id: "library.view.filter.tags.all",
-                                    message: "All tags",
-                                }),
-                            },
-                            ...availableTags.map((tag) => ({ value: tag, label: tag })),
-                        ]}
-                        className="w-full min-w-0"
-                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
-                    />
-                </div>
+                </header>
 
                 {error && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 ui-text-body-sm ui-color-error-tint">
+                    <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2">
                         {error}
                     </div>
                 )}
@@ -484,6 +408,7 @@ const LibraryView = ({
                                     const nextTags = item.tags.filter((entry) => entry !== tag);
                                     await updateItemWithTags(item.id, { tags: nextTags });
                                 }}
+                                onClickTag={(tag) => setSearchQuery(`#${tag}`)}
                                 editingNameId={editingNameId}
                                 editingNameDraft={editingNameDraft}
                                 onStartNameEdit={() => startNameEdit(item)}
