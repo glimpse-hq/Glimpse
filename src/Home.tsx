@@ -603,7 +603,7 @@ const Home = () => {
           </div>
 
           <div
-            className={`w-full max-w-3xl mx-auto pt-8 ${activeView === "dictionary" ? "" : "hidden"}`}
+            className={`w-full max-w-6xl mx-auto min-w-0 pt-8 ${activeView === "dictionary" ? "" : "hidden"}`}
           >
             <DictionaryView isActive={activeView === "dictionary"} />
           </div>
@@ -615,7 +615,7 @@ const Home = () => {
           </div>
 
           <div
-            className={`w-full pt-8 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
+            className={`w-full min-w-0 pt-8 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
           >
             <LibraryView
               pendingImportPaths={pendingImportPaths}

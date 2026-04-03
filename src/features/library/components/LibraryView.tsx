@@ -296,10 +296,10 @@ const LibraryView = ({
     ], [t]);
 
     return (
-        <div className="relative flex flex-1 flex-col min-h-0 h-full">
-            <div className="w-full text-left max-w-7xl mx-auto pl-2 pr-6 flex flex-col gap-4 pb-4">
+        <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
+            <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4 pb-4 pl-2 pr-6 text-left">
                 <header className="flex flex-col gap-4 mb-4 mt-2 md:-mt-6">
-                    <div className="flex items-start gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
                         <DotMatrix
                             rows={2}
                             cols={3}
@@ -308,7 +308,7 @@ const LibraryView = ({
                             gap={3}
                             color="var(--color-accent)"
                         />
-                        <div className="flex-1">
+                        <div className="min-w-0 flex-1">
                             <h2 className="ui-text-screen-title ui-color-primary tracking-tight">
                                 {t({ id: "library.view.title", message: "Library" })}
                             </h2>
@@ -321,7 +321,7 @@ const LibraryView = ({
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(14rem,1fr)_auto] md:items-center">
                         <button
                             onClick={handleImportClick}
                             className="flex items-center gap-2 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-surface)] px-3 py-1.5 ui-text-body-sm ui-color-primary hover:border-[var(--color-border-secondary)] hover:bg-[var(--color-bg-overlay)] transition-colors shrink-0"
@@ -330,7 +330,7 @@ const LibraryView = ({
                             {t({ id: "library.view.import_button", message: "Import" })}
                         </button>
 
-                        <div className="relative w-full sm:w-64 group">
+                        <div className="relative min-w-0 w-full group">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted group-focus-within:text-[var(--color-accent)] transition-colors" />
                             <input
                                 type="text"
@@ -354,6 +354,7 @@ const LibraryView = ({
                                 id: "library.filter.aria_label",
                                 message: "Filter library by status",
                             })}
+                            className="relative flex w-full items-center rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-1 md:w-auto"
                             activeIndicatorLayoutId="library-status-filter"
                         />
 
@@ -368,8 +369,8 @@ const LibraryView = ({
             </div>
             <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-3 pt-1">
                 <div key="library-list" className="flex flex-col gap-6 w-full">
-                    <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+                    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
+                        <div className="grid min-w-0 justify-start gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,220px),220px))]">
                         {isLoading && items.length === 0 && (
                             <div className="col-span-full py-12 flex items-center justify-center">
                                 <DotMatrix

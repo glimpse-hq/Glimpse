@@ -188,18 +188,18 @@ const LibraryCard = ({
             }}
             role="button"
             tabIndex={0}
-            className={`group relative flex flex-col rounded-xl cursor-pointer h-[220px] outline-none transition-colors duration-100 ease-out border ${
+            className={`group relative flex min-w-0 flex-col rounded-xl cursor-pointer h-[220px] outline-none transition-colors duration-100 ease-out border ${
                 shiftHeld
                     ? "border-[var(--color-error)]/30 hover:border-[var(--color-error)]/60 bg-[var(--color-error)]/5"
                     : "border-[var(--color-border-primary)] hover:border-[var(--color-border-secondary)]"
             } bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-overlay)]`}
         >
             <div className="px-4 pt-2.5 pb-2.5 flex flex-col h-full relative z-10 w-full min-w-0">
-                <div className="flex justify-between items-start mb-1">
-                    <div className="flex items-start gap-2.5">
+                <div className="mb-1 flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-start gap-2.5">
                         <IntelligencePixel active={isTranscribing} statusType={item.status.type} />
 
-                        <div className="flex flex-col gap-1.5 pt-[1px] min-h-[28px]">
+                        <div className="flex min-w-0 flex-col gap-1.5 pt-[1px] min-h-[28px]">
                             <div className="flex items-center gap-1.5 h-3">
                                 <span
                                     className={`ui-text-label-strong ${
@@ -379,7 +379,7 @@ const LibraryCard = ({
                 </div>
 
                 <div className="mt-auto shrink-0 flex flex-col gap-2 pt-2.5 border-t border-[var(--color-border-primary)]">
-                    <div className="flex items-center gap-1.5 ui-text-label ui-color-muted">
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5 ui-text-label ui-color-muted">
                         <span>{formatDuration(item.duration_seconds)}</span>
                         <span className="opacity-40">&bull;</span>
                         <span>{formatBytes(item.file_size_bytes)}</span>
