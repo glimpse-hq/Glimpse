@@ -1,8 +1,20 @@
-use anyhow::{anyhow, Result};
-use tauri::AppHandle;
-use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
+use std::thread::{self, JoinHandle};
+use std::time::Duration;
 
-use crate::AppRuntime;
+use anyhow::{anyhow, Result};
+use handy_keys::{
+    Hotkey, HotkeyManager, HotkeyState as HandyHotkeyState, KeyboardListener, Modifiers,
+};
+use parking_lot::Mutex;
+use serde::Serialize;
+use tauri::{AppHandle, Emitter};
+
+use crate::{pill, AppRuntime};
+
+const REGISTRATION_POLL_INTERVAL: Duration = Duration::from_millis(10);
+const CAPTURE_POLL_INTERVAL: Duration = Duration::from_millis(20);
+pub(crate) const SHORTCUT_CAPTURE_EVENT: &str = "shortcut:capture";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum HotkeyState {
@@ -10,203 +22,300 @@ pub(crate) enum HotkeyState {
     Released,
 }
 
-#[derive(Debug, Clone)]
-pub(crate) struct HotkeyEvent {
-    pub state: HotkeyState,
-}
-
-pub(crate) trait HotkeyProvider {
-    fn unregister_all(&self) -> Result<()>;
-
-    fn on_shortcut<F>(&self, shortcut: &str, handler: F) -> Result<()>
-    where
-        F: Fn(&AppHandle<AppRuntime>, HotkeyEvent) + Send + Sync + 'static;
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ModifierToken {
-    Control,
-    Shift,
-    Alt,
-    Command,
+pub(crate) enum ShortcutAction {
+    Smart,
+    Hold,
+    Toggle,
 }
 
-fn platform_command_or_control() -> ModifierToken {
-    #[cfg(target_os = "macos")]
-    {
-        ModifierToken::Command
-    }
-    #[cfg(not(target_os = "macos"))]
-    {
-        ModifierToken::Control
-    }
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct RegisteredHotkey {
+    pub hotkey: Hotkey,
+    pub action: ShortcutAction,
 }
 
-fn parse_modifier_token(token: &str) -> Option<ModifierToken> {
-    match token.to_ascii_lowercase().as_str() {
-        "control" | "ctrl" | "leftcontrol" | "rightcontrol" => Some(ModifierToken::Control),
-        "shift" | "leftshift" | "rightshift" => Some(ModifierToken::Shift),
-        "alt" | "option" | "leftalt" | "rightalt" | "leftoption" | "rightoption" => {
-            Some(ModifierToken::Alt)
-        }
-        "command" | "cmd" | "meta" | "super" | "leftcommand" | "rightcommand" => {
-            Some(ModifierToken::Command)
-        }
-        "commandorcontrol" | "commandorctrl" | "cmdorctrl" | "cmdorcontrol" => {
-            Some(platform_command_or_control())
-        }
-        _ => None,
-    }
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub(crate) enum ShortcutCapturePayload {
+    Preview { shortcut: String },
+    Captured { shortcut: String },
+    Error { message: String },
 }
 
-fn normalize_registered_key(token: &str) -> Option<String> {
-    let key = token.trim();
-    if key.is_empty() {
-        return None;
-    }
-    if parse_modifier_token(key).is_some() {
-        return None;
-    }
+#[derive(Default)]
+pub(crate) struct HotkeyCoordinator {
+    registration: Mutex<Option<WorkerSession>>,
+    capture: Mutex<Option<WorkerSession>>,
+}
 
-    if key.len() == 1 {
-        let ch = key.chars().next()?;
-        if ch.is_ascii_alphabetic() || ch.is_ascii_digit() {
-            return Some(ch.to_ascii_lowercase().to_string());
-        }
-        if "`-=[]\\;',./".contains(ch) {
-            return Some(ch.to_string());
-        }
-    }
+impl HotkeyCoordinator {
+    pub(crate) fn replace_registrations(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        bindings: Vec<RegisteredHotkey>,
+    ) -> Result<()> {
+        self.stop_registration();
 
-    let lower = key.to_ascii_lowercase();
-    if let Some(number) = lower.strip_prefix('f') {
-        if let Ok(value) = number.parse::<u8>() {
-            if (1..=24).contains(&value) {
-                return Some(format!("f{value}"));
+        if bindings.is_empty() {
+            return Ok(());
+        }
+
+        let app_handle = app.clone();
+        let session = WorkerSession::spawn("shortcut-registration", move |stop_rx| {
+            let manager = HotkeyManager::new_with_blocking()?;
+            let mut actions = Vec::with_capacity(bindings.len());
+
+            for binding in bindings {
+                let id = manager.register(binding.hotkey).map_err(|err| {
+                    anyhow!("Failed to register shortcut `{}`: {err}", binding.hotkey)
+                })?;
+                actions.push((id, binding.action));
             }
-        }
+
+            loop {
+                if should_stop(&stop_rx) {
+                    break;
+                }
+
+                if let Some(event) = manager.try_recv() {
+                    if let Some((_, action)) = actions
+                        .iter()
+                        .find(|(registered_id, _)| *registered_id == event.id)
+                    {
+                        let state = match event.state {
+                            HandyHotkeyState::Pressed => HotkeyState::Pressed,
+                            HandyHotkeyState::Released => HotkeyState::Released,
+                        };
+                        pill::handle_registered_hotkey_event(&app_handle, *action, state);
+                    }
+                    continue;
+                }
+
+                thread::sleep(REGISTRATION_POLL_INTERVAL);
+            }
+
+            Ok(())
+        })?;
+
+        *self.registration.lock() = Some(session);
+        Ok(())
     }
 
-    match lower.as_str() {
-        "space" | "spacebar" => Some("space".to_string()),
-        "enter" => Some("enter".to_string()),
-        "tab" => Some("tab".to_string()),
-        "backspace" => Some("backspace".to_string()),
-        "escape" | "esc" => Some("escape".to_string()),
-        "delete" | "del" => Some("delete".to_string()),
-        "up" | "arrowup" => Some("arrowup".to_string()),
-        "down" | "arrowdown" => Some("arrowdown".to_string()),
-        "left" | "arrowleft" => Some("arrowleft".to_string()),
-        "right" | "arrowright" => Some("arrowright".to_string()),
-        _ => None,
+    pub(crate) fn stop_registration(&self) {
+        self.registration.lock().take();
     }
+
+    pub(crate) fn start_capture(&self, app: &AppHandle<AppRuntime>) -> Result<()> {
+        self.stop_capture();
+
+        let app_handle = app.clone();
+        let session = WorkerSession::spawn("shortcut-capture", move |stop_rx| {
+            let listener = KeyboardListener::new()?;
+            let mut last_hotkey: Option<Hotkey> = None;
+
+            loop {
+                if should_stop(&stop_rx) {
+                    break;
+                }
+
+                match listener.recv_timeout(CAPTURE_POLL_INTERVAL) {
+                    Ok(event) => {
+                        if let Ok(hotkey) = event.as_hotkey() {
+                            last_hotkey = Some(hotkey);
+                            emit_capture_event(
+                                &app_handle,
+                                ShortcutCapturePayload::Preview {
+                                    shortcut: hotkey.to_string(),
+                                },
+                            );
+                        }
+
+                        if !event.is_key_down
+                            && (event.key.is_some() || event.changed_modifier.is_some())
+                        {
+                            if let Some(hotkey) = last_hotkey.take() {
+                                emit_capture_event(
+                                    &app_handle,
+                                    ShortcutCapturePayload::Captured {
+                                        shortcut: hotkey.to_string(),
+                                    },
+                                );
+                                break;
+                            }
+                        }
+                    }
+                    Err(handy_keys::Error::Timeout) => {}
+                    Err(err) => {
+                        emit_capture_event(
+                            &app_handle,
+                            ShortcutCapturePayload::Error {
+                                message: format!("Shortcut capture failed: {err}"),
+                            },
+                        );
+                        break;
+                    }
+                }
+            }
+
+            Ok(())
+        })?;
+
+        *self.capture.lock() = Some(session);
+        Ok(())
+    }
+
+    pub(crate) fn stop_capture(&self) {
+        self.capture.lock().take();
+    }
+}
+
+fn emit_capture_event(app: &AppHandle<AppRuntime>, payload: ShortcutCapturePayload) {
+    if let Err(err) = app.emit(SHORTCUT_CAPTURE_EVENT, payload) {
+        eprintln!("Failed to emit shortcut capture event: {err}");
+    }
+}
+
+struct WorkerSession {
+    stop_tx: Sender<()>,
+    join_handle: Option<JoinHandle<()>>,
+}
+
+impl WorkerSession {
+    fn spawn<F>(thread_name: &str, task: F) -> Result<Self>
+    where
+        F: FnOnce(Receiver<()>) -> Result<()> + Send + 'static,
+    {
+        let (stop_tx, stop_rx) = mpsc::channel();
+        let join_handle = thread::Builder::new()
+            .name(thread_name.to_string())
+            .spawn(move || {
+                if let Err(err) = task(stop_rx) {
+                    eprintln!("Hotkey worker exited with error: {err}");
+                }
+            })
+            .map_err(|err| anyhow!("Failed to spawn hotkey worker: {err}"))?;
+
+        Ok(Self {
+            stop_tx,
+            join_handle: Some(join_handle),
+        })
+    }
+}
+
+impl Drop for WorkerSession {
+    fn drop(&mut self) {
+        let _ = self.stop_tx.send(());
+        if let Some(join_handle) = self.join_handle.take() {
+            let _ = join_handle.join();
+        }
+    }
+}
+
+fn should_stop(stop_rx: &Receiver<()>) -> bool {
+    matches!(stop_rx.try_recv(), Ok(()) | Err(TryRecvError::Disconnected))
+}
+
+pub(crate) fn parse_shortcut(shortcut: &str) -> Result<Hotkey> {
+    let normalized = normalize_legacy_shortcut_input(shortcut);
+    normalized
+        .parse::<Hotkey>()
+        .map_err(|err| anyhow!("Shortcut `{shortcut}` is invalid: {err}"))
 }
 
 pub(crate) fn normalize_shortcut(shortcut: &str) -> Result<String> {
-    let mut saw_token = false;
-    let mut control = false;
-    let mut shift = false;
-    let mut alt = false;
-    let mut command = false;
-    let mut key: Option<String> = None;
+    Ok(parse_shortcut(shortcut)?.to_string())
+}
 
-    for token in shortcut
+fn normalize_legacy_shortcut_input(shortcut: &str) -> String {
+    shortcut
         .split('+')
-        .map(str::trim)
-        .filter(|part| !part.is_empty())
-    {
-        saw_token = true;
-
-        if let Some(modifier) = parse_modifier_token(token) {
-            match modifier {
-                ModifierToken::Control => control = true,
-                ModifierToken::Shift => shift = true,
-                ModifierToken::Alt => alt = true,
-                ModifierToken::Command => command = true,
+        .map(|token| match token.trim().to_ascii_lowercase().as_str() {
+            "commandorcontrol" | "commandorctrl" | "cmdorctrl" | "cmdorcontrol" => {
+                if cfg!(target_os = "macos") {
+                    "Cmd".to_string()
+                } else {
+                    "Ctrl".to_string()
+                }
             }
-            continue;
-        }
-
-        let normalized_key = normalize_registered_key(token)
-            .ok_or_else(|| anyhow!("Shortcut `{shortcut}` has an invalid base key `{token}`"))?;
-
-        if key.replace(normalized_key).is_some() {
-            return Err(anyhow!(
-                "Shortcut `{shortcut}` has multiple base keys; expected one"
-            ));
-        }
-    }
-
-    if !saw_token {
-        return Err(anyhow!("Shortcut `{shortcut}` is empty"));
-    }
-
-    let key = key.ok_or_else(|| {
-        anyhow!("Shortcut `{shortcut}` must include a non-modifier key (e.g. Control+Space)")
-    })?;
-
-    let mut parts = Vec::with_capacity(5);
-    if command {
-        parts.push("Command".to_string());
-    }
-    if alt {
-        parts.push("Alt".to_string());
-    }
-    if control {
-        parts.push("Control".to_string());
-    }
-    if shift {
-        parts.push("Shift".to_string());
-    }
-    parts.push(key);
-
-    Ok(parts.join("+"))
+            "leftcommand" => "CmdLeft".to_string(),
+            "rightcommand" => "CmdRight".to_string(),
+            "leftcontrol" => "CtrlLeft".to_string(),
+            "rightcontrol" => "CtrlRight".to_string(),
+            "leftalt" | "leftoption" => "OptLeft".to_string(),
+            "rightalt" | "rightoption" => "OptRight".to_string(),
+            "leftshift" => "ShiftLeft".to_string(),
+            "rightshift" => "ShiftRight".to_string(),
+            // Glimpse historically stored `Delete` for the forward-delete key.
+            "delete" => "ForwardDelete".to_string(),
+            "arrowleft" => "Left".to_string(),
+            "arrowright" => "Right".to_string(),
+            "arrowup" => "Up".to_string(),
+            "arrowdown" => "Down".to_string(),
+            "spacebar" => "Space".to_string(),
+            _ => token.trim().to_string(),
+        })
+        .filter(|token| !token.is_empty())
+        .collect::<Vec<_>>()
+        .join("+")
 }
 
-struct GlobalShortcutProvider<'a> {
-    app: &'a AppHandle<AppRuntime>,
+pub(crate) fn shortcuts_conflict(left: &Hotkey, right: &Hotkey) -> bool {
+    left == right || is_modifier_only_prefix(left, right) || is_modifier_only_prefix(right, left)
 }
 
-impl<'a> GlobalShortcutProvider<'a> {
-    fn new(app: &'a AppHandle<AppRuntime>) -> Self {
-        Self { app }
-    }
+fn is_modifier_only_prefix(prefix: &Hotkey, full: &Hotkey) -> bool {
+    prefix.key.is_none()
+        && !prefix.modifiers.is_empty()
+        && modifier_group_subset(
+            prefix.modifiers,
+            full.modifiers,
+            Modifiers::CMD_LEFT,
+            Modifiers::CMD_RIGHT,
+        )
+        && modifier_group_subset(
+            prefix.modifiers,
+            full.modifiers,
+            Modifiers::CTRL_LEFT,
+            Modifiers::CTRL_RIGHT,
+        )
+        && modifier_group_subset(
+            prefix.modifiers,
+            full.modifiers,
+            Modifiers::OPT_LEFT,
+            Modifiers::OPT_RIGHT,
+        )
+        && modifier_group_subset(
+            prefix.modifiers,
+            full.modifiers,
+            Modifiers::SHIFT_LEFT,
+            Modifiers::SHIFT_RIGHT,
+        )
+        && (!prefix.modifiers.contains(Modifiers::FN) || full.modifiers.contains(Modifiers::FN))
+        && (full.key.is_some() || prefix.modifiers != full.modifiers)
 }
 
-impl HotkeyProvider for GlobalShortcutProvider<'_> {
-    fn unregister_all(&self) -> Result<()> {
-        self.app
-            .global_shortcut()
-            .unregister_all()
-            .map_err(|err| anyhow!("Failed to unregister shortcuts: {err}"))?;
+fn modifier_group_subset(
+    prefix: Modifiers,
+    full: Modifiers,
+    left: Modifiers,
+    right: Modifiers,
+) -> bool {
+    let prefix_has_left = prefix.contains(left);
+    let prefix_has_right = prefix.contains(right);
 
-        Ok(())
+    if !prefix_has_left && !prefix_has_right {
+        return true;
     }
 
-    fn on_shortcut<F>(&self, shortcut: &str, handler: F) -> Result<()>
-    where
-        F: Fn(&AppHandle<AppRuntime>, HotkeyEvent) + Send + Sync + 'static,
-    {
-        let normalized_shortcut = normalize_shortcut(shortcut)?;
-        self.app
-            .global_shortcut()
-            .on_shortcut(normalized_shortcut.as_str(), move |app, _pressed_shortcut, event| {
-                let state = match event.state {
-                    ShortcutState::Pressed => HotkeyState::Pressed,
-                    ShortcutState::Released => HotkeyState::Released,
-                };
-                handler(app, HotkeyEvent { state });
-            })
-            .map_err(|err| {
-                anyhow!(
-                    "Failed to register shortcut `{shortcut}` (normalized `{normalized_shortcut}`): {err}"
-                )
-            })?;
+    let full_has_left = full.contains(left);
+    let full_has_right = full.contains(right);
 
-        Ok(())
+    if prefix_has_left && prefix_has_right {
+        full_has_left || full_has_right
+    } else if prefix_has_left {
+        full_has_left
+    } else {
+        full_has_right
     }
-}
-
-pub(crate) fn provider(app: &AppHandle<AppRuntime>) -> impl HotkeyProvider + '_ {
-    GlobalShortcutProvider::new(app)
 }

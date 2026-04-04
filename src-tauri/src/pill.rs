@@ -1,6 +1,6 @@
 use crate::{
     assistive,
-    core::hotkeys::{self, HotkeyProvider, HotkeyState},
+    core::hotkeys::{self, HotkeyState},
     emit_event, model_manager, music, permissions, platform,
     recorder::RecorderManager,
     settings::UserSettings,
@@ -787,6 +787,48 @@ fn shortcuts_paused(app: &AppHandle<AppRuntime>) -> bool {
     state.is_shortcut_capture_active()
 }
 
+pub(crate) fn handle_registered_hotkey_event(
+    app: &AppHandle<AppRuntime>,
+    action: hotkeys::ShortcutAction,
+    state: HotkeyState,
+) {
+    if shortcuts_paused(app) {
+        return;
+    }
+
+    let app_state = app.state::<AppState>();
+    let pill = app_state.pill();
+
+    match action {
+        hotkeys::ShortcutAction::Smart => match state {
+            HotkeyState::Pressed => {
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
+                pill.handle_smart_press(app);
+            }
+            HotkeyState::Released => pill.handle_smart_release(app),
+        },
+        hotkeys::ShortcutAction::Hold => match state {
+            HotkeyState::Pressed => {
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
+                let _ = pill.handle_hold_press(app);
+            }
+            HotkeyState::Released => pill.handle_hold_release(app),
+        },
+        hotkeys::ShortcutAction::Toggle => {
+            if state == HotkeyState::Pressed {
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
+                pill.handle_toggle_press(app);
+            }
+        }
+    }
+}
+
 pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     let state = app.state::<AppState>();
     if state.is_shortcut_capture_active() {
@@ -794,140 +836,63 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     }
 
     let settings = state.current_settings();
+    let mut parsed_shortcuts: Vec<(&'static str, handy_keys::Hotkey)> = Vec::new();
+    let mut bindings = Vec::new();
 
-    let provider = hotkeys::provider(app);
-    if let Err(err) = provider.unregister_all() {
-        eprintln!("Failed to clear shortcuts: {err}");
-    }
-
-    let smart_shortcut_normalized = if settings.smart_enabled {
-        match hotkeys::normalize_shortcut(&settings.smart_shortcut) {
-            Ok(shortcut) => Some(shortcut),
-            Err(err) => {
-                eprintln!(
-                    "Skipping invalid Smart shortcut `{}`: {err}",
-                    settings.smart_shortcut
-                );
-                None
-            }
+    let mut add_binding = |label: &'static str,
+                           enabled: bool,
+                           raw_shortcut: &str,
+                           action: hotkeys::ShortcutAction| {
+        if !enabled {
+            return;
         }
-    } else {
-        None
-    };
 
-    let hold_shortcut_normalized = if settings.hold_enabled {
-        match hotkeys::normalize_shortcut(&settings.hold_shortcut) {
-            Ok(shortcut) => Some(shortcut),
+        let hotkey = match hotkeys::parse_shortcut(raw_shortcut) {
+            Ok(hotkey) => hotkey,
             Err(err) => {
-                eprintln!(
-                    "Skipping invalid Hold shortcut `{}`: {err}",
-                    settings.hold_shortcut
-                );
-                None
-            }
-        }
-    } else {
-        None
-    };
-
-    let toggle_shortcut_normalized = if settings.toggle_enabled {
-        match hotkeys::normalize_shortcut(&settings.toggle_shortcut) {
-            Ok(shortcut) => Some(shortcut),
-            Err(err) => {
-                eprintln!(
-                    "Skipping invalid Toggle shortcut `{}`: {err}",
-                    settings.toggle_shortcut
-                );
-                None
-            }
-        }
-    } else {
-        None
-    };
-
-    let hold_is_subset_of_toggle = if let (Some(hold_shortcut), Some(toggle_shortcut)) = (
-        hold_shortcut_normalized.as_ref(),
-        toggle_shortcut_normalized.as_ref(),
-    ) {
-        let hold_keys: std::collections::HashSet<&str> =
-            hold_shortcut.split('+').map(|token| token.trim()).collect();
-        let toggle_keys: std::collections::HashSet<&str> = toggle_shortcut
-            .split('+')
-            .map(|token| token.trim())
-            .collect();
-        hold_keys.is_subset(&toggle_keys)
-    } else {
-        false
-    };
-
-    if settings.smart_enabled && smart_shortcut_normalized.is_some() {
-        let smart_shortcut = settings.smart_shortcut.clone();
-        provider.on_shortcut(smart_shortcut.as_str(), move |app, event| {
-            if shortcuts_paused(app) {
+                eprintln!("Skipping invalid {label} shortcut `{raw_shortcut}`: {err}");
                 return;
             }
-            let state = app.state::<AppState>();
-            let pill = state.pill();
-            match event.state {
-                HotkeyState::Pressed => {
-                    if pill.should_ignore_shortcut_press() {
-                        return;
-                    }
-                    pill.handle_smart_press(app)
-                }
-                HotkeyState::Released => pill.handle_smart_release(app),
-            }
-        })?;
-    }
+        };
 
-    if settings.hold_enabled && hold_shortcut_normalized.is_some() {
-        let hold_shortcut = settings.hold_shortcut.clone();
-        let check_toggle_overlap = hold_is_subset_of_toggle;
-        let toggle_shortcut_normalized = toggle_shortcut_normalized.clone();
-        if check_toggle_overlap {
-            if let Some(toggle_shortcut) = toggle_shortcut_normalized.as_ref() {
-                eprintln!(
-                    "Skipping Hold shortcut `{hold_shortcut}` because it overlaps Toggle shortcut `{toggle_shortcut}`"
-                );
-            }
-        } else {
-            provider.on_shortcut(hold_shortcut.as_str(), move |app, event| {
-                if shortcuts_paused(app) {
-                    return;
-                }
-                let state = app.state::<AppState>();
-                let pill = state.pill();
-                match event.state {
-                    HotkeyState::Pressed => {
-                        if pill.should_ignore_shortcut_press() {
-                            return;
-                        }
-                        let _ = pill.handle_hold_press(app);
-                    }
-                    HotkeyState::Released => pill.handle_hold_release(app),
-                }
-            })?;
+        if let Some((existing_label, existing_hotkey)) = parsed_shortcuts
+            .iter()
+            .find(|(_, existing_hotkey)| hotkeys::shortcuts_conflict(existing_hotkey, &hotkey))
+        {
+            let existing_shortcut = existing_hotkey.to_string();
+            eprintln!(
+                "Skipping {label} shortcut `{raw_shortcut}` because it conflicts with {existing_label} shortcut `{existing_shortcut}`"
+            );
+            return;
         }
-    }
 
-    if settings.toggle_enabled && toggle_shortcut_normalized.is_some() {
-        let toggle_shortcut = settings.toggle_shortcut.clone();
-        provider.on_shortcut(toggle_shortcut.as_str(), move |app, event| {
-            if shortcuts_paused(app) {
-                return;
-            }
-            let state = app.state::<AppState>();
-            if event.state == HotkeyState::Pressed {
-                let pill = state.pill();
-                if pill.should_ignore_shortcut_press() {
-                    return;
-                }
-                pill.handle_toggle_press(app);
-            }
-        })?;
-    }
+        parsed_shortcuts.push((label, hotkey));
+        bindings.push(hotkeys::RegisteredHotkey {
+            hotkey,
+            action,
+        });
+    };
 
-    Ok(())
+    add_binding(
+        "Smart",
+        settings.smart_enabled,
+        &settings.smart_shortcut,
+        hotkeys::ShortcutAction::Smart,
+    );
+    add_binding(
+        "Hold",
+        settings.hold_enabled,
+        &settings.hold_shortcut,
+        hotkeys::ShortcutAction::Hold,
+    );
+    add_binding(
+        "Toggle",
+        settings.toggle_enabled,
+        &settings.toggle_shortcut,
+        hotkeys::ShortcutAction::Toggle,
+    );
+
+    state.hotkeys.replace_registrations(app, bindings)
 }
 
 pub fn show_overlay(app: &AppHandle<AppRuntime>) {

@@ -52,6 +52,8 @@ export function ReadyStep({
     onStartCapture();
     invoke("set_shortcut_capture_active", { active: true }).catch((err) => {
       console.error("Failed to disable shortcuts for capture", err);
+      onEndCapture();
+      resetCaptureState();
     });
   };
 

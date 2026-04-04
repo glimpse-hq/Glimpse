@@ -1,4 +1,4 @@
-//! macOS permission checking for microphone and accessibility access.
+//! macOS permission checking for microphone, accessibility, and input monitoring access.
 
 #[cfg(target_os = "macos")]
 mod macos {
@@ -67,6 +67,18 @@ mod macos {
             Err(e) => Err(format!("Failed to open System Settings: {}", e)),
         }
     }
+
+    /// Open System Settings to the Input Monitoring privacy pane.
+    pub fn open_input_monitoring_settings() -> Result<(), String> {
+        let result = Command::new("open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")
+            .spawn();
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("Failed to open System Settings: {}", e)),
+        }
+    }
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -81,6 +93,10 @@ mod other {
 
     pub fn open_microphone_settings() -> Result<(), String> {
         Err("Microphone settings are only available on macOS".to_string())
+    }
+
+    pub fn open_input_monitoring_settings() -> Result<(), String> {
+        Err("Input Monitoring settings are only available on macOS".to_string())
     }
 }
 

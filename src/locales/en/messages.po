@@ -2357,6 +2357,16 @@ msgid "settings.app.accessibility.description"
 msgstr "required for auto-paste"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx:359
+msgid "settings.app.input_monitoring"
+msgstr "Input Monitoring"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx:365
+msgid "settings.app.input_monitoring.description"
+msgstr "required for global shortcuts"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx:288
 msgid "settings.app.microphone.description"
 msgstr "required for transcription"

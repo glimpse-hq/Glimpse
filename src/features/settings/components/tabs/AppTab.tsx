@@ -5,7 +5,11 @@ import { motion, type Variants } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { requestAccessibilityPermission } from "tauri-plugin-macos-permissions-api";
+import {
+  checkInputMonitoringPermission,
+  requestAccessibilityPermission,
+  requestInputMonitoringPermission,
+} from "tauri-plugin-macos-permissions-api";
 import { buildAppLocaleOptions } from "../../../../shared/lib/appLocales";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { ACTION_CARD_BUTTON_ACCENTS } from "../../../../shared/ui/ActionCardButton";
@@ -61,6 +65,7 @@ type AppTabProps = {
   variants: Variants;
   micPermission: boolean | null;
   accessibilityPermission: boolean | null;
+  inputMonitoringPermission: boolean | null;
   textSizeMode: TextSizeMode;
   onTextSizeModeChange: (mode: TextSizeMode) => void;
   appLocale: AppLocaleSetting;
@@ -79,6 +84,7 @@ const AppTab = ({
   variants,
   micPermission,
   accessibilityPermission,
+  inputMonitoringPermission,
   textSizeMode,
   onTextSizeModeChange,
   appLocale,
@@ -265,6 +271,43 @@ const AppTab = ({
                     if (!granted) await invoke("open_accessibility_settings");
                   } catch {
                     await invoke("open_accessibility_settings");
+                  }
+                }}
+                className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+              >
+                {t({
+                  id: "settings.app.open_settings",
+                  message: "Open Settings",
+                })}
+              </button>
+            </div>
+
+            <div className="px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="ui-text-label-strong ui-color-primary">
+                    {t({
+                      id: "settings.app.input_monitoring",
+                      message: "Input Monitoring",
+                    })}
+                  </span>
+                  <span className="truncate ui-text-meta ui-color-disabled">
+                    {t({
+                      id: "settings.app.input_monitoring.description",
+                      message: "required for global shortcuts",
+                    })}
+                  </span>
+                </div>
+                <PermissionStatus granted={inputMonitoringPermission} />
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    await requestInputMonitoringPermission();
+                    const granted = await checkInputMonitoringPermission();
+                    if (!granted) await invoke("open_input_monitoring_settings");
+                  } catch {
+                    await invoke("open_input_monitoring_settings");
                   }
                 }}
                 className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"

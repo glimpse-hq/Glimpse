@@ -11,6 +11,7 @@ import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   checkAccessibilityPermission,
+  checkInputMonitoringPermission,
   checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
@@ -111,6 +112,9 @@ export function useSettingsForm({
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [accessibilityPermission, setAccessibilityPermission] = useState<
+    boolean | null
+  >(null);
+  const [inputMonitoringPermission, setInputMonitoringPermission] = useState<
     boolean | null
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
@@ -296,17 +300,7 @@ export function useSettingsForm({
       }
       setError(null);
     },
-    onInvalidShortcut: () => {
-      setError(
-        i18n._(
-          msg({
-            id: "settings.shortcuts.invalid_non_modifier",
-            message:
-              "Shortcut must include a non-modifier key (for example, Control+Space).",
-          }),
-        ),
-      );
-    },
+    onError: setError,
     onCaptureInput: () => setError(null),
   });
 
@@ -386,6 +380,12 @@ export function useSettingsForm({
         setAccessibilityPermission(acc);
       } catch {
         setAccessibilityPermission(false);
+      }
+      try {
+        const inputMonitoring = await checkInputMonitoringPermission();
+        setInputMonitoringPermission(inputMonitoring);
+      } catch {
+        setInputMonitoringPermission(false);
       }
     };
 
@@ -637,6 +637,10 @@ export function useSettingsForm({
       setError(null);
       invoke("set_shortcut_capture_active", { active: true }).catch((err) => {
         console.error("Failed to disable shortcuts for capture", err);
+        captureActiveRef.current = null;
+        setCaptureActive(null);
+        resetCaptureState();
+        setError(String(err));
       });
     },
     [captureActive, finalizeCapture, resetCaptureState],
@@ -863,6 +867,7 @@ export function useSettingsForm({
 
     micPermission,
     accessibilityPermission,
+    inputMonitoringPermission,
     textSizeMode,
     setTextSizeMode,
 

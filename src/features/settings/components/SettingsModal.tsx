@@ -289,6 +289,7 @@ const SettingsModal = ({
                       variants={tabContentVariants}
                       micPermission={form.micPermission}
                       accessibilityPermission={form.accessibilityPermission}
+                      inputMonitoringPermission={form.inputMonitoringPermission}
                       textSizeMode={form.textSizeMode}
                       onTextSizeModeChange={form.setTextSizeMode}
                       appLocale={form.appLocale}

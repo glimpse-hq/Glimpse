@@ -38,7 +38,6 @@ use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
-use crate::core::hotkeys::HotkeyProvider;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Days, Local, Months};
 use pill::PillController;
@@ -243,8 +242,6 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init());
 
-    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
-
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_plugin_macos_permissions::init());
 
@@ -387,6 +384,7 @@ pub fn run() {
             toast::toast_dismissed,
             open_accessibility_settings,
             open_microphone_settings,
+            open_input_monitoring_settings,
             open_llm_cleanup_settings,
             open_ffmpeg_install,
             complete_onboarding,
@@ -464,6 +462,7 @@ pub struct AppState {
     storage: Arc<storage::StorageManager>,
     settings_store: Arc<SettingsStore>,
     settings: parking_lot::Mutex<UserSettings>,
+    hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
     pub(crate) settings_close_handler_registered: AtomicBool,
@@ -524,6 +523,7 @@ impl AppState {
             storage: Arc::new(storage),
             settings_store,
             settings: parking_lot::Mutex::new(settings),
+            hotkeys: core::hotkeys::HotkeyCoordinator::default(),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
             settings_close_handler_registered: AtomicBool::new(false),
@@ -861,18 +861,18 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
     state.set_shortcut_capture_active(active);
 
     if active {
-        if let Err(err) = core::hotkeys::provider(&app).unregister_all() {
-            eprintln!("Failed to clear shortcuts for capture: {err}");
-            toast::show(
-                &app,
-                "warning",
-                Some("Shortcut capture warning"),
-                "Could not disable existing OS shortcuts. Capture may miss keys while shortcuts remain active.",
-            );
+        state.hotkeys.stop_registration();
+        if let Err(err) = state.hotkeys.start_capture(&app) {
+            state.set_shortcut_capture_active(false);
+            if let Err(register_err) = pill::register_shortcuts(&app) {
+                eprintln!("Failed to restore shortcuts after capture start error: {register_err}");
+            }
+            return Err(err.to_string());
         }
         return Ok(());
     }
 
+    state.hotkeys.stop_capture();
     pill::register_shortcuts(&app).map_err(|err| err.to_string())
 }
 
@@ -884,6 +884,11 @@ fn open_accessibility_settings() -> Result<(), String> {
 #[tauri::command]
 fn open_microphone_settings() -> Result<(), String> {
     permissions::open_microphone_settings()
+}
+
+#[tauri::command]
+fn open_input_monitoring_settings() -> Result<(), String> {
+    permissions::open_input_monitoring_settings()
 }
 
 #[tauri::command]

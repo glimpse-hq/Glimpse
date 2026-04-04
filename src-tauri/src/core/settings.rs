@@ -38,17 +38,7 @@ pub(crate) struct UpdateSettingsArgs {
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> String {
-    shortcut
-        .split('+')
-        .map(|raw| {
-            let token = raw.trim();
-            match token.to_ascii_lowercase().as_str() {
-                "option" | "leftoption" | "rightoption" => "Alt".to_string(),
-                _ => token.to_string(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("+")
+    hotkeys::normalize_shortcut(shortcut).unwrap_or_else(|_| shortcut.trim().to_string())
 }
 
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
@@ -68,33 +58,40 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("At least one recording mode must be enabled".into());
     }
 
-    let mut enabled_shortcuts: Vec<(&str, &str, String)> = vec![];
+    let mut enabled_shortcuts: Vec<(&str, handy_keys::Hotkey)> = vec![];
     if args.smart_enabled {
         let raw = args.smart_shortcut.trim();
-        let normalized = hotkeys::normalize_shortcut(raw)
+        let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Smart", raw, normalized));
+        enabled_shortcuts.push(("Smart", normalized));
     }
     if args.hold_enabled {
         let raw = args.hold_shortcut.trim();
-        let normalized = hotkeys::normalize_shortcut(raw)
+        let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Hold", raw, normalized));
+        enabled_shortcuts.push(("Hold", normalized));
     }
     if args.toggle_enabled {
         let raw = args.toggle_shortcut.trim();
-        let normalized = hotkeys::normalize_shortcut(raw)
+        let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Toggle", raw, normalized));
+        enabled_shortcuts.push(("Toggle", normalized));
     }
 
     for i in 0..enabled_shortcuts.len() {
         for j in (i + 1)..enabled_shortcuts.len() {
-            let (name1, _, normalized1) = &enabled_shortcuts[i];
-            let (name2, _, normalized2) = &enabled_shortcuts[j];
+            let (name1, normalized1) = &enabled_shortcuts[i];
+            let (name2, normalized2) = &enabled_shortcuts[j];
             if normalized1 == normalized2 {
                 return Err(format!(
                     "{} and {} shortcuts cannot be the same",
+                    name1, name2
+                ));
+            }
+
+            if hotkeys::shortcuts_conflict(normalized1, normalized2) {
+                return Err(format!(
+                    "{} shortcut overlaps {} shortcut. Choose a more specific combination.",
                     name1, name2
                 ));
             }

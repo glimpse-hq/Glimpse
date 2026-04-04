@@ -2351,6 +2351,16 @@ msgid "settings.app.accessibility.description"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx:359
+msgid "settings.app.input_monitoring"
+msgstr "Surveillance des saisies"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx:365
+msgid "settings.app.input_monitoring.description"
+msgstr "requis pour les raccourcis globaux"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx:288
 msgid "settings.app.microphone.description"
 msgstr ""

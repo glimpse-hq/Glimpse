@@ -2,6 +2,7 @@
 
 ### Features
 - Added Nvidia nemotron a new streaming model with a new UI!
+- Added support for wayyyy more keybind options, including fn.
 
 ### Changes
 - Library views have had a small redesign.
@@ -10,6 +11,7 @@
 - Further refined UI elements
 - Media is now unpaused after recording rather than after recording + processing.
 - Models tab now as a new system models catagory.
+- Input monitoring is now an option in app settings, this is used for special key combinations like fn.
 ---
 0.7.5
 
