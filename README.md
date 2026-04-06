@@ -56,8 +56,8 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/
 - [x] Auto media pausing
 - [x] Recording auto deletion
 - [ ] Temporary mode (transcribe without saving)
-- [ ] App localization
-- [ ] Better customizable keybinds
+- [x] App localization
+- [x] Better customizable keybinds
 - [ ] Auto-dictionary
 - [ ] Personalization snippets
 - [ ] Windows support
