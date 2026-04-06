@@ -6,6 +6,8 @@
 
 ### Changes
 - Library views have had a small redesign.
+- `_` and `.` in audio files are now stripped.
+- A significant amount of the UI has been optimized to feel smoother.
 - Dictionary & Replacements have been merged into one view.
 - Edit mode is now signifcantly more consistant.
 - Further refined UI elements

@@ -15,6 +15,7 @@ import {
     formatDuration,
     getLibraryErrorDetails,
     shouldShowImportProgress,
+    formatLibraryName,
 } from "./library-utils";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
@@ -342,7 +343,7 @@ const LibraryCard = ({
                         />
                     ) : (
                         <h3 className="ui-text-title-lg font-medium leading-snug ui-color-primary line-clamp-3 break-words">
-                            {item.name}
+                            {formatLibraryName(item.name)}
                         </h3>
                     )}
                 </div>

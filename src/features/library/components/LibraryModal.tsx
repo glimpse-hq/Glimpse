@@ -31,6 +31,7 @@ import {
     PLAYBACK_RATES,
     sanitizeFileName,
     shouldShowImportProgress,
+    formatLibraryName,
 } from "./library-utils";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
@@ -792,7 +793,7 @@ const LibraryModal = ({
                         </div>
                     ) : (
                         <div className="flex items-center gap-1.5 mt-1 group">
-                            <h2 className="ui-text-body font-semibold text-content-primary truncate">{item.name}</h2>
+                            <h2 className="ui-text-body font-semibold text-content-primary truncate">{formatLibraryName(item.name)}</h2>
                             <button
                                 onClick={() => setIsEditingName(true)}
                                 className="opacity-0 group-hover:opacity-100 text-content-muted hover:text-content-primary transition-opacity"
