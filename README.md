@@ -62,13 +62,9 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/
 - [ ] Personalization snippets
 - [ ] Windows support
 
-## Translations
+## Contributing
 
-Want to help translate Glimpse? Translation contributors are currently added by invite only.
-
-Apply here: [Translation contributor form](https://tally.so/r/EkLeyL)
-
-If accepted, you'll receive a Lokalise invite by email. Applications are reviewed manually, and contributors may not be approved for every requested language.
+Interested in helping out? Check the [Contributing Guide](CONTRIBUTING.md) for ways to get involved, from translations to code to bug reports.
 
 ## Privacy
 
@@ -87,6 +83,7 @@ Glimpse is licensed under [AGPL-3.0](LICENSE). Free to self-host and modify — 
 
 ## Acknowledgments
 
+- <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="16" alt="Lokalise" align="center" /></a> [Lokalise](https://lokalise.com/) — localization platform (OSS supporter)
 - [Tauri](https://v2.tauri.app/) — app framework
 - [Glimpse-Speech](https://github.com/LegendarySpy/Glimpse-Speech) (MIT) — local transcription engine
 - [whisper-rs](https://github.com/tazz4843/whisper-rs) (Unlicense) — Rust bindings for Whisper
