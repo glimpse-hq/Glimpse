@@ -1,19 +1,17 @@
 0.8.0
 
 ### Features
-- Added Nvidia nemotron a new streaming model with a new UI!
-- Added support for wayyyy more keybind options, including fn.
+- Added Nvidia Nemotron, a new streaming model with a new pill UI.
+- Added support for way more keybind options, including fn.
+- Input monitoring is now an option in Settings > App for special key combinations like fn.
 
 ### Changes
-- Library views have had a small redesign.
-- `_` and `.` in audio files are now stripped.
-- A significant amount of the UI has been optimized to feel smoother.
 - Dictionary & Replacements have been merged into one view.
-- Edit mode is now signifcantly more consistant.
-- Further refined UI elements
+- Library views have had a small redesign — `_` and `.` in file names are now stripped for cleaner titles.
+- Models tab now has a new system models category.
 - Media is now unpaused after recording rather than after recording + processing.
-- Models tab now as a new system models catagory.
-- Input monitoring is now an option in app settings, this is used for special key combinations like fn.
+- Edit mode is now significantly more consistent.
+- UI across the app has been optimized to feel smoother.
 ---
 0.7.5
 
