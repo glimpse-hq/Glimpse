@@ -383,6 +383,8 @@ pub fn run() {
             audio::list_input_devices,
             toast::toast_dismissed,
             open_accessibility_settings,
+            check_microphone_permission,
+            request_microphone_permission,
             open_microphone_settings,
             open_input_monitoring_settings,
             open_llm_cleanup_settings,
@@ -879,6 +881,16 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
 #[tauri::command]
 fn open_accessibility_settings() -> Result<(), String> {
     permissions::open_accessibility_settings()
+}
+
+#[tauri::command]
+fn check_microphone_permission() -> bool {
+    permissions::check_microphone_permission()
+}
+
+#[tauri::command]
+fn request_microphone_permission() -> Result<(), String> {
+    permissions::request_microphone_permission()
 }
 
 #[tauri::command]

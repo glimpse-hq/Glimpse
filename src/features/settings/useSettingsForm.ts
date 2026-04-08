@@ -12,7 +12,6 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   checkAccessibilityPermission,
   checkInputMonitoringPermission,
-  checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
@@ -359,19 +358,8 @@ export function useSettingsForm({
 
     const checkPermissions = async () => {
       try {
-        const nativeMic = await checkMicrophonePermission();
-        if (nativeMic) {
-          setMicPermission(true);
-        } else {
-          try {
-            const result = await navigator.permissions.query({
-              name: "microphone" as PermissionName,
-            });
-            setMicPermission(result.state === "granted");
-          } catch {
-            setMicPermission(false);
-          }
-        }
+        const nativeMic = await invoke<boolean>("check_microphone_permission");
+        setMicPermission(nativeMic);
       } catch {
         setMicPermission(false);
       }

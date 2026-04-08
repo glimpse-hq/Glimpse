@@ -739,16 +739,20 @@ pub(crate) fn collapse_expanded_pill(app: &AppHandle<AppRuntime>) {
 fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
     #[cfg(target_os = "macos")]
     {
-        let mic_granted = tauri::async_runtime::block_on(async {
-            tauri_plugin_macos_permissions::check_microphone_permission().await
-        });
+        if permissions::check_microphone_permission() {
+            return true;
+        }
 
-        if !mic_granted {
+        if let Err(err) = permissions::request_microphone_permission() {
+            eprintln!("Failed to request microphone permission: {err}");
+        }
+
+        if !permissions::check_microphone_permission() {
             toast::show_with_action(
                 app,
                 "error",
                 Some("Microphone"),
-                "Microphone access required to record.",
+                "Microphone access required to record. Allow it, then try again.",
                 "open_microphone_settings",
                 "Open Settings",
             );

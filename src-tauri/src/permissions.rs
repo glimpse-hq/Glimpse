@@ -68,6 +68,20 @@ mod macos {
         }
     }
 
+    /// Check if microphone permission is granted.
+    pub fn check_microphone_permission() -> bool {
+        tauri::async_runtime::block_on(async {
+            tauri_plugin_macos_permissions::check_microphone_permission().await
+        })
+    }
+
+    /// Request microphone permission from macOS.
+    pub fn request_microphone_permission() -> Result<(), String> {
+        tauri::async_runtime::block_on(async {
+            tauri_plugin_macos_permissions::request_microphone_permission().await
+        })
+    }
+
     /// Open System Settings to the Input Monitoring privacy pane.
     pub fn open_input_monitoring_settings() -> Result<(), String> {
         let result = Command::new("open")
@@ -93,6 +107,14 @@ mod other {
 
     pub fn open_microphone_settings() -> Result<(), String> {
         Err("Microphone settings are only available on macOS".to_string())
+    }
+
+    pub fn check_microphone_permission() -> bool {
+        true
+    }
+
+    pub fn request_microphone_permission() -> Result<(), String> {
+        Ok(())
     }
 
     pub fn open_input_monitoring_settings() -> Result<(), String> {

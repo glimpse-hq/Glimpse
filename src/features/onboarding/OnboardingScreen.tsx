@@ -7,7 +7,6 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   checkAccessibilityPermission,
   requestAccessibilityPermission,
-  checkMicrophonePermission,
 } from "tauri-plugin-macos-permissions-api";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { onboardingMachine, getSteps, type LocalDownloadStatus } from "./machine";
@@ -224,10 +223,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
   const handleRequestMic = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-      const granted = await checkMicrophonePermission();
-      send({ type: "MIC_PERMISSION_CHANGED", granted, checking: false });
+      await invoke("request_microphone_permission");
     } catch {
       try {
         await invoke("open_microphone_settings");
