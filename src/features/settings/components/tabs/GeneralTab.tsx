@@ -800,7 +800,7 @@ const ShortcutRow = ({
           id: "settings.general.shortcut.record_aria",
           message: `Record new shortcut for ${label}, currently ${displayShortcut}`,
         })}
-        className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors ${
+        className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors flex items-center ${
           isCapturing
             ? "ui-color-primary border-border-hover"
             : enabled
@@ -808,25 +808,28 @@ const ShortcutRow = ({
               : "ui-color-disabled border-border-primary cursor-not-allowed"
         }`}
       >
-        {isCapturing ? (
-          <span className="flex min-w-0 items-center gap-1.5">
-            <motion.span
-              className="w-1 h-1 rounded-full bg-cloud"
-              animate={{ opacity: [0.3, 1, 0.3] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            />
-            <span
-              className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
-            >
-              {capturePreview || t({
-                id: "settings.general.shortcut.capture_placeholder",
-                message: "...",
-              })}
-            </span>
-          </span>
-        ) : (
-          <span className="block truncate">{displayShortcut}</span>
-        )}
+        <div className="flex min-w-0 items-center gap-1.5 h-5">
+          {isCapturing ? (
+            <>
+              <motion.span
+                className="w-1 h-1 rounded-full bg-cloud"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              <span
+                className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
+              >
+                {capturePreview ||
+                  t({
+                    id: "settings.general.shortcut.capture_placeholder",
+                    message: "...",
+                  })}
+              </span>
+            </>
+          ) : (
+            <span className="block truncate">{displayShortcut}</span>
+          )}
+        </div>
       </motion.button>
     </div>
   );

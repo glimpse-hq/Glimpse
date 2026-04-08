@@ -112,33 +112,36 @@ export function ReadyStep({
               id: "onboarding.ready.smart.capture_aria",
               message: `Record new shortcut for Smart, currently ${formatShortcutForDisplay(smartShortcut)}`,
             })}
-            className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors ${
+            className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors flex items-center ${
               captureActive
                 ? "ui-color-primary border-border-hover"
                 : "ui-color-secondary border-border-primary hover:border-border-secondary hover:text-content-primary"
             }`}
           >
-            {captureActive ? (
-              <span className="flex min-w-0 items-center gap-1.5">
-                <motion.span
-                  className="h-1 w-1 rounded-full bg-cloud"
-                  animate={{ opacity: [0.3, 1, 0.3] }}
-                  transition={{ duration: 1, repeat: Infinity }}
-                />
-                <span
-                  className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
-                >
-                  {capturePreview || t({
-                    id: "onboarding.ready.smart.capture_prompt",
-                    message: "Press new shortcut...",
-                  })}
+            <div className="flex min-w-0 items-center gap-1.5 h-5">
+              {captureActive ? (
+                <>
+                  <motion.span
+                    className="h-1 w-1 rounded-full bg-cloud"
+                    animate={{ opacity: [0.3, 1, 0.3] }}
+                    transition={{ duration: 1, repeat: Infinity }}
+                  />
+                  <span
+                    className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
+                  >
+                    {capturePreview ||
+                      t({
+                        id: "onboarding.ready.smart.capture_prompt",
+                        message: "Press new shortcut...",
+                      })}
+                  </span>
+                </>
+              ) : (
+                <span className="block truncate">
+                  {formatShortcutForDisplay(smartShortcut)}
                 </span>
-              </span>
-            ) : (
-              <span className="block truncate">
-                {formatShortcutForDisplay(smartShortcut)}
-              </span>
-            )}
+              )}
+            </div>
           </motion.button>
 
           <p className="ui-text-meta text-content-muted">
