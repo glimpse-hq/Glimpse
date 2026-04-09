@@ -164,7 +164,7 @@ const LibraryCard = ({
                     : "border-[var(--color-border-primary)] hover:border-[var(--color-border-secondary)]"
             } bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-overlay)]`}
         >
-            <div className="px-4 pt-2.5 pb-2.5 flex flex-col h-full relative z-10 w-full min-w-0">
+            <div className="px-4 pt-2.5 pb-2.5 flex flex-col h-full relative w-full min-w-0">
                 <div className="mb-1 flex items-start justify-between gap-2">
                     <div className="flex min-w-0 items-start gap-2.5">
                         <IntelligencePixel active={isTranscribing} statusType={item.status.type} />
@@ -199,7 +199,7 @@ const LibraryCard = ({
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <AlertCircle size={12} className="ui-color-error-strong" />
-                                        <div className="absolute top-1/2 -translate-y-1/2 left-[calc(100%+8px)] w-56 p-3 bg-[var(--color-bg-overlay)] border border-[var(--color-border-hover)] rounded-lg shadow-xl opacity-0 -translate-x-2 group-hover/tooltip:opacity-100 group-hover/tooltip:translate-x-0 transition-all duration-150 ease-out pointer-events-none z-[100]">
+                                        <div className="absolute top-0 left-[calc(100%+8px)] w-56 p-3 bg-[var(--color-bg-overlay)] border border-[var(--color-border-hover)] rounded-lg shadow-xl opacity-0 -translate-x-2 group-hover/tooltip:opacity-100 group-hover/tooltip:translate-x-0 transition-all duration-150 ease-out pointer-events-none z-[100]">
                                             <p className="ui-text-body-sm ui-color-primary normal-case tracking-normal">
                                                 {errorDetails.message}
                                             </p>
