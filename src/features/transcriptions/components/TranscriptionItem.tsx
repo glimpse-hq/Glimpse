@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown, { Components } from "react-markdown";
@@ -69,6 +70,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   skipAnimation = false,
   shiftHeld = false,
 }) => {
+  const { t } = useLingui();
   const [copied, setCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRetryingLlm, setIsRetryingLlm] = useState(false);
@@ -184,27 +186,58 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   });
   const isError = record.status === "error";
   const canRetryFromAudio = record.audio_available;
-  const errorMessage = record.error_message || "Transcription failed";
+  const errorMessage =
+    record.error_message ||
+    t({
+      id: "transcriptions.item.error.default",
+      message: "Transcription failed",
+    });
   const displayText = isError ? null : record.text;
   const speechModelLabel = record.speech_model?.trim()
     ? record.speech_model.startsWith("cloud-")
       ? record.speech_model.slice(6)
       : record.speech_model
-    : "Unknown model";
+    : t({
+        id: "transcriptions.item.unknown_model",
+        message: "Unknown model",
+      });
   const isCloudModel = record.speech_model?.startsWith("cloud-") ?? false;
   const llmModelLabel = record.llm_model?.trim() || null;
   const modeLabel = record.mode_name?.trim() || null;
-  const wordCountLabel = `${record.word_count || 0} ${record.word_count === 1 ? "word" : "words"}`;
+  const wordCountLabel =
+    record.word_count === 1
+      ? t({
+          id: "transcriptions.item.word_count.single",
+          message: "1 word",
+        })
+      : t({
+          id: "transcriptions.item.word_count.multiple",
+          message: `${record.word_count || 0} words`,
+        });
   const formatDuration = (seconds: number) => {
-    if (!Number.isFinite(seconds) || seconds <= 0) return "0s audio";
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      return t({
+        id: "transcriptions.item.audio_duration.zero",
+        message: "0s audio",
+      });
+    }
     if (seconds < 60) {
-      return `${seconds < 10 ? seconds.toFixed(1) : seconds.toFixed(0)}s audio`;
+      return t({
+        id: "transcriptions.item.audio_duration.seconds",
+        message: `${seconds < 10 ? seconds.toFixed(1) : seconds.toFixed(0)}s audio`,
+      });
     }
     const minutes = Math.floor(seconds / 60);
     const remaining = Math.round(seconds % 60);
     return remaining === 0
-      ? `${minutes}m audio`
-      : `${minutes}m ${remaining}s audio`;
+      ? t({
+          id: "transcriptions.item.audio_duration.minutes",
+          message: `${minutes}m audio`,
+        })
+      : t({
+          id: "transcriptions.item.audio_duration.minutes_seconds",
+          message: `${minutes}m ${remaining}s audio`,
+        });
   };
   const allowContextMenu = !isRetryingLlm && !isUndoingLlm;
 
@@ -259,8 +292,14 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                 onCancelRetry?.(record.id);
               }}
               className="relative flex items-center justify-center group/stop"
-              aria-label="Stop transcription"
-              title="Stop transcription"
+              aria-label={t({
+                id: "transcriptions.item.stop_retry",
+                message: "Stop transcription",
+              })}
+              title={t({
+                id: "transcriptions.item.stop_retry",
+                message: "Stop transcription",
+              })}
             >
               <DotMatrix
                 rows={1}
@@ -317,7 +356,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                   color="var(--color-border-hover)"
                 />
                 <span className="ui-text-uppercase-meta font-medium ui-color-error-strong">
-                  Failed
+                  {t({
+                    id: "transcriptions.item.failed",
+                    message: "Failed",
+                  })}
                 </span>
               </>
             )}
@@ -333,7 +375,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                 />
                 <span className="flex items-center gap-1 ui-text-meta ui-color-cloud">
                   <Cloud size={9} />
-                  Cloud
+                  {t({
+                    id: "transcriptions.item.cloud",
+                    message: "Cloud",
+                  })}
                 </span>
               </>
             )}
@@ -349,7 +394,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                 />
                 <span className="flex items-center gap-1 ui-text-meta ui-color-local">
                   <Wand2 size={9} />
-                  Enhanced
+                  {t({
+                    id: "transcriptions.item.enhanced",
+                    message: "Enhanced",
+                  })}
                 </span>
               </>
             )}
@@ -364,7 +412,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                   color="var(--color-border-hover)"
                 />
                 <span className="ui-text-uppercase-meta font-medium ui-color-cloud">
-                  Retrying...
+                  {t({
+                    id: "transcriptions.item.retrying",
+                    message: "Retrying...",
+                  })}
                 </span>
               </>
             )}
@@ -417,7 +468,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                   color="var(--color-border-hover)"
                   aria-hidden="true"
                 />
-                <span>Speech: {speechModelLabel}</span>
+                <span>
+                  {t({
+                    id: "transcriptions.item.speech_model",
+                    message: `Speech: ${speechModelLabel}`,
+                  })}
+                </span>
                 {llmModelLabel && (
                   <>
                     <DotMatrix
@@ -429,7 +485,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       color="var(--color-border-hover)"
                       aria-hidden="true"
                     />
-                    <span>LLM: {llmModelLabel}</span>
+                    <span>
+                      {t({
+                        id: "transcriptions.item.llm_model",
+                        message: `LLM: ${llmModelLabel}`,
+                      })}
+                    </span>
                   </>
                 )}
                 {modeLabel && (
@@ -443,7 +504,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       color="var(--color-border-hover)"
                       aria-hidden="true"
                     />
-                    <span>Mode: {modeLabel}</span>
+                    <span>
+                      {t({
+                        id: "transcriptions.item.mode",
+                        message: `Mode: ${modeLabel}`,
+                      })}
+                    </span>
                   </>
                 )}
               </>
@@ -453,17 +519,37 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-1 p-1 -ml-1 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                aria-label={isExpanded ? "Show less" : "Show more"}
+                aria-label={
+                  isExpanded
+                    ? t({
+                        id: "transcriptions.item.show_less",
+                        message: "Show less",
+                      })
+                    : t({
+                        id: "transcriptions.item.show_more",
+                        message: "Show more",
+                      })
+                }
               >
                 {isExpanded ? (
                   <>
                     <ChevronUp size={12} aria-hidden="true" />
-                    <span>Show less</span>
+                    <span>
+                      {t({
+                        id: "transcriptions.item.show_less",
+                        message: "Show less",
+                      })}
+                    </span>
                   </>
                 ) : (
                   <>
                     <ChevronDown size={12} aria-hidden="true" />
-                    <span>Show more</span>
+                    <span>
+                      {t({
+                        id: "transcriptions.item.show_more",
+                        message: "Show more",
+                      })}
+                    </span>
                   </>
                 )}
               </button>
@@ -484,8 +570,28 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                 className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 hover:bg-surface-elevated ${
                   copied ? "bg-surface-elevated" : ""
                 }`}
-                title={copied ? "Copied" : "Copy transcription"}
-                aria-label={copied ? "Copied" : "Copy transcription"}
+                title={
+                  copied
+                    ? t({
+                        id: "transcriptions.item.copied",
+                        message: "Copied",
+                      })
+                    : t({
+                        id: "transcriptions.item.copy_transcription",
+                        message: "Copy transcription",
+                      })
+                }
+                aria-label={
+                  copied
+                    ? t({
+                        id: "transcriptions.item.copied",
+                        message: "Copied",
+                      })
+                    : t({
+                        id: "transcriptions.item.copy_transcription",
+                        message: "Copy transcription",
+                      })
+                }
               >
                 {copied ? (
                   <Check
@@ -520,8 +626,28 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               className={`p-1.5 rounded-md transition-colors ${
                 shiftHeld ? "hover:bg-red-500/10" : "hover:bg-surface-elevated"
               }`}
-              title={shiftHeld ? "Delete" : "More options"}
-              aria-label={shiftHeld ? "Delete" : "More options"}
+              title={
+                shiftHeld
+                  ? t({
+                      id: "transcriptions.item.delete",
+                      message: "Delete",
+                    })
+                  : t({
+                      id: "transcriptions.item.more_options",
+                      message: "More options",
+                    })
+              }
+              aria-label={
+                shiftHeld
+                  ? t({
+                      id: "transcriptions.item.delete",
+                      message: "Delete",
+                    })
+                  : t({
+                      id: "transcriptions.item.more_options",
+                      message: "More options",
+                    })
+              }
               aria-haspopup="true"
               aria-expanded={menuOpen}
             >
@@ -561,7 +687,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                       >
                         <Copy size={12} className="text-content-muted" />
-                        <span>Copy selection</span>
+                        <span>
+                          {t({
+                            id: "transcriptions.item.copy_selection",
+                            message: "Copy selection",
+                          })}
+                        </span>
                       </button>
                       <div className="h-px bg-border-secondary mx-2" />
                     </>
@@ -573,7 +704,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
                     >
                       <RotateCw size={12} className="text-cloud" />
-                      <span>Retry</span>
+                      <span>
+                        {t({
+                          id: "transcriptions.item.retry",
+                          message: "Retry",
+                        })}
+                      </span>
                     </button>
                   )}
 
@@ -588,7 +724,15 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       >
                         <RotateCw size={12} className="text-local" />
                         <span>
-                          {record.llm_cleaned ? "Retry cleanup" : "Run cleanup"}
+                          {record.llm_cleaned
+                            ? t({
+                                id: "transcriptions.item.retry_cleanup",
+                                message: "Retry cleanup",
+                              })
+                            : t({
+                                id: "transcriptions.item.run_cleanup",
+                                message: "Run cleanup",
+                              })}
                         </span>
                       </button>
                     )}
@@ -605,7 +749,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                         className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
                       >
                         <Undo2 size={12} className="text-warning" />
-                        <span>Restore original transcript</span>
+                        <span>
+                          {t({
+                            id: "transcriptions.item.restore_original",
+                            message: "Restore original transcript",
+                          })}
+                        </span>
                       </button>
                     )}
 
@@ -620,7 +769,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors disabled:opacity-50"
                   >
                     <Trash2 size={12} />
-                    <span>Delete</span>
+                    <span>
+                      {t({
+                        id: "transcriptions.item.delete",
+                        message: "Delete",
+                      })}
+                    </span>
                   </button>
                 </motion.div>
               )}
@@ -632,13 +786,23 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
         {isRetryingLlm && (
           <div className="flex items-center gap-1.5 ui-text-meta ui-color-local">
             <RotateCw size={12} className="animate-spin" />
-            <span>Cleaning...</span>
+            <span>
+              {t({
+                id: "transcriptions.item.cleaning",
+                message: "Cleaning...",
+              })}
+            </span>
           </div>
         )}
         {isUndoingLlm && (
           <div className="flex items-center gap-1.5 ui-text-meta ui-color-warning">
             <Undo2 size={12} className="animate-pulse" />
-            <span>Reverting...</span>
+            <span>
+              {t({
+                id: "transcriptions.item.reverting",
+                message: "Reverting...",
+              })}
+            </span>
           </div>
         )}
       </div>

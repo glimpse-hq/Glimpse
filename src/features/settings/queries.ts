@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import * as settingsApi from "./api";
 import type { StoredSettings } from "../../types";
 
@@ -18,18 +18,6 @@ export function useSettings<TSelect = StoredSettings>(
     queryFn: settingsApi.getSettings,
     select,
     enabled,
-  });
-}
-
-export function useUpdateSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (args: Record<string, unknown>) =>
-      settingsApi.updateSettings(args),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.all });
-    },
   });
 }
 

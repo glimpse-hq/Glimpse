@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion, AnimatePresence } from "framer-motion";
@@ -76,6 +77,7 @@ const AccountView = ({
     onUserUpdate,
     onSignOut
 }: AccountViewProps) => {
+    const { t } = useLingui();
     const [isEditingName, setIsEditingName] = useState(false);
     const [editName, setEditName] = useState(currentUser?.name || "");
     const [nameLoading, setNameLoading] = useState(false);
@@ -183,11 +185,17 @@ const AccountView = ({
         setPasswordSuccess(false);
 
         if (newPassword !== confirmPassword) {
-            setPasswordError("Passwords don't match");
+            setPasswordError(t({
+                id: "settings.account.password.mismatch",
+                message: "Passwords don't match",
+            }));
             return;
         }
         if (newPassword.length < 8) {
-            setPasswordError("Password must be at least 8 characters");
+            setPasswordError(t({
+                id: "settings.account.password.too_short",
+                message: "Password must be at least 8 characters",
+            }));
             return;
         }
 
@@ -199,7 +207,14 @@ const AccountView = ({
                 closePasswordModal();
             }, 1500);
         } catch (err) {
-            setPasswordError(err instanceof Error ? err.message : "Failed to update password");
+            setPasswordError(
+                err instanceof Error
+                    ? err.message
+                    : t({
+                        id: "settings.account.password.update_failed",
+                        message: "Failed to update password",
+                    }),
+            );
         } finally {
             setPasswordLoading(false);
         }
@@ -268,7 +283,10 @@ const AccountView = ({
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
                                         autoFocus
-                                        aria-label="Edit name"
+                                        aria-label={t({
+                                            id: "settings.account.name.edit_aria",
+                                            message: "Edit name",
+                                        })}
                                         className="bg-surface-surface border border-border-primary rounded-lg px-2 py-0 ui-text-title-lg font-medium ui-color-on-solid focus:border-amber-400/50 outline-hidden w-48 h-full"
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") handleSaveName();
@@ -281,7 +299,10 @@ const AccountView = ({
                                     <button
                                         onClick={handleSaveName}
                                         disabled={nameLoading}
-                                        aria-label="Save name"
+                                        aria-label={t({
+                                            id: "settings.account.name.save_aria",
+                                            message: "Save name",
+                                        })}
                                         className="h-[28px] w-[28px] flex items-center justify-center rounded-sm hover:bg-border-secondary ui-color-warning-strong"
                                     >
                                         <Check size={16} aria-hidden="true" />
@@ -290,11 +311,17 @@ const AccountView = ({
                             ) : (
                                 <div className="flex items-center gap-2 h-[28px]">
                                     <h1 className="ui-text-title-lg font-medium ui-color-on-solid">
-                                        {currentUser.name || "Glimpse User"}
+                                        {currentUser.name || t({
+                                            id: "settings.account.name.default",
+                                            message: "Glimpse User",
+                                        })}
                                     </h1>
                                     <button
                                         onClick={() => setIsEditingName(true)}
-                                        aria-label="Edit name"
+                                        aria-label={t({
+                                            id: "settings.account.name.edit_aria",
+                                            message: "Edit name",
+                                        })}
                                         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-content-muted hover:text-content-secondary"
                                     >
                                         <Pencil size={12} aria-hidden="true" />
@@ -310,7 +337,12 @@ const AccountView = ({
                             <Lock size={10} aria-hidden="true" />
                             <span className="font-mono">••••••••</span>
                             <Pencil size={10} className="opacity-0 group-hover/pass:opacity-100 transition-opacity" aria-hidden="true" />
-                            <span className="sr-only">Change password</span>
+                            <span className="sr-only">
+                                {t({
+                                    id: "settings.account.password.change",
+                                    message: "Change password",
+                                })}
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -319,33 +351,70 @@ const AccountView = ({
                     className="flex items-center gap-2 ui-text-body-sm ui-color-muted hover:text-content-primary transition-colors"
                 >
                     <LogOut size={14} />
-                    Sign out
+                    {t({
+                        id: "settings.account.sign_out",
+                        message: "Sign out",
+                    })}
                 </button>
             </div>
 
             <div className="space-y-3">
-                <h3 className="ui-text-section-label-sm ui-color-muted">Account Settings</h3>
+                <h3 className="ui-text-section-label-sm ui-color-muted">
+                    {t({
+                        id: "settings.account.section.title",
+                        message: "Account Settings",
+                    })}
+                </h3>
                 <div className="bg-surface-surface border border-border-primary rounded-xl overflow-hidden divide-y divide-surface-elevated">
                     <div className="flex items-center justify-between p-4 transition-colors group">
                         <div className="flex items-center gap-3">
                             <div>
-                                <div className="ui-text-body-strong ui-color-primary">Subscription</div>
+                                <div className="ui-text-body-strong ui-color-primary">
+                                    {t({
+                                        id: "settings.account.subscription",
+                                        message: "Subscription",
+                                    })}
+                                </div>
                                 <div className="ui-text-label ui-color-muted">
-                                    {isSubscriber ? "Active Cloud Plan" : "Free Plan"}
+                                    {isSubscriber
+                                        ? t({
+                                            id: "settings.account.subscription.cloud_plan",
+                                            message: "Active Cloud Plan",
+                                        })
+                                        : t({
+                                            id: "settings.account.subscription.free_plan",
+                                            message: "Free Plan",
+                                        })}
                                 </div>
                             </div>
                         </div>
                         <span className="rounded-lg bg-surface-elevated px-2 py-0.5 ui-text-micro-strong ui-color-muted">
-                            In development
+                            {t({
+                                id: "settings.account.in_development",
+                                message: "In development",
+                            })}
                         </span>
                     </div>
 
                     <div className="flex items-center justify-between p-4 transition-colors">
                         <div className="flex items-center gap-3">
                             <div>
-                                <div className={`ui-text-body-strong ${isSubscriber ? "ui-color-primary" : "ui-color-muted"}`}>History Sync</div>
+                                <div className={`ui-text-body-strong ${isSubscriber ? "ui-color-primary" : "ui-color-muted"}`}>
+                                    {t({
+                                        id: "settings.account.history_sync",
+                                        message: "History Sync",
+                                    })}
+                                </div>
                                 <div className="ui-text-label ui-color-muted">
-                                    {isSubscriber ? "Sync transcriptions across devices" : "Cloud feature"}
+                                    {isSubscriber
+                                        ? t({
+                                            id: "settings.account.history_sync.cloud_description",
+                                            message: "Sync transcriptions across devices",
+                                        })
+                                        : t({
+                                            id: "settings.account.history_sync.cloud_feature",
+                                            message: "Cloud feature",
+                                        })}
                                 </div>
                             </div>
                         </div>
@@ -353,7 +422,10 @@ const AccountView = ({
                             <ToggleSwitch
                                 enabled={cloudSyncEnabled}
                                 onToggle={onCloudSyncToggle}
-                                ariaLabel="Toggle History Sync"
+                                ariaLabel={t({
+                                    id: "settings.account.history_sync.toggle",
+                                    message: "Toggle History Sync",
+                                })}
                             />
                         ) : null}
                     </div>
@@ -363,7 +435,12 @@ const AccountView = ({
             {/* Cloud Usage Stats Section */}
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="ui-text-section-label-sm ui-color-muted">Cloud Usage</h3>
+                    <h3 className="ui-text-section-label-sm ui-color-muted">
+                        {t({
+                            id: "settings.account.cloud_usage",
+                            message: "Cloud Usage",
+                        })}
+                    </h3>
                     <button
                         onClick={() => loadUsageStats(true)}
                         disabled={usageStatsLoading}
@@ -371,10 +448,21 @@ const AccountView = ({
                             ? "ui-color-warning-strong"
                             : "ui-color-disabled hover:text-content-primary"
                             }`}
-                        title="Refresh usage stats"
+                        title={t({
+                            id: "settings.account.cloud_usage.refresh_title",
+                            message: "Refresh usage stats",
+                        })}
                     >
                         <RefreshCw size={10} className={`flex-shrink-0 ${usageStatsLoading ? "animate-spin" : ""}`} />
-                        {usageStatsLoading ? "Refreshing..." : "Refresh"}
+                        {usageStatsLoading
+                            ? t({
+                                id: "settings.account.cloud_usage.refreshing",
+                                message: "Refreshing...",
+                            })
+                            : t({
+                                id: "settings.account.cloud_usage.refresh",
+                                message: "Refresh",
+                            })}
                     </button>
                 </div>
                 <div className="bg-surface-surface border border-border-primary rounded-xl overflow-hidden">
@@ -386,7 +474,12 @@ const AccountView = ({
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-2">
                                             <Cloud size={14} className="text-content-muted" />
-                                            <span className="ui-text-body-sm-strong ui-color-primary">This Month</span>
+                                            <span className="ui-text-body-sm-strong ui-color-primary">
+                                                {t({
+                                                    id: "settings.account.cloud_usage.this_month",
+                                                    message: "This Month",
+                                                })}
+                                            </span>
                                         </div>
                                         <div className="text-right">
                                             <div className="ui-text-kbd ui-color-secondary leading-none mb-1">
@@ -394,7 +487,10 @@ const AccountView = ({
                                                 <span className="opacity-50"> / 600 min</span>
                                             </div>
                                             <div className="ui-text-micro-strong ui-color-disabled">
-                                                {((usageStats.cloud_minutes_this_month / 600) * 100).toFixed(0)}% used
+                                                {t({
+                                                    id: "settings.account.cloud_usage.percent_used",
+                                                    message: `${((usageStats.cloud_minutes_this_month / 600) * 100).toFixed(0)}% used`,
+                                                })}
                                             </div>
                                         </div>
                                     </div>
@@ -410,18 +506,26 @@ const AccountView = ({
                                     <div className="flex items-center gap-1.5 pt-1">
                                         <DotMatrix rows={1} cols={1} activeDots={[0]} dotSize={2} gap={1} color="var(--color-cloud)" />
                                         <span className="ui-text-meta ui-color-muted">
-                                            {usageStats.cloud_transcriptions_this_month} transcriptions
+                                            {t({
+                                                id: "settings.account.cloud_usage.monthly_transcriptions",
+                                                message: `${usageStats.cloud_transcriptions_this_month} transcriptions`,
+                                            })}
                                         </span>
                                     </div>
                                 </div>
                             )}
 
                             {/* Lifetime Stats */}
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Activity size={14} className="text-content-muted" />
-                                    <span className="ui-text-body-sm-strong ui-color-primary">Lifetime</span>
-                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Activity size={14} className="text-content-muted" />
+                                        <span className="ui-text-body-sm-strong ui-color-primary">
+                                            {t({
+                                                id: "settings.account.cloud_usage.lifetime",
+                                                message: "Lifetime",
+                                            })}
+                                        </span>
+                                    </div>
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -431,17 +535,35 @@ const AccountView = ({
                                                 : usageStats.cloud_hours_lifetime.toFixed(1)
                                             }
                                             <span className="ui-text-stat-unit text-success/70 ml-1">
-                                                {usageStats.cloud_hours_lifetime < 1 ? 'min' : 'hrs'}
+                                                {usageStats.cloud_hours_lifetime < 1
+                                                    ? t({
+                                                        id: "settings.account.cloud_usage.minutes_unit",
+                                                        message: "min",
+                                                    })
+                                                    : t({
+                                                        id: "settings.account.cloud_usage.hours_unit",
+                                                        message: "hrs",
+                                                    })}
                                             </span>
                                         </div>
-                                        <div className="ui-text-meta ui-color-muted">Audio processed</div>
+                                        <div className="ui-text-meta ui-color-muted">
+                                            {t({
+                                                id: "settings.account.cloud_usage.audio_processed",
+                                                message: "Audio processed",
+                                            })}
+                                        </div>
                                     </div>
 
                                     <div>
                                         <div className="ui-text-stat ui-color-primary leading-none mb-1">
                                             {usageStats.cloud_transcriptions_count}
                                         </div>
-                                        <div className="ui-text-meta ui-color-muted">Transcriptions</div>
+                                        <div className="ui-text-meta ui-color-muted">
+                                            {t({
+                                                id: "settings.account.cloud_usage.transcriptions",
+                                                message: "Transcriptions",
+                                            })}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -452,13 +574,21 @@ const AccountView = ({
 
             <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                    <h3 className="ui-text-section-label-sm ui-color-muted">Active Sessions</h3>
+                    <h3 className="ui-text-section-label-sm ui-color-muted">
+                        {t({
+                            id: "settings.account.active_sessions",
+                            message: "Active Sessions",
+                        })}
+                    </h3>
                     {sessions.length > 1 && (
                         <button
                             onClick={handleSignOutAll}
                             className="ui-text-meta ui-color-error-strong ui-hover-error-soft transition-colors"
                         >
-                            Sign out all devices
+                            {t({
+                                id: "settings.account.active_sessions.sign_out_all",
+                                message: "Sign out all devices",
+                            })}
                         </button>
                     )}
                 </div>
@@ -469,23 +599,40 @@ const AccountView = ({
                             <Loader2 size={18} className="animate-spin text-content-disabled" />
                         </div>
                     ) : (
-                        sessions.map((session) => (
-                            <div key={session.$id} className="flex items-center justify-between p-4 hover:bg-surface-elevated transition-colors group">
+                        sessions.map((session, index) => {
+                            const unknownLocation = t({
+                                id: "settings.account.sessions.unknown_location",
+                                message: "Unknown Location",
+                            });
+                            const sessionLocation = session.countryName || unknownLocation;
+                            const sessionKey = session.$id || `session-${index}-${session.clientName || session.osName || "unknown"}`;
+
+                            return (
+                            <div key={sessionKey} className="flex items-center justify-between p-4 hover:bg-surface-elevated transition-colors group">
                                 <div className="flex items-center gap-3">
                                     {getOsIcon(session.osName, session.clientName)}
                                     <div className="flex flex-col">
                                         <div className="flex items-center gap-2">
                                             <span className="ui-text-body-strong ui-color-primary">
-                                                {session.clientName || "Unknown Device"}
+                                                {session.clientName || t({
+                                                    id: "settings.account.sessions.unknown_device",
+                                                    message: "Unknown Device",
+                                                })}
                                             </span>
                                             {session.current && (
                                                 <span className="ui-text-micro font-semibold ui-color-warning-strong bg-amber-400/10 px-1.5 py-0.5 rounded-sm">
-                                                    Current
+                                                    {t({
+                                                        id: "settings.account.sessions.current",
+                                                        message: "Current",
+                                                    })}
                                                 </span>
                                             )}
                                         </div>
                                         <span className="ui-text-label ui-color-muted">
-                                            {session.osName}, {session.countryName || "Unknown Location"}
+                                            {t({
+                                                id: "settings.account.sessions.location",
+                                                message: `${session.osName}, ${sessionLocation}`,
+                                            })}
                                         </span>
                                     </div>
                                 </div>
@@ -498,12 +645,16 @@ const AccountView = ({
                                         {deletingSession === session.$id ? (
                                             <Loader2 size={12} className="animate-spin ui-color-error-strong" />
                                         ) : (
-                                            "Revoke"
+                                            t({
+                                                id: "settings.account.sessions.revoke",
+                                                message: "Revoke",
+                                            })
                                         )}
                                     </button>
                                 )}
                             </div>
-                        ))
+                        );
+                        })
                     )}
                 </div>
             </div>
@@ -525,7 +676,12 @@ const AccountView = ({
                             className="w-[380px] rounded-2xl border border-border-primary bg-surface-tertiary p-6 shadow-2xl"
                         >
                             <div className="flex items-center justify-between mb-6">
-                                <h3 className="ui-text-title font-medium ui-color-on-solid">Change Password</h3>
+                                <h3 className="ui-text-title font-medium ui-color-on-solid">
+                                    {t({
+                                        id: "settings.account.password.modal_title",
+                                        message: "Change Password",
+                                    })}
+                                </h3>
                                 <button
                                     onClick={closePasswordModal}
                                     className="p-1 rounded-lg hover:bg-surface-elevated text-content-disabled ui-hover-on-solid transition-colors"
@@ -539,7 +695,12 @@ const AccountView = ({
                                     <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-3">
                                         <Check size={20} className="ui-color-success-strong" />
                                     </div>
-                                    <p className="ui-text-body ui-color-primary">Password updated successfully</p>
+                                    <p className="ui-text-body ui-color-primary">
+                                        {t({
+                                            id: "settings.account.password.success",
+                                            message: "Password updated successfully",
+                                        })}
+                                    </p>
                                 </div>
                             ) : (
                                 <form onSubmit={handlePasswordChange} className="space-y-4">
@@ -555,7 +716,10 @@ const AccountView = ({
                                                     setTimeout(() => setPasswordErrorCopied(false), 1500);
                                                 }}
                                                 className="shrink-0 p-0.5 rounded-sm hover:bg-red-500/20 transition-colors"
-                                                title="Copy error"
+                                                title={t({
+                                                    id: "settings.account.password.copy_error",
+                                                    message: "Copy error",
+                                                })}
                                             >
                                                 {passwordErrorCopied ? <Check size={11} /> : <Copy size={11} />}
                                             </button>
@@ -569,15 +733,29 @@ const AccountView = ({
                                                     type={showCurrentPassword ? "text" : "password"}
                                                     value={currentPassword}
                                                     onChange={(e) => setCurrentPassword(e.target.value)}
-                                                    placeholder="Current password"
-                                                    aria-label="Current password"
+                                                    placeholder={t({
+                                                        id: "settings.account.password.current_placeholder",
+                                                        message: "Current password",
+                                                    })}
+                                                    aria-label={t({
+                                                        id: "settings.account.password.current_aria",
+                                                        message: "Current password",
+                                                    })}
                                                     className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-hidden transition-colors"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                                                     className="absolute right-3 top-2.5 text-content-disabled hover:text-content-secondary"
-                                                    aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                                                    aria-label={showCurrentPassword
+                                                        ? t({
+                                                            id: "settings.account.password.hide",
+                                                            message: "Hide password",
+                                                        })
+                                                        : t({
+                                                            id: "settings.account.password.show",
+                                                            message: "Show password",
+                                                        })}
                                                 >
                                                     {showCurrentPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                                                 </button>
@@ -590,15 +768,29 @@ const AccountView = ({
                                                     type={showNewPassword ? "text" : "password"}
                                                     value={newPassword}
                                                     onChange={(e) => setNewPassword(e.target.value)}
-                                                    placeholder="New password"
-                                                    aria-label="New password"
+                                                    placeholder={t({
+                                                        id: "settings.account.password.new_placeholder",
+                                                        message: "New password",
+                                                    })}
+                                                    aria-label={t({
+                                                        id: "settings.account.password.new_aria",
+                                                        message: "New password",
+                                                    })}
                                                     className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-hidden transition-colors"
                                                 />
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowNewPassword(!showNewPassword)}
                                                     className="absolute right-3 top-2.5 text-content-disabled hover:text-content-secondary"
-                                                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                                                    aria-label={showNewPassword
+                                                        ? t({
+                                                            id: "settings.account.password.hide",
+                                                            message: "Hide password",
+                                                        })
+                                                        : t({
+                                                            id: "settings.account.password.show",
+                                                            message: "Show password",
+                                                        })}
                                                 >
                                                     {showNewPassword ? <EyeOff size={14} aria-hidden="true" /> : <Eye size={14} aria-hidden="true" />}
                                                 </button>
@@ -610,8 +802,14 @@ const AccountView = ({
                                                 type="password"
                                                 value={confirmPassword}
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                                placeholder="Confirm new password"
-                                                aria-label="Confirm new password"
+                                                placeholder={t({
+                                                    id: "settings.account.password.confirm_placeholder",
+                                                    message: "Confirm new password",
+                                                })}
+                                                aria-label={t({
+                                                    id: "settings.account.password.confirm_aria",
+                                                    message: "Confirm new password",
+                                                })}
                                                 className="w-full bg-surface-surface border border-border-secondary rounded-xl px-4 py-2.5 ui-text-body ui-color-on-solid placeholder-content-disabled focus:border-content-disabled outline-hidden transition-colors"
                                             />
                                         </div>
@@ -625,7 +823,10 @@ const AccountView = ({
                                         {passwordLoading ? (
                                             <Loader2 size={14} className="animate-spin mx-auto" />
                                         ) : (
-                                            "Save and Update"
+                                            t({
+                                                id: "settings.account.password.save",
+                                                message: "Save and Update",
+                                            })
                                         )}
                                     </button>
                                 </form>

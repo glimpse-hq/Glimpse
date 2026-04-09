@@ -1,149 +1,87 @@
-const platform = typeof navigator !== "undefined" ? navigator.platform || navigator.userAgent || "" : "";
+const platform =
+  typeof navigator !== "undefined"
+    ? navigator.platform || navigator.userAgent || ""
+    : "";
 const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(platform);
 
-const displayTokenMap: Record<string, string> = {
-    Command: "Command",
-    Option: "Option",
-    Meta: isMacPlatform ? "Command" : "Meta",
-    Super: isMacPlatform ? "Command" : "Super",
-    Alt: isMacPlatform ? "Option" : "Alt",
-    Control: "Ctrl",
+const MODIFIER_ORDER = ["Fn", "Cmd", "Opt", "Ctrl", "Shift"] as const;
+
+function modifierRank(token: string): number {
+  const index = MODIFIER_ORDER.findIndex(
+    (modifier) => token === modifier || token.startsWith(modifier),
+  );
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+function isModifierToken(token: string): boolean {
+  return modifierRank(token) !== Number.MAX_SAFE_INTEGER;
+}
+
+function humanizeModifierToken(token: string): string {
+  const modifierDisplay: Record<string, string> = {
+    Cmd: isMacPlatform ? "Command" : "Meta",
+    Opt: isMacPlatform ? "Option" : "Alt",
     Ctrl: "Ctrl",
-    Space: "Space",
-    Enter: "Enter",
-    Tab: "Tab",
-    Backspace: "Backspace",
+    Shift: "Shift",
+    Fn: "Fn",
+  };
+
+  for (const modifier of MODIFIER_ORDER) {
+    if (token === modifier) {
+      return modifierDisplay[modifier];
+    }
+    if (token === `${modifier}Left`) {
+      return `Left ${modifierDisplay[modifier]}`;
+    }
+    if (token === `${modifier}Right`) {
+      return `Right ${modifierDisplay[modifier]}`;
+    }
+  }
+
+  return token;
+}
+
+function humanizeKeyToken(token: string): string {
+  const directDisplay: Record<string, string> = {
+    Left: "Left",
+    Right: "Right",
+    Up: "Up",
+    Down: "Down",
     Escape: "Esc",
-    Delete: "Del",
-    ArrowUp: "Up",
-    ArrowDown: "Down",
-    ArrowLeft: "Left",
-    ArrowRight: "Right",
-};
+    Return: "Enter",
+    ForwardDelete: isMacPlatform ? "Forward Delete" : "Delete",
+    Delete: isMacPlatform ? "Delete" : "Backspace",
+  };
 
-const legacyDisplayAliasMap: Record<string, string> = {
-    leftcommand: "Command",
-    rightcommand: "Command",
-    leftoption: "Option",
-    rightoption: "Option",
-    leftalt: "Alt",
-    rightalt: "Alt",
-    leftshift: "Shift",
-    rightshift: "Shift",
-    leftcontrol: "Control",
-    rightcontrol: "Control",
-};
+  if (directDisplay[token]) {
+    return directDisplay[token];
+  }
 
-const modifierPriorityMap: Record<string, number> = {
-    Command: 0,
-    Meta: 0,
-    Super: 0,
-    Alt: 1,
-    Control: 2,
-    Ctrl: 2,
-    Shift: 3,
-};
+  if (/^[A-Z]$/.test(token) || /^\d$/.test(token) || /^F\d+$/.test(token)) {
+    return token;
+  }
 
-function canonicalizeModifierToken(modifier: string): string {
-    if (modifier === "Option") return "Alt";
-    if (modifier === "Ctrl") return "Control";
-    return modifier;
-}
+  if (token.startsWith("Keypad")) {
+    return token.replace(/^Keypad/, "Keypad ");
+  }
 
-function orderShortcutModifiers(modifiers: Iterable<string>): string[] {
-    const canonicalModifiers = Array.from(new Set(Array.from(modifiers, canonicalizeModifierToken)));
-    return canonicalModifiers.sort((a, b) => {
-        const priorityA = modifierPriorityMap[a] ?? Number.MAX_SAFE_INTEGER;
-        const priorityB = modifierPriorityMap[b] ?? Number.MAX_SAFE_INTEGER;
-        if (priorityA !== priorityB) return priorityA - priorityB;
-        return a.localeCompare(b);
-    });
-}
-
-export function normalizeShortcutModifier(event: KeyboardEvent): string | null {
-    if (
-        event.code === "MetaLeft" ||
-        event.code === "MetaRight" ||
-        event.code === "OSLeft" ||
-        event.code === "OSRight" ||
-        event.key === "Meta" ||
-        event.key === "Command" ||
-        event.key === "Super"
-    ) {
-        return isMacPlatform ? "Command" : event.key === "Super" ? "Super" : "Meta";
-    }
-    if (
-        event.code === "AltLeft" ||
-        event.code === "AltRight" ||
-        event.key === "Alt" ||
-        event.key === "Option"
-    ) {
-        return "Alt";
-    }
-    if (event.code === "ControlLeft" || event.code === "ControlRight" || event.key === "Control" || event.key === "Ctrl") {
-        return "Control";
-    }
-    if (event.code === "ShiftLeft" || event.code === "ShiftRight" || event.key === "Shift") {
-        return "Shift";
-    }
-    return null;
-}
-
-export function formatShortcutKey(code: string): string | null {
-    if (!code) return null;
-    if (code.startsWith("Key") && code.length > 3) return code.slice(3).toUpperCase();
-    if (code.startsWith("Digit") && code.length > 5) return code.slice(5);
-
-    const namedKeys: Record<string, string> = {
-        Space: "Space",
-        Enter: "Enter",
-        Tab: "Tab",
-        Backspace: "Backspace",
-        Escape: "Escape",
-        Delete: "Delete",
-        ArrowUp: "ArrowUp",
-        ArrowDown: "ArrowDown",
-        ArrowLeft: "ArrowLeft",
-        ArrowRight: "ArrowRight",
-        Backquote: "`",
-        Minus: "-",
-        Equal: "=",
-        BracketLeft: "[",
-        BracketRight: "]",
-        Backslash: "\\",
-        Semicolon: ";",
-        Quote: "'",
-        Comma: ",",
-        Period: ".",
-        Slash: "/",
-    };
-
-    return namedKeys[code] ?? code;
-}
-
-export function buildShortcutString(modifiers: Iterable<string>, keyCode: string | null): string | null {
-    const orderedModifiers = orderShortcutModifiers(modifiers);
-    const formattedKey = keyCode ? formatShortcutKey(keyCode) : null;
-    if (!formattedKey) return null;
-    const parts = [...orderedModifiers, formattedKey].filter((part): part is string => Boolean(part));
-    if (parts.length === 0) return null;
-    return parts.join("+");
-}
-
-export function buildShortcutPreviewString(modifiers: Iterable<string>, keyCode: string | null): string {
-    const orderedModifiers = orderShortcutModifiers(modifiers);
-    const formattedKey = keyCode ? formatShortcutKey(keyCode) : null;
-    const parts = [...orderedModifiers, formattedKey].filter((part): part is string => Boolean(part));
-    return parts.join("+");
+  return token.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
 }
 
 export function formatShortcutForDisplay(shortcut: string): string {
-    return shortcut
-        .split("+")
-        .map((raw) => {
-            const token = raw.trim();
-            const canonical = legacyDisplayAliasMap[token.toLowerCase()] ?? token;
-            return displayTokenMap[canonical] ?? canonical;
-        })
-        .join(" + ");
+  const tokens = shortcut
+    .split("+")
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  const modifiers = tokens
+    .filter(isModifierToken)
+    .sort((left, right) => modifierRank(left) - modifierRank(right))
+    .map(humanizeModifierToken);
+
+  const keys = tokens
+    .filter((token) => !isModifierToken(token))
+    .map(humanizeKeyToken);
+
+  return [...modifiers, ...keys].join(" + ");
 }

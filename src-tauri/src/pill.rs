@@ -1,6 +1,6 @@
 use crate::{
     assistive,
-    core::hotkeys::{self, HotkeyProvider, HotkeyState},
+    core::hotkeys::{self, HotkeyState},
     emit_event, model_manager, music, permissions, platform,
     recorder::RecorderManager,
     settings::UserSettings,
@@ -22,6 +22,7 @@ const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 const SHORTCUT_PRESS_DEBOUNCE_MS: u64 = 180;
 
 pub const EVENT_PILL_STATE: &str = "pill:state";
+pub const EVENT_PILL_MODE: &str = "pill:mode";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -222,6 +223,16 @@ impl PillController {
         });
     }
 
+    fn start_streaming_session_if_supported(&self, app: &AppHandle<AppRuntime>, local_model: &str) {
+        if !model_manager::is_streaming_model(local_model) {
+            return;
+        }
+
+        if let Ok(ready) = model_manager::ensure_model_ready(app, local_model) {
+            app.state::<AppState>().start_streaming_session(app, &ready);
+        }
+    }
+
     fn emit_state(&self, app: &AppHandle<AppRuntime>) {
         let status = *self.status.lock();
         let mode = self.recording_mode.lock().map(|m| match m {
@@ -280,7 +291,13 @@ impl PillController {
         next: PillStatus,
     ) {
         if next == PillStatus::Idle {
-            hide_overlay(app);
+            let app_handle = app.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(32));
+                if app_handle.state::<AppState>().pill().status() == PillStatus::Idle {
+                    hide_overlay(&app_handle);
+                }
+            });
             return;
         }
 
@@ -290,7 +307,6 @@ impl PillController {
     }
 
     pub fn reset(&self, app: &AppHandle<AppRuntime>) {
-        self.resume_paused_media();
         self.reset_recording_state();
         *self.hold_key_down.lock() = false;
         self.transition_to(app, PillStatus::Idle);
@@ -429,6 +445,8 @@ impl PillController {
                 self.transition_to(app, PillStatus::Listening);
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
+                self.start_streaming_session_if_supported(app, &settings.local_model);
+
                 emit_event(
                     app,
                     crate::EVENT_RECORDING_START,
@@ -499,6 +517,8 @@ impl PillController {
                     self.transition_to(app, PillStatus::Listening);
                     self.start_audio_spectrum_emitter(app);
                     self.pause_media_if_playing(app);
+                    self.start_streaming_session_if_supported(app, &settings.local_model);
+
                     emit_event(
                         app,
                         crate::EVENT_RECORDING_START,
@@ -576,38 +596,103 @@ impl PillController {
     fn stop_and_process(&self, app: &AppHandle<AppRuntime>) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
-        self.transition_to(app, PillStatus::Processing);
         self.capture_selected_text_if_enabled(app);
 
-        let recorder = Arc::clone(&self.recorder);
-        let app_handle = app.clone();
-        std::thread::spawn(move || match recorder.stop() {
-            Ok(Some(recording)) => {
-                let duration_ms = (recording.ended_at - recording.started_at).num_milliseconds();
-                if duration_ms < MIN_RECORDING_DURATION_MS {
-                    app_handle.state::<AppState>().pill().reset(&app_handle);
-                    return;
-                }
+        let state = app.state::<AppState>();
+        let has_streaming = state.has_streaming_session();
 
-                crate::persist_recording_async(app_handle, recording);
-            }
-            Ok(None) => {
-                app_handle.state::<AppState>().pill().reset(&app_handle);
-            }
-            Err(err) => {
-                app_handle
-                    .state::<AppState>()
-                    .pill()
-                    .transition_to_error(&app_handle, &format!("Unable to stop recording: {err}"));
-            }
-        });
+        if has_streaming {
+            state.clear_cancellation();
+            self.transition_to(app, PillStatus::Processing);
+            let recorder = Arc::clone(&self.recorder);
+            let app_handle = app.clone();
+            std::thread::spawn(move || match recorder.stop() {
+                Ok(Some(recording)) => {
+                    app_handle.state::<AppState>().pill().resume_paused_media();
+                    let duration_ms =
+                        (recording.ended_at - recording.started_at).num_milliseconds();
+                    let streaming_transcript = app_handle
+                        .state::<AppState>()
+                        .stop_streaming_session(&app_handle)
+                        .unwrap_or_default();
+
+                    if duration_ms < MIN_RECORDING_DURATION_MS {
+                        collapse_expanded_pill(&app_handle);
+                        app_handle.state::<AppState>().pill().reset(&app_handle);
+                        return;
+                    }
+
+                    if streaming_transcript.trim().is_empty() {
+                        collapse_expanded_pill(&app_handle);
+                        app_handle.state::<AppState>().pill().reset(&app_handle);
+                        return;
+                    }
+
+                    crate::transcribe::finalize_streaming_transcription(
+                        &app_handle,
+                        streaming_transcript,
+                        (duration_ms.max(0) as f32) / 1000.0,
+                    );
+                }
+                Ok(None) => {
+                    let _ = app_handle
+                        .state::<AppState>()
+                        .stop_streaming_session(&app_handle);
+                    collapse_expanded_pill(&app_handle);
+                    app_handle.state::<AppState>().pill().resume_paused_media();
+                    app_handle.state::<AppState>().pill().reset(&app_handle);
+                }
+                Err(err) => {
+                    let _ = app_handle
+                        .state::<AppState>()
+                        .stop_streaming_session(&app_handle);
+                    collapse_expanded_pill(&app_handle);
+                    app_handle.state::<AppState>().pill().resume_paused_media();
+                    app_handle.state::<AppState>().pill().transition_to_error(
+                        &app_handle,
+                        &format!("Unable to stop recording: {err}"),
+                    );
+                }
+            });
+        } else {
+            self.transition_to(app, PillStatus::Processing);
+            let recorder = Arc::clone(&self.recorder);
+            let app_handle = app.clone();
+            std::thread::spawn(move || match recorder.stop() {
+                Ok(Some(recording)) => {
+                    app_handle.state::<AppState>().pill().resume_paused_media();
+                    let duration_ms =
+                        (recording.ended_at - recording.started_at).num_milliseconds();
+                    if duration_ms < MIN_RECORDING_DURATION_MS {
+                        app_handle.state::<AppState>().pill().reset(&app_handle);
+                        return;
+                    }
+
+                    crate::persist_recording_async(app_handle, recording);
+                }
+                Ok(None) => {
+                    app_handle.state::<AppState>().pill().resume_paused_media();
+                    app_handle.state::<AppState>().pill().reset(&app_handle);
+                }
+                Err(err) => {
+                    app_handle.state::<AppState>().pill().resume_paused_media();
+                    app_handle.state::<AppState>().pill().transition_to_error(
+                        &app_handle,
+                        &format!("Unable to stop recording: {err}"),
+                    );
+                }
+            });
+        }
     }
 
     pub fn cancel(&self, app: &AppHandle<AppRuntime>) {
         self.stop_audio_spectrum_emitter();
+        let _ = app.state::<AppState>().stop_streaming_session(app);
+        collapse_expanded_pill(app);
         if let Err(err) = self.recorder.stop() {
             eprintln!("Failed to stop recorder: {err}");
         }
+        self.resume_paused_media();
         self.reset(app);
     }
 
@@ -618,6 +703,8 @@ impl PillController {
 
         self.stop_audio_spectrum_emitter();
         let state = app.state::<AppState>();
+        let _ = state.stop_streaming_session(app);
+        collapse_expanded_pill(app);
         state.request_cancellation();
         let _ = self.recorder.stop();
 
@@ -630,19 +717,42 @@ impl PillController {
     }
 }
 
+pub(crate) fn emit_pill_mode(app: &AppHandle<AppRuntime>, expanded: bool, text: &str) {
+    app.state::<AppState>().pill().set_expanded(expanded);
+
+    if let Err(err) = app.emit(
+        EVENT_PILL_MODE,
+        serde_json::json!({ "expanded": expanded, "text": text }),
+    ) {
+        eprintln!("Failed to emit pill mode: {err}");
+    }
+}
+
+pub(crate) fn show_expanded_pill_text(app: &AppHandle<AppRuntime>, text: &str) {
+    emit_pill_mode(app, true, text);
+}
+
+pub(crate) fn collapse_expanded_pill(app: &AppHandle<AppRuntime>) {
+    emit_pill_mode(app, false, "");
+}
+
 fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
     #[cfg(target_os = "macos")]
     {
-        let mic_granted = tauri::async_runtime::block_on(async {
-            tauri_plugin_macos_permissions::check_microphone_permission().await
-        });
+        if permissions::check_microphone_permission() {
+            return true;
+        }
 
-        if !mic_granted {
+        if let Err(err) = permissions::request_microphone_permission() {
+            eprintln!("Failed to request microphone permission: {err}");
+        }
+
+        if !permissions::check_microphone_permission() {
             toast::show_with_action(
                 app,
                 "error",
                 Some("Microphone"),
-                "Microphone access required to record.",
+                "Microphone access required to record. Allow it, then try again.",
                 "open_microphone_settings",
                 "Open Settings",
             );
@@ -681,6 +791,48 @@ fn shortcuts_paused(app: &AppHandle<AppRuntime>) -> bool {
     state.is_shortcut_capture_active()
 }
 
+pub(crate) fn handle_registered_hotkey_event(
+    app: &AppHandle<AppRuntime>,
+    action: hotkeys::ShortcutAction,
+    state: HotkeyState,
+) {
+    if shortcuts_paused(app) {
+        return;
+    }
+
+    let app_state = app.state::<AppState>();
+    let pill = app_state.pill();
+
+    match action {
+        hotkeys::ShortcutAction::Smart => match state {
+            HotkeyState::Pressed => {
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
+                pill.handle_smart_press(app);
+            }
+            HotkeyState::Released => pill.handle_smart_release(app),
+        },
+        hotkeys::ShortcutAction::Hold => match state {
+            HotkeyState::Pressed => {
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
+                let _ = pill.handle_hold_press(app);
+            }
+            HotkeyState::Released => pill.handle_hold_release(app),
+        },
+        hotkeys::ShortcutAction::Toggle => {
+            if state == HotkeyState::Pressed {
+                if pill.should_ignore_shortcut_press() {
+                    return;
+                }
+                pill.handle_toggle_press(app);
+            }
+        }
+    }
+}
+
 pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     let state = app.state::<AppState>();
     if state.is_shortcut_capture_active() {
@@ -688,144 +840,70 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     }
 
     let settings = state.current_settings();
+    let mut parsed_shortcuts: Vec<(&'static str, handy_keys::Hotkey)> = Vec::new();
+    let mut bindings = Vec::new();
 
-    let provider = hotkeys::provider(app);
-    if let Err(err) = provider.unregister_all() {
-        eprintln!("Failed to clear shortcuts: {err}");
-    }
-
-    let smart_shortcut_normalized = if settings.smart_enabled {
-        match hotkeys::normalize_shortcut(&settings.smart_shortcut) {
-            Ok(shortcut) => Some(shortcut),
-            Err(err) => {
-                eprintln!(
-                    "Skipping invalid Smart shortcut `{}`: {err}",
-                    settings.smart_shortcut
-                );
-                None
-            }
+    let mut add_binding = |label: &'static str,
+                           enabled: bool,
+                           raw_shortcut: &str,
+                           action: hotkeys::ShortcutAction| {
+        if !enabled {
+            return;
         }
-    } else {
-        None
-    };
 
-    let hold_shortcut_normalized = if settings.hold_enabled {
-        match hotkeys::normalize_shortcut(&settings.hold_shortcut) {
-            Ok(shortcut) => Some(shortcut),
+        let hotkey = match hotkeys::parse_shortcut(raw_shortcut) {
+            Ok(hotkey) => hotkey,
             Err(err) => {
-                eprintln!(
-                    "Skipping invalid Hold shortcut `{}`: {err}",
-                    settings.hold_shortcut
-                );
-                None
-            }
-        }
-    } else {
-        None
-    };
-
-    let toggle_shortcut_normalized = if settings.toggle_enabled {
-        match hotkeys::normalize_shortcut(&settings.toggle_shortcut) {
-            Ok(shortcut) => Some(shortcut),
-            Err(err) => {
-                eprintln!(
-                    "Skipping invalid Toggle shortcut `{}`: {err}",
-                    settings.toggle_shortcut
-                );
-                None
-            }
-        }
-    } else {
-        None
-    };
-
-    let hold_is_subset_of_toggle = if let (Some(hold_shortcut), Some(toggle_shortcut)) = (
-        hold_shortcut_normalized.as_ref(),
-        toggle_shortcut_normalized.as_ref(),
-    ) {
-        let hold_keys: std::collections::HashSet<&str> =
-            hold_shortcut.split('+').map(|token| token.trim()).collect();
-        let toggle_keys: std::collections::HashSet<&str> = toggle_shortcut
-            .split('+')
-            .map(|token| token.trim())
-            .collect();
-        hold_keys.is_subset(&toggle_keys)
-    } else {
-        false
-    };
-
-    if settings.smart_enabled && smart_shortcut_normalized.is_some() {
-        let smart_shortcut = settings.smart_shortcut.clone();
-        provider.on_shortcut(smart_shortcut.as_str(), move |app, event| {
-            if shortcuts_paused(app) {
+                eprintln!("Skipping invalid {label} shortcut `{raw_shortcut}`: {err}");
                 return;
             }
-            let state = app.state::<AppState>();
-            let pill = state.pill();
-            match event.state {
-                HotkeyState::Pressed => {
-                    if pill.should_ignore_shortcut_press() {
-                        return;
-                    }
-                    pill.handle_smart_press(app)
-                }
-                HotkeyState::Released => pill.handle_smart_release(app),
-            }
-        })?;
-    }
+        };
 
-    if settings.hold_enabled && hold_shortcut_normalized.is_some() {
-        let hold_shortcut = settings.hold_shortcut.clone();
-        let check_toggle_overlap = hold_is_subset_of_toggle;
-        let toggle_shortcut_normalized = toggle_shortcut_normalized.clone();
-        if check_toggle_overlap {
-            if let Some(toggle_shortcut) = toggle_shortcut_normalized.as_ref() {
-                eprintln!(
-                    "Skipping Hold shortcut `{hold_shortcut}` because it overlaps Toggle shortcut `{toggle_shortcut}`"
-                );
-            }
-        } else {
-            provider.on_shortcut(hold_shortcut.as_str(), move |app, event| {
-                if shortcuts_paused(app) {
-                    return;
-                }
-                let state = app.state::<AppState>();
-                let pill = state.pill();
-                match event.state {
-                    HotkeyState::Pressed => {
-                        if pill.should_ignore_shortcut_press() {
-                            return;
-                        }
-                        let _ = pill.handle_hold_press(app);
-                    }
-                    HotkeyState::Released => pill.handle_hold_release(app),
-                }
-            })?;
+        if let Some((existing_label, existing_hotkey)) = parsed_shortcuts
+            .iter()
+            .find(|(_, existing_hotkey)| hotkeys::shortcuts_conflict(existing_hotkey, &hotkey))
+        {
+            let existing_shortcut = existing_hotkey.to_string();
+            eprintln!(
+                "Skipping {label} shortcut `{raw_shortcut}` because it conflicts with {existing_label} shortcut `{existing_shortcut}`"
+            );
+            return;
         }
-    }
 
-    if settings.toggle_enabled && toggle_shortcut_normalized.is_some() {
-        let toggle_shortcut = settings.toggle_shortcut.clone();
-        provider.on_shortcut(toggle_shortcut.as_str(), move |app, event| {
-            if shortcuts_paused(app) {
-                return;
-            }
-            let state = app.state::<AppState>();
-            if event.state == HotkeyState::Pressed {
-                let pill = state.pill();
-                if pill.should_ignore_shortcut_press() {
-                    return;
-                }
-                pill.handle_toggle_press(app);
-            }
-        })?;
-    }
+        parsed_shortcuts.push((label, hotkey));
+        bindings.push(hotkeys::RegisteredHotkey {
+            hotkey,
+            action,
+        });
+    };
 
-    Ok(())
+    add_binding(
+        "Smart",
+        settings.smart_enabled,
+        &settings.smart_shortcut,
+        hotkeys::ShortcutAction::Smart,
+    );
+    add_binding(
+        "Hold",
+        settings.hold_enabled,
+        &settings.hold_shortcut,
+        hotkeys::ShortcutAction::Hold,
+    );
+    add_binding(
+        "Toggle",
+        settings.toggle_enabled,
+        &settings.toggle_shortcut,
+        hotkeys::ShortcutAction::Toggle,
+    );
+
+    state.hotkeys.replace_registrations(app, bindings)
 }
 
 pub fn show_overlay(app: &AppHandle<AppRuntime>) {
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        if !app.state::<AppState>().pill().is_expanded() {
+            collapse_expanded_pill(app);
+        }
         position_overlay_on_cursor_screen(&window);
         platform::overlay::show(app, &window);
     }
@@ -932,17 +1010,11 @@ pub fn set_pill_expanded(app: AppHandle<AppRuntime>, expanded: bool) -> Result<(
         platform::overlay::show(&app, &window);
     }
 
-    let state = app.state::<AppState>();
-    state.pill().set_expanded(expanded);
-
     let text = if expanded {
         "Cloud transcription streaming will appear here in real-time. This is a preview of the dynamic pill mode."
     } else {
         ""
     };
-    app.emit(
-        "pill:mode",
-        serde_json::json!({ "expanded": expanded, "text": text }),
-    )
-    .map_err(|e| e.to_string())
+    emit_pill_mode(&app, expanded, text);
+    Ok(())
 }

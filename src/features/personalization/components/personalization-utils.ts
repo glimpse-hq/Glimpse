@@ -11,16 +11,16 @@ export type WebsiteIcon = {
 
 export const MAX_INSTRUCTIONS_CHARS = 3000;
 export const DEFAULT_INSTRUCTIONS_HEIGHT = 128;
-export const MIN_INSTRUCTIONS_HEIGHT = Math.round(
+const MIN_INSTRUCTIONS_HEIGHT = Math.round(
   DEFAULT_INSTRUCTIONS_HEIGHT * 0.8,
 );
-export const MAX_INSTRUCTIONS_HEIGHT = Math.round(
+const MAX_INSTRUCTIONS_HEIGHT = Math.round(
   DEFAULT_INSTRUCTIONS_HEIGHT * 2.5,
 );
 
 export const normalizeEntry = (value: string) => value.trim();
 
-export const toCodePoints = (value: string) => Array.from(value);
+const toCodePoints = (value: string) => Array.from(value);
 
 export const countInstructionsChars = (value: string) =>
   toCodePoints(value).length;

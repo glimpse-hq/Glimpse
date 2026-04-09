@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
@@ -26,6 +27,7 @@ const LibraryRetranscribeModal = ({
     onCancel,
     onConfirm,
 }: LibraryRetranscribeModalProps) => {
+    const { t } = useLingui();
     const [selectedModelKey, setSelectedModelKey] = useState<string>(item.speech_model);
     const [showTimestamps, setShowTimestamps] = useState(item.show_timestamps);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,7 +91,12 @@ const LibraryRetranscribeModal = ({
             >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
                     <div>
-                        <p className="ui-text-meta uppercase tracking-[0.2em] text-content-disabled">Retranscribe</p>
+                        <p className="ui-text-meta uppercase tracking-[0.2em] text-content-disabled">
+                            {t({
+                                id: "library.retranscribe.title",
+                                message: "Retranscribe",
+                            })}
+                        </p>
                         <p className="ui-text-body-lg text-content-primary mt-1 truncate">{item.name}</p>
                     </div>
                     <button
@@ -103,26 +110,53 @@ const LibraryRetranscribeModal = ({
                 <div className="px-5 py-4 space-y-4">
                     {models.length === 0 && (
                         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
-                            No local models are installed. Download a model in Settings → Models before retranscribing.
+                            {t({
+                                id: "library.retranscribe.no_models",
+                                message: "No local models are installed. Download a model in Settings -> Models before retranscribing.",
+                            })}
                         </div>
                     )}
                     <div>
-                        <label className="ui-text-label font-medium text-content-muted ml-1">Model</label>
+                        <label className="ui-text-label font-medium text-content-muted ml-1">
+                            {t({
+                                id: "library.retranscribe.model",
+                                message: "Model",
+                            })}
+                        </label>
                         <Dropdown
                             value={selectedModelKey || null}
                             onChange={(value) => setSelectedModelKey(value)}
                             options={modelOptions}
-                            placeholder="Select a model"
+                            placeholder={t({
+                                id: "library.retranscribe.select_model",
+                                message: "Select a model",
+                            })}
                             searchable
-                            searchPlaceholder="Search installed models..."
+                            searchPlaceholder={t({
+                                id: "library.retranscribe.search_models",
+                                message: "Search installed models...",
+                            })}
                         />
                     </div>
 
                     <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
                         <div>
-                            <div className="ui-text-body-sm text-content-primary font-medium">Show timestamps</div>
+                            <div className="ui-text-body-sm text-content-primary font-medium">
+                                {t({
+                                    id: "library.retranscribe.show_timestamps",
+                                    message: "Show timestamps",
+                                })}
+                            </div>
                             <div className="ui-text-meta text-content-disabled">
-                                {timestampsSupported ? "Enabled for supported models" : "Not supported by this model"}
+                                {timestampsSupported
+                                    ? t({
+                                        id: "library.retranscribe.timestamps_supported",
+                                        message: "Enabled for supported models",
+                                    })
+                                    : t({
+                                        id: "library.retranscribe.timestamps_unsupported",
+                                        message: "Not supported by this model",
+                                    })}
                             </div>
                         </div>
                         <button
@@ -147,14 +181,25 @@ const LibraryRetranscribeModal = ({
                         onClick={onCancel}
                         className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-label text-content-muted hover:text-content-secondary"
                     >
-                        Cancel
+                        {t({
+                            id: "library.retranscribe.cancel",
+                            message: "Cancel",
+                        })}
                     </button>
                     <button
                         onClick={handleConfirm}
                         disabled={isSubmitting || !selectedModelKey}
                         className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-label text-content-primary hover:border-border-secondary disabled:opacity-50"
                     >
-                        {isSubmitting ? "Retranscribing..." : "Retranscribe"}
+                        {isSubmitting
+                            ? t({
+                                id: "library.retranscribe.loading",
+                                message: "Retranscribing...",
+                            })
+                            : t({
+                                id: "library.retranscribe.confirm",
+                                message: "Retranscribe",
+                            })}
                     </button>
                 </div>
             </motion.div>

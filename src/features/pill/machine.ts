@@ -145,7 +145,7 @@ export const pillMachine = setup({
   initial: "idle",
   states: {
     idle: {
-      entry: "stopErrorFlash",
+      entry: ["stopErrorFlash", "clearExpanded"],
       on: {
         PILL_STATE: [
           {

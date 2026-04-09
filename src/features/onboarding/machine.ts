@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { setup, assign, fromCallback } from "xstate";
 import type { ModelInfo, ModelStatus, TranscriptionMode } from "../../types";
 
@@ -76,20 +77,8 @@ const micPermissionPoller = fromCallback(({ sendBack }: { sendBack: (event: { ty
   let active = true;
   const check = async () => {
     try {
-      const { checkMicrophonePermission } = await import("tauri-plugin-macos-permissions-api");
-      const nativeGranted = await checkMicrophonePermission();
-      if (nativeGranted) {
-        sendBack({ type: "MIC_PERMISSION_CHANGED", granted: true, checking: false });
-        return;
-      }
-      try {
-        const result = await navigator.permissions.query({ name: "microphone" as PermissionName });
-        if (result.state === "granted") {
-          sendBack({ type: "MIC_PERMISSION_CHANGED", granted: true, checking: false });
-          return;
-        }
-      } catch { /* ignore */ }
-      sendBack({ type: "MIC_PERMISSION_CHANGED", granted: false, checking: false });
+      const granted = await invoke<boolean>("check_microphone_permission");
+      sendBack({ type: "MIC_PERMISSION_CHANGED", granted, checking: false });
     } catch {
       sendBack({ type: "MIC_PERMISSION_CHANGED", granted: false, checking: false });
     }

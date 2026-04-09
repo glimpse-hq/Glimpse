@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   LibraryItem,
   LibraryItemsPage,
@@ -7,8 +6,6 @@ import type {
   LibraryImportOptions,
   LibraryFilter,
   ExportFormat,
-  LibraryProgressPayload,
-  LibraryImportProgressPayload,
 } from "../../types";
 
 export async function createLibraryItem(
@@ -59,47 +56,4 @@ export async function exportLibraryItemToPath(
 
 export async function getLibraryTags(): Promise<string[]> {
   return invoke<string[]>("get_library_tags");
-}
-
-export function onTranscriptionProgress(
-  handler: (payload: LibraryProgressPayload) => void,
-): Promise<UnlistenFn> {
-  return listen<LibraryProgressPayload>(
-    "library:transcription_progress",
-    (e) => handler(e.payload),
-  );
-}
-
-export function onTranscriptionComplete(
-  handler: (payload: { id: string }) => void,
-): Promise<UnlistenFn> {
-  return listen<{ id: string }>("library:transcription_complete", (e) =>
-    handler(e.payload),
-  );
-}
-
-export function onTranscriptionError(
-  handler: (payload: { id: string; message: string }) => void,
-): Promise<UnlistenFn> {
-  return listen<{ id: string; message: string }>(
-    "library:transcription_error",
-    (e) => handler(e.payload),
-  );
-}
-
-export function onImportProgress(
-  handler: (payload: LibraryImportProgressPayload) => void,
-): Promise<UnlistenFn> {
-  return listen<LibraryImportProgressPayload>(
-    "library:import_progress",
-    (e) => handler(e.payload),
-  );
-}
-
-export function onOpenImport(
-  handler: (paths: string[]) => void,
-): Promise<UnlistenFn> {
-  return listen<string[]>("library:open_import", (e) =>
-    handler(e.payload),
-  );
 }

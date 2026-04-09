@@ -1113,3 +1113,143 @@ fn last_chars(value: &str, count: usize) -> String {
     chars.drain(0..chars.len() - count);
     chars.into_iter().collect()
 }
+
+pub(crate) fn finalize_streaming_transcription(
+    app: &AppHandle<AppRuntime>,
+    raw_transcript: String,
+    duration_seconds: f32,
+) {
+    let state = app.state::<AppState>();
+    state.clear_cancellation();
+    let pending_selected_text = state.take_pending_selected_text();
+    let http = state.http();
+    let app_handle = app.clone();
+
+    tauri::async_runtime::spawn(async move {
+        let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
+        let settings = app_handle.state::<AppState>().current_settings();
+        let auto_paste = transcription_api::auto_paste_enabled();
+        let active_mode = mode_context::resolve_active_personality(&settings);
+        let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
+
+        if count_words(&raw_transcript) == 0 {
+            crate::pill::collapse_expanded_pill(&app_handle);
+            app_handle
+                .state::<AppState>()
+                .pill()
+                .safe_reset(&app_handle);
+            return;
+        }
+
+        if is_cancelled() {
+            return;
+        }
+
+        let is_edit_mode = pending_selected_text.is_some();
+        let llm_available = llm_cleanup::is_llm_available(&settings);
+        let should_refine_transcript =
+            llm_cleanup::should_refine_transcript(&settings, active_mode.as_ref());
+        let llm_needed = is_edit_mode || should_refine_transcript;
+        let preflight_unavailable =
+            llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
+        let should_use_llm = if is_edit_mode {
+            llm_available && !preflight_unavailable
+        } else {
+            should_refine_transcript && !preflight_unavailable
+        };
+
+        let (final_transcript, llm_cleaned) = if should_use_llm {
+            if let Some(ref selected) = pending_selected_text {
+                match llm_cleanup::edit_transcription(&http, selected, &raw_transcript, &settings)
+                    .await
+                {
+                    Ok(edited) => (edited, true),
+                    Err(err) => {
+                        eprintln!("LLM edit failed (streaming): {err}");
+                        llm_cleanup::note_preflight_failure();
+                        maybe_warn_llm_unavailable(&app_handle, true);
+                        (selected.clone(), false)
+                    }
+                }
+            } else {
+                match llm_cleanup::cleanup_transcription(
+                    &http,
+                    &raw_transcript,
+                    &settings,
+                    active_mode.as_ref(),
+                )
+                .await
+                {
+                    Ok(cleaned) => (cleaned, true),
+                    Err(err) => {
+                        eprintln!("Cleanup failed (streaming): {err}");
+                        llm_cleanup::note_preflight_failure();
+                        maybe_warn_llm_unavailable(&app_handle, false);
+                        (raw_transcript.clone(), false)
+                    }
+                }
+            }
+        } else {
+            if preflight_unavailable {
+                maybe_warn_llm_unavailable(&app_handle, is_edit_mode);
+            }
+            (raw_transcript.clone(), false)
+        };
+
+        let final_transcript =
+            dictionary::apply_replacements(&final_transcript, &settings.replacements);
+
+        if count_words(&final_transcript) == 0 {
+            crate::pill::collapse_expanded_pill(&app_handle);
+            app_handle
+                .state::<AppState>()
+                .pill()
+                .safe_reset(&app_handle);
+            return;
+        }
+
+        if is_cancelled() {
+            return;
+        }
+
+        let mut pasted = false;
+        if auto_paste && !final_transcript.trim().is_empty() {
+            let text = final_transcript.clone();
+            match tauri::async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await {
+                Ok(Ok(())) => pasted = true,
+                Ok(Err(err)) => eprintln!("Auto paste failed (streaming): {err}"),
+                Err(err) => eprintln!("Auto paste task error (streaming): {err}"),
+            }
+        }
+
+        if is_cancelled() {
+            return;
+        }
+
+        let metadata = storage::TranscriptionMetadata {
+            speech_model: resolve_speech_model_label(&settings),
+            llm_model: if llm_cleaned {
+                llm_cleanup::resolved_model_name(&settings)
+            } else {
+                None
+            },
+            word_count: count_words(&final_transcript),
+            audio_duration_seconds: duration_seconds,
+            synced: false,
+            mode_id: active_mode.as_ref().map(|m| m.id.clone()),
+            mode_name: active_mode.as_ref().map(|m| m.name.clone()),
+        };
+
+        crate::pill::collapse_expanded_pill(&app_handle);
+        emit_transcription_complete_with_cleanup(
+            &app_handle,
+            raw_transcript,
+            final_transcript,
+            pasted,
+            String::new(),
+            llm_cleaned,
+            metadata,
+            "local_streaming",
+        );
+    });
+}

@@ -132,7 +132,7 @@
   --ui-pill-shell-border: var(--color-border-primary);
   --ui-scroll-fade-panel: var(--color-bg-secondary);
   --ui-pill-shell-shadow:
-    0 2px 12px rgba(0, 0, 0, 0.45),
+    0 0 10px rgba(0, 0, 0, 0.36),
     inset 0 -2px 5px rgba(0, 0, 0, 0.5);
 
   /* Semantic (note: warning matches cloud-hover intentionally) */
@@ -1338,4 +1338,9 @@ body {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.mask-fade-right {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
 }

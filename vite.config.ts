@@ -1,6 +1,8 @@
 import path from "path";
+import babel from "@rolldown/plugin-babel";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { lingui } from "@lingui/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 
 // @ts-expect-error process is a nodejs global
@@ -9,7 +11,14 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vite.dev/config/
 export default defineConfig(async () => ({
   base: './',
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    babel({
+      plugins: ["@lingui/babel-plugin-lingui-macro"],
+    }),
+    react(),
+    lingui(),
+    tailwindcss(),
+  ],
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

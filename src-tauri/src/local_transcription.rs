@@ -4,6 +4,8 @@ use std::time::{Duration, Instant};
 
 use anyhow::{anyhow, Result};
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use glimpse_speech::engines::nemotron::NemotronEngine;
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 use glimpse_speech::engines::parakeet::{
     ParakeetEngine, ParakeetInferenceParams, ParakeetModelParams, TimestampGranularity,
 };
@@ -39,6 +41,10 @@ struct LoadedEngine {
 }
 
 enum EngineInstance {
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    Nemotron {
+        engine: Box<NemotronEngine>,
+    },
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     Parakeet {
         engine: Box<ParakeetEngine>,
@@ -138,6 +144,10 @@ impl LocalTranscriber {
 
         let warmup_result = match &mut loaded.engine {
             #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+            EngineInstance::Nemotron { engine } => engine
+                .transcribe_samples(silence, None)
+                .map_err(|err| anyhow!("Nemotron warmup failed: {err}")),
+            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             EngineInstance::Parakeet { engine, .. } => engine
                 .transcribe_samples(silence, None)
                 .map_err(|err| anyhow!("Parakeet warmup failed: {err}")),
@@ -211,6 +221,10 @@ impl LocalTranscriber {
 
         let result = match &mut loaded.engine {
             #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+            EngineInstance::Nemotron { engine } => engine
+                .transcribe_samples(prepared.data.clone(), None)
+                .map_err(|err| anyhow!("Nemotron transcription failed: {err}"))?,
+            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             EngineInstance::Parakeet { engine } => {
                 let timestamp_granularity = if with_segments {
                     TimestampGranularity::Segment
@@ -257,6 +271,23 @@ impl LocalTranscriber {
         }
 
         let engine = match &model.engine {
+            LocalModelEngine::Nemotron => {
+                #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+                {
+                    let mut engine = NemotronEngine::new();
+                    engine
+                        .load_model(model.path.as_path())
+                        .map_err(|err| anyhow!("Failed to load Nemotron model: {err}"))?;
+                    EngineInstance::Nemotron {
+                        engine: Box::new(engine),
+                    }
+                }
+
+                #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+                {
+                    return Err(anyhow!("Nemotron is not available in Intel macOS builds"));
+                }
+            }
             LocalModelEngine::Parakeet => {
                 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
                 {
@@ -294,6 +325,48 @@ impl LocalTranscriber {
         });
 
         Ok(())
+    }
+
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    pub fn streaming_transcribe_chunk(&self, model: &ReadyModel, chunk: &[f32]) -> Result<String> {
+        self.ensure_engine(model)?;
+        self.touch();
+
+        let mut guard = self.inner.lock();
+        let loaded = guard
+            .as_mut()
+            .ok_or_else(|| anyhow!("Local model not available"))?;
+
+        match &mut loaded.engine {
+            EngineInstance::Nemotron { engine } => {
+                engine
+                    .transcribe_chunk(chunk)
+                    .map_err(|err| anyhow!("Nemotron streaming chunk failed: {err}"))?;
+                Ok(engine.get_transcript())
+            }
+            _ => Err(anyhow!("Streaming is only supported with Nemotron models")),
+        }
+    }
+
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    pub fn streaming_reset(&self) {
+        let mut guard = self.inner.lock();
+        if let Some(loaded) = guard.as_mut() {
+            if let EngineInstance::Nemotron { engine } = &mut loaded.engine {
+                engine.reset();
+            }
+        }
+    }
+
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    pub fn streaming_get_transcript(&self) -> String {
+        let guard = self.inner.lock();
+        if let Some(loaded) = guard.as_ref() {
+            if let EngineInstance::Nemotron { engine } = &loaded.engine {
+                return engine.get_transcript();
+            }
+        }
+        String::new()
     }
 
     pub fn unload(&self) {

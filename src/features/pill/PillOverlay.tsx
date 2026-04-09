@@ -1,3 +1,5 @@
+import { useLingui } from "@lingui/react/macro";
+import { motion } from "framer-motion";
 import React, { useRef, useEffect, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -28,6 +30,8 @@ const DOT_RADIUS = {
 const EXPANDED_WIDTH = 260;
 const EXPANDED_HEIGHT = 90;
 const EXPANDED_BORDER_RADIUS = 24;
+const EXPANDED_TEXT_TOP_FADE =
+  "linear-gradient(to bottom, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.38) 74%, transparent 100%)";
 
 const ICONS = {
   warning: [
@@ -137,12 +141,36 @@ interface PillOverlayProps {
   decay?: number;
 }
 
+interface ExpandedTextSegment {
+  key: number;
+  text: string;
+  isWhitespace: boolean;
+}
+
+function getExpandedTextSegments(text: string): ExpandedTextSegment[] {
+  let offset = 0;
+
+  return text
+    .split(/(\s+)/)
+    .filter((segment) => segment !== "")
+    .map((segment) => {
+      const key = offset;
+      offset += segment.length;
+      return {
+        key,
+        text: segment,
+        isWhitespace: /^\s+$/.test(segment),
+      };
+    });
+}
+
 const PillOverlay: React.FC<PillOverlayProps> = ({
   className = "",
   style = {},
   sensitivity = 3,
   decay = 0.85,
 }) => {
+  const { t } = useLingui();
   const [state, send] = useMachine(pillMachine);
   const pillStatus = state.value as PillStatus;
   const { spectrumBins, lastSpectrumAt, isErrorFlashing, isExpanded, expandedText } = state.context;
@@ -598,9 +626,21 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
   const getStatusMessage = (s: PillStatus) => {
     switch (s) {
-      case "listening": return "Listening...";
-      case "processing": return "Processing...";
-      case "error": return "Error occurred";
+      case "listening":
+        return t({
+          id: "pill.status.listening",
+          message: "Listening...",
+        });
+      case "processing":
+        return t({
+          id: "pill.status.processing",
+          message: "Processing...",
+        });
+      case "error":
+        return t({
+          id: "pill.status.error",
+          message: "Error occurred",
+        });
       default: return "";
     }
   };
@@ -608,6 +648,20 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const shellWidth = isExpanded ? EXPANDED_WIDTH : PILL_WIDTH;
   const shellHeight = isExpanded ? EXPANDED_HEIGHT : PILL_HEIGHT;
   const shellRadius = isExpanded ? EXPANDED_BORDER_RADIUS : PILL_HEIGHT / 2;
+  const shellTransition = isExpanded ? EXPAND_TRANSITION : "none";
+  const expandedContentTransition = isExpanded
+    ? "opacity 0.35s ease 0.15s, flex 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
+    : "none";
+  const expandedPaddingTransition = isExpanded
+    ? "padding 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
+    : "none";
+  const topFadeTransition = isExpanded ? "opacity 0.3s ease" : "none";
+  const bgOpacityTransition = isExpanded
+    ? "opacity 0.6s ease 0.15s"
+    : "none";
+  const baseOpacityTransition = isExpanded
+    ? "opacity 0.4s ease"
+    : "none";
 
   return (
     <div
@@ -629,7 +683,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
             backgroundColor: "var(--ui-pill-shell-bg)",
             borderColor: "var(--ui-pill-shell-border)",
             boxShadow: "var(--ui-pill-shell-shadow)",
-            transition: EXPAND_TRANSITION,
+            transition: shellTransition,
           }}
         >
           {/* Expanded content area — positioned above background dots */}
@@ -640,29 +694,81 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
               opacity: isExpanded ? 1 : 0,
               overflow: "hidden",
               minHeight: 0,
-              transition: `opacity 0.35s ease ${isExpanded ? "0.15s" : "0s"}, flex 0.5s cubic-bezier(0.32, 0.72, 0, 1)`,
+              transition: expandedContentTransition,
             }}
           >
             <div
-              className="h-full overflow-y-auto"
+              className="h-full w-full flex flex-col"
               style={{
-                padding: isExpanded ? "14px 16px 8px" : 0,
-                transition: "padding 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
+                padding: isExpanded ? "14px 16px 14px" : "0 16px",
+                transition: expandedPaddingTransition,
+                position: "relative",
               }}
             >
-              <p
+              <div
+                aria-hidden="true"
+                className="absolute left-0 right-0 top-0 pointer-events-none z-20"
                 style={{
-                  margin: 0,
-                  fontSize: "12.5px",
-                  lineHeight: "1.5",
-                  fontFamily: "'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif",
-                  color: "rgba(255, 255, 255, 0.85)",
-                  fontWeight: 400,
-                  letterSpacing: "-0.01em",
+                  height: 30,
+                  background: EXPANDED_TEXT_TOP_FADE,
+                  opacity: isExpanded ? 1 : 0,
+                  transition: topFadeTransition,
                 }}
-              >
-                {expandedText}
-              </p>
+              />
+
+              <div className="flex-1 w-full overflow-hidden flex flex-col justify-end relative z-10">
+                <motion.div
+                  layout="position"
+                  className="w-full flex flex-col justify-end"
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "13px",
+                      lineHeight: "1.5",
+                      fontFamily: "'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif",
+                      color: "rgba(255, 255, 255, 0.85)",
+                      fontWeight: 400,
+                      letterSpacing: "-0.01em",
+                      textAlign: "center",
+                      width: "100%",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {expandedText ? getExpandedTextSegments(expandedText).map(({ key, text, isWhitespace }) => {
+                      if (isWhitespace) {
+                        return (
+                          <motion.span
+                            key={key}
+                            layout="position"
+                            transition={{ layout: { type: "spring", bounce: 0, duration: 0.4 } }}
+                            style={{ display: "inline-block", whiteSpace: "pre" }}
+                          >
+                            {text}
+                          </motion.span>
+                        );
+                      }
+                      return (
+                        <motion.span
+                          key={key}
+                          layout="position"
+                          initial={{ opacity: 0, filter: "blur(4px)", y: 8 }}
+                          animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                          transition={{
+                            opacity: { duration: 0.4, ease: "easeOut" },
+                            filter: { duration: 0.4, ease: "easeOut" },
+                            y: { duration: 0.4, ease: "easeOut" },
+                            layout: { type: "spring", bounce: 0, duration: 0.4 }
+                          }}
+                          style={{ display: "inline-block", willChange: "transform, opacity, filter" }}
+                        >
+                          {text}
+                        </motion.span>
+                      );
+                    }) : null}
+                  </p>
+                </motion.div>
+              </div>
             </div>
           </div>
 
@@ -671,7 +777,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
             className="absolute inset-0 pointer-events-none flex items-center justify-center z-[1]"
             style={{
               opacity: isExpanded ? 0.08 : 0,
-              transition: `opacity ${isExpanded ? "0.6s" : "0.4s"} ease ${isExpanded ? "0.15s" : "0s"}`,
+              transition: bgOpacityTransition,
             }}
           >
             <div
@@ -683,7 +789,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 ref={bgCanvasRef}
                 className="absolute inset-0 w-full h-full block"
                 role="img"
-                aria-label="Background audio visualizer"
+                aria-label={t({
+                  id: "pill.background_visualizer",
+                  message: "Background audio visualizer",
+                })}
               />
             </div>
           </div>
@@ -693,7 +802,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
             className="absolute inset-0 pointer-events-none flex items-center justify-center z-[2]"
             style={{
               opacity: isExpanded ? 0 : 1,
-              transition: `opacity ${isExpanded ? "0.4s" : "0.6s"} ease ${isExpanded ? "0s" : "0.15s"}`,
+              transition: baseOpacityTransition,
             }}
           >
             <div
@@ -705,7 +814,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 ref={canvasRef}
                 className="absolute inset-0 w-full h-full block"
                 role="img"
-                aria-label="Audio visualizer"
+                aria-label={t({
+                  id: "pill.visualizer",
+                  message: "Audio visualizer",
+                })}
               />
             </div>
           </div>

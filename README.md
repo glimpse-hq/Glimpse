@@ -56,11 +56,15 @@ Grab the latest `.dmg` from the [Releases page](https://github.com/LegendarySpy/
 - [x] Auto media pausing
 - [x] Recording auto deletion
 - [ ] Temporary mode (transcribe without saving)
-- [ ] App localization
-- [ ] Better customizable keybinds
+- [x] App localization
+- [x] Better customizable keybinds
 - [ ] Auto-dictionary
 - [ ] Personalization snippets
 - [ ] Windows support
+
+## Contributing
+
+Interested in helping out? Check the [Contributing Guide](CONTRIBUTING.md) for ways to get involved, from translations to code to bug reports.
 
 ## Privacy
 
@@ -79,6 +83,7 @@ Glimpse is licensed under [AGPL-3.0](LICENSE). Free to self-host and modify — 
 
 ## Acknowledgments
 
+- <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="16" alt="Lokalise" align="center" /></a> [Lokalise](https://lokalise.com/) — localization platform (OSS supporter)
 - [Tauri](https://v2.tauri.app/) — app framework
 - [Glimpse-Speech](https://github.com/LegendarySpy/Glimpse-Speech) (MIT) — local transcription engine
 - [whisper-rs](https://github.com/tazz4843/whisper-rs) (Unlicense) — Rust bindings for Whisper

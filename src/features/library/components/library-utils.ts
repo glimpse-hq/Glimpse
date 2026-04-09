@@ -1,4 +1,5 @@
-import type { LibraryItemStatus } from "../../../types";
+import { msg } from "@lingui/core/macro";
+import { i18n } from "../../../i18n";
 
 export const SUPPORTED_EXTENSIONS = ["wav", "mp3", "m4a", "aac", "ogg", "flac", "mp4", "mov", "webm", "mkv"];
 export const PLAYBACK_RATES = [0.5, 1, 1.5, 2, 2.5, 3, 4];
@@ -8,40 +9,6 @@ export const clampProgress = (value: number) => Math.min(Math.max(value, 0), 1);
 export const shouldShowImportProgress = (value: number) => {
     const clamped = clampProgress(value);
     return clamped >= 0.02 && clamped < 0.98;
-};
-
-export const buildProgressDots = (progress: number, cols: number, rows: number) => {
-    const totalDots = cols * rows;
-    const activeCount = Math.round(clampProgress(progress) * totalDots);
-    return Array.from({ length: Math.min(activeCount, totalDots) }, (_, i) => i);
-};
-
-export type LibraryProgressDotsProps = {
-    progress: number;
-    status: "importing" | "transcribing";
-};
-
-export const statusLabel = (status: LibraryItemStatus) => {
-    switch (status.type) {
-        case "pending":
-            return "Queued";
-        case "importing":
-            if (!shouldShowImportProgress(status.progress)) return "Converting";
-            return `Converting ${Math.round(clampProgress(status.progress) * 100)}%`;
-        case "transcribing":
-            if (status.progress < 0.01) return "Starting...";
-            return `Transcribing ${Math.round(clampProgress(status.progress) * 100)}%`;
-        case "complete":
-            return "Done";
-        case "cancelling":
-            return "Canceling...";
-        case "cancelled":
-            return "Canceled";
-        case "error":
-            return "Failed";
-        default:
-            return "Queued";
-    }
 };
 
 export const formatDuration = (seconds: number) => {
@@ -75,25 +42,43 @@ export const getFileExtension = (path: string) => {
 };
 
 export const uniquePaths = (paths: string[]) => Array.from(new Set(paths));
+export const formatLibraryName = (name: string) => name.replace(/[_\.]/g, " ");
 export const sanitizeFileName = (value: string) =>
     value.trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ");
 
 export const formatImportErrorMessage = (rawMessage: string) => {
     const message = rawMessage.trim();
-    if (!message) return "Import failed for one of the files.";
+    if (!message) {
+        return i18n._(msg({
+            id: "library.import_error.default",
+            message: "Import failed for one of the files.",
+        }));
+    }
 
     const lower = message.toLowerCase();
     if (lower.includes("selected model is not installed")) {
-        return "Selected model isn't installed. Download one in Settings \u2192 Models.";
+        return i18n._(msg({
+            id: "library.import_error.model_not_installed",
+            message: "Selected model isn't installed. Download one in Settings -> Models.",
+        }));
     }
     if (lower.includes("file not found")) {
-        return "File not found. It may have moved or been deleted.";
+        return i18n._(msg({
+            id: "library.import_error.file_not_found",
+            message: "File not found. It may have moved or been deleted.",
+        }));
     }
     if (lower.includes("unsupported file format")) {
-        return "Unsupported file format.";
+        return i18n._(msg({
+            id: "library.import_error.unsupported_format",
+            message: "Unsupported file format.",
+        }));
     }
     if (lower.includes("no supported audio tracks")) {
-        return "No audio track found in this file.";
+        return i18n._(msg({
+            id: "library.import_error.no_audio_track",
+            message: "No audio track found in this file.",
+        }));
     }
     if (
         lower.includes("audio decode failed")
@@ -101,68 +86,136 @@ export const formatImportErrorMessage = (rawMessage: string) => {
         || lower.includes("unsupported audio codec")
         || lower.includes("no audio samples decoded")
     ) {
-        return "Couldn't decode this audio file. Try installing FFmpeg.";
+        return i18n._(msg({
+            id: "library.import_error.decode_failed",
+            message: "Couldn't decode this audio file. Try installing FFmpeg.",
+        }));
     }
     if (lower.includes("failed to create library folder")) {
-        return "Couldn't create library storage. Check disk permissions.";
+        return i18n._(msg({
+            id: "library.import_error.create_storage_failed",
+            message: "Couldn't create library storage. Check disk permissions.",
+        }));
     }
     if (lower.includes("failed to copy original file")) {
-        return "Couldn't copy the original file into the library.";
+        return i18n._(msg({
+            id: "library.import_error.copy_original_failed",
+            message: "Couldn't copy the original file into the library.",
+        }));
     }
     if (
         lower.includes("wav writer init failed")
         || lower.includes("wav finalize error")
         || lower.includes("wav write error")
     ) {
-        return "Couldn't convert this file to audio for transcription.";
+        return i18n._(msg({
+            id: "library.import_error.audio_conversion_failed",
+            message: "Couldn't convert this file to audio for transcription.",
+        }));
     }
     if (lower.includes("invalid sample rate") || lower.includes("unknown sample rate")) {
-        return "This file has an unsupported sample rate.";
+        return i18n._(msg({
+            id: "library.import_error.unsupported_sample_rate",
+            message: "This file has an unsupported sample rate.",
+        }));
     }
 
-    return "Import failed for one of the files.";
+    return i18n._(msg({
+        id: "library.import_error.default_fallback",
+        message: "Import failed for one of the files.",
+    }));
 };
 
 export const formatDeleteErrorMessage = (rawMessage: string) => {
     const message = rawMessage.trim();
-    if (!message) return "Failed to delete the library item.";
+    if (!message) {
+        return i18n._(msg({
+            id: "library.delete_error.default",
+            message: "Failed to delete the library item.",
+        }));
+    }
 
     const lower = message.toLowerCase();
     if (lower.includes("outside the library folder")) {
-        return "Couldn't delete this item because its files are outside the library folder.";
+        return i18n._(msg({
+            id: "library.delete_error.outside_folder",
+            message: "Couldn't delete this item because its files are outside the library folder.",
+        }));
     }
     if (lower.includes("storage location")) {
-        return "Couldn't delete this item. Library storage couldn't be found.";
+        return i18n._(msg({
+            id: "library.delete_error.storage_missing",
+            message: "Couldn't delete this item. Library storage couldn't be found.",
+        }));
     }
     if (lower.includes("delete library files") || lower.includes("delete library file")) {
-        return "Couldn't delete the library files. Check permissions and try again.";
+        return i18n._(msg({
+            id: "library.delete_error.delete_files_failed",
+            message: "Couldn't delete the library files. Check permissions and try again.",
+        }));
     }
     if (lower.includes("invalid library file path")) {
-        return "Couldn't delete this item due to an invalid file path.";
+        return i18n._(msg({
+            id: "library.delete_error.invalid_path",
+            message: "Couldn't delete this item due to an invalid file path.",
+        }));
     }
 
-    return "Failed to delete the library item.";
+    return i18n._(msg({
+        id: "library.delete_error.default_fallback",
+        message: "Failed to delete the library item.",
+    }));
 };
 
 export const getLibraryErrorDetails = (rawMessage: string) => {
     const message = rawMessage.trim();
     if (!message) {
-        return { message: "Import failed.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.import_failed",
+                message: "Import failed.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
 
     const lower = message.toLowerCase();
 
     if (lower.includes("selected model is not installed")) {
-        return { message: "Model not installed.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.model_not_installed",
+                message: "Model not installed.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (lower.includes("file not found") || lower.includes("audio file not found")) {
-        return { message: "File not found.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.file_not_found",
+                message: "File not found.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (lower.includes("unsupported file format")) {
-        return { message: "Unsupported file format.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.unsupported_format",
+                message: "Unsupported file format.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (lower.includes("no supported audio tracks")) {
-        return { message: "No audio track found.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.no_audio_track",
+                message: "No audio track found.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (
         lower.includes("invalid sample rate")
@@ -170,7 +223,13 @@ export const getLibraryErrorDetails = (rawMessage: string) => {
         || lower.includes("unknown channel count")
         || lower.includes("unsupported wav sample format")
     ) {
-        return { message: "Unsupported audio settings.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.unsupported_audio_settings",
+                message: "Unsupported audio settings.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (
         lower.includes("audio decode failed")
@@ -178,19 +237,49 @@ export const getLibraryErrorDetails = (rawMessage: string) => {
         || lower.includes("unsupported audio codec")
         || lower.includes("no audio samples decoded")
     ) {
-        return { message: "Not a valid audio file.", showFfmpegHelp: true };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.invalid_audio",
+                message: "Not a valid audio file.",
+            })),
+            showFfmpegHelp: true,
+        };
     }
     if (lower.includes("ffmpeg")) {
-        return { message: "FFmpeg required for video imports.", showFfmpegHelp: true };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.ffmpeg_required",
+                message: "FFmpeg required for video imports.",
+            })),
+            showFfmpegHelp: true,
+        };
     }
     if (lower.includes("failed to create library folder")) {
-        return { message: "Couldn't create library storage.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.create_storage_failed",
+                message: "Couldn't create library storage.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (lower.includes("failed to copy original file")) {
-        return { message: "Couldn't copy original file.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.copy_original_failed",
+                message: "Couldn't copy original file.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
     if (lower.includes("insufficient disk space")) {
-        return { message: "Not enough disk space.", showFfmpegHelp: false };
+        return {
+            message: i18n._(msg({
+                id: "library.error_details.insufficient_disk_space",
+                message: "Not enough disk space.",
+            })),
+            showFfmpegHelp: false,
+        };
     }
 
     return { message, showFfmpegHelp: false };

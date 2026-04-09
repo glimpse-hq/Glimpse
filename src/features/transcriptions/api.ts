@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { TranscriptionRecord } from "../../types";
 
 export async function getTranscriptions(
@@ -30,16 +29,4 @@ export async function undoLlmCleanup(id: string): Promise<void> {
 
 export async function deleteAllTranscriptions(): Promise<void> {
   await invoke("delete_all_transcriptions");
-}
-
-export function onTranscriptionComplete(
-  handler: () => void,
-): Promise<UnlistenFn> {
-  return listen("transcription:complete", () => handler());
-}
-
-export function onTranscriptionError(
-  handler: () => void,
-): Promise<UnlistenFn> {
-  return listen("transcription:error", () => handler());
 }

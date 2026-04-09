@@ -22,6 +22,7 @@ mod recent_transcriptions;
 mod recorder;
 mod settings;
 mod storage;
+mod streaming_transcription;
 mod toast;
 mod transcribe;
 mod transcription_api;
@@ -37,7 +38,6 @@ use std::time::{Duration, Instant};
 use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
-use crate::core::hotkeys::HotkeyProvider;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Days, Local, Months};
 use pill::PillController;
@@ -225,20 +225,22 @@ pub(crate) fn set_app_menu(
     platform::windows::menu::set_app_menu(app, settings)
 }
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let _guard = rt.enter();
     tauri::async_runtime::set(rt.handle().clone());
 
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|_, _, _| {}));
+
+    let builder = builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init());
-
-    let builder = builder.plugin(tauri_plugin_global_shortcut::Builder::new().build());
 
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_plugin_macos_permissions::init());
@@ -381,7 +383,10 @@ pub fn run() {
             audio::list_input_devices,
             toast::toast_dismissed,
             open_accessibility_settings,
+            check_microphone_permission,
+            request_microphone_permission,
             open_microphone_settings,
+            open_input_monitoring_settings,
             open_llm_cleanup_settings,
             open_ffmpeg_install,
             complete_onboarding,
@@ -459,6 +464,7 @@ pub struct AppState {
     storage: Arc<storage::StorageManager>,
     settings_store: Arc<SettingsStore>,
     settings: parking_lot::Mutex<UserSettings>,
+    hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
     pub(crate) settings_close_handler_registered: AtomicBool,
@@ -479,6 +485,7 @@ pub struct AppState {
     preflight_notify: Arc<Notify>,
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
+    streaming_session: parking_lot::Mutex<Option<streaming_transcription::StreamingSession>>,
 }
 
 #[derive(Clone, Copy)]
@@ -518,6 +525,7 @@ impl AppState {
             storage: Arc::new(storage),
             settings_store,
             settings: parking_lot::Mutex::new(settings),
+            hotkeys: core::hotkeys::HotkeyCoordinator::default(),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
             settings_close_handler_registered: AtomicBool::new(false),
@@ -540,7 +548,27 @@ impl AppState {
             session_counters: parking_lot::Mutex::new(SessionCounters {
                 transcription_count: 0,
             }),
+            streaming_session: parking_lot::Mutex::new(None),
         }
+    }
+
+    pub fn start_streaming_session(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        model: &model_manager::ReadyModel,
+    ) {
+        let _ = self.stop_streaming_session(app);
+        let session = streaming_transcription::StreamingSession::start(app, model);
+        *self.streaming_session.lock() = Some(session);
+    }
+
+    pub fn stop_streaming_session(&self, app: &AppHandle<AppRuntime>) -> Option<String> {
+        let session = self.streaming_session.lock().take()?;
+        Some(session.stop(app))
+    }
+
+    pub fn has_streaming_session(&self) -> bool {
+        self.streaming_session.lock().is_some()
     }
 
     /// Read analytics state from the in-memory cache (single lock acquisition).
@@ -835,18 +863,18 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
     state.set_shortcut_capture_active(active);
 
     if active {
-        if let Err(err) = core::hotkeys::provider(&app).unregister_all() {
-            eprintln!("Failed to clear shortcuts for capture: {err}");
-            toast::show(
-                &app,
-                "warning",
-                Some("Shortcut capture warning"),
-                "Could not disable existing OS shortcuts. Capture may miss keys while shortcuts remain active.",
-            );
+        state.hotkeys.stop_registration();
+        if let Err(err) = state.hotkeys.start_capture(&app) {
+            state.set_shortcut_capture_active(false);
+            if let Err(register_err) = pill::register_shortcuts(&app) {
+                eprintln!("Failed to restore shortcuts after capture start error: {register_err}");
+            }
+            return Err(err.to_string());
         }
         return Ok(());
     }
 
+    state.hotkeys.stop_capture();
     pill::register_shortcuts(&app).map_err(|err| err.to_string())
 }
 
@@ -856,8 +884,23 @@ fn open_accessibility_settings() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn check_microphone_permission() -> bool {
+    permissions::check_microphone_permission()
+}
+
+#[tauri::command]
+fn request_microphone_permission() -> Result<(), String> {
+    permissions::request_microphone_permission()
+}
+
+#[tauri::command]
 fn open_microphone_settings() -> Result<(), String> {
     permissions::open_microphone_settings()
+}
+
+#[tauri::command]
+fn open_input_monitoring_settings() -> Result<(), String> {
+    permissions::open_input_monitoring_settings()
 }
 
 #[tauri::command]

@@ -1,5 +1,6 @@
 export type TranscriptionMode = "cloud" | "local";
 export type TextSizeMode = "small" | "default" | "large";
+export type AppLocaleSetting = "system" | string;
 
 export type RecordingPrunePolicy =
     | "never"
@@ -55,6 +56,7 @@ export type StoredSettings = {
     local_model: string;
     microphone_device: string | null;
     language: string;
+    app_locale: AppLocaleSetting;
     llm_enabled: boolean;
     cleanup_enabled: boolean;
     llm_provider: LlmProvider;

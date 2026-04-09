@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import {
     useCallback,
     useEffect,
@@ -18,7 +19,6 @@ import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEvents";
-import { Dropdown } from "../../../shared/ui/Dropdown";
 import { useSettings } from "../../settings/queries";
 import { useModelCatalog } from "../../settings/models-queries";
 import LibraryImportModal from "./LibraryImportModal";
@@ -42,6 +42,7 @@ import {
     SUPPORTED_EXTENSIONS,
     uniquePaths,
 } from "./library-utils";
+import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import type {
     LibraryFilter,
     LibraryItem,
@@ -62,12 +63,12 @@ const LibraryView = ({
     sidebarWidth,
     isActive,
 }: LibraryViewProps) => {
+    const { t } = useLingui();
     const queryClient = useQueryClient();
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [tagFilter, setTagFilter] = useState<string>("all");
-    const [dateFilter, setDateFilter] = useState<string>("all");
+    // dateFilter was removed in redesign
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>({});
     const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -78,15 +79,13 @@ const LibraryView = ({
     const shiftHeld = useShiftHeld(isActive);
     const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
     const filter = useMemo<LibraryFilter>(() => {
-        const sinceDays =
-            dateFilter === "last7" ? 7 : dateFilter === "last30" ? 30 : null;
         return {
             search: debouncedSearchQuery || null,
             status: statusFilter === "all" ? null : statusFilter,
-            tag: tagFilter === "all" ? null : tagFilter,
-            since_days: sinceDays,
+            tag: null,
+            since_days: null,
         };
-    }, [dateFilter, debouncedSearchQuery, statusFilter, tagFilter]);
+    }, [debouncedSearchQuery, statusFilter]);
 
     const {
         data,
@@ -205,7 +204,10 @@ const LibraryView = ({
                 multiple: true,
                 filters: [
                     {
-                        name: "Audio & Video",
+                        name: t({
+                            id: "library.view.file_filter",
+                            message: "Audio & Video",
+                        }),
                         extensions: SUPPORTED_EXTENSIONS,
                     },
                 ],
@@ -221,7 +223,10 @@ const LibraryView = ({
             console.error("Failed to open import dialog:", err);
             invoke("debug_show_toast", {
                 toastType: "error",
-                message: "Could not open the import dialog.",
+                message: t({
+                    id: "library.view.import_dialog_error",
+                    message: "Could not open the import dialog.",
+                }),
             }).catch(() => { });
         }
     };
@@ -275,94 +280,97 @@ const LibraryView = ({
     };
 
     const selectedModel = installedModels.find((model) => model.key === defaultModelKey) ?? installedModels[0];
+    const statusFilterValue = useMemo(() => {
+        if (["transcribing", "importing", "pending"].includes(statusFilter)) {
+            return "active";
+        }
+        if (statusFilter === "complete") return "complete";
+        if (statusFilter === "error") return "error";
+        return "all";
+    }, [statusFilter]);
+    const statusFilterOptions = useMemo(() => [
+        { value: "all", label: t({ id: "library.filter.all", message: "All" }) },
+        { value: "active", label: t({ id: "library.filter.active", message: "Active" }) },
+        { value: "complete", label: t({ id: "library.filter.done", message: "Done" }) },
+        { value: "error", label: t({ id: "library.filter.failed", message: "Failed" }) },
+    ], [t]);
 
     return (
-        <div className="relative flex flex-1 flex-col min-h-0 h-full">
-            <div className="w-full max-w-5xl mx-auto flex flex-col gap-4 pb-4 text-left">
-                <header className="flex items-start gap-3 mb-4">
-                    <DotMatrix
-                        rows={2}
-                        cols={3}
-                        activeDots={[0, 1, 2, 4]}
-                        dotSize={3}
-                        gap={3}
-                        color="var(--color-accent)"
-                    />
-                    <div className="flex-1">
-                        <p className="ui-text-screen-title ui-color-primary tracking-tight">Library</p>
-                        <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                            Import audio and video files for transcription.
-                        </p>
-                    </div>
-                </header>
-                <div className="grid w-full max-w-5xl min-w-0 grid-cols-[auto_minmax(0,1fr)_132px_132px_120px] items-center gap-2">
-                    <button
-                        onClick={handleImportClick}
-                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-body-sm ui-color-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors shrink-0"
-                    >
-                        <Plus size={14} />
-                        Import
-                    </button>
-                    <div className="relative min-w-0">
-                        <div className="relative flex items-center gap-2 bg-surface-secondary border border-border-primary rounded-lg px-2.5 py-2 focus-within:border-border-secondary transition-colors">
-                            <Search size={12} className="text-content-disabled shrink-0" aria-hidden="true" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search library..."
-                                aria-label="Search library"
-                                className="w-full min-w-0 bg-transparent ui-text-input-sm ui-color-secondary placeholder-content-disabled outline-hidden"
-                            />
+        <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
+            <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4 pb-4 pl-2 pr-6 text-left">
+                <header className="flex flex-col gap-4 mb-4 mt-2 md:-mt-6">
+                    <div className="flex min-w-0 items-start gap-3">
+                        <DotMatrix
+                            rows={2}
+                            cols={3}
+                            activeDots={[0, 1, 2, 4]}
+                            dotSize={3}
+                            gap={3}
+                            color="var(--color-accent)"
+                        />
+                        <div className="min-w-0 flex-1">
+                            <h2 className="ui-text-screen-title ui-color-primary tracking-tight">
+                                {t({ id: "library.view.title", message: "Library" })}
+                            </h2>
+                            <p className="mt-1 ui-text-body-sm ui-color-secondary">
+                                {t({
+                                    id: "library.view.description",
+                                    message: "Manage and search your transcribed audio and documents.",
+                                })}
+                            </p>
                         </div>
                     </div>
-                    <Dropdown
-                        value={statusFilter}
-                        onChange={(value) => setStatusFilter(value)}
-                        options={[
-                            { value: "all", label: "All" },
-                            { value: "importing", label: "Converting" },
-                            { value: "pending", label: "Queued" },
-                            { value: "transcribing", label: "Transcribing" },
-                            { value: "complete", label: "Done" },
-                            { value: "error", label: "Failed" },
-                        ]}
-                        className="w-full min-w-0"
-                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
-                    />
-                    <Dropdown
-                        value={dateFilter}
-                        onChange={(value) => setDateFilter(value)}
-                        options={[
-                            { value: "all", label: "All time" },
-                            { value: "last7", label: "Last 7 days" },
-                            { value: "last30", label: "Last 30 days" },
-                        ]}
-                        className="w-full min-w-0"
-                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
-                    />
-                    <Dropdown
-                        value={tagFilter}
-                        onChange={(value) => setTagFilter(value)}
-                        options={[
-                            { value: "all", label: "All tags" },
-                            ...availableTags.map((tag) => ({ value: tag, label: tag })),
-                        ]}
-                        className="w-full min-w-0"
-                        menuClassName="right-auto min-w-full w-max max-w-[20rem]"
-                    />
-                </div>
+
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(14rem,1fr)_auto] md:items-center">
+                        <button
+                            onClick={handleImportClick}
+                            className="flex items-center gap-2 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-surface)] px-3 py-1.5 ui-text-body-sm ui-color-primary hover:border-[var(--color-border-secondary)] hover:bg-[var(--color-bg-overlay)] transition-colors shrink-0"
+                        >
+                            <Plus size={14} />
+                            {t({ id: "library.view.import_button", message: "Import" })}
+                        </button>
+
+                        <div className="relative min-w-0 w-full group">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted group-focus-within:text-[var(--color-accent)] transition-colors" />
+                            <input
+                                type="text"
+                                placeholder={t({
+                                    id: "library.view.search_placeholder",
+                                    message: "Search library... or use #tag",
+                                })}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-primary)] rounded-lg focus:border-[var(--color-border-hover)] pl-9 pr-4 py-1.5 ui-text-input ui-color-primary placeholder-[var(--color-text-muted)] outline-none transition-all duration-100 ease-out"
+                            />
+                        </div>
+
+                        <SegmentedControl
+                            value={statusFilterValue}
+                            options={statusFilterOptions}
+                            onChange={(value) =>
+                                setStatusFilter(value === "active" ? "transcribing" : value)
+                            }
+                            ariaLabel={t({
+                                id: "library.filter.aria_label",
+                                message: "Filter library by status",
+                            })}
+                            className="relative flex w-full items-center rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-secondary)] p-1 md:w-auto"
+                            activeIndicatorLayoutId="library-status-filter"
+                        />
+
+                    </div>
+                </header>
 
                 {error && (
-                    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 ui-text-body-sm ui-color-error-tint">
+                    <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2">
                         {error}
                     </div>
                 )}
             </div>
             <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-3 pt-1">
                 <div key="library-list" className="flex flex-col gap-6 w-full">
-                    <div className="w-full max-w-6xl mx-auto flex flex-col gap-6">
-                        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+                    <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
+                        <div className="grid min-w-0 justify-start gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,220px),220px))]">
                         {isLoading && items.length === 0 && (
                             <div className="col-span-full py-12 flex items-center justify-center">
                                 <DotMatrix
@@ -382,20 +390,24 @@ const LibraryView = ({
                             <div className="col-span-full rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-8 flex flex-col items-center justify-center text-center">
                                 <FolderOpen size={20} className="text-content-disabled" />
                                 <p className="mt-3 ui-text-body ui-color-muted">
-                                    Drag files here to build your Library.
+                                    {t({
+                                        id: "library.view.empty_state",
+                                        message: "Drag files here to build your Library.",
+                                    })}
                                 </p>
                             </div>
                         )}
 
-                        {items.map((item) => (
+                        {items.map((item, index) => (
                             <LibraryCard
-                                key={item.id}
+                                key={item.id || `library-item-${index}`}
                                 item={item}
                                 onOpen={() => setSelectedItemId(item.id)}
                                 onRemoveTag={async (tag) => {
                                     const nextTags = item.tags.filter((entry) => entry !== tag);
                                     await updateItemWithTags(item.id, { tags: nextTags });
                                 }}
+                                onClickTag={(tag) => setSearchQuery(`#${tag}`)}
                                 editingNameId={editingNameId}
                                 editingNameDraft={editingNameDraft}
                                 onStartNameEdit={() => startNameEdit(item)}
@@ -427,7 +439,12 @@ const LibraryView = ({
                                 className="rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-4 flex flex-col items-center justify-center text-center ui-color-muted hover:text-content-secondary hover:border-border-hover transition-colors"
                             >
                                 <FolderOpen size={18} />
-                                <span className="mt-2 ui-text-body-sm">Drop files to import</span>
+                                <span className="mt-2 ui-text-body-sm">
+                                    {t({
+                                        id: "library.view.dropzone",
+                                        message: "Drop files to import",
+                                    })}
+                                </span>
                             </button>
                         )}
 
@@ -441,10 +458,20 @@ const LibraryView = ({
                                         {isFetchingNextPage ? (
                                             <>
                                                 <Loader2 size={14} className="animate-spin" />
-                                                <span>Loading...</span>
+                                                <span>
+                                                    {t({
+                                                        id: "library.view.loading_more",
+                                                        message: "Loading...",
+                                                    })}
+                                                </span>
                                             </>
                                         ) : (
-                                            <span>Load more</span>
+                                            <span>
+                                                {t({
+                                                    id: "library.view.load_more",
+                                                    message: "Load more",
+                                                })}
+                                            </span>
                                         )}
                                     </button>
                                 </div>
@@ -464,7 +491,7 @@ const LibraryView = ({
                     >
                         <div className="w-full h-full min-h-0" onClick={(e) => e.stopPropagation()}>
                             <LibraryModal
-                                key={selectedItem.id}
+                                key={selectedItem.id || "selected-library-item"}
                                 item={selectedItem}
                                 models={installedModels}
                                 shiftHeld={shiftHeld}
@@ -504,7 +531,10 @@ const LibraryView = ({
                             if (unsupported.length > 0) {
                                 invoke("debug_show_toast", {
                                     toastType: "warning",
-                                    message: `${unsupported.length} file(s) skipped due to unsupported format.`,
+                                    message: t({
+                                        id: "library.view.unsupported_files",
+                                        message: `${unsupported.length} file(s) skipped due to unsupported format.`,
+                                    }),
                                 }).catch(() => { });
                             }
 

@@ -60,9 +60,16 @@ impl AudioSpectrumState {
     }
 }
 
+struct LiveBufferState {
+    buffer: Arc<Mutex<Vec<i16>>>,
+    sample_rate: u32,
+    channels: u16,
+}
+
 pub struct RecorderManager {
     tx: Sender<RecorderCommand>,
     spectrum: Arc<Mutex<AudioSpectrumState>>,
+    live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
 }
 
 struct ActiveRecording {
@@ -95,12 +102,14 @@ impl Default for RecorderManager {
     fn default() -> Self {
         let (tx, rx) = unbounded();
         let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
+        let live_buffer = Arc::new(Mutex::new(None));
         let spectrum_for_thread = Arc::clone(&spectrum);
+        let live_buffer_for_thread = Arc::clone(&live_buffer);
 
         std::thread::Builder::new()
             .name("glimpse-recorder".into())
             .spawn(move || {
-                let mut core = RecorderCore::new(spectrum_for_thread);
+                let mut core = RecorderCore::new(spectrum_for_thread, live_buffer_for_thread);
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
                         RecorderCommand::Start { device_id, respond } => {
@@ -114,7 +123,11 @@ impl Default for RecorderManager {
             })
             .expect("failed to spawn recorder thread");
 
-        Self { tx, spectrum }
+        Self {
+            tx,
+            spectrum,
+            live_buffer,
+        }
     }
 }
 
@@ -129,6 +142,36 @@ impl RecorderManager {
         } else {
             None
         }
+    }
+
+    /// Read new i16 samples from the live recording buffer starting at `offset`.
+    /// Returns `(new_samples_mono_f32, sample_rate, new_offset)` or `None` if not recording.
+    pub fn read_live_samples(&self, offset: usize) -> Option<(Vec<f32>, u32, usize)> {
+        let guard = self.live_buffer.lock();
+        let state = guard.as_ref()?;
+        let buffer = state.buffer.lock();
+        let channels = state.channels as usize;
+        let sample_rate = state.sample_rate;
+
+        if offset >= buffer.len() {
+            return Some((Vec::new(), sample_rate, offset));
+        }
+
+        let raw = &buffer[offset..];
+        let new_offset = buffer.len();
+
+        let mono: Vec<f32> = if channels <= 1 {
+            raw.iter().map(|s| *s as f32 / i16::MAX as f32).collect()
+        } else {
+            raw.chunks(channels)
+                .map(|frame| {
+                    let sum: f32 = frame.iter().map(|s| *s as f32).sum();
+                    (sum / channels as f32) / i16::MAX as f32
+                })
+                .collect()
+        };
+
+        Some((mono, sample_rate, new_offset))
     }
 
     pub fn start(&self, device_id: Option<String>) -> Result<DateTime<Local>> {
@@ -170,13 +213,18 @@ enum RecorderCommand {
 struct RecorderCore {
     active: Option<ActiveRecording>,
     spectrum: Arc<Mutex<AudioSpectrumState>>,
+    live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
 }
 
 impl RecorderCore {
-    fn new(spectrum: Arc<Mutex<AudioSpectrumState>>) -> Self {
+    fn new(
+        spectrum: Arc<Mutex<AudioSpectrumState>>,
+        live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
+    ) -> Self {
         Self {
             active: None,
             spectrum,
+            live_buffer,
         }
     }
 
@@ -271,6 +319,12 @@ impl RecorderCore {
 
         stream.play()?;
 
+        *self.live_buffer.lock() = Some(LiveBufferState {
+            buffer: Arc::clone(&buffer),
+            sample_rate,
+            channels,
+        });
+
         let started_at = Local::now();
         self.active = Some(ActiveRecording {
             stream,
@@ -284,6 +338,7 @@ impl RecorderCore {
     }
 
     fn stop(&mut self) -> Result<Option<CompletedRecording>> {
+        *self.live_buffer.lock() = None;
         self.spectrum.lock().reset();
         if let Some(active) = self.active.take() {
             drop(active.stream);

@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent } from "react";
-import { typedListen, type UnlistenFn } from "../tauri";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type { DownloadProgressPayload } from "../../types";
 
 type UseModelDownloadEventsOptions = {
@@ -35,9 +35,9 @@ export function useModelDownloadEvents({
       event: string,
       handler: (payload: TPayload) => void,
     ) => {
-      typedListen<TPayload>(event, (payload) => {
+      listen<TPayload>(event, (eventPayload) => {
         if (!cancelled) {
-          handler(payload);
+          handler(eventPayload.payload);
         }
       }).then((unlisten) => {
         if (cancelled) {

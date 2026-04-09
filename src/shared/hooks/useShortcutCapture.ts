@@ -1,142 +1,112 @@
-import { useCallback, useEffect, useRef } from "react";
-import {
-  buildShortcutPreviewString,
-  buildShortcutString,
-  formatShortcutForDisplay,
-  normalizeShortcutModifier,
-} from "../lib/shortcuts";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useCallback, useEffect } from "react";
+import { formatShortcutForDisplay } from "../lib/shortcuts";
+
+type ShortcutCapturePayload =
+  | { kind: "preview"; shortcut: string }
+  | { kind: "captured"; shortcut: string }
+  | { kind: "error"; message: string };
 
 type UseShortcutCaptureOptions = {
   active: boolean;
   onCancel: () => void;
   onPreviewChange: (preview: string) => void;
   onShortcutCaptured: (shortcut: string) => void;
-  onInvalidShortcut?: () => void;
+  onError?: (message: string) => void;
   onCaptureInput?: () => void;
 };
+
+const SHORTCUT_CAPTURE_EVENT = "shortcut:capture";
 
 export function useShortcutCapture({
   active,
   onCancel,
   onPreviewChange,
   onShortcutCaptured,
-  onInvalidShortcut,
+  onError,
   onCaptureInput,
 }: UseShortcutCaptureOptions) {
-  const pressedModifiers = useRef<Set<string>>(new Set());
-  const primaryKey = useRef<string | null>(null);
-
   const resetCaptureState = useCallback(() => {
-    pressedModifiers.current.clear();
-    primaryKey.current = null;
     onPreviewChange("");
   }, [onPreviewChange]);
-
-  const updatePreview = useCallback(() => {
-    const preview = buildShortcutPreviewString(
-      pressedModifiers.current,
-      primaryKey.current,
-    );
-    onPreviewChange(preview ? formatShortcutForDisplay(preview) : "");
-  }, [onPreviewChange]);
-
-  const captureCurrentCombo = useCallback(() => {
-    const combo = buildShortcutString(
-      pressedModifiers.current,
-      primaryKey.current,
-    );
-    if (!combo) {
-      onInvalidShortcut?.();
-      resetCaptureState();
-      return;
-    }
-
-    onShortcutCaptured(combo);
-    onCancel();
-    resetCaptureState();
-  }, [
-    onCancel,
-    onInvalidShortcut,
-    onShortcutCaptured,
-    resetCaptureState,
-  ]);
 
   useEffect(() => {
     if (!active) return;
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
+    let disposed = false;
+    let unlisten: UnlistenFn | null = null;
+
+    const handleCapturePayload = (payload: ShortcutCapturePayload) => {
+      if (disposed) return;
+
+      if (payload.kind === "preview") {
+        onCaptureInput?.();
+        onPreviewChange(formatShortcutForDisplay(payload.shortcut));
+        return;
+      }
+
+      if (payload.kind === "captured") {
+        onCaptureInput?.();
+        onShortcutCaptured(payload.shortcut);
         onCancel();
         resetCaptureState();
         return;
       }
 
-      event.preventDefault();
-      onCaptureInput?.();
-
-      const modifier = normalizeShortcutModifier(event);
-      if (modifier) {
-        pressedModifiers.current.add(modifier);
-        updatePreview();
-        return;
-      }
-
-      if (!event.code) return;
-
-      primaryKey.current = event.code;
-      updatePreview();
-      captureCurrentCombo();
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-        resetCaptureState();
-        return;
-      }
-
-      event.preventDefault();
-      onCaptureInput?.();
-
-      const modifier = normalizeShortcutModifier(event);
-      if (modifier) {
-        pressedModifiers.current.delete(modifier);
-        updatePreview();
-        return;
-      }
-
-      if (!event.code || primaryKey.current) return;
-
-      primaryKey.current = event.code;
-      updatePreview();
-      captureCurrentCombo();
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
+      onError?.(payload.message);
       onCancel();
       resetCaptureState();
     };
 
-    window.addEventListener("keydown", handleKeyDown, true);
-    window.addEventListener("keyup", handleKeyUp, true);
-    window.addEventListener("keydown", handleEscape, true);
+    listen<ShortcutCapturePayload>(SHORTCUT_CAPTURE_EVENT, (event) => {
+      handleCapturePayload(event.payload);
+    })
+      .then((cleanup) => {
+        if (disposed) {
+          cleanup();
+        } else {
+          unlisten = cleanup;
+        }
+      })
+      .catch((error) => {
+        if (disposed) return;
+        onError?.(String(error));
+        onCancel();
+        resetCaptureState();
+      });
+
+    const swallowKeyboardEvent = (event: KeyboardEvent) => {
+      const hasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+
+      if (event.key === "Escape" && !hasModifier) {
+        event.preventDefault();
+        event.stopPropagation();
+        onCancel();
+        resetCaptureState();
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    window.addEventListener("keydown", swallowKeyboardEvent, true);
+    window.addEventListener("keyup", swallowKeyboardEvent, true);
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDown, true);
-      window.removeEventListener("keyup", handleKeyUp, true);
-      window.removeEventListener("keydown", handleEscape, true);
+      disposed = true;
+      unlisten?.();
+      window.removeEventListener("keydown", swallowKeyboardEvent, true);
+      window.removeEventListener("keyup", swallowKeyboardEvent, true);
     };
   }, [
     active,
-    captureCurrentCombo,
     onCancel,
     onCaptureInput,
+    onError,
+    onPreviewChange,
+    onShortcutCaptured,
     resetCaptureState,
-    updatePreview,
   ]);
 
   return { resetCaptureState };

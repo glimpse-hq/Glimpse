@@ -147,3 +147,11 @@ pub fn whisper_supported_languages() -> Vec<SupportedLanguageInfo> {
 pub fn parakeet_v3_supported_languages() -> Vec<SupportedLanguageInfo> {
     supported_languages_for_codes(NVIDIA_PARAKEET_V3_LANGUAGE_CODES)
 }
+
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+pub fn nemotron_supported_languages() -> Vec<SupportedLanguageInfo> {
+    vec![SupportedLanguageInfo {
+        code: "en".to_string(),
+        name: "English".to_string(),
+    }]
+}

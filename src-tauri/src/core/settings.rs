@@ -3,13 +3,11 @@ use tauri::{AppHandle, Emitter};
 
 use super::hotkeys;
 use crate::settings::{
-    LlmProvider, RecordingPrunePolicy, TranscriptionMode, UserSettings,
+    canonicalize_app_locale, canonicalize_app_locale_or_default, LlmProvider, RecordingPrunePolicy,
+    TranscriptionMode, UserSettings,
 };
 
-use crate::{
-    analytics, model_manager, pill, tray, AppRuntime, AppState,
-    EVENT_SETTINGS_CHANGED,
-};
+use crate::{analytics, model_manager, pill, tray, AppRuntime, AppState, EVENT_SETTINGS_CHANGED};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -24,6 +22,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub local_model: String,
     pub microphone_device: Option<String>,
     pub language: String,
+    pub app_locale: String,
     pub llm_enabled: bool,
 
     pub cleanup_enabled: bool,
@@ -39,17 +38,7 @@ pub(crate) struct UpdateSettingsArgs {
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> String {
-    shortcut
-        .split('+')
-        .map(|raw| {
-            let token = raw.trim();
-            match token.to_ascii_lowercase().as_str() {
-                "option" | "leftoption" | "rightoption" => "Alt".to_string(),
-                _ => token.to_string(),
-            }
-        })
-        .collect::<Vec<_>>()
-        .join("+")
+    hotkeys::normalize_shortcut(shortcut).unwrap_or_else(|_| shortcut.trim().to_string())
 }
 
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
@@ -69,33 +58,40 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("At least one recording mode must be enabled".into());
     }
 
-    let mut enabled_shortcuts: Vec<(&str, &str, String)> = vec![];
+    let mut enabled_shortcuts: Vec<(&str, handy_keys::Hotkey)> = vec![];
     if args.smart_enabled {
         let raw = args.smart_shortcut.trim();
-        let normalized = hotkeys::normalize_shortcut(raw)
+        let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Smart", raw, normalized));
+        enabled_shortcuts.push(("Smart", normalized));
     }
     if args.hold_enabled {
         let raw = args.hold_shortcut.trim();
-        let normalized = hotkeys::normalize_shortcut(raw)
+        let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Hold", raw, normalized));
+        enabled_shortcuts.push(("Hold", normalized));
     }
     if args.toggle_enabled {
         let raw = args.toggle_shortcut.trim();
-        let normalized = hotkeys::normalize_shortcut(raw)
+        let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Toggle", raw, normalized));
+        enabled_shortcuts.push(("Toggle", normalized));
     }
 
     for i in 0..enabled_shortcuts.len() {
         for j in (i + 1)..enabled_shortcuts.len() {
-            let (name1, _, normalized1) = &enabled_shortcuts[i];
-            let (name2, _, normalized2) = &enabled_shortcuts[j];
+            let (name1, normalized1) = &enabled_shortcuts[i];
+            let (name2, normalized2) = &enabled_shortcuts[j];
             if normalized1 == normalized2 {
                 return Err(format!(
                     "{} and {} shortcuts cannot be the same",
+                    name1, name2
+                ));
+            }
+
+            if hotkeys::shortcuts_conflict(normalized1, normalized2) {
+                return Err(format!(
+                    "{} shortcut overlaps {} shortcut. Choose a more specific combination.",
                     name1, name2
                 ));
             }
@@ -104,6 +100,10 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
 
     if model_manager::definition(&args.local_model).is_none() {
         return Err("Unknown model selection".into());
+    }
+
+    if canonicalize_app_locale(&args.app_locale).is_none() {
+        return Err("Unknown app language selection".into());
     }
 
     if args.llm_enabled && matches!(args.llm_provider, LlmProvider::None) {
@@ -201,6 +201,7 @@ pub(crate) fn update_settings(
     next.local_model = args.local_model;
     next.microphone_device = args.microphone_device;
     next.language = args.language;
+    next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
     next.llm_enabled = args.llm_enabled;
 
     next.cleanup_enabled = args.cleanup_enabled;
@@ -239,8 +240,6 @@ pub(crate) fn update_settings(
         eprintln!("Failed to emit settings change: {err}");
     }
 
-
-
     if prev.recording_prune_policy != next.recording_prune_policy {
         crate::schedule_recording_prune(app.clone(), next.clone());
     }
@@ -265,6 +264,7 @@ mod tests {
             local_model: default_local_model(),
             microphone_device: None,
             language: "en".to_string(),
+            app_locale: "system".to_string(),
             llm_enabled: false,
 
             cleanup_enabled: false,
@@ -323,5 +323,15 @@ mod tests {
         let err = validate_update_settings_args(&args).unwrap_err();
 
         assert_eq!(err, "Choose a language model before enabling AI features");
+    }
+
+    #[test]
+    fn rejects_invalid_app_locale_selection() {
+        let mut args = base_args();
+        args.app_locale = "de".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(err, "Unknown app language selection");
     }
 }

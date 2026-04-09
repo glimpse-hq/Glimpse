@@ -13,64 +13,49 @@ use std::{thread, time::Duration};
 
 #[cfg(target_os = "macos")]
 pub fn get_selected_text_ax() -> Option<String> {
-    use core_foundation::base::{CFType, TCFType};
-    use core_foundation::string::CFString;
-    use std::ffi::c_void;
-    use std::ptr;
+    let mut clipboard = Clipboard::new().ok()?;
 
-    #[link(name = "ApplicationServices", kind = "framework")]
-    extern "C" {
-        fn AXUIElementCreateSystemWide() -> *mut c_void;
-        fn AXUIElementCopyAttributeValue(
-            element: *mut c_void,
-            attribute: *const c_void,
-            value: *mut *mut c_void,
-        ) -> i32;
-        fn CFRelease(cf: *const c_void);
+    let backup = ClipboardBackup::capture(&mut clipboard);
+
+    let _ = clipboard.clear();
+    thread::sleep(Duration::from_millis(5));
+
+    if send_copy_keystroke().is_err() {
+        backup.restore(&mut clipboard);
+        return None;
     }
+    thread::sleep(Duration::from_millis(50));
 
-    unsafe {
-        let system_wide = AXUIElementCreateSystemWide();
-        if system_wide.is_null() {
-            return None;
-        }
+    let text = clipboard.get_text().ok();
 
-        let focused_attr = CFString::new("AXFocusedUIElement");
-        let mut focused_element: *mut c_void = ptr::null_mut();
-        let result = AXUIElementCopyAttributeValue(
-            system_wide,
-            focused_attr.as_concrete_TypeRef() as *const c_void,
-            &mut focused_element,
-        );
-        CFRelease(system_wide);
+    backup.restore(&mut clipboard);
 
-        if result != 0 || focused_element.is_null() {
-            return None;
-        }
-
-        let selected_attr = CFString::new("AXSelectedText");
-        let mut selected_value: *mut c_void = ptr::null_mut();
-        let result = AXUIElementCopyAttributeValue(
-            focused_element,
-            selected_attr.as_concrete_TypeRef() as *const c_void,
-            &mut selected_value,
-        );
-        CFRelease(focused_element);
-
-        if result != 0 || selected_value.is_null() {
-            return None;
-        }
-
-        let cf_type: CFType = CFType::wrap_under_create_rule(selected_value as *const _);
-        let cf_string = cf_type.downcast::<CFString>()?;
-        let text = cf_string.to_string();
-
-        if text.trim().is_empty() {
-            return None;
-        }
-
-        Some(text)
+    match text {
+        Some(t) if !t.trim().is_empty() => Some(t),
+        _ => None,
     }
+}
+
+#[cfg(target_os = "macos")]
+fn send_copy_keystroke() -> Result<()> {
+    const C_KEY: CGKeyCode = 8;
+
+    let source = CGEventSource::new(CGEventSourceStateID::CombinedSessionState)
+        .map_err(|_| anyhow!("Failed to create CGEventSource"))?;
+
+    let key_down = CGEvent::new_keyboard_event(source.clone(), C_KEY, true)
+        .map_err(|_| anyhow!("Failed to create key-down event"))?;
+    key_down.set_flags(CGEventFlags::CGEventFlagCommand);
+    key_down.post(CGEventTapLocation::HID);
+
+    thread::sleep(Duration::from_millis(5));
+
+    let key_up = CGEvent::new_keyboard_event(source, C_KEY, false)
+        .map_err(|_| anyhow!("Failed to create key-up event"))?;
+    key_up.set_flags(CGEventFlags::CGEventFlagCommand);
+    key_up.post(CGEventTapLocation::HID);
+
+    Ok(())
 }
 
 #[cfg(target_os = "macos")]

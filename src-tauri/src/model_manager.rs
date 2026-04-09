@@ -8,12 +8,13 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use crate::downloader::{download_model_files, ModelFileDescriptor};
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-use crate::model_language_table::parakeet_v3_supported_languages;
+use crate::model_language_table::{nemotron_supported_languages, parakeet_v3_supported_languages};
 use crate::model_language_table::{whisper_supported_languages, SupportedLanguageInfo};
 
 const MODELS_ROOT: &str = "models";
 pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
 pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
+pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
 
 #[derive(Debug, Clone)]
 pub enum ModelStorage {
@@ -26,6 +27,8 @@ pub enum ModelStorage {
 
 #[derive(Debug, Clone)]
 pub enum LocalModelEngine {
+    #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
+    Nemotron,
     #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
     Parakeet,
     Whisper,
@@ -68,6 +71,26 @@ const PARAKEET_TDT_INT8_FILES: [ModelFileDescriptor; 3] = [
     },
 ];
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+const NEMOTRON_STREAMING_FILES: [ModelFileDescriptor; 4] = [
+    ModelFileDescriptor {
+        url: "https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8/resolve/main/encoder.onnx",
+        name: "encoder.onnx",
+    },
+    ModelFileDescriptor {
+        url: "https://huggingface.co/altunenes/parakeet-rs/resolve/main/nemotron-speech-streaming-en-0.6b/encoder.onnx.data",
+        name: "encoder.onnx.data",
+    },
+    ModelFileDescriptor {
+        url: "https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8/resolve/main/decoder_joint.onnx",
+        name: "decoder_joint.onnx",
+    },
+    ModelFileDescriptor {
+        url: "https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8/resolve/main/tokenizer.model",
+        name: "tokenizer.model",
+    },
+];
+
 const WHISPER_SMALL_Q5_FILES: [ModelFileDescriptor; 1] = [ModelFileDescriptor {
     url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin",
     name: "ggml-small-q5_1.bin",
@@ -107,6 +130,19 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         storage: ModelStorage::Directory,
         tags: &["Multilingual", "Fast"],
         capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
+    },
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    ModelDefinition {
+        key: "nemotron_streaming_en",
+        label: "Nemotron Streaming 0.6B",
+        description: "Real-time streaming transcription. Text appears as you speak.",
+        size_mb: 895.0,
+        files: &NEMOTRON_STREAMING_FILES,
+        engine: LocalModelEngine::Nemotron,
+        variant: "INT8",
+        storage: ModelStorage::Directory,
+        tags: &["English", "Streaming"],
+        capabilities: &[MODEL_CAPABILITY_STREAMING],
     },
     ModelDefinition {
         key: "whisper_small_q5",
@@ -192,6 +228,17 @@ pub struct ModelStatus {
 fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
     match engine {
         LocalModelEngine::Whisper => whisper_supported_languages(),
+        LocalModelEngine::Nemotron => {
+            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+            {
+                nemotron_supported_languages()
+            }
+
+            #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
+            {
+                Vec::new()
+            }
+        }
         LocalModelEngine::Parakeet => {
             #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             {
@@ -259,16 +306,22 @@ fn calculate_dir_size(dir: &Path) -> Result<u64> {
 
 fn engine_label(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Parakeet => "Parakeet",
+        LocalModelEngine::Nemotron => "NVIDIA",
+        LocalModelEngine::Parakeet => "NVIDIA",
         LocalModelEngine::Whisper => "Whisper",
     }
 }
 
 fn engine_id(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Parakeet => "parakeet_v3",
+        LocalModelEngine::Nemotron => "nvidia",
+        LocalModelEngine::Parakeet => "nvidia",
         LocalModelEngine::Whisper => "whisper",
     }
+}
+
+pub fn is_streaming_model(model_key: &str) -> bool {
+    model_supports_capability(model_key, MODEL_CAPABILITY_STREAMING)
 }
 
 #[tauri::command]
@@ -321,7 +374,7 @@ pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
 
     result.sort_by_key(|g| match g.models.first().map(|m| m.engine_id.as_str()) {
         Some("whisper") => 0,
-        Some("parakeet_v3") => 1,
+        Some("nvidia") => 1,
         _ => 2,
     });
 

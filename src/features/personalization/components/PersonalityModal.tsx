@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -122,6 +123,7 @@ const PersonalityModal = ({
   onUpdateList,
   onDelete,
 }: PersonalityModalProps) => {
+  const { t } = useLingui();
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(personality.name);
@@ -225,14 +227,24 @@ const PersonalityModal = ({
       return;
     }
     if (!isValidDomain(value)) {
-      setWebsiteError("Enter a valid domain like gmail.com");
+      setWebsiteError(
+        t({
+          id: "personalization.modal.website.invalid",
+          message: "Enter a valid domain like gmail.com",
+        }),
+      );
       return;
     }
     const exists = personality.websites.some(
       (site) => site.toLowerCase() === value.toLowerCase(),
     );
     if (exists) {
-      setWebsiteError("That domain is already added");
+      setWebsiteError(
+        t({
+          id: "personalization.modal.website.duplicate",
+          message: "That domain is already added",
+        }),
+      );
       return;
     }
     setWebsiteError(null);
@@ -350,7 +362,10 @@ const PersonalityModal = ({
               />
               <div>
                 <p className="ui-text-section-label ui-color-disabled tracking-[0.18em]">
-                  Personalization
+                  {t({
+                    id: "personalization.modal.header",
+                    message: "Personalization",
+                  })}
                 </p>
                 <div className="h-[28px] flex items-center">
                   {isEditingName ? (
@@ -360,7 +375,10 @@ const PersonalityModal = ({
                         value={nameDraft}
                         onChange={(event) => setNameDraft(event.target.value)}
                         autoFocus
-                        aria-label="Edit mode name"
+                        aria-label={t({
+                          id: "personalization.modal.edit_name",
+                          message: "Edit mode name",
+                        })}
                         onKeyDown={(event) => {
                           if (event.key === "Enter") {
                             event.preventDefault();
@@ -377,7 +395,10 @@ const PersonalityModal = ({
                       <button
                         onClick={handleSaveName}
                         className="h-[28px] w-[28px] flex items-center justify-center rounded-sm hover:bg-border-secondary ui-color-primary"
-                        aria-label="Save name"
+                        aria-label={t({
+                          id: "personalization.modal.save_name",
+                          message: "Save name",
+                        })}
                       >
                         <Check size={14} aria-hidden="true" />
                       </button>
@@ -385,7 +406,10 @@ const PersonalityModal = ({
                   ) : (
                     <div
                       onClick={() => {
-                        if (personality.name === "New Mode") {
+                        if (personality.name === t({
+                          id: "personalization.new_mode.default_name",
+                          message: "New Mode",
+                        })) {
                           setNameDraft("");
                         }
                         setIsEditingName(true);
@@ -412,15 +436,24 @@ const PersonalityModal = ({
               <button
                 onClick={onDelete}
                 className="p-2 rounded-lg ui-color-error-strong hover:bg-red-500/10 transition-colors"
-                title="Delete mode"
-                aria-label="Delete mode"
+                title={t({
+                  id: "personalization.modal.delete_mode",
+                  message: "Delete mode",
+                })}
+                aria-label={t({
+                  id: "personalization.modal.delete_mode",
+                  message: "Delete mode",
+                })}
               >
                 <Trash2 size={14} aria-hidden="true" />
               </button>
               <button
                 onClick={onClose}
                 className="p-2 rounded-lg hover:bg-surface-elevated text-content-muted hover:text-content-primary transition-colors"
-                aria-label="Close modal"
+                aria-label={t({
+                  id: "personalization.modal.close",
+                  message: "Close modal",
+                })}
               >
                 <X size={16} aria-hidden="true" />
               </button>
@@ -430,7 +463,10 @@ const PersonalityModal = ({
           <div className="flex flex-col gap-4 p-4 flex-1 min-h-0">
             <section className="space-y-0.5">
               <p className="ui-text-section-label-sm ui-color-muted">
-                Custom instructions
+                {t({
+                  id: "personalization.modal.custom_instructions",
+                  message: "Custom instructions",
+                })}
               </p>
               <div className="relative rounded-xl border border-border-primary bg-surface-surface p-2 px-3">
                 <textarea
@@ -438,8 +474,14 @@ const PersonalityModal = ({
                   onChange={(event) =>
                     handleInstructionsChange(event.target.value)
                   }
-                  placeholder="Add custom instructions"
-                  aria-label="Custom instructions"
+                  placeholder={t({
+                    id: "personalization.modal.custom_instructions.placeholder",
+                    message: "Add custom instructions",
+                  })}
+                  aria-label={t({
+                    id: "personalization.modal.custom_instructions",
+                    message: "Custom instructions",
+                  })}
                   className="w-full resize-none bg-transparent ui-text-label font-mono ui-color-primary placeholder-content-disabled outline-hidden instructions-scroll"
                   style={{ height: `${instructionsHeight}px` }}
                 />
@@ -452,8 +494,14 @@ const PersonalityModal = ({
                   type="button"
                   onPointerDown={handleInstructionsResizeStart}
                   className="h-4 w-4 rounded-sm text-content-disabled hover:text-content-primary transition-colors cursor-pointer touch-none"
-                  aria-label="Resize custom instructions"
-                  title="Drag to resize"
+                  aria-label={t({
+                    id: "personalization.modal.custom_instructions.resize",
+                    message: "Resize custom instructions",
+                  })}
+                  title={t({
+                    id: "personalization.modal.custom_instructions.drag",
+                    message: "Drag to resize",
+                  })}
                 >
                   <svg
                     viewBox="0 0 20 20"
@@ -475,10 +523,16 @@ const PersonalityModal = ({
               <section className="space-y-2 flex flex-col min-h-0">
                 <div className="flex items-center justify-between">
                   <p className="ui-text-section-label-sm ui-color-muted">
-                    Applications
+                    {t({
+                      id: "personalization.modal.applications",
+                      message: "Applications",
+                    })}
                   </p>
                   <span className="ui-text-meta ui-color-disabled">
-                    {personality.apps.length} selected
+                    {t({
+                      id: "personalization.modal.applications.selected",
+                      message: `${personality.apps.length} selected`,
+                    })}
                   </span>
                 </div>
                 <Dropdown
@@ -488,16 +542,25 @@ const PersonalityModal = ({
                     addApp(value);
                   }}
                   options={appDropdownOptions}
-                  placeholder="Add application"
+                  placeholder={t({
+                    id: "personalization.modal.applications.add",
+                    message: "Add application",
+                  })}
                   searchable
-                  searchPlaceholder="Search applications..."
+                  searchPlaceholder={t({
+                    id: "personalization.modal.applications.search",
+                    message: "Search applications...",
+                  })}
                   menuClassName="max-h-[220px]"
                 />
                 <div className="relative flex-1 min-h-0">
                   <div className="space-y-1 h-full instructions-scroll pr-2">
                     {personality.apps.length === 0 ? (
                       <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 ui-text-label ui-color-muted">
-                        No applications selected
+                        {t({
+                          id: "personalization.modal.applications.none",
+                          message: "No applications selected",
+                        })}
                       </div>
                     ) : (
                       personality.apps.map((app, index) => {
@@ -523,15 +586,24 @@ const PersonalityModal = ({
                               </span>
                               {isMissing && (
                                 <span className="ui-text-meta ui-color-disabled">
-                                  Not installed
+                                  {t({
+                                    id: "personalization.modal.applications.not_installed",
+                                    message: "Not installed",
+                                  })}
                                 </span>
                               )}
                             </div>
                             <button
                               onClick={() => removeApp(app)}
                               className="rounded-md p-1.5 text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
-                              title="Remove"
-                              aria-label={`Remove ${app}`}
+                              title={t({
+                                id: "personalization.modal.remove",
+                                message: "Remove",
+                              })}
+                              aria-label={t({
+                                id: "personalization.modal.remove_app",
+                                message: `Remove ${app}`,
+                              })}
                             >
                               <X size={12} />
                             </button>
@@ -547,10 +619,16 @@ const PersonalityModal = ({
               <section className="space-y-2 flex flex-col min-h-0">
                 <div className="flex items-center justify-between">
                   <p className="ui-text-section-label-sm ui-color-muted">
-                    Websites
+                    {t({
+                      id: "personalization.modal.websites",
+                      message: "Websites",
+                    })}
                   </p>
                   <span className="ui-text-meta ui-color-disabled">
-                    {personality.websites.length} sites
+                    {t({
+                      id: "personalization.modal.websites.count",
+                      message: `${personality.websites.length} sites`,
+                    })}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 min-h-[40px] focus-within:border-border-hover transition-colors">
@@ -568,8 +646,14 @@ const PersonalityModal = ({
                         addWebsite();
                       }
                     }}
-                    placeholder="Add a site like gmail.com"
-                    aria-label="Add website domain"
+                    placeholder={t({
+                      id: "personalization.modal.websites.placeholder",
+                      message: "Add a site like gmail.com",
+                    })}
+                    aria-label={t({
+                      id: "personalization.modal.websites.aria",
+                      message: "Add website domain",
+                    })}
                     className="bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden flex-1"
                   />
                   <button
@@ -577,7 +661,10 @@ const PersonalityModal = ({
                     className="flex items-center gap-1 rounded-md bg-surface-elevated px-2 py-0.5 ui-text-button ui-color-primary hover:bg-surface-elevated-hover transition-colors"
                   >
                     <Plus size={12} aria-hidden="true" />
-                    Add
+                    {t({
+                      id: "personalization.modal.add",
+                      message: "Add",
+                    })}
                   </button>
                 </div>
                 {websiteError && (
@@ -587,7 +674,10 @@ const PersonalityModal = ({
                   <div className="space-y-1 h-full instructions-scroll pr-2">
                     {personality.websites.length === 0 ? (
                       <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-3 ui-text-label ui-color-muted">
-                        No websites added
+                        {t({
+                          id: "personalization.modal.websites.none",
+                          message: "No websites added",
+                        })}
                       </div>
                     ) : (
                       personality.websites.map((site, index) => (
@@ -610,8 +700,14 @@ const PersonalityModal = ({
                           <button
                             onClick={() => removeWebsite(site)}
                             className="rounded-md p-1.5 text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
-                            title="Remove"
-                            aria-label={`Remove ${site}`}
+                            title={t({
+                              id: "personalization.modal.remove",
+                              message: "Remove",
+                            })}
+                            aria-label={t({
+                              id: "personalization.modal.remove_site",
+                              message: `Remove ${site}`,
+                            })}
                           >
                             <X size={12} />
                           </button>

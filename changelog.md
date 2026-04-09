@@ -1,3 +1,19 @@
+0.8.0
+
+### Features
+- App localization support (English for now)
+- Streaming speech transcription with Nvidia Nemotron
+- Enhanced keybind customization including function keys
+- Input monitoring settings in App preferences
+
+### Changes
+- Dictionary & Replacements have been merged into one view.
+- Library views have had a small redesign — `_` and `.` in file names are now stripped for cleaner titles.
+- Models tab now has a new system models category.
+- Media is now unpaused after recording rather than after recording + processing.
+- Edit mode is now significantly more consistent.
+- UI across the app has been optimized to feel smoother.
+---
 0.7.5
 
 ### Changes

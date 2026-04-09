@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { getCurrentWindow, type UnlistenFn } from "../tauri";
+import { type UnlistenFn } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export function useShiftHeld(enabled: boolean = true) {
   const [shiftHeld, setShiftHeld] = useState(false);

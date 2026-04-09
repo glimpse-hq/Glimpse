@@ -31,7 +31,7 @@ type EngineSupport = {
 
 const KNOWN_ENGINE_BADGES: Record<string, string> = {
     whisper: "WS",
-    parakeet_v3: "P3",
+    nvidia: "NV",
 };
 
 function normalizeEngineId(value: string | null | undefined): TranscriptionEngineId | null {
@@ -115,6 +115,8 @@ function getTranscriptionEngineId(value: string | null | undefined): Transcripti
     if (normalized.includes("whisper")) return "whisper";
     if (normalized.includes("parakeet_v3")) return "parakeet_v3";
     if (normalized.includes("parakeet")) return "parakeet_v3";
+    if (normalized.includes("nvidia")) return "nvidia";
+    if (normalized.includes("nemotron")) return "nvidia";
 
     return normalized;
 }
@@ -160,7 +162,8 @@ export function getInstalledTranscriptionEngines(
 export function buildTranscriptionLanguageView(
     modelCatalog: ModelInfo[],
     activeEngine: TranscriptionEngineId | null,
-    visibleEngines: TranscriptionEngineId[]
+    visibleEngines: TranscriptionEngineId[],
+    autoLabel: string
 ): TranscriptionLanguageView {
     const engineSupport = collectEngineSupport(modelCatalog);
     const orderedVisibleEngines = visibleEngines.filter((engineId) => engineSupport.has(engineId));
@@ -178,6 +181,9 @@ export function buildTranscriptionLanguageView(
         if (!languages) continue;
 
         for (const [code, name] of languages.entries()) {
+            if (!code.trim()) {
+                continue;
+            }
             if (!languageNames.has(code)) {
                 languageNames.set(code, name);
                 orderedCodes.push(code);
@@ -198,7 +204,7 @@ export function buildTranscriptionLanguageView(
     }));
 
     return {
-        options: [{ code: "", name: "Auto", badges: [] }, ...options],
+        options: [{ code: "", name: autoLabel, badges: [] }, ...options],
         badgeColumns,
     };
 }

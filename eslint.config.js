@@ -28,14 +28,26 @@ export default tseslint.config(
         {
           default: "disallow",
           rules: [
-            { from: "app", allow: ["app", "feature", "shared", "legacy"] },
-            { from: "feature", allow: ["shared", "legacy"] },
-            { from: "shared", allow: ["shared", "legacy"] },
-            { from: "legacy", allow: ["app", "feature", "shared", "legacy"] },
+            {
+              from: { type: "app" },
+              allow: { to: { type: ["app", "feature", "shared", "legacy"] } },
+            },
+            {
+              from: { type: "feature" },
+              allow: { to: { type: ["shared", "legacy"] } },
+            },
+            {
+              from: { type: "shared" },
+              allow: { to: { type: ["shared", "legacy"] } },
+            },
+            {
+              from: { type: "legacy" },
+              allow: { to: { type: ["app", "feature", "shared", "legacy"] } },
+            },
           ],
         },
       ],
-      // No direct @tauri-apps imports outside allowed files
+      // No direct @tauri-apps imports outside boundary files
       "no-restricted-imports": [
         "warn",
         {
@@ -43,7 +55,7 @@ export default tseslint.config(
             {
               group: ["@tauri-apps/api/*"],
               message:
-                "Use @/shared/tauri helpers or feature api.ts instead of direct @tauri-apps imports.",
+                "Use feature api.ts or an existing app/shared boundary file instead of adding new direct @tauri-apps imports.",
             },
           ],
         },
@@ -58,10 +70,13 @@ export default tseslint.config(
       "no-useless-assignment": "off",
     },
   },
-  // Override: allow @tauri-apps imports in shared/tauri, feature api/query files, and legacy
+  // Override: allow @tauri-apps imports in app/shared boundary files, feature api/query files, and legacy
   {
     files: [
-      "src/shared/tauri/**/*.ts",
+      "src/app/**/*.ts",
+      "src/app/**/*.tsx",
+      "src/shared/hooks/**/*.ts",
+      "src/shared/hooks/**/*.tsx",
       "src/features/*/api.ts",
       "src/features/*/models-api.ts",
       "src/features/*/queries.ts",
@@ -88,7 +103,10 @@ export default tseslint.config(
         {
           default: "disallow",
           rules: [
-            { from: "feature", allow: ["feature", "shared", "legacy"] },
+            {
+              from: { type: "feature" },
+              allow: { to: { type: ["feature", "shared", "legacy"] } },
+            },
           ],
         },
       ],

@@ -106,8 +106,6 @@ Window labels and behavior must stay aligned across:
 - `src/shared/lib/*`: static metadata/formatting only, not a service layer.
 - `src/shared/ui/*`: small reusable UI primitives.
 - `src/types/*`: effective shared frontend type layer today.
-- `src/shared/types/schemas.ts`: duplicate zod mirror. Keep it in sync if it
-  remains in use.
 
 ## Change map
 

@@ -1,3 +1,4 @@
+import { msg } from "@lingui/core/macro";
 import {
   useState,
   useEffect,
@@ -10,7 +11,7 @@ import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   checkAccessibilityPermission,
-  checkMicrophonePermission,
+  checkInputMonitoringPermission,
 } from "tauri-plugin-macos-permissions-api";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
@@ -23,6 +24,7 @@ import {
   type TranscriptionEngineId,
 } from "../../shared/lib/transcriptionLanguages";
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
+import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
 import { useModelCatalog } from "./models-queries";
 import type {
@@ -33,6 +35,7 @@ import type {
   DownloadEvent,
   LlmProvider,
   RecordingPrunePolicy,
+  AppLocaleSetting,
 } from "../../types";
 
 
@@ -73,6 +76,7 @@ export function useSettingsForm({
   const [localModel, setLocalModel] = useState("");
   const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
   const [language, setLanguage] = useState("en");
+  const [appLocale, setAppLocale] = useState<AppLocaleSetting>("system");
   const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>(
     {},
   );
@@ -107,6 +111,9 @@ export function useSettingsForm({
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [accessibilityPermission, setAccessibilityPermission] = useState<
+    boolean | null
+  >(null);
+  const [inputMonitoringPermission, setInputMonitoringPermission] = useState<
     boolean | null
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
@@ -185,6 +192,7 @@ export function useSettingsForm({
     setLocalModel(s.local_model);
     setMicrophoneDevice(s.microphone_device);
     setLanguage(s.language);
+    setAppLocale(s.app_locale ?? "system");
 
     setLlmEnabledRaw(s.llm_enabled ?? false);
     setCleanupEnabled(s.cleanup_enabled ?? false);
@@ -226,16 +234,30 @@ export function useSettingsForm({
     catalogTranscriptionEngines,
   ]);
   const showLanguageSupportBadges = installedTranscriptionEngines.length > 1;
+  const autoTranscriptionLanguageLabel = i18n._(
+    msg({
+      id: "transcription.language.auto",
+      message: "Auto",
+    }),
+  );
   const languageView = useMemo(
     () =>
       buildTranscriptionLanguageView(
         modelCatalog,
         activeTranscriptionEngine,
         visibleTranscriptionEngines,
+        autoTranscriptionLanguageLabel,
       ),
-    [modelCatalog, activeTranscriptionEngine, visibleTranscriptionEngines],
+    [
+      modelCatalog,
+      activeTranscriptionEngine,
+      visibleTranscriptionEngines,
+      autoTranscriptionLanguageLabel,
+    ],
   );
-  const languageForcedAuto = activeTranscriptionEngine === "parakeet_v3";
+  const languageForcedAuto =
+    activeTranscriptionEngine === "parakeet_v3" ||
+    activeTranscriptionEngine === "nvidia";
   const displayedLanguage = languageForcedAuto ? "" : language;
   const displayedLanguageOptions = useMemo(
     () =>
@@ -277,11 +299,7 @@ export function useSettingsForm({
       }
       setError(null);
     },
-    onInvalidShortcut: () => {
-      setError(
-        "Shortcut must include a non-modifier key (for example, Control+Space).",
-      );
-    },
+    onError: setError,
     onCaptureInput: () => setError(null),
   });
 
@@ -340,19 +358,8 @@ export function useSettingsForm({
 
     const checkPermissions = async () => {
       try {
-        const nativeMic = await checkMicrophonePermission();
-        if (nativeMic) {
-          setMicPermission(true);
-        } else {
-          try {
-            const result = await navigator.permissions.query({
-              name: "microphone" as PermissionName,
-            });
-            setMicPermission(result.state === "granted");
-          } catch {
-            setMicPermission(false);
-          }
-        }
+        const nativeMic = await invoke<boolean>("check_microphone_permission");
+        setMicPermission(nativeMic);
       } catch {
         setMicPermission(false);
       }
@@ -361,6 +368,12 @@ export function useSettingsForm({
         setAccessibilityPermission(acc);
       } catch {
         setAccessibilityPermission(false);
+      }
+      try {
+        const inputMonitoring = await checkInputMonitoringPermission();
+        setInputMonitoringPermission(inputMonitoring);
+      } catch {
+        setInputMonitoringPermission(false);
       }
     };
 
@@ -536,6 +549,7 @@ export function useSettingsForm({
             localModel,
             microphoneDevice,
             language,
+            appLocale,
 
             llmEnabled: aiFeaturesReady,
             cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
@@ -559,7 +573,11 @@ export function useSettingsForm({
       }
     };
 
-    saveSettings();
+    const timeoutId = setTimeout(() => {
+      saveSettings();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
   }, [
     loading,
     smartShortcut,
@@ -572,6 +590,7 @@ export function useSettingsForm({
     localModel,
     microphoneDevice,
     language,
+    appLocale,
 
     llmEnabled,
     cleanupEnabled,
@@ -610,6 +629,10 @@ export function useSettingsForm({
       setError(null);
       invoke("set_shortcut_capture_active", { active: true }).catch((err) => {
         console.error("Failed to disable shortcuts for capture", err);
+        captureActiveRef.current = null;
+        setCaptureActive(null);
+        resetCaptureState();
+        setError(String(err));
       });
     },
     [captureActive, finalizeCapture, resetCaptureState],
@@ -783,6 +806,8 @@ export function useSettingsForm({
     setMicrophoneDevice,
     language: displayedLanguage,
     setLanguage,
+    appLocale,
+    setAppLocale,
     languages: displayedLanguageOptions,
     languageBadgeColumns: languageView.badgeColumns,
     showLanguageSupportBadges,
@@ -834,6 +859,7 @@ export function useSettingsForm({
 
     micPermission,
     accessibilityPermission,
+    inputMonitoringPermission,
     textSizeMode,
     setTextSizeMode,
 
