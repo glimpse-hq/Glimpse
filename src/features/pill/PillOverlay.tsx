@@ -141,6 +141,29 @@ interface PillOverlayProps {
   decay?: number;
 }
 
+interface ExpandedTextSegment {
+  key: number;
+  text: string;
+  isWhitespace: boolean;
+}
+
+function getExpandedTextSegments(text: string): ExpandedTextSegment[] {
+  let offset = 0;
+
+  return text
+    .split(/(\s+)/)
+    .filter((segment) => segment !== "")
+    .map((segment) => {
+      const key = offset;
+      offset += segment.length;
+      return {
+        key,
+        text: segment,
+        isWhitespace: /^\s+$/.test(segment),
+      };
+    });
+}
+
 const PillOverlay: React.FC<PillOverlayProps> = ({
   className = "",
   style = {},
@@ -712,23 +735,22 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                       wordBreak: "break-word",
                     }}
                   >
-                    {expandedText ? expandedText.split(/(\s+)/).map((word, i) => {
-                      const isWhitespace = /^\s+$/.test(word);
-                      if (isWhitespace || word === "") {
+                    {expandedText ? getExpandedTextSegments(expandedText).map(({ key, text, isWhitespace }) => {
+                      if (isWhitespace) {
                         return (
                           <motion.span
-                            key={i}
+                            key={key}
                             layout="position"
                             transition={{ layout: { type: "spring", bounce: 0, duration: 0.4 } }}
                             style={{ display: "inline-block", whiteSpace: "pre" }}
                           >
-                            {word}
+                            {text}
                           </motion.span>
                         );
                       }
                       return (
                         <motion.span
-                          key={i}
+                          key={key}
                           layout="position"
                           initial={{ opacity: 0, filter: "blur(4px)", y: 8 }}
                           animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
@@ -740,7 +762,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                           }}
                           style={{ display: "inline-block", willChange: "transform, opacity, filter" }}
                         >
-                          {word}
+                          {text}
                         </motion.span>
                       );
                     }) : null}

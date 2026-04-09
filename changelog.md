@@ -1,9 +1,10 @@
 0.8.0
 
 ### Features
-- Added Nvidia Nemotron, a new streaming model with a new pill UI.
-- Added support for way more keybind options, including fn.
-- Input monitoring is now an option in Settings > App for special key combinations like fn.
+- App localization support (English for now)
+- Streaming speech transcription with Nvidia Nemotron
+- Enhanced keybind customization including function keys
+- Input monitoring settings in App preferences
 
 ### Changes
 - Dictionary & Replacements have been merged into one view.

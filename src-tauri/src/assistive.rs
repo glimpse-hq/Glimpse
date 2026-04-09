@@ -20,7 +20,10 @@ pub fn get_selected_text_ax() -> Option<String> {
     let _ = clipboard.clear();
     thread::sleep(Duration::from_millis(5));
 
-    send_copy_keystroke().ok()?;
+    if send_copy_keystroke().is_err() {
+        backup.restore(&mut clipboard);
+        return None;
+    }
     thread::sleep(Duration::from_millis(50));
 
     let text = clipboard.get_text().ok();
