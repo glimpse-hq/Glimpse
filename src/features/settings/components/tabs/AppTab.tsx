@@ -66,6 +66,7 @@ type AppTabProps = {
   micPermission: boolean | null;
   accessibilityPermission: boolean | null;
   inputMonitoringPermission: boolean | null;
+  onRequestMicrophonePermission: () => Promise<void>;
   textSizeMode: TextSizeMode;
   onTextSizeModeChange: (mode: TextSizeMode) => void;
   appLocale: AppLocaleSetting;
@@ -85,6 +86,7 @@ const AppTab = ({
   micPermission,
   accessibilityPermission,
   inputMonitoringPermission,
+  onRequestMicrophonePermission,
   textSizeMode,
   onTextSizeModeChange,
   appLocale,
@@ -236,7 +238,9 @@ const AppTab = ({
                 <PermissionStatus granted={micPermission} />
               </div>
               <button
-                onClick={() => invoke("open_microphone_settings")}
+                onClick={() => {
+                  void onRequestMicrophonePermission();
+                }}
                 className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
               >
                 {t({

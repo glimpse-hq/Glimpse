@@ -350,36 +350,29 @@ export function useSettingsForm({
     };
   }, []);
 
+  const refreshPermissionState = useCallback(async () => {
+    const [nativeMic, acc, inputMonitoring] = await Promise.allSettled([
+      invoke<boolean>("check_microphone_permission"),
+      checkAccessibilityPermission(),
+      checkInputMonitoringPermission(),
+    ]);
+
+    setMicPermission(nativeMic.status === "fulfilled" ? nativeMic.value : false);
+    setAccessibilityPermission(acc.status === "fulfilled" ? acc.value : false);
+    setInputMonitoringPermission(
+      inputMonitoring.status === "fulfilled" ? inputMonitoring.value : false,
+    );
+  }, []);
+
   useEffect(() => {
     if (activeTab !== "app" || !isOpen) return;
 
     let cancelled = false;
     let unlistenFocus: UnlistenFn | null = null;
 
-    const checkPermissions = async () => {
-      try {
-        const nativeMic = await invoke<boolean>("check_microphone_permission");
-        setMicPermission(nativeMic);
-      } catch {
-        setMicPermission(false);
-      }
-      try {
-        const acc = await checkAccessibilityPermission();
-        setAccessibilityPermission(acc);
-      } catch {
-        setAccessibilityPermission(false);
-      }
-      try {
-        const inputMonitoring = await checkInputMonitoringPermission();
-        setInputMonitoringPermission(inputMonitoring);
-      } catch {
-        setInputMonitoringPermission(false);
-      }
-    };
-
     const refreshPermissions = () => {
       if (!cancelled) {
-        void checkPermissions();
+        void refreshPermissionState();
       }
     };
 
@@ -415,7 +408,32 @@ export function useSettingsForm({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       unlistenFocus?.();
     };
-  }, [activeTab, isOpen]);
+  }, [activeTab, isOpen, refreshPermissionState]);
+
+  const handleRequestMicrophonePermission = useCallback(async () => {
+    try {
+      await invoke("request_microphone_permission");
+    } catch {
+      // Fall through to the settings fallback below.
+    }
+
+    try {
+      const granted = await invoke<boolean>("check_microphone_permission");
+      setMicPermission(granted);
+      if (!granted) {
+        await invoke("open_microphone_settings");
+      }
+    } catch {
+      setMicPermission(false);
+      try {
+        await invoke("open_microphone_settings");
+      } catch {
+        // ignore
+      }
+    } finally {
+      void refreshPermissionState();
+    }
+  }, [refreshPermissionState]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -860,6 +878,7 @@ export function useSettingsForm({
     micPermission,
     accessibilityPermission,
     inputMonitoringPermission,
+    handleRequestMicrophonePermission,
     textSizeMode,
     setTextSizeMode,
 
