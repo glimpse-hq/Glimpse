@@ -86,7 +86,7 @@ Glimpse is licensed under [AGPL-3.0](LICENSE). Free to self-host and modify — 
 - <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="16" alt="Lokalise" align="center" /></a> [Lokalise](https://lokalise.com/) — localization platform (OSS supporter)
 - [Tauri](https://v2.tauri.app/) — app framework
 - [Glimpse-Speech](https://github.com/LegendarySpy/Glimpse-Speech) (MIT) — local transcription engine
-- [whisper-rs](https://github.com/tazz4843/whisper-rs) (Unlicense) — Rust bindings for Whisper
+- [whisper-rs](https://codeberg.org/tazz4843/whisper-rs) (Unlicense) — Rust bindings for Whisper
 - [parakeet-rs](https://github.com/altunenes/parakeet-rs) (MIT OR Apache-2.0) — ONNX Runtime bindings for Parakeet
 
 **Bundled models** (downloaded in-app from Hugging Face):
