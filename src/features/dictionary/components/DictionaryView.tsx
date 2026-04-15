@@ -253,7 +253,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const FADE_ITEM_THRESHOLD = 6;
 
   return (
-    <div className="w-full min-w-0 max-w-7xl mx-auto pl-2 pr-6 text-left">
+    <div className="w-full min-w-0 max-w-7xl mx-auto px-0 text-left">
       <div className="mb-6 mt-2 flex min-w-0 items-start gap-3 md:-mt-6">
         <DotMatrix
           rows={2}
@@ -264,12 +264,40 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
           color="var(--color-cloud)"
         />
         <div className="min-w-0 flex-1">
-          <p className="ui-text-screen-title ui-color-primary tracking-tight text-balance">
-            {t({
-              id: "dictionary.combined.title",
-              message: "Dictionary & Replacements",
-            })}
-          </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <p className="ui-text-screen-title ui-color-primary tracking-tight text-balance">
+              {t({
+                id: "dictionary.combined.title",
+                message: "Dictionary & Replacements",
+              })}
+            </p>
+            {showWarning && (
+              <span
+                className="group relative inline-flex shrink-0 items-center justify-center self-center translate-y-[3px]"
+              >
+                <span
+                  title={t({
+                    id: "dictionary.warning_aria",
+                    message: "Warning: model compatibility issue",
+                  })}
+                  className="inline-flex items-center justify-center ui-color-warning opacity-90 hover:opacity-100 cursor-default"
+                >
+                  <AlertTriangle size={18} aria-hidden="true" />
+                </span>
+                <span className="pointer-events-none absolute left-1/2 top-full z-50 hidden w-80 -translate-x-1/2 pt-2 text-left font-sans tracking-normal group-hover:block group-focus-within:block">
+                  <span
+                    className="block rounded-lg border bg-surface-overlay p-3 ui-color-warning shadow-xl leading-relaxed ui-text-body-sm shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+                    style={{ borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)" }}
+                  >
+                    {t({
+                      id: "dictionary.warning",
+                      message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
+                    })}
+                  </span>
+                </span>
+              </span>
+            )}
+          </div>
           <p className="mt-1 ui-text-body-sm ui-color-secondary text-pretty">
             {t({
               id: "dictionary.combined.description",
@@ -279,18 +307,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
           </p>
         </div>
       </div>
-
-      {showWarning && (
-        <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-amber-100">
-          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
-          <div className="ui-text-body leading-relaxed">
-            {t({
-              id: "dictionary.warning",
-              message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
-            })}
-          </div>
-        </div>
-      )}
 
       <div className="grid w-full min-w-0 grid-cols-1 gap-0 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         {/* Dictionary Column */}

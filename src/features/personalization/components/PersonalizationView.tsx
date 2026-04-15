@@ -296,7 +296,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   }, [activePersonalityId, activePersonality]);
 
   return (
-    <div className="w-full text-left max-w-7xl mx-auto pl-2 pr-6">
+    <div className="w-full text-left max-w-7xl mx-auto px-0">
       <div className="flex items-start gap-3 mb-6 mt-2 md:-mt-6">
         <DotMatrix
           rows={2}

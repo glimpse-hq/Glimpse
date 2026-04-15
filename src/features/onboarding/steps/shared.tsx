@@ -176,7 +176,9 @@ export const ModelProgress = ({
       dotSize={3}
       gap={2}
       color={color}
-      className="opacity-70"
+      className={status === "downloading" ? "opacity-90" : "opacity-70"}
+      morphOnActive={true}
+      activeScale={1.0}
     />
   );
 };

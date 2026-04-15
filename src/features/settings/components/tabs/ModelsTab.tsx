@@ -437,9 +437,7 @@ const ModelRow = ({
   );
 
   return (
-    <div
-      className="rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-elevated/50"
-    >
+    <div className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-elevated/50">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -464,13 +462,13 @@ const ModelRow = ({
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={`ui-text-meta ${getSizeColor(model.size_mb)}`}>
+            <span className={`ui-text-meta ${getSizeColor(model.size_mb)} whitespace-nowrap`}>
               {formatBytes(model.size_mb * 1024 * 1024)}
             </span>
             {visibleTags.length > 0 && (
               <>
-                <span className="ui-text-meta ui-color-disabled">·</span>
-                <span className="ui-text-meta ui-color-disabled">
+                <span className="ui-text-meta ui-color-disabled shrink-0">·</span>
+                <span className="ui-text-meta ui-color-disabled truncate">
                   {visibleTags.join(", ")}
                 </span>
               </>
@@ -478,7 +476,50 @@ const ModelRow = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {(isDownloading || showError || isCancelled) && (
+          <div className="flex flex-col items-end justify-center mr-2 min-w-[160px]">
+            <ModelProgress
+              percent={percent}
+              status={progress?.status ?? "idle"}
+            />
+            <div className="mt-1 flex h-3 w-full items-center justify-end">
+              {isDownloading && (
+                <p className="ui-text-micro ui-color-disabled tabular-nums truncate max-w-[150px] text-right">
+                  {progress?.percent?.toFixed(0)}% ·{" "}
+                  {
+                    (
+                      progress as Extract<
+                        DownloadEvent,
+                        { status: "downloading" }
+                      >
+                    ).file
+                  }
+                </p>
+              )}
+              {showError && (
+                <p className="ui-text-micro ui-color-error flex items-center justify-end gap-1 w-full">
+                  <AlertCircle size={9} className="shrink-0" />
+                  <span className="truncate">
+                    {
+                      (progress as Extract<DownloadEvent, { status: "error" }>)
+                        .message
+                    }
+                  </span>
+                </p>
+              )}
+              {isCancelled && (
+                <p className="ui-text-micro ui-color-disabled text-right w-full">
+                  {t({
+                    id: "settings.models.cancelled",
+                    message: "Cancelled",
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 shrink-0">
           {installed && !isActive && (
             <button
               onClick={onUse}
@@ -543,47 +584,6 @@ const ModelRow = ({
           )}
         </div>
       </div>
-
-      {(isDownloading || showError || isCancelled) && (
-        <div className="mt-2">
-          <ModelProgress
-            percent={percent}
-            status={progress?.status ?? "idle"}
-          />
-          <div className="h-3 flex items-center mt-1">
-            {isDownloading && (
-              <p className="ui-text-micro ui-color-disabled tabular-nums truncate">
-                {progress?.percent?.toFixed(0)}% ·{" "}
-                {
-                  (
-                    progress as Extract<
-                      DownloadEvent,
-                      { status: "downloading" }
-                    >
-                  ).file
-                }
-              </p>
-            )}
-            {showError && (
-              <p className="ui-text-micro ui-color-error flex items-center gap-1">
-                <AlertCircle size={9} />
-                {
-                  (progress as Extract<DownloadEvent, { status: "error" }>)
-                    .message
-                }
-              </p>
-            )}
-            {isCancelled && (
-              <p className="ui-text-micro ui-color-disabled">
-                {t({
-                  id: "settings.models.cancelled",
-                  message: "Cancelled",
-                })}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -619,7 +619,9 @@ const ModelProgress = ({ percent, status }: ModelProgressProps) => {
       dotSize={2}
       gap={2}
       color={color}
-      className="opacity-60"
+      className={status === "downloading" ? "opacity-80" : "opacity-60"}
+      morphOnActive={true}
+      activeScale={1.0}
     />
   );
 };

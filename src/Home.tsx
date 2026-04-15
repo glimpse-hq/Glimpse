@@ -34,32 +34,48 @@ const SidebarItem = ({
   label,
   active = false,
   collapsed,
+  activeColor,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
   collapsed: boolean;
+  activeColor?: string;
   onClick?: () => void;
 }) => (
   <button
     onClick={onClick}
-    className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${
+    className={`group relative flex w-full items-center h-9 pl-[17px] pr-3 transition-colors rounded-lg mb-[2px] ${
       collapsed ? "gap-0" : "gap-3"
     } ${
       active
-        ? "bg-surface-elevated text-content-primary"
-        : "text-content-muted hover:bg-surface-overlay hover:text-content-secondary"
+        ? "text-content-primary"
+        : "text-content-muted hover:text-content-secondary hover:bg-surface-overlay/40"
     }`}
   >
+    {active && (
+      <motion.div
+        layoutId="activeSidebarIndicator"
+        className="absolute -left-[7.5px] top-[6px] bottom-[6px] w-[3px] rounded-r-[1.5px] pointer-events-none"
+        style={{
+          backgroundColor: activeColor || "var(--color-content-primary)",
+        }}
+        transition={{ type: "spring", stiffness: 450, damping: 40 }}
+      />
+    )}
     <div
-      className={`flex items-center justify-center w-[18px] shrink-0 ${active ? "text-content-primary" : "group-hover:text-content-secondary"}`}
+      className={`relative z-10 flex items-center justify-center w-[18px] shrink-0 transition-colors ${
+        active ? "text-content-primary" : "group-hover:text-content-secondary"
+      }`}
     >
       {icon}
     </div>
     <span
       style={{ width: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }}
-      className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+      className={`relative z-10 ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out ${
+        active ? "font-medium" : "font-normal"
+      }`}
     >
       {label}
     </span>
@@ -276,15 +292,17 @@ const Home = () => {
       >
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
-        <div className="pl-6 pb-6 pt-1">
-          <div className="flex items-center gap-3 h-6">
-            <div className="shrink-0">
+        <div className="px-2 pb-6 pt-1">
+          <div
+            className={`flex items-center h-6 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"}`}
+          >
+            <div className="flex items-center justify-center w-[18px] shrink-0">
               <DotMatrix
                 rows={2}
                 cols={2}
                 activeDots={logoActiveDots}
-                dotSize={4}
-                gap={3}
+                dotSize={4.5}
+                gap={3.5}
                 color={logoColor}
               />
             </div>
@@ -300,40 +318,41 @@ const Home = () => {
           </div>
         </div>
 
-        <nav className="flex-1 px-2 space-y-1">
-          <SidebarItem
-            icon={<HomeIcon size={18} />}
-            label={t({
-              id: "home.sidebar.home",
-              message: "Home",
-            })}
-            active={activeView === "home"}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setActiveView("home")}
-          />
-          <SidebarItem
-            icon={<Book size={18} />}
-            label={t({
-              id: "home.sidebar.dictionary",
-              message: "Dictionary",
-            })}
-            active={activeView === "dictionary"}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setActiveView("dictionary")}
-          />
-          <SidebarItem
-            icon={<Brain size={18} />}
-            label={t({
-              id: "home.sidebar.personalization",
-              message: "Personalization",
-            })}
-            active={activeView === "brain"}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setActiveView("brain")}
-          />
-
-          <div className="pt-3">
-            <div className="h-px bg-border-primary mx-4 mb-3" />
+        <nav className="flex-1 flex flex-col px-2">
+          <div className="space-y-1">
+            <SidebarItem
+              icon={<HomeIcon size={18} />}
+              label={t({
+                id: "home.sidebar.home",
+                message: "Home",
+              })}
+              active={activeView === "home"}
+              collapsed={isSidebarCollapsed}
+              activeColor={logoColor}
+              onClick={() => setActiveView("home")}
+            />
+            <SidebarItem
+              icon={<Book size={18} />}
+              label={t({
+                id: "home.sidebar.dictionary",
+                message: "Dictionary",
+              })}
+              active={activeView === "dictionary"}
+              collapsed={isSidebarCollapsed}
+              activeColor={logoColor}
+              onClick={() => setActiveView("dictionary")}
+            />
+            <SidebarItem
+              icon={<Brain size={18} />}
+              label={t({
+                id: "home.sidebar.personalization",
+                message: "Personalization",
+              })}
+              active={activeView === "brain"}
+              collapsed={isSidebarCollapsed}
+              activeColor={logoColor}
+              onClick={() => setActiveView("brain")}
+            />
             <SidebarItem
               icon={<Library size={18} />}
               label={t({
@@ -342,9 +361,11 @@ const Home = () => {
               })}
               active={activeView === "library"}
               collapsed={isSidebarCollapsed}
+              activeColor={logoColor}
               onClick={() => setActiveView("library")}
             />
           </div>
+          <div className="flex-1" />
         </nav>
 
         <div className="p-2 space-y-1 border-t border-border-primary">
@@ -580,9 +601,9 @@ const Home = () => {
           </button>
         )}
 
-        <div className="flex-1 flex flex-col px-12 pb-16 min-h-0">
+        <div className="flex-1 flex flex-col px-8 pb-16 min-h-0">
           <div
-            className={`w-full max-w-2xl mx-auto pt-8 ${activeView === "home" ? "" : "hidden"}`}
+            className={`w-full max-w-[700px] mx-auto pt-8 ${activeView === "home" ? "" : "hidden"}`}
           >
             <div className="mb-8">
               <h1 className="ui-text-display ui-color-primary tracking-tight">
