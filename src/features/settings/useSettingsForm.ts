@@ -108,6 +108,7 @@ export function useSettingsForm({
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+  const [autoLaunchEnabled, setAutoLaunchEnabled] = useState(false);
   const [recordingPrunePolicy, setRecordingPrunePolicy] =
     useState<RecordingPrunePolicy>("never");
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
@@ -219,6 +220,7 @@ export function useSettingsForm({
     setEditModeEnabled(s.edit_mode_enabled ?? false);
     setMediaControlEnabled(s.media_control_enabled ?? false);
     setAutoUpdateEnabled(s.auto_update_enabled ?? false);
+    setAutoLaunchEnabled(s.auto_launch_enabled ?? false);
     setRecordingPrunePolicy(s.recording_prune_policy ?? "never");
     setAnalyticsEnabled(s.analytics_enabled ?? true);
   }, []);
@@ -594,6 +596,7 @@ export function useSettingsForm({
             editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
             mediaControlEnabled,
             autoUpdateEnabled,
+            autoLaunchEnabled,
             recordingPrunePolicy,
             analyticsEnabled,
           },
@@ -635,6 +638,7 @@ export function useSettingsForm({
     editModeEnabled,
     mediaControlEnabled,
     autoUpdateEnabled,
+    autoLaunchEnabled,
     recordingPrunePolicy,
     analyticsEnabled,
     aiFeaturesReady,
@@ -879,6 +883,8 @@ export function useSettingsForm({
     setMediaControlEnabled,
     autoUpdateEnabled,
     setAutoUpdateEnabled,
+    autoLaunchEnabled,
+    setAutoLaunchEnabled,
     recordingPrunePolicy,
     setRecordingPrunePolicy,
     analyticsEnabled,

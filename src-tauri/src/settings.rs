@@ -35,6 +35,7 @@ const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
 const KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
 const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
+const KEY_AUTO_LAUNCH_ENABLED: &str = "auto_launch_enabled";
 const KEY_RECORDING_PRUNE_POLICY: &str = "recording_prune_policy";
 const KEY_ANALYTICS_ENABLED: &str = "analytics_enabled";
 const KEY_ANALYTICS_INSTALL_ID: &str = "analytics_install_id";
@@ -114,6 +115,8 @@ pub struct UserSettings {
     pub media_control_enabled: bool,
     #[serde(default)]
     pub auto_update_enabled: bool,
+    #[serde(default)]
+    pub auto_launch_enabled: bool,
     #[serde(default = "default_recording_prune_policy")]
     pub recording_prune_policy: RecordingPrunePolicy,
     #[serde(default = "default_true")]
@@ -282,6 +285,7 @@ impl Default for UserSettings {
             edit_mode_enabled: false,
             media_control_enabled: false,
             auto_update_enabled: false,
+            auto_launch_enabled: false,
             recording_prune_policy: default_recording_prune_policy(),
             analytics_enabled: true,
             analytics_install_id: String::new(),
@@ -548,6 +552,8 @@ impl SettingsStore {
             )?;
             settings.auto_update_enabled =
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
+            settings.auto_launch_enabled =
+                self.read_value(&conn, KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
             settings.recording_prune_policy = self.read_value(
                 &conn,
                 KEY_RECORDING_PRUNE_POLICY,
@@ -702,6 +708,11 @@ impl SettingsStore {
             &conn,
             KEY_AUTO_UPDATE_ENABLED,
             &settings.auto_update_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_LAUNCH_ENABLED,
+            &settings.auto_launch_enabled,
         )?;
         self.write_value(
             &conn,

@@ -305,6 +305,8 @@ const SettingsModal = ({
                       }
                       autoUpdateEnabled={form.autoUpdateEnabled}
                       onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
+                      autoLaunchEnabled={form.autoLaunchEnabled}
+                      onAutoLaunchEnabledChange={form.setAutoLaunchEnabled}
                       recordingPrunePolicy={form.recordingPrunePolicy}
                       onRecordingPrunePolicyChange={form.setRecordingPrunePolicy}
                       analyticsEnabled={form.analyticsEnabled}

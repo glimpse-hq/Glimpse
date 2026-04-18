@@ -58,6 +58,8 @@ use tauri::{AppHandle, Manager, Wry};
 
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt as AutostartManagerExt};
 use tauri_plugin_opener::OpenerExt;
 
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
@@ -69,6 +71,45 @@ pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
 pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-mac";
+
+fn launched_via_autostart() -> bool {
+    std::env::args_os().any(|arg| arg == "--autostart")
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+pub(crate) fn sync_launch_at_login(
+    app: &AppHandle<AppRuntime>,
+    enabled: bool,
+) -> Result<(), String> {
+    let autostart = app.autolaunch();
+    let currently_enabled = autostart
+        .is_enabled()
+        .map_err(|err| format!("Failed to read launch at login status: {err}"))?;
+
+    if currently_enabled == enabled {
+        return Ok(());
+    }
+
+    if enabled {
+        autostart
+            .enable()
+            .map_err(|err| format!("Failed to enable launch at login: {err}"))?;
+    } else {
+        autostart
+            .disable()
+            .map_err(|err| format!("Failed to disable launch at login: {err}"))?;
+    }
+
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+pub(crate) fn sync_launch_at_login(
+    _app: &AppHandle<AppRuntime>,
+    _enabled: bool,
+) -> Result<(), String> {
+    Ok(())
+}
 
 #[cfg(target_os = "macos")]
 fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
@@ -242,6 +283,12 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init());
 
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
+    let builder = builder.plugin(tauri_plugin_autostart::init(
+        MacosLauncher::LaunchAgent,
+        Some(vec!["--autostart"]),
+    ));
+
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_plugin_macos_permissions::init());
 
@@ -280,6 +327,14 @@ pub fn run() {
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             library::commands::recover_interrupted_library_items(handle);
+
+            {
+                let handle = app.handle();
+                let settings = handle.state::<AppState>().current_settings();
+                if let Err(err) = sync_launch_at_login(handle, settings.auto_launch_enabled) {
+                    eprintln!("Failed to sync launch at login state: {err}");
+                }
+            }
 
             #[cfg(target_os = "macos")]
             {
@@ -320,11 +375,13 @@ pub fn run() {
                 eprintln!("Failed to register shortcuts: {err}");
             }
 
-            let h = handle.clone();
-            std::thread::spawn(move || {
-                std::thread::sleep(Duration::from_millis(300));
-                let _ = tray::toggle_settings_window(&h);
-            });
+            if !launched_via_autostart() {
+                let h = handle.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(Duration::from_millis(300));
+                    let _ = tray::toggle_settings_window(&h);
+                });
+            }
 
             update_checker::check_post_auto_update(handle);
 
@@ -965,12 +1022,11 @@ async fn preview_recording_prune(
     policy: RecordingPrunePolicy,
     app: AppHandle<AppRuntime>,
 ) -> Result<RecordingPrunePreview, String> {
-    let candidate_count = async_runtime::spawn_blocking(move || {
-        preview_recording_prune_for_policy(&app, policy)
-    })
-    .await
-    .map_err(|err| err.to_string())?
-    .map_err(|err| err.to_string())?;
+    let candidate_count =
+        async_runtime::spawn_blocking(move || preview_recording_prune_for_policy(&app, policy))
+            .await
+            .map_err(|err| err.to_string())?
+            .map_err(|err| err.to_string())?;
 
     Ok(RecordingPrunePreview { candidate_count })
 }

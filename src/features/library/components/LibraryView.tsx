@@ -330,7 +330,7 @@ const LibraryView = ({
                         </button>
 
                         <div className="relative min-w-0 w-full group">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted group-focus-within:text-[var(--color-accent)] transition-colors" />
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted transition-colors" />
                             <input
                                 type="text"
                                 placeholder={t({

@@ -92,6 +92,8 @@ type AppTabProps = {
   onMediaControlEnabledChange: (enabled: boolean) => void;
   autoUpdateEnabled: boolean;
   onAutoUpdateEnabledChange: (enabled: boolean) => void;
+  autoLaunchEnabled: boolean;
+  onAutoLaunchEnabledChange: (enabled: boolean) => void;
   recordingPrunePolicy: RecordingPrunePolicy;
   onRecordingPrunePolicyChange: (policy: RecordingPrunePolicy) => void;
   analyticsEnabled: boolean;
@@ -114,6 +116,8 @@ const AppTab = ({
   onMediaControlEnabledChange,
   autoUpdateEnabled,
   onAutoUpdateEnabledChange,
+  autoLaunchEnabled,
+  onAutoLaunchEnabledChange,
   recordingPrunePolicy,
   onRecordingPrunePolicyChange,
   analyticsEnabled,
@@ -617,6 +621,33 @@ const AppTab = ({
                   {t({
                     id: "settings.app.auto_update.body",
                     message: "downloads and installs updates in the background.",
+                  })}
+                </span>
+              </div>
+
+              <div className="px-2 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="ui-text-label-strong ui-color-primary">
+                    {t({
+                      id: "settings.app.auto_launch",
+                      message: "Launch at Login",
+                    })}
+                  </span>
+                  <ToggleSwitch
+                    enabled={autoLaunchEnabled}
+                    onToggle={() =>
+                      onAutoLaunchEnabledChange(!autoLaunchEnabled)
+                    }
+                    ariaLabel={t({
+                      id: "settings.app.auto_launch.toggle_aria",
+                      message: "Toggle launch at login",
+                    })}
+                  />
+                </div>
+                <span className="ui-text-micro ui-color-disabled block mt-0.5">
+                  {t({
+                    id: "settings.app.auto_launch.body",
+                    message: "starts Glimpse automatically when you sign in.",
                   })}
                 </span>
               </div>
