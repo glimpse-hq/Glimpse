@@ -1,4 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
+import { plural } from "@lingui/core/macro";
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -201,17 +202,35 @@ const AppTab = ({
   const describeRecordingPruneThreshold = (policy: RecordingPrunePolicy) => {
     switch (policy) {
       case "immediately":
-        return "right now";
+        return t({
+          id: "settings.app.prune.threshold.immediately",
+          message: "right now",
+        });
       case "day":
-        return "1 day";
+        return t({
+          id: "settings.app.prune.threshold.day",
+          message: "1 day",
+        });
       case "week":
-        return "1 week";
+        return t({
+          id: "settings.app.prune.threshold.week",
+          message: "1 week",
+        });
       case "month":
-        return "1 month";
+        return t({
+          id: "settings.app.prune.threshold.month",
+          message: "1 month",
+        });
       case "three_months":
-        return "3 months";
+        return t({
+          id: "settings.app.prune.threshold.three_months",
+          message: "3 months",
+        });
       case "year":
-        return "1 year";
+        return t({
+          id: "settings.app.prune.threshold.year",
+          message: "1 year",
+        });
       case "never":
       default:
         return null;
@@ -225,9 +244,18 @@ const AppTab = ({
     const policyLabel = getRecordingPrunePolicyLabel(policy);
     if (policy === "immediately") {
       if (candidateCount === null) {
-        return `Changing auto-delete to ${policyLabel} may immediately delete your existing local recordings.`;
+        return t({
+          id: "settings.app.auto_delete_recordings.confirm.immediately.unknown_count",
+          message: `Changing auto-delete to ${{ policyLabel }} may immediately delete your existing local recordings.`,
+        });
       }
-      return `Changing auto-delete to ${policyLabel} will immediately delete ${candidateCount} existing local recording${candidateCount === 1 ? "" : "s"}.`;
+      return t({
+        id: "settings.app.auto_delete_recordings.confirm.immediately.known_count",
+        message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${plural(candidateCount, {
+          one: "# existing local recording",
+          other: "# existing local recordings",
+        })}.`,
+      });
     }
 
     const threshold = describeRecordingPruneThreshold(policy);
@@ -236,10 +264,19 @@ const AppTab = ({
     }
 
     if (candidateCount === null) {
-      return `Changing auto-delete to ${policyLabel} may immediately delete local recordings that are already older than ${threshold}.`;
+      return t({
+        id: "settings.app.auto_delete_recordings.confirm.threshold.unknown_count",
+        message: `Changing auto-delete to ${{ policyLabel }} may immediately delete local recordings that are already older than ${{ threshold }}.`,
+      });
     }
 
-    return `Changing auto-delete to ${policyLabel} will immediately delete ${candidateCount} local recording${candidateCount === 1 ? "" : "s"} that ${candidateCount === 1 ? "is" : "are"} already older than ${threshold}.`;
+    return t({
+      id: "settings.app.auto_delete_recordings.confirm.threshold.known_count",
+      message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${plural(candidateCount, {
+        one: `# local recording that is already older than ${{ threshold }}`,
+        other: `# local recordings that are already older than ${{ threshold }}`,
+      })}.`,
+    });
   };
 
   const handleApply = async () => {
@@ -710,7 +747,9 @@ const AppTab = ({
                 </div>
               </div>
             </div>
-            <p className="ui-text-micro px-0.5 invisible">Placeholder</p>
+            <p className="ui-text-micro px-0.5 invisible" aria-hidden="true">
+              &nbsp;
+            </p>
           </div>
         </div>
       </motion.div>
