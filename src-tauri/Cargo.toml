@@ -68,3 +68,4 @@ tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "da9c9a
 tauri-plugin-macos-permissions = "2.3.0"
 core-graphics = "0.25"
 core-foundation = "0.10"
+objc2-core-audio = "0.3.2"

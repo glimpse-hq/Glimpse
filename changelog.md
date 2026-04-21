@@ -1,7 +1,11 @@
 0.8.2
 
+### New Features
+  - Added a microphone test button in general settings.
+
 ## Improvements
-  - Cleaned up some smaller UI interactions
+  - Cleaned up some smaller UI interactions.
+  - Connecting a new microphone will show up instantly.
 
 0.8.1
 

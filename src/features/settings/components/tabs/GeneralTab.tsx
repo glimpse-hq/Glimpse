@@ -1,7 +1,8 @@
+import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { Check, Copy, Info } from "lucide-react";
+import { Check, Copy, Info, Mic, Square } from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { formatShortcutForDisplay } from "../../../../shared/lib/shortcuts";
@@ -17,6 +18,11 @@ import type {
 
 type CaptureMode = "smart" | "hold" | "toggle" | null;
 type HelpTooltipId = "edit-mode" | "cleanup";
+type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
+type MicrophoneTestLevels = {
+  left: number;
+  right: number;
+};
 
 type GeneralTabProps = {
   variants: Variants;
@@ -94,8 +100,20 @@ const GeneralTab = ({
   const { t } = useLingui();
   const [openHelpTooltip, setOpenHelpTooltip] =
     useState<HelpTooltipId | null>(null);
+  const {
+    activeDeviceLabel,
+    error: microphoneTestError,
+    levels: microphoneTestLevels,
+    reset: resetMicrophoneTest,
+    start: startMicrophoneTest,
+    status: microphoneTestStatus,
+  } = useMicrophoneTest(inputDevices, microphoneDevice);
   const aiFeaturesDisabled = transcriptionMode === "local" && !aiFeaturesReady;
   const localModelStatus = localModel ? modelStatus[localModel] : undefined;
+  const systemDefaultLabel = t({
+    id: "settings.general.system_default",
+    message: "System Default",
+  });
   const shouldShowMissingModelWarning =
     transcriptionMode === "local" &&
     Boolean(localModel) &&
@@ -112,6 +130,19 @@ const GeneralTab = ({
 
   const toggleHelpTooltip = (tooltip: HelpTooltipId) => {
     setOpenHelpTooltip((current) => (current === tooltip ? null : tooltip));
+  };
+
+  const isMicrophoneTestActive =
+    microphoneTestStatus === "starting" ||
+    microphoneTestStatus === "listening";
+
+  const handleMicrophoneTestButton = () => {
+    if (isMicrophoneTestActive || microphoneTestStatus === "error") {
+      resetMicrophoneTest();
+      return;
+    }
+
+    void startMicrophoneTest();
   };
 
   return (
@@ -275,38 +306,87 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-1.5">
-        <div className="flex h-5 items-center">
+        <div className="flex h-5 items-center justify-between gap-2">
           <label className="ui-text-label-strong ui-color-muted leading-none">
             {t({
               id: "settings.general.microphone",
               message: "Microphone",
             })}
           </label>
+          <button
+            type="button"
+            onClick={handleMicrophoneTestButton}
+            className={`flex h-5 items-center gap-1 rounded-md px-1.5 ui-text-meta transition-colors ${
+              isMicrophoneTestActive
+                ? "ui-color-error hover:bg-error/10"
+                : "ui-color-muted hover:bg-surface-elevated hover:text-content-primary"
+            }`}
+          >
+            {isMicrophoneTestActive ? (
+              <>
+                <Square size={9} fill="currentColor" aria-hidden="true" />
+                {t({
+                  id: "settings.general.microphone_test.stop",
+                  message: "Stop",
+                })}
+              </>
+            ) : microphoneTestStatus === "error" ? (
+              <>
+                <Check size={10} aria-hidden="true" />
+                {t({
+                  id: "settings.general.microphone_test.done",
+                  message: "Done",
+                })}
+              </>
+            ) : (
+              <>
+                <Mic size={10} aria-hidden="true" />
+                {t({
+                  id: "settings.general.microphone_test.test",
+                  message: "Test",
+                })}
+              </>
+            )}
+          </button>
         </div>
-        <div className="relative z-20">
-          <Dropdown
-            value={microphoneDevice || ""}
-            onChange={(val) =>
-              onMicrophoneDeviceChange(val === "" ? null : val)
-            }
-            options={[
-              {
-                value: "",
-                label: t({
-                  id: "settings.general.system_default",
-                  message: "System Default",
-                }),
-              },
-              ...inputDevices.map((device) => ({
-                value: device.id,
-                label: device.name,
-              })),
-            ]}
-            placeholder={t({
-              id: "settings.general.select_microphone",
-              message: "Select microphone...",
-            })}
-          />
+        <div className="relative z-20 h-[38px]">
+          {microphoneTestStatus === "listening" ||
+          microphoneTestStatus === "error" ? (
+            <MicrophoneTestSlot
+              status={microphoneTestStatus}
+              levels={microphoneTestLevels}
+              label={
+                activeDeviceLabel ??
+                getSelectedMicrophoneName(inputDevices, microphoneDevice) ??
+                systemDefaultLabel
+              }
+              error={microphoneTestError}
+            />
+          ) : (
+            <Dropdown
+              value={microphoneDevice || ""}
+              onChange={(val) =>
+                onMicrophoneDeviceChange(val === "" ? null : val)
+              }
+              options={[
+                {
+                  value: "",
+                  label: systemDefaultLabel,
+                },
+                ...inputDevices.map((device) => ({
+                  value: device.id,
+                  label: device.name,
+                })),
+              ]}
+              placeholder={t({
+                id: "settings.general.select_microphone",
+                message: "Select microphone...",
+              })}
+              className="h-[38px]"
+              buttonClassName="h-[38px] px-3 py-2 ui-text-body-sm"
+              menuClassName="top-[38px]"
+            />
+          )}
         </div>
       </div>
 
@@ -737,6 +817,408 @@ const GeneralTab = ({
     </AnimatePresence>
     </motion.div>
   );
+};
+
+const MICROPHONE_TEST_DOT_COLS = 32;
+const MICROPHONE_TEST_DOT_SIZE = 2;
+const MICROPHONE_TEST_DOT_GAP = 2;
+const MICROPHONE_TEST_DOT_WIDTH =
+  MICROPHONE_TEST_DOT_COLS * MICROPHONE_TEST_DOT_SIZE +
+  (MICROPHONE_TEST_DOT_COLS - 1) * MICROPHONE_TEST_DOT_GAP;
+const EMPTY_MICROPHONE_TEST_LEVELS = { left: 0, right: 0 };
+const MICROPHONE_TEST_UPDATE_INTERVAL_MS = 24;
+
+type MicrophoneTestSlotProps = {
+  status: MicrophoneTestStatus;
+  levels: MicrophoneTestLevels;
+  label: string;
+  error: string | null;
+};
+
+const MicrophoneTestSlot = ({
+  status,
+  levels,
+  label,
+  error,
+}: MicrophoneTestSlotProps) => {
+  const { t } = useLingui();
+
+  if (status === "error") {
+    return (
+      <div className="flex h-[38px] items-center rounded-lg border border-error/30 bg-error/5 px-3">
+        <p className="ui-text-meta ui-color-error truncate">
+          {error ??
+            t({
+              id: "settings.general.microphone_test.generic_error",
+              message: "Couldn't start microphone test.",
+            })}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="flex h-[38px] items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3"
+      aria-live="polite"
+    >
+      <span
+        className="min-w-0 flex-1 truncate ui-text-meta ui-color-muted"
+        title={label}
+      >
+        {label}
+      </span>
+      <MicrophoneLevelMeter levels={levels} />
+    </div>
+  );
+};
+
+type MicrophoneLevelMeterProps = {
+  levels: MicrophoneTestLevels;
+};
+
+const MicrophoneLevelMeter = ({ levels }: MicrophoneLevelMeterProps) => (
+  <div
+    className="ml-auto grid shrink-0 place-items-center overflow-hidden"
+    style={{
+      gridTemplateColumns: `repeat(${MICROPHONE_TEST_DOT_COLS}, ${MICROPHONE_TEST_DOT_SIZE}px)`,
+      gap: MICROPHONE_TEST_DOT_GAP,
+      width: MICROPHONE_TEST_DOT_WIDTH,
+    }}
+  >
+    {[levels.left, levels.right].flatMap((level, row) =>
+      Array.from(
+        { length: MICROPHONE_TEST_DOT_COLS },
+        (_, col) => {
+          const active = col < levelToDotCount(level);
+          return (
+            <div
+              key={`${row}-${col}`}
+              style={{
+                width: MICROPHONE_TEST_DOT_SIZE,
+                height: MICROPHONE_TEST_DOT_SIZE,
+                backgroundColor: getMicrophoneDotColor(col),
+                opacity: active ? 0.95 : 0.16,
+                borderRadius: active ? 0.5 : "50%",
+                transition:
+                  "border-radius 0.18s ease-out, opacity 0.18s ease-out",
+              }}
+            />
+          );
+        },
+      ),
+    )}
+  </div>
+);
+
+const levelToDotCount = (level: number) =>
+  Math.min(
+    MICROPHONE_TEST_DOT_COLS,
+    Math.round(level * MICROPHONE_TEST_DOT_COLS),
+  );
+
+const getMicrophoneDotColor = (col: number) => {
+  if (col < 5) return "var(--color-warning)";
+  if (col >= MICROPHONE_TEST_DOT_COLS - 4) return "var(--color-error)";
+  return "var(--color-success)";
+};
+
+const getSelectedMicrophoneName = (
+  inputDevices: DeviceInfo[],
+  microphoneDevice: string | null,
+) => {
+  if (!microphoneDevice) return null;
+  return (
+    inputDevices.find((device) => device.id === microphoneDevice)?.name ?? null
+  );
+};
+
+const useMicrophoneTest = (
+  inputDevices: DeviceInfo[],
+  microphoneDevice: string | null,
+) => {
+  const { t } = useLingui();
+  const [status, setStatus] = useState<MicrophoneTestStatus>("idle");
+  const [levels, setLevels] = useState<MicrophoneTestLevels>(
+    EMPTY_MICROPHONE_TEST_LEVELS,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [activeDeviceLabel, setActiveDeviceLabel] = useState<string | null>(
+    null,
+  );
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const smoothedLevelsRef = useRef<MicrophoneTestLevels>(
+    EMPTY_MICROPHONE_TEST_LEVELS,
+  );
+  const runIdRef = useRef(0);
+
+  const releaseResources = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    void audioContextRef.current?.close();
+    audioContextRef.current = null;
+  }, []);
+
+  const clearMeterState = useCallback(() => {
+    smoothedLevelsRef.current = EMPTY_MICROPHONE_TEST_LEVELS;
+    setLevels(EMPTY_MICROPHONE_TEST_LEVELS);
+    setActiveDeviceLabel(null);
+  }, []);
+
+  const reset = useCallback(() => {
+    runIdRef.current += 1;
+    releaseResources();
+    setStatus("idle");
+    clearMeterState();
+    setError(null);
+  }, [clearMeterState, releaseResources]);
+
+  const start = useCallback(async () => {
+    const mediaDevices = navigator.mediaDevices;
+    if (!mediaDevices?.getUserMedia) {
+      setStatus("error");
+      setError(
+        t({
+          id: "settings.general.microphone_test.unsupported",
+          message: "Microphone testing isn't available in this window.",
+        }),
+      );
+      return;
+    }
+
+    runIdRef.current += 1;
+    const runId = runIdRef.current;
+    releaseResources();
+    setStatus("starting");
+    clearMeterState();
+    setError(null);
+
+    let stream: MediaStream | null = null;
+
+    try {
+      const selectedDeviceName = getSelectedMicrophoneName(
+        inputDevices,
+        microphoneDevice,
+      );
+
+      stream = await mediaDevices.getUserMedia({ audio: true });
+
+      if (runIdRef.current !== runId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      const matchedDeviceId = await findBrowserMicrophoneDeviceId(
+        mediaDevices,
+        selectedDeviceName,
+      );
+
+      if (matchedDeviceId) {
+        try {
+          const selectedStream = await mediaDevices.getUserMedia({
+            audio: { deviceId: { exact: matchedDeviceId } },
+          });
+
+          if (runIdRef.current !== runId) {
+            selectedStream.getTracks().forEach((track) => track.stop());
+            stream.getTracks().forEach((track) => track.stop());
+            return;
+          }
+
+          stream.getTracks().forEach((track) => track.stop());
+          stream = selectedStream;
+        } catch {
+          // The default stream still gives a useful meter if WebKit rejects
+          // the matched browser device id.
+        }
+      }
+
+      const AudioContextCtor =
+        window.AudioContext ??
+        (window as typeof window & {
+          webkitAudioContext?: typeof AudioContext;
+        }).webkitAudioContext;
+
+      if (!AudioContextCtor) {
+        throw new Error("AudioContext is not available");
+      }
+
+      const audioContext = new AudioContextCtor();
+      const source = audioContext.createMediaStreamSource(stream);
+      const leftAnalyser = audioContext.createAnalyser();
+      const rightAnalyser = audioContext.createAnalyser();
+      const splitter = audioContext.createChannelSplitter(2);
+      const channelCount =
+        stream.getAudioTracks()[0]?.getSettings().channelCount ?? 1;
+      leftAnalyser.fftSize = 128;
+      rightAnalyser.fftSize = 128;
+      leftAnalyser.smoothingTimeConstant = 0.12;
+      rightAnalyser.smoothingTimeConstant = 0.12;
+      source.connect(splitter);
+      splitter.connect(leftAnalyser, 0);
+      splitter.connect(rightAnalyser, channelCount > 1 ? 1 : 0);
+
+      streamRef.current = stream;
+      audioContextRef.current = audioContext;
+      const displayLabel =
+        stream.getAudioTracks()[0]?.label || selectedDeviceName;
+      setActiveDeviceLabel(displayLabel);
+      setStatus("listening");
+
+      const leftData = new Uint8Array(leftAnalyser.fftSize);
+      const rightData = new Uint8Array(rightAnalyser.fftSize);
+      let lastUpdate = 0;
+
+      const updateLevel = (now: number) => {
+        leftAnalyser.getByteTimeDomainData(leftData);
+        rightAnalyser.getByteTimeDomainData(rightData);
+
+        if (now - lastUpdate > MICROPHONE_TEST_UPDATE_INTERVAL_MS) {
+          smoothedLevelsRef.current = smoothMicrophoneLevels(
+            smoothedLevelsRef.current,
+            {
+              left: calculateMicrophoneLevel(leftData),
+              right: calculateMicrophoneLevel(rightData),
+            },
+          );
+          setLevels(smoothedLevelsRef.current);
+          lastUpdate = now;
+        }
+
+        animationFrameRef.current = requestAnimationFrame(updateLevel);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(updateLevel);
+    } catch (err) {
+      stream?.getTracks().forEach((track) => track.stop());
+      if (runIdRef.current !== runId) return;
+      releaseResources();
+      clearMeterState();
+      setStatus("error");
+      setError(t(formatMicrophoneTestError(err)));
+    }
+  }, [
+    clearMeterState,
+    inputDevices,
+    microphoneDevice,
+    releaseResources,
+    t,
+  ]);
+
+  useEffect(() => releaseResources, [releaseResources]);
+
+  return {
+    activeDeviceLabel,
+    error,
+    levels,
+    reset,
+    start,
+    status,
+  };
+};
+
+const smoothMicrophoneLevels = (
+  previous: MicrophoneTestLevels,
+  target: MicrophoneTestLevels,
+) => ({
+  left: smoothMicrophoneLevel(previous.left, target.left),
+  right: smoothMicrophoneLevel(previous.right, target.right),
+});
+
+const smoothMicrophoneLevel = (previous: number, target: number) => {
+  const factor = target > previous ? 0.78 : 0.32;
+  const next = previous + (target - previous) * factor;
+  return next < 0.02 ? 0 : next;
+};
+
+const calculateMicrophoneLevel = (data: Uint8Array) => {
+  let sum = 0;
+  for (const sample of data) {
+    const centered = (sample - 128) / 128;
+    sum += centered * centered;
+  }
+
+  const noiseFloor = 0.012;
+  const speechCeiling = 0.18;
+  const rms = Math.sqrt(sum / data.length);
+  const normalized =
+    Math.max(0, rms - noiseFloor) / (speechCeiling - noiseFloor);
+
+  return Math.min(1, Math.pow(normalized, 0.72));
+};
+
+const findBrowserMicrophoneDeviceId = async (
+  mediaDevices: MediaDevices,
+  selectedDeviceName: string | null,
+) => {
+  if (!selectedDeviceName || !mediaDevices.enumerateDevices) return null;
+
+  const browserDevices = await mediaDevices.enumerateDevices();
+  const selectedName = normalizeMicrophoneLabel(selectedDeviceName);
+  if (!selectedName) return null;
+
+  const match = browserDevices.find((device) => {
+    if (device.kind !== "audioinput" || !device.deviceId || !device.label) {
+      return false;
+    }
+
+    const browserLabel = normalizeMicrophoneLabel(device.label);
+    return (
+      browserLabel.includes(selectedName) ||
+      selectedName.includes(browserLabel)
+    );
+  });
+
+  return match?.deviceId ?? null;
+};
+
+const normalizeMicrophoneLabel = (label: string) =>
+  label
+    .toLowerCase()
+    .replace(/^default\s*[-:]\s*/, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const formatMicrophoneTestError = (err: unknown) => {
+  if (err instanceof DOMException) {
+    if (
+      err.name === "NotAllowedError" ||
+      err.name === "PermissionDeniedError"
+    ) {
+      return msg({
+        id: "settings.general.microphone_test.permission_error",
+        message: "Microphone access was denied.",
+      });
+    }
+
+    if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+      return msg({
+        id: "settings.general.microphone_test.not_found_error",
+        message: "No microphone was found.",
+      });
+    }
+
+    if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+      return msg({
+        id: "settings.general.microphone_test.busy_error",
+        message: "That microphone is already in use.",
+      });
+    }
+  }
+
+  return msg({
+    id: "settings.general.microphone_test.start_error",
+    message: "Couldn't start microphone test.",
+  });
 };
 
 type ShortcutRowProps = {

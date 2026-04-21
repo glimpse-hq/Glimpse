@@ -35,5 +35,6 @@ export function useInputDevices(enabled: boolean = true) {
     queryKey: settingsKeys.devices(),
     queryFn: settingsApi.listInputDevices,
     enabled,
+    refetchOnMount: "always",
   });
 }

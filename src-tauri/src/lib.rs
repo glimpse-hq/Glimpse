@@ -343,6 +343,9 @@ pub fn run() {
                 if let Err(err) = set_app_menu(handle, &settings) {
                     eprintln!("Failed to set app menu: {err}");
                 }
+                if let Err(err) = platform::macos::audio_devices::init(handle) {
+                    eprintln!("Failed to initialize input device watcher: {err}");
+                }
             }
 
             #[cfg(target_os = "windows")]

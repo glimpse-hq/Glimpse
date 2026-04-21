@@ -3545,3 +3545,48 @@ msgstr "Your data is your data. Not ours to share. We will never sell or share y
 #: src/features/transcriptions/components/TranscriptionList.tsx:465
 msgid "transcriptions.list.empty"
 msgstr "Your recent transcriptions will appear here"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:1218
+msgid "settings.general.microphone_test.start_error"
+msgstr "Couldn't start microphone test."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:851
+msgid "settings.general.microphone_test.generic_error"
+msgstr "Couldn't start microphone test."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:336
+msgid "settings.general.microphone_test.done"
+msgstr "Done"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:1197
+msgid "settings.general.microphone_test.permission_error"
+msgstr "Microphone access was denied."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:989
+msgid "settings.general.microphone_test.unsupported"
+msgstr "Microphone testing isn't available in this window."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:1204
+msgid "settings.general.microphone_test.not_found_error"
+msgstr "No microphone was found."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:328
+msgid "settings.general.microphone_test.stop"
+msgstr "Stop"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:344
+msgid "settings.general.microphone_test.test"
+msgstr "Test"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx:1211
+msgid "settings.general.microphone_test.busy_error"
+msgstr "That microphone is already in use."

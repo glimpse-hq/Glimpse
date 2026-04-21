@@ -64,6 +64,9 @@ function QuerySyncBridge() {
       register("transcription:error", () => {
         queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
       });
+      register("audio:input-devices-changed", () => {
+        queryClient.invalidateQueries({ queryKey: settingsKeys.devices() });
+      });
     }
 
     return () => {
