@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { Mic, ChevronRight } from "lucide-react";
+import { ChevronRight, Mic } from "lucide-react";
 import { StatusBadge, type StepMotionProps } from "./shared";
 
 interface MicrophoneStepProps {

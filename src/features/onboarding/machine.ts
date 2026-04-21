@@ -1,14 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
-import { setup, assign, fromCallback } from "xstate";
-import type { ModelInfo, ModelStatus, TranscriptionMode } from "../../types";
-
-export type OnboardingStep =
-  | "welcome"
-  | "localModel"
-  | "localSignin"
-  | "microphone"
-  | "accessibility"
-  | "ready";
+import { setup, assign } from "xstate";
+import type { TranscriptionMode } from "../../types";
+import {
+  getOnboardingPlatform,
+  getOnboardingSteps,
+  type OnboardingPlatform,
+  type OnboardingStep,
+} from "./platform";
 
 export type LocalDownloadStatus = {
   status: "idle" | "downloading" | "complete" | "error" | "cancelled";
@@ -18,19 +15,11 @@ export type LocalDownloadStatus = {
 };
 
 export type OnboardingContext = {
+  platform: OnboardingPlatform;
   selectedMode: TranscriptionMode;
   localModelChoice: string;
-  persistedLocalModel: string;
   downloadStatus: Record<string, LocalDownloadStatus>;
-  modelStatus: Record<string, ModelStatus>;
-  modelCatalog: ModelInfo[];
-  isLoadingModelCatalog: boolean;
-  modelCatalogUnavailable: boolean;
   showLocalConfirm: boolean;
-  micPermission: boolean;
-  accessibilityPermission: boolean;
-  isCheckingMic: boolean;
-  isCheckingAccessibility: boolean;
   smartShortcut: string;
   captureActive: boolean;
   capturePreview: string;
@@ -47,12 +36,6 @@ export type OnboardingEvent =
   | { type: "SELECT_MODE"; mode: TranscriptionMode }
   | { type: "SELECT_MODEL"; key: string }
   | { type: "SET_DOWNLOAD_STATUS"; key: string; status: LocalDownloadStatus }
-  | { type: "SET_MODEL_STATUS"; key: string; status: ModelStatus }
-  | { type: "SET_MODEL_CATALOG"; catalog: ModelInfo[]; persistedModel: string }
-  | { type: "SET_CATALOG_LOADING"; loading: boolean }
-  | { type: "SET_CATALOG_UNAVAILABLE"; unavailable: boolean }
-  | { type: "MIC_PERMISSION_CHANGED"; granted: boolean; checking: boolean }
-  | { type: "ACCESSIBILITY_PERMISSION_CHANGED"; granted: boolean; checking: boolean }
   | { type: "SET_SHORTCUT"; shortcut: string }
   | { type: "CAPTURE_START" }
   | { type: "CAPTURE_END"; shortcut?: string }
@@ -63,87 +46,33 @@ export type OnboardingEvent =
   | { type: "COMPLETE_ERROR"; error: string }
   | { type: "TOGGLE_FAQ"; show: boolean };
 
-function getSteps(mode: TranscriptionMode): OnboardingStep[] {
-  if (mode === "cloud") {
-    return ["welcome", "localSignin", "localModel", "microphone", "accessibility", "ready"];
-  }
-  return ["welcome", "localModel", "microphone", "accessibility", "ready"];
+function getSteps(
+  mode: TranscriptionMode,
+  platform: OnboardingPlatform = getOnboardingPlatform(),
+): OnboardingStep[] {
+  return getOnboardingSteps(mode, platform);
 }
 
-// These helpers are available but most logic is handled by the machine's state transitions
+const requiresMicrophoneStep = ({ context }: { context: OnboardingContext }) =>
+  context.platform.requiresMicrophonePermission;
 
-// Actors for permission polling
-const micPermissionPoller = fromCallback(({ sendBack }: { sendBack: (event: { type: "MIC_PERMISSION_CHANGED"; granted: boolean; checking: boolean }) => void }) => {
-  let active = true;
-  const check = async () => {
-    try {
-      const granted = await invoke<boolean>("check_microphone_permission");
-      sendBack({ type: "MIC_PERMISSION_CHANGED", granted, checking: false });
-    } catch {
-      sendBack({ type: "MIC_PERMISSION_CHANGED", granted: false, checking: false });
-    }
-  };
-
-  check();
-  const interval = setInterval(() => {
-    if (active) check();
-  }, 1500);
-
-  return () => {
-    active = false;
-    clearInterval(interval);
-  };
-});
-
-const accessibilityPermissionPoller = fromCallback(({ sendBack }: { sendBack: (event: { type: "ACCESSIBILITY_PERMISSION_CHANGED"; granted: boolean; checking: boolean }) => void }) => {
-  let active = true;
-  const check = async () => {
-    try {
-      const { checkAccessibilityPermission } = await import("tauri-plugin-macos-permissions-api");
-      const granted = await checkAccessibilityPermission();
-      sendBack({ type: "ACCESSIBILITY_PERMISSION_CHANGED", granted, checking: false });
-    } catch {
-      sendBack({ type: "ACCESSIBILITY_PERMISSION_CHANGED", granted: false, checking: false });
-    }
-  };
-
-  check();
-  const interval = setInterval(() => {
-    if (active) check();
-  }, 800);
-
-  return () => {
-    active = false;
-    clearInterval(interval);
-  };
-});
+const requiresAccessibilityStep = ({ context }: { context: OnboardingContext }) =>
+  context.platform.requiresAccessibilityPermission;
 
 export const onboardingMachine = setup({
   types: {
     context: {} as OnboardingContext,
     events: {} as OnboardingEvent,
   },
-  actors: {
-    micPermissionPoller,
-    accessibilityPermissionPoller,
-  },
 }).createMachine({
   id: "onboarding",
   initial: "welcome",
   context: {
+    platform: getOnboardingPlatform(),
     selectedMode: "local",
     localModelChoice: "",
-    persistedLocalModel: "",
     downloadStatus: {},
-    modelStatus: {},
-    modelCatalog: [],
-    isLoadingModelCatalog: true,
-    modelCatalogUnavailable: false,
     showLocalConfirm: false,
-    micPermission: false,
-    accessibilityPermission: false,
-    isCheckingMic: true,
-    isCheckingAccessibility: true,
     smartShortcut: "Control+Space",
     captureActive: false,
     capturePreview: "",
@@ -166,43 +95,6 @@ export const onboardingMachine = setup({
           ...context.downloadStatus,
           [event.key]: event.status,
         }),
-      }),
-    },
-    SET_MODEL_STATUS: {
-      actions: assign({
-        modelStatus: ({ context, event }) => ({
-          ...context.modelStatus,
-          [event.key]: event.status,
-        }),
-      }),
-    },
-    SET_MODEL_CATALOG: {
-      actions: assign({
-        modelCatalog: ({ event }) => event.catalog,
-        persistedLocalModel: ({ event }) => event.persistedModel,
-        isLoadingModelCatalog: false,
-        modelCatalogUnavailable: false,
-      }),
-    },
-    SET_CATALOG_LOADING: {
-      actions: assign({ isLoadingModelCatalog: ({ event }) => event.loading }),
-    },
-    SET_CATALOG_UNAVAILABLE: {
-      actions: assign({
-        modelCatalogUnavailable: ({ event }) => event.unavailable,
-        isLoadingModelCatalog: false,
-      }),
-    },
-    MIC_PERMISSION_CHANGED: {
-      actions: assign({
-        micPermission: ({ event }) => event.granted,
-        isCheckingMic: ({ event }) => event.checking,
-      }),
-    },
-    ACCESSIBILITY_PERMISSION_CHANGED: {
-      actions: assign({
-        accessibilityPermission: ({ event }) => event.granted,
-        isCheckingAccessibility: ({ event }) => event.checking,
       }),
     },
     SET_SHORTCUT: {
@@ -270,10 +162,22 @@ export const onboardingMachine = setup({
     },
     localModel: {
       on: {
-        NEXT: {
-          target: "microphone",
-          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        NEXT: [
+          {
+            target: "microphone",
+            guard: requiresMicrophoneStep,
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "accessibility",
+            guard: requiresAccessibilityStep,
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "ready",
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+        ],
         BACK: [
           {
             target: "localSignin",
@@ -288,16 +192,18 @@ export const onboardingMachine = setup({
       },
     },
     microphone: {
-      invoke: {
-        src: "micPermissionPoller",
-        id: "micPoller",
-        input: {},
-      },
       on: {
-        NEXT: {
-          target: "accessibility",
-          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        NEXT: [
+          {
+            target: "accessibility",
+            guard: requiresAccessibilityStep,
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "ready",
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+        ],
         BACK: {
           target: "localModel",
           actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
@@ -305,28 +211,42 @@ export const onboardingMachine = setup({
       },
     },
     accessibility: {
-      invoke: {
-        src: "accessibilityPermissionPoller",
-        id: "accessibilityPoller",
-        input: {},
-      },
       on: {
         NEXT: {
           target: "ready",
           actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
         },
-        BACK: {
-          target: "microphone",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        BACK: [
+          {
+            target: "microphone",
+            guard: requiresMicrophoneStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "localModel",
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+        ],
       },
     },
     ready: {
       on: {
-        BACK: {
-          target: "accessibility",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        BACK: [
+          {
+            target: "accessibility",
+            guard: requiresAccessibilityStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "microphone",
+            guard: requiresMicrophoneStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "localModel",
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+        ],
       },
     },
   },

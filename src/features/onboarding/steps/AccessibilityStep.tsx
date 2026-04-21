@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { Accessibility, ExternalLink, ChevronRight } from "lucide-react";
-import { StatusBadge, type StepMotionProps } from "./shared";
+import { ExternalLink, ChevronRight } from "lucide-react";
+import { AppleAccessibilityIcon, StatusBadge, type StepMotionProps } from "./shared";
 
 interface AccessibilityStepProps {
   stepMotionProps: StepMotionProps;
@@ -32,7 +32,7 @@ export function AccessibilityStep({
       className="flex flex-col items-center text-center max-w-sm"
     >
       <div className="mb-5">
-        <Accessibility size={32} className="ui-color-accent" />
+        <AppleAccessibilityIcon size={32} className="ui-color-accent" />
       </div>
 
       <h2 className="ui-text-title-lg font-semibold text-content-primary mb-1">

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download, Trash2, Square, AlertTriangle } from "lucide-react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { ModelProgress, type StepMotionProps } from "./shared";
-import type { ModelInfo, ModelStatus } from "../../../types";
+import type { ModelInfo } from "../../../types";
 import type { LocalDownloadStatus } from "../machine";
 
 interface ModelSelectionStepProps {
@@ -14,7 +14,6 @@ interface ModelSelectionStepProps {
   selectedModel: string;
   onSelectModel: (key: string) => void;
   displayStateByModel: Record<string, LocalDownloadStatus>;
-  modelStatus: Record<string, ModelStatus>;
   selectedModelReady: boolean;
   showLocalConfirm: boolean;
   onShowConfirm: (show: boolean) => void;
@@ -32,7 +31,6 @@ export function ModelSelectionStep({
   selectedModel,
   onSelectModel,
   displayStateByModel,
-  modelStatus: _modelStatus,
   selectedModelReady,
   showLocalConfirm,
   onShowConfirm,
