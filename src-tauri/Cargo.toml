@@ -47,7 +47,7 @@ aes-gcm = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }
 sha2 = "0.10"
 base64 = "0.22"
-rand = "0.8"
+rand = "0.9"
 rusqlite = { version = "0.38", features = ["bundled"] }
 regex = "1"
 fs2 = "0.4"
