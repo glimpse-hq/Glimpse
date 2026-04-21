@@ -35,6 +35,7 @@ import {
 } from "./library-utils";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
+import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type {
     ExportFormat,
     LibraryItem,
@@ -286,7 +287,6 @@ const LibraryModal = ({
         const handleMove = (e: MouseEvent | TouchEvent) => {
             const currentX = "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
             const diffX = currentX - startX;
-            // Every 15px dragged horizontally equals one step in PLAYBACK_RATES
             const steps = Math.round(diffX / 15);
             
             const nextIndex = Math.min(
@@ -768,8 +768,7 @@ const LibraryModal = ({
     }, [activeSegmentIndex, followTimestampsActive]);
 
     return (
-        <div className="flex h-full w-full min-h-0 overflow-hidden rounded-2xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-surface)] shadow-2xl shadow-black/50">
-            {/* Sidebar */}
+        <div className="flex h-full w-full min-h-0 overflow-hidden rounded-2xl border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-[var(--shadow-lg)]">
             <aside className="flex w-48 shrink-0 flex-col border-r border-[var(--color-border-primary)]">
                 <div className="px-4 pt-5 pb-3">
                     {isEditingName ? (
@@ -806,7 +805,6 @@ const LibraryModal = ({
                 </div>
 
                 <nav className="flex-1 px-2 py-2 space-y-3 overflow-y-auto custom-scrollbar scrollbar-gutter">
-                    {/* Audio player */}
                     <div className="px-2">
                         <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled mb-1.5">
                             {t({
@@ -831,7 +829,7 @@ const LibraryModal = ({
                                         className="library-scrubber w-full"
                                         disabled={!audioReady || !!audioError}
                                         style={{
-                                            background: `linear-gradient(to right, var(--color-cloud) 0%, var(--color-cloud) ${scrubberPercent}%, var(--color-border-secondary) ${scrubberPercent}%, var(--color-border-secondary) 100%)`,
+                                            background: `linear-gradient(to right, var(--color-toggle-on) 0%, var(--color-toggle-on) ${scrubberPercent}%, var(--color-border-secondary) ${scrubberPercent}%, var(--color-border-secondary) 100%)`,
                                         }}
                                         aria-label={t({ id: "library.modal.audio_scrubber", message: "Audio scrubber" })}
                                     />
@@ -903,7 +901,6 @@ const LibraryModal = ({
                         </div>
                     </div>
 
-                    {/* Settings section */}
                     <div className="px-2 space-y-2">
                         <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">
                             {t({
@@ -936,8 +933,9 @@ const LibraryModal = ({
                                         })}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => {
+                            <ToggleSwitch
+                                enabled={showTimestamps}
+                                onToggle={() => {
                                     if (!canShowTimestamps) return;
                                     const nextValue = !showTimestamps;
                                     setShowTimestamps(nextValue);
@@ -946,54 +944,42 @@ const LibraryModal = ({
                                     }
                                     onUpdate({ show_timestamps: nextValue });
                                 }}
-                                className={`relative w-8 h-4 rounded-full transition-colors ${showTimestamps ? "bg-cloud" : "bg-border-secondary"} ${!canShowTimestamps ? "opacity-40 cursor-not-allowed" : ""}`}
-                                role="switch"
-                                aria-checked={showTimestamps}
+                                ariaLabel={t({
+                                    id: "library.modal.timestamps",
+                                    message: "Timestamps",
+                                })}
                                 disabled={!canShowTimestamps}
-                            >
-                                <motion.div
-                                    className="absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-xs"
-                                    initial={false}
-                                    animate={{ left: showTimestamps ? "calc(100% - 14px)" : "2px" }}
-                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                />
-                            </button>
+                                size="md"
+                            />
                         </div>
                         <div className="flex items-center justify-between pl-3">
-                                <div>
-                                    <div className="flex items-center gap-1.5 ui-text-meta text-content-secondary">
-                                        <CornerDownRight size={10} className="text-content-disabled" aria-hidden="true" />
-                                        <span>
-                                            {t({
-                                                id: "library.modal.follow_timestamp",
-                                                message: "Follow timestamp",
-                                            })}
-                                        </span>
-                                    </div>
+                            <div>
+                                <div className="flex items-center gap-1.5 ui-text-meta text-content-secondary">
+                                    <CornerDownRight size={10} className="text-content-disabled" aria-hidden="true" />
+                                    <span>
+                                        {t({
+                                            id: "library.modal.follow_timestamp",
+                                            message: "Follow timestamp",
+                                        })}
+                                    </span>
                                 </div>
-                            <button
-                                onClick={() => {
+                            </div>
+                            <ToggleSwitch
+                                enabled={followTimestampsActive}
+                                onToggle={() => {
                                     if (!showSegmentView) return;
                                     onFollowTimestampsChange((prev) => !prev);
                                 }}
-                                className={`relative w-7 h-3 rounded-full transition-colors ${
-                                    followTimestampsActive ? "bg-cloud" : "bg-border-secondary"
-                                } ${!showSegmentView ? "opacity-40 cursor-not-allowed" : ""}`}
-                                role="switch"
-                                aria-checked={followTimestampsActive}
+                                ariaLabel={t({
+                                    id: "library.modal.follow_timestamp",
+                                    message: "Follow timestamp",
+                                })}
                                 disabled={!showSegmentView}
-                            >
-                                <motion.div
-                                    className="absolute top-[1px] w-2.5 h-2.5 rounded-full bg-white shadow-xs"
-                                    initial={false}
-                                    animate={{ left: followTimestampsActive ? "calc(100% - 10px)" : "2px" }}
-                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                                />
-                            </button>
+                                size="sm"
+                            />
                         </div>
                     </div>
 
-                    {/* Tags section */}
                     <div className="px-2 space-y-1.5">
                         <p className="ui-text-meta font-semibold uppercase tracking-wider text-content-disabled">
                             {t({
@@ -1118,7 +1104,6 @@ const LibraryModal = ({
                     </div>
                 </nav>
 
-                {/* Sidebar footer actions */}
                 <div className="px-2 py-3 border-t border-[var(--color-border-primary)] space-y-1.5">
                     {(item.status.type === "transcribing"
                         || item.status.type === "cancelling"
@@ -1153,9 +1138,7 @@ const LibraryModal = ({
                 </div>
             </aside>
 
-            {/* Main content */}
             <main className="flex flex-1 flex-col min-h-0 min-w-0 bg-transparent">
-                {/* Header */}
                 <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border-primary)] shrink-0 bg-transparent">
                     <button
                         onClick={() => setShowRetranscribe(true)}
@@ -1222,20 +1205,22 @@ const LibraryModal = ({
                             disabled={!transcriptAvailable}
                             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 ui-text-meta disabled:opacity-50 transition-colors ${
                                 copyConfirmed
-                                    ? "ui-color-success-subtle bg-emerald-400/10"
+                                    ? "ui-color-success bg-[color-mix(in_srgb,var(--color-success)_12%,transparent)]"
                                     : "text-content-secondary hover:text-content-primary hover:bg-surface-surface"
                             }`}
                         >
                             {copyConfirmed ? <Check size={10} /> : <Copy size={10} />}
-                            {copyConfirmed
-                                ? t({
-                                    id: "library.modal.copy.copied",
-                                    message: "Copied",
-                                })
-                                : t({
-                                    id: "library.modal.copy",
-                                    message: "Copy",
-                                })}
+                            <span className="inline-block min-w-[38px] text-left">
+                                {copyConfirmed
+                                    ? t({
+                                        id: "library.modal.copy.copied",
+                                        message: "Copied",
+                                    })
+                                    : t({
+                                        id: "library.modal.copy",
+                                        message: "Copy",
+                                    })}
+                            </span>
                         </button>
                         <div className="relative">
                             <button
@@ -1289,7 +1274,6 @@ const LibraryModal = ({
                     </div>
                 </div>
 
-                {/* Transcript area */}
                 <div className="flex-1 min-h-0 overflow-hidden px-4 pb-0 pt-0 flex flex-col gap-3">
                     {item.status.type === "error" ? (
                         <div className="flex-1 min-h-0 flex items-center justify-center">
@@ -1327,6 +1311,22 @@ const LibraryModal = ({
                         </div>
                     ) : (
                         <div className="relative flex-1 min-h-0">
+                            <div
+                                className="pointer-events-none absolute left-0 right-3 top-0 h-5 z-10"
+                                style={{
+                                    background:
+                                        "linear-gradient(to bottom, var(--color-bg-overlay), transparent)",
+                                }}
+                                aria-hidden="true"
+                            />
+                            <div
+                                className="pointer-events-none absolute left-0 right-3 bottom-0 h-6 z-10"
+                                style={{
+                                    background:
+                                        "linear-gradient(to top, var(--color-bg-overlay), transparent)",
+                                }}
+                                aria-hidden="true"
+                            />
                             {showSegmentView ? (
                                 <Virtuoso
                                     ref={segmentsVirtuosoRef}
@@ -1349,9 +1349,15 @@ const LibraryModal = ({
                                                     initial={{ opacity: 0, y: 6 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
-                                                    className={`grid w-full grid-cols-[auto_1fr] gap-3 rounded-md px-2 py-1 transition-colors select-none ${
-                                                        isActive ? "bg-cloud-10 border border-cloud-30" : "border border-transparent"
-                                                    }`}
+                                                    className="grid w-full grid-cols-[auto_1fr] gap-3 rounded-md px-2 py-1 transition-colors select-none border"
+                                                    style={{
+                                                        backgroundColor: isActive
+                                                            ? "var(--color-interactive-10)"
+                                                            : "transparent",
+                                                        borderColor: isActive
+                                                            ? "var(--color-interactive-30)"
+                                                            : "transparent",
+                                                    }}
                                                 >
                                                     <span
                                                         className="text-content-disabled font-mono ui-text-label pt-0.5 select-none cursor-pointer hover:text-content-primary"
@@ -1434,8 +1440,6 @@ const LibraryModal = ({
                                     className="h-full w-full resize-none bg-transparent ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 custom-scrollbar select-text pr-4 pt-3 pb-3"
                                 />
                             )}
-                            <div className="absolute left-0 right-0 top-0 h-[18px] pointer-events-none z-[5]" style={{ background: 'linear-gradient(180deg, var(--color-bg-surface), transparent)' }} aria-hidden="true" />
-                            <div className="absolute left-0 right-0 bottom-0 h-[18px] pointer-events-none z-[5]" style={{ background: 'linear-gradient(180deg, transparent, var(--color-bg-surface))' }} aria-hidden="true" />
                         </div>
                     )}
                 </div>

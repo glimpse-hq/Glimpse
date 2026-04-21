@@ -31,6 +31,7 @@ interface DropdownProps<T extends string | number> {
     buttonClassName?: string;
     menuClassName?: string;
     onOpen?: () => void;
+    disabled?: boolean;
 }
 
 export function Dropdown<T extends string | number>({
@@ -46,6 +47,7 @@ export function Dropdown<T extends string | number>({
     buttonClassName,
     menuClassName = "",
     onOpen,
+    disabled = false,
 }: DropdownProps<T>) {
     const { t } = useLingui();
     const [isOpen, setIsOpen] = useState(false);
@@ -68,6 +70,12 @@ export function Dropdown<T extends string | number>({
     }, []);
 
     useClickOutside(containerRef, closeDropdown, isOpen);
+
+    useEffect(() => {
+        if (disabled) {
+            closeDropdown();
+        }
+    }, [closeDropdown, disabled]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -96,7 +104,6 @@ export function Dropdown<T extends string | number>({
             if (!opt.isHeader) {
                 return matchesSearch(opt);
             }
-            // Only show header if there are options after it that match the search
             for (let i = idx + 1; i < options.length; i++) {
                 if (options[i].isHeader) break;
                 if (matchesSearch(options[i])) return true;
@@ -113,14 +120,14 @@ export function Dropdown<T extends string | number>({
 
         if (fixedBadgeSlots) {
             return (
-                <span className="flex items-center gap-1 ui-text-uppercase-micro font-medium">
+                <span className="flex items-center gap-1 ui-text-uppercase-micro font-medium tracking-[0.08em]">
                     {badges.map((badge, index) => (
                         <span
                             key={`${badge.label}-${index}`}
-                            className={`w-5 text-right ${badge.visible === false
+                            className={`w-4 text-right ${badge.visible === false
                                 ? "text-transparent"
                                 : badge.highlighted
-                                    ? "text-cloud"
+                                    ? "text-[var(--color-interactive)]"
                                     : "text-content-disabled"
                                 }`}
                         >
@@ -137,7 +144,7 @@ export function Dropdown<T extends string | number>({
                     badge.visible === false ? null : (
                         <span
                             key={`${badge.label}-${index}`}
-                            className={badge.highlighted ? "text-cloud" : "text-content-disabled"}
+                            className={badge.highlighted ? "text-[var(--color-interactive)]" : "text-content-disabled"}
                         >
                             {badge.label}
                         </span>
@@ -151,7 +158,9 @@ export function Dropdown<T extends string | number>({
         <div className={`relative ${className}`} ref={containerRef}>
             <button
                 type="button"
+                disabled={disabled}
                 onClick={() => {
+                    if (disabled) return;
                     if (isOpen) {
                         closeDropdown();
                     } else {
@@ -161,7 +170,8 @@ export function Dropdown<T extends string | number>({
                 }}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
+                aria-disabled={disabled}
+                className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border-primary ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
             >
                 <div className="flex items-center gap-2 min-w-0">
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
@@ -187,7 +197,7 @@ export function Dropdown<T extends string | number>({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className={`absolute left-0 right-0 top-full mt-1 z-[9999] rounded-lg border border-border-secondary bg-surface-surface shadow-xl shadow-black/40 overflow-hidden flex flex-col max-h-[280px] ${menuClassName}`}
+                        className={`ui-surface-menu absolute left-0 right-0 top-full mt-1 z-[9999] flex flex-col max-h-[280px] ${menuClassName}`}
                     >
                         {searchable && (
                             <div className="p-2 border-b border-border-secondary shrink-0">
@@ -203,7 +213,7 @@ export function Dropdown<T extends string | number>({
                                             message: "Search options",
                                         })}
                                         autoFocus
-                                        className="w-full rounded-md bg-surface-elevated border border-border-secondary py-1.5 pl-7 pr-2.5 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:border-content-disabled focus:outline-hidden transition-colors"
+                                        className="w-full rounded-md bg-surface-secondary/50 border border-border-primary py-1.5 pl-7 pr-2.5 ui-text-body-sm text-content-primary placeholder-content-disabled hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors"
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </div>
@@ -232,7 +242,7 @@ export function Dropdown<T extends string | number>({
                                                 closeDropdown();
                                             }}
                                             className={`w-full text-left px-3 py-2 transition-colors flex items-center justify-between group ${value === option.value
-                                                ? "bg-cloud/10 text-cloud"
+                                                ? "bg-[var(--color-interactive-10)] text-[var(--color-interactive)]"
                                                 : "text-content-secondary hover:bg-surface-elevated hover:text-content-primary"
                                                 }`}
                                         >
@@ -242,7 +252,7 @@ export function Dropdown<T extends string | number>({
                                                     <span className="truncate">{option.label}</span>
                                                 </span>
                                                 {option.description && (
-                                                    <span className={`ui-text-meta truncate ${value === option.value ? "text-cloud/70" : "ui-color-disabled group-hover:text-content-muted"
+                                                    <span className={`ui-text-meta truncate ${value === option.value ? "text-[var(--color-interactive)] opacity-75" : "ui-color-disabled group-hover:text-content-muted"
                                                         }`}>
                                                         {option.description}
                                                     </span>

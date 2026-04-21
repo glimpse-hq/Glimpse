@@ -1,8 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
+import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../../../shared/lib/modelCapabilities";
 import type { LibraryItem, ModelInfo } from "../../../types";
 
@@ -87,7 +88,7 @@ const LibraryRetranscribeModal = ({
                 exit={{ opacity: 0, scale: 0.96, y: 20 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="relative w-[420px] max-w-[92vw] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
                     <div>
@@ -159,19 +160,16 @@ const LibraryRetranscribeModal = ({
                                     })}
                             </div>
                         </div>
-                        <button
-                            onClick={() => timestampsSupported && setShowTimestamps(!showTimestamps)}
-                            className={`relative w-10 h-5 rounded-full transition-colors ${showTimestamps ? "bg-cloud" : "bg-border-secondary"} ${!timestampsSupported ? "opacity-40 cursor-not-allowed" : ""}`}
-                            role="switch"
-                            aria-checked={showTimestamps}
+                        <ToggleSwitch
+                            enabled={showTimestamps}
+                            onToggle={() => timestampsSupported && setShowTimestamps(!showTimestamps)}
+                            ariaLabel={t({
+                                id: "library.retranscribe.show_timestamps",
+                                message: "Show timestamps",
+                            })}
                             disabled={!timestampsSupported}
-                        >
-                            <motion.div
-                                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs"
-                                animate={{ left: showTimestamps ? "calc(100% - 18px)" : "2px" }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                        </button>
+                            size="md"
+                        />
                     </div>
 
                 </div>

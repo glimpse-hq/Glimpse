@@ -30,6 +30,7 @@ import { useModelCatalog } from "./models-queries";
 import type {
   TranscriptionMode,
   TextSizeMode,
+  ThemeMode,
   StoredSettings,
   ModelStatus,
   DownloadEvent,
@@ -40,11 +41,17 @@ import type {
 
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
+const THEME_MODE_STORAGE_KEY = "glimpse_theme_mode";
 
 const parseTextSizeMode = (value: string | null): TextSizeMode =>
   value === "small" || value === "default" || value === "large"
     ? value
     : "default";
+
+const parseThemeMode = (value: string | null): ThemeMode =>
+  value === "light" || value === "dark" || value === "system"
+    ? value
+    : "system";
 
 type ActiveTab = "general" | "models" | "about" | "account" | "app";
 
@@ -101,11 +108,15 @@ export function useSettingsForm({
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+  const [autoLaunchEnabled, setAutoLaunchEnabled] = useState(false);
   const [recordingPrunePolicy, setRecordingPrunePolicy] =
     useState<RecordingPrunePolicy>("never");
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
+  );
+  const [themeMode, setThemeModeRaw] = useState<ThemeMode>(() =>
+    parseThemeMode(localStorage.getItem(THEME_MODE_STORAGE_KEY)),
   );
   const [authLoading, setAuthLoading] = useState(false);
   const [showFAQModal, setShowFAQModal] = useState(false);
@@ -168,6 +179,12 @@ export function useSettingsForm({
     emit("ui:text_size_changed", { mode }).catch(() => {});
   }, []);
 
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeModeRaw(mode);
+    localStorage.setItem(THEME_MODE_STORAGE_KEY, mode);
+    emit("ui:theme_changed", { mode }).catch(() => {});
+  }, []);
+
   const setLlmProvider = useCallback((value: LlmProvider) => {
     setLlmProviderRaw(value);
     setAvailableModels([]);
@@ -203,6 +220,7 @@ export function useSettingsForm({
     setEditModeEnabled(s.edit_mode_enabled ?? false);
     setMediaControlEnabled(s.media_control_enabled ?? false);
     setAutoUpdateEnabled(s.auto_update_enabled ?? false);
+    setAutoLaunchEnabled(s.auto_launch_enabled ?? false);
     setRecordingPrunePolicy(s.recording_prune_policy ?? "never");
     setAnalyticsEnabled(s.analytics_enabled ?? true);
   }, []);
@@ -350,36 +368,29 @@ export function useSettingsForm({
     };
   }, []);
 
+  const refreshPermissionState = useCallback(async () => {
+    const [nativeMic, acc, inputMonitoring] = await Promise.allSettled([
+      invoke<boolean>("check_microphone_permission"),
+      checkAccessibilityPermission(),
+      checkInputMonitoringPermission(),
+    ]);
+
+    setMicPermission(nativeMic.status === "fulfilled" ? nativeMic.value : false);
+    setAccessibilityPermission(acc.status === "fulfilled" ? acc.value : false);
+    setInputMonitoringPermission(
+      inputMonitoring.status === "fulfilled" ? inputMonitoring.value : false,
+    );
+  }, []);
+
   useEffect(() => {
     if (activeTab !== "app" || !isOpen) return;
 
     let cancelled = false;
     let unlistenFocus: UnlistenFn | null = null;
 
-    const checkPermissions = async () => {
-      try {
-        const nativeMic = await invoke<boolean>("check_microphone_permission");
-        setMicPermission(nativeMic);
-      } catch {
-        setMicPermission(false);
-      }
-      try {
-        const acc = await checkAccessibilityPermission();
-        setAccessibilityPermission(acc);
-      } catch {
-        setAccessibilityPermission(false);
-      }
-      try {
-        const inputMonitoring = await checkInputMonitoringPermission();
-        setInputMonitoringPermission(inputMonitoring);
-      } catch {
-        setInputMonitoringPermission(false);
-      }
-    };
-
     const refreshPermissions = () => {
       if (!cancelled) {
-        void checkPermissions();
+        void refreshPermissionState();
       }
     };
 
@@ -415,7 +426,32 @@ export function useSettingsForm({
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       unlistenFocus?.();
     };
-  }, [activeTab, isOpen]);
+  }, [activeTab, isOpen, refreshPermissionState]);
+
+  const handleRequestMicrophonePermission = useCallback(async () => {
+    try {
+      await invoke("request_microphone_permission");
+    } catch {
+      // Fall through to the settings fallback below.
+    }
+
+    try {
+      const granted = await invoke<boolean>("check_microphone_permission");
+      setMicPermission(granted);
+      if (!granted) {
+        await invoke("open_microphone_settings");
+      }
+    } catch {
+      setMicPermission(false);
+      try {
+        await invoke("open_microphone_settings");
+      } catch {
+        // ignore
+      }
+    } finally {
+      void refreshPermissionState();
+    }
+  }, [refreshPermissionState]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -560,6 +596,7 @@ export function useSettingsForm({
             editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
             mediaControlEnabled,
             autoUpdateEnabled,
+            autoLaunchEnabled,
             recordingPrunePolicy,
             analyticsEnabled,
           },
@@ -601,6 +638,7 @@ export function useSettingsForm({
     editModeEnabled,
     mediaControlEnabled,
     autoUpdateEnabled,
+    autoLaunchEnabled,
     recordingPrunePolicy,
     analyticsEnabled,
     aiFeaturesReady,
@@ -845,6 +883,8 @@ export function useSettingsForm({
     setMediaControlEnabled,
     autoUpdateEnabled,
     setAutoUpdateEnabled,
+    autoLaunchEnabled,
+    setAutoLaunchEnabled,
     recordingPrunePolicy,
     setRecordingPrunePolicy,
     analyticsEnabled,
@@ -860,8 +900,11 @@ export function useSettingsForm({
     micPermission,
     accessibilityPermission,
     inputMonitoringPermission,
+    handleRequestMicrophonePermission,
     textSizeMode,
     setTextSizeMode,
+    themeMode,
+    setThemeMode,
 
     showFAQModal,
     setShowFAQModal,

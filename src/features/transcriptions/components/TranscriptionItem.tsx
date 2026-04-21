@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -11,10 +11,8 @@ import {
   ChevronDown,
   ChevronUp,
   MoreVertical,
-  Wand2,
   AlertTriangle,
   Undo2,
-  Cloud,
   X,
 } from "lucide-react";
 import type { TranscriptionRecord } from "../../../types";
@@ -54,8 +52,8 @@ interface TranscriptionItemProps {
   onUndoLlm?: (id: string) => Promise<void>;
   isRetrying?: boolean;
   showLlmButtons?: boolean;
-  skipAnimation?: boolean;
   shiftHeld?: boolean;
+  showDate?: boolean;
 }
 
 const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
@@ -67,12 +65,13 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   onUndoLlm,
   isRetrying = false,
   showLlmButtons = false,
-  skipAnimation = false,
   shiftHeld = false,
+  showDate = false,
 }) => {
   const { t } = useLingui();
   const [copied, setCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isCancellingRetry, setIsCancellingRetry] = useState(false);
   const [isRetryingLlm, setIsRetryingLlm] = useState(false);
   const [isUndoingLlm, setIsUndoingLlm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -91,12 +90,36 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     menuOpen,
   );
 
-  useLayoutEffect(() => {
-    if (textRef.current && !isExpanded) {
-      setIsOverflowing(
-        textRef.current.scrollHeight > textRef.current.clientHeight,
-      );
+  useEffect(() => {
+    if (isExpanded) {
+      setIsOverflowing(true);
+      return;
     }
+
+    const element = textRef.current;
+    if (!element) return;
+
+    let frameId = 0;
+    const updateOverflow = () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+      frameId = window.requestAnimationFrame(() => {
+        setIsOverflowing(element.scrollHeight > element.clientHeight);
+      });
+    };
+
+    updateOverflow();
+
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
   }, [record.text, isExpanded]);
 
   const handleCopy = async () => {
@@ -142,8 +165,23 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     setSelectionText("");
     try {
       await onRetry(record.id);
-    } catch {
-      // Errors are handled by the hook (quota toast, etc.)
+    } catch (err) {
+      console.error("Failed to retry:", err);
+    }
+  };
+
+  const handleCancelRetry = async (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.stopPropagation();
+    if (isCancellingRetry || !onCancelRetry) return;
+    setIsCancellingRetry(true);
+    try {
+      await onCancelRetry(record.id);
+    } catch (err) {
+      console.error("Failed to stop retry:", err);
+    } finally {
+      setIsCancellingRetry(false);
     }
   };
 
@@ -177,7 +215,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
 
   const timestamp = new Date(record.timestamp);
   const timeStr = timestamp.toLocaleTimeString([], {
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
   });
   const dateStr = timestamp.toLocaleDateString([], {
@@ -193,52 +231,15 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
       message: "Transcription failed",
     });
   const displayText = isError ? null : record.text;
-  const speechModelLabel = record.speech_model?.trim()
-    ? record.speech_model.startsWith("cloud-")
-      ? record.speech_model.slice(6)
-      : record.speech_model
-    : t({
-        id: "transcriptions.item.unknown_model",
-        message: "Unknown model",
-      });
-  const isCloudModel = record.speech_model?.startsWith("cloud-") ?? false;
+  const normalizedModel = (record.speech_model ?? "").trim();
+  const isCloudModel = normalizedModel.startsWith("cloud-");
+  const speechModelLabel = normalizedModel
+    ? isCloudModel
+      ? normalizedModel.slice(6)
+      : normalizedModel
+    : null;
   const llmModelLabel = record.llm_model?.trim() || null;
   const modeLabel = record.mode_name?.trim() || null;
-  const wordCountLabel =
-    record.word_count === 1
-      ? t({
-          id: "transcriptions.item.word_count.single",
-          message: "1 word",
-        })
-      : t({
-          id: "transcriptions.item.word_count.multiple",
-          message: `${record.word_count || 0} words`,
-        });
-  const formatDuration = (seconds: number) => {
-    if (!Number.isFinite(seconds) || seconds <= 0) {
-      return t({
-        id: "transcriptions.item.audio_duration.zero",
-        message: "0s audio",
-      });
-    }
-    if (seconds < 60) {
-      return t({
-        id: "transcriptions.item.audio_duration.seconds",
-        message: `${seconds < 10 ? seconds.toFixed(1) : seconds.toFixed(0)}s audio`,
-      });
-    }
-    const minutes = Math.floor(seconds / 60);
-    const remaining = Math.round(seconds % 60);
-    return remaining === 0
-      ? t({
-          id: "transcriptions.item.audio_duration.minutes",
-          message: `${minutes}m audio`,
-        })
-      : t({
-          id: "transcriptions.item.audio_duration.minutes_seconds",
-          message: `${minutes}m ${remaining}s audio`,
-        });
-  };
   const allowContextMenu = !isRetryingLlm && !isUndoingLlm;
 
   const captureSelectionText = () => {
@@ -264,12 +265,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   };
 
   return (
-    <motion.div
-      initial={skipAnimation ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ duration: 0.2 }}
-      className="group relative snap-start"
+    <div
+      className="group relative"
       onContextMenu={(event) => {
         if (!allowContextMenu) return;
         event.preventDefault();
@@ -281,81 +278,30 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
       }}
     >
       <div
-        className={`flex items-start gap-3 py-3 px-4 rounded-lg transition-colors ${isError ? "bg-red-500/[0.03]" : "hover:bg-surface-surface"}`}
+        className={`flex items-start gap-2 py-2.5 px-3 rounded-lg transition-colors ${isError ? "bg-red-500/[0.03]" : "hover:bg-[var(--surface-interactive)]"}`}
       >
-        {/* Status Indicator */}
-        <div className="mt-1.5 shrink-0">
-          {isRetrying ? (
-            <button
-              onClick={(event) => {
-                event.stopPropagation();
-                onCancelRetry?.(record.id);
-              }}
-              className="relative flex items-center justify-center group/stop"
-              aria-label={t({
-                id: "transcriptions.item.stop_retry",
-                message: "Stop transcription",
-              })}
-              title={t({
-                id: "transcriptions.item.stop_retry",
-                message: "Stop transcription",
-              })}
-            >
-              <DotMatrix
-                rows={1}
-                cols={1}
-                activeDots={[0]}
-                dotSize={4}
-                gap={1}
-                color="var(--color-warning)"
-                className="opacity-70 transition-opacity group-hover/stop:opacity-20"
-              />
-              <X
-                size={10}
-                className="absolute text-cloud opacity-0 transition-opacity group-hover/stop:opacity-100"
-              />
-            </button>
-          ) : isError ? (
-            <AlertTriangle size={14} className="text-red-400/70" />
-          ) : (
-            <DotMatrix
-              rows={1}
-              cols={1}
-              activeDots={[0]}
-              dotSize={4}
-              gap={1}
-              color="var(--color-success)"
-              className="opacity-70"
-            />
-          )}
-        </div>
-
-        {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="ui-text-uppercase-meta font-medium ui-color-muted">
-              {dateStr}
-            </span>
-            <DotMatrix
-              rows={1}
-              cols={1}
-              activeDots={[0]}
-              dotSize={2}
-              gap={1}
-              color="var(--color-border-hover)"
-            />
-            <span className="ui-text-kbd ui-color-disabled">{timeStr}</span>
+          <div className="flex items-center gap-x-2 mb-1 ui-text-meta ui-color-disabled whitespace-nowrap overflow-hidden">
+            {showDate && (
+              <>
+                <span>{dateStr}</span>
+                <span aria-hidden="true" className="opacity-60">
+                  ·
+                </span>
+              </>
+            )}
+            <span>{timeStr}</span>
             {isError && (
               <>
-                <DotMatrix
-                  rows={1}
-                  cols={1}
-                  activeDots={[0]}
-                  dotSize={2}
-                  gap={1}
-                  color="var(--color-border-hover)"
-                />
-                <span className="ui-text-uppercase-meta font-medium ui-color-error-strong">
+                <span aria-hidden="true" className="opacity-60">
+                  ·
+                </span>
+                <span className="flex items-center gap-1 ui-color-error-strong font-medium">
+                  <AlertTriangle
+                    size={10}
+                    aria-hidden="true"
+                    className="opacity-80"
+                  />
                   {t({
                     id: "transcriptions.item.failed",
                     message: "Failed",
@@ -363,201 +309,113 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                 </span>
               </>
             )}
-            {isCloudModel && !isError && (
-              <>
-                <DotMatrix
-                  rows={1}
-                  cols={1}
-                  activeDots={[0]}
-                  dotSize={2}
-                  gap={1}
-                  color="var(--color-border-hover)"
-                />
-                <span className="flex items-center gap-1 ui-text-meta ui-color-cloud">
-                  <Cloud size={9} />
-                  {t({
-                    id: "transcriptions.item.cloud",
-                    message: "Cloud",
-                  })}
-                </span>
-              </>
-            )}
-            {record.llm_cleaned && !isError && !isCloudModel && (
-              <>
-                <DotMatrix
-                  rows={1}
-                  cols={1}
-                  activeDots={[0]}
-                  dotSize={2}
-                  gap={1}
-                  color="var(--color-border-hover)"
-                />
-                <span className="flex items-center gap-1 ui-text-meta ui-color-local">
-                  <Wand2 size={9} />
-                  {t({
-                    id: "transcriptions.item.enhanced",
-                    message: "Enhanced",
-                  })}
-                </span>
-              </>
-            )}
             {isRetrying && (
               <>
-                <DotMatrix
-                  rows={1}
-                  cols={1}
-                  activeDots={[0]}
-                  dotSize={2}
-                  gap={1}
-                  color="var(--color-border-hover)"
-                />
-                <span className="ui-text-uppercase-meta font-medium ui-color-cloud">
+                <span aria-hidden="true" className="opacity-60">
+                  ·
+                </span>
+                <button
+                  onClick={(event) => {
+                    void handleCancelRetry(event);
+                  }}
+                  disabled={isCancellingRetry || !onCancelRetry}
+                  className="flex items-center gap-1 ui-color-cloud font-medium group/stop hover:text-cloud-hover transition-colors"
+                  aria-label={t({
+                    id: "transcriptions.item.stop_retry",
+                    message: "Stop transcription",
+                  })}
+                  title={t({
+                    id: "transcriptions.item.stop_retry",
+                    message: "Stop transcription",
+                  })}
+                >
+                  <span className="relative inline-flex items-center justify-center w-[9px] h-[9px]">
+                    <DotMatrix
+                      rows={1}
+                      cols={1}
+                      activeDots={[0]}
+                      dotSize={3}
+                      gap={1}
+                      color="var(--color-warning)"
+                      className="opacity-80 transition-opacity group-hover/stop:opacity-0"
+                    />
+                    <X
+                      size={9}
+                      className="absolute opacity-0 transition-opacity group-hover/stop:opacity-100"
+                      aria-hidden="true"
+                    />
+                  </span>
                   {t({
                     id: "transcriptions.item.retrying",
                     message: "Retrying...",
                   })}
-                </span>
+                </button>
               </>
             )}
           </div>
 
           {isError ? (
-            <div className="flex items-start gap-2 rounded-md border border-red-500/20 bg-red-500/[0.06] px-2.5 py-2">
-              <p className="ui-text-body-sm ui-color-error-soft">
-                {errorMessage}
-              </p>
-            </div>
+            <p className="ui-text-body-sm ui-color-error-soft">
+              {errorMessage}
+            </p>
           ) : (
-            <div
-              ref={textRef}
-              className={`ui-text-body ui-color-secondary leading-relaxed select-text cursor-text overflow-hidden break-words ${!isExpanded ? "line-clamp-6" : ""}`}
-              onMouseUp={() => setSelectionText(captureSelectionText())}
-              onKeyUp={() => setSelectionText(captureSelectionText())}
-            >
-              <ReactMarkdown
-                components={markdownComponents}
-                remarkPlugins={[remarkBreaks]}
+            <>
+              <div
+                ref={textRef}
+                className={`ui-text-body ui-color-primary leading-relaxed select-text cursor-text overflow-hidden break-words ${!isExpanded ? "line-clamp-3" : ""}`}
+                onMouseUp={() => setSelectionText(captureSelectionText())}
+                onKeyUp={() => setSelectionText(captureSelectionText())}
               >
-                {displayText || ""}
-              </ReactMarkdown>
-            </div>
+                <ReactMarkdown
+                  components={markdownComponents}
+                  remarkPlugins={[remarkBreaks]}
+                >
+                  {displayText || ""}
+                </ReactMarkdown>
+              </div>
+              {(isOverflowing || isExpanded) && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="flex items-center gap-1 mt-1 -ml-0.5 px-1 py-0.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors rounded"
+                  aria-label={
+                    isExpanded
+                      ? t({
+                          id: "transcriptions.item.show_less",
+                          message: "Show less",
+                        })
+                      : t({
+                          id: "transcriptions.item.show_more",
+                          message: "Show more",
+                        })
+                  }
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp size={11} aria-hidden="true" />
+                      <span>
+                        {t({
+                          id: "transcriptions.item.show_less",
+                          message: "Show less",
+                        })}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={11} aria-hidden="true" />
+                      <span>
+                        {t({
+                          id: "transcriptions.item.show_more",
+                          message: "Show more",
+                        })}
+                      </span>
+                    </>
+                  )}
+                </button>
+              )}
+            </>
           )}
-
-          <div className="flex flex-wrap items-center gap-3 mt-1 ui-text-meta ui-color-disabled">
-            {!isError && (
-              <>
-                <span>{wordCountLabel}</span>
-                <DotMatrix
-                  rows={1}
-                  cols={1}
-                  activeDots={[0]}
-                  dotSize={2}
-                  gap={1}
-                  color="var(--color-border-hover)"
-                  aria-hidden="true"
-                />
-                <span>
-                  {formatDuration(record.audio_duration_seconds ?? 0)}
-                </span>
-                <DotMatrix
-                  rows={1}
-                  cols={1}
-                  activeDots={[0]}
-                  dotSize={2}
-                  gap={1}
-                  color="var(--color-border-hover)"
-                  aria-hidden="true"
-                />
-                <span>
-                  {t({
-                    id: "transcriptions.item.speech_model",
-                    message: `Speech: ${speechModelLabel}`,
-                  })}
-                </span>
-                {llmModelLabel && (
-                  <>
-                    <DotMatrix
-                      rows={1}
-                      cols={1}
-                      activeDots={[0]}
-                      dotSize={2}
-                      gap={1}
-                      color="var(--color-border-hover)"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {t({
-                        id: "transcriptions.item.llm_model",
-                        message: `LLM: ${llmModelLabel}`,
-                      })}
-                    </span>
-                  </>
-                )}
-                {modeLabel && (
-                  <>
-                    <DotMatrix
-                      rows={1}
-                      cols={1}
-                      activeDots={[0]}
-                      dotSize={2}
-                      gap={1}
-                      color="var(--color-border-hover)"
-                      aria-hidden="true"
-                    />
-                    <span>
-                      {t({
-                        id: "transcriptions.item.mode",
-                        message: `Mode: ${modeLabel}`,
-                      })}
-                    </span>
-                  </>
-                )}
-              </>
-            )}
-
-            {(isOverflowing || isExpanded) && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="flex items-center gap-1 p-1 -ml-1 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                aria-label={
-                  isExpanded
-                    ? t({
-                        id: "transcriptions.item.show_less",
-                        message: "Show less",
-                      })
-                    : t({
-                        id: "transcriptions.item.show_more",
-                        message: "Show more",
-                      })
-                }
-              >
-                {isExpanded ? (
-                  <>
-                    <ChevronUp size={12} aria-hidden="true" />
-                    <span>
-                      {t({
-                        id: "transcriptions.item.show_less",
-                        message: "Show less",
-                      })}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown size={12} aria-hidden="true" />
-                    <span>
-                      {t({
-                        id: "transcriptions.item.show_more",
-                        message: "Show more",
-                      })}
-                    </span>
-                  </>
-                )}
-              </button>
-            )}
-          </div>
         </div>
 
-        {/* Actions - Copy and menu buttons */}
         {!isRetrying && !isRetryingLlm && !isUndoingLlm && (
           <div
             className="relative shrink-0 flex items-center gap-1"
@@ -669,17 +527,35 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
                   transition={{ duration: 0.12 }}
-                  className="fixed z-[100] min-w-[160px] rounded-lg border border-border-secondary bg-surface-overlay shadow-xl shadow-black/50 overflow-hidden"
-                  style={{
-                    top: menuRef.current
-                      ? menuRef.current.getBoundingClientRect().bottom + 4
-                      : 0,
-                    right: menuRef.current
-                      ? window.innerWidth -
-                        menuRef.current.getBoundingClientRect().right
-                      : 0,
-                  }}
+                  className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[200px] origin-top-right"
                 >
+                  {(speechModelLabel || modeLabel || llmModelLabel) && (
+                    <>
+                      <div className="px-3 pt-2.5 pb-2 space-y-0.5">
+                        <div className="ui-text-meta ui-color-disabled">
+                          {dateStr} · {timeStr}
+                        </div>
+                        {speechModelLabel && (
+                          <div
+                            className={`ui-text-meta truncate ${isCloudModel ? "ui-color-cloud" : "ui-color-secondary"}`}
+                          >
+                            {speechModelLabel}
+                          </div>
+                        )}
+                        {llmModelLabel && record.llm_cleaned && (
+                          <div className="ui-text-meta ui-color-local truncate">
+                            {llmModelLabel}
+                          </div>
+                        )}
+                        {modeLabel && (
+                          <div className="ui-text-meta ui-color-secondary truncate">
+                            {modeLabel}
+                          </div>
+                        )}
+                      </div>
+                      <div className="h-px bg-border-secondary mx-2" />
+                    </>
+                  )}
                   {selectionText.trim().length > 0 && (
                     <>
                       <button
@@ -759,8 +635,16 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     )}
 
                   {(canRetryFromAudio ||
-                    (!isError && onRetryLlm && showLlmButtons && !isCloudModel) ||
-                    (!isError && record.llm_cleaned && record.raw_text && onUndoLlm && showLlmButtons && !isCloudModel)) && (
+                    (!isError &&
+                      onRetryLlm &&
+                      showLlmButtons &&
+                      !isCloudModel) ||
+                    (!isError &&
+                      record.llm_cleaned &&
+                      record.raw_text &&
+                      onUndoLlm &&
+                      showLlmButtons &&
+                      !isCloudModel)) && (
                     <div className="h-px bg-border-secondary mx-2" />
                   )}
                   <button
@@ -782,7 +666,6 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
           </div>
         )}
 
-        {/* Loading state indicators */}
         {isRetryingLlm && (
           <div className="flex items-center gap-1.5 ui-text-meta ui-color-local">
             <RotateCw size={12} className="animate-spin" />
@@ -806,10 +689,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
           </div>
         )}
       </div>
-
-      {/* Subtle divider */}
-      <div className="h-px ui-gradient-divider mx-4" />
-    </motion.div>
+    </div>
   );
 };
 

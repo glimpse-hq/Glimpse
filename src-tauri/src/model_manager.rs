@@ -110,7 +110,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         size_mb: 880.0,
         files: &WHISPER_LARGE_V3_TURBO_Q8_FILES,
         engine: LocalModelEngine::Whisper,
-        variant: "Q8_1",
+        variant: "Q8_0",
         storage: ModelStorage::File {
             artifact: "ggml-large-v3-turbo-q8_0.bin",
         },
@@ -139,7 +139,7 @@ pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
         size_mb: 895.0,
         files: &NEMOTRON_STREAMING_FILES,
         engine: LocalModelEngine::Nemotron,
-        variant: "INT8",
+        variant: "Int8",
         storage: ModelStorage::Directory,
         tags: &["English", "Streaming"],
         capabilities: &[MODEL_CAPABILITY_STREAMING],

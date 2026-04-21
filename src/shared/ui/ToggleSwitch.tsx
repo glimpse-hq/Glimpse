@@ -41,7 +41,7 @@ const ToggleSwitch = ({
       aria-label={ariaLabel}
       disabled={disabled}
       className={`${config.track} rounded-full transition-colors relative overflow-hidden ${
-        enabled ? "bg-cloud" : "bg-border-secondary"
+        enabled ? "bg-[var(--color-toggle-on)]" : "bg-[var(--color-border-secondary)]"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
       <motion.div

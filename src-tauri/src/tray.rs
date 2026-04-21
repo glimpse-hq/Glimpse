@@ -343,8 +343,8 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
         reset_close_flag = true;
         WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
             .title("Glimpse Settings")
-            .inner_size(900.0, 650.0)
-            .min_inner_size(625.0, 400.0)
+            .inner_size(900.0, 750.0)
+            .min_inner_size(900.0, 750.0)
             .resizable(true)
             .visible(false)
             .hidden_title(true)

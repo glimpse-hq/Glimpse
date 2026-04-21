@@ -42,7 +42,7 @@ export const getFileExtension = (path: string) => {
 };
 
 export const uniquePaths = (paths: string[]) => Array.from(new Set(paths));
-export const formatLibraryName = (name: string) => name.replace(/[_\.]/g, " ");
+export const formatLibraryName = (name: string) => name.replace(/[_.]/g, " ");
 export const sanitizeFileName = (value: string) =>
     value.trim().replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ");
 

@@ -44,22 +44,19 @@ const SidebarItem = ({
 }) => (
   <button
     onClick={onClick}
-    className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${
+    data-active={active ? "true" : "false"}
+    className={`ui-nav-item group h-9 pl-[17px] pr-3 mb-[2px] ${
       collapsed ? "gap-0" : "gap-3"
-    } ${
-      active
-        ? "bg-surface-elevated text-content-primary"
-        : "text-content-muted hover:bg-surface-overlay hover:text-content-secondary"
     }`}
   >
-    <div
-      className={`flex items-center justify-center w-[18px] shrink-0 ${active ? "text-content-primary" : "group-hover:text-content-secondary"}`}
-    >
+    <div className="flex items-center justify-center w-[18px] shrink-0">
       {icon}
     </div>
     <span
       style={{ width: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }}
-      className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+      className={`ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out ${
+        active ? "font-medium" : "font-normal"
+      }`}
     >
       {label}
     </span>
@@ -86,7 +83,6 @@ const Home = () => {
     null,
   );
 
-  // Query-based state
   const { data: settings } = useSettings();
   const { data: updateStatus } = useUpdateStatus();
   const { data: appInfoData } = useAppInfo();
@@ -102,7 +98,6 @@ const Home = () => {
       ? currentUser.prefs.avatar
       : null;
 
-  // Navigation + drag-drop event listeners (settings data now comes from useSettings query)
   useEffect(() => {
     let cancelled = false;
     let unlistenNavigate: UnlistenFn | null = null;
@@ -196,7 +191,6 @@ const Home = () => {
     };
   }, []);
 
-  // Update status now comes from useUpdateStatus() query hook
   useClickOutside(
     supportMenuRef,
     () => setShowSupportPopup(false),
@@ -268,23 +262,25 @@ const Home = () => {
   };
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-surface-tertiary font-sans ui-color-on-solid select-none">
+    <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">
       <aside
         data-app-sidebar
         style={{ width: sidebarWidth }}
-        className="relative flex flex-col border-r border-border-primary bg-surface-secondary shrink-0 transition-[width] duration-200 ease-out will-change-[width]"
+        className="relative z-30 flex flex-col border-r border-border-primary bg-[var(--color-bg-primary)]/85 backdrop-blur-2xl shrink-0 transition-[width] duration-200 ease-out will-change-[width]"
       >
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
-        <div className="pl-6 pb-6 pt-1">
-          <div className="flex items-center gap-3 h-6">
-            <div className="shrink-0">
+        <div className="px-2 pb-6 pt-1">
+          <div
+            className={`flex items-center h-6 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"}`}
+          >
+            <div className="flex items-center justify-center w-[18px] shrink-0">
               <DotMatrix
                 rows={2}
                 cols={2}
                 activeDots={logoActiveDots}
-                dotSize={4}
-                gap={3}
+                dotSize={4.5}
+                gap={3.5}
                 color={logoColor}
               />
             </div>
@@ -300,40 +296,38 @@ const Home = () => {
           </div>
         </div>
 
-        <nav className="flex-1 px-2 space-y-1">
-          <SidebarItem
-            icon={<HomeIcon size={18} />}
-            label={t({
-              id: "home.sidebar.home",
-              message: "Home",
-            })}
-            active={activeView === "home"}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setActiveView("home")}
-          />
-          <SidebarItem
-            icon={<Book size={18} />}
-            label={t({
-              id: "home.sidebar.dictionary",
-              message: "Dictionary",
-            })}
-            active={activeView === "dictionary"}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setActiveView("dictionary")}
-          />
-          <SidebarItem
-            icon={<Brain size={18} />}
-            label={t({
-              id: "home.sidebar.personalization",
-              message: "Personalization",
-            })}
-            active={activeView === "brain"}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setActiveView("brain")}
-          />
-
-          <div className="pt-3">
-            <div className="h-px bg-border-primary mx-4 mb-3" />
+        <nav className="flex-1 flex flex-col px-2">
+          <div className="space-y-1">
+            <SidebarItem
+              icon={<HomeIcon size={18} />}
+              label={t({
+                id: "home.sidebar.home",
+                message: "Home",
+              })}
+              active={activeView === "home"}
+              collapsed={isSidebarCollapsed}
+              onClick={() => setActiveView("home")}
+            />
+            <SidebarItem
+              icon={<Book size={18} />}
+              label={t({
+                id: "home.sidebar.dictionary",
+                message: "Dictionary",
+              })}
+              active={activeView === "dictionary"}
+              collapsed={isSidebarCollapsed}
+              onClick={() => setActiveView("dictionary")}
+            />
+            <SidebarItem
+              icon={<Brain size={18} />}
+              label={t({
+                id: "home.sidebar.personalization",
+                message: "Personalization",
+              })}
+              active={activeView === "brain"}
+              collapsed={isSidebarCollapsed}
+              onClick={() => setActiveView("brain")}
+            />
             <SidebarItem
               icon={<Library size={18} />}
               label={t({
@@ -345,6 +339,7 @@ const Home = () => {
               onClick={() => setActiveView("library")}
             />
           </div>
+          <div className="flex-1" />
         </nav>
 
         <div className="p-2 space-y-1 border-t border-border-primary">
@@ -376,7 +371,7 @@ const Home = () => {
           <div className="relative" ref={supportMenuRef}>
             <button
               onClick={() => setShowSupportPopup(!showSupportPopup)}
-              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:bg-surface-overlay hover:text-content-secondary ${
+              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:bg-[var(--surface-interactive)] hover:text-content-secondary ${
                 isSidebarCollapsed ? "gap-0" : "gap-3"
               }`}
               aria-expanded={showSupportPopup}
@@ -410,7 +405,7 @@ const Home = () => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.95 }}
                   transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="absolute bottom-full left-2 mb-2 w-56 bg-surface-surface border border-border-secondary rounded-xl shadow-xl overflow-hidden z-50"
+                  className="ui-surface-menu absolute bottom-full left-2 mb-2 w-56 z-[60]"
                 >
                   <div className="p-3 border-b border-border-primary">
                     <div className="flex items-center justify-between">
@@ -438,7 +433,7 @@ const Home = () => {
                     >
                       <HelpCircle
                         size={16}
-                        className="ui-color-warning-strong"
+                        style={{ color: "var(--color-support-help)" }}
                       />
                       <div>
                         <div className="ui-text-body-sm-strong ui-color-primary">
@@ -462,7 +457,7 @@ const Home = () => {
                       onClick={() => setShowSupportPopup(false)}
                       className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group"
                     >
-                      <Bug size={16} className="text-content-secondary" />
+                      <Bug size={16} className="ui-color-secondary" />
                       <div>
                         <div className="ui-text-body-sm-strong ui-color-primary">
                           {t({
@@ -486,7 +481,10 @@ const Home = () => {
                       }}
                       className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
                     >
-                      <Info size={16} className="ui-color-brand" />
+                      <Info
+                        size={16}
+                        style={{ color: "var(--color-support-info)" }}
+                      />
                       <div>
                         <div className="ui-text-body-sm-strong ui-color-primary">
                           {t({
@@ -514,7 +512,7 @@ const Home = () => {
                 setSettingsTab("about");
                 setIsSettingsOpen(true);
               }}
-              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} hover:bg-surface-overlay transition-colors`}
+              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} hover:bg-[var(--surface-interactive)] transition-colors`}
               style={{ color: "var(--color-accent)" }}
             >
               <div className="flex items-center justify-center w-[18px] shrink-0">
@@ -556,7 +554,7 @@ const Home = () => {
               setSettingsTab("account");
               setIsSettingsOpen(true);
             }}
-            className="fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-primary bg-surface-surface hover:bg-surface-overlay hover:border-border-secondary transition-colors z-10"
+            className="fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-primary bg-surface-surface hover:bg-[var(--surface-interactive)] hover:border-border-secondary transition-colors z-10 shadow-[var(--shadow-sm)]"
           >
             <div className="w-6 h-6 rounded-full bg-surface-elevated border border-border-secondary flex items-center justify-center overflow-hidden">
               {currentUserAvatar ? (
@@ -580,21 +578,13 @@ const Home = () => {
           </button>
         )}
 
-        <div className="flex-1 flex flex-col px-12 pb-16 min-h-0">
+        <div className="flex-1 flex flex-col px-8 pb-6 min-h-0">
           <div
-            className={`w-full max-w-2xl mx-auto pt-8 ${activeView === "home" ? "" : "hidden"}`}
+            className={`w-full max-w-[680px] mx-auto pt-12 flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
           >
-            <div className="mb-8">
-              <h1 className="ui-text-display ui-color-primary tracking-tight">
-                {getGreeting()}
-              </h1>
-              <p className="mt-2 ui-text-title ui-color-muted pl-[2px]">
-                {t({
-                  id: "home.ready_subtitle",
-                  message: "Ready when you are",
-                })}
-              </p>
-            </div>
+            <h1 className="ui-text-display font-normal ui-color-primary tracking-tight mb-8 shrink-0">
+              {getGreeting()}
+            </h1>
 
             <TranscriptionList
               showLlmButtons={showCleanupButtons}

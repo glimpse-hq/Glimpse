@@ -1,3 +1,18 @@
+0.8.1
+
+### Features
+- Added Launch at Login in Settings > App
+- Added Light mode
+
+### Changes
+- Big UI overhaul across the app.
+- Auto-delete recordings now has a confirmation step when changing to a more aggressive option.
+
+### Fixes
+- Mic permissions in Settings should behave better on newer macOS versions.
+- Cleaned up localization catalogs again, and French has been removed for now until it's properly reviewed. #CallingAllMultilingualPeople
+
+---
 0.8.0
 
 ### Features

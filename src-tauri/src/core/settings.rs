@@ -33,6 +33,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub edit_mode_enabled: bool,
     pub media_control_enabled: bool,
     pub auto_update_enabled: bool,
+    pub auto_launch_enabled: bool,
     pub recording_prune_policy: RecordingPrunePolicy,
     pub analytics_enabled: bool,
 }
@@ -212,12 +213,34 @@ pub(crate) fn update_settings(
     next.edit_mode_enabled = args.edit_mode_enabled;
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
+    next.auto_launch_enabled = args.auto_launch_enabled;
     next.recording_prune_policy = args.recording_prune_policy;
     next.analytics_enabled = args.analytics_enabled;
 
-    let next = state
-        .persist_settings(next)
-        .map_err(|err| err.to_string())?;
+    let launch_changed = prev.auto_launch_enabled != next.auto_launch_enabled;
+    if launch_changed {
+        crate::sync_launch_at_login(app, next.auto_launch_enabled)?;
+    }
+    let requested_auto_launch_enabled = next.auto_launch_enabled;
+
+    let next = match state.persist_settings(next) {
+        Ok(next) => next,
+        Err(err) => {
+            if launch_changed {
+                if let Err(rollback_err) = crate::sync_launch_at_login(app, prev.auto_launch_enabled)
+                {
+                    return Err(format!(
+                        "{} (also failed to roll back launch at login from {} back to {}: {})",
+                        err,
+                        requested_auto_launch_enabled,
+                        prev.auto_launch_enabled,
+                        rollback_err
+                    ));
+                }
+            }
+            return Err(err.to_string());
+        }
+    };
 
     state.request_preflight_refresh();
 
@@ -275,6 +298,7 @@ mod tests {
             edit_mode_enabled: false,
             media_control_enabled: true,
             auto_update_enabled: true,
+            auto_launch_enabled: false,
             recording_prune_policy: RecordingPrunePolicy::Never,
             analytics_enabled: true,
         }
@@ -324,5 +348,4 @@ mod tests {
 
         assert_eq!(err, "Choose a language model before enabling AI features");
     }
-
 }

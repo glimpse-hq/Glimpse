@@ -10,6 +10,8 @@ interface DotMatrixProps extends React.HTMLAttributes<HTMLDivElement> {
     gap?: number;
     color?: string;
     animated?: boolean;
+    morphOnActive?: boolean;
+    activeScale?: number;
 }
 
 const DotMatrix: React.FC<DotMatrixProps> = ({
@@ -21,6 +23,8 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
     gap = 4,
     color = "currentColor",
     animated = false,
+    morphOnActive = false,
+    activeScale = 1,
     ...rest
 }) => {
     const dots = useMemo(() => {
@@ -28,6 +32,10 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
         return Array.from({ length: total }).map((_, i) => {
             const isActive = activeDots.includes(i);
             const DotComponent = animated ? motion.div : "div";
+
+            const isMorphed = isActive && morphOnActive;
+            const borderRadius = isMorphed ? `${dotSize * 0.25}px` : "50%";
+            const scale = isActive ? activeScale : 1;
 
             return (
                 <DotComponent
@@ -37,9 +45,11 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
                         height: dotSize,
                         backgroundColor: color,
                         opacity: isActive ? 1 : 0.15,
-                        borderRadius: "50%",
+                        borderRadius: borderRadius,
+                        transform: `scale(${scale})`,
+                        transition: "border-radius 0.4s ease-out, opacity 0.3s ease-out, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
                     }}
-                    {...(animated && isActive ? {
+                    {...(animated && isActive && !morphOnActive ? {
                         initial: { scale: 0.8, opacity: 0 },
                         animate: { scale: 1, opacity: 1 },
                         transition: { delay: i * 0.002, duration: 0.2 }
@@ -47,11 +57,11 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
                 />
             );
         });
-    }, [rows, cols, activeDots, dotSize, color, animated]);
+    }, [rows, cols, activeDots, dotSize, color, animated, morphOnActive, activeScale]);
 
     return (
         <div
-            className={`grid ${className}`}
+            className={`grid place-items-center ${className}`}
             style={{
                 gridTemplateColumns: `repeat(${cols}, ${dotSize}px)`,
                 gap: gap,

@@ -159,8 +159,10 @@ export function ReadyStep({
       </div>
 
       <button
+        type="button"
         onClick={onComplete}
         disabled={captureActive || isCompleting}
+        aria-busy={isCompleting}
         className="mt-6 flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-2.5 ui-text-body-lg font-semibold ui-color-on-warning hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isCompleting

@@ -1,5 +1,6 @@
 export type TranscriptionMode = "cloud" | "local";
 export type TextSizeMode = "small" | "default" | "large";
+export type ThemeMode = "system" | "light" | "dark";
 export type AppLocaleSetting = "system" | string;
 
 export type RecordingPrunePolicy =
@@ -70,6 +71,7 @@ export type StoredSettings = {
     edit_mode_enabled: boolean;
     media_control_enabled: boolean;
     auto_update_enabled: boolean;
+    auto_launch_enabled: boolean;
     recording_prune_policy: RecordingPrunePolicy;
     analytics_enabled: boolean;
     analytics_install_id: string;

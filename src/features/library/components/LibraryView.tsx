@@ -68,7 +68,6 @@ const LibraryView = ({
 
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
-    // dateFilter was removed in redesign
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
     const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>({});
     const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -297,7 +296,7 @@ const LibraryView = ({
 
     return (
         <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
-            <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4 pb-4 pl-2 pr-6 text-left">
+            <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4 pb-4 px-0 text-left">
                 <header className="flex flex-col gap-4 mb-4 mt-2 md:-mt-6">
                     <div className="flex min-w-0 items-start gap-3">
                         <DotMatrix
@@ -306,7 +305,7 @@ const LibraryView = ({
                             activeDots={[0, 1, 2, 4]}
                             dotSize={3}
                             gap={3}
-                            color="var(--color-accent)"
+                            color="var(--color-section-marker-alt)"
                         />
                         <div className="min-w-0 flex-1">
                             <h2 className="ui-text-screen-title ui-color-primary tracking-tight">
@@ -331,7 +330,7 @@ const LibraryView = ({
                         </button>
 
                         <div className="relative min-w-0 w-full group">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted group-focus-within:text-[var(--color-accent)] transition-colors" />
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 ui-color-muted transition-colors" />
                             <input
                                 type="text"
                                 placeholder={t({
@@ -370,7 +369,7 @@ const LibraryView = ({
             <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-3 pt-1">
                 <div key="library-list" className="flex flex-col gap-6 w-full">
                     <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
-                        <div className="grid min-w-0 justify-start gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,220px),220px))]">
+                        <div className="grid min-w-0 gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))]">
                         {isLoading && items.length === 0 && (
                             <div className="col-span-full py-12 flex items-center justify-center">
                                 <DotMatrix

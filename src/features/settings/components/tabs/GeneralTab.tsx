@@ -313,7 +313,7 @@ const GeneralTab = ({
       <div className="space-y-1.5">
         <div className="flex h-5 items-center">
           <div className="flex items-center gap-1">
-            <label className="ui-text-label-strong ui-color-muted leading-none">
+            <label className="ui-text-label-strong ui-color-primary leading-none">
               {t({
                 id: "settings.general.transcription_language",
                 message: "Transcription Language",
@@ -331,7 +331,7 @@ const GeneralTab = ({
                 <Info size={10} aria-hidden="true" />
               </button>
               <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-10">
-                <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-56 shadow-lg leading-tight">
+                <div className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight">
                   <p>
                     {t({
                       id: "settings.general.language_info.installed",
@@ -386,6 +386,7 @@ const GeneralTab = ({
               id: "settings.general.search_language",
               message: "Search language...",
             })}
+            buttonClassName="min-h-[38px] px-3 py-2 ui-text-body-sm"
           />
         </div>
       </div>
@@ -506,20 +507,17 @@ const GeneralTab = ({
                 />
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <span
-                  className={`ui-text-meta ${
-                    aiFeaturesDisabled
-                      ? "ui-color-warning-strong"
-                      : "ui-color-disabled"
-                  }`}
-                >
+                <span className="ui-text-meta ui-color-muted">
                   {aiFeaturesDisabled ? (
                     <>
-                      Enable and configure a language model in{" "}
+                      {t({
+                        id: "settings.general.edit_mode.configure_prefix",
+                        message: "Configure a language model in",
+                      })}{" "}
                       <button
                         type="button"
                         onClick={onOpenModelsTab}
-                        className="underline underline-offset-2 hover:text-cloud transition-colors"
+                        className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
                       >
                         {t({
                           id: "settings.general.models_tab",
@@ -622,20 +620,17 @@ const GeneralTab = ({
                 />
               </div>
               <div className="flex items-center justify-between mt-0.5">
-                <span
-                  className={`ui-text-meta ${
-                    aiFeaturesDisabled
-                      ? "ui-color-warning-strong"
-                      : "ui-color-disabled"
-                  }`}
-                >
+                <span className="ui-text-meta ui-color-muted">
                   {aiFeaturesDisabled ? (
                     <>
-                      Enable and configure a language model in{" "}
+                      {t({
+                        id: "settings.general.cleanup.configure_prefix",
+                        message: "Configure a language model in",
+                      })}{" "}
                       <button
                         type="button"
                         onClick={onOpenModelsTab}
-                        className="underline underline-offset-2 hover:text-cloud transition-colors"
+                        className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
                       >
                         {t({
                           id: "settings.general.models_tab",

@@ -58,17 +58,18 @@ const engineDescription = (engineId: string, engineLabel: string) => {
   );
 };
 
+const getSizeColorVar = (sizeMb: number): string => {
+  if (sizeMb < 200) return "var(--color-size-small)";
+  if (sizeMb < 1000) return "var(--color-size-medium)";
+  return "var(--color-size-large)";
+};
+
 const enginePriority = (engineId: string): number => {
   if (engineId === "whisper") return 0;
   if (engineId === "nvidia") return 1;
   return 2;
 };
 
-const getSizeColor = (sizeMb: number): string => {
-  if (sizeMb < 500) return "ui-color-success-strong";
-  if (sizeMb < 1500) return "ui-color-warning-strong";
-  return "ui-color-error-strong";
-};
 
 type ModelsTabProps = {
   variants: Variants;
@@ -193,7 +194,7 @@ const ModelsTab = ({
               message: "Manage transcription engines and AI provider settings.",
             })}
           </p>
-          <div className="flex gap-0.5 p-0.5 rounded-md bg-surface-surface border border-border-primary shrink-0">
+          <div className="flex gap-0.5 p-0.5 rounded-md bg-[var(--color-bg-primary)] border border-border-primary shrink-0">
             {categories.map((cat) => {
               const isActive = activeCategory === cat.id;
               const Icon = cat.icon;
@@ -204,13 +205,13 @@ const ModelsTab = ({
                   className={`relative flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-[5px] ui-text-meta transition-colors ${
                     isActive
                       ? "ui-color-primary"
-                      : "ui-color-disabled hover:ui-color-muted"
+                      : "ui-color-muted hover:text-content-primary"
                   }`}
                 >
                   {isActive && (
                     <motion.div
                       layoutId="models-category-pill"
-                      className="absolute inset-0 rounded-[5px] bg-surface-elevated border border-border-primary shadow-[0_1px_0_0_rgba(0,0,0,0.4),inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+                      className="absolute inset-0 rounded-[5px] bg-surface-surface border border-border-secondary shadow-[var(--shadow-sm)]"
                       transition={{ type: "spring", stiffness: 500, damping: 35 }}
                     />
                   )}
@@ -257,7 +258,7 @@ const ModelsTab = ({
                   message: "Transcription Engines",
                 })}
               </h3>
-              <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden divide-y divide-border-primary shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+              <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden divide-y divide-border-primary shadow-[var(--shadow-sm)]">
                 {groupedModels.map((group, groupIndex) => {
                   const isExpanded = expandedEngine === group.id;
                   const installedCount = group.models.filter(
@@ -298,7 +299,7 @@ const ModelsTab = ({
                               </span>
                             )}
                             {hasActiveModel && activeModel && (
-                              <span className="ui-text-meta ui-color-cloud">
+                              <span className="ui-text-meta ui-color-muted">
                                 {activeModel.label}
                               </span>
                             )}
@@ -309,11 +310,13 @@ const ModelsTab = ({
                         </div>
                         <div className="flex items-center gap-2">
                           {hasActiveModel && (
-                            <Check
-                              size={12}
-                              aria-hidden="true"
-                              className="ui-color-cloud"
-                            />
+                            <span className="flex items-center gap-1 ui-text-meta ui-color-local">
+                              <Check size={12} aria-hidden="true" />
+                              {t({
+                                id: "settings.models.active",
+                                message: "Active",
+                              })}
+                            </span>
                           )}
                           {!hasActiveModel && installedCount > 0 && (
                             <span className="ui-text-meta ui-color-disabled">
@@ -374,7 +377,7 @@ const ModelsTab = ({
             transition={{ duration: 0.15 }}
             className="space-y-5"
           >
-            <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]">
+            <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden shadow-[var(--shadow-sm)]">
               <div className="px-5 py-8 flex flex-col items-center text-center">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-elevated border border-border-primary mb-3">
                   <Settings2 size={18} className="ui-color-disabled" aria-hidden="true" />
@@ -437,9 +440,7 @@ const ModelRow = ({
   );
 
   return (
-    <div
-      className="rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-elevated/50"
-    >
+    <div className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-elevated/50">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -455,7 +456,8 @@ const ModelRow = ({
               </span>
             )}
             {isActive && (
-              <span className="ui-text-meta ui-color-cloud">
+              <span className="flex items-center gap-1 ui-text-meta ui-color-local">
+                <Check size={10} aria-hidden="true" />
                 {t({
                   id: "settings.models.active",
                   message: "Active",
@@ -464,13 +466,16 @@ const ModelRow = ({
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={`ui-text-meta ${getSizeColor(model.size_mb)}`}>
+            <span
+              className="ui-text-meta whitespace-nowrap tabular-nums"
+              style={{ color: getSizeColorVar(model.size_mb) }}
+            >
               {formatBytes(model.size_mb * 1024 * 1024)}
             </span>
             {visibleTags.length > 0 && (
               <>
-                <span className="ui-text-meta ui-color-disabled">·</span>
-                <span className="ui-text-meta ui-color-disabled">
+                <span className="ui-text-meta ui-color-disabled shrink-0">·</span>
+                <span className="ui-text-meta ui-color-muted truncate">
                   {visibleTags.join(", ")}
                 </span>
               </>
@@ -478,11 +483,54 @@ const ModelRow = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {(isDownloading || showError || isCancelled) && (
+          <div className="flex flex-col items-end justify-center mr-2 min-w-[160px]">
+            <ModelProgress
+              percent={percent}
+              status={progress?.status ?? "idle"}
+            />
+            <div className="mt-1 flex h-3 w-full items-center justify-end">
+              {isDownloading && (
+                <p className="ui-text-micro ui-color-disabled tabular-nums truncate max-w-[150px] text-right">
+                  {progress?.percent?.toFixed(0)}% ·{" "}
+                  {
+                    (
+                      progress as Extract<
+                        DownloadEvent,
+                        { status: "downloading" }
+                      >
+                    ).file
+                  }
+                </p>
+              )}
+              {showError && (
+                <p className="ui-text-micro ui-color-error flex items-center justify-end gap-1 w-full">
+                  <AlertCircle size={9} className="shrink-0" />
+                  <span className="truncate">
+                    {
+                      (progress as Extract<DownloadEvent, { status: "error" }>)
+                        .message
+                    }
+                  </span>
+                </p>
+              )}
+              {isCancelled && (
+                <p className="ui-text-micro ui-color-disabled text-right w-full">
+                  {t({
+                    id: "settings.models.cancelled",
+                    message: "Cancelled",
+                  })}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 shrink-0">
           {installed && !isActive && (
             <button
               onClick={onUse}
-              className="px-2.5 py-1 rounded-md border border-border-primary bg-surface-surface ui-text-button-sm ui-color-secondary shadow-[0_2px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-local-30 hover:bg-local-5 hover:text-local hover:shadow-[0_1px_0_-1px_rgba(165,179,254,0.4),inset_0_1px_0_0_rgba(165,179,254,0.1)] hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none transition-all duration-100"
+              className="px-2.5 py-1 rounded-md border border-border-primary bg-surface-surface ui-text-button-sm ui-color-secondary hover:border-local-30 hover:bg-local-5 hover:text-local transition-colors"
             >
               {t({
                 id: "settings.models.use",
@@ -543,47 +591,6 @@ const ModelRow = ({
           )}
         </div>
       </div>
-
-      {(isDownloading || showError || isCancelled) && (
-        <div className="mt-2">
-          <ModelProgress
-            percent={percent}
-            status={progress?.status ?? "idle"}
-          />
-          <div className="h-3 flex items-center mt-1">
-            {isDownloading && (
-              <p className="ui-text-micro ui-color-disabled tabular-nums truncate">
-                {progress?.percent?.toFixed(0)}% ·{" "}
-                {
-                  (
-                    progress as Extract<
-                      DownloadEvent,
-                      { status: "downloading" }
-                    >
-                  ).file
-                }
-              </p>
-            )}
-            {showError && (
-              <p className="ui-text-micro ui-color-error flex items-center gap-1">
-                <AlertCircle size={9} />
-                {
-                  (progress as Extract<DownloadEvent, { status: "error" }>)
-                    .message
-                }
-              </p>
-            )}
-            {isCancelled && (
-              <p className="ui-text-micro ui-color-disabled">
-                {t({
-                  id: "settings.models.cancelled",
-                  message: "Cancelled",
-                })}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -619,7 +626,9 @@ const ModelProgress = ({ percent, status }: ModelProgressProps) => {
       dotSize={2}
       gap={2}
       color={color}
-      className="opacity-60"
+      className={status === "downloading" ? "opacity-80" : "opacity-60"}
+      morphOnActive={true}
+      activeScale={1.0}
     />
   );
 };

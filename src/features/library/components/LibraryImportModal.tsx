@@ -1,8 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
+import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../../../shared/lib/modelCapabilities";
 import type { LibraryImportOptions, ModelInfo } from "../../../types";
 
@@ -92,7 +93,7 @@ const LibraryImportModal = ({
                 exit={{ opacity: 0, scale: 0.96, y: 20 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
                 className="relative w-[520px] max-w-[92vw] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
                     <div>
@@ -175,18 +176,15 @@ const LibraryImportModal = ({
                                 })}
                             </div>
                         </div>
-                        <button
-                            onClick={() => setStoreOriginal(!storeOriginal)}
-                            className={`relative w-10 h-5 rounded-full transition-colors ${storeOriginal ? "bg-cloud" : "bg-border-secondary"}`}
-                            role="switch"
-                            aria-checked={storeOriginal}
-                        >
-                            <motion.div
-                                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs"
-                                animate={{ left: storeOriginal ? "calc(100% - 18px)" : "2px" }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                        </button>
+                        <ToggleSwitch
+                            enabled={storeOriginal}
+                            onToggle={() => setStoreOriginal(!storeOriginal)}
+                            ariaLabel={t({
+                                id: "library.import.store_original.aria",
+                                message: "Store original",
+                            })}
+                            size="md"
+                        />
                     </div>
 
                     <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
@@ -209,19 +207,16 @@ const LibraryImportModal = ({
                                     })}
                             </div>
                         </div>
-                        <button
-                            onClick={() => timestampsSupported && setShowTimestamps(!showTimestamps)}
-                            className={`relative w-10 h-5 rounded-full transition-colors ${showTimestamps ? "bg-cloud" : "bg-border-secondary"} ${!timestampsSupported ? "opacity-40 cursor-not-allowed" : ""}`}
-                            role="switch"
-                            aria-checked={showTimestamps}
+                        <ToggleSwitch
+                            enabled={showTimestamps}
+                            onToggle={() => timestampsSupported && setShowTimestamps(!showTimestamps)}
+                            ariaLabel={t({
+                                id: "library.import.show_timestamps.aria",
+                                message: "Show timestamps",
+                            })}
                             disabled={!timestampsSupported}
-                        >
-                            <motion.div
-                                className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-xs"
-                                animate={{ left: showTimestamps ? "calc(100% - 18px)" : "2px" }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            />
-                        </button>
+                            size="md"
+                        />
                     </div>
 
                 </div>

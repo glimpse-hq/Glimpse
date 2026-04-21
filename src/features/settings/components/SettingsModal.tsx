@@ -83,7 +83,7 @@ const SettingsModal = ({
           />
 
           <motion.div
-            className="relative flex max-h-[80vh] h-[625px] w-[850px] overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50"
+            className="relative flex h-[625px] w-[850px] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50"
             variants={modalVariants}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
@@ -129,6 +129,7 @@ const SettingsModal = ({
                       message: "Account",
                     })}
                     active={form.activeTab === "account"}
+                    disabled
                     onClick={() => form.setActiveTab("account")}
                   />
                 </div>
@@ -290,8 +291,13 @@ const SettingsModal = ({
                       micPermission={form.micPermission}
                       accessibilityPermission={form.accessibilityPermission}
                       inputMonitoringPermission={form.inputMonitoringPermission}
+                      onRequestMicrophonePermission={
+                        form.handleRequestMicrophonePermission
+                      }
                       textSizeMode={form.textSizeMode}
                       onTextSizeModeChange={form.setTextSizeMode}
+                      themeMode={form.themeMode}
+                      onThemeModeChange={form.setThemeMode}
                       appLocale={form.appLocale}
                       onAppLocaleChange={form.setAppLocale}
                       mediaControlEnabled={form.mediaControlEnabled}
@@ -300,6 +306,8 @@ const SettingsModal = ({
                       }
                       autoUpdateEnabled={form.autoUpdateEnabled}
                       onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
+                      autoLaunchEnabled={form.autoLaunchEnabled}
+                      onAutoLaunchEnabledChange={form.setAutoLaunchEnabled}
                       recordingPrunePolicy={form.recordingPrunePolicy}
                       onRecordingPrunePolicyChange={form.setRecordingPrunePolicy}
                       analyticsEnabled={form.analyticsEnabled}
@@ -342,23 +350,28 @@ const ModalNavItem = ({
   icon,
   label,
   active,
+  disabled = false,
   onClick,
 }: {
   icon: ReactNode;
   label: string;
   active: boolean;
+  disabled?: boolean;
   onClick: () => void;
 }) => (
   <motion.button
     onClick={onClick}
+    disabled={disabled}
     className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 ui-text-body-sm-strong transition-colors ${
-      active
-        ? "bg-surface-elevated ui-color-primary"
-        : "ui-color-muted hover:bg-surface-elevated hover:text-content-secondary"
+      disabled
+        ? "cursor-not-allowed text-content-disabled/60"
+        : active
+          ? "bg-surface-elevated ui-color-primary"
+          : "ui-color-muted hover:bg-surface-elevated hover:text-content-secondary"
     }`}
-    whileTap={{ scale: 0.98 }}
+    whileTap={disabled ? undefined : { scale: 0.98 }}
   >
-    <div className={active ? "text-cloud/80" : "text-content-disabled"}>
+    <div className={disabled ? "text-content-disabled/50" : active ? "text-cloud/80" : "text-content-disabled"}>
       {icon}
     </div>
     {label}

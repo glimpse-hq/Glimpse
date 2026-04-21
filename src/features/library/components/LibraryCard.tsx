@@ -158,11 +158,11 @@ const LibraryCard = ({
             }}
             role="button"
             tabIndex={0}
-            className={`group relative flex min-w-0 flex-col rounded-xl cursor-pointer h-[220px] outline-none transition-colors duration-100 ease-out border ${
+            className={`ui-card-liftable group relative flex min-w-0 flex-col h-[220px] outline-none ${
                 shiftHeld
-                    ? "border-[var(--color-error)]/30 hover:border-[var(--color-error)]/60 bg-[var(--color-error)]/5"
-                    : "border-[var(--color-border-primary)] hover:border-[var(--color-border-secondary)]"
-            } bg-[var(--color-bg-surface)] hover:bg-[var(--color-bg-overlay)]`}
+                    ? "!border-[var(--color-error)]/30 hover:!border-[var(--color-error)]/60 !bg-[var(--color-error)]/5"
+                    : ""
+            }`}
         >
             <div className="px-4 pt-2.5 pb-2.5 flex flex-col h-full relative w-full min-w-0">
                 <div className="mb-1 flex items-start justify-between gap-2">
@@ -224,6 +224,7 @@ const LibraryCard = ({
                     <div className="flex items-center -mr-1 -mt-1 overflow-visible h-6">
                         <div ref={menuRef} className="flex relative items-center justify-center">
                             <button
+                                data-no-press
                                 onPointerDown={(e) => {
                                     e.stopPropagation();
                                 }}
@@ -250,6 +251,7 @@ const LibraryCard = ({
                             <AnimatePresence>
                                 {menuOpen && (
                                     <motion.div
+                                        data-no-press
                                         initial={{ opacity: 0, scale: 0.95, y: -4 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -338,7 +340,7 @@ const LibraryCard = ({
                             }}
                             onBlur={onCommitNameEdit}
                             onClick={(event) => event.stopPropagation()}
-                            className="w-full min-w-0 rounded-md border border-[var(--color-border-hover)] bg-[var(--color-bg-surface)] px-2 py-1 ui-text-title-lg ui-color-primary outline-hidden focus:border-[var(--color-accent)]"
+                            className="w-full min-w-0 rounded-md border border-[var(--color-border-hover)] bg-[var(--color-bg-surface)] px-2 py-1 ui-text-title-lg ui-color-primary outline-hidden focus:border-[var(--color-border-hover)]"
                             autoFocus
                         />
                     ) : (

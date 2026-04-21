@@ -303,6 +303,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           editModeEnabled: false,
           mediaControlEnabled: true,
           autoUpdateEnabled: true,
+          autoLaunchEnabled: false,
           recordingPrunePolicy: "never",
           analyticsEnabled: true,
         },

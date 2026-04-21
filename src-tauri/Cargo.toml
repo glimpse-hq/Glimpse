@@ -1,6 +1,6 @@
 [package]
 name = "Glimpse"
-version = "0.8.0"
+version = "0.8.1"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["LegendarySpy"]
 edition = "2021"
@@ -22,14 +22,14 @@ tauri-build = { version = "2.5.6", features = [] }
 [dependencies]
 tauri = { version = "2.10.3", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
 tauri-plugin-opener = "2.5.3"
-tauri-plugin-dialog = "2.6.0"
+tauri-plugin-dialog = "2.7.0"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 cpal = "0.17"
 anyhow = "1"
 tracing = "0.1"
-symphonia = { version = "0.5.4", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4"] }
+symphonia = { version = "0.5.5", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4"] }
 hound = "3.5.1"
 parking_lot = "0.12"
 crossbeam-channel = "0.5"
@@ -38,11 +38,11 @@ rustfft = "6"
 reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "stream", "rustls-tls", "blocking"] }
 dotenvy = "0.15"
 dotenvy_macro = "0.15"
-posthog-rs = "0.4.7" # NOTE / TODO: This uses reqwest 0.11 this needs to be updated to 0.12
+posthog-rs = "0.5.1"
 arboard = "3"
 mime_guess = "2"
-glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.2.0", features = ["whisper", "nvidia"] }
-uuid = { version = "1.21.0", features = ["v4"] }
+glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.2.5", features = ["whisper", "nvidia"] }
+uuid = { version = "1.23.1", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }
 sha2 = "0.10"
@@ -57,8 +57,9 @@ handy-keys = "0.2.4"
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 tauri-plugin-process = "2.3.1"
-tauri-plugin-updater = "2.10.0"
-tauri-plugin-single-instance = "2.4.0"
+tauri-plugin-updater = "2.10.1"
+tauri-plugin-single-instance = "2.4.1"
+tauri-plugin-autostart = "2.5.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tokio-util = "0.7"
 
