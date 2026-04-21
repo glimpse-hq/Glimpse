@@ -1,17 +1,16 @@
 0.8.1
 
-### Features
-- Added Launch at Login in Settings > App
-- Added Light mode
+### New Features
+  - Launch at Login toggle and OS autostart support!
+  - Light theme option!
+  - Search and sorting for transcriptions.
 
-### Changes
-- Big UI overhaul across the app.
-- Auto-delete recordings now has a confirmation step when changing to a more aggressive option.
-
-### Fixes
-- Mic permissions in Settings should behave better on newer macOS versions.
-- Cleaned up localization catalogs again, and French has been removed for now until it's properly reviewed. #CallingAllMultilingualPeople
-
+### Improvements
+  - Large UI overhaul: Light mode, new styles - lots to see!
+  - Settings: change light / dark mode, enable auto launch.
+  - 
+### Bug Fixes
+  - Improved microphone permissions handling on newer macOS versions.
 ---
 0.8.0
 
