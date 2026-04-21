@@ -416,6 +416,16 @@ msgstr ""
 #~ msgstr "Private, fast, and runs entirely on your machine."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx:40
+#~ msgid "faq.cloud.answer"
+#~ msgstr "An optional paid upgrade with cross-device sync, faster cloud processing, and better AI models."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx:36
+#~ msgid "faq.cloud.question"
+#~ msgstr "What's Glimpse Cloud?"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx:1300
 msgid "settings.general.shortcut.capture_placeholder"
 msgstr "..."
@@ -567,7 +577,7 @@ msgid "settings.app.prune.three_months"
 msgstr "3 Months"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:490
+#: src/Home.tsx:530
 msgid "home.support.about.title"
 msgstr "About"
 
@@ -587,7 +597,7 @@ msgid "onboarding.accessibility.title"
 msgstr "Accessibility"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:573
+#: src/Home.tsx:613
 msgid "home.account.fallback"
 msgstr "Account"
 
@@ -686,11 +696,6 @@ msgstr "Add words, phrases or names that arent in the default dictionary."
 #: src/features/library/components/LibraryView.tsx:291
 msgid "library.filter.all"
 msgstr "All"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:40
-msgid "faq.cloud.answer"
-msgstr "An optional paid upgrade with cross-device sync, faster cloud processing, and better AI models."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx:574
@@ -943,7 +948,7 @@ msgid "settings.app.confirm.checking"
 msgstr "Checking..."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/shared.tsx:94
+#: src/features/onboarding/steps/shared.tsx:138
 msgid "onboarding.status.checking"
 msgstr "Checking..."
 
@@ -993,7 +998,7 @@ msgid "library.modal.close"
 msgstr "Close"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:112
+#: src/shared/ui/FAQModal.tsx:96
 msgid "faq.close_aria"
 msgstr "Close FAQ"
 
@@ -1018,18 +1023,18 @@ msgid "settings.modal.close_button"
 msgstr "Close settings"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:235
+#: src/Home.tsx:282
 msgid "home.mode.cloud"
-msgstr "Cloud"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx:65
-msgid "onboarding.welcome.cloud.title"
 msgstr "Cloud"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx:196
 msgid "settings.general.cloud.label"
+msgstr "Cloud"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/WelcomeStep.tsx:65
+msgid "onboarding.welcome.cloud.title"
 msgstr "Cloud"
 
 #. js-lingui-explicit-id
@@ -1063,7 +1068,7 @@ msgid "settings.account.cloud_usage"
 msgstr "Cloud Usage"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:355
+#: src/Home.tsx:395
 msgid "home.sidebar.collapse"
 msgstr "Collapse sidebar"
 
@@ -1078,12 +1083,12 @@ msgid "settings.about.faq_help_description"
 msgstr "common questions"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:446
+#: src/Home.tsx:486
 msgid "home.support.faq.subtitle"
 msgstr "Common questions"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:102
+#: src/shared/ui/FAQModal.tsx:87
 msgid "faq.subtitle"
 msgstr "Common questions about Glimpse"
 
@@ -1159,15 +1164,15 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "Converting audio... {0}%"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx:433
-#: src/features/transcriptions/components/TranscriptionItem.tsx:444
-msgid "transcriptions.item.copied"
-msgstr "Copied"
-
-#. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx:310
 #: src/features/toast/ToastOverlay.tsx:319
 msgid "toast.copied"
+msgstr "Copied"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx:433
+#: src/features/transcriptions/components/TranscriptionItem.tsx:444
+msgid "transcriptions.item.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
@@ -1423,9 +1428,9 @@ msgid "settings.app.auto_delete_recordings.confirm.title"
 msgstr "Delete older recordings now?"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:60
+#: src/shared/ui/FAQModal.tsx:50
 msgid "faq.delete.answer"
-msgstr "Delete recordings locally to remove them. Synced data is flagged for removal immediately when you delete it."
+msgstr "Delete recordings to locally remove them. No data is stored anywhere else."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: replacement.from
@@ -1440,7 +1445,7 @@ msgid "library.modal.delete_confirm.title"
 msgstr "Delete this item?"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:313
+#: src/Home.tsx:353
 msgid "home.sidebar.dictionary"
 msgstr "Dictionary"
 
@@ -1492,13 +1497,13 @@ msgid "onboarding.models.action.download_aria"
 msgstr "Download {modelLabel}"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx:250
-msgid "onboarding.models.download_failed"
+#: src/features/onboarding/OnboardingScreen.tsx:260
+msgid "onboarding.download.failed"
 msgstr "Download failed"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/OnboardingScreen.tsx:260
-msgid "onboarding.download.failed"
+#: src/features/onboarding/steps/ModelSelectionStep.tsx:250
+msgid "onboarding.models.download_failed"
 msgstr "Download failed"
 
 #. js-lingui-explicit-id
@@ -1537,7 +1542,7 @@ msgid "library.view.dropzone"
 msgstr "Drop files to import"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:643
+#: src/Home.tsx:683
 msgid "home.drag_import.title"
 msgstr "Drop files to transcribe"
 
@@ -1573,7 +1578,7 @@ msgid "settings.app.permission.enabled"
 msgstr "Enabled"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/shared.tsx:110
+#: src/features/onboarding/steps/shared.tsx:154
 msgid "onboarding.status.enabled"
 msgstr "Enabled"
 
@@ -1608,7 +1613,7 @@ msgid "pill.status.error"
 msgstr "Error occurred"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:351
+#: src/Home.tsx:391
 msgid "home.sidebar.expand"
 msgstr "Expand sidebar"
 
@@ -1658,7 +1663,7 @@ msgid "settings.account.password.update_failed"
 msgstr "Failed to update password"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:440
+#: src/Home.tsx:480
 msgid "home.support.faq.title"
 msgstr "FAQ"
 
@@ -1734,7 +1739,7 @@ msgid "onboarding.welcome.local.feature.free"
 msgstr "Free, no account required"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:96
+#: src/shared/ui/FAQModal.tsx:81
 msgid "faq.title"
 msgstr "Frequently Asked Questions"
 
@@ -1754,12 +1759,12 @@ msgid "onboarding.ready.get_started"
 msgstr "Get Started"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:413
+#: src/Home.tsx:453
 msgid "home.support.title"
 msgstr "Get Support"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:463
+#: src/Home.tsx:503
 msgid "home.support.github.title"
 msgstr "GitHub Issues"
 
@@ -1769,7 +1774,7 @@ msgid "updates.whats_new.github_unavailable"
 msgstr "GitHub may be temporarily unavailable. Check your connection and try again."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:141
+#: src/shared/ui/FAQModal.tsx:139
 msgid "faq.brand"
 msgstr "Glimpse"
 
@@ -1809,22 +1814,22 @@ msgid "faq.free.answer"
 msgstr "Glimpse uses on-device OSS AI models for transcription, so there are no ongoing costs for the core experience."
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:253
+#: src/Home.tsx:300
 msgid "home.greeting.afternoon"
 msgstr "Good afternoon"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:258
+#: src/Home.tsx:305
 msgid "home.greeting.evening"
 msgstr "Good evening"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:247
+#: src/Home.tsx:294
 msgid "home.greeting.morning"
 msgstr "Good morning"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:151
+#: src/shared/ui/FAQModal.tsx:149
 msgid "faq.confirm"
 msgstr "Got it"
 
@@ -1855,7 +1860,7 @@ msgid "settings.general.shortcuts.hold_description"
 msgstr "hold to talk, release to stop"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:303
+#: src/Home.tsx:343
 msgid "home.sidebar.home"
 msgstr "Home"
 
@@ -1865,7 +1870,7 @@ msgid "faq.free.question"
 msgstr "How is Glimpse free?"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:46
+#: src/shared/ui/FAQModal.tsx:36
 msgid "faq.data_use.question"
 msgstr "How is my data used?"
 
@@ -1880,13 +1885,13 @@ msgid "settings.language_model.endpoint.placeholder"
 msgstr "https://your-llm-endpoint.com"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx:329
-msgid "library.view.import_button"
+#: src/features/library/components/LibraryImportModal.tsx:244
+msgid "library.import.confirm"
 msgstr "Import"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx:244
-msgid "library.import.confirm"
+#: src/features/library/components/LibraryView.tsx:329
+msgid "library.view.import_button"
 msgstr "Import"
 
 #. js-lingui-explicit-id
@@ -1930,13 +1935,13 @@ msgid "onboarding.signin.status"
 msgstr "in development"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx:392
-msgid "settings.account.in_development"
+#: src/features/settings/components/tabs/GeneralTab.tsx:221
+msgid "settings.general.cloud.description"
 msgstr "In development"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx:221
-msgid "settings.general.cloud.description"
+#: src/features/settings/components/AccountView.tsx:392
+msgid "settings.account.in_development"
 msgstr "In development"
 
 #. js-lingui-explicit-id
@@ -1995,7 +2000,7 @@ msgid "settings.app.auto_launch"
 msgstr "Launch at Login"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:333
+#: src/Home.tsx:373
 msgid "home.sidebar.library"
 msgstr "Library"
 
@@ -2005,7 +2010,7 @@ msgid "library.view.title"
 msgstr "Library"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:637
+#: src/Home.tsx:677
 msgid "home.drag_import.eyebrow"
 msgstr "Library Import"
 
@@ -2060,7 +2065,7 @@ msgid "library.view.loading_more"
 msgstr "Loading..."
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:239
+#: src/Home.tsx:286
 msgid "home.mode.local"
 msgstr "Local"
 
@@ -2075,13 +2080,13 @@ msgid "settings.language_model.provider.local"
 msgstr "Local"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx:125
-msgid "onboarding.welcome.local.title"
+#: src/features/settings/components/tabs/GeneralTab.tsx:245
+msgid "settings.general.local.label"
 msgstr "Local"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx:245
-msgid "settings.general.local.label"
+#: src/features/onboarding/steps/WelcomeStep.tsx:125
+msgid "onboarding.welcome.local.title"
 msgstr "Local"
 
 #. js-lingui-explicit-id
@@ -2213,7 +2218,7 @@ msgid "transcriptions.item.more_options"
 msgstr "More options"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:649
+#: src/Home.tsx:689
 msgid "home.drag_import.subtitle"
 msgstr "MP3, WAV, M4A, MP4, MOV, and more"
 
@@ -2390,7 +2395,7 @@ msgid "library.error_details.invalid_audio"
 msgstr "Not a valid audio file."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/shared.tsx:120
+#: src/features/onboarding/steps/shared.tsx:164
 msgid "onboarding.status.not_enabled"
 msgstr "Not enabled"
 
@@ -2492,18 +2497,18 @@ msgid "settings.app.permissions_restart_notice"
 msgstr "Permission changes may require a restart."
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:323
+#: src/Home.tsx:363
 msgid "home.sidebar.personalization"
-msgstr "Personalization"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx:365
-msgid "personalization.modal.header"
 msgstr "Personalization"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx:338
 msgid "personalization.title"
+msgstr "Personalization"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx:365
+msgid "personalization.modal.header"
 msgstr "Personalization"
 
 #. js-lingui-explicit-id
@@ -2682,7 +2687,7 @@ msgid "dictionary.section.replacements_title"
 msgstr "Replacements"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:469
+#: src/Home.tsx:509
 msgid "home.support.github.subtitle"
 msgstr "Report bugs & request features"
 
@@ -2812,13 +2817,13 @@ msgid "toast.retry_transcription"
 msgstr "Retry transcription"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionItem.tsx:348
-msgid "transcriptions.item.retrying"
+#: src/features/toast/ToastOverlay.tsx:362
+msgid "toast.retrying"
 msgstr "Retrying..."
 
 #. js-lingui-explicit-id
-#: src/features/toast/ToastOverlay.tsx:362
-msgid "toast.retrying"
+#: src/features/transcriptions/components/TranscriptionItem.tsx:348
+msgid "transcriptions.item.retrying"
 msgstr "Retrying..."
 
 #. js-lingui-explicit-id
@@ -2852,13 +2857,13 @@ msgid "settings.account.password.save"
 msgstr "Save and Update"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx:302
-msgid "settings.account.name.save_aria"
+#: src/features/personalization/components/PersonalityModal.tsx:400
+msgid "personalization.modal.save_name"
 msgstr "Save name"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx:400
-msgid "personalization.modal.save_name"
+#: src/features/settings/components/AccountView.tsx:302
+msgid "settings.account.name.save_aria"
 msgstr "Save name"
 
 #. js-lingui-explicit-id
@@ -3005,7 +3010,7 @@ msgid "library.import_error.model_not_installed"
 msgstr "Selected model isn't installed. Download one in Settings -> Models."
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:538
+#: src/Home.tsx:578
 msgid "home.sidebar.settings"
 msgstr "Settings"
 
@@ -3109,13 +3114,13 @@ msgid "settings.app.text_size.small"
 msgstr "Small"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx:86
-msgid "onboarding.ready.smart.label"
+#: src/features/settings/components/tabs/GeneralTab.tsx:486
+msgid "settings.general.shortcuts.smart"
 msgstr "Smart"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx:486
-msgid "settings.general.shortcuts.smart"
+#: src/features/onboarding/steps/ReadyStep.tsx:86
+msgid "onboarding.ready.smart.label"
 msgstr "Smart"
 
 #. js-lingui-explicit-id
@@ -3186,12 +3191,12 @@ msgid "settings.account.subscription"
 msgstr "Subscription"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:394
+#: src/Home.tsx:434
 msgid "home.support.label"
 msgstr "Support"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:379
+#: src/Home.tsx:419
 msgid "home.support.menu_aria"
 msgstr "Support menu"
 
@@ -3246,13 +3251,13 @@ msgid "settings.general.shortcuts.toggle_description"
 msgstr "tap to start, tap to stop"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx:92
-msgid "onboarding.ready.smart.description"
+#: src/features/settings/components/tabs/GeneralTab.tsx:490
+msgid "settings.general.shortcuts.smart_description"
 msgstr "tap to toggle, hold to talk"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx:490
-msgid "settings.general.shortcuts.smart_description"
+#: src/features/onboarding/steps/ReadyStep.tsx:92
+msgid "onboarding.ready.smart.description"
 msgstr "tap to toggle, hold to talk"
 
 #. js-lingui-explicit-id
@@ -3457,7 +3462,7 @@ msgid "updates.update"
 msgstr "Update"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:528
+#: src/Home.tsx:568
 msgid "home.update_available"
 msgstr "Update available"
 
@@ -3487,7 +3492,7 @@ msgid "settings.models.use"
 msgstr "Use"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx:496
+#: src/Home.tsx:536
 msgid "home.support.about.version_mode"
 msgstr "v{version} • {mode}"
 
@@ -3517,13 +3522,13 @@ msgid "settings.app.auto_delete_recordings.confirm.unknown_count"
 msgstr "We couldn't count them right now, but the cleanup will still run as soon as you save this change."
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx:624
-msgid "personalization.modal.websites"
+#: src/features/personalization/components/PersonalizationView.tsx:516
+msgid "personalization.websites"
 msgstr "Websites"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx:516
-msgid "personalization.websites"
+#: src/features/personalization/components/PersonalityModal.tsx:624
+msgid "personalization.modal.websites"
 msgstr "Websites"
 
 #. js-lingui-explicit-id
@@ -3532,14 +3537,9 @@ msgid "onboarding.welcome.title"
 msgstr "Welcome"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:56
+#: src/shared/ui/FAQModal.tsx:46
 msgid "faq.delete.question"
 msgstr "What if I want to delete my data?"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:36
-msgid "faq.cloud.question"
-msgstr "What's Glimpse Cloud?"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx:200
@@ -3554,7 +3554,7 @@ msgstr "What's new?"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx:30
 msgid "faq.privacy.answer"
-msgstr "Yes. In local mode, all your audio and transcriptions stay on your device. We never collect or transmit your recordings. Cloud sync is optional."
+msgstr "Yes. In local mode, all your audio and transcriptions stay on your device. We never collect your recordings, transcriptions or any personally identifiable information."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx:113
@@ -3582,7 +3582,7 @@ msgid "updates.up_to_date"
 msgstr "You're up to date"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:50
+#: src/shared/ui/FAQModal.tsx:40
 msgid "faq.data_use.answer"
 msgstr "Your data is your data. Not ours to share. We will never sell or share your data with third parties."
 

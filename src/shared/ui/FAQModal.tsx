@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, HelpCircle } from "lucide-react";
-import DotMatrix from "./DotMatrix";
+import { X } from "lucide-react";
+import { GlimpseLogo } from "../../features/onboarding/steps/shared";
 
 interface FAQModalProps {
     isOpen: boolean;
@@ -29,17 +29,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
             }),
             answer: t({
                 id: "faq.privacy.answer",
-                message: "Yes. In local mode, all your audio and transcriptions stay on your device. We never collect or transmit your recordings. Cloud sync is optional.",
-            }),
-        },
-        {
-            question: t({
-                id: "faq.cloud.question",
-                message: "What's Glimpse Cloud?",
-            }),
-            answer: t({
-                id: "faq.cloud.answer",
-                message: "An optional paid upgrade with cross-device sync, faster cloud processing, and better AI models.",
+                message: "Yes. All your audio and transcriptions stay on your device. We never collect or transmit your recordings.",
             }),
         },
         {
@@ -59,7 +49,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
             }),
             answer: t({
                 id: "faq.delete.answer",
-                message: "Delete recordings locally to remove them. Synced data is flagged for removal immediately when you delete it.",
+                message: "Delete recordings locally to remove them.",
             }),
         },
     ];
@@ -71,44 +61,38 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xs"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs"
                     onClick={onClose}
                     role="dialog"
                     aria-modal="true"
                     aria-labelledby="faq-title"
                 >
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="relative bg-surface-secondary border border-border-primary rounded-2xl overflow-hidden max-w-md w-full mx-4 shadow-2xl"
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
                         onClick={(e) => e.stopPropagation()}
+                        className="relative w-full max-w-lg h-[75vh] bg-surface-tertiary rounded-2xl border border-border-secondary shadow-2xl shadow-black/50 overflow-hidden flex flex-col"
                     >
-                        <div className="relative flex items-center justify-between p-5 border-b border-border-primary">
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center w-8 h-8">
-                                    <HelpCircle size={16} className="ui-color-warning-strong" aria-hidden="true" />
-                                </div>
-                                <div>
-                                    <h2 id="faq-title" className="ui-text-title-strong ui-color-on-solid">
-                                        {t({
-                                            id: "faq.title",
-                                            message: "Frequently Asked Questions",
-                                        })}
-                                    </h2>
-                                    <p className="ui-text-label ui-color-muted">
-                                        {t({
-                                            id: "faq.subtitle",
-                                            message: "Common questions about Glimpse",
-                                        })}
-                                    </p>
-                                </div>
+                        <div className="flex items-center justify-between px-7 pt-6 pb-2 shrink-0">
+                            <div>
+                                <h2 id="faq-title" className="ui-text-display font-normal ui-color-primary tracking-tight">
+                                    {t({
+                                        id: "faq.title",
+                                        message: "Frequently Asked Questions",
+                                    })}
+                                </h2>
+                                <p className="ui-text-meta ui-color-muted mt-1">
+                                    {t({
+                                        id: "faq.subtitle",
+                                        message: "Common questions about Glimpse",
+                                    })}
+                                </p>
                             </div>
                             <button
                                 onClick={onClose}
-                                className="p-2 rounded-lg hover:bg-surface-elevated text-content-disabled ui-hover-on-solid transition-colors"
+                                className="p-1.5 rounded-lg text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
                                 aria-label={t({
                                     id: "faq.close_aria",
                                     message: "Close FAQ",
@@ -118,26 +102,40 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                             </button>
                         </div>
 
-                        <div className="relative p-5 space-y-3 max-h-[60vh] overflow-y-auto">
-                            {faqItems.map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="p-4 rounded-xl bg-surface-tertiary border border-border-primary hover:border-border-secondary transition-colors"
-                                >
-                                    <h3 className="ui-text-body ui-color-primary font-medium mb-1.5">
-                                        {item.question}
-                                    </h3>
-                                    <p className="ui-text-body-sm ui-color-muted leading-relaxed">
-                                        {item.answer}
-                                    </p>
+                        <div className="relative flex-1 min-h-0 overflow-hidden">
+                            <div
+                                className="pointer-events-none absolute left-0 right-3 top-0 h-6 z-10"
+                                style={{ background: "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)" }}
+                                aria-hidden="true"
+                            />
+                            <div
+                                className="pointer-events-none absolute left-0 right-3 bottom-0 h-8 z-10"
+                                style={{ background: "linear-gradient(to top, var(--color-bg-tertiary), transparent)" }}
+                                aria-hidden="true"
+                            />
+                            <div className="h-full overflow-y-auto settings-scroll px-7 pt-5 pb-7">
+                                <div className="space-y-8">
+                                    {faqItems.map((item, index) => (
+                                        <div key={index}>
+                                            <h3 className="ui-text-body-lg-strong ui-color-primary mb-2">
+                                                {item.question}
+                                            </h3>
+                                            <p className="ui-text-body leading-relaxed ui-color-secondary">
+                                                {item.answer}
+                                            </p>
+                                            {index < faqItems.length - 1 && (
+                                                <div className="border-t border-border-primary mt-6" />
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
                         </div>
 
-                        <div className="relative flex items-center justify-between p-4 border-t border-border-primary bg-surface-primary">
-                            <div className="flex items-center gap-2">
-                                <DotMatrix rows={2} cols={2} activeDots={[0, 3]} dotSize={3} gap={2} color="var(--color-cloud)" />
-                                <span className="ui-text-meta ui-color-disabled">
+                        <div className="flex flex-row items-center justify-between px-7 py-4 border-t border-border-primary bg-surface-primary shrink-0">
+                            <div className="flex items-center gap-3">
+                                <GlimpseLogo size="sm" />
+                                <span className="ui-text-meta ui-color-disabled font-medium">
                                     {t({
                                         id: "faq.brand",
                                         message: "Glimpse",
