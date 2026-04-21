@@ -14,10 +14,6 @@ export const ACTION_CARD_BUTTON_ACCENTS = {
     borderColor: "var(--color-interactive-30)",
     backgroundColor: "var(--color-interactive-10)",
   },
-  amber: {
-    borderColor: "var(--color-cloud-30)",
-    backgroundColor: "var(--color-cloud-10)",
-  },
   cloud: {
     borderColor: "var(--color-cloud-30)",
     backgroundColor: "var(--color-cloud-10)",

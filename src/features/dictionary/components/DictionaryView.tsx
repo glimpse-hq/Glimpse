@@ -71,9 +71,14 @@ function useQueuedPersist<T>({
           const queuedValue = queuedRef.current;
           queuedRef.current = null;
           const cleaned = await persist(queuedValue);
-          currentRef.current = cleaned;
-          persistedRef.current = cleaned;
-          setValue(cleaned);
+          if (
+            queuedRef.current === null ||
+            Object.is(queuedRef.current, queuedValue)
+          ) {
+            currentRef.current = cleaned;
+            persistedRef.current = cleaned;
+            setValue(cleaned);
+          }
         }
       } catch (error) {
         console.error(error);

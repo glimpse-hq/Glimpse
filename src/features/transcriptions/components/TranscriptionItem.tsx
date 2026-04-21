@@ -101,6 +101,9 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
 
     let frameId = 0;
     const updateOverflow = () => {
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+      }
       frameId = window.requestAnimationFrame(() => {
         setIsOverflowing(element.scrollHeight > element.clientHeight);
       });
@@ -228,11 +231,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
       message: "Transcription failed",
     });
   const displayText = isError ? null : record.text;
-  const isCloudModel = record.speech_model?.startsWith("cloud-") ?? false;
-  const speechModelLabel = record.speech_model?.trim()
-    ? record.speech_model.startsWith("cloud-")
-      ? record.speech_model.slice(6)
-      : record.speech_model
+  const normalizedModel = (record.speech_model ?? "").trim();
+  const isCloudModel = normalizedModel.startsWith("cloud-");
+  const speechModelLabel = normalizedModel
+    ? isCloudModel
+      ? normalizedModel.slice(6)
+      : normalizedModel
     : null;
   const llmModelLabel = record.llm_model?.trim() || null;
   const modeLabel = record.mode_name?.trim() || null;
