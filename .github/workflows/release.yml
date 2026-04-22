@@ -15,15 +15,8 @@ jobs:
   publish-tauri:
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Universal macOS build
-          - platform: "macos-15"
-            args: "--target universal-apple-darwin"
 
-    runs-on: ${{ matrix.platform }}
+    runs-on: macos-15
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
@@ -41,9 +34,9 @@ jobs:
         run: xcodebuild -version
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version-file: package.json
 
       - name: determine release type
         shell: bash
@@ -85,7 +78,13 @@ jobs:
           workspaces: src-tauri -> target
 
       - name: install frontend dependencies
-        run: bun install --frozen-lockfile
+        run: bun ci
+
+      - name: build frontend
+        run: bun run build
+
+      - name: cargo check
+        run: cargo check --locked --manifest-path src-tauri/Cargo.toml
 
       - name: import Apple Developer Certificate
         env:
@@ -129,4 +128,4 @@ jobs:
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
-          args: ${{ matrix.args }}
+          args: --target universal-apple-darwin

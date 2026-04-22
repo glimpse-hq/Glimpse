@@ -58,9 +58,9 @@ jobs:
         run: xcodebuild -version
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version-file: package.json
 
       - name: cache bun
         uses: actions/cache@v4
@@ -82,7 +82,7 @@ jobs:
           workspaces: src-tauri -> target
 
       - name: install frontend dependencies
-        run: bun install --frozen-lockfile
+        run: bun ci
 
       - name: build frontend
         run: bun run build
