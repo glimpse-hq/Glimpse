@@ -2,7 +2,6 @@ import { setup, assign } from "xstate";
 import type { TranscriptionMode } from "../../types";
 import {
   getOnboardingPlatform,
-  getOnboardingSteps,
   type OnboardingPlatform,
   type OnboardingStep,
 } from "./platform";
@@ -48,7 +47,21 @@ function getSteps(
   mode: TranscriptionMode,
   platform: OnboardingPlatform = getOnboardingPlatform(),
 ): OnboardingStep[] {
-  return getOnboardingSteps(mode, platform);
+  const steps: OnboardingStep[] =
+    mode === "cloud"
+      ? ["welcome", "localSignin", "localModel"]
+      : ["welcome", "localModel"];
+
+  if (platform.requiresMicrophonePermission) {
+    steps.push("microphone");
+  }
+
+  if (platform.requiresAccessibilityPermission) {
+    steps.push("accessibility");
+  }
+
+  steps.push("ready");
+  return steps;
 }
 
 const requiresMicrophoneStep = ({ context }: { context: OnboardingContext }) =>

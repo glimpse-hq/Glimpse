@@ -33,7 +33,7 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx:285
 #~ msgid "dictionary.word_dictionary.description"
-#~ msgstr "Add custom words or phrases that arent in the default dictionary."
+#~ msgstr "Add custom words or phrases that aren't in the default dictionary."
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx:339
@@ -690,7 +690,7 @@ msgstr "Add website domain"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx:485
 msgid "dictionary.no_entries.description"
-msgstr "Add words, phrases or names that arent in the default dictionary."
+msgstr "Add words, phrases, or names above and press Enter to save them here."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx:291
@@ -955,7 +955,7 @@ msgstr "Checking..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx:39
 msgid "onboarding.welcome.subtitle"
-msgstr "Choose how you want to use Glimpse."
+msgstr "Choose how you want to transcribe."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx:60
@@ -1430,7 +1430,7 @@ msgstr "Delete older recordings now?"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx:50
 msgid "faq.delete.answer"
-msgstr "Delete recordings to locally remove them. No data is stored anywhere else."
+msgstr "Delete recordings locally to remove them."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: replacement.from
@@ -1500,6 +1500,11 @@ msgstr "Download {modelLabel}"
 #: src/features/onboarding/OnboardingScreen.tsx:260
 msgid "onboarding.download.failed"
 msgstr "Download failed"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx:280
+msgid "onboarding.delete.failed"
+msgstr "Delete failed"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx:250
@@ -1947,7 +1952,7 @@ msgstr "In development"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx:71
 msgid "onboarding.welcome.cloud.badge"
-msgstr "In development"
+msgstr "In progress"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx:889
@@ -2982,7 +2987,7 @@ msgstr "Select existing tag"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx:89
 msgid "onboarding.welcome.local.aria"
-msgstr "Select Local mode (Privacy-first, on-device)"
+msgstr "Select Local mode — privacy-first, on-device transcription"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx:381
@@ -3554,7 +3559,7 @@ msgstr "What's new?"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx:30
 msgid "faq.privacy.answer"
-msgstr "Yes. In local mode, all your audio and transcriptions stay on your device. We never collect your recordings, transcriptions or any personally identifiable information."
+msgstr "Yes. All your audio and transcriptions stay on your device. We never collect or transmit your recordings."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx:113

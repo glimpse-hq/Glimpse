@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { GlimpseLogo } from "../../features/onboarding/steps/shared";
+import { GlimpseLogo } from "./GlimpseLogo";
 
 interface FAQModalProps {
     isOpen: boolean;

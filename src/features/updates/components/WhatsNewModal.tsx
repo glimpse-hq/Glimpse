@@ -203,7 +203,11 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                                     })}
                                 </h2>
                                 <button
-                                    onClick={() => openUrl("https://github.com/LegendarySpy/Glimpse/releases")}
+                                    onClick={() => {
+                                        openUrl("https://github.com/LegendarySpy/Glimpse/releases").catch((err) => {
+                                            console.error("Failed to open releases:", err);
+                                        });
+                                    }}
                                     className="flex items-center gap-1.5 mt-1 ui-text-meta ui-color-muted hover:ui-color-secondary transition-colors"
                                 >
                                     <span>{t({

@@ -279,11 +279,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         updateDownloadStatus(modelKey, {
           status: "error",
           percent: 0,
-          message: "Delete failed",
+          message: t({
+            id: "onboarding.delete.failed",
+            message: "Delete failed",
+          }),
         });
       }
     },
-    [queryClient, updateDownloadStatus],
+    [queryClient, t, updateDownloadStatus],
   );
 
   const handleCancelDownload = useCallback(
@@ -382,7 +385,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           holdEnabled: false,
           toggleShortcut: "Control+Alt+Space",
           toggleEnabled: false,
-          transcriptionMode: "local",
+          transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
           microphoneDevice: null,
           language: "en",
@@ -417,7 +420,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           }),
       });
     }
-  }, [ctx.smartShortcut, onComplete, selectedModel, send, t]);
+  }, [
+    ctx.selectedMode,
+    ctx.smartShortcut,
+    onComplete,
+    selectedModel,
+    send,
+    t,
+  ]);
 
   const goNext = useCallback(() => {
     send({ type: "NEXT" });

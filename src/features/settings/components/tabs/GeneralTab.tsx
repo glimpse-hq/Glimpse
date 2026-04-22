@@ -1022,8 +1022,9 @@ const useMicrophoneTest = (
       );
 
       if (matchedDeviceId) {
+        let selectedStream: MediaStream | null = null;
         try {
-          const selectedStream = await mediaDevices.getUserMedia({
+          selectedStream = await mediaDevices.getUserMedia({
             audio: { deviceId: { exact: matchedDeviceId } },
           });
 
@@ -1035,9 +1036,12 @@ const useMicrophoneTest = (
 
           stream.getTracks().forEach((track) => track.stop());
           stream = selectedStream;
-        } catch {
-          // The default stream still gives a useful meter if WebKit rejects
-          // the matched browser device id.
+          selectedStream = null;
+        } catch (err) {
+          selectedStream?.getTracks().forEach((track) => track.stop());
+          stream?.getTracks().forEach((track) => track.stop());
+          stream = null;
+          throw err;
         }
       }
 

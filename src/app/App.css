@@ -301,12 +301,8 @@
   --color-toggle-on: #8f6a47;
   --color-toggle-on-20: rgba(143, 106, 71, 0.18);
   --color-toggle-on-30: rgba(143, 106, 71, 0.26);
-  --ui-action-card-rest-shadow:
-    0 1px 2px rgba(26, 23, 22, 0.08),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.72);
-  --ui-action-card-hover-shadow:
-    0 3px 8px rgba(26, 23, 22, 0.12),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.88);
+  --ui-action-card-rest-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
+  --ui-action-card-hover-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
 
   --ui-surface-divider: #eae7e2;
   --ui-avatar-gradient-start: #f3f1ed;

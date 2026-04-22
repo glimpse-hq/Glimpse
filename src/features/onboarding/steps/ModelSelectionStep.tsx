@@ -218,17 +218,17 @@ export function ModelSelectionStep({
                         onCancelDownload(model.key);
                       } else if (installed) {
                         onDelete(model.key);
-                      } else if (!isCancelled) {
+                      } else {
                         onDownload(model.key);
                       }
                     }}
-                    disabled={isCancelled}
+                    onKeyDown={(event) => {
+                      event.stopPropagation();
+                    }}
                     className={`shrink-0 flex h-7 w-7 items-center justify-center rounded-md border border-border-secondary transition-colors ${
                       isDownloading || installed
                         ? "text-error hover:bg-surface-elevated"
-                        : isCancelled
-                          ? "text-content-disabled cursor-default"
-                          : "text-content-primary hover:bg-surface-elevated"
+                        : "text-content-primary hover:bg-surface-elevated"
                     }`}
                   >
                     {isDownloading ? (

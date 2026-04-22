@@ -1,5 +1,3 @@
-import type { TranscriptionMode } from "../../types";
-
 export type OnboardingPlatformId = "macos" | "windows" | "unsupported";
 
 export type OnboardingStep =
@@ -36,25 +34,4 @@ export const getOnboardingPlatform = (): OnboardingPlatform => {
     requiresMicrophonePermission: id === "macos" || id === "windows",
     requiresAccessibilityPermission: id === "macos",
   };
-};
-
-export const getOnboardingSteps = (
-  mode: TranscriptionMode,
-  platform: OnboardingPlatform,
-): OnboardingStep[] => {
-  const steps: OnboardingStep[] =
-    mode === "cloud"
-      ? ["welcome", "localSignin", "localModel"]
-      : ["welcome", "localModel"];
-
-  if (platform.requiresMicrophonePermission) {
-    steps.push("microphone");
-  }
-
-  if (platform.requiresAccessibilityPermission) {
-    steps.push("accessibility");
-  }
-
-  steps.push("ready");
-  return steps;
 };

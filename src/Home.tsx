@@ -28,53 +28,52 @@ import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
 
+const STATIC_LOGO_DOT_SIZE = 5;
+const STATIC_LOGO_GAP = 3;
+const STATIC_LOGO_DISTANCE = STATIC_LOGO_DOT_SIZE + STATIC_LOGO_GAP;
+const STATIC_LOGO_RADIUS = STATIC_LOGO_DOT_SIZE / 2;
+const STATIC_LOGO_GRID_SIZE = STATIC_LOGO_DOT_SIZE * 2 + STATIC_LOGO_GAP;
+const STATIC_LOGO_DOT_COLORS = [
+  "var(--color-cloud)",
+  "var(--color-local)",
+  "var(--color-local)",
+  "var(--color-cloud)",
+];
+const STATIC_LOGO_COORDS = [
+  { cx: STATIC_LOGO_RADIUS, cy: STATIC_LOGO_RADIUS },
+  { cx: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE, cy: STATIC_LOGO_RADIUS },
+  { cx: STATIC_LOGO_RADIUS, cy: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE },
+  {
+    cx: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE,
+    cy: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE,
+  },
+];
+
 const StaticGlimpseLogo = ({ isCloudMode }: { isCloudMode: boolean }) => {
-  const dotSize = 5;
-  const gap = 3;
-  const D = dotSize + gap;
-  const r = dotSize / 2;
-  
-  const dotColors = [
-    "var(--color-cloud)",
-    "var(--color-local)",
-    "var(--color-local)",
-    "var(--color-cloud)",
-  ];
-
-  const coords = [
-    { cx: r, cy: r },             // 0: TL
-    { cx: r + D, cy: r },         // 1: TR
-    { cx: r, cy: r + D },         // 2: BL
-    { cx: r + D, cy: r + D },     // 3: BR
-  ];
-
-  const gridSize = dotSize * 2 + gap;
-
   return (
-    <div className="relative flex items-center justify-center" style={{ width: gridSize, height: gridSize }}>
-      <svg
-        width={gridSize}
-        height={gridSize}
-        viewBox={`0 0 ${gridSize} ${gridSize}`}
-        style={{ overflow: "visible" }}
-      >
-        {/* Dots */}
-        {coords.map((coord, i) => {
-          const isCloudDot = i === 0 || i === 3;
-          const isActive = isCloudMode ? isCloudDot : !isCloudDot;
-          return (
-            <circle
-              key={`dot-${i}`}
-              cx={coord.cx}
-              cy={coord.cy}
-              r={r}
-              fill={dotColors[i]}
-              opacity={isActive ? 1 : 0.15}
-            />
-          );
-        })}
-      </svg>
-    </div>
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={STATIC_LOGO_GRID_SIZE}
+      height={STATIC_LOGO_GRID_SIZE}
+      viewBox={`0 0 ${STATIC_LOGO_GRID_SIZE} ${STATIC_LOGO_GRID_SIZE}`}
+      style={{ overflow: "visible" }}
+    >
+      {STATIC_LOGO_COORDS.map((coord, i) => {
+        const isCloudDot = i === 0 || i === 3;
+        const isActive = isCloudMode ? isCloudDot : !isCloudDot;
+        return (
+          <circle
+            key={`dot-${i}`}
+            cx={coord.cx}
+            cy={coord.cy}
+            r={STATIC_LOGO_RADIUS}
+            fill={STATIC_LOGO_DOT_COLORS[i]}
+            opacity={isActive ? 1 : 0.15}
+          />
+        );
+      })}
+    </svg>
   );
 };
 
