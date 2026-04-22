@@ -7,7 +7,9 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
-use crate::{model_manager::ReadyModel, pill, AppRuntime, AppState};
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+use crate::pill;
+use crate::{model_manager::ReadyModel, AppRuntime, AppState};
 
 const POLL_INTERVAL: Duration = Duration::from_millis(400);
 
@@ -44,11 +46,10 @@ impl StreamingSession {
             let _ = handle.join();
         }
 
-        let state = app.state::<AppState>();
-        let transcriber = state.local_transcriber();
-
         #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
         {
+            let state = app.state::<AppState>();
+            let transcriber = state.local_transcriber();
             let transcript = transcriber.streaming_get_transcript();
             transcriber.streaming_reset();
             transcript
@@ -56,6 +57,7 @@ impl StreamingSession {
 
         #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
         {
+            let _ = app;
             String::new()
         }
     }
@@ -85,6 +87,7 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
     let recorder = state.pill().recorder();
     let mut buffer_offset: usize = 0;
     let mut resample_remainder: Vec<f32> = Vec::new();
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     let mut last_text = String::new();
 
     while !stop_flag.load(Ordering::SeqCst) {
@@ -113,15 +116,14 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
 
         let mut processed = 0;
         while processed + CHUNK_SAMPLES_16K <= all_samples.len() {
-            let chunk = &all_samples[processed..processed + CHUNK_SAMPLES_16K];
-
             #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             {
+                let chunk = &all_samples[processed..processed + CHUNK_SAMPLES_16K];
                 match transcriber.streaming_transcribe_chunk(&model, chunk) {
                     Ok(transcript) => {
                         if transcript != last_text {
                             last_text.clone_from(&transcript);
-                            pill::show_expanded_pill_text(&app, &transcript);
+                            pill::emit_pill_mode(&app, true, &transcript);
                         }
                     }
                     Err(err) => {
@@ -144,7 +146,7 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
         if let Ok(transcript) = transcriber.streaming_transcribe_chunk(&model, &resample_remainder)
         {
             if transcript != last_text {
-                pill::show_expanded_pill_text(&app, &transcript);
+                pill::emit_pill_mode(&app, true, &transcript);
             }
         }
     }

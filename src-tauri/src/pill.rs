@@ -728,10 +728,6 @@ pub(crate) fn emit_pill_mode(app: &AppHandle<AppRuntime>, expanded: bool, text: 
     }
 }
 
-pub(crate) fn show_expanded_pill_text(app: &AppHandle<AppRuntime>, text: &str) {
-    emit_pill_mode(app, true, text);
-}
-
 pub(crate) fn collapse_expanded_pill(app: &AppHandle<AppRuntime>) {
     emit_pill_mode(app, false, "");
 }
