@@ -1,8 +1,6 @@
-const platform =
-  typeof navigator !== "undefined"
-    ? navigator.platform || navigator.userAgent || ""
-    : "";
-const isMacPlatform = /Mac|iPhone|iPad|iPod/i.test(platform);
+import { detectAppPlatform } from "./platform";
+
+const isMacPlatform = detectAppPlatform() === "macos";
 
 const MODIFIER_ORDER = ["Fn", "Cmd", "Opt", "Ctrl", "Shift"] as const;
 

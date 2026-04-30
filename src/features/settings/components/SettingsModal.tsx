@@ -71,6 +71,7 @@ const SettingsModal = ({
     <AnimatePresence>
       {isOpen && (
         <motion.div
+          key="settings-modal"
           className="fixed inset-0 z-50 flex items-center justify-center"
           initial="hidden"
           animate="visible"
@@ -208,6 +209,7 @@ const SettingsModal = ({
                 <AnimatePresence mode="wait">
                   {form.activeTab === "account" && (
                     <AccountTab
+                      key="account"
                       variants={tabContentVariants}
                       authLoading={form.authLoading}
                       currentUser={form.currentUser}
@@ -221,6 +223,7 @@ const SettingsModal = ({
 
                   {form.activeTab === "general" && (
                     <GeneralTab
+                      key="general"
                       variants={tabContentVariants}
                       transcriptionMode={form.transcriptionMode}
                       onTranscriptionModeChange={form.setTranscriptionMode}
@@ -260,6 +263,7 @@ const SettingsModal = ({
 
                   {form.activeTab === "models" && (
                     <ModelsTab
+                      key="models"
                       variants={tabContentVariants}
                       llmEnabled={form.llmEnabled}
                       setLlmEnabled={form.setLlmEnabled}
@@ -287,6 +291,7 @@ const SettingsModal = ({
 
                   {form.activeTab === "app" && (
                     <AppTab
+                      key="app"
                       variants={tabContentVariants}
                       micPermission={form.micPermission}
                       accessibilityPermission={form.accessibilityPermission}
@@ -312,11 +317,13 @@ const SettingsModal = ({
                       onRecordingPrunePolicyChange={form.setRecordingPrunePolicy}
                       analyticsEnabled={form.analyticsEnabled}
                       onAnalyticsEnabledChange={form.setAnalyticsEnabled}
+                      platformCapabilities={form.platformCapabilities}
                     />
                   )}
 
                   {form.activeTab === "about" && (
                     <AboutTab
+                      key="about"
                       variants={tabContentVariants}
                       appInfo={form.appInfo}
                       formatBytes={form.formatBytes}
@@ -334,10 +341,12 @@ const SettingsModal = ({
       )}
 
       <FAQModal
+        key="faq-modal"
         isOpen={form.showFAQModal}
         onClose={() => form.setShowFAQModal(false)}
       />
       <WhatsNewModal
+        key="whats-new-modal"
         isOpen={form.whatsNewOpen}
         onClose={() => form.setWhatsNewOpen(false)}
       />

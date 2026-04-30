@@ -147,7 +147,7 @@ fn default_personalities() -> Vec<Personality> {
             id: "messaging".to_string(),
             name: "Messaging".to_string(),
             enabled: true,
-            apps: vec!["Messages".to_string(), "Slack".to_string()],
+            apps: default_messaging_apps(),
             websites: vec!["slack.com".to_string()],
             instructions: vec![],
         },
@@ -155,11 +155,7 @@ fn default_personalities() -> Vec<Personality> {
             id: "email".to_string(),
             name: "Email".to_string(),
             enabled: true,
-            apps: vec![
-                "Mail".to_string(),
-                "Outlook".to_string(),
-                "Spark".to_string(),
-            ],
+            apps: default_email_apps(),
             websites: vec![
                 "mail.google.com".to_string(),
                 "outlook.com".to_string(),
@@ -171,13 +167,7 @@ fn default_personalities() -> Vec<Personality> {
             id: "notes".to_string(),
             name: "Notes".to_string(),
             enabled: true,
-            apps: vec![
-                "Notes".to_string(),
-                "Notion".to_string(),
-                "Obsidian".to_string(),
-                "Craft".to_string(),
-                "Affine".to_string(),
-            ],
+            apps: default_notes_apps(),
             websites: vec![
                 "notion.so".to_string(),
                 "craft.do".to_string(),
@@ -190,13 +180,7 @@ fn default_personalities() -> Vec<Personality> {
             id: "coding".to_string(),
             name: "Coding".to_string(),
             enabled: true,
-            apps: vec![
-                "Cursor".to_string(),
-                "Visual Studio Code".to_string(),
-                "Xcode".to_string(),
-                "WebStorm".to_string(),
-                "IntelliJ IDEA".to_string(),
-            ],
+            apps: default_coding_apps(),
             websites: vec![
                 "github.com".to_string(),
                 "gitlab.com".to_string(),
@@ -205,6 +189,82 @@ fn default_personalities() -> Vec<Personality> {
             instructions: vec![],
         },
     ]
+}
+
+#[cfg(target_os = "windows")]
+fn default_messaging_apps() -> Vec<String> {
+    ["Microsoft Teams", "Slack", "Discord", "WhatsApp"]
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_messaging_apps() -> Vec<String> {
+    ["Messages", "Slack"]
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+#[cfg(target_os = "windows")]
+fn default_email_apps() -> Vec<String> {
+    ["Outlook", "Thunderbird"]
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_email_apps() -> Vec<String> {
+    ["Mail", "Outlook", "Spark"]
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+#[cfg(target_os = "windows")]
+fn default_notes_apps() -> Vec<String> {
+    ["OneNote", "Sticky Notes", "Notion", "Obsidian"]
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_notes_apps() -> Vec<String> {
+    ["Notes", "Notion", "Obsidian", "Craft", "Affine"]
+        .into_iter()
+        .map(String::from)
+        .collect()
+}
+
+#[cfg(target_os = "windows")]
+fn default_coding_apps() -> Vec<String> {
+    [
+        "Cursor",
+        "Visual Studio Code",
+        "Visual Studio",
+        "WebStorm",
+        "IntelliJ IDEA",
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect()
+}
+
+#[cfg(not(target_os = "windows"))]
+fn default_coding_apps() -> Vec<String> {
+    [
+        "Cursor",
+        "Visual Studio Code",
+        "Xcode",
+        "WebStorm",
+        "IntelliJ IDEA",
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect()
 }
 
 fn seed_personality_notes(personalities: &mut [Personality]) {

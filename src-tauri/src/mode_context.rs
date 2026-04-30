@@ -17,10 +17,13 @@ fn extract_host(candidate: &str) -> Option<String> {
         value = value[(index + 3)..].to_string();
     }
 
-    let slash_index = value.find('/').unwrap_or(value.len());
-    let host_port = &value[..slash_index];
+    let end_index = value
+        .find(|ch| matches!(ch, '/' | '?' | '#'))
+        .unwrap_or(value.len());
+    let host_port = &value[..end_index];
     let host_port = host_port.split('@').next_back().unwrap_or(host_port);
     let host = host_port.split(':').next().unwrap_or(host_port);
+    let host = host.trim_start_matches("www.");
 
     if host.is_empty() {
         None
@@ -29,59 +32,42 @@ fn extract_host(candidate: &str) -> Option<String> {
     }
 }
 
-fn token_match(haystack: &str, needle: &str) -> bool {
-    let haystack = haystack.to_lowercase();
-    let needle = needle.to_lowercase();
-    if haystack.is_empty() || needle.is_empty() {
+fn site_matches(url: &str, site: &str) -> bool {
+    let Some(host) = extract_host(url) else {
         return false;
-    }
-
-    let haystack_bytes = haystack.as_bytes();
-    for (i, _) in haystack.match_indices(&needle) {
-        let before_ok = i == 0 || !haystack_bytes[i - 1].is_ascii_alphanumeric();
-        let after_ok = i + needle.len() >= haystack.len()
-            || !haystack_bytes[i + needle.len()].is_ascii_alphanumeric();
-        if before_ok && after_ok {
-            return true;
-        }
-    }
-    false
-}
-
-fn site_matches(haystack: &str, site: &str) -> bool {
-    let site = site.trim().to_lowercase();
-    if site.is_empty() {
+    };
+    let Some(site_host) = extract_host(site) else {
         return false;
-    }
-
-    let target = if haystack.contains("://") {
-        extract_host(haystack).unwrap_or_else(|| haystack.to_string())
-    } else {
-        haystack.to_string()
     };
 
-    if token_match(&target, &site) {
-        return true;
-    }
-
-    let mut labels = site.split('.');
-    if let Some(label) = labels.next() {
-        if label != site && label.len() >= 2 {
-            return token_match(&target, label);
-        }
-    }
-
-    false
+    host == site_host || host.ends_with(&format!(".{site_host}"))
 }
 
-fn app_matches(app_name: &str, entry: &str) -> bool {
-    let app_name = app_name.trim();
-    let entry = entry.trim();
-    if app_name.is_empty() || entry.is_empty() {
+fn app_tokens(value: &str) -> Vec<String> {
+    value
+        .trim()
+        .trim_end_matches(".exe")
+        .to_lowercase()
+        .split(|ch: char| !ch.is_ascii_alphanumeric())
+        .filter(|token| !token.is_empty())
+        .map(ToString::to_string)
+        .collect()
+}
+
+fn tokens_contain_all(haystack: &[String], needles: &[String]) -> bool {
+    !needles.is_empty() && needles.iter().all(|needle| haystack.contains(needle))
+}
+
+fn app_matches(active_app_name: &str, configured_app_name: &str) -> bool {
+    let active_tokens = app_tokens(active_app_name);
+    let configured_tokens = app_tokens(configured_app_name);
+    if active_tokens.is_empty() || configured_tokens.is_empty() {
         return false;
     }
 
-    app_name.eq_ignore_ascii_case(entry) || token_match(app_name, entry)
+    active_tokens == configured_tokens
+        || tokens_contain_all(&configured_tokens, &active_tokens)
+        || tokens_contain_all(&active_tokens, &configured_tokens)
 }
 
 fn mode_matches(mode: &Personality, context: &accessibility_context::ActiveContext) -> bool {
@@ -94,12 +80,8 @@ fn mode_matches(mode: &Personality, context: &accessibility_context::ActiveConte
         .as_ref()
         .map(|url| mode.websites.iter().any(|site| site_matches(url, site)))
         .unwrap_or(false);
-    let site_match_from_title = mode
-        .websites
-        .iter()
-        .any(|site| site_matches(&context.window_title, site));
 
-    app_match || site_match_from_url || site_match_from_title
+    app_match || site_match_from_url
 }
 
 fn resolve_mode_context(settings: &UserSettings) -> Option<Vec<ModeContextMode>> {

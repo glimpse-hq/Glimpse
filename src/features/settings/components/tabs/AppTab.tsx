@@ -7,12 +7,13 @@ import { AlertTriangle, Check, Loader2 } from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
-  checkInputMonitoringPermission,
-  requestAccessibilityPermission,
-  requestInputMonitoringPermission,
-} from "tauri-plugin-macos-permissions-api";
+  checkMacInputMonitoringPermission,
+  requestMacAccessibilityPermission,
+  requestMacInputMonitoringPermission,
+} from "../../../../shared/lib/macosPermissions";
 import { buildAppLocaleOptions } from "../../../../shared/lib/appLocales";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
+import type { PlatformCapabilities } from "../../../../shared/lib/platform";
 import type {
   AppLocaleSetting,
   RecordingPrunePolicy,
@@ -99,6 +100,7 @@ type AppTabProps = {
   onRecordingPrunePolicyChange: (policy: RecordingPrunePolicy) => void;
   analyticsEnabled: boolean;
   onAnalyticsEnabledChange: (enabled: boolean) => void;
+  platformCapabilities: PlatformCapabilities;
 };
 
 const AppTab = ({
@@ -123,6 +125,7 @@ const AppTab = ({
   onRecordingPrunePolicyChange,
   analyticsEnabled,
   onAnalyticsEnabledChange,
+  platformCapabilities,
 }: AppTabProps) => {
   const { t } = useLingui();
   const [draftPolicy, setDraftPolicy] = useState<RecordingPrunePolicy>(
@@ -372,6 +375,10 @@ const AppTab = ({
         message: "Checking how many recordings would be deleted",
       })
     : confirmButtonLabel;
+  const hasPermissionRows =
+    platformCapabilities.requiresNativeMicrophonePermission ||
+    platformCapabilities.requiresAccessibilityPermission ||
+    platformCapabilities.requiresInputMonitoringPermission;
 
   return (
     <>
@@ -449,109 +456,115 @@ const AppTab = ({
             </h2>
 
             <div className="space-y-3 rounded-lg bg-surface-surface p-2.5 flex-1">
-              <div className="px-2 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="ui-text-label-strong ui-color-primary">
-                      {t({
-                        id: "settings.app.microphone",
-                        message: "Microphone",
-                      })}
-                    </span>
-                    <span className="truncate ui-text-meta ui-color-disabled">
-                      {t({
-                        id: "settings.app.microphone.description",
-                        message: "required for transcription",
-                      })}
-                    </span>
+              {platformCapabilities.requiresNativeMicrophonePermission && (
+                <div className="px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="ui-text-label-strong ui-color-primary">
+                        {t({
+                          id: "settings.app.microphone",
+                          message: "Microphone",
+                        })}
+                      </span>
+                      <span className="truncate ui-text-meta ui-color-disabled">
+                        {t({
+                          id: "settings.app.microphone.description",
+                          message: "required for transcription",
+                        })}
+                      </span>
+                    </div>
+                    <PermissionStatus granted={micPermission} />
                   </div>
-                  <PermissionStatus granted={micPermission} />
+                  <button
+                    onClick={() => {
+                      void onRequestMicrophonePermission();
+                    }}
+                    className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+                  >
+                    {t({
+                      id: "settings.app.open_settings",
+                      message: "Open Settings",
+                    })}
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    void onRequestMicrophonePermission();
-                  }}
-                  className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                >
-                  {t({
-                    id: "settings.app.open_settings",
-                    message: "Open Settings",
-                  })}
-                </button>
-              </div>
+              )}
 
-              <div className="px-2 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="ui-text-label-strong ui-color-primary">
-                      {t({
-                        id: "settings.app.accessibility",
-                        message: "Accessibility",
-                      })}
-                    </span>
-                    <span className="truncate ui-text-meta ui-color-disabled">
-                      {t({
-                        id: "settings.app.accessibility.description",
-                        message: "required for auto-paste",
-                      })}
-                    </span>
+              {platformCapabilities.requiresAccessibilityPermission && (
+                <div className="px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="ui-text-label-strong ui-color-primary">
+                        {t({
+                          id: "settings.app.accessibility",
+                          message: "Accessibility",
+                        })}
+                      </span>
+                      <span className="truncate ui-text-meta ui-color-disabled">
+                        {t({
+                          id: "settings.app.accessibility.description",
+                          message: "required for auto-paste",
+                        })}
+                      </span>
+                    </div>
+                    <PermissionStatus granted={accessibilityPermission} />
                   </div>
-                  <PermissionStatus granted={accessibilityPermission} />
+                  <button
+                    onClick={async () => {
+                      try {
+                        const granted = await requestMacAccessibilityPermission();
+                        if (!granted) await invoke("open_accessibility_settings");
+                      } catch {
+                        await invoke("open_accessibility_settings");
+                      }
+                    }}
+                    className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+                  >
+                    {t({
+                      id: "settings.app.open_settings",
+                      message: "Open Settings",
+                    })}
+                  </button>
                 </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      const granted = await requestAccessibilityPermission();
-                      if (!granted) await invoke("open_accessibility_settings");
-                    } catch {
-                      await invoke("open_accessibility_settings");
-                    }
-                  }}
-                  className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                >
-                  {t({
-                    id: "settings.app.open_settings",
-                    message: "Open Settings",
-                  })}
-                </button>
-              </div>
+              )}
 
-              <div className="px-2 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <span className="ui-text-label-strong ui-color-primary">
-                      {t({
-                        id: "settings.app.input_monitoring",
-                        message: "Input Monitoring",
-                      })}
-                    </span>
-                    <span className="truncate ui-text-meta ui-color-disabled">
-                      {t({
-                        id: "settings.app.input_monitoring.description",
-                        message: "required for global shortcuts",
-                      })}
-                    </span>
+              {platformCapabilities.requiresInputMonitoringPermission && (
+                <div className="px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="ui-text-label-strong ui-color-primary">
+                        {t({
+                          id: "settings.app.input_monitoring",
+                          message: "Input Monitoring",
+                        })}
+                      </span>
+                      <span className="truncate ui-text-meta ui-color-disabled">
+                        {t({
+                          id: "settings.app.input_monitoring.description",
+                          message: "required for global shortcuts",
+                        })}
+                      </span>
+                    </div>
+                    <PermissionStatus granted={inputMonitoringPermission} />
                   </div>
-                  <PermissionStatus granted={inputMonitoringPermission} />
+                  <button
+                    onClick={async () => {
+                      try {
+                        await requestMacInputMonitoringPermission();
+                        const granted = await checkMacInputMonitoringPermission();
+                        if (!granted) await invoke("open_input_monitoring_settings");
+                      } catch {
+                        await invoke("open_input_monitoring_settings");
+                      }
+                    }}
+                    className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+                  >
+                    {t({
+                      id: "settings.app.open_settings",
+                      message: "Open Settings",
+                    })}
+                  </button>
                 </div>
-                <button
-                  onClick={async () => {
-                    try {
-                      await requestInputMonitoringPermission();
-                      const granted = await checkInputMonitoringPermission();
-                      if (!granted) await invoke("open_input_monitoring_settings");
-                    } catch {
-                      await invoke("open_input_monitoring_settings");
-                    }
-                  }}
-                  className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                >
-                  {t({
-                    id: "settings.app.open_settings",
-                    message: "Open Settings",
-                  })}
-                </button>
-              </div>
+              )}
 
               <div className="px-2 py-1.5">
                 <div className="flex items-center justify-between gap-2">
@@ -592,12 +605,18 @@ const AppTab = ({
               </div>
             </div>
 
-            <p className="ui-text-micro ui-color-disabled px-0.5">
-              {t({
-                id: "settings.app.permissions_restart_notice",
-                message: "Permission changes may require a restart.",
-              })}
-            </p>
+            {hasPermissionRows ? (
+              <p className="ui-text-micro ui-color-disabled px-0.5">
+                {t({
+                  id: "settings.app.permissions_restart_notice",
+                  message: "Permission changes may require a restart.",
+                })}
+              </p>
+            ) : (
+              <p className="ui-text-micro px-0.5 invisible" aria-hidden="true">
+                &nbsp;
+              </p>
+            )}
           </div>
 
           <div className="space-y-2 flex flex-col">
@@ -609,32 +628,34 @@ const AppTab = ({
             </h2>
 
             <div className="space-y-3 rounded-lg bg-surface-surface p-2.5 flex-1">
-              <div className="px-2 py-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="ui-text-label-strong ui-color-primary">
+              {platformCapabilities.supportsAutoPauseMedia && (
+                <div className="px-2 py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="ui-text-label-strong ui-color-primary">
+                      {t({
+                        id: "settings.app.auto_pause_media",
+                        message: "Auto-pause Media",
+                      })}
+                    </span>
+                    <ToggleSwitch
+                      enabled={mediaControlEnabled}
+                      onToggle={() =>
+                        onMediaControlEnabledChange(!mediaControlEnabled)
+                      }
+                      ariaLabel={t({
+                        id: "settings.app.auto_pause_media.toggle_aria",
+                        message: "Toggle auto-pause media while recording",
+                      })}
+                    />
+                  </div>
+                  <span className="ui-text-micro ui-color-disabled block mt-0.5">
                     {t({
-                      id: "settings.app.auto_pause_media",
-                      message: "Auto-pause Media",
+                      id: "settings.app.auto_pause_media.body",
+                      message: "pauses music while recording, resumes when done.",
                     })}
                   </span>
-                  <ToggleSwitch
-                    enabled={mediaControlEnabled}
-                    onToggle={() =>
-                      onMediaControlEnabledChange(!mediaControlEnabled)
-                    }
-                    ariaLabel={t({
-                      id: "settings.app.auto_pause_media.toggle_aria",
-                      message: "Toggle auto-pause media while recording",
-                    })}
-                  />
                 </div>
-                <span className="ui-text-micro ui-color-disabled block mt-0.5">
-                  {t({
-                    id: "settings.app.auto_pause_media.body",
-                    message: "pauses music while recording, resumes when done.",
-                  })}
-                </span>
-              </div>
+              )}
 
               <div className="px-2 py-1.5">
                 <div className="flex items-center justify-between gap-2">

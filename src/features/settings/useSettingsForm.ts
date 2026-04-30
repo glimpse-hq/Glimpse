@@ -10,10 +10,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
-  checkAccessibilityPermission,
-  checkInputMonitoringPermission,
-} from "tauri-plugin-macos-permissions-api";
+  checkMacAccessibilityPermission,
+  checkMacInputMonitoringPermission,
+} from "../../shared/lib/macosPermissions";
+import { getPlatformCapabilities } from "../../shared/lib/platform";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
+import { parseTextSizeMode } from "../../shared/lib/textSize";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { logout, type User as AuthUser } from "../auth/api";
 import {
@@ -42,11 +44,6 @@ import type {
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 const THEME_MODE_STORAGE_KEY = "glimpse_theme_mode";
-
-const parseTextSizeMode = (value: string | null): TextSizeMode =>
-  value === "small" || value === "default" || value === "large"
-    ? value
-    : "default";
 
 const parseThemeMode = (value: string | null): ThemeMode =>
   value === "light" || value === "dark" || value === "system"
@@ -136,6 +133,7 @@ export function useSettingsForm({
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
   const appInfo = appInfoQuery.data ?? null;
+  const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
   const loading =
     isOpen &&
     (settingsQuery.isLoading ||
@@ -273,17 +271,8 @@ export function useSettingsForm({
       autoTranscriptionLanguageLabel,
     ],
   );
-  const languageForcedAuto =
-    activeTranscriptionEngine === "parakeet_v3" ||
-    activeTranscriptionEngine === "nvidia";
-  const displayedLanguage = languageForcedAuto ? "" : language;
-  const displayedLanguageOptions = useMemo(
-    () =>
-      languageForcedAuto
-        ? languageView.options.filter((option) => option.code === "")
-        : languageView.options,
-    [languageForcedAuto, languageView.options],
-  );
+  const displayedLanguage = language;
+  const displayedLanguageOptions = languageView.options;
 
   const llmProviderPreset = useMemo(
     () => getProviderPreset(llmProvider),
@@ -370,9 +359,15 @@ export function useSettingsForm({
 
   const refreshPermissionState = useCallback(async () => {
     const [nativeMic, acc, inputMonitoring] = await Promise.allSettled([
-      invoke<boolean>("check_microphone_permission"),
-      checkAccessibilityPermission(),
-      checkInputMonitoringPermission(),
+      platformCapabilities.requiresNativeMicrophonePermission
+        ? invoke<boolean>("check_microphone_permission")
+        : Promise.resolve<boolean | null>(null),
+      platformCapabilities.requiresAccessibilityPermission
+        ? checkMacAccessibilityPermission()
+        : Promise.resolve<boolean | null>(null),
+      platformCapabilities.requiresInputMonitoringPermission
+        ? checkMacInputMonitoringPermission()
+        : Promise.resolve<boolean | null>(null),
     ]);
 
     setMicPermission(nativeMic.status === "fulfilled" ? nativeMic.value : false);
@@ -380,7 +375,7 @@ export function useSettingsForm({
     setInputMonitoringPermission(
       inputMonitoring.status === "fulfilled" ? inputMonitoring.value : false,
     );
-  }, []);
+  }, [platformCapabilities]);
 
   useEffect(() => {
     if (activeTab !== "app" || !isOpen) return;
@@ -889,6 +884,7 @@ export function useSettingsForm({
     setRecordingPrunePolicy,
     analyticsEnabled,
     setAnalyticsEnabled,
+    platformCapabilities,
 
     authLoading,
     currentUser,

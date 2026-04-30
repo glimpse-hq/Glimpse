@@ -386,15 +386,19 @@ const LibraryView = ({
                         )}
 
                         {!isLoading && items.length === 0 && (
-                            <div className="col-span-full rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-8 flex flex-col items-center justify-center text-center">
+                            <button
+                                type="button"
+                                onClick={handleImportClick}
+                                className="col-span-full rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-8 flex flex-col items-center justify-center text-center hover:text-content-secondary hover:border-border-hover transition-colors"
+                            >
                                 <FolderOpen size={20} className="text-content-disabled" />
                                 <p className="mt-3 ui-text-body ui-color-muted">
                                     {t({
                                         id: "library.view.empty_state",
-                                        message: "Drag files here to build your Library.",
+                                        message: "Click to import files, or drag them here to build your Library.",
                                     })}
                                 </p>
-                            </div>
+                            </button>
                         )}
 
                         {items.map((item, index) => (
@@ -441,7 +445,7 @@ const LibraryView = ({
                                 <span className="mt-2 ui-text-body-sm">
                                     {t({
                                         id: "library.view.dropzone",
-                                        message: "Drop files to import",
+                                        message: "Click or drop files to import",
                                     })}
                                 </span>
                             </button>

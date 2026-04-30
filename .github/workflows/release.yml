@@ -16,7 +16,19 @@ jobs:
     permissions:
       contents: write
 
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - platform: macos-15
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            tauri-args: --target universal-apple-darwin
+          - platform: windows-latest
+            rust-targets: x86_64-pc-windows-msvc
+            tauri-args: --target x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform }}
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "14.0"
@@ -31,12 +43,26 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: verify Xcode
+        if: matrix.platform == 'macos-15'
         run: xcodebuild -version
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: package.json
+
+      - name: configure Windows build paths
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          "CARGO_TARGET_DIR=$env:RUNNER_TEMP\cargo-target" >> $env:GITHUB_ENV
+
+      - name: install Vulkan SDK
+        if: matrix.platform == 'windows-latest'
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
 
       - name: determine release type
         shell: bash
@@ -63,6 +89,7 @@ jobs:
             ~/.bun/install/cache
             ~/.cache/bun
             ~/Library/Caches/bun
+            ~\AppData\Local\bun\install\cache
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock', 'bun.lockb') }}
           restore-keys: |
             ${{ runner.os }}-bun-
@@ -70,7 +97,7 @@ jobs:
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin,x86_64-apple-darwin
+          targets: ${{ matrix.rust-targets }}
 
       - name: cache rust
         uses: Swatinem/rust-cache@v2
@@ -87,6 +114,7 @@ jobs:
         run: cargo check --locked --manifest-path src-tauri/Cargo.toml
 
       - name: import Apple Developer Certificate
+        if: matrix.platform == 'macos-15'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -102,6 +130,7 @@ jobs:
           security find-identity -v -p codesigning build.keychain
 
       - name: verify certificate
+        if: matrix.platform == 'macos-15'
         run: |
           CERT_INFO=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
           CERT_ID=$(echo "$CERT_INFO" | awk -F'"' '{print $2}')
@@ -128,4 +157,4 @@ jobs:
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: ${{ env.IS_PRERELEASE == 'true' }}
-          args: --target universal-apple-darwin
+          args: ${{ matrix.tauri-args }}

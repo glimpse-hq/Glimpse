@@ -232,7 +232,7 @@ impl LocalTranscriber {
                     TimestampGranularity::Token
                 };
                 let params = Some(ParakeetInferenceParams {
-                    language: None,
+                    language: language.map(|s| s.to_string()),
                     dictionary: dictionary.to_vec(),
                     timestamp_granularity,
                 });

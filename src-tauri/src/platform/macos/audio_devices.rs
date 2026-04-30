@@ -3,11 +3,10 @@ use std::ptr::NonNull;
 
 use crossbeam_channel::Sender;
 use objc2_core_audio::{
-    kAudioHardwareNoError, kAudioHardwarePropertyDefaultInputDevice,
-    kAudioHardwarePropertyDevices, kAudioObjectPropertyElementMain,
-    kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject, AudioObjectAddPropertyListener,
-    AudioObjectID, AudioObjectPropertyAddress, AudioObjectPropertySelector,
-    AudioObjectRemovePropertyListener,
+    kAudioHardwareNoError, kAudioHardwarePropertyDefaultInputDevice, kAudioHardwarePropertyDevices,
+    kAudioObjectPropertyElementMain, kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject,
+    AudioObjectAddPropertyListener, AudioObjectID, AudioObjectPropertyAddress,
+    AudioObjectPropertySelector, AudioObjectRemovePropertyListener,
 };
 use tauri::{AppHandle, Emitter, Manager};
 

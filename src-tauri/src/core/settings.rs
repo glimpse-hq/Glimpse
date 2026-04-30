@@ -39,7 +39,7 @@ pub(crate) struct UpdateSettingsArgs {
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> String {
-    hotkeys::normalize_shortcut(shortcut).unwrap_or_else(|_| shortcut.trim().to_string())
+    hotkeys::normalize_recording_shortcut(shortcut).unwrap_or_else(|_| shortcut.trim().to_string())
 }
 
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
@@ -64,18 +64,35 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         let raw = args.smart_shortcut.trim();
         let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
+        if !hotkeys::shortcut_has_non_modifier_key(&normalized) {
+            return Err(
+                "Smart shortcut must include a non-modifier key (for example, Control+Space)"
+                    .into(),
+            );
+        }
         enabled_shortcuts.push(("Smart", normalized));
     }
     if args.hold_enabled {
         let raw = args.hold_shortcut.trim();
         let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
+        if !hotkeys::shortcut_has_non_modifier_key(&normalized) {
+            return Err(
+                "Hold shortcut must include a non-modifier key (for example, Control+Space)".into(),
+            );
+        }
         enabled_shortcuts.push(("Hold", normalized));
     }
     if args.toggle_enabled {
         let raw = args.toggle_shortcut.trim();
         let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
+        if !hotkeys::shortcut_has_non_modifier_key(&normalized) {
+            return Err(
+                "Toggle shortcut must include a non-modifier key (for example, Control+Space)"
+                    .into(),
+            );
+        }
         enabled_shortcuts.push(("Toggle", normalized));
     }
 
@@ -227,14 +244,12 @@ pub(crate) fn update_settings(
         Ok(next) => next,
         Err(err) => {
             if launch_changed {
-                if let Err(rollback_err) = crate::sync_launch_at_login(app, prev.auto_launch_enabled)
+                if let Err(rollback_err) =
+                    crate::sync_launch_at_login(app, prev.auto_launch_enabled)
                 {
                     return Err(format!(
                         "{} (also failed to roll back launch at login from {} back to {}: {})",
-                        err,
-                        requested_auto_launch_enabled,
-                        prev.auto_launch_enabled,
-                        rollback_err
+                        err, requested_auto_launch_enabled, prev.auto_launch_enabled, rollback_err
                     ));
                 }
             }

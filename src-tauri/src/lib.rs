@@ -70,6 +70,10 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
+#[cfg(target_os = "windows")]
+pub(crate) const FFMPEG_HELP_URL: &str =
+    "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-windows";
+#[cfg(not(target_os = "windows"))]
 pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-mac";
 
 fn launched_via_autostart() -> bool {
@@ -151,11 +155,6 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             }
         }
     }
-}
-
-#[cfg(target_os = "windows")]
-fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
-    platform::windows::menu::handle_menu_event(app, id);
 }
 
 #[cfg(target_os = "macos")]
@@ -258,20 +257,15 @@ pub(crate) fn set_app_menu(
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
-pub(crate) fn set_app_menu(
-    app: &AppHandle<AppRuntime>,
-    settings: &settings::UserSettings,
-) -> tauri::Result<()> {
-    platform::windows::menu::set_app_menu(app, settings)
-}
-
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let _guard = rt.enter();
     tauri::async_runtime::set(rt.handle().clone());
 
     let builder = tauri::Builder::default();
+
+    #[cfg(target_os = "windows")]
+    let builder = builder.device_event_filter(tauri::DeviceEventFilter::Always);
 
     #[cfg(any(target_os = "macos", target_os = "windows"))]
     let builder = builder.plugin(tauri_plugin_single_instance::init(|_, _, _| {}));
@@ -296,12 +290,6 @@ pub fn run() {
     let builder = builder.plugin(tauri_nspanel::init());
 
     #[cfg(target_os = "macos")]
-    let builder = builder.on_menu_event(|app, event| {
-        let id = event.id().as_ref();
-        handle_app_menu_event(app, id);
-    });
-
-    #[cfg(target_os = "windows")]
     let builder = builder.on_menu_event(|app, event| {
         let id = event.id().as_ref();
         handle_app_menu_event(app, id);
@@ -348,18 +336,6 @@ pub fn run() {
                 }
             }
 
-            #[cfg(target_os = "windows")]
-            {
-                let handle = app.handle();
-                let settings = handle.state::<AppState>().current_settings();
-                if let Err(err) = set_app_menu(handle, &settings) {
-                    eprintln!("Failed to set app menu: {err}");
-                }
-                if let Err(err) = platform::windows::hotkeys::init(handle) {
-                    eprintln!("Failed to initialize Windows hotkey platform stubs: {err}");
-                }
-            }
-
             if let Some(window) = handle.get_webview_window(MAIN_WINDOW_LABEL) {
                 let _ = window.hide();
                 platform::overlay::init(handle, &window);
@@ -368,6 +344,10 @@ pub fn run() {
             if let Some(toast_window) = handle.get_webview_window(toast::WINDOW_LABEL) {
                 let _ = toast_window.hide();
                 platform::toast::init(handle, &toast_window);
+            }
+
+            if let Some(settings_window) = handle.get_webview_window(SETTINGS_WINDOW_LABEL) {
+                platform::settings_window::init(&settings_window);
             }
 
             if let Ok(tray) = tray::build_tray(handle) {
@@ -476,6 +456,7 @@ pub fn run() {
                     eprintln!("Failed to handle opened files: {err}");
                 }
             }
+            #[cfg(target_os = "macos")]
             tauri::RunEvent::Reopen {
                 has_visible_windows,
                 ..

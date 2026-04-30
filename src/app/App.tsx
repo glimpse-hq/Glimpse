@@ -7,27 +7,15 @@ import Home from "../Home";
 import OnboardingScreen from "../features/onboarding/OnboardingScreen";
 import { useSettings } from "../features/settings/queries";
 import type { TextSizeMode, ThemeMode } from "../types";
+import { detectAppPlatform } from "../shared/lib/platform";
+import { parseTextSizeMode, resolveTextScale } from "../shared/lib/textSize";
 import "./App.css";
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 const THEME_MODE_STORAGE_KEY = "glimpse_theme_mode";
 
-const parseTextSizeMode = (value: string | null): TextSizeMode =>
-  value === "small" || value === "default" || value === "large" ? value : "default";
-
 const parseThemeMode = (value: string | null): ThemeMode =>
   value === "light" || value === "dark" || value === "system" ? value : "system";
-
-const resolveTextScale = (mode: TextSizeMode): string => {
-  switch (mode) {
-    case "small":
-      return "0.94";
-    case "large":
-      return "1.08";
-    default:
-      return "1";
-  }
-};
 
 const resolveThemeAttribute = (mode: ThemeMode): "light" | "dark" => {
   if (mode === "system") {
@@ -67,8 +55,9 @@ function App() {
       return;
     }
 
+    const platform = detectAppPlatform();
     const applyTextScale = (mode: TextSizeMode) => {
-      const scaleValue = resolveTextScale(mode);
+      const scaleValue = resolveTextScale(mode, platform);
       root.style.setProperty("--ui-text-scale", scaleValue);
     };
 

@@ -26,6 +26,7 @@ pub(crate) fn is_ffmpeg_error_message(message: &str) -> bool {
 pub const EVENT_LIBRARY_PROGRESS: &str = "library:transcription_progress";
 pub const EVENT_LIBRARY_COMPLETE: &str = "library:transcription_complete";
 pub const EVENT_LIBRARY_ERROR: &str = "library:transcription_error";
+#[cfg(target_os = "macos")]
 pub const EVENT_LIBRARY_OPEN_IMPORT: &str = "library:open_import";
 pub const EVENT_LIBRARY_IMPORT_PROGRESS: &str = "library:import_progress";
 

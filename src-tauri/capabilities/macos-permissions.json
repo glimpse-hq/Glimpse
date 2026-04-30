@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "macos-permissions",
+  "description": "macOS-only system permission APIs",
+  "platforms": [
+    "macOS"
+  ],
+  "windows": [
+    "settings"
+  ],
+  "permissions": [
+    "macos-permissions:default"
+  ]
+}

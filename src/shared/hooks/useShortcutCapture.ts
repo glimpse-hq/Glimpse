@@ -17,6 +17,70 @@ type UseShortcutCaptureOptions = {
 };
 
 const SHORTCUT_CAPTURE_EVENT = "shortcut:capture";
+const MODIFIER_KEYS = new Set([
+  "Alt",
+  "AltGraph",
+  "Control",
+  "Meta",
+  "Shift",
+  "Fn",
+  "OS",
+]);
+
+const CODE_TO_KEY_TOKEN: Record<string, string> = {
+  Space: "Space",
+  Enter: "Return",
+  NumpadEnter: "Return",
+  Escape: "Escape",
+  Tab: "Tab",
+  Backspace: "Delete",
+  Delete: "ForwardDelete",
+  ArrowLeft: "Left",
+  ArrowRight: "Right",
+  ArrowUp: "Up",
+  ArrowDown: "Down",
+  Home: "Home",
+  End: "End",
+  PageUp: "PageUp",
+  PageDown: "PageDown",
+};
+
+function modifierTokensFromEvent(event: KeyboardEvent): string[] {
+  const tokens: string[] = [];
+  if (event.metaKey) tokens.push("Cmd");
+  if (event.ctrlKey) tokens.push("Ctrl");
+  if (event.altKey) tokens.push("Opt");
+  if (event.shiftKey) tokens.push("Shift");
+  return tokens;
+}
+
+function keyTokenFromEvent(event: KeyboardEvent): string | null {
+  if (MODIFIER_KEYS.has(event.key)) return null;
+  if (CODE_TO_KEY_TOKEN[event.code]) return CODE_TO_KEY_TOKEN[event.code];
+
+  if (/^Key[A-Z]$/.test(event.code)) return event.code.slice(3);
+  if (/^Digit\d$/.test(event.code)) return event.code.slice(5);
+  if (/^F\d{1,2}$/.test(event.code)) return event.code;
+  if (/^Numpad\d$/.test(event.code)) return `Keypad${event.code.slice(6)}`;
+
+  if (/^[a-z]$/i.test(event.key)) return event.key.toUpperCase();
+  if (/^\d$/.test(event.key)) return event.key;
+  if (/^F\d{1,2}$/i.test(event.key)) return event.key.toUpperCase();
+
+  return null;
+}
+
+function shortcutFromEvent(event: KeyboardEvent): string | null {
+  const tokens = modifierTokensFromEvent(event);
+  const keyToken = keyTokenFromEvent(event);
+  if (keyToken) tokens.push(keyToken);
+  if (tokens.length === 0) return null;
+  return tokens.join("+");
+}
+
+function hasNonModifierKey(event: KeyboardEvent): boolean {
+  return keyTokenFromEvent(event) !== null;
+}
 
 export function useShortcutCapture({
   active,
@@ -75,7 +139,7 @@ export function useShortcutCapture({
         resetCaptureState();
       });
 
-    const swallowKeyboardEvent = (event: KeyboardEvent) => {
+    const handleKeyboardEvent = (event: KeyboardEvent) => {
       const hasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
 
       if (event.key === "Escape" && !hasModifier) {
@@ -88,16 +152,29 @@ export function useShortcutCapture({
 
       event.preventDefault();
       event.stopPropagation();
+
+      const shortcut = shortcutFromEvent(event);
+      if (!shortcut) return;
+
+      onCaptureInput?.();
+
+      onPreviewChange(formatShortcutForDisplay(shortcut));
+
+      if (event.type === "keydown" && hasNonModifierKey(event)) {
+        onShortcutCaptured(shortcut);
+        onCancel();
+        resetCaptureState();
+      }
     };
 
-    window.addEventListener("keydown", swallowKeyboardEvent, true);
-    window.addEventListener("keyup", swallowKeyboardEvent, true);
+    window.addEventListener("keydown", handleKeyboardEvent, true);
+    window.addEventListener("keyup", handleKeyboardEvent, true);
 
     return () => {
       disposed = true;
       unlisten?.();
-      window.removeEventListener("keydown", swallowKeyboardEvent, true);
-      window.removeEventListener("keyup", swallowKeyboardEvent, true);
+      window.removeEventListener("keydown", handleKeyboardEvent, true);
+      window.removeEventListener("keyup", handleKeyboardEvent, true);
     };
   }, [
     active,

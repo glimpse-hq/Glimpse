@@ -1,4 +1,10 @@
-export type OnboardingPlatformId = "macos" | "windows" | "unsupported";
+import {
+  detectAppPlatform,
+  getPlatformCapabilities,
+  type AppPlatformId,
+} from "../../shared/lib/platform";
+
+export type OnboardingPlatformId = AppPlatformId;
 
 export type OnboardingStep =
   | "welcome"
@@ -14,24 +20,13 @@ export type OnboardingPlatform = {
   requiresAccessibilityPermission: boolean;
 };
 
-const detectPlatformId = (): OnboardingPlatformId => {
-  if (typeof navigator === "undefined") return "unsupported";
-
-  const userAgentData = (
-    navigator as Navigator & { userAgentData?: { platform?: string } }
-  ).userAgentData;
-  const platform = `${userAgentData?.platform ?? ""} ${navigator.platform ?? ""} ${navigator.userAgent ?? ""}`;
-  if (/mac/i.test(platform)) return "macos";
-  if (/win/i.test(platform)) return "windows";
-  return "unsupported";
-};
-
 export const getOnboardingPlatform = (): OnboardingPlatform => {
-  const id = detectPlatformId();
+  const id = detectAppPlatform();
+  const capabilities = getPlatformCapabilities();
 
   return {
     id,
-    requiresMicrophonePermission: id === "macos" || id === "windows",
-    requiresAccessibilityPermission: id === "macos",
+    requiresMicrophonePermission: capabilities.requiresNativeMicrophonePermission,
+    requiresAccessibilityPermission: capabilities.requiresAccessibilityPermission,
   };
 };
