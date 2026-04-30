@@ -141,17 +141,7 @@ pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
     set_text_excluding_history(&mut clipboard, text.to_string())
 }
 
-#[cfg(target_os = "macos")]
-fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result<()> {
-    clipboard
-        .set()
-        .exclude_from_history()
-        .text(text)
-        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
-    Ok(())
-}
-
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result<()> {
     clipboard
         .set()
@@ -264,23 +254,4 @@ fn keyboard_input(key: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS) -> INPUT {
             },
         },
     }
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-pub fn paste_text(_text: &str) -> Result<()> {
-    Err(anyhow!("Assistive paste is only supported on macOS"))
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
-    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
-    clipboard
-        .set_text(text.to_string())
-        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
-    Ok(())
-}
-
-#[cfg(not(any(target_os = "macos", target_os = "windows")))]
-pub fn get_selected_text_ax() -> Option<String> {
-    None
 }

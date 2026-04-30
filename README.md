@@ -81,7 +81,7 @@ Telemetry is tied to a random install ID (not your identity) and stored in the E
 
 ## License
 
-Glimpse is licensed under [AGPL-3.0](LICENSE). Free to self-host and modify, as long as you keep changes open. An optional paid cloud tier is planned for users who want faster speeds or cloud-only features.
+Glimpse is licensed under [AGPL-3.0](LICENSE). When you distribute Glimpse or provide it as a network service, you must make the corresponding source code, including your modifications, available under the AGPL-3.0 license. An optional paid cloud tier is planned for users who want faster speeds or cloud-only features.
 
 ## Acknowledgments
 

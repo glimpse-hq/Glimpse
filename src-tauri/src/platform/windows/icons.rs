@@ -151,6 +151,7 @@ fn wide_buffer_to_string(buffer: &[u16]) -> Option<String> {
 
 fn resolve_shortcut_icon_source(shortcut_path: &Path) -> Option<(PathBuf, i32)> {
     use windows::core::{Interface, PCWSTR};
+    use windows::Win32::Foundation::S_OK;
     use windows::Win32::System::Com::{
         CoCreateInstance, CoInitializeEx, CoUninitialize, IPersistFile, CLSCTX_INPROC_SERVER,
         COINIT_APARTMENTTHREADED, STGM_READ,
@@ -158,7 +159,7 @@ fn resolve_shortcut_icon_source(shortcut_path: &Path) -> Option<(PathBuf, i32)> 
     use windows::Win32::UI::Shell::{IShellLinkW, ShellLink};
 
     let hr = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
-    let should_uninitialize = hr.is_ok();
+    let should_uninitialize = hr == S_OK;
     let result = (|| {
         let shell_link: IShellLinkW =
             unsafe { CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER).ok()? };

@@ -81,13 +81,15 @@ fn mode_matches(mode: &Personality, context: &accessibility_context::ActiveConte
         .apps
         .iter()
         .any(|app| app_matches(&context.app_name, app));
-    let site_match_from_url = context
-        .url
-        .as_ref()
-        .map(|url| mode.websites.iter().any(|site| site_matches(url, site)))
-        .unwrap_or(false);
+    let site_match = if let Some(url) = context.url.as_ref() {
+        mode.websites.iter().any(|site| site_matches(url, site))
+    } else {
+        mode.websites.iter().any(|site| {
+            site_matches(&context.window_title, site) || site_matches(&context.app_name, site)
+        })
+    };
 
-    app_match || site_match_from_url
+    app_match || site_match
 }
 
 fn resolve_mode_context(settings: &UserSettings) -> Option<Vec<ModeContextMode>> {

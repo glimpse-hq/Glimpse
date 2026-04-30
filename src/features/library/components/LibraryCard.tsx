@@ -237,6 +237,18 @@ const LibraryCard = ({
                                         setMenuOpen((prev) => !prev);
                                     }
                                 }}
+                                onKeyDown={(e) => {
+                                    e.stopPropagation();
+                                    if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        if (shiftHeld) {
+                                            handleDelete();
+                                        } else {
+                                            setMenuOpen((prev) => !prev);
+                                        }
+                                    }
+                                }}
+                                onKeyUp={(e) => e.stopPropagation()}
                                 className={`p-1 ml-1 rounded transition-colors duration-200 outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-border-hover)] flex items-center justify-center ${
                                     shiftHeld
                                         ? "ui-color-error hover:bg-[var(--color-error)]/10"

@@ -451,6 +451,15 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                         className="-mt-0.5"
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => event.stopPropagation()}
+                        onKeyDown={(event) => {
+                          if (
+                            event.key === "Enter" ||
+                            event.key === " " ||
+                            event.key === "Spacebar"
+                          ) {
+                            event.stopPropagation();
+                          }
+                        }}
                       >
                         <ToggleSwitch
                           enabled={personality.enabled}

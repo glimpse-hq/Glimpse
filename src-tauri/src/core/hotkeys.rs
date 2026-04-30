@@ -121,7 +121,11 @@ impl HotkeyCoordinator {
                 match listener.recv_timeout(CAPTURE_POLL_INTERVAL) {
                     Ok(event) => {
                         if !event.is_key_down {
-                            if let Some(hotkey) = captured_hotkey.take() {
+                            if captured_hotkey
+                                .as_ref()
+                                .is_some_and(|hotkey| hotkey.key.is_some())
+                            {
+                                let hotkey = captured_hotkey.take().expect("checked above");
                                 emit_capture_event(
                                     &app_handle,
                                     ShortcutCapturePayload::Captured {

@@ -402,58 +402,63 @@ mod imp {
         }
     }
 
-    fn current_session() -> Option<GlobalSystemMediaTransportControlsSession> {
+    fn with_current_session<T>(
+        action: impl FnOnce(&GlobalSystemMediaTransportControlsSession) -> Option<T>,
+    ) -> Option<T> {
+        let _apartment = windows::core::initialize_mta().ok()?;
         let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .ok()?
             .join()
             .ok()?;
-        manager.GetCurrentSession().ok()
+        let session = manager.GetCurrentSession().ok()?;
+        action(&session)
     }
 
     fn pause_active_now_playing() -> Option<String> {
-        let session = current_session()?;
-        let playback = session.GetPlaybackInfo().ok()?.PlaybackStatus().ok()?;
-        if playback != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
-            return None;
-        }
+        with_current_session(|session| {
+            let playback = session.GetPlaybackInfo().ok()?.PlaybackStatus().ok()?;
+            if playback != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                return None;
+            }
 
-        let app_id = session.SourceAppUserModelId().ok()?.to_string_lossy();
-        if session.TryPauseAsync().ok()?.join().ok()? {
-            Some(app_id)
-        } else {
-            None
-        }
+            let app_id = session.SourceAppUserModelId().ok()?.to_string_lossy();
+            if session.TryPauseAsync().ok()?.join().ok()? {
+                Some(app_id)
+            } else {
+                None
+            }
+        })
     }
 
     fn resume_if_matching_target(expected_app_id: &str) -> bool {
-        let session = match current_session() {
-            Some(session) => session,
-            None => return false,
-        };
+        with_current_session(|session| {
+            let app_id = match session.SourceAppUserModelId() {
+                Ok(value) => value.to_string_lossy(),
+                Err(_) => return Some(false),
+            };
+            if app_id != expected_app_id {
+                return Some(false);
+            }
 
-        let app_id = match session.SourceAppUserModelId() {
-            Ok(value) => value.to_string_lossy(),
-            Err(_) => return false,
-        };
-        if app_id != expected_app_id {
-            return false;
-        }
+            let playback = match session
+                .GetPlaybackInfo()
+                .and_then(|info| info.PlaybackStatus())
+            {
+                Ok(status) => status,
+                Err(_) => return Some(false),
+            };
+            if playback == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+                return Some(false);
+            }
 
-        let playback = match session
-            .GetPlaybackInfo()
-            .and_then(|info| info.PlaybackStatus())
-        {
-            Ok(status) => status,
-            Err(_) => return false,
-        };
-        if playback == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
-            return false;
-        }
-
-        session
-            .TryPlayAsync()
-            .and_then(|operation| operation.join())
-            .unwrap_or(false)
+            Some(
+                session
+                    .TryPlayAsync()
+                    .and_then(|operation| operation.join())
+                    .unwrap_or(false),
+            )
+        })
+        .unwrap_or(false)
     }
 }
 

@@ -54,6 +54,8 @@ use settings::{
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
 use tauri::Emitter;
+#[cfg(target_os = "macos")]
+use tauri::Listener;
 use tauri::{AppHandle, Manager, Wry};
 
 #[cfg(target_os = "macos")]
@@ -315,6 +317,14 @@ pub fn run() {
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             library::commands::recover_interrupted_library_items(handle);
+
+            #[cfg(target_os = "macos")]
+            {
+                let h = handle.clone();
+                handle.listen(library::types::EVENT_LIBRARY_RENDERER_READY, move |_| {
+                    library::commands::mark_library_import_renderer_ready(&h);
+                });
+            }
 
             {
                 let handle = app.handle();

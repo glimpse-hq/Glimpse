@@ -13,7 +13,7 @@ import {
   checkMacAccessibilityPermission,
   checkMacInputMonitoringPermission,
 } from "../../shared/lib/macosPermissions";
-import { getPlatformCapabilities } from "../../shared/lib/platform";
+import { getPlatformCapabilities } from "../../platform/service";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
 import { parseTextSizeMode } from "../../shared/lib/textSize";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";

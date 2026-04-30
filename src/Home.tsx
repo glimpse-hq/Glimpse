@@ -215,8 +215,12 @@ const Home = () => {
         setActiveView("library");
       }
     }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenOpenImport = fn;
+      if (cancelled) {
+        fn();
+      } else {
+        unlistenOpenImport = fn;
+        emit("library:renderer_ready").catch(() => {});
+      }
     });
 
     listen("navigate:sign-in", () => {
@@ -536,7 +540,7 @@ const Home = () => {
                         <div className="ui-text-meta ui-color-muted">
                           {t({
                             id: "home.support.about.version_mode",
-                            message: `v${{ version: appVersion }} • ${{ mode: currentModeLabel }}`,
+                            message: `v${appVersion} • ${currentModeLabel}`,
                           })}
                         </div>
                       </div>

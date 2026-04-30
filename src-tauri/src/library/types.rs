@@ -28,6 +28,8 @@ pub const EVENT_LIBRARY_COMPLETE: &str = "library:transcription_complete";
 pub const EVENT_LIBRARY_ERROR: &str = "library:transcription_error";
 #[cfg(target_os = "macos")]
 pub const EVENT_LIBRARY_OPEN_IMPORT: &str = "library:open_import";
+#[cfg(target_os = "macos")]
+pub const EVENT_LIBRARY_RENDERER_READY: &str = "library:renderer_ready";
 pub const EVENT_LIBRARY_IMPORT_PROGRESS: &str = "library:import_progress";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

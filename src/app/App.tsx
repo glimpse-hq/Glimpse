@@ -7,7 +7,7 @@ import Home from "../Home";
 import OnboardingScreen from "../features/onboarding/OnboardingScreen";
 import { useSettings } from "../features/settings/queries";
 import type { TextSizeMode, ThemeMode } from "../types";
-import { detectAppPlatform } from "../shared/lib/platform";
+import { detectAppPlatform } from "../platform/service";
 import { parseTextSizeMode, resolveTextScale } from "../shared/lib/textSize";
 import "./App.css";
 

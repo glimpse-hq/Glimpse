@@ -1,8 +1,8 @@
 import {
   detectAppPlatform,
   getPlatformCapabilities,
-  type AppPlatformId,
-} from "../../shared/lib/platform";
+} from "../../platform/service";
+import type { AppPlatformId } from "../../shared/lib/platform";
 
 export type OnboardingPlatformId = AppPlatformId;
 

@@ -1,4 +1,4 @@
-import { detectAppPlatform } from "./platform";
+import { detectAppPlatform } from "../../platform/service";
 
 const isMacPlatform = detectAppPlatform() === "macos";
 

@@ -28,13 +28,15 @@ fn normalize_website_domain(value: &str) -> Option<String> {
         return None;
     }
 
+    if let Some(rest) = trimmed.strip_prefix("feed://") {
+        trimmed = rest.to_string();
+    } else if let Some(rest) = trimmed.strip_prefix("feed:") {
+        trimmed = rest.to_string();
+    }
+
     if let Some(rest) = trimmed.strip_prefix("https://") {
         trimmed = rest.to_string();
     } else if let Some(rest) = trimmed.strip_prefix("http://") {
-        trimmed = rest.to_string();
-    } else if let Some(rest) = trimmed.strip_prefix("feed://") {
-        trimmed = rest.to_string();
-    } else if let Some(rest) = trimmed.strip_prefix("feed:") {
         trimmed = rest.to_string();
     }
 

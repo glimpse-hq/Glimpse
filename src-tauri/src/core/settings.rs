@@ -194,11 +194,23 @@ pub(crate) fn update_settings(
 
     let mut next = state.current_settings();
     let prev = next.clone();
-    next.smart_shortcut = canonicalize_shortcut_for_storage(&args.smart_shortcut)?;
+    next.smart_shortcut = if args.smart_enabled {
+        canonicalize_shortcut_for_storage(&args.smart_shortcut)?
+    } else {
+        args.smart_shortcut
+    };
     next.smart_enabled = args.smart_enabled;
-    next.hold_shortcut = canonicalize_shortcut_for_storage(&args.hold_shortcut)?;
+    next.hold_shortcut = if args.hold_enabled {
+        canonicalize_shortcut_for_storage(&args.hold_shortcut)?
+    } else {
+        args.hold_shortcut
+    };
     next.hold_enabled = args.hold_enabled;
-    next.toggle_shortcut = canonicalize_shortcut_for_storage(&args.toggle_shortcut)?;
+    next.toggle_shortcut = if args.toggle_enabled {
+        canonicalize_shortcut_for_storage(&args.toggle_shortcut)?
+    } else {
+        args.toggle_shortcut
+    };
     next.toggle_enabled = args.toggle_enabled;
     next.transcription_mode = args.transcription_mode;
     next.local_model = args.local_model;

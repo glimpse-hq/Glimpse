@@ -1,7 +1,11 @@
 use std::fs;
 use std::path::{Component, Path, PathBuf};
+#[cfg(target_os = "macos")]
+use std::sync::OnceLock;
 
 use anyhow::{Context, Result};
+#[cfg(target_os = "macos")]
+use parking_lot::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
@@ -16,6 +20,38 @@ use super::types::{
     ExportFormat, LibraryErrorPayload, LibraryFilter, LibraryImportOptions, LibraryItem,
     LibraryItemPatch, LibraryItemStatus, LibraryItemsPage, EVENT_LIBRARY_ERROR,
 };
+
+#[cfg(target_os = "macos")]
+#[derive(Default)]
+struct PendingLibraryImport {
+    renderer_ready: bool,
+    paths: Vec<String>,
+}
+
+#[cfg(target_os = "macos")]
+fn pending_library_import() -> &'static Mutex<PendingLibraryImport> {
+    static PENDING: OnceLock<Mutex<PendingLibraryImport>> = OnceLock::new();
+    PENDING.get_or_init(|| Mutex::new(PendingLibraryImport::default()))
+}
+
+#[cfg(target_os = "macos")]
+fn flush_pending_library_import(app: &AppHandle<AppRuntime>) {
+    let paths = {
+        let mut pending = pending_library_import().lock();
+        if !pending.renderer_ready || pending.paths.is_empty() {
+            return;
+        }
+        std::mem::take(&mut pending.paths)
+    };
+
+    let _ = app.emit(EVENT_LIBRARY_OPEN_IMPORT, paths);
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn mark_library_import_renderer_ready(app: &AppHandle<AppRuntime>) {
+    pending_library_import().lock().renderer_ready = true;
+    flush_pending_library_import(app);
+}
 
 enum LibraryDeleteScope {
     SkipFilesystemDeletion,
@@ -310,10 +346,11 @@ pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> R
     if paths.is_empty() {
         return Ok(());
     }
+    pending_library_import().lock().paths = paths;
     if let Err(err) = crate::tray::toggle_settings_window(app) {
         eprintln!("Failed to open settings window: {err}");
     }
-    let _ = app.emit(EVENT_LIBRARY_OPEN_IMPORT, paths);
+    flush_pending_library_import(app);
     Ok(())
 }
 

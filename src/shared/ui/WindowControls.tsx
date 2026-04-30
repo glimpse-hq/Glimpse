@@ -1,6 +1,6 @@
 import { Minus, Square, X } from "lucide-react";
 import { useWindowControls } from "../hooks/useWindowControls";
-import { getPlatformCapabilities } from "../lib/platform";
+import { getPlatformCapabilities } from "../../platform/service";
 
 const WindowControls = () => {
   const shouldShow = getPlatformCapabilities().usesCustomWindowControls;

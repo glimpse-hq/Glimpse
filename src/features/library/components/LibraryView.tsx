@@ -395,7 +395,7 @@ const LibraryView = ({
                                 <p className="mt-3 ui-text-body ui-color-muted">
                                     {t({
                                         id: "library.view.empty_state",
-                                        message: "Click to import files, or drag them here to build your Library.",
+                                        message: "Click to import files and build your Library.",
                                     })}
                                 </p>
                             </button>
@@ -445,7 +445,7 @@ const LibraryView = ({
                                 <span className="mt-2 ui-text-body-sm">
                                     {t({
                                         id: "library.view.dropzone",
-                                        message: "Click or drop files to import",
+                                        message: "Click to import files",
                                     })}
                                 </span>
                             </button>
