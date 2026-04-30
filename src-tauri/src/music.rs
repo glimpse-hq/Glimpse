@@ -316,6 +316,9 @@ mod imp {
         GlobalSystemMediaTransportControlsSessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     };
+    use windows::Win32::System::Com::{
+        CoDecrementMTAUsage, CoIncrementMTAUsage, CO_MTA_USAGE_COOKIE,
+    };
 
     #[derive(Default)]
     struct MediaState {
@@ -405,13 +408,27 @@ mod imp {
     fn with_current_session<T>(
         action: impl FnOnce(&GlobalSystemMediaTransportControlsSession) -> Option<T>,
     ) -> Option<T> {
-        let _apartment = windows::core::initialize_mta().ok()?;
+        let _mta_usage = MtaUsage::new()?;
         let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .ok()?
             .join()
             .ok()?;
         let session = manager.GetCurrentSession().ok()?;
         action(&session)
+    }
+
+    struct MtaUsage(CO_MTA_USAGE_COOKIE);
+
+    impl MtaUsage {
+        fn new() -> Option<Self> {
+            unsafe { CoIncrementMTAUsage().ok().map(Self) }
+        }
+    }
+
+    impl Drop for MtaUsage {
+        fn drop(&mut self) {
+            let _ = unsafe { CoDecrementMTAUsage(self.0) };
+        }
     }
 
     fn pause_active_now_playing() -> Option<String> {
