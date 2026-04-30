@@ -1,6 +1,6 @@
 use crate::{pill, AppRuntime, AppState};
 use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
+use tauri::{AppHandle, Emitter, Manager, Monitor, WebviewWindow};
 
 pub const WINDOW_LABEL: &str = "toast";
 pub const EVENT_SHOW: &str = "toast:show";
@@ -83,22 +83,49 @@ pub fn hide(app: &AppHandle<AppRuntime>) {
 }
 
 fn position_toast_window(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) {
-    let scale_factor = toast_window.scale_factor().unwrap_or(1.0);
-
     let state = app.state::<AppState>();
     let is_expanded = state.pill().is_expanded();
     let base_margin = if is_expanded { 380.0 } else { 300.0 };
 
+    let Some(monitor) = target_toast_monitor(app, toast_window) else {
+        return;
+    };
+
+    let scale_factor = monitor.scale_factor();
     let toast_width = (420.0 * scale_factor) as i32;
     let bottom_margin = (base_margin * scale_factor) as i32;
 
-    if let Ok(Some(monitor)) = toast_window.current_monitor() {
-        let screen = monitor.size();
-        let mon_pos = monitor.position();
-        let x = mon_pos.x + (screen.width as i32 - toast_width) / 2;
-        let y = mon_pos.y + screen.height as i32 - bottom_margin;
-        let _ = toast_window.set_position(tauri::PhysicalPosition::new(x, y));
-    }
+    let screen = monitor.size();
+    let mon_pos = monitor.position();
+    let x = mon_pos.x + (screen.width as i32 - toast_width) / 2;
+    let y = mon_pos.y + screen.height as i32 - bottom_margin;
+    let _ = toast_window.set_position(tauri::PhysicalPosition::new(x, y));
+}
+
+fn target_toast_monitor(
+    app: &AppHandle<AppRuntime>,
+    toast_window: &WebviewWindow<AppRuntime>,
+) -> Option<Monitor> {
+    app.get_webview_window(crate::MAIN_WINDOW_LABEL)
+        .and_then(|pill_window| pill_window.current_monitor().ok().flatten())
+        .or_else(|| monitor_containing_cursor(toast_window))
+        .or_else(|| toast_window.current_monitor().ok().flatten())
+}
+
+fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> Option<Monitor> {
+    let cursor_pos = window.cursor_position().ok()?;
+    window
+        .available_monitors()
+        .ok()?
+        .into_iter()
+        .find(|monitor| {
+            let pos = monitor.position();
+            let size = monitor.size();
+            cursor_pos.x >= pos.x as f64
+                && cursor_pos.x < (pos.x + size.width as i32) as f64
+                && cursor_pos.y >= pos.y as f64
+                && cursor_pos.y < (pos.y + size.height as i32) as f64
+        })
 }
 
 #[tauri::command]
