@@ -1215,6 +1215,12 @@
   app-region: no-drag;
 }
 
+[data-window-controls],
+[data-window-controls] * {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
 html,
 body {
   width: 100%;

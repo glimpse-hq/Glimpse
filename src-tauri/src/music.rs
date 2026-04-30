@@ -305,7 +305,159 @@ function run(argv) {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+mod imp {
+    use super::PauseSession;
+    use parking_lot::Mutex;
+    use std::sync::OnceLock;
+    use tauri::async_runtime;
+    use windows::Media::Control::{
+        GlobalSystemMediaTransportControlsSession,
+        GlobalSystemMediaTransportControlsSessionManager,
+        GlobalSystemMediaTransportControlsSessionPlaybackStatus,
+    };
+
+    #[derive(Default)]
+    struct MediaState {
+        next_session: u64,
+        active_session: Option<PauseSession>,
+        paused_target: Option<String>,
+    }
+
+    impl MediaState {
+        fn alloc_session(&mut self) -> PauseSession {
+            self.next_session = self.next_session.wrapping_add(1);
+            if self.next_session == 0 {
+                self.next_session = 1;
+            }
+            PauseSession(self.next_session)
+        }
+    }
+
+    fn state() -> &'static Mutex<MediaState> {
+        static STATE: OnceLock<Mutex<MediaState>> = OnceLock::new();
+        STATE.get_or_init(|| Mutex::new(MediaState::default()))
+    }
+
+    pub(crate) fn pause_if_playing() -> Option<PauseSession> {
+        let session = {
+            let mut shared = state().lock();
+            let session = shared.alloc_session();
+            shared.active_session = Some(session);
+            shared.paused_target = None;
+            session
+        };
+
+        let _ = async_runtime::spawn_blocking(move || {
+            let target = pause_active_now_playing();
+            finish_pause_attempt(session, target);
+        });
+
+        Some(session)
+    }
+
+    pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
+        let Some(session) = session else {
+            return;
+        };
+
+        let target = {
+            let mut shared = state().lock();
+            if shared.active_session != Some(session) {
+                return;
+            }
+            shared.active_session = None;
+            shared.paused_target.take()
+        };
+
+        if let Some(target) = target {
+            let _ = async_runtime::spawn_blocking(move || {
+                let _ = resume_if_matching_target(&target);
+            });
+        }
+    }
+
+    fn finish_pause_attempt(session: PauseSession, target: Option<String>) {
+        let target_to_resume = {
+            let mut shared = state().lock();
+
+            if shared.active_session != Some(session) {
+                target
+            } else {
+                match target {
+                    Some(target) => {
+                        shared.paused_target = Some(target);
+                        None
+                    }
+                    None => {
+                        shared.active_session = None;
+                        None
+                    }
+                }
+            }
+        };
+
+        if let Some(target) = target_to_resume {
+            let _ = resume_if_matching_target(&target);
+        }
+    }
+
+    fn current_session() -> Option<GlobalSystemMediaTransportControlsSession> {
+        let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
+            .ok()?
+            .join()
+            .ok()?;
+        manager.GetCurrentSession().ok()
+    }
+
+    fn pause_active_now_playing() -> Option<String> {
+        let session = current_session()?;
+        let playback = session.GetPlaybackInfo().ok()?.PlaybackStatus().ok()?;
+        if playback != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+            return None;
+        }
+
+        let app_id = session.SourceAppUserModelId().ok()?.to_string_lossy();
+        if session.TryPauseAsync().ok()?.join().ok()? {
+            Some(app_id)
+        } else {
+            None
+        }
+    }
+
+    fn resume_if_matching_target(expected_app_id: &str) -> bool {
+        let session = match current_session() {
+            Some(session) => session,
+            None => return false,
+        };
+
+        let app_id = match session.SourceAppUserModelId() {
+            Ok(value) => value.to_string_lossy(),
+            Err(_) => return false,
+        };
+        if app_id != expected_app_id {
+            return false;
+        }
+
+        let playback = match session
+            .GetPlaybackInfo()
+            .and_then(|info| info.PlaybackStatus())
+        {
+            Ok(status) => status,
+            Err(_) => return false,
+        };
+        if playback == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+            return false;
+        }
+
+        session
+            .TryPlayAsync()
+            .and_then(|operation| operation.join())
+            .unwrap_or(false)
+    }
+}
+
+#[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
 mod imp {
     use super::PauseSession;
 

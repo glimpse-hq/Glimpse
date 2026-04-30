@@ -472,9 +472,9 @@ const LibraryCard = ({
                                 >
                                     +
                                 </button>
-                                {item.tags.map((tag) => (
+                                {item.tags.map((tag, index) => (
                                     <span
-                                        key={tag}
+                                        key={`tag-${index}-${tag || "empty"}`}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             if (shiftHeld) {

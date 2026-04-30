@@ -25,6 +25,7 @@ dependencies = [
  "objc2-core-audio",
  "parking_lot",
  "pbkdf2",
+ "png 0.18.1",
  "posthog-rs",
  "rand 0.9.4",
  "regex",
@@ -52,6 +53,8 @@ dependencies = [
  "urlencoding",
  "uuid",
  "webrtc-vad",
+ "windows 0.62.2",
+ "windows-future 0.3.2",
 ]
 
 [[package]]

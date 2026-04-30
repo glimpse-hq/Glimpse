@@ -135,7 +135,98 @@ end tell
 #[cfg(target_os = "macos")]
 pub use macos::get_active_context;
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+mod windows_context {
+    use super::ActiveContext;
+    use std::path::Path;
+    use windows::core::PWSTR;
+    use windows::Win32::Foundation::{CloseHandle, HWND};
+    use windows::Win32::System::Threading::{
+        OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_FORMAT,
+        PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId,
+    };
+
+    fn foreground_window() -> Option<HWND> {
+        let hwnd = unsafe { GetForegroundWindow() };
+        if hwnd.is_invalid() {
+            None
+        } else {
+            Some(hwnd)
+        }
+    }
+
+    fn window_title(hwnd: HWND) -> String {
+        let len = unsafe { GetWindowTextLengthW(hwnd) };
+        if len <= 0 {
+            return String::new();
+        }
+
+        let mut buffer = vec![0u16; (len as usize) + 1];
+        let copied = unsafe { GetWindowTextW(hwnd, &mut buffer) };
+        if copied <= 0 {
+            return String::new();
+        }
+
+        String::from_utf16_lossy(&buffer[..copied as usize])
+            .trim()
+            .to_string()
+    }
+
+    fn process_image_path(pid: u32) -> Option<String> {
+        let handle = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()? };
+        let mut buffer = vec![0u16; 32_768];
+        let mut size = buffer.len() as u32;
+        let result = unsafe {
+            QueryFullProcessImageNameW(
+                handle,
+                PROCESS_NAME_FORMAT(0),
+                PWSTR(buffer.as_mut_ptr()),
+                &mut size,
+            )
+        };
+        let _ = unsafe { CloseHandle(handle) };
+        result.ok()?;
+        Some(String::from_utf16_lossy(&buffer[..size as usize]))
+    }
+
+    fn app_name_from_path(path: &str) -> String {
+        Path::new(path)
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .unwrap_or(path)
+            .trim()
+            .to_string()
+    }
+
+    pub fn get_active_context() -> Option<ActiveContext> {
+        let hwnd = foreground_window()?;
+        let mut pid = 0u32;
+        unsafe {
+            GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        }
+        if pid == 0 {
+            return None;
+        }
+
+        let app_name = process_image_path(pid)
+            .map(|path| app_name_from_path(&path))
+            .filter(|name| !name.is_empty())?;
+
+        Some(ActiveContext {
+            app_name,
+            window_title: window_title(hwnd),
+            url: None,
+        })
+    }
+}
+
+#[cfg(target_os = "windows")]
+pub use windows_context::get_active_context;
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub fn get_active_context() -> Option<ActiveContext> {
     None
 }

@@ -1,7 +1,9 @@
+#[cfg(target_os = "macos")]
+use crate::permissions;
 use crate::{
     assistive,
     core::hotkeys::{self, HotkeyState},
-    emit_event, model_manager, music, permissions, platform,
+    emit_event, model_manager, music, platform,
     recorder::RecorderManager,
     settings::UserSettings,
     toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
@@ -537,6 +539,8 @@ impl PillController {
     }
 
     fn handle_smart_press(&self, app: &AppHandle<AppRuntime>) {
+        let press_time = Local::now();
+
         if self.status() == PillStatus::Processing {
             if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Smart) {
                 self.cancel_processing(app);
@@ -568,7 +572,7 @@ impl PillController {
 
         // Only set state if recording actually starts (permissions and recorder startup pass)
         if self.handle_hold_press(app) {
-            *self.smart_press_time.lock() = Some(Local::now());
+            *self.smart_press_time.lock() = Some(press_time);
             *self.shortcut_origin.lock() = Some(ShortcutOrigin::Smart);
         } else if should_rollback_origin {
             *self.shortcut_origin.lock() = None;
@@ -867,10 +871,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
         }
 
         parsed_shortcuts.push((label, hotkey));
-        bindings.push(hotkeys::RegisteredHotkey {
-            hotkey,
-            action,
-        });
+        bindings.push(hotkeys::RegisteredHotkey { hotkey, action });
     };
 
     add_binding(
@@ -902,6 +903,18 @@ pub fn show_overlay(app: &AppHandle<AppRuntime>) {
         }
         position_overlay_on_cursor_screen(&window);
         platform::overlay::show(app, &window);
+        app.state::<AppState>().pill().emit_state(app);
+
+        let app_handle = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(50));
+            if app_handle.state::<AppState>().pill().status() != PillStatus::Idle {
+                app_handle
+                    .state::<AppState>()
+                    .pill()
+                    .emit_state(&app_handle);
+            }
+        });
     }
 }
 

@@ -499,10 +499,14 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     }
 
     loaderTimeRef.current = 0;
+    let animationStartTime: number | null = null;
     const emptySpectrum = new Uint8Array(256);
 
-    const tick = () => {
-      loaderTimeRef.current += 16;
+    const tick = (frameTime: number) => {
+      if (animationStartTime === null) {
+        animationStartTime = frameTime;
+      }
+      loaderTimeRef.current = frameTime - animationStartTime;
 
       switch (pillStatus) {
         case "listening": {

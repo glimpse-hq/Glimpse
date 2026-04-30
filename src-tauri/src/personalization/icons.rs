@@ -1,0 +1,218 @@
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Manager};
+
+use crate::{platform, AppRuntime};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InstalledApp {
+    pub name: String,
+    pub path: String,
+    pub icon_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebsiteIcon {
+    pub site: String,
+    pub icon_path: Option<String>,
+}
+
+fn normalize_website_domain(value: &str) -> Option<String> {
+    let mut trimmed = value.trim().to_lowercase();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    if let Some(rest) = trimmed.strip_prefix("https://") {
+        trimmed = rest.to_string();
+    } else if let Some(rest) = trimmed.strip_prefix("http://") {
+        trimmed = rest.to_string();
+    } else if let Some(rest) = trimmed.strip_prefix("feed://") {
+        trimmed = rest.to_string();
+    } else if let Some(rest) = trimmed.strip_prefix("feed:") {
+        trimmed = rest.to_string();
+    }
+
+    if let Some(rest) = trimmed.strip_prefix("www.") {
+        trimmed = rest.to_string();
+    }
+
+    for separator in ['/', '?', '#', ':'] {
+        if let Some((host, _)) = trimmed.split_once(separator) {
+            trimmed = host.to_string();
+        }
+    }
+
+    (!trimmed.is_empty()).then_some(trimmed)
+}
+
+pub(crate) fn app_icon_cache_dir(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
+    let mut dir = app.path().app_data_dir().ok()?;
+    dir.push("local");
+    dir.push("cache");
+    dir.push("appicons");
+    std::fs::create_dir_all(&dir).ok()?;
+    Some(dir)
+}
+
+pub(crate) fn website_icon_cache_dir(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
+    let mut dir = app.path().app_data_dir().ok()?;
+    dir.push("local");
+    dir.push("cache");
+    dir.push("siteicons");
+    std::fs::create_dir_all(&dir).ok()?;
+    Some(dir)
+}
+
+pub(crate) fn icon_cache_file_path(source_path: &Path, cache_dir: &Path) -> PathBuf {
+    let mut hasher = DefaultHasher::new();
+    #[cfg(target_os = "windows")]
+    "windows-target-icon-v4-png-crate".hash(&mut hasher);
+    source_path.to_string_lossy().hash(&mut hasher);
+    let key = hasher.finish();
+    cache_dir.join(format!("{key:016x}.png"))
+}
+
+fn website_icon_cache_file_path(site: &str, cache_dir: &Path) -> PathBuf {
+    let mut hasher = DefaultHasher::new();
+    site.hash(&mut hasher);
+    let key = hasher.finish();
+    cache_dir.join(format!("{key:016x}.ico"))
+}
+
+pub(crate) fn should_refresh_icon(source: &Path, cached: &Path) -> bool {
+    if !cached.exists() {
+        return true;
+    }
+
+    let source_modified = std::fs::metadata(source)
+        .and_then(|meta| meta.modified())
+        .ok();
+    let cached_modified = std::fs::metadata(cached)
+        .and_then(|meta| meta.modified())
+        .ok();
+
+    match (source_modified, cached_modified) {
+        (Some(source_modified), Some(cached_modified)) => source_modified > cached_modified,
+        _ => true,
+    }
+}
+
+fn fetch_website_icon_bytes(
+    url: String,
+    client: &reqwest::blocking::Client,
+) -> Option<Vec<u8>> {
+    let response = client.get(url).send().ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+
+    let bytes = response.bytes().ok()?;
+    if bytes.is_empty() || bytes.len() > 512 * 1024 {
+        return None;
+    }
+
+    Some(bytes.to_vec())
+}
+
+fn fetch_and_cache_website_icon(
+    site: &str,
+    cache_dir: &Path,
+    client: &reqwest::blocking::Client,
+) -> Option<PathBuf> {
+    let bytes = fetch_website_icon_bytes(format!("https://{site}/favicon.ico"), client)
+        .or_else(|| fetch_website_icon_bytes(format!("http://{site}/favicon.ico"), client))?;
+
+    let icon_path = website_icon_cache_file_path(site, cache_dir);
+    std::fs::write(&icon_path, &bytes).ok()?;
+    Some(icon_path)
+}
+
+fn warm_website_icon_cache_in_background(pending_sites: Vec<String>, cache_dir: PathBuf) {
+    if pending_sites.is_empty() {
+        return;
+    }
+
+    std::thread::spawn(move || {
+        let client = match reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(4))
+            .connect_timeout(Duration::from_secs(3))
+            .build()
+        {
+            Ok(client) => client,
+            Err(_) => return,
+        };
+
+        for site in pending_sites {
+            let _ = fetch_and_cache_website_icon(&site, &cache_dir, &client);
+        }
+    });
+}
+
+pub fn list_website_icons(
+    sites: Vec<String>,
+    app: AppHandle<AppRuntime>,
+) -> Result<Vec<WebsiteIcon>, String> {
+    let mut seen = HashSet::new();
+    let mut normalized = Vec::new();
+    for site in sites {
+        let Some(site) = normalize_website_domain(&site) else {
+            continue;
+        };
+        if seen.insert(site.clone()) {
+            normalized.push(site);
+        }
+        if normalized.len() >= 256 {
+            break;
+        }
+    }
+
+    let Some(cache_dir) = website_icon_cache_dir(&app) else {
+        return Ok(normalized
+            .into_iter()
+            .map(|site| WebsiteIcon {
+                site,
+                icon_path: None,
+            })
+            .collect());
+    };
+
+    let mut pending_sites = Vec::new();
+    let mut icons = Vec::with_capacity(normalized.len());
+    for site in normalized {
+        let cached = website_icon_cache_file_path(&site, &cache_dir);
+        let icon_path = if cached.exists() {
+            Some(cached.to_string_lossy().to_string())
+        } else {
+            pending_sites.push(site.clone());
+            None
+        };
+        icons.push(WebsiteIcon { site, icon_path });
+    }
+
+    warm_website_icon_cache_in_background(pending_sites, cache_dir);
+    Ok(icons)
+}
+
+pub fn list_installed_apps(app: AppHandle<AppRuntime>) -> Result<Vec<InstalledApp>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        platform::macos::icons::list_installed_apps(&app)
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        platform::windows::icons::list_installed_apps(&app)
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        let _ = app;
+        Ok(Vec::new())
+    }
+}

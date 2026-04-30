@@ -11,6 +11,7 @@ import { AnimatePresence } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
+import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
 import { useSettings } from "../settings/queries";
 import {
   modelKeys,
@@ -26,6 +27,7 @@ import { ReadyStep } from "./steps/ReadyStep";
 import { SigninStep } from "./steps/SigninStep";
 import { GlimpseLogo, StepIndicator } from "./steps/shared";
 import FAQModal from "../../shared/ui/FAQModal";
+import WindowControls from "../../shared/ui/WindowControls";
 import type { ModelInfo, ModelStatus } from "../../types";
 
 const hasRecommendedTag = (model: Pick<ModelInfo, "tags">) =>
@@ -80,11 +82,6 @@ const checkAccessibilityPermission = () =>
 
 const stopShortcutCapture = () =>
   invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
-
-const requestMacAccessibilityPermission = async () => {
-  const permissions = await import("tauri-plugin-macos-permissions-api");
-  await permissions.requestAccessibilityPermission();
-};
 
 const refreshModelStatus = (
   queryClient: QueryClient,
@@ -536,6 +533,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
+      <WindowControls />
       <div data-tauri-drag-region className="h-7 w-full shrink-0" />
 
       <div className="flex justify-center pt-6 pb-6">

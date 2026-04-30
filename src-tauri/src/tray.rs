@@ -341,14 +341,20 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
         existing
     } else {
         reset_close_flag = true;
-        WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
-            .title("Glimpse Settings")
+        let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
+            .title("Glimpse")
             .inner_size(900.0, 750.0)
             .min_inner_size(900.0, 750.0)
             .resizable(true)
-            .visible(false)
-            .hidden_title(true)
-            .build()?
+            .visible(false);
+
+        #[cfg(target_os = "macos")]
+        let builder = builder.hidden_title(true);
+
+        #[cfg(target_os = "windows")]
+        let builder = builder.decorations(false);
+
+        builder.build()?
     };
 
     if reset_close_flag {
@@ -386,6 +392,7 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
         .settings_close_handler_registered
         .swap(true, Ordering::SeqCst);
     if !already_registered {
+        #[cfg(target_os = "macos")]
         let app_handle = app.clone();
         let window_clone = window.clone();
         window.on_window_event(move |event| {

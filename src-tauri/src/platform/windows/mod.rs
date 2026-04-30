@@ -1,4 +1,4 @@
-pub mod hotkeys;
-pub mod menu;
+pub mod icons;
 pub mod overlay;
+pub mod settings_window;
 pub mod toast;

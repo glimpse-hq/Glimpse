@@ -4,12 +4,19 @@ use anyhow::{anyhow, Result};
 use arboard::Clipboard;
 #[cfg(target_os = "macos")]
 use arboard::{Clipboard, ImageData, SetExtApple};
+#[cfg(target_os = "windows")]
+use arboard::{ImageData, SetExtWindows};
 #[cfg(target_os = "macos")]
 use core_graphics::event::{CGEvent, CGEventFlags, CGEventTapLocation, CGKeyCode};
 #[cfg(target_os = "macos")]
 use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 use std::{thread, time::Duration};
+#[cfg(target_os = "windows")]
+use windows::Win32::UI::Input::KeyboardAndMouse::{
+    SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYBD_EVENT_FLAGS, KEYEVENTF_KEYUP,
+    VIRTUAL_KEY, VK_C, VK_CONTROL, VK_V,
+};
 
 #[cfg(target_os = "macos")]
 pub fn get_selected_text_ax() -> Option<String> {
@@ -58,17 +65,55 @@ fn send_copy_keystroke() -> Result<()> {
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(target_os = "windows")]
+pub fn get_selected_text_ax() -> Option<String> {
+    let mut clipboard = Clipboard::new().ok()?;
+
+    let backup = ClipboardBackup::capture(&mut clipboard);
+
+    let _ = clipboard.clear();
+    thread::sleep(Duration::from_millis(5));
+
+    if send_copy_keystroke().is_err() {
+        backup.restore(&mut clipboard);
+        return None;
+    }
+    thread::sleep(Duration::from_millis(80));
+
+    let text = clipboard.get_text().ok();
+
+    backup.restore(&mut clipboard);
+
+    match text {
+        Some(t) if !t.trim().is_empty() => Some(t),
+        _ => None,
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn send_copy_keystroke() -> Result<()> {
+    let inputs = [
+        keyboard_input(VK_CONTROL, KEYBD_EVENT_FLAGS(0)),
+        keyboard_input(VK_C, KEYBD_EVENT_FLAGS(0)),
+        keyboard_input(VK_C, KEYEVENTF_KEYUP),
+        keyboard_input(VK_CONTROL, KEYEVENTF_KEYUP),
+    ];
+
+    let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
+    if sent != inputs.len() as u32 {
+        return Err(anyhow!("Failed to send Ctrl+C copy keystroke"));
+    }
+
+    Ok(())
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn paste_text(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 
-    clipboard
-        .set()
-        .exclude_from_history()
-        .text(text.to_string())
-        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+    set_text_excluding_history(&mut clipboard, text.to_string())?;
 
     thread::sleep(Duration::from_millis(10));
 
@@ -84,25 +129,46 @@ pub fn paste_text(text: &str) -> Result<()> {
     paste_result
 }
 
+#[cfg(target_os = "windows")]
+pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
+    let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    set_text_excluding_history(&mut clipboard, text.to_string())
+}
+
 #[cfg(target_os = "macos")]
 pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+    set_text_excluding_history(&mut clipboard, text.to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result<()> {
     clipboard
         .set()
         .exclude_from_history()
-        .text(text.to_string())
+        .text(text)
         .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
     Ok(())
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(target_os = "windows")]
+fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result<()> {
+    clipboard
+        .set()
+        .exclude_from_history()
+        .text(text)
+        .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+    Ok(())
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 struct ClipboardBackup {
     text: Option<String>,
     html: Option<String>,
     image: Option<ImageData<'static>>,
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 impl ClipboardBackup {
     fn capture(clipboard: &mut Clipboard) -> Self {
         Self {
@@ -127,7 +193,7 @@ impl ClipboardBackup {
             }
 
             if let Some(text) = alt_text {
-                let _ = clipboard.set().exclude_from_history().text(text);
+                let _ = set_text_excluding_history(clipboard, text);
                 return;
             }
         }
@@ -138,7 +204,7 @@ impl ClipboardBackup {
         }
 
         if let Some(text) = text {
-            let _ = clipboard.set().exclude_from_history().text(text);
+            let _ = set_text_excluding_history(clipboard, text);
         } else {
             let _ = clipboard.clear();
         }
@@ -167,12 +233,45 @@ fn send_paste_keystroke() -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(target_os = "windows")]
+fn send_paste_keystroke() -> Result<()> {
+    let inputs = [
+        keyboard_input(VK_CONTROL, KEYBD_EVENT_FLAGS(0)),
+        keyboard_input(VK_V, KEYBD_EVENT_FLAGS(0)),
+        keyboard_input(VK_V, KEYEVENTF_KEYUP),
+        keyboard_input(VK_CONTROL, KEYEVENTF_KEYUP),
+    ];
+
+    let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
+    if sent != inputs.len() as u32 {
+        return Err(anyhow!("Failed to send Ctrl+V paste keystroke"));
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn keyboard_input(key: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS) -> INPUT {
+    INPUT {
+        r#type: INPUT_KEYBOARD,
+        Anonymous: INPUT_0 {
+            ki: KEYBDINPUT {
+                wVk: key,
+                wScan: 0,
+                dwFlags: flags,
+                time: 0,
+                dwExtraInfo: 0,
+            },
+        },
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub fn paste_text(_text: &str) -> Result<()> {
     Err(anyhow!("Assistive paste is only supported on macOS"))
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
     clipboard
@@ -181,7 +280,7 @@ pub fn copy_text_to_clipboard(text: &str) -> Result<()> {
     Ok(())
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 pub fn get_selected_text_ax() -> Option<String> {
     None
 }

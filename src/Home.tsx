@@ -18,6 +18,7 @@ import {
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import SettingsModal from "./features/settings/components/SettingsModal";
 import FAQModal from "./shared/ui/FAQModal";
+import WindowControls from "./shared/ui/WindowControls";
 import { useClickOutside } from "./shared/hooks/useClickOutside";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
 import DictionaryView from "./features/dictionary/components/DictionaryView";
@@ -309,6 +310,7 @@ const Home = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">
+      <WindowControls />
       <aside
         data-app-sidebar
         style={{ width: sidebarWidth }}

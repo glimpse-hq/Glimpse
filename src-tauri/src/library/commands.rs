@@ -10,10 +10,11 @@ use super::processing::{
     build_export_content, create_item_from_path, library_root, stored_original_path,
 };
 use super::queue::{release_library_slot, schedule_library_job};
+#[cfg(target_os = "macos")]
+use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
     ExportFormat, LibraryErrorPayload, LibraryFilter, LibraryImportOptions, LibraryItem,
     LibraryItemPatch, LibraryItemStatus, LibraryItemsPage, EVENT_LIBRARY_ERROR,
-    EVENT_LIBRARY_OPEN_IMPORT,
 };
 
 enum LibraryDeleteScope {
@@ -299,6 +300,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     }
 }
 
+#[cfg(target_os = "macos")]
 pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> Result<()> {
     let paths: Vec<String> = urls
         .into_iter()

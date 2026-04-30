@@ -5,19 +5,19 @@
   "type": "module",
   "packageManager": "bun@1.3.13",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "dev": "bun ./node_modules/vite/bin/vite.js",
+    "build": "bun ./node_modules/typescript/lib/tsc.js && bun ./node_modules/vite/bin/vite.js build",
     "lingui:extract": "lingui extract",
     "lingui:compile": "lingui compile",
-    "preview": "vite preview",
-    "tauri": "tauri",
-    "lint": "eslint src/"
+    "preview": "bun ./node_modules/vite/bin/vite.js preview",
+    "tauri": "node ./scripts/tauri.mjs",
+    "lint": "bun ./node_modules/eslint/bin/eslint.js src/"
   },
   "dependencies": {
     "@lingui/core": "^5.9.5",
     "@lingui/macro": "^5.9.5",
     "@lingui/react": "^5.9.5",
-    "@tanstack/react-query": "^5.99.2",
+    "@tanstack/react-query": "^5.100.6",
     "@tauri-apps/api": "2.10.1",
     "@tauri-apps/plugin-deep-link": "^2.4.8",
     "@tauri-apps/plugin-dialog": "^2.7.0",
@@ -28,14 +28,14 @@
     "browserslist": "^4.28.2",
     "framer-motion": "^12.38.0",
     "howler": "^2.2.4",
-    "lucide-react": "^1.8.0",
+    "lucide-react": "^1.14.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
-    "react-virtuoso": "^4.18.5",
+    "react-virtuoso": "^4.18.6",
     "remark-breaks": "^4.0.0",
     "tauri-plugin-macos-permissions-api": "^2.3.0",
-    "xstate": "^5.30.0"
+    "xstate": "^5.31.0"
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
@@ -49,12 +49,12 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "baseline-browser-mapping": "^2.10.20",
+    "baseline-browser-mapping": "^2.10.24",
     "eslint": "^10.2.1",
     "eslint-plugin-boundaries": "^6.0.2",
     "tailwindcss": "^4.2.4",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.59.0",
-    "vite": "^8.0.9"
+    "typescript-eslint": "^8.59.1",
+    "vite": "^8.0.10"
   }
 }
