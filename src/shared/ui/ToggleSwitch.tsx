@@ -40,7 +40,7 @@ const ToggleSwitch = ({
       aria-checked={enabled}
       aria-label={ariaLabel}
       disabled={disabled}
-      className={`${config.track} rounded-full transition-colors relative overflow-hidden ${
+      className={`${config.track} relative inline-block shrink-0 overflow-hidden rounded-full border-0 p-0 appearance-none transition-colors ${
         enabled ? "bg-[var(--color-toggle-on)]" : "bg-[var(--color-border-secondary)]"
       } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
     >
