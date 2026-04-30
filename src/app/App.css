@@ -582,6 +582,14 @@
     color: var(--color-warning-strong);
   }
 
+  .ui-color-warning-subtle {
+    color: color-mix(in srgb, var(--color-warning-strong) 75%, transparent);
+  }
+
+  :root[data-theme="light"] .ui-color-warning-subtle {
+    color: color-mix(in srgb, var(--color-warning-strong) 70%, transparent);
+  }
+
   .ui-color-error {
     color: var(--color-error);
   }
@@ -640,6 +648,10 @@
 
   .ui-color-on-warning {
     color: #000000;
+  }
+
+  :root[data-theme="light"] .ui-color-on-warning {
+    color: #ffffff;
   }
 
   .ui-color-brand {
@@ -1113,6 +1125,10 @@
 
   .hover\:bg-amber-300:hover {
     background-color: #fcd34d;
+  }
+
+  :root[data-theme="light"] .hover\:bg-amber-300:hover {
+    background-color: var(--color-cloud-hover);
   }
 
   .hover\:bg-amber-400\/10:hover {

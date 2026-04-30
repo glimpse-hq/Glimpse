@@ -19,6 +19,7 @@ const KEY_LOCAL_MODEL: &str = "local_model";
 const KEY_MICROPHONE_DEVICE: &str = "microphone_device";
 const KEY_LANGUAGE: &str = "language";
 const KEY_APP_LOCALE: &str = "app_locale";
+const KEY_THEME_MODE: &str = "theme_mode";
 
 const LEGACY_KEY_LLM_CLEANUP_ENABLED: &str = "llm_cleanup_enabled";
 const KEY_LLM_ENABLED: &str = "llm_enabled";
@@ -86,6 +87,8 @@ pub struct UserSettings {
     pub language: String,
     #[serde(default = "default_app_locale")]
     pub app_locale: String,
+    #[serde(default)]
+    pub theme_mode: ThemeMode,
 
     #[serde(default)]
     pub llm_enabled: bool,
@@ -330,6 +333,7 @@ impl Default for UserSettings {
             microphone_device: None,
             language: default_language(),
             app_locale: default_app_locale(),
+            theme_mode: ThemeMode::default(),
 
             llm_enabled: false,
             cleanup_enabled: false,
@@ -380,6 +384,15 @@ pub enum RecordingPrunePolicy {
 
 fn default_recording_prune_policy() -> RecordingPrunePolicy {
     RecordingPrunePolicy::Never
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum ThemeMode {
+    #[default]
+    System,
+    Light,
+    Dark,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -532,6 +545,7 @@ impl SettingsStore {
         let legacy_llm_cleanup_enabled_exists: bool;
         let llm_enabled_exists: bool;
         let cleanup_enabled_exists: bool;
+        let theme_mode_exists: bool;
         {
             let conn = self.conn.lock();
 
@@ -567,6 +581,9 @@ impl SettingsStore {
             settings.language = self.read_value(&conn, KEY_LANGUAGE, settings.language.clone())?;
             settings.app_locale =
                 self.read_value(&conn, KEY_APP_LOCALE, settings.app_locale.clone())?;
+            let theme_mode = self.read_optional_value::<ThemeMode>(&conn, KEY_THEME_MODE)?;
+            theme_mode_exists = theme_mode.is_some();
+            settings.theme_mode = theme_mode.unwrap_or(settings.theme_mode);
 
             let legacy_llm_cleanup_enabled =
                 self.read_optional_value::<bool>(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)?;
@@ -673,6 +690,10 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        if !theme_mode_exists {
+            should_persist = true;
+        }
+
         if crate::model_manager::definition(&settings.local_model).is_none() {
             settings.local_model = default_local_model();
             should_persist = true;
@@ -741,6 +762,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
         self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
         self.write_value(&conn, KEY_APP_LOCALE, &stored_app_locale)?;
+        self.write_value(&conn, KEY_THEME_MODE, &settings.theme_mode)?;
 
         self.write_value(&conn, KEY_LLM_ENABLED, &settings.llm_enabled)?;
         self.write_value(&conn, KEY_CLEANUP_ENABLED, &settings.cleanup_enabled)?;

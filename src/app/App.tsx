@@ -12,7 +12,6 @@ import { parseTextSizeMode, resolveTextScale } from "../shared/lib/textSize";
 import "./App.css";
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
-const THEME_MODE_STORAGE_KEY = "glimpse_theme_mode";
 
 const parseThemeMode = (value: string | null): ThemeMode =>
   value === "light" || value === "dark" || value === "system" ? value : "system";
@@ -86,9 +85,7 @@ function App() {
       return;
     }
 
-    let currentMode: ThemeMode = parseThemeMode(
-      localStorage.getItem(THEME_MODE_STORAGE_KEY),
-    );
+    let currentMode: ThemeMode = parseThemeMode(settings?.theme_mode ?? null);
 
     const applyTheme = (mode: ThemeMode) => {
       currentMode = mode;
@@ -114,7 +111,7 @@ function App() {
       mediaQuery.removeEventListener("change", handleSystemChange);
       unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
     };
-  }, [settingsLoading, showOnboarding, windowLabel]);
+  }, [settings?.theme_mode, settingsLoading, showOnboarding, windowLabel]);
 
   useEffect(() => {
     const body = document.body;

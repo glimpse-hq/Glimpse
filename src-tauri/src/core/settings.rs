@@ -4,7 +4,7 @@ use tauri::{AppHandle, Emitter};
 use super::hotkeys;
 use crate::settings::{
     canonicalize_app_locale, canonicalize_app_locale_or_default, LlmProvider, RecordingPrunePolicy,
-    TranscriptionMode, UserSettings,
+    ThemeMode, TranscriptionMode, UserSettings,
 };
 
 use crate::{analytics, model_manager, pill, tray, AppRuntime, AppState, EVENT_SETTINGS_CHANGED};
@@ -23,6 +23,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub microphone_device: Option<String>,
     pub language: String,
     pub app_locale: String,
+    pub theme_mode: ThemeMode,
     pub llm_enabled: bool,
 
     pub cleanup_enabled: bool,
@@ -217,6 +218,7 @@ pub(crate) fn update_settings(
     next.microphone_device = args.microphone_device;
     next.language = args.language;
     next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
+    next.theme_mode = args.theme_mode;
     next.llm_enabled = args.llm_enabled;
 
     next.cleanup_enabled = args.cleanup_enabled;

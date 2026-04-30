@@ -58,6 +58,7 @@ export type StoredSettings = {
     microphone_device: string | null;
     language: string;
     app_locale: AppLocaleSetting;
+    theme_mode: ThemeMode;
     llm_enabled: boolean;
     cleanup_enabled: boolean;
     llm_provider: LlmProvider;

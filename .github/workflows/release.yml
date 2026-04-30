@@ -12,9 +12,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  create-release:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+
+    outputs:
+      release-id: ${{ steps.create-release.outputs.result }}
+      version: ${{ steps.release-type.outputs.version }}
+      prerelease: ${{ steps.release-type.outputs.prerelease }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: determine release type
+        id: release-type
+        shell: bash
+        run: |
+          VERSION=$(awk -F'"' '
+            /^\[package\]$/ { in_package = 1; next }
+            /^\[/ { in_package = 0 }
+            in_package && /^version = / { print $2; exit }
+          ' src-tauri/Cargo.toml)
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to resolve app version from src-tauri/Cargo.toml" >&2
+            exit 1
+          fi
+          if [[ "$VERSION" =~ -rc\.[0-9]+$ ]]; then
+            PRERELEASE=true
+          else
+            PRERELEASE=false
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+      - name: create draft release
+        id: create-release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = `v${{ steps.release-type.outputs.version }}`;
+            const release = {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: `Glimpse ${tag}`,
+              body: "See the assets to download this version and install.",
+              draft: true,
+              prerelease: ${{ steps.release-type.outputs.prerelease }},
+            };
+
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({
+                owner: release.owner,
+                repo: release.repo,
+                tag,
+              });
+              return data.id;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+
+            const { data } = await github.rest.repos.createRelease(release);
+            return data.id;
+
   publish-tauri:
     permissions:
       contents: write
+    needs: create-release
 
     strategy:
       fail-fast: false
@@ -56,24 +122,6 @@ jobs:
         with:
           version: 1.4.309.0
           cache: true
-
-      - name: determine release type
-        shell: bash
-        run: |
-          VERSION=$(awk -F'"' '
-            /^\[package\]$/ { in_package = 1; next }
-            /^\[/ { in_package = 0 }
-            in_package && /^version = / { print $2; exit }
-          ' src-tauri/Cargo.toml)
-          if [[ -z "$VERSION" ]]; then
-            echo "Failed to resolve app version from src-tauri/Cargo.toml" >&2
-            exit 1
-          fi
-          if [[ "$VERSION" =~ -rc\.[0-9]+$ ]]; then
-            echo "IS_PRERELEASE=true" >> "$GITHUB_ENV"
-          else
-            echo "IS_PRERELEASE=false" >> "$GITHUB_ENV"
-          fi
 
       - name: cache bun
         uses: actions/cache@v4
@@ -151,11 +199,13 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
         with:
+          releaseId: ${{ needs.create-release.outputs.release-id }}
           tagName: v__VERSION__
           releaseName: "Glimpse v__VERSION__"
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
-          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          prerelease: ${{ needs.create-release.outputs.prerelease == 'true' }}
+          includeUpdaterJson: false
           args: ${{ matrix.tauri-args }}
 
       - name: build and publish Windows
@@ -168,9 +218,80 @@ jobs:
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
         with:
+          releaseId: ${{ needs.create-release.outputs.release-id }}
           tagName: v__VERSION__
           releaseName: "Glimpse v__VERSION__"
           releaseBody: "See the assets to download this version and install."
           releaseDraft: true
-          prerelease: ${{ env.IS_PRERELEASE == 'true' }}
+          prerelease: ${{ needs.create-release.outputs.prerelease == 'true' }}
+          includeUpdaterJson: false
           args: ${{ matrix.tauri-args }}
+
+  publish-updater-json:
+    permissions:
+      contents: write
+    needs:
+      - create-release
+      - publish-tauri
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: publish combined updater JSON
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG_NAME: v${{ needs.create-release.outputs.version }}
+          VERSION: ${{ needs.create-release.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          assets_json=$(gh release view "$TAG_NAME" --json assets)
+
+          mac_asset=$(jq -r '.assets[].name | select(endswith(".app.tar.gz"))' <<< "$assets_json" | head -n 1)
+          mac_sig="${mac_asset}.sig"
+          windows_asset=$(jq -r '.assets[].name | select(endswith(".exe"))' <<< "$assets_json" | head -n 1)
+          if [[ -z "$windows_asset" ]]; then
+            windows_asset=$(jq -r '.assets[].name | select(endswith(".msi"))' <<< "$assets_json" | head -n 1)
+          fi
+          windows_sig="${windows_asset}.sig"
+
+          for asset in "$mac_asset" "$mac_sig" "$windows_asset" "$windows_sig"; do
+            if [[ -z "$asset" || "$asset" == "null" ]]; then
+              echo "Missing updater asset: $asset" >&2
+              jq -r '.assets[].name' <<< "$assets_json" >&2
+              exit 1
+            fi
+          done
+
+          workdir=$(mktemp -d)
+          gh release download "$TAG_NAME" --pattern "$mac_sig" --pattern "$windows_sig" --dir "$workdir"
+
+          mac_signature=$(<"$workdir/$mac_sig")
+          windows_signature=$(<"$workdir/$windows_sig")
+          mac_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/${mac_asset}"
+          windows_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG_NAME}/${windows_asset}"
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes "See the assets to download this version and install." \
+            --arg pub_date "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            --arg mac_signature "$mac_signature" \
+            --arg mac_url "$mac_url" \
+            --arg windows_signature "$windows_signature" \
+            --arg windows_url "$windows_url" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "darwin-aarch64": { signature: $mac_signature, url: $mac_url },
+                "darwin-x86_64": { signature: $mac_signature, url: $mac_url },
+                "darwin-aarch64-app": { signature: $mac_signature, url: $mac_url },
+                "darwin-x86_64-app": { signature: $mac_signature, url: $mac_url },
+                "windows-x86_64": { signature: $windows_signature, url: $windows_url }
+              }
+            }' > latest.json
+
+          gh release upload "$TAG_NAME" latest.json --clobber
