@@ -241,6 +241,7 @@ const LibraryCard = ({
                                     e.stopPropagation();
                                     if (e.key === "Enter" || e.key === " ") {
                                         e.preventDefault();
+                                        if (e.repeat) return;
                                         if (shiftHeld) {
                                             handleDelete();
                                         } else {

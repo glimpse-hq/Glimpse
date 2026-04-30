@@ -321,7 +321,7 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             {
                 let h = handle.clone();
-                handle.listen(library::types::EVENT_LIBRARY_RENDERER_READY, move |_| {
+                handle.listen(library::EVENT_LIBRARY_RENDERER_READY, move |_| {
                     library::commands::mark_library_import_renderer_ready(&h);
                 });
             }

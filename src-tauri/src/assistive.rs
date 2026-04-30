@@ -2,6 +2,8 @@ use anyhow::{anyhow, Result};
 
 #[cfg(not(target_os = "macos"))]
 use arboard::Clipboard;
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+use arboard::Error as ClipboardError;
 #[cfg(target_os = "macos")]
 use arboard::{Clipboard, ImageData, SetExtApple};
 #[cfg(target_os = "windows")]
@@ -24,7 +26,10 @@ pub fn get_selected_text_ax() -> Option<String> {
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 
-    let _ = clipboard.clear();
+    if clipboard.clear().is_err() {
+        backup.restore(&mut clipboard);
+        return None;
+    }
     thread::sleep(Duration::from_millis(5));
 
     if send_copy_keystroke().is_err() {
@@ -71,7 +76,10 @@ pub fn get_selected_text_ax() -> Option<String> {
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 
-    let _ = clipboard.clear();
+    if clipboard.clear().is_err() {
+        backup.restore(&mut clipboard);
+        return None;
+    }
     thread::sleep(Duration::from_millis(5));
 
     if send_copy_keystroke().is_err() {
@@ -113,7 +121,8 @@ pub fn paste_text(text: &str) -> Result<()> {
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 
-    set_text_excluding_history(&mut clipboard, text.to_string())?;
+    let inserted_text = text.to_string();
+    set_text_excluding_history(&mut clipboard, inserted_text.clone())?;
 
     thread::sleep(Duration::from_millis(10));
 
@@ -122,7 +131,9 @@ pub fn paste_text(text: &str) -> Result<()> {
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(1000));
         if let Ok(mut clipboard) = Clipboard::new() {
-            backup.restore(&mut clipboard);
+            if should_restore_after_paste(&mut clipboard, &inserted_text) {
+                backup.restore(&mut clipboard);
+            }
         }
     });
 
@@ -149,6 +160,27 @@ fn set_text_excluding_history(clipboard: &mut Clipboard, text: String) -> Result
         .text(text)
         .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
     Ok(())
+}
+
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+fn should_restore_after_paste(clipboard: &mut Clipboard, inserted_text: &str) -> bool {
+    match clipboard.get_text() {
+        Ok(current) => return current == inserted_text || current.is_empty(),
+        Err(ClipboardError::ContentNotAvailable) => {}
+        Err(_) => return false,
+    }
+
+    clipboard
+        .get()
+        .html()
+        .is_err_and(|err| matches!(err, ClipboardError::ContentNotAvailable))
+        && clipboard
+            .get_image()
+            .is_err_and(|err| matches!(err, ClipboardError::ContentNotAvailable))
+        && clipboard
+            .get()
+            .file_list()
+            .is_err_and(|err| matches!(err, ClipboardError::ContentNotAvailable))
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
