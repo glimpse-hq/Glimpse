@@ -12,14 +12,16 @@ type ToggleSwitchProps = {
 
 const sizeConfig = {
   sm: {
-    track: "w-7 h-4",
-    thumb: "left-[2px] top-[2px] w-3 h-3",
-    travelX: 12,
+    trackWidth: 28,
+    trackHeight: 16,
+    thumbSize: 12,
+    padding: 2,
   },
   md: {
-    track: "w-10 h-5",
-    thumb: "left-[2px] top-0.5 w-4 h-4",
-    travelX: 20,
+    trackWidth: 40,
+    trackHeight: 20,
+    thumbSize: 16,
+    padding: 2,
   },
 } as const;
 
@@ -32,6 +34,10 @@ const ToggleSwitch = ({
 }: ToggleSwitchProps) => {
   const config = sizeConfig[size];
 
+  const thumbLeft = enabled
+    ? config.trackWidth - config.thumbSize - config.padding
+    : config.padding;
+
   return (
     <button
       type="button"
@@ -40,15 +46,42 @@ const ToggleSwitch = ({
       aria-checked={enabled}
       aria-label={ariaLabel}
       disabled={disabled}
-      className={`${config.track} relative inline-block shrink-0 overflow-hidden rounded-full border-0 p-0 appearance-none transition-colors ${
-        enabled ? "bg-[var(--color-toggle-on)]" : "bg-[var(--color-border-secondary)]"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+      className={`
+        relative inline-block shrink-0 align-middle
+        rounded-full border-0 p-0
+        appearance-none leading-none
+        transition-colors duration-150
+        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+        ${enabled ? "bg-[var(--color-toggle-on)]" : "bg-[var(--color-border-secondary)]"}
+        ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
+      `}
+      style={{
+        width: config.trackWidth,
+        minWidth: config.trackWidth,
+        height: config.trackHeight,
+        minHeight: config.trackHeight,
+        boxSizing: "border-box",
+      }}
     >
-      <motion.div
-        className={`absolute ${config.thumb} rounded-full bg-white shadow-xs`}
+      <motion.span
+        className="absolute block rounded-full bg-white shadow-sm"
         initial={false}
-        animate={{ x: enabled ? config.travelX : 0 }}
-        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+        animate={{
+          left: thumbLeft,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 500,
+          damping: 35,
+          mass: 0.7,
+        }}
+        style={{
+          top: config.padding,
+          width: config.thumbSize,
+          height: config.thumbSize,
+          borderRadius: "9999px",
+          backfaceVisibility: "hidden",
+        }}
       />
     </button>
   );
