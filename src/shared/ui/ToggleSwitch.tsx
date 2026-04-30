@@ -34,9 +34,9 @@ const ToggleSwitch = ({
 }: ToggleSwitchProps) => {
   const config = sizeConfig[size];
 
-  const thumbLeft = enabled
-    ? config.trackWidth - config.thumbSize - config.padding
-    : config.padding;
+  const thumbOffset = enabled
+    ? config.trackWidth - config.thumbSize - config.padding * 2
+    : 0;
 
   return (
     <button
@@ -67,7 +67,7 @@ const ToggleSwitch = ({
         className="absolute block rounded-full bg-white shadow-sm"
         initial={false}
         animate={{
-          left: thumbLeft,
+          x: thumbOffset,
         }}
         transition={{
           type: "spring",
@@ -77,6 +77,7 @@ const ToggleSwitch = ({
         }}
         style={{
           top: config.padding,
+          left: config.padding,
           width: config.thumbSize,
           height: config.thumbSize,
           borderRadius: "9999px",
