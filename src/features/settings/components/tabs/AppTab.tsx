@@ -448,124 +448,135 @@ const AppTab = ({
 
         <div className="grid grid-cols-2 gap-3 items-stretch">
           <div className="space-y-2 flex flex-col">
-            <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
-              {t({
-                id: "settings.app.privacy_permissions",
-                message: "Privacy & Permissions",
-              })}
-            </h2>
+            {hasPermissionRows && (
+              <>
+                <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
+                  {t({
+                    id: "settings.app.privacy_permissions",
+                    message: "Privacy & Permissions",
+                  })}
+                </h2>
 
-            <div className="space-y-3 rounded-lg bg-surface-surface p-2.5 flex-1">
-              {platformCapabilities.requiresNativeMicrophonePermission && (
-                <div className="px-2 py-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="ui-text-label-strong ui-color-primary">
+                <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
+                  {platformCapabilities.requiresNativeMicrophonePermission && (
+                    <div className="px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="ui-text-label-strong ui-color-primary">
+                            {t({
+                              id: "settings.app.microphone",
+                              message: "Microphone",
+                            })}
+                          </span>
+                          <span className="truncate ui-text-meta ui-color-disabled">
+                            {t({
+                              id: "settings.app.microphone.description",
+                              message: "required for transcription",
+                            })}
+                          </span>
+                        </div>
+                        <PermissionStatus granted={micPermission} />
+                      </div>
+                      <button
+                        onClick={() => {
+                          void onRequestMicrophonePermission();
+                        }}
+                        className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+                      >
                         {t({
-                          id: "settings.app.microphone",
-                          message: "Microphone",
+                          id: "settings.app.open_settings",
+                          message: "Open Settings",
                         })}
-                      </span>
-                      <span className="truncate ui-text-meta ui-color-disabled">
-                        {t({
-                          id: "settings.app.microphone.description",
-                          message: "required for transcription",
-                        })}
-                      </span>
+                      </button>
                     </div>
-                    <PermissionStatus granted={micPermission} />
-                  </div>
-                  <button
-                    onClick={() => {
-                      void onRequestMicrophonePermission();
-                    }}
-                    className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                  >
-                    {t({
-                      id: "settings.app.open_settings",
-                      message: "Open Settings",
-                    })}
-                  </button>
-                </div>
-              )}
+                  )}
 
-              {platformCapabilities.requiresAccessibilityPermission && (
-                <div className="px-2 py-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="ui-text-label-strong ui-color-primary">
+                  {platformCapabilities.requiresAccessibilityPermission && (
+                    <div className="px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="ui-text-label-strong ui-color-primary">
+                            {t({
+                              id: "settings.app.accessibility",
+                              message: "Accessibility",
+                            })}
+                          </span>
+                          <span className="truncate ui-text-meta ui-color-disabled">
+                            {t({
+                              id: "settings.app.accessibility.description",
+                              message: "required for auto-paste",
+                            })}
+                          </span>
+                        </div>
+                        <PermissionStatus granted={accessibilityPermission} />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const granted =
+                              await requestMacAccessibilityPermission();
+                            if (!granted)
+                              await invoke("open_accessibility_settings");
+                          } catch {
+                            await invoke("open_accessibility_settings");
+                          }
+                        }}
+                        className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+                      >
                         {t({
-                          id: "settings.app.accessibility",
-                          message: "Accessibility",
+                          id: "settings.app.open_settings",
+                          message: "Open Settings",
                         })}
-                      </span>
-                      <span className="truncate ui-text-meta ui-color-disabled">
-                        {t({
-                          id: "settings.app.accessibility.description",
-                          message: "required for auto-paste",
-                        })}
-                      </span>
+                      </button>
                     </div>
-                    <PermissionStatus granted={accessibilityPermission} />
-                  </div>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const granted = await requestMacAccessibilityPermission();
-                        if (!granted) await invoke("open_accessibility_settings");
-                      } catch {
-                        await invoke("open_accessibility_settings");
-                      }
-                    }}
-                    className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                  >
-                    {t({
-                      id: "settings.app.open_settings",
-                      message: "Open Settings",
-                    })}
-                  </button>
-                </div>
-              )}
+                  )}
 
-              {platformCapabilities.requiresInputMonitoringPermission && (
-                <div className="px-2 py-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <span className="ui-text-label-strong ui-color-primary">
+                  {platformCapabilities.requiresInputMonitoringPermission && (
+                    <div className="px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="ui-text-label-strong ui-color-primary">
+                            {t({
+                              id: "settings.app.input_monitoring",
+                              message: "Input Monitoring",
+                            })}
+                          </span>
+                          <span className="truncate ui-text-meta ui-color-disabled">
+                            {t({
+                              id: "settings.app.input_monitoring.description",
+                              message: "required for global shortcuts",
+                            })}
+                          </span>
+                        </div>
+                        <PermissionStatus granted={inputMonitoringPermission} />
+                      </div>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await requestMacInputMonitoringPermission();
+                            const granted =
+                              await checkMacInputMonitoringPermission();
+                            if (!granted)
+                              await invoke("open_input_monitoring_settings");
+                          } catch {
+                            await invoke("open_input_monitoring_settings");
+                          }
+                        }}
+                        className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
+                      >
                         {t({
-                          id: "settings.app.input_monitoring",
-                          message: "Input Monitoring",
+                          id: "settings.app.open_settings",
+                          message: "Open Settings",
                         })}
-                      </span>
-                      <span className="truncate ui-text-meta ui-color-disabled">
-                        {t({
-                          id: "settings.app.input_monitoring.description",
-                          message: "required for global shortcuts",
-                        })}
-                      </span>
+                      </button>
                     </div>
-                    <PermissionStatus granted={inputMonitoringPermission} />
-                  </div>
-                  <button
-                    onClick={async () => {
-                      try {
-                        await requestMacInputMonitoringPermission();
-                        const granted = await checkMacInputMonitoringPermission();
-                        if (!granted) await invoke("open_input_monitoring_settings");
-                      } catch {
-                        await invoke("open_input_monitoring_settings");
-                      }
-                    }}
-                    className="mt-1.5 ui-text-meta ui-color-muted hover:text-content-secondary transition-colors"
-                  >
-                    {t({
-                      id: "settings.app.open_settings",
-                      message: "Open Settings",
-                    })}
-                  </button>
+                  )}
                 </div>
-              )}
 
+              </>
+            )}
+
+            <div className="rounded-lg bg-surface-surface p-2.5">
               <div className="px-2 py-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="ui-text-label-strong ui-color-primary">
@@ -605,16 +616,12 @@ const AppTab = ({
               </div>
             </div>
 
-            {hasPermissionRows ? (
+            {hasPermissionRows && (
               <p className="ui-text-micro ui-color-disabled px-0.5">
                 {t({
                   id: "settings.app.permissions_restart_notice",
                   message: "Permission changes may require a restart.",
                 })}
-              </p>
-            ) : (
-              <p className="ui-text-micro px-0.5 invisible" aria-hidden="true">
-                &nbsp;
               </p>
             )}
           </div>
