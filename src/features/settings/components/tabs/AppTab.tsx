@@ -448,16 +448,15 @@ const AppTab = ({
 
         <div className="grid grid-cols-2 gap-3 items-stretch">
           <div className="space-y-2 flex flex-col">
-            {hasPermissionRows && (
-              <>
-                <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
-                  {t({
-                    id: "settings.app.privacy_permissions",
-                    message: "Privacy & Permissions",
-                  })}
-                </h2>
+            <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
+              {t({
+                id: "settings.app.privacy_permissions",
+                message: "Privacy & Permissions",
+              })}
+            </h2>
 
-                <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
+            {hasPermissionRows && (
+              <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
                   {platformCapabilities.requiresNativeMicrophonePermission && (
                     <div className="px-2 py-1.5">
                       <div className="flex items-center justify-between gap-2">
@@ -571,9 +570,7 @@ const AppTab = ({
                       </button>
                     </div>
                   )}
-                </div>
-
-              </>
+              </div>
             )}
 
             <div className="rounded-lg bg-surface-surface p-2.5">
