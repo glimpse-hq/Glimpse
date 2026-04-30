@@ -54,7 +54,8 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          "CARGO_TARGET_DIR=$env:RUNNER_TEMP\cargo-target" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force C:\t | Out-Null
+          "CARGO_TARGET_DIR=C:/t" >> $env:GITHUB_ENV
 
       - name: install Vulkan SDK
         if: matrix.platform == 'windows-latest'
@@ -101,7 +102,11 @@ jobs:
       - name: cache rust
         uses: Swatinem/rust-cache@v2
         with:
+          key: ${{ matrix.platform }}-${{ matrix.rust-targets }}
           workspaces: src-tauri -> target
+          cache-directories: |
+            C:/t
+          cache-on-failure: true
 
       - name: install frontend dependencies
         run: bun ci
