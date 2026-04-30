@@ -4,9 +4,14 @@ import { getPlatformCapabilities } from "../lib/platform";
 
 const WindowControls = () => {
   const shouldShow = getPlatformCapabilities().usesCustomWindowControls;
-  const windowControls = useWindowControls();
 
   if (!shouldShow) return null;
+
+  return <WindowControlsButtons />;
+};
+
+const WindowControlsButtons = () => {
+  const windowControls = useWindowControls();
 
   const buttonClass =
     "flex h-8 w-11 items-center justify-center text-content-muted transition-colors hover:bg-surface-elevated hover:text-content-primary";

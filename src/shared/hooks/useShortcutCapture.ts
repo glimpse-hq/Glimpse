@@ -94,19 +94,23 @@ export function useShortcutCapture({
       if (disposed) return;
 
       const hasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
-      if (event.key !== "Escape" || hasModifier) return;
+      const shouldCancel = event.type === "keydown" && event.key === "Escape" && !hasModifier;
 
       event.preventDefault();
       event.stopPropagation();
-      cancelCapture();
+      if (shouldCancel) {
+        cancelCapture();
+      }
     };
 
     window.addEventListener("keydown", handleKeyboardEvent, true);
+    window.addEventListener("keyup", handleKeyboardEvent, true);
 
     return () => {
       disposed = true;
       unlisten?.();
       window.removeEventListener("keydown", handleKeyboardEvent, true);
+      window.removeEventListener("keyup", handleKeyboardEvent, true);
     };
   }, [
     active,
