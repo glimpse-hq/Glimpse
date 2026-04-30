@@ -121,6 +121,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     [modelCatalogQuery.data],
   );
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
+  const persistedThemeMode = settingsQuery.data?.theme_mode ?? "system";
   const selectedModel = ctx.localModelChoice ||
     pickDefaultOnboardingModel(onboardingModelCatalog, persistedLocalModel);
   const statusModelKeys = useMemo(
@@ -387,6 +388,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           microphoneDevice: null,
           language: "en",
           appLocale: "system",
+          themeMode: persistedThemeMode,
           llmEnabled: false,
           cleanupEnabled: false,
           llmProvider: "none",
@@ -421,6 +423,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     ctx.selectedMode,
     ctx.smartShortcut,
     onComplete,
+    persistedThemeMode,
     selectedModel,
     send,
     t,

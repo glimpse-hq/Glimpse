@@ -302,6 +302,7 @@ mod tests {
             microphone_device: None,
             language: "en".to_string(),
             app_locale: "system".to_string(),
+            theme_mode: ThemeMode::default(),
             llm_enabled: false,
 
             cleanup_enabled: false,
