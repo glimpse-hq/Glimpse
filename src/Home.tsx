@@ -540,7 +540,7 @@ const Home = () => {
                         <div className="ui-text-meta ui-color-muted">
                           {t({
                             id: "home.support.about.version_mode",
-                            message: `v${appVersion} • ${currentModeLabel}`,
+                            message: `v${{ version: appVersion }} • ${{ mode: currentModeLabel }}`,
                           })}
                         </div>
                       </div>
