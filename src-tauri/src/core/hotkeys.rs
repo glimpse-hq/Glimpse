@@ -3,7 +3,7 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
-use handy_keys::{Hotkey, KeyboardListener, Modifiers};
+use handy_keys::{Hotkey, Key, KeyboardListener, Modifiers};
 use handy_keys::{HotkeyManager, HotkeyState as HandyHotkeyState};
 use parking_lot::Mutex;
 use serde::Serialize;
@@ -112,6 +112,7 @@ impl HotkeyCoordinator {
         let session = WorkerSession::spawn("shortcut-capture", move |stop_rx| {
             let listener = KeyboardListener::new()?;
             let mut captured_hotkey: Option<Hotkey> = None;
+            let mut capture_anchor: Option<CapturePart> = None;
 
             loop {
                 if should_stop(&stop_rx) {
@@ -120,30 +121,46 @@ impl HotkeyCoordinator {
 
                 match listener.recv_timeout(CAPTURE_POLL_INTERVAL) {
                     Ok(event) => {
-                        if !event.is_key_down {
-                            if captured_hotkey
-                                .as_ref()
-                                .is_some_and(|hotkey| hotkey.key.is_some())
-                            {
-                                let hotkey = captured_hotkey.take().expect("checked above");
+                        let Some(part) = capture_part(event) else {
+                            continue;
+                        };
+
+                        if event.is_key_down {
+                            capture_anchor.get_or_insert(part);
+
+                            if let Ok(hotkey) = event.as_hotkey() {
+                                let captured = merge_capture_hotkey(captured_hotkey, hotkey);
+                                captured_hotkey = Some(captured);
                                 emit_capture_event(
                                     &app_handle,
-                                    ShortcutCapturePayload::Captured {
-                                        shortcut: hotkey.to_string(),
+                                    ShortcutCapturePayload::Preview {
+                                        shortcut: captured.to_string(),
                                     },
                                 );
-                                break;
                             }
                             continue;
                         }
 
-                        if let Ok(hotkey) = event.as_hotkey() {
-                            let captured = merge_capture_hotkey(captured_hotkey, hotkey);
-                            captured_hotkey = Some(captured);
+                        let Some(hotkey) = captured_hotkey else {
+                            continue;
+                        };
+
+                        if capture_anchor == Some(part) {
+                            emit_capture_event(
+                                &app_handle,
+                                ShortcutCapturePayload::Captured {
+                                    shortcut: hotkey.to_string(),
+                                },
+                            );
+                            break;
+                        }
+
+                        captured_hotkey = remove_capture_part(hotkey, part);
+                        if let Some(hotkey) = captured_hotkey {
                             emit_capture_event(
                                 &app_handle,
                                 ShortcutCapturePayload::Preview {
-                                    shortcut: captured.to_string(),
+                                    shortcut: hotkey.to_string(),
                                 },
                             );
                         }
@@ -173,6 +190,19 @@ impl HotkeyCoordinator {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CapturePart {
+    Modifier(Modifiers),
+    Key(Key),
+}
+
+fn capture_part(event: handy_keys::KeyEvent) -> Option<CapturePart> {
+    event
+        .changed_modifier
+        .map(CapturePart::Modifier)
+        .or_else(|| event.key.map(CapturePart::Key))
+}
+
 fn merge_capture_hotkey(previous: Option<Hotkey>, current: Hotkey) -> Hotkey {
     if let Some(previous) = previous {
         Hotkey {
@@ -182,6 +212,16 @@ fn merge_capture_hotkey(previous: Option<Hotkey>, current: Hotkey) -> Hotkey {
     } else {
         current
     }
+}
+
+fn remove_capture_part(mut hotkey: Hotkey, part: CapturePart) -> Option<Hotkey> {
+    match part {
+        CapturePart::Modifier(modifier) => hotkey.modifiers &= !modifier,
+        CapturePart::Key(key) if hotkey.key == Some(key) => hotkey.key = None,
+        CapturePart::Key(_) => {}
+    }
+
+    Hotkey::new(hotkey.modifiers, hotkey.key).ok()
 }
 
 fn emit_capture_event(app: &AppHandle<AppRuntime>, payload: ShortcutCapturePayload) {

@@ -45,6 +45,9 @@ import type {
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
 type ActiveTab = "general" | "models" | "about" | "account" | "app";
+type ShortcutOverrides = Partial<
+  Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
+>;
 
 interface UseSettingsFormOptions {
   isOpen: boolean;
@@ -118,6 +121,9 @@ export function useSettingsForm({
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const settingsSaveRef = useRef(Promise.resolve());
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settingsQuery = useSettings(undefined, isOpen);
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
@@ -278,6 +284,94 @@ export function useSettingsForm({
   );
   const aiFeaturesReady = llmEnabled && llmConfigReady;
 
+  const buildSettingsArgs = useCallback(
+    (shortcutOverrides: ShortcutOverrides = {}) => ({
+      smartShortcut: shortcutOverrides.smartShortcut ?? smartShortcut,
+      smartEnabled,
+      holdShortcut: shortcutOverrides.holdShortcut ?? holdShortcut,
+      holdEnabled,
+      toggleShortcut: shortcutOverrides.toggleShortcut ?? toggleShortcut,
+      toggleEnabled,
+      transcriptionMode,
+      localModel,
+      microphoneDevice,
+      language,
+      appLocale,
+      themeMode,
+
+      llmEnabled: aiFeaturesReady,
+      cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
+      llmProvider,
+      llmEndpoint,
+      llmApiKey,
+      llmModel,
+      editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
+      mediaControlEnabled,
+      autoUpdateEnabled,
+      autoLaunchEnabled,
+      recordingPrunePolicy,
+      analyticsEnabled,
+    }),
+    [
+      smartShortcut,
+      smartEnabled,
+      holdShortcut,
+      holdEnabled,
+      toggleShortcut,
+      toggleEnabled,
+      transcriptionMode,
+      localModel,
+      microphoneDevice,
+      language,
+      appLocale,
+      themeMode,
+      aiFeaturesReady,
+      cleanupEnabled,
+      llmProvider,
+      llmEndpoint,
+      llmApiKey,
+      llmModel,
+      editModeEnabled,
+      mediaControlEnabled,
+      autoUpdateEnabled,
+      autoLaunchEnabled,
+      recordingPrunePolicy,
+      analyticsEnabled,
+    ],
+  );
+
+  const saveSettingsNow = useCallback(
+    (shortcutOverrides?: ShortcutOverrides) => {
+      if (!localModel) return Promise.resolve();
+
+      const args = buildSettingsArgs(shortcutOverrides);
+      const save = settingsSaveRef.current
+        .catch(() => {})
+        .then(async () => {
+          isSavingRef.current = true;
+          try {
+            await invoke("update_settings", { args });
+            setError(null);
+          } catch (err) {
+            console.error(err);
+            setError(String(err));
+          } finally {
+            isSavingRef.current = false;
+          }
+        });
+
+      settingsSaveRef.current = save;
+      return save;
+    },
+    [buildSettingsArgs, localModel],
+  );
+
+  const clearPendingSettingsSave = useCallback(() => {
+    if (saveTimeoutRef.current === null) return;
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = null;
+  }, []);
+
   const finalizeCapture = useCallback(() => {
     invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
     captureActiveRef.current = null;
@@ -289,12 +383,16 @@ export function useSettingsForm({
     onCancel: finalizeCapture,
     onPreviewChange: setCapturePreview,
     onShortcutCaptured: (combo) => {
+      clearPendingSettingsSave();
       if (captureActive === "smart") {
         setSmartShortcut(combo);
+        void saveSettingsNow({ smartShortcut: combo });
       } else if (captureActive === "hold") {
         setHoldShortcut(combo);
+        void saveSettingsNow({ holdShortcut: combo });
       } else if (captureActive === "toggle") {
         setToggleShortcut(combo);
+        void saveSettingsNow({ toggleShortcut: combo });
       }
       setError(null);
     },
@@ -546,8 +644,6 @@ export function useSettingsForm({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [finalizeCapture, isOpen, onClose, resetCaptureState]);
 
-  const isSavingRef = useRef(false);
-
   useEffect(() => {
     if (loading) return;
     if (!didHydrateRef.current) {
@@ -555,83 +651,13 @@ export function useSettingsForm({
       return;
     }
 
-    const saveSettings = async () => {
-      if (!localModel) return;
-
-      isSavingRef.current = true;
-      try {
-        await invoke("update_settings", {
-          args: {
-            smartShortcut,
-            smartEnabled,
-            holdShortcut,
-            holdEnabled,
-            toggleShortcut,
-            toggleEnabled,
-            transcriptionMode,
-            localModel,
-            microphoneDevice,
-            language,
-            appLocale,
-            themeMode,
-
-            llmEnabled: aiFeaturesReady,
-            cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
-            llmProvider,
-            llmEndpoint,
-            llmApiKey,
-            llmModel,
-            editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
-            mediaControlEnabled,
-            autoUpdateEnabled,
-            autoLaunchEnabled,
-            recordingPrunePolicy,
-            analyticsEnabled,
-          },
-        });
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError(String(err));
-      } finally {
-        isSavingRef.current = false;
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      saveSettings();
+    saveTimeoutRef.current = setTimeout(() => {
+      void saveSettingsNow();
+      saveTimeoutRef.current = null;
     }, 500);
 
-    return () => clearTimeout(timeoutId);
-  }, [
-    loading,
-    smartShortcut,
-    smartEnabled,
-    holdShortcut,
-    holdEnabled,
-    toggleShortcut,
-    toggleEnabled,
-    transcriptionMode,
-    localModel,
-    microphoneDevice,
-    language,
-    appLocale,
-    themeMode,
-
-    llmEnabled,
-    cleanupEnabled,
-    llmProvider,
-    llmEndpoint,
-    llmApiKey,
-    llmModel,
-    editModeEnabled,
-    mediaControlEnabled,
-    autoUpdateEnabled,
-    autoLaunchEnabled,
-    recordingPrunePolicy,
-    analyticsEnabled,
-    aiFeaturesReady,
-  ]);
+    return clearPendingSettingsSave;
+  }, [clearPendingSettingsSave, loading, saveSettingsNow]);
 
   const handleOpenDataDir = useCallback(async () => {
     if (!appInfo?.data_dir_path) return;

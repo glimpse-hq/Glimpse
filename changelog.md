@@ -1,3 +1,14 @@
+0.8.5
+
+
+
+### Improvements
+- Settings keybinds is even more stable.
+- Fixed an issue where the app would refocus after a toast.
+- Fixed an issue where the the pill wouldn't behave nicely.
+
+
+
 0.8.4
 
 ### New Features
