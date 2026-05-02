@@ -185,14 +185,7 @@ const ToastOverlay: React.FC = () => {
   }, [toast]);
 
   useEffect(() => {
-    const unsub1 = listen<ToastPayload>("toast:show", async (ev) => {
-      try {
-        await getCurrentWindow().show();
-        await getCurrentWindow().setFocus();
-      } catch (err) {
-        console.error("Failed to show toast window:", err);
-      }
-
+    const unsub1 = listen<ToastPayload>("toast:show", (ev) => {
       if (timerRef.current) clearTimeout(timerRef.current);
       if (dismissAnimationTimerRef.current) {
         clearTimeout(dismissAnimationTimerRef.current);

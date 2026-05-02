@@ -85,9 +85,10 @@ pub fn hide(app: &AppHandle<AppRuntime>) {
 fn position_toast_window(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) {
     let state = app.state::<AppState>();
     let is_expanded = state.pill().is_expanded();
+    let pill_is_visible = state.pill().status() != pill::PillStatus::Idle;
     let base_margin = if is_expanded { 380.0 } else { 300.0 };
 
-    let Some(monitor) = target_toast_monitor(app, toast_window) else {
+    let Some(monitor) = target_toast_monitor(app, toast_window, pill_is_visible) else {
         return;
     };
 
@@ -105,11 +106,17 @@ fn position_toast_window(app: &AppHandle<AppRuntime>, toast_window: &WebviewWind
 fn target_toast_monitor(
     app: &AppHandle<AppRuntime>,
     toast_window: &WebviewWindow<AppRuntime>,
+    pill_is_visible: bool,
 ) -> Option<Monitor> {
-    app.get_webview_window(crate::MAIN_WINDOW_LABEL)
-        .and_then(|pill_window| pill_window.current_monitor().ok().flatten())
-        .or_else(|| monitor_containing_cursor(toast_window))
-        .or_else(|| toast_window.current_monitor().ok().flatten())
+    if pill_is_visible {
+        app.get_webview_window(crate::MAIN_WINDOW_LABEL)
+            .and_then(|pill_window| pill_window.current_monitor().ok().flatten())
+            .or_else(|| monitor_containing_cursor(toast_window))
+            .or_else(|| toast_window.current_monitor().ok().flatten())
+    } else {
+        monitor_containing_cursor(toast_window)
+            .or_else(|| toast_window.current_monitor().ok().flatten())
+    }
 }
 
 fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> Option<Monitor> {

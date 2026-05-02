@@ -264,8 +264,8 @@ impl PillController {
             previous
         };
 
-        self.emit_state(app);
         self.update_overlay_visibility(app, previous, new_status);
+        self.emit_state(app);
     }
 
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
@@ -314,8 +314,14 @@ impl PillController {
         self.transition_to(app, PillStatus::Idle);
     }
 
-    pub fn safe_reset(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() != PillStatus::Listening {
+    pub fn finish_processing(&self, app: &AppHandle<AppRuntime>) {
+        let should_reset = match self.status() {
+            PillStatus::Processing => true,
+            PillStatus::Listening => !self.is_recording(),
+            _ => false,
+        };
+
+        if should_reset {
             self.reset(app);
         }
     }
@@ -341,6 +347,7 @@ impl PillController {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
         *self.smart_press_time.lock() = None;
+        *self.last_shortcut_press_time.lock() = None;
         // Note: hold_key_down is intentionally NOT cleared here.
         // It tracks physical key state and should only change via actual key events.
         *self.shortcut_origin.lock() = None;
@@ -404,14 +411,19 @@ impl PillController {
         should_ignore
     }
 
+    fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
+        if self.status() == PillStatus::Listening && !self.is_recording() {
+            self.reset(app);
+        }
+    }
+
     /// Returns true if recording started successfully, false if blocked by a check
     fn handle_hold_press(&self, app: &AppHandle<AppRuntime>) -> bool {
         if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Hold) {
-                self.cancel_processing(app);
-            }
+            self.cancel_processing(app);
             return false;
         }
+        self.reset_stale_listening_state(app);
 
         if self.status() == PillStatus::Error {
             toast::hide(app);
@@ -481,11 +493,10 @@ impl PillController {
 
     fn handle_toggle_press(&self, app: &AppHandle<AppRuntime>) {
         if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Toggle) {
-                self.cancel_processing(app);
-            }
+            self.cancel_processing(app);
             return;
         }
+        self.reset_stale_listening_state(app);
 
         if self.status() == PillStatus::Error {
             toast::hide(app);
@@ -542,11 +553,10 @@ impl PillController {
         let press_time = Local::now();
 
         if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Smart) {
-                self.cancel_processing(app);
-            }
+            self.cancel_processing(app);
             return;
         }
+        self.reset_stale_listening_state(app);
 
         if self.is_recording() && self.active_mode() == Some(RecordingMode::Toggle) {
             self.handle_toggle_press(app);
@@ -898,23 +908,11 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
 
 pub fn show_overlay(app: &AppHandle<AppRuntime>) {
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        position_overlay_on_cursor_screen(&window);
+        platform::overlay::show(app, &window);
         if !app.state::<AppState>().pill().is_expanded() {
             collapse_expanded_pill(app);
         }
-        position_overlay_on_cursor_screen(&window);
-        platform::overlay::show(app, &window);
-        app.state::<AppState>().pill().emit_state(app);
-
-        let app_handle = app.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(50));
-            if app_handle.state::<AppState>().pill().status() != PillStatus::Idle {
-                app_handle
-                    .state::<AppState>()
-                    .pill()
-                    .emit_state(&app_handle);
-            }
-        });
     }
 }
 

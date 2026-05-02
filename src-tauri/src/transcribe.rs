@@ -117,7 +117,7 @@ pub(crate) fn queue_transcription(
                     app_handle
                         .state::<AppState>()
                         .pill()
-                        .safe_reset(&app_handle);
+                        .finish_processing(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -133,7 +133,7 @@ pub(crate) fn queue_transcription(
                     app_handle
                         .state::<AppState>()
                         .pill()
-                        .safe_reset(&app_handle);
+                        .finish_processing(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -218,7 +218,7 @@ pub(crate) fn queue_transcription(
                     app_handle
                         .state::<AppState>()
                         .pill()
-                        .safe_reset(&app_handle);
+                        .finish_processing(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -264,7 +264,7 @@ pub(crate) fn queue_transcription(
                 app_handle
                     .state::<AppState>()
                     .pill()
-                    .safe_reset(&app_handle);
+                    .finish_processing(&app_handle);
                 app_handle.state::<AppState>().set_pending_path(None);
             }
             Err(err) => {
@@ -550,7 +550,7 @@ fn emit_transcription_complete_with_cleanup(
         },
     );
 
-    app.state::<AppState>().pill().safe_reset(app);
+    app.state::<AppState>().pill().finish_processing(app);
 
     if llm_cleaned {
         let _ = app
@@ -625,7 +625,7 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
 
     crate::schedule_recording_prune(app.clone(), app.state::<AppState>().current_settings());
 
-    app.state::<AppState>().pill().safe_reset(app);
+    app.state::<AppState>().pill().finish_processing(app);
     app.state::<AppState>().set_pending_path(None);
 }
 
@@ -1137,7 +1137,7 @@ pub(crate) fn finalize_streaming_transcription(
             app_handle
                 .state::<AppState>()
                 .pill()
-                .safe_reset(&app_handle);
+                .finish_processing(&app_handle);
             return;
         }
 
@@ -1204,7 +1204,7 @@ pub(crate) fn finalize_streaming_transcription(
             app_handle
                 .state::<AppState>()
                 .pill()
-                .safe_reset(&app_handle);
+                .finish_processing(&app_handle);
             return;
         }
 
