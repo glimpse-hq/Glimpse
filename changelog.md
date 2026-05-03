@@ -6,6 +6,7 @@
 - Fixed an issue where the the pill wouldn't behave nicely.
 - Pausing music from transcribing is more stable.
 - Using edit mode in TUIs should no longer type 'c'
+- Many pieces of the app have been optimized to load faster.
 
 0.8.4
 

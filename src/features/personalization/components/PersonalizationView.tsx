@@ -1,19 +1,24 @@
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { invoke } from "@tauri-apps/api/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import type { Personality } from "../../../types";
+import * as personalizationApi from "../api";
 import {
-  buildWebsiteIconMap,
+  personalizationKeys,
+  setPersonalitiesCache,
+  useInstalledApps,
+  usePersonalities,
+  useWebsiteIconMap,
+} from "../queries";
+import {
   createId,
   formatWebsitePreview,
   normalizeWebsite,
-  type InstalledApp,
-  type WebsiteIcon,
 } from "./personalization-utils";
 import PersonalityModal, {
   AppIconBadge,
@@ -23,12 +28,7 @@ import PersonalityModal, {
 
 const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const { t } = useLingui();
-  const [personalities, setPersonalities] = useState<Personality[]>([]);
-  const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
-  const [websiteIconBySite, setWebsiteIconBySite] = useState<
-    Record<string, string>
-  >({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [activePersonalityId, setActivePersonalityId] = useState<string | null>(
     null,
@@ -41,28 +41,14 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const saveTimeoutRef = useRef<number | null>(null);
   const shiftHeld = useShiftHeld(isActive);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [personalityResp, appsResp] = await Promise.all([
-        invoke<Personality[]>("get_personalities"),
-        invoke<InstalledApp[]>("list_installed_apps"),
-      ]);
-      setPersonalities(personalityResp ?? []);
-      setInstalledApps(appsResp ?? []);
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isActive) return;
-    load();
-  }, [isActive, load]);
+  const personalitiesQuery = usePersonalities(isActive);
+  const installedAppsQuery = useInstalledApps(isActive);
+  const personalities = personalitiesQuery.data ?? [];
+  const installedApps = installedAppsQuery.data ?? [];
+  const loading = isActive && personalitiesQuery.isLoading;
+  const queryError = personalitiesQuery.error ?? installedAppsQuery.error;
+  const errorMessage =
+    error ?? (queryError instanceof Error ? queryError.message : null);
 
   const websiteDomains = useMemo(() => {
     const seen = new Set<string>();
@@ -77,25 +63,14 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
     return Array.from(seen).sort();
   }, [personalities]);
 
-  const loadWebsiteIcons = useCallback(async (sites: string[]) => {
-    if (sites.length === 0) {
-      setWebsiteIconBySite({});
-      return;
-    }
-    try {
-      const iconsResp = await invoke<WebsiteIcon[]>("list_website_icons", {
-        sites,
-      });
-      setWebsiteIconBySite(buildWebsiteIconMap(iconsResp ?? []));
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
+  const websiteIconsQuery = useWebsiteIconMap(websiteDomains, isActive);
+  const websiteIconBySite = websiteIconsQuery.data ?? {};
 
   useEffect(() => {
-    if (!isActive) return;
-    void loadWebsiteIcons(websiteDomains);
-  }, [isActive, websiteDomains, loadWebsiteIcons]);
+    if (personalitiesQuery.error) {
+      console.error(personalitiesQuery.error);
+    }
+  }, [personalitiesQuery.error]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -118,29 +93,24 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
       return;
     }
 
-    const timer = window.setTimeout(async () => {
+    const timer = window.setTimeout(() => {
       websiteIconRefreshKeyRef.current = currentKey;
-      try {
-        const iconsResp = await invoke<WebsiteIcon[]>("list_website_icons", {
-          sites: websiteDomains,
-        });
-        setWebsiteIconBySite(buildWebsiteIconMap(iconsResp ?? []));
-      } catch {
-        // Keep current icon map; website icon refresh is best-effort only.
-      }
+      void queryClient.invalidateQueries({
+        queryKey: personalizationKeys.websiteIcons(websiteDomains),
+      });
     }, 2500);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isActive, websiteDomains, websiteIconBySite]);
+  }, [isActive, queryClient, websiteDomains, websiteIconBySite]);
 
   useEffect(() => {
     if (!isActive) return;
 
     if (
       hasRequestedIconRefreshRef.current ||
-      loading ||
+      installedAppsQuery.isLoading ||
       installedApps.length === 0
     ) {
       return;
@@ -152,39 +122,35 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
       return;
     }
 
-    const timer = window.setTimeout(async () => {
+    const timer = window.setTimeout(() => {
       hasRequestedIconRefreshRef.current = true;
-      try {
-        const appsResp = await invoke<InstalledApp[]>("list_installed_apps");
-        setInstalledApps(appsResp ?? []);
-      } catch {
-        // Keep current app list; icon refresh is best-effort only.
-      }
+      void queryClient.invalidateQueries({
+        queryKey: personalizationKeys.installedApps(),
+      });
     }, 2500);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isActive, installedApps, loading]);
+  }, [isActive, installedApps, installedAppsQuery.isLoading, queryClient]);
 
   const persistPersonalities = useCallback((next: Personality[]) => {
     const persistVersion = persistVersionRef.current + 1;
     persistVersionRef.current = persistVersion;
-    
+    setPersonalitiesCache(queryClient, next);
+
     if (saveTimeoutRef.current !== null) {
       window.clearTimeout(saveTimeoutRef.current);
     }
-    
+
     saveTimeoutRef.current = window.setTimeout(async () => {
       setError(null);
       try {
-        const cleaned = await invoke<Personality[]>("set_personalities", {
-          personalities: next,
-        });
+        const cleaned = await personalizationApi.setPersonalities(next);
         if (persistVersion !== persistVersionRef.current) {
           return;
         }
-        setPersonalities(cleaned ?? next);
+        setPersonalitiesCache(queryClient, cleaned ?? next);
       } catch (err) {
         if (persistVersion !== persistVersionRef.current) {
           return;
@@ -193,7 +159,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         setError(err instanceof Error ? err.message : String(err));
       }
     }, 500);
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     return () => {
@@ -205,13 +171,9 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
   const updatePersonalities = useCallback(
     (updater: (prev: Personality[]) => Personality[]) => {
-      setPersonalities((prev) => {
-        const next = updater(prev);
-        void persistPersonalities(next);
-        return next;
-      });
+      persistPersonalities(updater(personalities));
     },
-    [persistPersonalities],
+    [persistPersonalities, personalities],
   );
 
   const updatePersonality = useCallback(
@@ -591,8 +553,10 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         </div>
       )}
 
-      {error && (
-        <div className="mt-4 ui-text-body-sm ui-color-error-soft">{error}</div>
+      {errorMessage && (
+        <div className="mt-4 ui-text-body-sm ui-color-error-soft">
+          {errorMessage}
+        </div>
       )}
 
       {activePersonality && (
