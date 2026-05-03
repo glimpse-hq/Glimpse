@@ -6,6 +6,7 @@ import {
   useMemo,
   useCallback,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -28,13 +29,12 @@ import {
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
-import { useModelCatalog } from "./models-queries";
+import { modelKeys, useModelCatalog, useModelStatuses } from "./models-queries";
 import type {
   TranscriptionMode,
   TextSizeMode,
   ThemeMode,
   StoredSettings,
-  ModelStatus,
   DownloadEvent,
   LlmProvider,
   RecordingPrunePolicy,
@@ -78,9 +78,6 @@ export function useSettingsForm({
   const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
   const [language, setLanguage] = useState("en");
   const [appLocale, setAppLocale] = useState<AppLocaleSetting>("system");
-  const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>(
-    {},
-  );
   const [downloadState, setDownloadState] = useState<
     Record<string, DownloadEvent>
   >({});
@@ -124,12 +121,22 @@ export function useSettingsForm({
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve());
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queryClient = useQueryClient();
   const settingsQuery = useSettings(undefined, isOpen);
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
+  const modelKeysForStatus = useMemo(
+    () => modelCatalog.map((model) => model.key),
+    [modelCatalog],
+  );
+  const modelStatusesQuery = useModelStatuses(
+    modelKeysForStatus,
+    isOpen && modelKeysForStatus.length > 0,
+  );
+  const modelStatus = modelStatusesQuery.statusByModel;
   const appInfo = appInfoQuery.data ?? null;
   const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
   const loading =
@@ -568,39 +575,24 @@ export function useSettingsForm({
     hydrateFromSettings(settingsQuery.data);
   }, [hydrateFromSettings, isOpen, settingsQuery.data, settingsQuery.error]);
 
-  const refreshModelStatus = useCallback((modelKey: string) => {
-    invoke<ModelStatus>("check_model_status", { model: modelKey })
-      .then((status) => {
-        setModelStatus((prev) => ({ ...prev, [modelKey]: status }));
-      })
-      .catch((err) => {
-        console.error(err);
-        setModelStatus((prev) => ({
-          ...prev,
-          [modelKey]: {
-            key: modelKey,
-            installed: false,
-            bytes_on_disk: 0,
-            missing_files: [],
-            directory: "",
-          },
-        }));
+  const invalidateModelStatus = useCallback(
+    (modelKey: string) => {
+      void queryClient.invalidateQueries({
+        queryKey: modelKeys.status(modelKey),
       });
-  }, []);
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     if (!isOpen || modelCatalog.length === 0) return;
-
-    for (const model of modelCatalog) {
-      void refreshModelStatus(model.key);
-    }
 
     setLocalModel((current) =>
       modelCatalog.some((model) => model.key === current)
         ? current
         : (modelCatalog[0]?.key ?? ""),
     );
-  }, [isOpen, modelCatalog, refreshModelStatus]);
+  }, [isOpen, modelCatalog]);
 
   useModelDownloadEvents({
     enabled: isOpen,
@@ -626,7 +618,7 @@ export function useSettingsForm({
           total: prev[model]?.total ?? 0,
         },
       }));
-      refreshModelStatus(model);
+      invalidateModelStatus(model);
     },
     onError: ({ model, error }) => {
       if (error.toLowerCase().includes("cancelled")) return;
@@ -751,7 +743,7 @@ export function useSettingsForm({
       }));
       try {
         await invoke("download_model", { model: modelKey });
-        refreshModelStatus(modelKey);
+        invalidateModelStatus(modelKey);
       } catch (err) {
         const errorMsg = String(err);
         if (errorMsg.toLowerCase().includes("cancelled")) return;
@@ -768,7 +760,7 @@ export function useSettingsForm({
         }));
       }
     },
-    [refreshModelStatus],
+    [invalidateModelStatus],
   );
 
   const handleDelete = useCallback(
@@ -789,7 +781,7 @@ export function useSettingsForm({
           }
         }
 
-        refreshModelStatus(modelKey);
+        invalidateModelStatus(modelKey);
       } catch (err) {
         console.error(err);
         setDownloadState((prev) => ({
@@ -804,7 +796,7 @@ export function useSettingsForm({
         }));
       }
     },
-    [localModel, modelCatalog, modelStatus, refreshModelStatus],
+    [invalidateModelStatus, localModel, modelCatalog, modelStatus],
   );
 
   const handleCancelDownload = useCallback(async (modelKey: string) => {
