@@ -58,10 +58,10 @@ mod coord {
             };
 
             let pause_fn = self.pause_fn;
-            let _ = async_runtime::spawn_blocking(move || {
+            std::mem::drop(async_runtime::spawn_blocking(move || {
                 let target = pause_fn();
                 self.finish_pause(session, target);
-            });
+            }));
 
             session
         }
@@ -77,7 +77,9 @@ mod coord {
             };
 
             if let Some(target) = target {
-                let _ = async_runtime::spawn_blocking(move || self.resume_or_keep(target));
+                std::mem::drop(async_runtime::spawn_blocking(move || {
+                    self.resume_or_keep(target)
+                }));
             }
         }
 
@@ -115,9 +117,7 @@ mod coord {
                 }
             }
 
-            let played = (self.resume_fn)(&target, &|| {
-                self.state.lock().active_session.is_some()
-            });
+            let played = (self.resume_fn)(&target, &|| self.state.lock().active_session.is_some());
 
             if !played {
                 let mut shared = self.state.lock();
@@ -131,8 +131,8 @@ mod coord {
 
 #[cfg(target_os = "macos")]
 mod imp {
-    use super::PauseSession;
     use super::coord::{CancelFn, Coordinator};
+    use super::PauseSession;
     use serde::Deserialize;
     use std::process::Command;
 
@@ -357,8 +357,8 @@ function run(argv) {
 
 #[cfg(target_os = "windows")]
 mod imp {
-    use super::PauseSession;
     use super::coord::{CancelFn, Coordinator};
+    use super::PauseSession;
     use windows::Media::Control::{
         GlobalSystemMediaTransportControlsSession,
         GlobalSystemMediaTransportControlsSessionManager,

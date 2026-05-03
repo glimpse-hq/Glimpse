@@ -17,9 +17,7 @@ fn extract_host(candidate: &str) -> Option<String> {
         value = value[(index + 3)..].to_string();
     }
 
-    let end_index = value
-        .find(|ch| matches!(ch, '/' | '?' | '#'))
-        .unwrap_or(value.len());
+    let end_index = value.find(['/', '?', '#']).unwrap_or(value.len());
     let host_port = &value[..end_index];
     let host_port = host_port.split('@').next_back().unwrap_or(host_port);
     let host = if let Some(rest) = host_port.strip_prefix('[') {

@@ -52,17 +52,9 @@ pub enum RecordingMode {
     Toggle,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ShortcutOrigin {
-    Hold,
-    Toggle,
-    Smart,
-}
-
 #[derive(Serialize, Clone)]
 pub struct PillStatePayload {
     pub status: PillStatus,
-    pub mode: Option<String>,
 }
 
 const SPECTRUM_SIZE: usize = 512;
@@ -147,7 +139,6 @@ pub struct PillController {
     smart_press_time: Mutex<Option<DateTime<Local>>>,
     last_shortcut_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
-    shortcut_origin: Mutex<Option<ShortcutOrigin>>,
     paused_media_session: Mutex<Option<music::PauseSession>>,
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<AudioSpectrumEmitter>>,
@@ -162,7 +153,6 @@ impl PillController {
             smart_press_time: Mutex::new(None),
             last_shortcut_press_time: Mutex::new(None),
             hold_key_down: Mutex::new(false),
-            shortcut_origin: Mutex::new(None),
             paused_media_session: Mutex::new(None),
             recorder,
             audio_spectrum_emitter: Mutex::new(None),
@@ -237,18 +227,8 @@ impl PillController {
 
     fn emit_state(&self, app: &AppHandle<AppRuntime>) {
         let status = *self.status.lock();
-        let mode = self.recording_mode.lock().map(|m| match m {
-            RecordingMode::Hold => "hold",
-            RecordingMode::Toggle => "toggle",
-        });
 
-        if let Err(err) = app.emit(
-            EVENT_PILL_STATE,
-            PillStatePayload {
-                status,
-                mode: mode.map(String::from),
-            },
-        ) {
+        if let Err(err) = app.emit(EVENT_PILL_STATE, PillStatePayload { status }) {
             eprintln!("Failed to emit pill state: {err}");
         }
     }
@@ -350,7 +330,6 @@ impl PillController {
         *self.last_shortcut_press_time.lock() = None;
         // Note: hold_key_down is intentionally NOT cleared here.
         // It tracks physical key state and should only change via actual key events.
-        *self.shortcut_origin.lock() = None;
     }
 
     fn capture_selected_text_if_enabled(&self, app: &AppHandle<AppRuntime>) {
@@ -442,13 +421,6 @@ impl PillController {
             return false;
         }
 
-        {
-            let mut origin = self.shortcut_origin.lock();
-            if origin.is_none() {
-                *origin = Some(ShortcutOrigin::Hold);
-            }
-        }
-
         let state = app.state::<AppState>();
         let settings = state.current_settings();
 
@@ -518,8 +490,6 @@ impl PillController {
                 return;
             }
 
-            *self.shortcut_origin.lock() = Some(ShortcutOrigin::Toggle);
-
             let state = app.state::<AppState>();
             let settings = state.current_settings();
 
@@ -567,25 +537,9 @@ impl PillController {
             return;
         }
 
-        // Smart mode delegates to `handle_hold_press` to start a hold-recording, but the origin
-        // should still reflect the initiating shortcut (Smart). We pre-set the origin to prevent
-        // `handle_hold_press` from assigning `Hold`, and roll back if recording doesn't start.
-        let should_rollback_origin = {
-            let mut origin = self.shortcut_origin.lock();
-            if origin.is_none() {
-                *origin = Some(ShortcutOrigin::Smart);
-                true
-            } else {
-                false
-            }
-        };
-
         // Only set state if recording actually starts (permissions and recorder startup pass)
         if self.handle_hold_press(app) {
             *self.smart_press_time.lock() = Some(press_time);
-            *self.shortcut_origin.lock() = Some(ShortcutOrigin::Smart);
-        } else if should_rollback_origin {
-            *self.shortcut_origin.lock() = None;
         }
     }
 

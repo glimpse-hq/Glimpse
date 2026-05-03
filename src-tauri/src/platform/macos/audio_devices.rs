@@ -78,7 +78,7 @@ impl AudioPropertyListener {
             )
         };
 
-        if status != kAudioHardwareNoError as i32 {
+        if status != kAudioHardwareNoError {
             return Err(format!("CoreAudio listener failed with status {status}"));
         }
 

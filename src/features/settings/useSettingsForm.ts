@@ -366,11 +366,20 @@ export function useSettingsForm({
     [buildSettingsArgs, localModel],
   );
 
+  const saveSettingsNowRef = useRef(saveSettingsNow);
+  saveSettingsNowRef.current = saveSettingsNow;
+
   const clearPendingSettingsSave = useCallback(() => {
     if (saveTimeoutRef.current === null) return;
     clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = null;
   }, []);
+
+  const flushPendingSettingsSave = useCallback(() => {
+    if (saveTimeoutRef.current === null) return;
+    clearPendingSettingsSave();
+    void saveSettingsNowRef.current();
+  }, [clearPendingSettingsSave]);
 
   const finalizeCapture = useCallback(() => {
     invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
@@ -420,20 +429,27 @@ export function useSettingsForm({
   }, [isOpen, initialTab]);
 
   useEffect(() => {
-    if (!isOpen) {
-      didHydrateRef.current = false;
-      if (captureActive) {
-        finalizeCapture();
-        resetCaptureState();
-      }
+    if (isOpen) return;
+    flushPendingSettingsSave();
+    didHydrateRef.current = false;
+    if (captureActive) {
+      finalizeCapture();
+      resetCaptureState();
     }
-  }, [captureActive, finalizeCapture, isOpen, resetCaptureState]);
+  }, [
+    captureActive,
+    finalizeCapture,
+    flushPendingSettingsSave,
+    isOpen,
+    resetCaptureState,
+  ]);
 
   useEffect(() => {
     return () => {
+      flushPendingSettingsSave();
       invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
     };
-  }, []);
+  }, [flushPendingSettingsSave]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -651,13 +667,14 @@ export function useSettingsForm({
       return;
     }
 
+    if (saveTimeoutRef.current !== null) {
+      clearTimeout(saveTimeoutRef.current);
+    }
     saveTimeoutRef.current = setTimeout(() => {
-      void saveSettingsNow();
       saveTimeoutRef.current = null;
+      void saveSettingsNow();
     }, 500);
-
-    return clearPendingSettingsSave;
-  }, [clearPendingSettingsSave, loading, saveSettingsNow]);
+  }, [loading, saveSettingsNow]);
 
   const handleOpenDataDir = useCallback(async () => {
     if (!appInfo?.data_dir_path) return;

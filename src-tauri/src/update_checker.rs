@@ -211,13 +211,11 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                             if !app.state::<AppState>().is_auto_update_enabled() {
                                 break;
                             }
-                            if should_restart_for_auto_update(&app, &state) {
-                                if write_marker(&app) {
-                                    state.lock().clear();
-                                    info!("auto-update: restarting (deferred)");
-                                    app.request_restart();
-                                    return;
-                                }
+                            if should_restart_for_auto_update(&app, &state) && write_marker(&app) {
+                                state.lock().clear();
+                                info!("auto-update: restarting (deferred)");
+                                app.request_restart();
+                                return;
                             }
                         }
                         continue;
