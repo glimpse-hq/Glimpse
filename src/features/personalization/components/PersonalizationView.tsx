@@ -39,6 +39,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const websiteIconRefreshKeyRef = useRef<string | null>(null);
   const persistVersionRef = useRef(0);
   const saveTimeoutRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
   const shiftHeld = useShiftHeld(isActive);
 
   const personalitiesQuery = usePersonalities(isActive);
@@ -144,15 +145,16 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
     }
 
     saveTimeoutRef.current = window.setTimeout(async () => {
+      saveTimeoutRef.current = null;
       setError(null);
       try {
         const cleaned = await personalizationApi.setPersonalities(next);
-        if (persistVersion !== persistVersionRef.current) {
+        if (!mountedRef.current || persistVersion !== persistVersionRef.current) {
           return;
         }
         setPersonalitiesCache(queryClient, cleaned ?? next);
       } catch (err) {
-        if (persistVersion !== persistVersionRef.current) {
+        if (!mountedRef.current || persistVersion !== persistVersionRef.current) {
           return;
         }
         console.error(err);
@@ -163,8 +165,10 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       if (saveTimeoutRef.current !== null) {
         window.clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
       }
     };
   }, []);

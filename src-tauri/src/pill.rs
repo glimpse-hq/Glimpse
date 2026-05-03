@@ -136,6 +136,7 @@ impl AudioSpectrumEmitter {
 pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
+    recording_settings: Mutex<Option<UserSettings>>,
     smart_press_time: Mutex<Option<DateTime<Local>>>,
     last_shortcut_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
@@ -150,6 +151,7 @@ impl PillController {
         Self {
             status: Mutex::new(PillStatus::Idle),
             recording_mode: Mutex::new(None),
+            recording_settings: Mutex::new(None),
             smart_press_time: Mutex::new(None),
             last_shortcut_press_time: Mutex::new(None),
             hold_key_down: Mutex::new(false),
@@ -326,15 +328,19 @@ impl PillController {
     fn reset_recording_state(&self) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
+        *self.recording_settings.lock() = None;
         *self.smart_press_time.lock() = None;
         *self.last_shortcut_press_time.lock() = None;
         // Note: hold_key_down is intentionally NOT cleared here.
         // It tracks physical key state and should only change via actual key events.
     }
 
-    fn capture_selected_text_if_enabled(&self, app: &AppHandle<AppRuntime>) {
+    fn capture_selected_text_if_enabled(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        settings: &UserSettings,
+    ) {
         let state = app.state::<AppState>();
-        let settings = state.current_settings();
 
         if !settings.edit_mode_enabled {
             state.set_pending_selected_text(None);
@@ -423,6 +429,7 @@ impl PillController {
 
         let state = app.state::<AppState>();
         let settings = state.current_settings();
+        *self.recording_settings.lock() = Some(settings.clone());
 
         self.preload_local_model_if_needed(app, &settings);
 
@@ -492,6 +499,7 @@ impl PillController {
 
             let state = app.state::<AppState>();
             let settings = state.current_settings();
+            *self.recording_settings.lock() = Some(settings.clone());
 
             self.preload_local_model_if_needed(app, &settings);
 
@@ -564,7 +572,12 @@ impl PillController {
     fn stop_and_process(&self, app: &AppHandle<AppRuntime>) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
-        self.capture_selected_text_if_enabled(app);
+        let settings = self
+            .recording_settings
+            .lock()
+            .take()
+            .unwrap_or_else(|| app.state::<AppState>().current_settings());
+        self.capture_selected_text_if_enabled(app, &settings);
 
         let state = app.state::<AppState>();
         let has_streaming = state.has_streaming_session();
@@ -575,6 +588,7 @@ impl PillController {
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
             let resume_app = app_handle.clone();
+            let settings_for_transcription = settings.clone();
             std::thread::spawn(move || {
                 match recorder.stop_after_capture(move || {
                     resume_app.state::<AppState>().pill().resume_paused_media();
@@ -603,6 +617,7 @@ impl PillController {
                             &app_handle,
                             streaming_transcript,
                             (duration_ms.max(0) as f32) / 1000.0,
+                            settings_for_transcription,
                         );
                     }
                     Ok(None) => {
@@ -629,6 +644,7 @@ impl PillController {
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
             let resume_app = app_handle.clone();
+            let settings_for_transcription = settings.clone();
             std::thread::spawn(move || {
                 match recorder.stop_after_capture(move || {
                     resume_app.state::<AppState>().pill().resume_paused_media();
@@ -641,7 +657,11 @@ impl PillController {
                             return;
                         }
 
-                        crate::persist_recording_async(app_handle, recording);
+                        crate::persist_recording_async(
+                            app_handle,
+                            recording,
+                            settings_for_transcription,
+                        );
                     }
                     Ok(None) => {
                         app_handle.state::<AppState>().pill().reset(&app_handle);

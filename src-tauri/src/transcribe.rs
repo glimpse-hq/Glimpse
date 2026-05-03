@@ -55,6 +55,7 @@ pub(crate) fn queue_transcription(
     app: &AppHandle<AppRuntime>,
     saved: RecordingSaved,
     recording: CompletedRecording,
+    settings: UserSettings,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -71,7 +72,6 @@ pub(crate) fn queue_transcription(
     async_runtime::spawn(async move {
         let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
 
-        let settings = app_handle.state::<AppState>().current_settings();
         let auto_paste = transcription_api::auto_paste_enabled();
 
         eprintln!(
@@ -1191,6 +1191,7 @@ pub(crate) fn finalize_streaming_transcription(
     app: &AppHandle<AppRuntime>,
     raw_transcript: String,
     duration_seconds: f32,
+    settings: UserSettings,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -1200,7 +1201,6 @@ pub(crate) fn finalize_streaming_transcription(
 
     tauri::async_runtime::spawn(async move {
         let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
-        let settings = app_handle.state::<AppState>().current_settings();
         let auto_paste = transcription_api::auto_paste_enabled();
         let active_mode = mode_context::resolve_active_personality(&settings);
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);

@@ -1290,7 +1290,11 @@ fn cancel_recording(app: AppHandle<AppRuntime>) {
     }
 }
 
-pub(crate) fn persist_recording_async(app: AppHandle<AppRuntime>, recording: CompletedRecording) {
+pub(crate) fn persist_recording_async(
+    app: AppHandle<AppRuntime>,
+    recording: CompletedRecording,
+    settings: settings::UserSettings,
+) {
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
         Err(err) => {
@@ -1308,7 +1312,7 @@ pub(crate) fn persist_recording_async(app: AppHandle<AppRuntime>, recording: Com
         let task =
             async_runtime::spawn_blocking(move || recorder::persist_recording(base_dir, recording));
         match task.await {
-            Ok(Ok(saved)) => emit_complete(&app, saved, recording_for_transcription),
+            Ok(Ok(saved)) => emit_complete(&app, saved, recording_for_transcription, settings),
             Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
             Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
         }
@@ -1319,6 +1323,7 @@ fn emit_complete(
     app: &AppHandle<AppRuntime>,
     saved: RecordingSaved,
     recording: CompletedRecording,
+    settings: settings::UserSettings,
 ) {
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
@@ -1346,7 +1351,7 @@ fn emit_complete(
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording);
+    transcribe::queue_transcription(app, saved, recording, settings);
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {

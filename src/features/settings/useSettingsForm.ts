@@ -48,6 +48,9 @@ type ActiveTab = "general" | "models" | "about" | "account" | "app";
 type ShortcutOverrides = Partial<
   Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
 >;
+type SaveSettingsOverrides = ShortcutOverrides & {
+  localModel?: string;
+};
 
 interface UseSettingsFormOptions {
   isOpen: boolean;
@@ -121,6 +124,9 @@ export function useSettingsForm({
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve());
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const downloadResetTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(
+    new Set(),
+  );
   const queryClient = useQueryClient();
   const settingsQuery = useSettings(undefined, isOpen);
   const appInfoQuery = useAppInfo(isOpen);
@@ -292,15 +298,15 @@ export function useSettingsForm({
   const aiFeaturesReady = llmEnabled && llmConfigReady;
 
   const buildSettingsArgs = useCallback(
-    (shortcutOverrides: ShortcutOverrides = {}) => ({
-      smartShortcut: shortcutOverrides.smartShortcut ?? smartShortcut,
+    (overrides: SaveSettingsOverrides = {}) => ({
+      smartShortcut: overrides.smartShortcut ?? smartShortcut,
       smartEnabled,
-      holdShortcut: shortcutOverrides.holdShortcut ?? holdShortcut,
+      holdShortcut: overrides.holdShortcut ?? holdShortcut,
       holdEnabled,
-      toggleShortcut: shortcutOverrides.toggleShortcut ?? toggleShortcut,
+      toggleShortcut: overrides.toggleShortcut ?? toggleShortcut,
       toggleEnabled,
       transcriptionMode,
-      localModel,
+      localModel: overrides.localModel ?? localModel,
       microphoneDevice,
       language,
       appLocale,
@@ -348,10 +354,10 @@ export function useSettingsForm({
   );
 
   const saveSettingsNow = useCallback(
-    (shortcutOverrides?: ShortcutOverrides) => {
-      if (!localModel) return Promise.resolve();
+    (overrides?: SaveSettingsOverrides) => {
+      if (!(overrides?.localModel ?? localModel)) return Promise.resolve();
 
-      const args = buildSettingsArgs(shortcutOverrides);
+      const args = buildSettingsArgs(overrides);
       const save = settingsSaveRef.current
         .catch(() => {})
         .then(async () => {
@@ -455,17 +461,27 @@ export function useSettingsForm({
     return () => {
       flushPendingSettingsSave();
       invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+      for (const timeout of downloadResetTimeoutsRef.current) {
+        clearTimeout(timeout);
+      }
+      downloadResetTimeoutsRef.current.clear();
     };
   }, [flushPendingSettingsSave]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlisten: (() => void) | undefined;
     listen("open_whats_new", () => {
       setWhatsNewOpen(true);
     }).then((fn) => {
-      unlisten = fn;
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
     });
     return () => {
+      cancelled = true;
       unlisten?.();
     };
   }, []);
@@ -700,6 +716,15 @@ export function useSettingsForm({
     [captureActive, finalizeCapture, resetCaptureState],
   );
 
+  const handleLocalModelChange = useCallback(
+    (modelKey: string) => {
+      clearPendingSettingsSave();
+      setLocalModel(modelKey);
+      void saveSettingsNow({ localModel: modelKey });
+    },
+    [clearPendingSettingsSave, saveSettingsNow],
+  );
+
   const handleSignOut = useCallback(async () => {
     setAuthLoading(true);
     try {
@@ -777,7 +802,7 @@ export function useSettingsForm({
             (m) => m.key !== modelKey && modelStatus[m.key]?.installed,
           );
           if (otherInstalledModel) {
-            setLocalModel(otherInstalledModel.key);
+            handleLocalModelChange(otherInstalledModel.key);
           }
         }
 
@@ -796,7 +821,13 @@ export function useSettingsForm({
         }));
       }
     },
-    [invalidateModelStatus, localModel, modelCatalog, modelStatus],
+    [
+      handleLocalModelChange,
+      invalidateModelStatus,
+      localModel,
+      modelCatalog,
+      modelStatus,
+    ],
   );
 
   const handleCancelDownload = useCallback(async (modelKey: string) => {
@@ -811,7 +842,8 @@ export function useSettingsForm({
           total: 0,
         },
       }));
-      setTimeout(() => {
+      const resetTimeout = setTimeout(() => {
+        downloadResetTimeoutsRef.current.delete(resetTimeout);
         setDownloadState((prev) => {
           if (prev[modelKey]?.status === "cancelled") {
             return {
@@ -827,6 +859,7 @@ export function useSettingsForm({
           return prev;
         });
       }, 1500);
+      downloadResetTimeoutsRef.current.add(resetTimeout);
     } catch (err) {
       console.error("Failed to cancel download:", err);
     }
@@ -863,7 +896,7 @@ export function useSettingsForm({
     transcriptionMode,
     setTranscriptionMode,
     localModel,
-    setLocalModel,
+    setLocalModel: handleLocalModelChange,
     microphoneDevice,
     setMicrophoneDevice,
     language: displayedLanguage,
