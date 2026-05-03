@@ -1,13 +1,10 @@
 0.8.5
 
-
-
 ### Improvements
 - Settings keybinds is even more stable.
 - Fixed an issue where the app would refocus after a toast.
 - Fixed an issue where the the pill wouldn't behave nicely.
-
-
+- Pausing music from transcribing is more stable.
 
 0.8.4
 

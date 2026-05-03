@@ -620,80 +620,84 @@ impl PillController {
             self.transition_to(app, PillStatus::Processing);
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
-            std::thread::spawn(move || match recorder.stop() {
-                Ok(Some(recording)) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    let duration_ms =
-                        (recording.ended_at - recording.started_at).num_milliseconds();
-                    let streaming_transcript = app_handle
-                        .state::<AppState>()
-                        .stop_streaming_session(&app_handle)
-                        .unwrap_or_default();
+            let resume_app = app_handle.clone();
+            std::thread::spawn(move || {
+                match recorder.stop_after_capture(move || {
+                    resume_app.state::<AppState>().pill().resume_paused_media();
+                }) {
+                    Ok(Some(recording)) => {
+                        let duration_ms =
+                            (recording.ended_at - recording.started_at).num_milliseconds();
+                        let streaming_transcript = app_handle
+                            .state::<AppState>()
+                            .stop_streaming_session(&app_handle)
+                            .unwrap_or_default();
 
-                    if duration_ms < MIN_RECORDING_DURATION_MS {
+                        if duration_ms < MIN_RECORDING_DURATION_MS {
+                            collapse_expanded_pill(&app_handle);
+                            app_handle.state::<AppState>().pill().reset(&app_handle);
+                            return;
+                        }
+
+                        if streaming_transcript.trim().is_empty() {
+                            collapse_expanded_pill(&app_handle);
+                            app_handle.state::<AppState>().pill().reset(&app_handle);
+                            return;
+                        }
+
+                        crate::transcribe::finalize_streaming_transcription(
+                            &app_handle,
+                            streaming_transcript,
+                            (duration_ms.max(0) as f32) / 1000.0,
+                        );
+                    }
+                    Ok(None) => {
+                        let _ = app_handle
+                            .state::<AppState>()
+                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
                         app_handle.state::<AppState>().pill().reset(&app_handle);
-                        return;
                     }
-
-                    if streaming_transcript.trim().is_empty() {
+                    Err(err) => {
+                        let _ = app_handle
+                            .state::<AppState>()
+                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
-                        app_handle.state::<AppState>().pill().reset(&app_handle);
-                        return;
+                        app_handle.state::<AppState>().pill().transition_to_error(
+                            &app_handle,
+                            &format!("Unable to stop recording: {err}"),
+                        );
                     }
-
-                    crate::transcribe::finalize_streaming_transcription(
-                        &app_handle,
-                        streaming_transcript,
-                        (duration_ms.max(0) as f32) / 1000.0,
-                    );
-                }
-                Ok(None) => {
-                    let _ = app_handle
-                        .state::<AppState>()
-                        .stop_streaming_session(&app_handle);
-                    collapse_expanded_pill(&app_handle);
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().reset(&app_handle);
-                }
-                Err(err) => {
-                    let _ = app_handle
-                        .state::<AppState>()
-                        .stop_streaming_session(&app_handle);
-                    collapse_expanded_pill(&app_handle);
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().transition_to_error(
-                        &app_handle,
-                        &format!("Unable to stop recording: {err}"),
-                    );
                 }
             });
         } else {
             self.transition_to(app, PillStatus::Processing);
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
-            std::thread::spawn(move || match recorder.stop() {
-                Ok(Some(recording)) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    let duration_ms =
-                        (recording.ended_at - recording.started_at).num_milliseconds();
-                    if duration_ms < MIN_RECORDING_DURATION_MS {
-                        app_handle.state::<AppState>().pill().reset(&app_handle);
-                        return;
-                    }
+            let resume_app = app_handle.clone();
+            std::thread::spawn(move || {
+                match recorder.stop_after_capture(move || {
+                    resume_app.state::<AppState>().pill().resume_paused_media();
+                }) {
+                    Ok(Some(recording)) => {
+                        let duration_ms =
+                            (recording.ended_at - recording.started_at).num_milliseconds();
+                        if duration_ms < MIN_RECORDING_DURATION_MS {
+                            app_handle.state::<AppState>().pill().reset(&app_handle);
+                            return;
+                        }
 
-                    crate::persist_recording_async(app_handle, recording);
-                }
-                Ok(None) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().reset(&app_handle);
-                }
-                Err(err) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().transition_to_error(
-                        &app_handle,
-                        &format!("Unable to stop recording: {err}"),
-                    );
+                        crate::persist_recording_async(app_handle, recording);
+                    }
+                    Ok(None) => {
+                        app_handle.state::<AppState>().pill().reset(&app_handle);
+                    }
+                    Err(err) => {
+                        app_handle.state::<AppState>().pill().transition_to_error(
+                            &app_handle,
+                            &format!("Unable to stop recording: {err}"),
+                        );
+                    }
                 }
             });
         }
@@ -703,10 +707,12 @@ impl PillController {
         self.stop_audio_spectrum_emitter();
         let _ = app.state::<AppState>().stop_streaming_session(app);
         collapse_expanded_pill(app);
-        if let Err(err) = self.recorder.stop() {
+        let app_handle = app.clone();
+        if let Err(err) = self.recorder.stop_after_capture(move || {
+            app_handle.state::<AppState>().pill().resume_paused_media();
+        }) {
             eprintln!("Failed to stop recorder: {err}");
         }
-        self.resume_paused_media();
         self.reset(app);
     }
 
@@ -720,7 +726,10 @@ impl PillController {
         let _ = state.stop_streaming_session(app);
         collapse_expanded_pill(app);
         state.request_cancellation();
-        let _ = self.recorder.stop();
+        let app_handle = app.clone();
+        let _ = self.recorder.stop_after_capture(move || {
+            app_handle.state::<AppState>().pill().resume_paused_media();
+        });
 
         if let Some(path) = state.take_pending_path() {
             let _ = std::fs::remove_file(&path);
