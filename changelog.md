@@ -5,6 +5,7 @@
 - Fixed an issue where the app would refocus after a toast.
 - Fixed an issue where the the pill wouldn't behave nicely.
 - Pausing music from transcribing is more stable.
+- Using edit mode in TUIs should no longer type 'c'
 
 0.8.4
 
