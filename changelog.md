@@ -7,6 +7,7 @@
 - Pausing music from transcribing is more stable.
 - Using edit mode in TUIs should no longer type 'c'
 - Many pieces of the app have been optimized to load faster.
+- AI prompt injection protections are better.
 
 0.8.4
 
