@@ -1,0 +1,133 @@
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  AudioSpectrumPayload,
+  PillModePayload,
+  PillStatePayload,
+  PillStatus,
+} from "../../types";
+
+const EMPTY_SPECTRUM = new Uint8Array(256);
+const ERROR_FLASH_MS = 1200;
+
+function emptySpectrum() {
+  return new Uint8Array(EMPTY_SPECTRUM);
+}
+
+export function usePillState() {
+  const [pillStatus, setPillStatus] = useState<PillStatus>("idle");
+  const [spectrumBins, setSpectrumBins] = useState(() => emptySpectrum());
+  const [lastSpectrumAt, setLastSpectrumAt] = useState(0);
+  const [isErrorFlashing, setIsErrorFlashing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [expandedText, setExpandedText] = useState("");
+
+  const statusRef = useRef<PillStatus>("idle");
+  const errorFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  const clearErrorFlashTimer = useCallback(() => {
+    if (errorFlashTimeoutRef.current === null) return;
+    clearTimeout(errorFlashTimeoutRef.current);
+    errorFlashTimeoutRef.current = null;
+  }, []);
+
+  const resetAudioState = useCallback(() => {
+    setSpectrumBins(emptySpectrum());
+    setLastSpectrumAt(0);
+  }, []);
+
+  const applyStatus = useCallback(
+    (next: PillStatus) => {
+      if (statusRef.current === next) return;
+
+      statusRef.current = next;
+      setPillStatus(next);
+
+      if (next === "idle") {
+        clearErrorFlashTimer();
+        setIsErrorFlashing(false);
+        setIsExpanded(false);
+        setExpandedText("");
+        return;
+      }
+
+      if (next === "listening") {
+        resetAudioState();
+        return;
+      }
+
+      if (next === "error") {
+        clearErrorFlashTimer();
+        setIsErrorFlashing(true);
+        errorFlashTimeoutRef.current = setTimeout(() => {
+          errorFlashTimeoutRef.current = null;
+          setIsErrorFlashing(false);
+        }, ERROR_FLASH_MS);
+      }
+    },
+    [clearErrorFlashTimer, resetAudioState],
+  );
+
+  const dismiss = useCallback(() => {
+    applyStatus("idle");
+  }, [applyStatus]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const unlisteners: UnlistenFn[] = [];
+
+    const register = <TPayload,>(
+      event: string,
+      handler: (payload: TPayload) => void,
+    ) => {
+      listen<TPayload>(event, ({ payload }) => {
+        if (!cancelled) {
+          handler(payload);
+        }
+      })
+        .then((unlisten) => {
+          if (cancelled) {
+            unlisten();
+          } else {
+            unlisteners.push(unlisten);
+          }
+        })
+        .catch((error) => {
+          console.error(`Failed to listen for ${event}`, error);
+        });
+    };
+
+    register<PillStatePayload>("pill:state", ({ status }) => {
+      applyStatus(status);
+    });
+
+    register<AudioSpectrumPayload>("audio:spectrum", ({ bins }) => {
+      if (statusRef.current !== "listening") return;
+      setSpectrumBins(new Uint8Array(bins));
+      setLastSpectrumAt(performance.now());
+    });
+
+    register<PillModePayload>("pill:mode", ({ expanded, text }) => {
+      setIsExpanded(expanded);
+      setExpandedText(expanded ? (text ?? "") : "");
+    });
+
+    return () => {
+      cancelled = true;
+      clearErrorFlashTimer();
+      unlisteners.forEach((unlisten) => unlisten());
+    };
+  }, [applyStatus, clearErrorFlashTimer]);
+
+  return {
+    pillStatus,
+    spectrumBins,
+    lastSpectrumAt,
+    isErrorFlashing,
+    isExpanded,
+    expandedText,
+    dismiss,
+  };
+}

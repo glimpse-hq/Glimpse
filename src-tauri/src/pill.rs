@@ -268,6 +268,16 @@ impl PillController {
         toast::show(app, "error", None, &simple_msg);
     }
 
+    fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, message: &str) {
+        eprintln!("[Pill] {message}");
+        self.resume_paused_media();
+        self.reset_recording_state();
+        *self.hold_key_down.lock() = false;
+        self.transition_to(app, PillStatus::Error);
+        let simple_msg = simplify_recording_error(message);
+        toast::show(app, "error", None, &simple_msg);
+    }
+
     fn update_overlay_visibility(
         &self,
         app: &AppHandle<AppRuntime>,
@@ -384,30 +394,12 @@ impl PillController {
         }
     }
 
-    fn should_ignore_shortcut_press(&self) -> bool {
-        let mut last_press_time = self.last_shortcut_press_time.lock();
-        let now = Instant::now();
-        let should_ignore = last_press_time.as_ref().is_some_and(|last| {
-            now.duration_since(*last) < Duration::from_millis(SHORTCUT_PRESS_DEBOUNCE_MS)
-        });
-        if !should_ignore {
-            *last_press_time = Some(now);
-        }
-        should_ignore
-    }
-
-    fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() == PillStatus::Listening && !self.is_recording() {
-            self.reset(app);
-        }
-    }
-
-    /// Returns true if recording started successfully, false if blocked by a check
-    fn handle_hold_press(&self, app: &AppHandle<AppRuntime>) -> bool {
+    fn prepare_shortcut_press(&self, app: &AppHandle<AppRuntime>) -> bool {
         if self.status() == PillStatus::Processing {
             self.cancel_processing(app);
             return false;
         }
+
         self.reset_stale_listening_state(app);
 
         if self.status() == PillStatus::Error {
@@ -415,15 +407,15 @@ impl PillController {
             self.reset(app);
         }
 
-        if *self.hold_key_down.lock() {
-            return false;
-        }
+        true
+    }
 
+    fn start_recording(&self, app: &AppHandle<AppRuntime>, mode: RecordingMode) -> bool {
         if !check_mic_permission(app) {
             return false;
         }
 
-        if !self.try_start_recording(RecordingMode::Hold) {
+        if !self.try_start_recording(mode) {
             return false;
         }
 
@@ -458,6 +450,37 @@ impl PillController {
         }
     }
 
+    fn should_ignore_shortcut_press(&self) -> bool {
+        let mut last_press_time = self.last_shortcut_press_time.lock();
+        let now = Instant::now();
+        let should_ignore = last_press_time.as_ref().is_some_and(|last| {
+            now.duration_since(*last) < Duration::from_millis(SHORTCUT_PRESS_DEBOUNCE_MS)
+        });
+        if !should_ignore {
+            *last_press_time = Some(now);
+        }
+        should_ignore
+    }
+
+    fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
+        if self.status() == PillStatus::Listening && !self.is_recording() {
+            self.reset(app);
+        }
+    }
+
+    /// Returns true if recording started successfully, false if blocked by a check
+    fn handle_hold_press(&self, app: &AppHandle<AppRuntime>) -> bool {
+        if !self.prepare_shortcut_press(app) {
+            return false;
+        }
+
+        if *self.hold_key_down.lock() {
+            return false;
+        }
+
+        self.start_recording(app, RecordingMode::Hold)
+    }
+
     fn handle_hold_release(&self, app: &AppHandle<AppRuntime>) {
         if !self.clear_hold_state() {
             return;
@@ -471,15 +494,8 @@ impl PillController {
     }
 
     fn handle_toggle_press(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() == PillStatus::Processing {
-            self.cancel_processing(app);
+        if !self.prepare_shortcut_press(app) {
             return;
-        }
-        self.reset_stale_listening_state(app);
-
-        if self.status() == PillStatus::Error {
-            toast::hide(app);
-            self.reset(app);
         }
 
         if self.active_mode() == Some(RecordingMode::Hold) {
@@ -489,52 +505,16 @@ impl PillController {
         if self.is_recording() {
             self.stop_and_process(app);
         } else {
-            if !check_mic_permission(app) {
-                return;
-            }
-
-            if !self.try_start_recording(RecordingMode::Toggle) {
-                return;
-            }
-
-            let state = app.state::<AppState>();
-            let settings = state.current_settings();
-            *self.recording_settings.lock() = Some(settings.clone());
-
-            self.preload_local_model_if_needed(app, &settings);
-
-            match self.recorder.start(settings.microphone_device) {
-                Ok(started) => {
-                    self.transition_to(app, PillStatus::Listening);
-                    self.start_audio_spectrum_emitter(app);
-                    self.pause_media_if_playing(app);
-                    self.start_streaming_session_if_supported(app, &settings.local_model);
-
-                    emit_event(
-                        app,
-                        crate::EVENT_RECORDING_START,
-                        crate::RecordingStartPayload {
-                            started_at: started.to_rfc3339(),
-                        },
-                    );
-                    check_accessibility_warning(app);
-                }
-                Err(err) => {
-                    self.reset_recording_state();
-                    self.transition_to_error(app, &format!("Unable to start recording: {err}"));
-                }
-            }
+            self.start_recording(app, RecordingMode::Toggle);
         }
     }
 
     fn handle_smart_press(&self, app: &AppHandle<AppRuntime>) {
         let press_time = Local::now();
 
-        if self.status() == PillStatus::Processing {
-            self.cancel_processing(app);
+        if !self.prepare_shortcut_press(app) {
             return;
         }
-        self.reset_stale_listening_state(app);
 
         if self.is_recording() && self.active_mode() == Some(RecordingMode::Toggle) {
             self.handle_toggle_press(app);
@@ -632,7 +612,7 @@ impl PillController {
                             .state::<AppState>()
                             .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
-                        app_handle.state::<AppState>().pill().transition_to_error(
+                        app_handle.state::<AppState>().pill().fail_recording_stop(
                             &app_handle,
                             &format!("Unable to stop recording: {err}"),
                         );
@@ -667,7 +647,7 @@ impl PillController {
                         app_handle.state::<AppState>().pill().reset(&app_handle);
                     }
                     Err(err) => {
-                        app_handle.state::<AppState>().pill().transition_to_error(
+                        app_handle.state::<AppState>().pill().fail_recording_stop(
                             &app_handle,
                             &format!("Unable to stop recording: {err}"),
                         );

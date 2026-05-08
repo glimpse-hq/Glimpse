@@ -57,8 +57,8 @@ mod coord {
                 session
             };
 
-            let pause_fn = self.pause_fn;
             std::mem::drop(async_runtime::spawn_blocking(move || {
+                let pause_fn = self.pause_fn;
                 let target = pause_fn();
                 self.finish_pause(session, target);
             }));
@@ -187,12 +187,11 @@ function nowPlayingIdentity() {
 
         const nowPlayingItem = MRNowPlayingRequest.localNowPlayingItem;
         const info = nowPlayingItem ? nowPlayingItem.nowPlayingInfo : null;
-        const rate = playbackRate(info);
 
         return {
             bundleId: unwrapString(client.bundleIdentifier),
             displayName: unwrapString(client.displayName),
-            rate: rate
+            rate: playbackRate(info)
         };
     } catch (error) {
         return null;
@@ -214,36 +213,35 @@ function run(argv) {
 
         if (action === "pause") {
             const identity = nowPlayingIdentity();
-            if (identity && identity.rate <= 0) return "";
+            if (!identity || (!identity.bundleId && !identity.displayName) || identity.rate <= 0) {
+                return "";
+            }
 
-            // MRMediaRemoteCommand: 1 = Pause
-            const sent = $.MRMediaRemoteSendCommand(1, $.NSDictionary.alloc.init);
-            if (!sent && !identity) return "";
+            if (!$.MRMediaRemoteSendCommand(1, $.NSDictionary.alloc.init)) {
+                return "";
+            }
 
             return JSON.stringify({
-                bundleId: identity ? identity.bundleId : "",
-                displayName: identity ? identity.displayName : ""
+                bundleId: identity.bundleId,
+                displayName: identity.displayName
             });
         }
 
-        // Resume: check if the same app is still the now-playing target
         const expectedBundleId = argv.length > 1 ? String(argv[1]) : "";
         const expectedName = argv.length > 2 ? String(argv[2]) : "";
         const identity = nowPlayingIdentity();
 
-        if (expectedBundleId || expectedName) {
-            if (identity && !targetMatches(expectedBundleId, expectedName, identity.bundleId, identity.displayName)) {
-                return "skip";
-            }
+        if (!identity || !targetMatches(expectedBundleId, expectedName, identity.bundleId, identity.displayName)) {
+            return "skip";
         }
 
-        // MRMediaRemoteCommand: 0 = Play
         $.MRMediaRemoteSendCommand(0, $.NSDictionary.alloc.init);
         return "played";
     } catch (error) {
         return "";
     }
 }
+
 "#;
 
     #[derive(Default, Clone, Deserialize)]
@@ -256,16 +254,18 @@ function run(argv) {
 
     #[derive(Default, Clone)]
     pub(super) struct PausedTarget {
-        bundle_id: Option<String>,
-        display_name: Option<String>,
+        bundle_id: String,
+        display_name: String,
     }
 
     impl PausedTarget {
         fn from_json(stdout: &str) -> Option<Self> {
             let payload: PausePayload = serde_json::from_str(stdout).ok()?;
-            let bundle_id = (!payload.bundle_id.trim().is_empty()).then_some(payload.bundle_id);
-            let display_name =
-                (!payload.display_name.trim().is_empty()).then_some(payload.display_name);
+            let bundle_id = payload.bundle_id.trim().to_string();
+            let display_name = payload.display_name.trim().to_string();
+            if bundle_id.is_empty() && display_name.is_empty() {
+                return None;
+            }
 
             Some(Self {
                 bundle_id,
@@ -292,16 +292,14 @@ function run(argv) {
     }
 
     fn resume_target(target: &PausedTarget, should_cancel: CancelFn<'_>) -> bool {
-        let bundle_id = target.bundle_id.as_deref().unwrap_or("");
-        let display_name = target.display_name.as_deref().unwrap_or("");
-
-        run_script(&["resume", bundle_id, display_name], should_cancel)
-            .as_deref()
-            .is_some_and(|result| result == "played")
+        run_script(
+            &["resume", &target.bundle_id, &target.display_name],
+            should_cancel,
+        )
+        .as_deref()
+        .is_some_and(|result| result == "played")
     }
 
-    /// Spawns `osascript` and blocks the current worker thread until it exits,
-    /// the deadline is hit, or `should_cancel` returns true.
     fn run_script(args: &[&str], should_cancel: CancelFn<'_>) -> Option<String> {
         use std::io::Read;
         use std::time::{Duration, Instant};
@@ -330,6 +328,7 @@ function run(argv) {
                     if !status.success() {
                         return None;
                     }
+
                     let mut stdout = String::new();
                     child.stdout.take()?.read_to_string(&mut stdout).ok()?;
                     let stdout = stdout.trim().to_string();
