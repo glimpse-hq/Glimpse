@@ -300,12 +300,22 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
     let settings = app.state::<AppState>().current_settings();
     let menu = build_tray_menu(app, &settings)?;
 
-    let icon_bytes = include_bytes!("../icons/tray.png");
-    let icon = tauri::image::Image::from_bytes(icon_bytes)?.to_owned();
+    let builder = TrayIconBuilder::new();
 
-    TrayIconBuilder::new()
-        .icon(icon)
-        .icon_as_template(true)
+    #[cfg(target_os = "macos")]
+    let builder = {
+        let icon_bytes = include_bytes!("../icons/tray.png");
+        let icon = tauri::image::Image::from_bytes(icon_bytes)?.to_owned();
+        builder.icon(icon).icon_as_template(true)
+    };
+
+    #[cfg(target_os = "windows")]
+    let builder = match app.default_window_icon() {
+        Some(icon) => builder.icon(icon.clone()),
+        None => builder,
+    };
+
+    builder
         .menu(&menu)
         .on_tray_icon_event(|tray, event| match event {
             TrayIconEvent::Click {
