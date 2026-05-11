@@ -10,7 +10,7 @@
     "lingui:extract": "lingui extract",
     "lingui:compile": "lingui compile",
     "preview": "bun ./node_modules/vite/bin/vite.js preview",
-    "tauri": "node ./scripts/tauri.mjs",
+    "tauri": "bun ./scripts/tauri.mjs",
     "lint": "bun ./node_modules/eslint/bin/eslint.js src/"
   },
   "dependencies": {

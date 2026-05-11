@@ -16,6 +16,8 @@ use super::{
     PlatformShutdown,
 };
 
+const LLKHF_EXTENDED_FLAG: u32 = 0x01;
+
 struct HookState {
     tx: Sender<KeyEvent>,
     modifiers: Modifiers,
@@ -125,7 +127,7 @@ fn build_event(
     is_key_down: bool,
 ) -> Option<(KeyEvent, BlockingHotkeys, Sender<KeyEvent>)> {
     let vk = VIRTUAL_KEY(info.vkCode as u16);
-    let is_extended = (info.flags.0 & LLKHF_EXTENDED.0) != 0;
+    let is_extended = (info.flags.0 & LLKHF_EXTENDED_FLAG) != 0;
 
     let event = if let Some(modifier) = modifier_from_vk(vk, info.scanCode, is_extended) {
         if is_key_down {
