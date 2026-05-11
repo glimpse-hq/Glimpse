@@ -1347,7 +1347,7 @@ fn emit_complete(
             eprintln!("Failed to remove rejected recording file: {err}");
         }
 
-        app.state::<AppState>().pill().reset(app);
+        app.state::<AppState>().pill().finish_processing(app);
         return;
     }
 

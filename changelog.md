@@ -8,6 +8,7 @@
 - Using edit mode in TUIs should no longer type 'c'
 - Many pieces of the app have been optimized to load faster.
 - AI prompt injection protections are better.
+- Fixed a bug where keybinds wouldn't activate occasionally.
 
 0.8.4
 

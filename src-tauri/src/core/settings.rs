@@ -40,9 +40,9 @@ pub(crate) struct UpdateSettingsArgs {
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> Result<String, String> {
-    hotkeys::normalize_recording_shortcut(shortcut)
-        .map(|shortcut| shortcut.trim().to_string())
-        .map_err(|err| err.to_string())
+    let hotkey = hotkeys::parse_shortcut(shortcut).map_err(|err| err.to_string())?;
+    hotkeys::validate_recording_shortcut(&hotkey).map_err(|err| err.to_string())?;
+    Ok(hotkey.to_string())
 }
 
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
@@ -62,10 +62,12 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("At least one recording mode must be enabled".into());
     }
 
-    let mut enabled_shortcuts: Vec<(&str, handy_keys::Hotkey)> = vec![];
+    let mut enabled_shortcuts: Vec<(&str, hotkeys::Hotkey)> = vec![];
     if args.smart_enabled {
         let raw = args.smart_shortcut.trim();
         let normalized = hotkeys::parse_shortcut(raw)
+            .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
+        hotkeys::validate_recording_shortcut(&normalized)
             .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
         enabled_shortcuts.push(("Smart", normalized));
     }
@@ -73,11 +75,15 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         let raw = args.hold_shortcut.trim();
         let normalized = hotkeys::parse_shortcut(raw)
             .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
+        hotkeys::validate_recording_shortcut(&normalized)
+            .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
         enabled_shortcuts.push(("Hold", normalized));
     }
     if args.toggle_enabled {
         let raw = args.toggle_shortcut.trim();
         let normalized = hotkeys::parse_shortcut(raw)
+            .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
+        hotkeys::validate_recording_shortcut(&normalized)
             .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
         enabled_shortcuts.push(("Toggle", normalized));
     }
@@ -359,6 +365,19 @@ mod tests {
         args.smart_shortcut = "Ctrl".to_string();
 
         validate_update_settings_args(&args).unwrap();
+    }
+
+    #[test]
+    fn rejects_capslock_recording_shortcut() {
+        let mut args = base_args();
+        args.smart_shortcut = "CapsLock".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(
+            err,
+            "Smart shortcut is invalid: CapsLock cannot be used as a recording shortcut"
+        );
     }
 
     #[test]

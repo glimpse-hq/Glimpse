@@ -4,12 +4,11 @@ import { formatShortcutForDisplay } from "../lib/shortcuts";
 
 type ShortcutCapturePayload =
   | { kind: "preview"; shortcut: string }
-  | { kind: "captured"; shortcut: string }
-  | { kind: "error"; message: string };
+  | { kind: "captured"; shortcut: string };
 
 type UseShortcutCaptureOptions = {
   active: boolean;
-  onCancel: () => void;
+  onCancel: () => void | Promise<void>;
   onPreviewChange: (preview: string) => void;
   onShortcutCaptured: (shortcut: string) => void;
   onError?: (message: string) => void;
@@ -36,22 +35,22 @@ export function useShortcutCapture({
     let disposed = false;
     let unlisten: UnlistenFn | null = null;
 
-    const finishCapture = (shortcut: string) => {
+    const finishCapture = async (shortcut: string) => {
       if (disposed) return;
       disposed = true;
       unlisten?.();
       unlisten = null;
+      await onCancel();
       onShortcutCaptured(shortcut);
-      onCancel();
       resetCaptureState();
     };
 
-    const cancelCapture = () => {
+    const cancelCapture = async () => {
       if (disposed) return;
       disposed = true;
       unlisten?.();
       unlisten = null;
-      onCancel();
+      await onCancel();
       resetCaptureState();
     };
 
@@ -66,12 +65,8 @@ export function useShortcutCapture({
 
       if (payload.kind === "captured") {
         onCaptureInput?.();
-        finishCapture(payload.shortcut);
-        return;
+        void finishCapture(payload.shortcut);
       }
-
-      onError?.(payload.message);
-      cancelCapture();
     };
 
     listen<ShortcutCapturePayload>(SHORTCUT_CAPTURE_EVENT, (event) => {
@@ -87,7 +82,7 @@ export function useShortcutCapture({
       .catch((error) => {
         if (disposed) return;
         onError?.(String(error));
-        cancelCapture();
+        void cancelCapture();
       });
 
     const handleKeyboardEvent = (event: KeyboardEvent) => {
@@ -99,7 +94,7 @@ export function useShortcutCapture({
       event.preventDefault();
       event.stopPropagation();
       if (shouldCancel) {
-        cancelCapture();
+        void cancelCapture();
       }
     };
 

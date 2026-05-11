@@ -1,18 +1,19 @@
-use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
+use std::collections::HashSet;
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
-use handy_keys::{Hotkey, Key, KeyboardListener, Modifiers};
-use handy_keys::{HotkeyManager, HotkeyState as HandyHotkeyState};
+use crossbeam_channel::{select, unbounded, Receiver, Sender};
 use parking_lot::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
+pub(crate) use super::keyboard::Hotkey;
+use super::keyboard::{
+    blocking_hotkeys, empty_blocking_hotkeys, Key, KeyEvent, KeyboardListener, Modifiers,
+};
 use crate::{pill, AppRuntime};
 
-const REGISTRATION_POLL_INTERVAL: Duration = Duration::from_millis(10);
-const CAPTURE_POLL_INTERVAL: Duration = Duration::from_millis(20);
 pub(crate) const SHORTCUT_CAPTURE_EVENT: &str = "shortcut:capture";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -39,7 +40,6 @@ pub(crate) struct RegisteredHotkey {
 pub(crate) enum ShortcutCapturePayload {
     Preview { shortcut: String },
     Captured { shortcut: String },
-    Error { message: String },
 }
 
 #[derive(Default)]
@@ -62,38 +62,27 @@ impl HotkeyCoordinator {
 
         let app_handle = app.clone();
         let session = WorkerSession::spawn("shortcut-registration", move |stop_rx| {
-            let manager = HotkeyManager::new_with_blocking()?;
-            let mut actions = Vec::with_capacity(bindings.len());
-
-            for binding in bindings {
-                let id = manager.register(binding.hotkey).map_err(|err| {
-                    anyhow!("Failed to register shortcut `{}`: {err}", binding.hotkey)
-                })?;
-                actions.push((id, binding.action));
-            }
-
+            let blocked = blocking_hotkeys(bindings.iter().map(|binding| binding.hotkey).collect());
+            let listener = KeyboardListener::new(blocked)?;
+            let mut state = RegisteredShortcutState::new(bindings);
             loop {
-                if should_stop(&stop_rx) {
-                    break;
-                }
-
-                if let Some(event) = manager.try_recv() {
-                    if let Some((_, action)) = actions
-                        .iter()
-                        .find(|(registered_id, _)| *registered_id == event.id)
-                    {
-                        let state = match event.state {
-                            HandyHotkeyState::Pressed => HotkeyState::Pressed,
-                            HandyHotkeyState::Released => HotkeyState::Released,
+                select! {
+                    recv(stop_rx) -> _ => break,
+                    recv(listener.events()) -> event => {
+                        let Ok(event) = event else {
+                            break;
                         };
-                        pill::handle_registered_hotkey_event(&app_handle, *action, state);
-                    }
-                    continue;
-                }
 
-                thread::sleep(REGISTRATION_POLL_INTERVAL);
+                        for (action, hotkey_state) in state.process(event) {
+                            pill::handle_registered_hotkey_event(&app_handle, action, hotkey_state);
+                        }
+                    }
+                }
             }
 
+            for (action, hotkey_state) in state.release_all() {
+                pill::handle_registered_hotkey_event(&app_handle, action, hotkey_state);
+            }
             Ok(())
         })?;
 
@@ -110,17 +99,19 @@ impl HotkeyCoordinator {
 
         let app_handle = app.clone();
         let session = WorkerSession::spawn("shortcut-capture", move |stop_rx| {
-            let listener = KeyboardListener::new()?;
+            let listener = KeyboardListener::new(empty_blocking_hotkeys())?;
             let mut captured_hotkey: Option<Hotkey> = None;
             let mut capture_anchor: Option<CapturePart> = None;
 
             loop {
-                if should_stop(&stop_rx) {
-                    break;
-                }
+                select! {
+                    recv(stop_rx) -> _ => break,
+                    recv(listener.events()) -> event => {
+                        let event = match event {
+                            Ok(event) => event,
+                            Err(_) => break,
+                        };
 
-                match listener.recv_timeout(CAPTURE_POLL_INTERVAL) {
-                    Ok(event) => {
                         let Some(part) = capture_part(event) else {
                             continue;
                         };
@@ -165,16 +156,6 @@ impl HotkeyCoordinator {
                             );
                         }
                     }
-                    Err(handy_keys::Error::Timeout) => {}
-                    Err(err) => {
-                        emit_capture_event(
-                            &app_handle,
-                            ShortcutCapturePayload::Error {
-                                message: format!("Shortcut capture failed: {err}"),
-                            },
-                        );
-                        break;
-                    }
                 }
             }
 
@@ -190,13 +171,85 @@ impl HotkeyCoordinator {
     }
 }
 
+struct RegisteredShortcutState {
+    bindings: Vec<RegisteredHotkey>,
+    pressed: HashSet<usize>,
+}
+
+impl RegisteredShortcutState {
+    fn new(bindings: Vec<RegisteredHotkey>) -> Self {
+        Self {
+            bindings,
+            pressed: HashSet::new(),
+        }
+    }
+
+    fn process(&mut self, event: KeyEvent) -> Vec<(ShortcutAction, HotkeyState)> {
+        if event.releases_everything() {
+            return self.release_all();
+        }
+
+        let mut emitted = Vec::new();
+        let released: Vec<usize> = self
+            .bindings
+            .iter()
+            .enumerate()
+            .filter_map(|(id, binding)| {
+                if self.pressed.contains(&id)
+                    && (!binding.hotkey.modifiers.matches(event.modifiers)
+                        || (!event.is_key_down && binding.hotkey.key == event.key))
+                {
+                    Some(id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        for id in released {
+            self.pressed.remove(&id);
+            let binding = &self.bindings[id];
+            emitted.push((binding.action, HotkeyState::Released));
+        }
+
+        if event.is_key_down && !event.repeat {
+            for (id, binding) in self.bindings.iter().enumerate() {
+                if binding.hotkey.matches_event(&event) {
+                    if self.pressed.insert(id) {
+                        emitted.push((binding.action, HotkeyState::Pressed));
+                    }
+                }
+            }
+        }
+
+        emitted
+    }
+
+    fn release_all(&mut self) -> Vec<(ShortcutAction, HotkeyState)> {
+        let mut pressed: Vec<usize> = self.pressed.drain().collect();
+        pressed.sort_unstable();
+        pressed
+            .into_iter()
+            .filter_map(|id| {
+                self.bindings
+                    .get(id)
+                    .map(|binding| (binding.action, HotkeyState::Released))
+            })
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CapturePart {
     Modifier(Modifiers),
     Key(Key),
 }
 
-fn capture_part(event: handy_keys::KeyEvent) -> Option<CapturePart> {
+fn capture_part(event: KeyEvent) -> Option<CapturePart> {
+    if event.key == Some(Key::CapsLock) {
+        return None;
+    }
+
     event
         .changed_modifier
         .map(CapturePart::Modifier)
@@ -233,6 +286,7 @@ fn emit_capture_event(app: &AppHandle<AppRuntime>, payload: ShortcutCapturePaylo
 struct WorkerSession {
     stop_tx: Sender<()>,
     join_handle: Option<JoinHandle<()>>,
+    thread_name: String,
 }
 
 impl WorkerSession {
@@ -240,7 +294,7 @@ impl WorkerSession {
     where
         F: FnOnce(Receiver<()>) -> Result<()> + Send + 'static,
     {
-        let (stop_tx, stop_rx) = mpsc::channel();
+        let (stop_tx, stop_rx) = unbounded();
         let join_handle = thread::Builder::new()
             .name(thread_name.to_string())
             .spawn(move || {
@@ -253,6 +307,7 @@ impl WorkerSession {
         Ok(Self {
             stop_tx,
             join_handle: Some(join_handle),
+            thread_name: thread_name.to_string(),
         })
     }
 }
@@ -261,13 +316,30 @@ impl Drop for WorkerSession {
     fn drop(&mut self) {
         let _ = self.stop_tx.send(());
         if let Some(join_handle) = self.join_handle.take() {
-            let _ = join_handle.join();
+            let thread_name = self.thread_name.clone();
+            let (done_tx, done_rx) = crossbeam_channel::bounded(1);
+
+            let join_result = thread::Builder::new()
+                .name(format!("{thread_name}-join"))
+                .spawn(move || {
+                    let _ = join_handle.join();
+                    let _ = done_tx.send(());
+                });
+
+            if join_result.is_ok() {
+                let watch_name = thread_name.clone();
+                let _ = thread::Builder::new()
+                    .name(format!("{thread_name}-watch"))
+                    .spawn(move || {
+                        if done_rx.recv_timeout(Duration::from_secs(2)).is_err() {
+                            eprintln!("Hotkey worker `{watch_name}` did not stop within 2s");
+                        }
+                    });
+            } else if let Err(err) = join_result {
+                eprintln!("Failed to spawn hotkey worker `{thread_name}` join thread: {err}");
+            }
         }
     }
-}
-
-fn should_stop(stop_rx: &Receiver<()>) -> bool {
-    matches!(stop_rx.try_recv(), Ok(()) | Err(TryRecvError::Disconnected))
 }
 
 pub(crate) fn parse_shortcut(shortcut: &str) -> Result<Hotkey> {
@@ -277,9 +349,12 @@ pub(crate) fn parse_shortcut(shortcut: &str) -> Result<Hotkey> {
         .map_err(|err| anyhow!("Shortcut `{shortcut}` is invalid: {err}"))
 }
 
-pub(crate) fn normalize_recording_shortcut(shortcut: &str) -> Result<String> {
-    let hotkey = parse_shortcut(shortcut)?;
-    Ok(hotkey.to_string())
+pub(crate) fn validate_recording_shortcut(shortcut: &Hotkey) -> Result<()> {
+    if shortcut.key == Some(Key::CapsLock) {
+        return Err(anyhow!("CapsLock cannot be used as a recording shortcut"));
+    }
+
+    Ok(())
 }
 
 fn normalize_legacy_shortcut_input(shortcut: &str) -> String {
@@ -376,5 +451,81 @@ fn modifier_group_subset(
         full_has_left
     } else {
         full_has_right
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn event(modifiers: Modifiers, key: Option<Key>, is_key_down: bool) -> KeyEvent {
+        KeyEvent {
+            modifiers,
+            key,
+            is_key_down,
+            changed_modifier: None,
+            repeat: false,
+        }
+    }
+
+    #[test]
+    fn registered_state_releases_when_modifiers_drop() {
+        let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
+            hotkey: Hotkey::new(Modifiers::CTRL, Key::Space).unwrap(),
+            action: ShortcutAction::Hold,
+        }]);
+
+        assert_eq!(
+            state.process(event(Modifiers::CTRL_LEFT, Some(Key::Space), true)),
+            vec![(ShortcutAction::Hold, HotkeyState::Pressed)]
+        );
+        assert_eq!(
+            state.process(event(Modifiers::empty(), None, false)),
+            vec![(ShortcutAction::Hold, HotkeyState::Released)]
+        );
+    }
+
+    #[test]
+    fn registered_state_forces_release_on_reset_event() {
+        let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
+            hotkey: Hotkey::new(Modifiers::CTRL, Key::Space).unwrap(),
+            action: ShortcutAction::Smart,
+        }]);
+
+        state.process(event(Modifiers::CTRL_LEFT, Some(Key::Space), true));
+        assert_eq!(
+            state.process(KeyEvent::all_released()),
+            vec![(ShortcutAction::Smart, HotkeyState::Released)]
+        );
+    }
+
+    #[test]
+    fn registered_state_ignores_duplicate_press_without_release() {
+        let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
+            hotkey: Hotkey::new(Modifiers::OPT_RIGHT, None).unwrap(),
+            action: ShortcutAction::Hold,
+        }]);
+
+        let press = KeyEvent {
+            modifiers: Modifiers::OPT_RIGHT,
+            key: None,
+            is_key_down: true,
+            changed_modifier: Some(Modifiers::OPT_RIGHT),
+            repeat: false,
+        };
+
+        assert_eq!(
+            state.process(press),
+            vec![(ShortcutAction::Hold, HotkeyState::Pressed)]
+        );
+        assert!(state.process(press).is_empty());
+    }
+
+    #[test]
+    fn capture_ignores_capslock() {
+        assert_eq!(
+            capture_part(event(Modifiers::empty(), Some(Key::CapsLock), true)),
+            None
+        );
     }
 }
