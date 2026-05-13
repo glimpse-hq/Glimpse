@@ -120,10 +120,6 @@ impl Modifiers {
         (self.0 & other.0) == other.0
     }
 
-    pub(crate) fn intersects(self, other: Self) -> bool {
-        (self.0 & other.0) != 0
-    }
-
     pub(crate) fn insert(&mut self, other: Self) {
         self.0 |= other.0;
     }
@@ -700,16 +696,6 @@ pub(crate) struct KeyEvent {
 impl KeyEvent {
     pub(crate) fn as_hotkey(self) -> Result<Hotkey> {
         Hotkey::new(self.modifiers, self.key)
-    }
-
-    pub(crate) fn all_released() -> Self {
-        Self {
-            modifiers: Modifiers::empty(),
-            key: None,
-            is_key_down: false,
-            changed_modifier: None,
-            repeat: false,
-        }
     }
 
     pub(crate) fn releases_everything(self) -> bool {

@@ -494,7 +494,7 @@ mod tests {
 
         state.process(event(Modifiers::CTRL_LEFT, Some(Key::Space), true));
         assert_eq!(
-            state.process(KeyEvent::all_released()),
+            state.process(event(Modifiers::empty(), None, false)),
             vec![(ShortcutAction::Smart, HotkeyState::Released)]
         );
     }

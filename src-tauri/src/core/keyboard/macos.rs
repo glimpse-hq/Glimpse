@@ -153,7 +153,13 @@ fn handle_event(
         CGEventType::TapDisabledByTimeout | CGEventType::TapDisabledByUserInput => {
             state.borrow_mut().modifiers = Modifiers::empty();
             reenable_tap.store(true, Ordering::Release);
-            Some(KeyEvent::all_released())
+            Some(KeyEvent {
+                modifiers: Modifiers::empty(),
+                key: None,
+                is_key_down: false,
+                changed_modifier: None,
+                repeat: false,
+            })
         }
         _ => None,
     };
@@ -313,7 +319,7 @@ fn modifiers_for_key_event(mut modifiers: Modifiers, flags: CGEventFlags) -> Mod
 
 fn reconcile_group(modifiers: &mut Modifiers, active: bool, left: Modifiers, right: Modifiers) {
     if active {
-        if !modifiers.intersects(left | right) {
+        if !modifiers.contains(left) && !modifiers.contains(right) {
             modifiers.insert(left);
         }
     } else {
