@@ -1370,7 +1370,7 @@ pub(crate) fn emit_event<T: Serialize + Clone>(
     }
 }
 
-fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<PathBuf> {
+pub(crate) fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<PathBuf> {
     let mut data_dir = app
         .path()
         .app_data_dir()

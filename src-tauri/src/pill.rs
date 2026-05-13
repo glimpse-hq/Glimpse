@@ -134,6 +134,7 @@ impl AudioSpectrumEmitter {
 pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
+    shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
     recording_settings: Mutex<Option<UserSettings>>,
     smart_press_time: Mutex<Option<DateTime<Local>>>,
     hold_key_down: Mutex<bool>,
@@ -148,6 +149,7 @@ impl PillController {
         Self {
             status: Mutex::new(PillStatus::Idle),
             recording_mode: Mutex::new(None),
+            shortcut_origin: Mutex::new(None),
             recording_settings: Mutex::new(None),
             smart_press_time: Mutex::new(None),
             hold_key_down: Mutex::new(false),
@@ -335,6 +337,7 @@ impl PillController {
     fn reset_recording_state(&self) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
+        *self.shortcut_origin.lock() = None;
         *self.recording_settings.lock() = None;
         *self.smart_press_time.lock() = None;
         // Stop-processing cleanup should not invent a release event.
@@ -368,12 +371,13 @@ impl PillController {
         *self.recording_mode.lock()
     }
 
-    fn try_start_recording(&self, mode: RecordingMode) -> bool {
+    fn try_start_recording(&self, mode: RecordingMode, origin: hotkeys::ShortcutAction) -> bool {
         let mut current_mode = self.recording_mode.lock();
         if current_mode.is_some() {
             return false;
         }
         *current_mode = Some(mode);
+        *self.shortcut_origin.lock() = Some(origin);
         if mode == RecordingMode::Hold {
             self.set_hold_key_down(true);
         }
@@ -394,15 +398,22 @@ impl PillController {
         }
     }
 
-    fn prepare_shortcut_press(&self, app: &AppHandle<AppRuntime>) -> bool {
+    fn prepare_shortcut_press(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        action: hotkeys::ShortcutAction,
+    ) -> bool {
         if self.status() == PillStatus::Idle {
             let _ = self.recording_mode.lock().take();
+            let _ = self.shortcut_origin.lock().take();
             self.set_hold_key_down(false);
             let _ = self.smart_press_time.lock().take();
         }
 
         if self.status() == PillStatus::Processing {
-            self.cancel_processing(app);
+            if *self.shortcut_origin.lock() == Some(action) {
+                self.cancel_processing(app);
+            }
             return false;
         }
 
@@ -416,12 +427,17 @@ impl PillController {
         true
     }
 
-    fn start_recording(&self, app: &AppHandle<AppRuntime>, mode: RecordingMode) -> bool {
+    fn start_recording(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        mode: RecordingMode,
+        origin: hotkeys::ShortcutAction,
+    ) -> bool {
         if !check_mic_permission(app) {
             return false;
         }
 
-        if !self.try_start_recording(mode) {
+        if !self.try_start_recording(mode, origin) {
             return false;
         }
 
@@ -462,12 +478,16 @@ impl PillController {
         }
     }
 
-    fn handle_hold_press(&self, app: &AppHandle<AppRuntime>) -> bool {
-        if !self.prepare_shortcut_press(app) {
+    fn handle_hold_press(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        origin: hotkeys::ShortcutAction,
+    ) -> bool {
+        if !self.prepare_shortcut_press(app, origin) {
             return false;
         }
 
-        self.start_recording(app, RecordingMode::Hold)
+        self.start_recording(app, RecordingMode::Hold, origin)
     }
 
     fn handle_hold_release(&self, app: &AppHandle<AppRuntime>) {
@@ -483,7 +503,8 @@ impl PillController {
     }
 
     fn handle_toggle_press(&self, app: &AppHandle<AppRuntime>) {
-        if !self.prepare_shortcut_press(app) {
+        let origin = hotkeys::ShortcutAction::Toggle;
+        if !self.prepare_shortcut_press(app, origin) {
             return;
         }
 
@@ -494,14 +515,15 @@ impl PillController {
         if self.is_recording() {
             self.stop_and_process(app);
         } else {
-            self.start_recording(app, RecordingMode::Toggle);
+            self.start_recording(app, RecordingMode::Toggle, origin);
         }
     }
 
     fn handle_smart_press(&self, app: &AppHandle<AppRuntime>) {
         let press_time = Local::now();
 
-        if !self.prepare_shortcut_press(app) {
+        let origin = hotkeys::ShortcutAction::Smart;
+        if !self.prepare_shortcut_press(app, origin) {
             return;
         }
 
@@ -514,7 +536,7 @@ impl PillController {
             return;
         }
 
-        if self.handle_hold_press(app) {
+        if self.handle_hold_press(app, origin) {
             *self.smart_press_time.lock() = Some(press_time);
         }
     }
@@ -587,10 +609,28 @@ impl PillController {
                             return;
                         }
 
+                        let saved = match crate::recordings_root(&app_handle).and_then(|base_dir| {
+                            crate::recorder::persist_recording(base_dir, recording)
+                        }) {
+                            Ok(saved) => saved,
+                            Err(err) => {
+                                collapse_expanded_pill(&app_handle);
+                                app_handle.state::<AppState>().pill().fail_recording_stop(
+                                    &app_handle,
+                                    &format!("Unable to save recording: {err}"),
+                                );
+                                return;
+                            }
+                        };
+                        app_handle
+                            .state::<AppState>()
+                            .set_pending_path(Some(saved.path.clone()));
+
                         crate::transcribe::finalize_streaming_transcription(
                             &app_handle,
                             streaming_transcript,
                             (duration_ms.max(0) as f32) / 1000.0,
+                            saved.path,
                             settings_for_transcription,
                         );
                     }
@@ -668,6 +708,7 @@ impl PillController {
         if let Err(err) = self.recorder.stop_after_capture(move || {
             app_handle.state::<AppState>().pill().resume_paused_media();
         }) {
+            self.resume_paused_media();
             eprintln!("Failed to stop recorder: {err}");
         }
         self.reset(app);
@@ -684,9 +725,12 @@ impl PillController {
         collapse_expanded_pill(app);
         state.request_cancellation();
         let app_handle = app.clone();
-        let _ = self.recorder.stop_after_capture(move || {
+        if let Err(err) = self.recorder.stop_after_capture(move || {
             app_handle.state::<AppState>().pill().resume_paused_media();
-        });
+        }) {
+            self.resume_paused_media();
+            eprintln!("Failed to stop recorder: {err}");
+        }
 
         if let Some(path) = state.take_pending_path() {
             let _ = std::fs::remove_file(&path);
@@ -786,7 +830,7 @@ pub(crate) fn handle_registered_hotkey_event(
         },
         hotkeys::ShortcutAction::Hold => match state {
             HotkeyState::Pressed => {
-                let _ = pill.handle_hold_press(app);
+                let _ = pill.handle_hold_press(app, action);
             }
             HotkeyState::Released => pill.handle_hold_release(app),
         },

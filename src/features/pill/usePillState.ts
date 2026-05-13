@@ -38,9 +38,23 @@ export function usePillState() {
     setLastSpectrumAt(0);
   }, []);
 
+  const triggerErrorFlash = useCallback(() => {
+    clearErrorFlashTimer();
+    setIsErrorFlashing(true);
+    errorFlashTimeoutRef.current = setTimeout(() => {
+      errorFlashTimeoutRef.current = null;
+      setIsErrorFlashing(false);
+    }, ERROR_FLASH_MS);
+  }, [clearErrorFlashTimer]);
+
   const applyStatus = useCallback(
     (next: PillStatus) => {
-      if (statusRef.current === next) return;
+      if (statusRef.current === next) {
+        if (next === "error") {
+          triggerErrorFlash();
+        }
+        return;
+      }
 
       statusRef.current = next;
       setPillStatus(next);
@@ -59,15 +73,10 @@ export function usePillState() {
       }
 
       if (next === "error") {
-        clearErrorFlashTimer();
-        setIsErrorFlashing(true);
-        errorFlashTimeoutRef.current = setTimeout(() => {
-          errorFlashTimeoutRef.current = null;
-          setIsErrorFlashing(false);
-        }, ERROR_FLASH_MS);
+        triggerErrorFlash();
       }
     },
-    [clearErrorFlashTimer, resetAudioState],
+    [clearErrorFlashTimer, resetAudioState, triggerErrorFlash],
   );
 
   const dismiss = useCallback(() => {
@@ -110,6 +119,7 @@ export function usePillState() {
     });
 
     register<PillModePayload>("pill:mode", ({ expanded, text }) => {
+      if (statusRef.current === "idle") return;
       setIsExpanded(expanded);
       setExpandedText(expanded ? (text ?? "") : "");
     });

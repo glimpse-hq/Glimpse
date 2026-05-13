@@ -40,6 +40,7 @@ pub(crate) struct RegisteredHotkey {
 pub(crate) enum ShortcutCapturePayload {
     Preview { shortcut: String },
     Captured { shortcut: String },
+    Error { message: String },
 }
 
 #[derive(Default)]
@@ -98,8 +99,21 @@ impl HotkeyCoordinator {
         self.stop_capture();
 
         let app_handle = app.clone();
+        let listener = match KeyboardListener::new(empty_blocking_hotkeys()) {
+            Ok(listener) => listener,
+            Err(err) => {
+                let message = err.to_string();
+                emit_capture_event(
+                    app,
+                    ShortcutCapturePayload::Error {
+                        message: message.clone(),
+                    },
+                );
+                return Err(anyhow!(message));
+            }
+        };
+
         let session = WorkerSession::spawn("shortcut-capture", move |stop_rx| {
-            let listener = KeyboardListener::new(empty_blocking_hotkeys())?;
             let mut captured_hotkey: Option<Hotkey> = None;
             let mut capture_anchor: Option<CapturePart> = None;
 

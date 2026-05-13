@@ -4,7 +4,8 @@ import { formatShortcutForDisplay } from "../lib/shortcuts";
 
 type ShortcutCapturePayload =
   | { kind: "preview"; shortcut: string }
-  | { kind: "captured"; shortcut: string };
+  | { kind: "captured"; shortcut: string }
+  | { kind: "error"; message: string };
 
 type UseShortcutCaptureOptions = {
   active: boolean;
@@ -40,9 +41,14 @@ export function useShortcutCapture({
       disposed = true;
       unlisten?.();
       unlisten = null;
-      await onCancel();
-      onShortcutCaptured(shortcut);
-      resetCaptureState();
+      try {
+        await onCancel();
+      } catch (error) {
+        onError?.(String(error));
+      } finally {
+        onShortcutCaptured(shortcut);
+        resetCaptureState();
+      }
     };
 
     const cancelCapture = async () => {
@@ -50,8 +56,13 @@ export function useShortcutCapture({
       disposed = true;
       unlisten?.();
       unlisten = null;
-      await onCancel();
-      resetCaptureState();
+      try {
+        await onCancel();
+      } catch (error) {
+        onError?.(String(error));
+      } finally {
+        resetCaptureState();
+      }
     };
 
     const handleCapturePayload = (payload: ShortcutCapturePayload) => {
@@ -66,6 +77,12 @@ export function useShortcutCapture({
       if (payload.kind === "captured") {
         onCaptureInput?.();
         void finishCapture(payload.shortcut);
+        return;
+      }
+
+      if (payload.kind === "error") {
+        onError?.(payload.message);
+        void cancelCapture();
       }
     };
 

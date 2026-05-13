@@ -1191,6 +1191,7 @@ pub(crate) fn finalize_streaming_transcription(
     app: &AppHandle<AppRuntime>,
     raw_transcript: String,
     duration_seconds: f32,
+    audio_path: PathBuf,
     settings: UserSettings,
 ) {
     let state = app.state::<AppState>();
@@ -1206,15 +1207,18 @@ pub(crate) fn finalize_streaming_transcription(
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
 
         if count_words(&raw_transcript) == 0 {
+            let _ = std::fs::remove_file(&audio_path);
             crate::pill::collapse_expanded_pill(&app_handle);
             app_handle
                 .state::<AppState>()
                 .pill()
                 .finish_processing(&app_handle);
+            app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
 
         if is_cancelled() {
+            app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
 
@@ -1234,17 +1238,17 @@ pub(crate) fn finalize_streaming_transcription(
         {
             ProcessTranscriptOutcome::Ready(processed) => processed,
             ProcessTranscriptOutcome::Empty => {
-                crate::pill::collapse_expanded_pill(&app_handle);
-                app_handle
-                    .state::<AppState>()
-                    .pill()
-                    .finish_processing(&app_handle);
+                handle_empty_transcription(&app_handle, &audio_path);
                 return;
             }
-            ProcessTranscriptOutcome::Cancelled => return,
+            ProcessTranscriptOutcome::Cancelled => {
+                app_handle.state::<AppState>().set_pending_path(None);
+                return;
+            }
         };
 
         if is_cancelled() {
+            app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
 
@@ -1269,11 +1273,12 @@ pub(crate) fn finalize_streaming_transcription(
                 raw_transcript,
                 final_transcript: processed.final_transcript,
                 auto_paste: processed.pasted,
-                audio_path: String::new(),
+                audio_path: audio_path.display().to_string(),
                 llm_cleaned: processed.llm_cleaned,
                 metadata,
                 mode: "local_streaming",
             },
         );
+        app_handle.state::<AppState>().set_pending_path(None);
     });
 }

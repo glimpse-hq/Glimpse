@@ -74,7 +74,10 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   }, [personalitiesQuery.error]);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      websiteIconRefreshKeyRef.current = null;
+      return;
+    }
 
     if (websiteDomains.length === 0) {
       websiteIconRefreshKeyRef.current = null;
@@ -175,9 +178,13 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
   const updatePersonalities = useCallback(
     (updater: (prev: Personality[]) => Personality[]) => {
-      persistPersonalities(updater(personalities));
+      const current =
+        queryClient.getQueryData<Personality[]>(
+          personalizationKeys.personalities(),
+        ) ?? personalities;
+      persistPersonalities(updater(current));
     },
-    [persistPersonalities, personalities],
+    [persistPersonalities, personalities, queryClient],
   );
 
   const updatePersonality = useCallback(

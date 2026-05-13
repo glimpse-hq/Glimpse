@@ -715,8 +715,10 @@ pub(crate) fn empty_blocking_hotkeys() -> BlockingHotkeys {
 }
 
 pub(crate) fn should_block_event(blocking_hotkeys: &BlockingHotkeys, event: &KeyEvent) -> bool {
-    if event.changed_modifier.is_some() {
-        return false;
+    if let Some(changed_modifier) = event.changed_modifier {
+        return blocking_hotkeys
+            .iter()
+            .any(|hotkey| hotkey.key.is_none() && hotkey.modifiers.contains(changed_modifier));
     }
 
     event.key.is_some_and(|_| {
@@ -767,10 +769,10 @@ mod tests {
     }
 
     #[test]
-    fn modifier_only_hotkeys_do_not_block_modifier_events() {
+    fn modifier_only_hotkeys_block_modifier_events() {
         let hotkeys = blocking_hotkeys(vec![Hotkey::new(Modifiers::OPT_RIGHT, None).unwrap()]);
 
-        assert!(!should_block_event(
+        assert!(should_block_event(
             &hotkeys,
             &KeyEvent {
                 modifiers: Modifiers::OPT_RIGHT,
@@ -780,7 +782,7 @@ mod tests {
                 repeat: false,
             }
         ));
-        assert!(!should_block_event(
+        assert!(should_block_event(
             &hotkeys,
             &KeyEvent {
                 modifiers: Modifiers::empty(),
