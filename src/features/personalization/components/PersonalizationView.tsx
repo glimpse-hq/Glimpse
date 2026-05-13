@@ -298,40 +298,42 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           gap={3}
           color="var(--color-section-marker-alt)"
         />
-        <div className="flex-1 flex items-start justify-between gap-4">
-          <div>
+        <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <p className="ui-text-screen-title ui-color-primary tracking-tight">
               {t({
                 id: "personalization.title",
                 message: "Personalization",
               })}
             </p>
-            <p className="mt-1 ui-text-body-sm ui-color-secondary">
-              {t({
-                id: "personalization.description",
-                message: "Tailor language model behavior to apps, sites, and custom instructions.",
-              })}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <p className="min-w-0 ui-text-body-sm ui-color-secondary">
+                {t({
+                  id: "personalization.description",
+                  message: "Tailor language model behavior to apps, sites, and custom instructions.",
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={handleAddMode}
+                aria-label={t({
+                  id: "personalization.new_mode",
+                  message: "New mode",
+                })}
+                className="group inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 ui-text-button ui-color-secondary transition-colors hover:border-border-hover hover:bg-surface-elevated hover:text-content-primary"
+              >
+                <Plus
+                  size={13}
+                  aria-hidden="true"
+                  className="text-content-muted transition-colors group-hover:text-content-primary"
+                />
+                {t({
+                  id: "personalization.new_mode",
+                  message: "New mode",
+                })}
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleAddMode}
-            aria-label={t({
-              id: "personalization.new_mode",
-              message: "New mode",
-            })}
-            className="group inline-flex shrink-0 self-start items-center gap-1.5 rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 ui-text-button ui-color-secondary transition-colors hover:border-border-hover hover:bg-surface-elevated hover:text-content-primary"
-          >
-            <Plus
-              size={13}
-              aria-hidden="true"
-              className="text-content-muted transition-colors group-hover:text-content-primary"
-            />
-            {t({
-              id: "personalization.new_mode",
-              message: "New mode",
-            })}
-          </button>
         </div>
       </div>
 
