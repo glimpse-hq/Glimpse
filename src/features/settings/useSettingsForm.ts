@@ -395,10 +395,11 @@ export function useSettingsForm({
   }, [clearPendingSettingsSave]);
 
   const finalizeCapture = useCallback(async () => {
+    flushPendingSettingsSave();
     captureActiveRef.current = null;
     setCaptureActive(null);
     await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
-  }, []);
+  }, [flushPendingSettingsSave]);
 
   const { resetCaptureState } = useShortcutCapture({
     active: captureActive !== null,

@@ -340,17 +340,20 @@ impl Drop for WorkerSession {
                     let _ = done_tx.send(());
                 });
 
-            if join_result.is_ok() {
-                let watch_name = thread_name.clone();
-                let _ = thread::Builder::new()
-                    .name(format!("{thread_name}-watch"))
-                    .spawn(move || {
-                        if done_rx.recv_timeout(Duration::from_secs(2)).is_err() {
-                            eprintln!("Hotkey worker `{watch_name}` did not stop within 2s");
-                        }
-                    });
-            } else if let Err(err) = join_result {
-                eprintln!("Failed to spawn hotkey worker `{thread_name}` join thread: {err}");
+            match join_result {
+                Ok(_) => {
+                    let watch_name = thread_name.clone();
+                    let _ = thread::Builder::new()
+                        .name(format!("{thread_name}-watch"))
+                        .spawn(move || {
+                            if done_rx.recv_timeout(Duration::from_secs(2)).is_err() {
+                                eprintln!("Hotkey worker `{watch_name}` did not stop within 2s");
+                            }
+                        });
+                }
+                Err(err) => {
+                    eprintln!("Failed to spawn hotkey worker `{thread_name}` join thread: {err}");
+                }
             }
         }
     }

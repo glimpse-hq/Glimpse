@@ -39,6 +39,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const websiteIconRefreshKeyRef = useRef<string | null>(null);
   const persistVersionRef = useRef(0);
   const saveTimeoutRef = useRef<number | null>(null);
+  const lastPendingPersonalitiesRef = useRef<Personality[] | null>(null);
   const mountedRef = useRef(true);
   const shiftHeld = useShiftHeld(isActive);
 
@@ -141,6 +142,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const persistPersonalities = useCallback((next: Personality[]) => {
     const persistVersion = persistVersionRef.current + 1;
     persistVersionRef.current = persistVersion;
+    lastPendingPersonalitiesRef.current = next;
     setPersonalitiesCache(queryClient, next);
 
     if (saveTimeoutRef.current !== null) {
@@ -172,6 +174,14 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
       if (saveTimeoutRef.current !== null) {
         window.clearTimeout(saveTimeoutRef.current);
         saveTimeoutRef.current = null;
+        const pendingPersonalities = lastPendingPersonalitiesRef.current;
+        if (pendingPersonalities !== null) {
+          void personalizationApi
+            .setPersonalities(pendingPersonalities)
+            .catch((err) => {
+              console.error("Failed to flush pending personalities", err);
+            });
+        }
       }
     };
   }, []);
