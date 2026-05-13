@@ -121,6 +121,7 @@ export function useSettingsForm({
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
+  const suppressAutosaveAfterHydrationRef = useRef(false);
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve());
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -355,9 +356,10 @@ export function useSettingsForm({
 
   const saveSettingsNow = useCallback(
     (overrides?: SaveSettingsOverrides) => {
-      if (!(overrides?.localModel ?? localModel)) return Promise.resolve();
-
       const args = buildSettingsArgs(overrides);
+      if (overrides?.localModel !== undefined && !args.localModel) {
+        return Promise.resolve();
+      }
       const save = settingsSaveRef.current
         .catch(() => {})
         .then(async () => {
@@ -376,7 +378,7 @@ export function useSettingsForm({
       settingsSaveRef.current = save;
       return save;
     },
-    [buildSettingsArgs, localModel],
+    [buildSettingsArgs],
   );
 
   const saveSettingsNowRef = useRef(saveSettingsNow);
@@ -446,6 +448,7 @@ export function useSettingsForm({
     if (isOpen) return;
     flushPendingSettingsSave();
     didHydrateRef.current = false;
+    suppressAutosaveAfterHydrationRef.current = false;
     if (captureActive) {
       finalizeCapture();
       resetCaptureState();
@@ -673,6 +676,12 @@ export function useSettingsForm({
     if (loading) return;
     if (!didHydrateRef.current) {
       didHydrateRef.current = true;
+      suppressAutosaveAfterHydrationRef.current = true;
+      return;
+    }
+
+    if (suppressAutosaveAfterHydrationRef.current) {
+      suppressAutosaveAfterHydrationRef.current = false;
       return;
     }
 
