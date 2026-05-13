@@ -16,13 +16,11 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
-const SHORTCUT_PRESS_DEBOUNCE_MS: u64 = 180;
-
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
 
@@ -52,17 +50,9 @@ pub enum RecordingMode {
     Toggle,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ShortcutOrigin {
-    Hold,
-    Toggle,
-    Smart,
-}
-
 #[derive(Serialize, Clone)]
 pub struct PillStatePayload {
     pub status: PillStatus,
-    pub mode: Option<String>,
 }
 
 const SPECTRUM_SIZE: usize = 512;
@@ -144,10 +134,10 @@ impl AudioSpectrumEmitter {
 pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
+    shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
+    recording_settings: Mutex<Option<UserSettings>>,
     smart_press_time: Mutex<Option<DateTime<Local>>>,
-    last_shortcut_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
-    shortcut_origin: Mutex<Option<ShortcutOrigin>>,
     paused_media_session: Mutex<Option<music::PauseSession>>,
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<AudioSpectrumEmitter>>,
@@ -159,10 +149,10 @@ impl PillController {
         Self {
             status: Mutex::new(PillStatus::Idle),
             recording_mode: Mutex::new(None),
-            smart_press_time: Mutex::new(None),
-            last_shortcut_press_time: Mutex::new(None),
-            hold_key_down: Mutex::new(false),
             shortcut_origin: Mutex::new(None),
+            recording_settings: Mutex::new(None),
+            smart_press_time: Mutex::new(None),
+            hold_key_down: Mutex::new(false),
             paused_media_session: Mutex::new(None),
             recorder,
             audio_spectrum_emitter: Mutex::new(None),
@@ -237,18 +227,8 @@ impl PillController {
 
     fn emit_state(&self, app: &AppHandle<AppRuntime>) {
         let status = *self.status.lock();
-        let mode = self.recording_mode.lock().map(|m| match m {
-            RecordingMode::Hold => "hold",
-            RecordingMode::Toggle => "toggle",
-        });
 
-        if let Err(err) = app.emit(
-            EVENT_PILL_STATE,
-            PillStatePayload {
-                status,
-                mode: mode.map(String::from),
-            },
-        ) {
+        if let Err(err) = app.emit(EVENT_PILL_STATE, PillStatePayload { status }) {
             eprintln!("Failed to emit pill state: {err}");
         }
     }
@@ -264,8 +244,8 @@ impl PillController {
             previous
         };
 
-        self.emit_state(app);
         self.update_overlay_visibility(app, previous, new_status);
+        self.emit_state(app);
     }
 
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
@@ -280,7 +260,17 @@ impl PillController {
         }
         self.resume_paused_media();
         self.reset_recording_state();
-        *self.hold_key_down.lock() = false;
+        self.set_hold_key_down(false);
+        self.transition_to(app, PillStatus::Error);
+        let simple_msg = simplify_recording_error(message);
+        toast::show(app, "error", None, &simple_msg);
+    }
+
+    fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, message: &str) {
+        eprintln!("[Pill] {message}");
+        self.resume_paused_media();
+        self.reset_recording_state();
+        self.set_hold_key_down(false);
         self.transition_to(app, PillStatus::Error);
         let simple_msg = simplify_recording_error(message);
         toast::show(app, "error", None, &simple_msg);
@@ -310,12 +300,19 @@ impl PillController {
 
     pub fn reset(&self, app: &AppHandle<AppRuntime>) {
         self.reset_recording_state();
-        *self.hold_key_down.lock() = false;
+        self.set_hold_key_down(false);
         self.transition_to(app, PillStatus::Idle);
     }
 
-    pub fn safe_reset(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() != PillStatus::Listening {
+    pub fn finish_processing(&self, app: &AppHandle<AppRuntime>) {
+        let status = self.status();
+        let recording = self.is_recording();
+        let should_reset = match status {
+            PillStatus::Processing => true,
+            PillStatus::Listening => !recording,
+            _ => false,
+        };
+        if should_reset {
             self.reset(app);
         }
     }
@@ -340,15 +337,19 @@ impl PillController {
     fn reset_recording_state(&self) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
-        *self.smart_press_time.lock() = None;
-        // Note: hold_key_down is intentionally NOT cleared here.
-        // It tracks physical key state and should only change via actual key events.
         *self.shortcut_origin.lock() = None;
+        *self.recording_settings.lock() = None;
+        *self.smart_press_time.lock() = None;
+        // Stop-processing cleanup should not invent a release event.
+        // Reset/error paths clear this when the whole pill state is discarded.
     }
 
-    fn capture_selected_text_if_enabled(&self, app: &AppHandle<AppRuntime>) {
+    fn capture_selected_text_if_enabled(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        settings: &UserSettings,
+    ) {
         let state = app.state::<AppState>();
-        let settings = state.current_settings();
 
         if !settings.edit_mode_enabled {
             state.set_pending_selected_text(None);
@@ -370,16 +371,21 @@ impl PillController {
         *self.recording_mode.lock()
     }
 
-    fn try_start_recording(&self, mode: RecordingMode) -> bool {
+    fn try_start_recording(&self, mode: RecordingMode, origin: hotkeys::ShortcutAction) -> bool {
         let mut current_mode = self.recording_mode.lock();
         if current_mode.is_some() {
             return false;
         }
         *current_mode = Some(mode);
+        *self.shortcut_origin.lock() = Some(origin);
         if mode == RecordingMode::Hold {
-            *self.hold_key_down.lock() = true;
+            self.set_hold_key_down(true);
         }
         true
+    }
+
+    fn set_hold_key_down(&self, is_down: bool) {
+        *self.hold_key_down.lock() = is_down;
     }
 
     fn clear_hold_state(&self) -> bool {
@@ -392,53 +398,52 @@ impl PillController {
         }
     }
 
-    fn should_ignore_shortcut_press(&self) -> bool {
-        let mut last_press_time = self.last_shortcut_press_time.lock();
-        let now = Instant::now();
-        let should_ignore = last_press_time.as_ref().is_some_and(|last| {
-            now.duration_since(*last) < Duration::from_millis(SHORTCUT_PRESS_DEBOUNCE_MS)
-        });
-        if !should_ignore {
-            *last_press_time = Some(now);
+    fn prepare_shortcut_press(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        action: hotkeys::ShortcutAction,
+    ) -> bool {
+        if self.status() == PillStatus::Idle {
+            let _ = self.recording_mode.lock().take();
+            let _ = self.shortcut_origin.lock().take();
+            self.set_hold_key_down(false);
+            let _ = self.smart_press_time.lock().take();
         }
-        should_ignore
-    }
 
-    /// Returns true if recording started successfully, false if blocked by a check
-    fn handle_hold_press(&self, app: &AppHandle<AppRuntime>) -> bool {
         if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Hold) {
+            if *self.shortcut_origin.lock() == Some(action) {
                 self.cancel_processing(app);
             }
             return false;
         }
+
+        self.reset_stale_listening_state(app);
 
         if self.status() == PillStatus::Error {
             toast::hide(app);
             self.reset(app);
         }
 
-        if *self.hold_key_down.lock() {
-            return false;
-        }
+        true
+    }
 
+    fn start_recording(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        mode: RecordingMode,
+        origin: hotkeys::ShortcutAction,
+    ) -> bool {
         if !check_mic_permission(app) {
             return false;
         }
 
-        if !self.try_start_recording(RecordingMode::Hold) {
+        if !self.try_start_recording(mode, origin) {
             return false;
-        }
-
-        {
-            let mut origin = self.shortcut_origin.lock();
-            if origin.is_none() {
-                *origin = Some(ShortcutOrigin::Hold);
-            }
         }
 
         let state = app.state::<AppState>();
         let settings = state.current_settings();
+        *self.recording_settings.lock() = Some(settings.clone());
 
         self.preload_local_model_if_needed(app, &settings);
 
@@ -467,6 +472,24 @@ impl PillController {
         }
     }
 
+    fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
+        if self.status() == PillStatus::Listening && !self.is_recording() {
+            self.reset(app);
+        }
+    }
+
+    fn handle_hold_press(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        origin: hotkeys::ShortcutAction,
+    ) -> bool {
+        if !self.prepare_shortcut_press(app, origin) {
+            return false;
+        }
+
+        self.start_recording(app, RecordingMode::Hold, origin)
+    }
+
     fn handle_hold_release(&self, app: &AppHandle<AppRuntime>) {
         if !self.clear_hold_state() {
             return;
@@ -480,16 +503,9 @@ impl PillController {
     }
 
     fn handle_toggle_press(&self, app: &AppHandle<AppRuntime>) {
-        if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Toggle) {
-                self.cancel_processing(app);
-            }
+        let origin = hotkeys::ShortcutAction::Toggle;
+        if !self.prepare_shortcut_press(app, origin) {
             return;
-        }
-
-        if self.status() == PillStatus::Error {
-            toast::hide(app);
-            self.reset(app);
         }
 
         if self.active_mode() == Some(RecordingMode::Hold) {
@@ -499,52 +515,15 @@ impl PillController {
         if self.is_recording() {
             self.stop_and_process(app);
         } else {
-            if !check_mic_permission(app) {
-                return;
-            }
-
-            if !self.try_start_recording(RecordingMode::Toggle) {
-                return;
-            }
-
-            *self.shortcut_origin.lock() = Some(ShortcutOrigin::Toggle);
-
-            let state = app.state::<AppState>();
-            let settings = state.current_settings();
-
-            self.preload_local_model_if_needed(app, &settings);
-
-            match self.recorder.start(settings.microphone_device) {
-                Ok(started) => {
-                    self.transition_to(app, PillStatus::Listening);
-                    self.start_audio_spectrum_emitter(app);
-                    self.pause_media_if_playing(app);
-                    self.start_streaming_session_if_supported(app, &settings.local_model);
-
-                    emit_event(
-                        app,
-                        crate::EVENT_RECORDING_START,
-                        crate::RecordingStartPayload {
-                            started_at: started.to_rfc3339(),
-                        },
-                    );
-                    check_accessibility_warning(app);
-                }
-                Err(err) => {
-                    self.reset_recording_state();
-                    self.transition_to_error(app, &format!("Unable to start recording: {err}"));
-                }
-            }
+            self.start_recording(app, RecordingMode::Toggle, origin);
         }
     }
 
     fn handle_smart_press(&self, app: &AppHandle<AppRuntime>) {
         let press_time = Local::now();
 
-        if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(ShortcutOrigin::Smart) {
-                self.cancel_processing(app);
-            }
+        let origin = hotkeys::ShortcutAction::Smart;
+        if !self.prepare_shortcut_press(app, origin) {
             return;
         }
 
@@ -557,25 +536,8 @@ impl PillController {
             return;
         }
 
-        // Smart mode delegates to `handle_hold_press` to start a hold-recording, but the origin
-        // should still reflect the initiating shortcut (Smart). We pre-set the origin to prevent
-        // `handle_hold_press` from assigning `Hold`, and roll back if recording doesn't start.
-        let should_rollback_origin = {
-            let mut origin = self.shortcut_origin.lock();
-            if origin.is_none() {
-                *origin = Some(ShortcutOrigin::Smart);
-                true
-            } else {
-                false
-            }
-        };
-
-        // Only set state if recording actually starts (permissions and recorder startup pass)
-        if self.handle_hold_press(app) {
+        if self.handle_hold_press(app, origin) {
             *self.smart_press_time.lock() = Some(press_time);
-            *self.shortcut_origin.lock() = Some(ShortcutOrigin::Smart);
-        } else if should_rollback_origin {
-            *self.shortcut_origin.lock() = None;
         }
     }
 
@@ -587,7 +549,7 @@ impl PillController {
 
             if held_duration_ms < SMART_MODE_TAP_THRESHOLD_MS {
                 if self.active_mode() == Some(RecordingMode::Hold) {
-                    *self.hold_key_down.lock() = false;
+                    self.set_hold_key_down(false);
                     *self.recording_mode.lock() = Some(RecordingMode::Toggle);
                 }
                 return;
@@ -600,7 +562,12 @@ impl PillController {
     fn stop_and_process(&self, app: &AppHandle<AppRuntime>) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
-        self.capture_selected_text_if_enabled(app);
+        let settings = self
+            .recording_settings
+            .lock()
+            .take()
+            .unwrap_or_else(|| app.state::<AppState>().current_settings());
+        self.capture_selected_text_if_enabled(app, &settings);
 
         let state = app.state::<AppState>();
         let has_streaming = state.has_streaming_session();
@@ -610,80 +577,124 @@ impl PillController {
             self.transition_to(app, PillStatus::Processing);
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
-            std::thread::spawn(move || match recorder.stop() {
-                Ok(Some(recording)) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    let duration_ms =
-                        (recording.ended_at - recording.started_at).num_milliseconds();
-                    let streaming_transcript = app_handle
-                        .state::<AppState>()
-                        .stop_streaming_session(&app_handle)
-                        .unwrap_or_default();
+            let resume_app = app_handle.clone();
+            let settings_for_transcription = settings.clone();
+            std::thread::spawn(move || {
+                match recorder.stop_after_capture(move || {
+                    resume_app.state::<AppState>().pill().resume_paused_media();
+                }) {
+                    Ok(Some(recording)) => {
+                        let duration_ms =
+                            (recording.ended_at - recording.started_at).num_milliseconds();
+                        let streaming_transcript = app_handle
+                            .state::<AppState>()
+                            .stop_streaming_session(&app_handle)
+                            .unwrap_or_default();
 
-                    if duration_ms < MIN_RECORDING_DURATION_MS {
-                        collapse_expanded_pill(&app_handle);
-                        app_handle.state::<AppState>().pill().reset(&app_handle);
-                        return;
+                        if duration_ms < MIN_RECORDING_DURATION_MS {
+                            collapse_expanded_pill(&app_handle);
+                            app_handle
+                                .state::<AppState>()
+                                .pill()
+                                .finish_processing(&app_handle);
+                            return;
+                        }
+
+                        if streaming_transcript.trim().is_empty() {
+                            collapse_expanded_pill(&app_handle);
+                            app_handle
+                                .state::<AppState>()
+                                .pill()
+                                .finish_processing(&app_handle);
+                            return;
+                        }
+
+                        let saved = match crate::recordings_root(&app_handle).and_then(|base_dir| {
+                            crate::recorder::persist_recording(base_dir, recording)
+                        }) {
+                            Ok(saved) => saved,
+                            Err(err) => {
+                                collapse_expanded_pill(&app_handle);
+                                app_handle.state::<AppState>().pill().fail_recording_stop(
+                                    &app_handle,
+                                    &format!("Unable to save recording: {err}"),
+                                );
+                                return;
+                            }
+                        };
+                        app_handle
+                            .state::<AppState>()
+                            .set_pending_path(Some(saved.path.clone()));
+
+                        crate::transcribe::finalize_streaming_transcription(
+                            &app_handle,
+                            streaming_transcript,
+                            (duration_ms.max(0) as f32) / 1000.0,
+                            saved.path,
+                            settings_for_transcription,
+                        );
                     }
-
-                    if streaming_transcript.trim().is_empty() {
+                    Ok(None) => {
+                        let _ = app_handle
+                            .state::<AppState>()
+                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
-                        app_handle.state::<AppState>().pill().reset(&app_handle);
-                        return;
+                        app_handle
+                            .state::<AppState>()
+                            .pill()
+                            .finish_processing(&app_handle);
                     }
-
-                    crate::transcribe::finalize_streaming_transcription(
-                        &app_handle,
-                        streaming_transcript,
-                        (duration_ms.max(0) as f32) / 1000.0,
-                    );
-                }
-                Ok(None) => {
-                    let _ = app_handle
-                        .state::<AppState>()
-                        .stop_streaming_session(&app_handle);
-                    collapse_expanded_pill(&app_handle);
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().reset(&app_handle);
-                }
-                Err(err) => {
-                    let _ = app_handle
-                        .state::<AppState>()
-                        .stop_streaming_session(&app_handle);
-                    collapse_expanded_pill(&app_handle);
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().transition_to_error(
-                        &app_handle,
-                        &format!("Unable to stop recording: {err}"),
-                    );
+                    Err(err) => {
+                        let _ = app_handle
+                            .state::<AppState>()
+                            .stop_streaming_session(&app_handle);
+                        collapse_expanded_pill(&app_handle);
+                        app_handle.state::<AppState>().pill().fail_recording_stop(
+                            &app_handle,
+                            &format!("Unable to stop recording: {err}"),
+                        );
+                    }
                 }
             });
         } else {
             self.transition_to(app, PillStatus::Processing);
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
-            std::thread::spawn(move || match recorder.stop() {
-                Ok(Some(recording)) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    let duration_ms =
-                        (recording.ended_at - recording.started_at).num_milliseconds();
-                    if duration_ms < MIN_RECORDING_DURATION_MS {
-                        app_handle.state::<AppState>().pill().reset(&app_handle);
-                        return;
-                    }
+            let resume_app = app_handle.clone();
+            let settings_for_transcription = settings.clone();
+            std::thread::spawn(move || {
+                match recorder.stop_after_capture(move || {
+                    resume_app.state::<AppState>().pill().resume_paused_media();
+                }) {
+                    Ok(Some(recording)) => {
+                        let duration_ms =
+                            (recording.ended_at - recording.started_at).num_milliseconds();
+                        if duration_ms < MIN_RECORDING_DURATION_MS {
+                            app_handle
+                                .state::<AppState>()
+                                .pill()
+                                .finish_processing(&app_handle);
+                            return;
+                        }
 
-                    crate::persist_recording_async(app_handle, recording);
-                }
-                Ok(None) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().reset(&app_handle);
-                }
-                Err(err) => {
-                    app_handle.state::<AppState>().pill().resume_paused_media();
-                    app_handle.state::<AppState>().pill().transition_to_error(
-                        &app_handle,
-                        &format!("Unable to stop recording: {err}"),
-                    );
+                        crate::persist_recording_async(
+                            app_handle,
+                            recording,
+                            settings_for_transcription,
+                        );
+                    }
+                    Ok(None) => {
+                        app_handle
+                            .state::<AppState>()
+                            .pill()
+                            .finish_processing(&app_handle);
+                    }
+                    Err(err) => {
+                        app_handle.state::<AppState>().pill().fail_recording_stop(
+                            &app_handle,
+                            &format!("Unable to stop recording: {err}"),
+                        );
+                    }
                 }
             });
         }
@@ -693,10 +704,13 @@ impl PillController {
         self.stop_audio_spectrum_emitter();
         let _ = app.state::<AppState>().stop_streaming_session(app);
         collapse_expanded_pill(app);
-        if let Err(err) = self.recorder.stop() {
+        let app_handle = app.clone();
+        if let Err(err) = self.recorder.stop_after_capture(move || {
+            app_handle.state::<AppState>().pill().resume_paused_media();
+        }) {
+            self.resume_paused_media();
             eprintln!("Failed to stop recorder: {err}");
         }
-        self.resume_paused_media();
         self.reset(app);
     }
 
@@ -710,7 +724,13 @@ impl PillController {
         let _ = state.stop_streaming_session(app);
         collapse_expanded_pill(app);
         state.request_cancellation();
-        let _ = self.recorder.stop();
+        let app_handle = app.clone();
+        if let Err(err) = self.recorder.stop_after_capture(move || {
+            app_handle.state::<AppState>().pill().resume_paused_media();
+        }) {
+            self.resume_paused_media();
+            eprintln!("Failed to stop recorder: {err}");
+        }
 
         if let Some(path) = state.take_pending_path() {
             let _ = std::fs::remove_file(&path);
@@ -805,28 +825,17 @@ pub(crate) fn handle_registered_hotkey_event(
 
     match action {
         hotkeys::ShortcutAction::Smart => match state {
-            HotkeyState::Pressed => {
-                if pill.should_ignore_shortcut_press() {
-                    return;
-                }
-                pill.handle_smart_press(app);
-            }
+            HotkeyState::Pressed => pill.handle_smart_press(app),
             HotkeyState::Released => pill.handle_smart_release(app),
         },
         hotkeys::ShortcutAction::Hold => match state {
             HotkeyState::Pressed => {
-                if pill.should_ignore_shortcut_press() {
-                    return;
-                }
-                let _ = pill.handle_hold_press(app);
+                let _ = pill.handle_hold_press(app, action);
             }
             HotkeyState::Released => pill.handle_hold_release(app),
         },
         hotkeys::ShortcutAction::Toggle => {
             if state == HotkeyState::Pressed {
-                if pill.should_ignore_shortcut_press() {
-                    return;
-                }
                 pill.handle_toggle_press(app);
             }
         }
@@ -840,7 +849,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     }
 
     let settings = state.current_settings();
-    let mut parsed_shortcuts: Vec<(&'static str, handy_keys::Hotkey)> = Vec::new();
+    let mut parsed_shortcuts: Vec<(&'static str, hotkeys::Hotkey)> = Vec::new();
     let mut bindings = Vec::new();
 
     let mut add_binding = |label: &'static str,
@@ -858,6 +867,10 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
                 return;
             }
         };
+        if let Err(err) = hotkeys::validate_recording_shortcut(&hotkey) {
+            eprintln!("Skipping unsupported {label} shortcut `{raw_shortcut}`: {err}");
+            return;
+        }
 
         if let Some((existing_label, existing_hotkey)) = parsed_shortcuts
             .iter()
@@ -898,23 +911,11 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
 
 pub fn show_overlay(app: &AppHandle<AppRuntime>) {
     if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+        position_overlay_on_cursor_screen(&window);
+        platform::overlay::show(app, &window);
         if !app.state::<AppState>().pill().is_expanded() {
             collapse_expanded_pill(app);
         }
-        position_overlay_on_cursor_screen(&window);
-        platform::overlay::show(app, &window);
-        app.state::<AppState>().pill().emit_state(app);
-
-        let app_handle = app.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(50));
-            if app_handle.state::<AppState>().pill().status() != PillStatus::Idle {
-                app_handle
-                    .state::<AppState>()
-                    .pill()
-                    .emit_state(&app_handle);
-            }
-        });
     }
 }
 

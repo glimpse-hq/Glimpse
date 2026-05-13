@@ -22,6 +22,12 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 
 #[cfg(target_os = "macos")]
 pub fn get_selected_text_ax() -> Option<String> {
+    match macos_ax::probe_selection() {
+        macos_ax::SelectionProbe::Text(text) if !text.trim().is_empty() => return Some(text),
+        macos_ax::SelectionProbe::Empty => return None,
+        macos_ax::SelectionProbe::Text(_) | macos_ax::SelectionProbe::Unknown => {}
+    }
+
     let mut clipboard = Clipboard::new().ok()?;
 
     let backup = ClipboardBackup::capture(&mut clipboard);
@@ -45,6 +51,129 @@ pub fn get_selected_text_ax() -> Option<String> {
     match text {
         Some(t) if !t.trim().is_empty() => Some(t),
         _ => None,
+    }
+}
+
+#[cfg(target_os = "macos")]
+mod macos_ax {
+    use core_foundation::base::{CFRelease, CFType, CFTypeRef, TCFType};
+    use core_foundation::string::CFString;
+    use std::ffi::c_void;
+    use std::ptr;
+
+    type AXUIElementRef = *mut c_void;
+    type AXError = i32;
+    const AX_ERROR_SUCCESS: AXError = 0;
+    const AX_VALUE_TYPE_CF_RANGE: u32 = 4;
+
+    #[repr(C)]
+    struct CFRange {
+        location: isize,
+        length: isize,
+    }
+
+    #[link(name = "ApplicationServices", kind = "framework")]
+    extern "C" {
+        fn AXUIElementCreateSystemWide() -> AXUIElementRef;
+        fn AXUIElementCopyAttributeValue(
+            element: *mut c_void,
+            attribute: *const c_void,
+            value: *mut *mut c_void,
+        ) -> i32;
+        fn AXValueGetValue(value: *const c_void, ax_type: u32, value_ptr: *mut c_void) -> bool;
+        fn AXIsProcessTrusted() -> u8;
+    }
+
+    pub(super) enum SelectionProbe {
+        Text(String),
+        Empty,
+        Unknown,
+    }
+
+    pub(super) fn probe_selection() -> SelectionProbe {
+        if unsafe { AXIsProcessTrusted() } == 0 {
+            return SelectionProbe::Unknown;
+        }
+
+        unsafe {
+            let system = AXUIElementCreateSystemWide();
+            if system.is_null() {
+                return SelectionProbe::Unknown;
+            }
+
+            let focused_attr = CFString::new("AXFocusedUIElement");
+            let mut focused: *mut c_void = ptr::null_mut();
+            let err = AXUIElementCopyAttributeValue(
+                system,
+                focused_attr.as_concrete_TypeRef() as *const c_void,
+                &mut focused,
+            );
+            CFRelease(system as CFTypeRef);
+
+            if err != AX_ERROR_SUCCESS || focused.is_null() {
+                return SelectionProbe::Unknown;
+            }
+
+            let result = probe_focused(focused);
+            CFRelease(focused as CFTypeRef);
+            result
+        }
+    }
+
+    unsafe fn probe_focused(focused: AXUIElementRef) -> SelectionProbe {
+        if let Some(text) = read_string_attribute(focused, "AXSelectedText") {
+            if !text.is_empty() {
+                return SelectionProbe::Text(text);
+            }
+        }
+
+        if matches!(
+            read_selected_text_range(focused),
+            Some(CFRange { length: 0, .. })
+        ) {
+            return SelectionProbe::Empty;
+        }
+
+        SelectionProbe::Unknown
+    }
+
+    unsafe fn read_string_attribute(element: AXUIElementRef, attribute: &str) -> Option<String> {
+        let value = copy_attribute(element, attribute)?;
+        let cf_type: CFType = CFType::wrap_under_create_rule(value as *const _);
+        let cf_string = cf_type.downcast::<CFString>()?;
+        Some(cf_string.to_string())
+    }
+
+    unsafe fn read_selected_text_range(element: AXUIElementRef) -> Option<CFRange> {
+        let value = copy_attribute(element, "AXSelectedTextRange")?;
+        let mut range = CFRange {
+            location: 0,
+            length: 0,
+        };
+        let ok = AXValueGetValue(
+            value,
+            AX_VALUE_TYPE_CF_RANGE,
+            &mut range as *mut CFRange as *mut c_void,
+        );
+        CFRelease(value as CFTypeRef);
+
+        ok.then_some(range)
+    }
+
+    unsafe fn copy_attribute(element: AXUIElementRef, attribute: &str) -> Option<*mut c_void> {
+        let attribute = CFString::new(attribute);
+        let mut value: *mut c_void = ptr::null_mut();
+        let err = AXUIElementCopyAttributeValue(
+            element,
+            attribute.as_concrete_TypeRef() as *const c_void,
+            &mut value,
+        );
+
+        if err == AX_ERROR_SUCCESS && !value.is_null() {
+            return Some(value);
+        }
+
+        None
     }
 }
 

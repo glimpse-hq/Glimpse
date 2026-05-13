@@ -218,6 +218,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                                     app.request_restart();
                                     return;
                                 }
+                                warn!("auto-update: installed, but deferred marker write failed");
                             }
                         }
                         continue;

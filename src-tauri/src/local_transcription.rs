@@ -37,6 +37,7 @@ pub struct LocalTranscriber {
 struct LoadedEngine {
     key: String,
     path: PathBuf,
+    warmed: bool,
     engine: EngineInstance,
 }
 
@@ -121,15 +122,17 @@ impl LocalTranscriber {
     }
 
     pub fn preload_and_warm(&self, model: &ReadyModel) -> Result<()> {
-        let already_loaded = {
+        let already_warmed = {
             let guard = self.inner.lock();
             guard
                 .as_ref()
-                .map(|current| current.key == model.key && current.path == model.path)
+                .map(|current| {
+                    current.key == model.key && current.path == model.path && current.warmed
+                })
                 .unwrap_or(false)
         };
 
-        if already_loaded {
+        if already_warmed {
             return Ok(());
         }
 
@@ -141,6 +144,9 @@ impl LocalTranscriber {
         let loaded = guard
             .as_mut()
             .ok_or_else(|| anyhow!("Local model not available"))?;
+        if loaded.key == model.key && loaded.path == model.path && loaded.warmed {
+            return Ok(());
+        }
 
         let warmup_result = match &mut loaded.engine {
             #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
@@ -156,6 +162,7 @@ impl LocalTranscriber {
                 .map_err(|err| anyhow!("Whisper warmup failed: {err}")),
         };
         let _ = warmup_result?;
+        loaded.warmed = true;
 
         Ok(())
     }
@@ -261,12 +268,10 @@ impl LocalTranscriber {
     }
 
     fn ensure_engine(&self, model: &ReadyModel) -> Result<()> {
-        {
-            let guard = self.inner.lock();
-            if let Some(current) = guard.as_ref() {
-                if current.key == model.key && current.path == model.path {
-                    return Ok(());
-                }
+        let mut guard = self.inner.lock();
+        if let Some(current) = guard.as_ref() {
+            if current.key == model.key && current.path == model.path {
+                return Ok(());
             }
         }
 
@@ -317,10 +322,10 @@ impl LocalTranscriber {
             }
         };
 
-        let mut guard = self.inner.lock();
         *guard = Some(LoadedEngine {
             key: model.key.clone(),
             path: model.path.clone(),
+            warmed: false,
             engine,
         });
 

@@ -9,7 +9,7 @@ type ShortcutCapturePayload =
 
 type UseShortcutCaptureOptions = {
   active: boolean;
-  onCancel: () => void;
+  onCancel: () => void | Promise<void>;
   onPreviewChange: (preview: string) => void;
   onShortcutCaptured: (shortcut: string) => void;
   onError?: (message: string) => void;
@@ -36,23 +36,33 @@ export function useShortcutCapture({
     let disposed = false;
     let unlisten: UnlistenFn | null = null;
 
-    const finishCapture = (shortcut: string) => {
+    const finishCapture = async (shortcut: string) => {
       if (disposed) return;
       disposed = true;
       unlisten?.();
       unlisten = null;
-      onShortcutCaptured(shortcut);
-      onCancel();
-      resetCaptureState();
+      try {
+        await onCancel();
+      } catch (error) {
+        onError?.(String(error));
+      } finally {
+        onShortcutCaptured(shortcut);
+        resetCaptureState();
+      }
     };
 
-    const cancelCapture = () => {
+    const cancelCapture = async () => {
       if (disposed) return;
       disposed = true;
       unlisten?.();
       unlisten = null;
-      onCancel();
-      resetCaptureState();
+      try {
+        await onCancel();
+      } catch (error) {
+        onError?.(String(error));
+      } finally {
+        resetCaptureState();
+      }
     };
 
     const handleCapturePayload = (payload: ShortcutCapturePayload) => {
@@ -66,12 +76,14 @@ export function useShortcutCapture({
 
       if (payload.kind === "captured") {
         onCaptureInput?.();
-        finishCapture(payload.shortcut);
+        void finishCapture(payload.shortcut);
         return;
       }
 
-      onError?.(payload.message);
-      cancelCapture();
+      if (payload.kind === "error") {
+        onError?.(payload.message);
+        void cancelCapture();
+      }
     };
 
     listen<ShortcutCapturePayload>(SHORTCUT_CAPTURE_EVENT, (event) => {
@@ -87,7 +99,7 @@ export function useShortcutCapture({
       .catch((error) => {
         if (disposed) return;
         onError?.(String(error));
-        cancelCapture();
+        void cancelCapture();
       });
 
     const handleKeyboardEvent = (event: KeyboardEvent) => {
@@ -99,7 +111,7 @@ export function useShortcutCapture({
       event.preventDefault();
       event.stopPropagation();
       if (shouldCancel) {
-        cancelCapture();
+        void cancelCapture();
       }
     };
 

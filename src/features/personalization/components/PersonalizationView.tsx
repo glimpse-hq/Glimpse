@@ -1,19 +1,24 @@
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { invoke } from "@tauri-apps/api/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import type { Personality } from "../../../types";
+import * as personalizationApi from "../api";
 import {
-  buildWebsiteIconMap,
+  personalizationKeys,
+  setPersonalitiesCache,
+  useInstalledApps,
+  usePersonalities,
+  useWebsiteIconMap,
+} from "../queries";
+import {
   createId,
   formatWebsitePreview,
   normalizeWebsite,
-  type InstalledApp,
-  type WebsiteIcon,
 } from "./personalization-utils";
 import PersonalityModal, {
   AppIconBadge,
@@ -23,12 +28,7 @@ import PersonalityModal, {
 
 const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const { t } = useLingui();
-  const [personalities, setPersonalities] = useState<Personality[]>([]);
-  const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
-  const [websiteIconBySite, setWebsiteIconBySite] = useState<
-    Record<string, string>
-  >({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [activePersonalityId, setActivePersonalityId] = useState<string | null>(
     null,
@@ -39,30 +39,18 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const websiteIconRefreshKeyRef = useRef<string | null>(null);
   const persistVersionRef = useRef(0);
   const saveTimeoutRef = useRef<number | null>(null);
+  const lastPendingPersonalitiesRef = useRef<Personality[] | null>(null);
+  const mountedRef = useRef(true);
   const shiftHeld = useShiftHeld(isActive);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [personalityResp, appsResp] = await Promise.all([
-        invoke<Personality[]>("get_personalities"),
-        invoke<InstalledApp[]>("list_installed_apps"),
-      ]);
-      setPersonalities(personalityResp ?? []);
-      setInstalledApps(appsResp ?? []);
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isActive) return;
-    load();
-  }, [isActive, load]);
+  const personalitiesQuery = usePersonalities(isActive);
+  const installedAppsQuery = useInstalledApps(isActive);
+  const personalities = personalitiesQuery.data ?? [];
+  const installedApps = installedAppsQuery.data ?? [];
+  const loading = isActive && personalitiesQuery.isLoading;
+  const queryError = personalitiesQuery.error ?? installedAppsQuery.error;
+  const errorMessage =
+    error ?? (queryError instanceof Error ? queryError.message : null);
 
   const websiteDomains = useMemo(() => {
     const seen = new Set<string>();
@@ -77,28 +65,20 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
     return Array.from(seen).sort();
   }, [personalities]);
 
-  const loadWebsiteIcons = useCallback(async (sites: string[]) => {
-    if (sites.length === 0) {
-      setWebsiteIconBySite({});
+  const websiteIconsQuery = useWebsiteIconMap(websiteDomains, isActive);
+  const websiteIconBySite = websiteIconsQuery.data ?? {};
+
+  useEffect(() => {
+    if (personalitiesQuery.error) {
+      console.error(personalitiesQuery.error);
+    }
+  }, [personalitiesQuery.error]);
+
+  useEffect(() => {
+    if (!isActive) {
+      websiteIconRefreshKeyRef.current = null;
       return;
     }
-    try {
-      const iconsResp = await invoke<WebsiteIcon[]>("list_website_icons", {
-        sites,
-      });
-      setWebsiteIconBySite(buildWebsiteIconMap(iconsResp ?? []));
-    } catch (err) {
-      console.error(err);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isActive) return;
-    void loadWebsiteIcons(websiteDomains);
-  }, [isActive, websiteDomains, loadWebsiteIcons]);
-
-  useEffect(() => {
-    if (!isActive) return;
 
     if (websiteDomains.length === 0) {
       websiteIconRefreshKeyRef.current = null;
@@ -118,29 +98,24 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
       return;
     }
 
-    const timer = window.setTimeout(async () => {
+    const timer = window.setTimeout(() => {
       websiteIconRefreshKeyRef.current = currentKey;
-      try {
-        const iconsResp = await invoke<WebsiteIcon[]>("list_website_icons", {
-          sites: websiteDomains,
-        });
-        setWebsiteIconBySite(buildWebsiteIconMap(iconsResp ?? []));
-      } catch {
-        // Keep current icon map; website icon refresh is best-effort only.
-      }
+      void queryClient.invalidateQueries({
+        queryKey: personalizationKeys.websiteIcons(websiteDomains),
+      });
     }, 2500);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isActive, websiteDomains, websiteIconBySite]);
+  }, [isActive, queryClient, websiteDomains, websiteIconBySite]);
 
   useEffect(() => {
     if (!isActive) return;
 
     if (
       hasRequestedIconRefreshRef.current ||
-      loading ||
+      installedAppsQuery.isLoading ||
       installedApps.length === 0
     ) {
       return;
@@ -152,66 +127,74 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
       return;
     }
 
-    const timer = window.setTimeout(async () => {
+    const timer = window.setTimeout(() => {
       hasRequestedIconRefreshRef.current = true;
-      try {
-        const appsResp = await invoke<InstalledApp[]>("list_installed_apps");
-        setInstalledApps(appsResp ?? []);
-      } catch {
-        // Keep current app list; icon refresh is best-effort only.
-      }
+      void queryClient.invalidateQueries({
+        queryKey: personalizationKeys.installedApps(),
+      });
     }, 2500);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [isActive, installedApps, loading]);
+  }, [isActive, installedApps, installedAppsQuery.isLoading, queryClient]);
 
   const persistPersonalities = useCallback((next: Personality[]) => {
     const persistVersion = persistVersionRef.current + 1;
     persistVersionRef.current = persistVersion;
-    
+    lastPendingPersonalitiesRef.current = next;
+    setPersonalitiesCache(queryClient, next);
+
     if (saveTimeoutRef.current !== null) {
       window.clearTimeout(saveTimeoutRef.current);
     }
-    
+
     saveTimeoutRef.current = window.setTimeout(async () => {
+      saveTimeoutRef.current = null;
       setError(null);
       try {
-        const cleaned = await invoke<Personality[]>("set_personalities", {
-          personalities: next,
-        });
-        if (persistVersion !== persistVersionRef.current) {
+        const cleaned = await personalizationApi.setPersonalities(next);
+        if (!mountedRef.current || persistVersion !== persistVersionRef.current) {
           return;
         }
-        setPersonalities(cleaned ?? next);
+        setPersonalitiesCache(queryClient, cleaned ?? next);
       } catch (err) {
-        if (persistVersion !== persistVersionRef.current) {
+        if (!mountedRef.current || persistVersion !== persistVersionRef.current) {
           return;
         }
         console.error(err);
         setError(err instanceof Error ? err.message : String(err));
       }
     }, 500);
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     return () => {
+      mountedRef.current = false;
       if (saveTimeoutRef.current !== null) {
         window.clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+        const pendingPersonalities = lastPendingPersonalitiesRef.current;
+        if (pendingPersonalities !== null) {
+          void personalizationApi
+            .setPersonalities(pendingPersonalities)
+            .catch((err) => {
+              console.error("Failed to flush pending personalities", err);
+            });
+        }
       }
     };
   }, []);
 
   const updatePersonalities = useCallback(
     (updater: (prev: Personality[]) => Personality[]) => {
-      setPersonalities((prev) => {
-        const next = updater(prev);
-        void persistPersonalities(next);
-        return next;
-      });
+      const current =
+        queryClient.getQueryData<Personality[]>(
+          personalizationKeys.personalities(),
+        ) ?? personalities;
+      persistPersonalities(updater(current));
     },
-    [persistPersonalities],
+    [persistPersonalities, personalities, queryClient],
   );
 
   const updatePersonality = useCallback(
@@ -332,40 +315,42 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           gap={3}
           color="var(--color-section-marker-alt)"
         />
-        <div className="flex-1 flex items-start justify-between gap-4">
-          <div>
+        <div className="flex-1 min-w-0">
+          <div className="min-w-0">
             <p className="ui-text-screen-title ui-color-primary tracking-tight">
               {t({
                 id: "personalization.title",
                 message: "Personalization",
               })}
             </p>
-            <p className="mt-1 ui-text-body-sm ui-color-secondary">
-              {t({
-                id: "personalization.description",
-                message: "Tailor language model behavior to apps, sites, and custom instructions.",
-              })}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <p className="min-w-0 ui-text-body-sm ui-color-secondary">
+                {t({
+                  id: "personalization.description",
+                  message: "Tailor language model behavior to apps, sites, and custom instructions.",
+                })}
+              </p>
+              <button
+                type="button"
+                onClick={handleAddMode}
+                aria-label={t({
+                  id: "personalization.new_mode",
+                  message: "New mode",
+                })}
+                className="group inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 ui-text-button ui-color-secondary transition-colors hover:border-border-hover hover:bg-surface-elevated hover:text-content-primary"
+              >
+                <Plus
+                  size={13}
+                  aria-hidden="true"
+                  className="text-content-muted transition-colors group-hover:text-content-primary"
+                />
+                {t({
+                  id: "personalization.new_mode",
+                  message: "New mode",
+                })}
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={handleAddMode}
-            aria-label={t({
-              id: "personalization.new_mode",
-              message: "New mode",
-            })}
-            className="group inline-flex shrink-0 self-start items-center gap-1.5 rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 ui-text-button ui-color-secondary transition-colors hover:border-border-hover hover:bg-surface-elevated hover:text-content-primary"
-          >
-            <Plus
-              size={13}
-              aria-hidden="true"
-              className="text-content-muted transition-colors group-hover:text-content-primary"
-            />
-            {t({
-              id: "personalization.new_mode",
-              message: "New mode",
-            })}
-          </button>
         </div>
       </div>
 
@@ -591,8 +576,10 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         </div>
       )}
 
-      {error && (
-        <div className="mt-4 ui-text-body-sm ui-color-error-soft">{error}</div>
+      {errorMessage && (
+        <div className="mt-4 ui-text-body-sm ui-color-error-soft">
+          {errorMessage}
+        </div>
       )}
 
       {activePersonality && (

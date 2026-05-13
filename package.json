@@ -1,7 +1,7 @@
 {
   "name": "glimpse",
   "private": true,
-  "version": "0.8.4",
+  "version": "0.8.5",
   "type": "module",
   "packageManager": "bun@1.3.13",
   "scripts": {
@@ -10,7 +10,7 @@
     "lingui:extract": "lingui extract",
     "lingui:compile": "lingui compile",
     "preview": "bun ./node_modules/vite/bin/vite.js preview",
-    "tauri": "node ./scripts/tauri.mjs",
+    "tauri": "bun ./scripts/tauri.mjs",
     "lint": "bun ./node_modules/eslint/bin/eslint.js src/"
   },
   "dependencies": {

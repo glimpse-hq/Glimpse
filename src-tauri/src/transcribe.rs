@@ -20,10 +20,42 @@ const WHISPER_CHUNK_OVERLAP_SECONDS: f32 = 2.0;
 const VAD_MIN_SPEECH_PERCENT_FILE: f32 = 2.0;
 const VAD_MIN_SPEECH_PERCENT_CHUNK: f32 = 5.0;
 
+struct ProcessedTranscript {
+    final_transcript: String,
+    llm_cleaned: bool,
+    pasted: bool,
+}
+
+enum ProcessTranscriptOutcome {
+    Ready(ProcessedTranscript),
+    Empty,
+    Cancelled,
+}
+
+struct ProcessTranscriptInput<'a> {
+    raw_transcript: String,
+    pending_selected_text: Option<String>,
+    settings: &'a UserSettings,
+    active_mode: Option<&'a Personality>,
+    auto_paste: bool,
+    log_context: Option<&'a str>,
+}
+
+struct CompletionInput {
+    raw_transcript: String,
+    final_transcript: String,
+    auto_paste: bool,
+    audio_path: String,
+    llm_cleaned: bool,
+    metadata: storage::TranscriptionMetadata,
+    mode: &'static str,
+}
+
 pub(crate) fn queue_transcription(
     app: &AppHandle<AppRuntime>,
     saved: RecordingSaved,
     recording: CompletedRecording,
+    settings: UserSettings,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -40,7 +72,6 @@ pub(crate) fn queue_transcription(
     async_runtime::spawn(async move {
         let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
 
-        let settings = app_handle.state::<AppState>().current_settings();
         let auto_paste = transcription_api::auto_paste_enabled();
 
         eprintln!(
@@ -117,7 +148,7 @@ pub(crate) fn queue_transcription(
                     app_handle
                         .state::<AppState>()
                         .pill()
-                        .safe_reset(&app_handle);
+                        .finish_processing(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -133,7 +164,7 @@ pub(crate) fn queue_transcription(
                     app_handle
                         .state::<AppState>()
                         .pill()
-                        .safe_reset(&app_handle);
+                        .finish_processing(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -150,121 +181,70 @@ pub(crate) fn queue_transcription(
                     return;
                 }
 
-                let is_edit_mode = pending_selected_text.is_some();
-                let llm_available = llm_cleanup::is_llm_available(&settings);
-                let should_refine_transcript =
-                    llm_cleanup::should_refine_transcript(&settings, active_mode.as_ref());
-                let llm_needed = is_edit_mode || should_refine_transcript;
-                let preflight_unavailable =
-                    llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
-                let should_use_llm = if is_edit_mode {
-                    llm_available && !preflight_unavailable
-                } else {
-                    should_refine_transcript && !preflight_unavailable
-                };
-
-                let (final_transcript, llm_cleaned) = if should_use_llm {
-                    if let Some(ref selected) = pending_selected_text {
-                        match llm_cleanup::edit_transcription(
-                            &http,
-                            selected,
-                            &raw_transcript,
-                            &settings,
-                        )
-                        .await
-                        {
-                            Ok(edited) => (edited, true),
-                            Err(err) => {
-                                eprintln!("LLM edit failed, keeping original selected text: {err}");
-                                llm_cleanup::note_preflight_failure();
-                                maybe_warn_llm_unavailable(&app_handle, true);
-                                (selected.clone(), false)
-                            }
-                        }
-                    } else {
-                        match llm_cleanup::cleanup_transcription(
-                            &http,
-                            &raw_transcript,
-                            &settings,
-                            active_mode.as_ref(),
-                        )
-                        .await
-                        {
-                            Ok(cleaned) => (cleaned, true),
-                            Err(err) => {
-                                eprintln!("Cleanup failed, using raw transcript: {err}");
-                                llm_cleanup::note_preflight_failure();
-                                maybe_warn_llm_unavailable(&app_handle, false);
-                                (raw_transcript.clone(), false)
-                            }
-                        }
+                let processed = match process_transcript_text(
+                    &app_handle,
+                    &http,
+                    ProcessTranscriptInput {
+                        raw_transcript: raw_transcript.clone(),
+                        pending_selected_text,
+                        settings: &settings,
+                        active_mode: active_mode.as_ref(),
+                        auto_paste,
+                        log_context: None,
+                    },
+                )
+                .await
+                {
+                    ProcessTranscriptOutcome::Ready(processed) => processed,
+                    ProcessTranscriptOutcome::Empty => {
+                        handle_empty_transcription(&app_handle, &saved_for_task.path);
+                        return;
                     }
-                } else {
-                    if preflight_unavailable {
-                        maybe_warn_llm_unavailable(&app_handle, is_edit_mode);
+                    ProcessTranscriptOutcome::Cancelled => {
+                        app_handle
+                            .state::<AppState>()
+                            .pill()
+                            .finish_processing(&app_handle);
+                        app_handle.state::<AppState>().set_pending_path(None);
+                        return;
                     }
-                    (raw_transcript.clone(), false)
                 };
-
-                let final_transcript =
-                    dictionary::apply_replacements(&final_transcript, &settings.replacements);
-
-                if count_words(&final_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
-                    return;
-                }
 
                 if is_cancelled() {
                     app_handle
                         .state::<AppState>()
                         .pill()
-                        .safe_reset(&app_handle);
+                        .finish_processing(&app_handle);
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
-                }
-
-                let mut pasted = false;
-                if auto_paste && !final_transcript.trim().is_empty() {
-                    let text = final_transcript.clone();
-                    match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await
-                    {
-                        Ok(Ok(())) => pasted = true,
-                        Ok(Err(err)) => {
-                            emit_auto_paste_error(&app_handle, format!("Auto paste failed: {err}"));
-                        }
-                        Err(err) => {
-                            emit_auto_paste_error(
-                                &app_handle,
-                                format!("Auto paste task error: {err}"),
-                            );
-                        }
-                    }
                 }
 
                 let metadata = build_transcription_metadata(TranscriptionMetadataInput {
                     saved: &saved_for_task,
                     settings: &settings,
-                    final_text: &final_transcript,
-                    llm_cleaned,
+                    final_text: &processed.final_transcript,
+                    llm_cleaned: processed.llm_cleaned,
                     synced: false,
                     mode: active_mode.as_ref(),
                 });
 
                 emit_transcription_complete_with_cleanup(
                     &app_handle,
-                    raw_transcript,
-                    final_transcript,
-                    pasted,
-                    saved_for_task.path.display().to_string(),
-                    llm_cleaned,
-                    metadata,
-                    "local",
+                    CompletionInput {
+                        raw_transcript,
+                        final_transcript: processed.final_transcript,
+                        auto_paste: processed.pasted,
+                        audio_path: saved_for_task.path.display().to_string(),
+                        llm_cleaned: processed.llm_cleaned,
+                        metadata,
+                        mode: "local",
+                    },
                 );
 
                 app_handle
                     .state::<AppState>()
                     .pill()
-                    .safe_reset(&app_handle);
+                    .finish_processing(&app_handle);
                 app_handle.state::<AppState>().set_pending_path(None);
             }
             Err(err) => {
@@ -282,6 +262,98 @@ pub(crate) fn queue_transcription(
             }
         }
     });
+}
+
+async fn process_transcript_text(
+    app: &AppHandle<AppRuntime>,
+    http: &reqwest::Client,
+    input: ProcessTranscriptInput<'_>,
+) -> ProcessTranscriptOutcome {
+    let ProcessTranscriptInput {
+        raw_transcript,
+        pending_selected_text,
+        settings,
+        active_mode,
+        auto_paste,
+        log_context,
+    } = input;
+
+    let is_edit_mode = pending_selected_text.is_some();
+    let llm_available = llm_cleanup::is_llm_available(settings);
+    let should_refine_transcript = llm_cleanup::should_refine_transcript(settings, active_mode);
+    let llm_needed = is_edit_mode || should_refine_transcript;
+    let preflight_unavailable =
+        llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
+    let should_use_llm = if is_edit_mode {
+        llm_available && !preflight_unavailable
+    } else {
+        should_refine_transcript && !preflight_unavailable
+    };
+
+    let (final_transcript, llm_cleaned) = if should_use_llm {
+        if let Some(ref selected) = pending_selected_text {
+            match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
+                Ok(edited) => (edited, true),
+                Err(err) => {
+                    if let Some(context) = log_context {
+                        eprintln!("LLM edit failed ({context}): {err}");
+                    } else {
+                        eprintln!("LLM edit failed, keeping original selected text: {err}");
+                    }
+                    llm_cleanup::note_preflight_failure();
+                    maybe_warn_llm_unavailable(app, true);
+                    (selected.clone(), false)
+                }
+            }
+        } else {
+            match llm_cleanup::cleanup_transcription(http, &raw_transcript, settings, active_mode)
+                .await
+            {
+                Ok(cleaned) => (cleaned, true),
+                Err(err) => {
+                    if let Some(context) = log_context {
+                        eprintln!("Cleanup failed ({context}): {err}");
+                    } else {
+                        eprintln!("Cleanup failed, using raw transcript: {err}");
+                    }
+                    llm_cleanup::note_preflight_failure();
+                    maybe_warn_llm_unavailable(app, false);
+                    (raw_transcript.clone(), false)
+                }
+            }
+        }
+    } else {
+        if preflight_unavailable {
+            maybe_warn_llm_unavailable(app, is_edit_mode);
+        }
+        (raw_transcript.clone(), false)
+    };
+
+    let final_transcript =
+        dictionary::apply_replacements(&final_transcript, &settings.replacements);
+    if count_words(&final_transcript) == 0 {
+        return ProcessTranscriptOutcome::Empty;
+    }
+
+    if app.state::<AppState>().is_cancelled() {
+        return ProcessTranscriptOutcome::Cancelled;
+    }
+
+    let mut pasted = false;
+    if auto_paste && !final_transcript.trim().is_empty() {
+        let text = final_transcript.clone();
+        match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await {
+            Ok(Ok(())) => pasted = true,
+            Ok(Err(err)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
+            Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
+        }
+    }
+
+    ProcessTranscriptOutcome::Ready(ProcessedTranscript {
+        final_transcript,
+        llm_cleaned,
+        pasted,
+    })
 }
 
 pub(crate) fn retry_transcription_async(
@@ -528,16 +600,17 @@ pub(crate) fn retry_transcription_async(
     });
 }
 
-fn emit_transcription_complete_with_cleanup(
-    app: &AppHandle<AppRuntime>,
-    raw_transcript: String,
-    final_transcript: String,
-    auto_paste: bool,
-    audio_path: String,
-    llm_cleaned: bool,
-    metadata: storage::TranscriptionMetadata,
-    mode: &str,
-) {
+fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: CompletionInput) {
+    let CompletionInput {
+        raw_transcript,
+        final_transcript,
+        auto_paste,
+        audio_path,
+        llm_cleaned,
+        metadata,
+        mode,
+    } = input;
+
     analytics::track_transcription_completed(app, mode, Some(&metadata.speech_model), llm_cleaned);
     app.state::<AppState>().record_transcription_completed();
 
@@ -550,7 +623,7 @@ fn emit_transcription_complete_with_cleanup(
         },
     );
 
-    app.state::<AppState>().pill().safe_reset(app);
+    app.state::<AppState>().pill().finish_processing(app);
 
     if llm_cleaned {
         let _ = app
@@ -625,7 +698,7 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
 
     crate::schedule_recording_prune(app.clone(), app.state::<AppState>().current_settings());
 
-    app.state::<AppState>().pill().safe_reset(app);
+    app.state::<AppState>().pill().finish_processing(app);
     app.state::<AppState>().set_pending_path(None);
 }
 
@@ -1118,6 +1191,8 @@ pub(crate) fn finalize_streaming_transcription(
     app: &AppHandle<AppRuntime>,
     raw_transcript: String,
     duration_seconds: f32,
+    audio_path: PathBuf,
+    settings: UserSettings,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -1127,113 +1202,64 @@ pub(crate) fn finalize_streaming_transcription(
 
     tauri::async_runtime::spawn(async move {
         let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
-        let settings = app_handle.state::<AppState>().current_settings();
         let auto_paste = transcription_api::auto_paste_enabled();
         let active_mode = mode_context::resolve_active_personality(&settings);
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
 
         if count_words(&raw_transcript) == 0 {
+            let _ = std::fs::remove_file(&audio_path);
             crate::pill::collapse_expanded_pill(&app_handle);
             app_handle
                 .state::<AppState>()
                 .pill()
-                .safe_reset(&app_handle);
+                .finish_processing(&app_handle);
+            app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
 
         if is_cancelled() {
+            app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
 
-        let is_edit_mode = pending_selected_text.is_some();
-        let llm_available = llm_cleanup::is_llm_available(&settings);
-        let should_refine_transcript =
-            llm_cleanup::should_refine_transcript(&settings, active_mode.as_ref());
-        let llm_needed = is_edit_mode || should_refine_transcript;
-        let preflight_unavailable =
-            llm_needed && matches!(llm_cleanup::cached_preflight_available(), Some(false));
-        let should_use_llm = if is_edit_mode {
-            llm_available && !preflight_unavailable
-        } else {
-            should_refine_transcript && !preflight_unavailable
+        let processed = match process_transcript_text(
+            &app_handle,
+            &http,
+            ProcessTranscriptInput {
+                raw_transcript: raw_transcript.clone(),
+                pending_selected_text,
+                settings: &settings,
+                active_mode: active_mode.as_ref(),
+                auto_paste,
+                log_context: Some("streaming"),
+            },
+        )
+        .await
+        {
+            ProcessTranscriptOutcome::Ready(processed) => processed,
+            ProcessTranscriptOutcome::Empty => {
+                handle_empty_transcription(&app_handle, &audio_path);
+                return;
+            }
+            ProcessTranscriptOutcome::Cancelled => {
+                app_handle.state::<AppState>().set_pending_path(None);
+                return;
+            }
         };
 
-        let (final_transcript, llm_cleaned) = if should_use_llm {
-            if let Some(ref selected) = pending_selected_text {
-                match llm_cleanup::edit_transcription(&http, selected, &raw_transcript, &settings)
-                    .await
-                {
-                    Ok(edited) => (edited, true),
-                    Err(err) => {
-                        eprintln!("LLM edit failed (streaming): {err}");
-                        llm_cleanup::note_preflight_failure();
-                        maybe_warn_llm_unavailable(&app_handle, true);
-                        (selected.clone(), false)
-                    }
-                }
-            } else {
-                match llm_cleanup::cleanup_transcription(
-                    &http,
-                    &raw_transcript,
-                    &settings,
-                    active_mode.as_ref(),
-                )
-                .await
-                {
-                    Ok(cleaned) => (cleaned, true),
-                    Err(err) => {
-                        eprintln!("Cleanup failed (streaming): {err}");
-                        llm_cleanup::note_preflight_failure();
-                        maybe_warn_llm_unavailable(&app_handle, false);
-                        (raw_transcript.clone(), false)
-                    }
-                }
-            }
-        } else {
-            if preflight_unavailable {
-                maybe_warn_llm_unavailable(&app_handle, is_edit_mode);
-            }
-            (raw_transcript.clone(), false)
-        };
-
-        let final_transcript =
-            dictionary::apply_replacements(&final_transcript, &settings.replacements);
-
-        if count_words(&final_transcript) == 0 {
-            crate::pill::collapse_expanded_pill(&app_handle);
-            app_handle
-                .state::<AppState>()
-                .pill()
-                .safe_reset(&app_handle);
-            return;
-        }
-
         if is_cancelled() {
-            return;
-        }
-
-        let mut pasted = false;
-        if auto_paste && !final_transcript.trim().is_empty() {
-            let text = final_transcript.clone();
-            match tauri::async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await {
-                Ok(Ok(())) => pasted = true,
-                Ok(Err(err)) => eprintln!("Auto paste failed (streaming): {err}"),
-                Err(err) => eprintln!("Auto paste task error (streaming): {err}"),
-            }
-        }
-
-        if is_cancelled() {
+            app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
 
         let metadata = storage::TranscriptionMetadata {
             speech_model: resolve_speech_model_label(&settings),
-            llm_model: if llm_cleaned {
+            llm_model: if processed.llm_cleaned {
                 llm_cleanup::resolved_model_name(&settings)
             } else {
                 None
             },
-            word_count: count_words(&final_transcript),
+            word_count: count_words(&processed.final_transcript),
             audio_duration_seconds: duration_seconds,
             synced: false,
             mode_id: active_mode.as_ref().map(|m| m.id.clone()),
@@ -1243,13 +1269,16 @@ pub(crate) fn finalize_streaming_transcription(
         crate::pill::collapse_expanded_pill(&app_handle);
         emit_transcription_complete_with_cleanup(
             &app_handle,
-            raw_transcript,
-            final_transcript,
-            pasted,
-            String::new(),
-            llm_cleaned,
-            metadata,
-            "local_streaming",
+            CompletionInput {
+                raw_transcript,
+                final_transcript: processed.final_transcript,
+                auto_paste: processed.pasted,
+                audio_path: audio_path.display().to_string(),
+                llm_cleaned: processed.llm_cleaned,
+                metadata,
+                mode: "local_streaming",
+            },
         );
+        app_handle.state::<AppState>().set_pending_path(None);
     });
 }

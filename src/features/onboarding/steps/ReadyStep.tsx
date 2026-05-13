@@ -35,8 +35,8 @@ export function ReadyStep({
 }: ReadyStepProps) {
   const { t } = useLingui();
 
-  const finalizeCapture = useCallback(() => {
-    invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+  const finalizeCapture = useCallback(async () => {
+    await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
     onEndCapture();
   }, [onEndCapture]);
 

@@ -72,6 +72,8 @@ pub struct RecorderManager {
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
 }
 
+type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
+
 struct ActiveRecording {
     stream: Stream,
     buffer: Arc<Mutex<Vec<i16>>>,
@@ -115,8 +117,11 @@ impl Default for RecorderManager {
                         RecorderCommand::Start { device_id, respond } => {
                             let _ = respond.send(core.start(device_id));
                         }
-                        RecorderCommand::Stop { respond } => {
-                            let _ = respond.send(core.stop());
+                        RecorderCommand::Stop {
+                            respond,
+                            after_capture,
+                        } => {
+                            let _ = respond.send(core.stop(after_capture));
                         }
                     }
                 }
@@ -188,10 +193,18 @@ impl RecorderManager {
     }
 
     pub fn stop(&self) -> Result<Option<CompletedRecording>> {
+        self.stop_after_capture(|| {})
+    }
+
+    pub fn stop_after_capture(
+        &self,
+        after_capture: impl FnOnce() + Send + 'static,
+    ) -> Result<Option<CompletedRecording>> {
         let (respond_tx, respond_rx) = bounded(1);
         self.tx
             .send(RecorderCommand::Stop {
                 respond: respond_tx,
+                after_capture: Box::new(after_capture),
             })
             .map_err(|err| anyhow!("Recorder channel closed: {err}"))?;
         respond_rx
@@ -207,6 +220,7 @@ enum RecorderCommand {
     },
     Stop {
         respond: Sender<Result<Option<CompletedRecording>>>,
+        after_capture: AfterCaptureHook,
     },
 }
 
@@ -337,11 +351,13 @@ impl RecorderCore {
         Ok(started_at)
     }
 
-    fn stop(&mut self) -> Result<Option<CompletedRecording>> {
+    fn stop(&mut self, after_capture: AfterCaptureHook) -> Result<Option<CompletedRecording>> {
         *self.live_buffer.lock() = None;
         self.spectrum.lock().reset();
         if let Some(active) = self.active.take() {
             drop(active.stream);
+            let ended_at = Local::now();
+            after_capture();
             let raw_samples = Arc::try_unwrap(active.buffer)
                 .map(|mutex| mutex.into_inner())
                 .unwrap_or_else(|arc| arc.lock().clone());
@@ -353,7 +369,7 @@ impl RecorderCore {
                     sample_rate: active.sample_rate,
                     channels: active.channels,
                     started_at: active.started_at,
-                    ended_at: Local::now(),
+                    ended_at,
                 }));
             }
 
@@ -374,9 +390,10 @@ impl RecorderCore {
                 sample_rate: active.sample_rate,
                 channels: 1,
                 started_at: active.started_at,
-                ended_at: Local::now(),
+                ended_at,
             }))
         } else {
+            after_capture();
             Ok(None)
         }
     }

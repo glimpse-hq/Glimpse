@@ -55,7 +55,7 @@ pub fn show(
     let app_clone = app.clone();
     let _ = app.run_on_main_thread(move || {
         if let Ok(panel) = app_clone.get_webview_panel(crate::MAIN_WINDOW_LABEL) {
-            panel.show();
+            panel.as_panel().orderFront(None);
             panel.set_ignores_mouse_events(true);
         }
     });

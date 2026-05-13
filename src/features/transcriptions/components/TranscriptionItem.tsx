@@ -424,7 +424,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
             {!isError && (
               <motion.button
                 onClick={handleCopy}
-                whileTap={{ scale: 0.95 }}
+                data-no-press
                 className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 hover:bg-surface-elevated ${
                   copied ? "bg-surface-elevated" : ""
                 }`}
@@ -451,19 +451,25 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       })
                 }
               >
-                {copied ? (
-                  <Check
-                    size={14}
-                    className="text-success"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Copy
-                    size={14}
-                    className="text-content-secondary"
-                    aria-hidden="true"
-                  />
-                )}
+                <motion.span
+                  className="flex origin-center"
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ duration: 0.08 }}
+                >
+                  {copied ? (
+                    <Check
+                      size={14}
+                      className="text-success"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <Copy
+                      size={14}
+                      className="text-content-secondary"
+                      aria-hidden="true"
+                    />
+                  )}
+                </motion.span>
               </motion.button>
             )}
 

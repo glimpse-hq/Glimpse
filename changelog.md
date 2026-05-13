@@ -1,3 +1,15 @@
+0.8.5
+
+### Improvements
+- Keybinds should feel much more reliable, especially with repeated presses and custom shortcuts.
+- Settings and personalization should open faster and save more consistently.
+- Model changes now save immediately, and recordings keep using the model they started with.
+- Media pausing during recordings is more reliable.
+- The pill and toast windows behave more predictably without stealing focus.
+- AI cleanup has stronger prompt-injection guardrails.
+- Edit mode works better in terminals and TUIs.
+- Improved Windows key handling and tray behavior.
+
 0.8.4
 
 ### New Features

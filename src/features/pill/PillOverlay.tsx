@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import React, { useRef, useEffect, useCallback } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
-import { useMachine } from "@xstate/react";
-import { pillMachine } from "./machine";
+import { usePillState } from "./usePillState";
 import type { PillStatus } from "../../types";
 
 /* ───────────────────────── Constants ───────────────────────── */
@@ -171,9 +170,15 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   decay = 0.85,
 }) => {
   const { t } = useLingui();
-  const [state, send] = useMachine(pillMachine);
-  const pillStatus = state.value as PillStatus;
-  const { spectrumBins, lastSpectrumAt, isErrorFlashing, isExpanded, expandedText } = state.context;
+  const {
+    pillStatus,
+    spectrumBins,
+    lastSpectrumAt,
+    isErrorFlashing,
+    isExpanded,
+    expandedText,
+    dismiss,
+  } = usePillState();
 
   // Primary canvas (small pill dots)
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -559,13 +564,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && pillStatus === "error") {
         e.preventDefault();
-        send({ type: "DISMISS" });
+        dismiss();
         hideWindow();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pillStatus, send, hideWindow]);
+  }, [pillStatus, dismiss, hideWindow]);
 
   /* ───────────────────────── Canvas Setup ───────────────────────── */
 

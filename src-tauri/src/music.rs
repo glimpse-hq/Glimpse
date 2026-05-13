@@ -9,14 +9,132 @@ pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
     imp::resume_if_paused_by_us(session);
 }
 
-#[cfg(target_os = "macos")]
-mod imp {
+#[cfg(any(target_os = "macos", target_os = "windows"))]
+mod coord {
     use super::PauseSession;
     use parking_lot::Mutex;
+    use tauri::async_runtime;
+
+    struct MediaState<T> {
+        next_session: u64,
+        active_session: Option<PauseSession>,
+        paused_target: Option<T>,
+    }
+
+    pub(super) type CancelFn<'a> = &'a dyn Fn() -> bool;
+
+    pub(super) struct Coordinator<T: Send + 'static> {
+        state: Mutex<MediaState<T>>,
+        pause_fn: fn() -> Option<T>,
+        resume_fn: fn(&T, CancelFn<'_>) -> bool,
+    }
+
+    impl<T: Send + 'static> Coordinator<T> {
+        pub(super) const fn new(
+            pause_fn: fn() -> Option<T>,
+            resume_fn: fn(&T, CancelFn<'_>) -> bool,
+        ) -> Self {
+            Self {
+                state: Mutex::new(MediaState {
+                    next_session: 0,
+                    active_session: None,
+                    paused_target: None,
+                }),
+                pause_fn,
+                resume_fn,
+            }
+        }
+
+        pub(super) fn pause_if_playing(&'static self) -> PauseSession {
+            let session = {
+                let mut shared = self.state.lock();
+                shared.next_session = shared.next_session.wrapping_add(1);
+                if shared.next_session == 0 {
+                    shared.next_session = 1;
+                }
+                let session = PauseSession(shared.next_session);
+                shared.active_session = Some(session);
+                session
+            };
+
+            std::mem::drop(async_runtime::spawn_blocking(move || {
+                let pause_fn = self.pause_fn;
+                let target = pause_fn();
+                self.finish_pause(session, target);
+            }));
+
+            session
+        }
+
+        pub(super) fn resume_if_paused_by_us(&'static self, session: PauseSession) {
+            let target = {
+                let mut shared = self.state.lock();
+                if shared.active_session != Some(session) {
+                    return;
+                }
+                shared.active_session = None;
+                shared.paused_target.take()
+            };
+
+            if let Some(target) = target {
+                std::mem::drop(async_runtime::spawn_blocking(move || {
+                    self.resume_or_keep(target)
+                }));
+            }
+        }
+
+        fn finish_pause(&'static self, session: PauseSession, target: Option<T>) {
+            let target_to_resume = {
+                let mut shared = self.state.lock();
+                match (shared.active_session, target) {
+                    // Original session still active: store our pause result.
+                    (Some(active), Some(t)) if active == session => {
+                        shared.paused_target = Some(t);
+                        None
+                    }
+                    // Newer session preempted us: carry late pause forward without overwriting.
+                    (Some(_), Some(t)) => {
+                        shared.paused_target.get_or_insert(t);
+                        None
+                    }
+                    (Some(_), None) => None,
+                    // No active session: resume immediately if we have a target.
+                    (None, target) => target,
+                }
+            };
+
+            if let Some(target) = target_to_resume {
+                self.resume_or_keep(target);
+            }
+        }
+
+        fn resume_or_keep(&'static self, target: T) {
+            {
+                let mut shared = self.state.lock();
+                if shared.active_session.is_some() {
+                    shared.paused_target.get_or_insert(target);
+                    return;
+                }
+            }
+
+            let played = (self.resume_fn)(&target, &|| self.state.lock().active_session.is_some());
+
+            if !played {
+                let mut shared = self.state.lock();
+                if shared.active_session.is_some() {
+                    shared.paused_target.get_or_insert(target);
+                }
+            }
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+mod imp {
+    use super::coord::{CancelFn, Coordinator};
+    use super::PauseSession;
     use serde::Deserialize;
     use std::process::Command;
-    use std::sync::OnceLock;
-    use tauri::async_runtime;
 
     const MEDIA_REMOTE_SCRIPT: &str = r#"
 ObjC.import('Foundation');
@@ -69,12 +187,11 @@ function nowPlayingIdentity() {
 
         const nowPlayingItem = MRNowPlayingRequest.localNowPlayingItem;
         const info = nowPlayingItem ? nowPlayingItem.nowPlayingInfo : null;
-        const rate = playbackRate(info);
 
         return {
             bundleId: unwrapString(client.bundleIdentifier),
             displayName: unwrapString(client.displayName),
-            rate: rate
+            rate: playbackRate(info)
         };
     } catch (error) {
         return null;
@@ -96,37 +213,35 @@ function run(argv) {
 
         if (action === "pause") {
             const identity = nowPlayingIdentity();
-            if (identity && identity.rate <= 0) return "";
+            if (!identity || (!identity.bundleId && !identity.displayName) || identity.rate <= 0) {
+                return "";
+            }
 
-            // MRMediaRemoteCommand: 1 = Pause
-            const sent = $.MRMediaRemoteSendCommand(1, $.NSDictionary.alloc.init);
-            if (!sent && !identity) return "";
+            if (!$.MRMediaRemoteSendCommand(1, $.NSDictionary.alloc.init)) {
+                return "";
+            }
 
             return JSON.stringify({
-                bundleId: identity ? identity.bundleId : "",
-                displayName: identity ? identity.displayName : ""
+                bundleId: identity.bundleId,
+                displayName: identity.displayName
             });
         }
 
-        // Resume: check if the same app is still the now-playing target
         const expectedBundleId = argv.length > 1 ? String(argv[1]) : "";
         const expectedName = argv.length > 2 ? String(argv[2]) : "";
         const identity = nowPlayingIdentity();
 
-        if (expectedBundleId || expectedName) {
-            if (identity && !targetMatches(expectedBundleId, expectedName, identity.bundleId, identity.displayName)) {
-                return "skip";
-            }
-            if (identity && identity.rate > 0) return "skip";
+        if (!identity || !targetMatches(expectedBundleId, expectedName, identity.bundleId, identity.displayName)) {
+            return "skip";
         }
 
-        // MRMediaRemoteCommand: 0 = Play
         $.MRMediaRemoteSendCommand(0, $.NSDictionary.alloc.init);
         return "played";
     } catch (error) {
         return "";
     }
 }
+
 "#;
 
     #[derive(Default, Clone, Deserialize)]
@@ -138,17 +253,19 @@ function run(argv) {
     }
 
     #[derive(Default, Clone)]
-    struct PausedTarget {
-        bundle_id: Option<String>,
-        display_name: Option<String>,
+    pub(super) struct PausedTarget {
+        bundle_id: String,
+        display_name: String,
     }
 
     impl PausedTarget {
         fn from_json(stdout: &str) -> Option<Self> {
             let payload: PausePayload = serde_json::from_str(stdout).ok()?;
-            let bundle_id = (!payload.bundle_id.trim().is_empty()).then_some(payload.bundle_id);
-            let display_name =
-                (!payload.display_name.trim().is_empty()).then_some(payload.display_name);
+            let bundle_id = payload.bundle_id.trim().to_string();
+            let display_name = payload.display_name.trim().to_string();
+            if bundle_id.is_empty() && display_name.is_empty() {
+                return None;
+            }
 
             Some(Self {
                 bundle_id,
@@ -157,108 +274,33 @@ function run(argv) {
         }
     }
 
-    #[derive(Default)]
-    struct MediaState {
-        next_session: u64,
-        active_session: Option<PauseSession>,
-        paused_target: Option<PausedTarget>,
-    }
-
-    impl MediaState {
-        fn alloc_session(&mut self) -> PauseSession {
-            self.next_session = self.next_session.wrapping_add(1);
-            if self.next_session == 0 {
-                self.next_session = 1;
-            }
-            PauseSession(self.next_session)
-        }
-    }
-
-    fn state() -> &'static Mutex<MediaState> {
-        static STATE: OnceLock<Mutex<MediaState>> = OnceLock::new();
-        STATE.get_or_init(|| Mutex::new(MediaState::default()))
-    }
+    static COORD: Coordinator<PausedTarget> = Coordinator::new(pause_now_playing, resume_target);
 
     pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-        let session = {
-            let mut shared = state().lock();
-            let session = shared.alloc_session();
-            shared.active_session = Some(session);
-            shared.paused_target = None;
-            session
-        };
-
-        let _ = async_runtime::spawn_blocking(move || {
-            let target = pause_active_now_playing();
-            finish_pause_attempt(session, target);
-        });
-
-        Some(session)
+        Some(COORD.pause_if_playing())
     }
 
     pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
-        let Some(session) = session else {
-            return;
-        };
-
-        let target = {
-            let mut shared = state().lock();
-            if shared.active_session != Some(session) {
-                return;
-            }
-            shared.active_session = None;
-            shared.paused_target.take()
-        };
-
-        if let Some(target) = target {
-            let _ = async_runtime::spawn_blocking(move || {
-                let _ = resume_if_matching_target(&target);
-            });
+        if let Some(session) = session {
+            COORD.resume_if_paused_by_us(session);
         }
     }
 
-    fn finish_pause_attempt(session: PauseSession, target: Option<PausedTarget>) {
-        let target_to_resume = {
-            let mut shared = state().lock();
-
-            if shared.active_session != Some(session) {
-                target
-            } else {
-                match target {
-                    Some(target) => {
-                        shared.paused_target = Some(target);
-                        None
-                    }
-                    None => {
-                        shared.active_session = None;
-                        None
-                    }
-                }
-            }
-        };
-
-        if let Some(target) = target_to_resume {
-            let _ = resume_if_matching_target(&target);
-        }
-    }
-
-    fn pause_active_now_playing() -> Option<PausedTarget> {
-        let stdout = run_script(&["pause"])?;
+    fn pause_now_playing() -> Option<PausedTarget> {
+        let stdout = run_script(&["pause"], &|| false)?;
         PausedTarget::from_json(&stdout)
     }
 
-    fn resume_if_matching_target(target: &PausedTarget) -> bool {
-        let bundle_id = target.bundle_id.as_deref().unwrap_or("");
-        let display_name = target.display_name.as_deref().unwrap_or("");
-
-        run_script(&["resume", bundle_id, display_name])
-            .as_deref()
-            .is_some_and(|result| result == "played")
+    fn resume_target(target: &PausedTarget, should_cancel: CancelFn<'_>) -> bool {
+        run_script(
+            &["resume", &target.bundle_id, &target.display_name],
+            should_cancel,
+        )
+        .as_deref()
+        .is_some_and(|result| result == "played")
     }
 
-    /// Blocks until the `osascript` child process exits.
-    /// Keep `run_script` on a blocking worker thread and out of latency-sensitive paths.
-    fn run_script(args: &[&str]) -> Option<String> {
+    fn run_script(args: &[&str], should_cancel: CancelFn<'_>) -> Option<String> {
         use std::io::Read;
         use std::time::{Duration, Instant};
 
@@ -275,11 +317,18 @@ function run(argv) {
         let deadline = Instant::now() + Duration::from_secs(3);
 
         loop {
+            if should_cancel() {
+                let _ = child.kill();
+                let _ = child.wait();
+                return None;
+            }
+
             match child.try_wait() {
                 Ok(Some(status)) => {
                     if !status.success() {
                         return None;
                     }
+
                     let mut stdout = String::new();
                     child.stdout.take()?.read_to_string(&mut stdout).ok()?;
                     let stdout = stdout.trim().to_string();
@@ -294,7 +343,7 @@ function run(argv) {
                         let _ = child.wait();
                         return None;
                     }
-                    std::thread::sleep(Duration::from_millis(25));
+                    std::thread::sleep(Duration::from_millis(10));
                 }
                 Err(_) => {
                     let _ = child.kill();
@@ -307,10 +356,8 @@ function run(argv) {
 
 #[cfg(target_os = "windows")]
 mod imp {
+    use super::coord::{CancelFn, Coordinator};
     use super::PauseSession;
-    use parking_lot::Mutex;
-    use std::sync::OnceLock;
-    use tauri::async_runtime;
     use windows::Media::Control::{
         GlobalSystemMediaTransportControlsSession,
         GlobalSystemMediaTransportControlsSessionManager,
@@ -320,88 +367,15 @@ mod imp {
         CoDecrementMTAUsage, CoIncrementMTAUsage, CO_MTA_USAGE_COOKIE,
     };
 
-    #[derive(Default)]
-    struct MediaState {
-        next_session: u64,
-        active_session: Option<PauseSession>,
-        paused_target: Option<String>,
-    }
-
-    impl MediaState {
-        fn alloc_session(&mut self) -> PauseSession {
-            self.next_session = self.next_session.wrapping_add(1);
-            if self.next_session == 0 {
-                self.next_session = 1;
-            }
-            PauseSession(self.next_session)
-        }
-    }
-
-    fn state() -> &'static Mutex<MediaState> {
-        static STATE: OnceLock<Mutex<MediaState>> = OnceLock::new();
-        STATE.get_or_init(|| Mutex::new(MediaState::default()))
-    }
+    static COORD: Coordinator<String> = Coordinator::new(pause_now_playing, resume_target);
 
     pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-        let session = {
-            let mut shared = state().lock();
-            let session = shared.alloc_session();
-            shared.active_session = Some(session);
-            shared.paused_target = None;
-            session
-        };
-
-        let _ = async_runtime::spawn_blocking(move || {
-            let target = pause_active_now_playing();
-            finish_pause_attempt(session, target);
-        });
-
-        Some(session)
+        Some(COORD.pause_if_playing())
     }
 
     pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
-        let Some(session) = session else {
-            return;
-        };
-
-        let target = {
-            let mut shared = state().lock();
-            if shared.active_session != Some(session) {
-                return;
-            }
-            shared.active_session = None;
-            shared.paused_target.take()
-        };
-
-        if let Some(target) = target {
-            let _ = async_runtime::spawn_blocking(move || {
-                let _ = resume_if_matching_target(&target);
-            });
-        }
-    }
-
-    fn finish_pause_attempt(session: PauseSession, target: Option<String>) {
-        let target_to_resume = {
-            let mut shared = state().lock();
-
-            if shared.active_session != Some(session) {
-                target
-            } else {
-                match target {
-                    Some(target) => {
-                        shared.paused_target = Some(target);
-                        None
-                    }
-                    None => {
-                        shared.active_session = None;
-                        None
-                    }
-                }
-            }
-        };
-
-        if let Some(target) = target_to_resume {
-            let _ = resume_if_matching_target(&target);
+        if let Some(session) = session {
+            COORD.resume_if_paused_by_us(session);
         }
     }
 
@@ -431,7 +405,7 @@ mod imp {
         }
     }
 
-    fn pause_active_now_playing() -> Option<String> {
+    fn pause_now_playing() -> Option<String> {
         with_current_session(|session| {
             let playback = session.GetPlaybackInfo().ok()?.PlaybackStatus().ok()?;
             if playback != GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
@@ -447,24 +421,13 @@ mod imp {
         })
     }
 
-    fn resume_if_matching_target(expected_app_id: &str) -> bool {
+    fn resume_target(expected_app_id: &String, _should_cancel: CancelFn<'_>) -> bool {
         with_current_session(|session| {
             let app_id = match session.SourceAppUserModelId() {
                 Ok(value) => value.to_string_lossy(),
                 Err(_) => return Some(false),
             };
-            if app_id != expected_app_id {
-                return Some(false);
-            }
-
-            let playback = match session
-                .GetPlaybackInfo()
-                .and_then(|info| info.PlaybackStatus())
-            {
-                Ok(status) => status,
-                Err(_) => return Some(false),
-            };
-            if playback == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing {
+            if app_id != *expected_app_id {
                 return Some(false);
             }
 

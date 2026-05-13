@@ -6,6 +6,7 @@ import {
   useMemo,
   useCallback,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -28,13 +29,12 @@ import {
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
-import { useModelCatalog } from "./models-queries";
+import { modelKeys, useModelCatalog, useModelStatuses } from "./models-queries";
 import type {
   TranscriptionMode,
   TextSizeMode,
   ThemeMode,
   StoredSettings,
-  ModelStatus,
   DownloadEvent,
   LlmProvider,
   RecordingPrunePolicy,
@@ -45,6 +45,12 @@ import type {
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
 type ActiveTab = "general" | "models" | "about" | "account" | "app";
+type ShortcutOverrides = Partial<
+  Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
+>;
+type SaveSettingsOverrides = ShortcutOverrides & {
+  localModel?: string;
+};
 
 interface UseSettingsFormOptions {
   isOpen: boolean;
@@ -75,9 +81,6 @@ export function useSettingsForm({
   const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
   const [language, setLanguage] = useState("en");
   const [appLocale, setAppLocale] = useState<AppLocaleSetting>("system");
-  const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>(
-    {},
-  );
   const [downloadState, setDownloadState] = useState<
     Record<string, DownloadEvent>
   >({});
@@ -118,12 +121,29 @@ export function useSettingsForm({
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
+  const suppressAutosaveAfterHydrationRef = useRef(false);
+  const isSavingRef = useRef(false);
+  const settingsSaveRef = useRef(Promise.resolve());
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const downloadResetTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(
+    new Set(),
+  );
+  const queryClient = useQueryClient();
   const settingsQuery = useSettings(undefined, isOpen);
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
+  const modelKeysForStatus = useMemo(
+    () => modelCatalog.map((model) => model.key),
+    [modelCatalog],
+  );
+  const modelStatusesQuery = useModelStatuses(
+    modelKeysForStatus,
+    isOpen && modelKeysForStatus.length > 0,
+  );
+  const modelStatus = modelStatusesQuery.statusByModel;
   const appInfo = appInfoQuery.data ?? null;
   const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
   const loading =
@@ -278,23 +298,126 @@ export function useSettingsForm({
   );
   const aiFeaturesReady = llmEnabled && llmConfigReady;
 
-  const finalizeCapture = useCallback(() => {
-    invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+  const buildSettingsArgs = useCallback(
+    (overrides: SaveSettingsOverrides = {}) => ({
+      smartShortcut: overrides.smartShortcut ?? smartShortcut,
+      smartEnabled,
+      holdShortcut: overrides.holdShortcut ?? holdShortcut,
+      holdEnabled,
+      toggleShortcut: overrides.toggleShortcut ?? toggleShortcut,
+      toggleEnabled,
+      transcriptionMode,
+      localModel: overrides.localModel ?? localModel,
+      microphoneDevice,
+      language,
+      appLocale,
+      themeMode,
+
+      llmEnabled: aiFeaturesReady,
+      cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
+      llmProvider,
+      llmEndpoint,
+      llmApiKey,
+      llmModel,
+      editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
+      mediaControlEnabled,
+      autoUpdateEnabled,
+      autoLaunchEnabled,
+      recordingPrunePolicy,
+      analyticsEnabled,
+    }),
+    [
+      smartShortcut,
+      smartEnabled,
+      holdShortcut,
+      holdEnabled,
+      toggleShortcut,
+      toggleEnabled,
+      transcriptionMode,
+      localModel,
+      microphoneDevice,
+      language,
+      appLocale,
+      themeMode,
+      aiFeaturesReady,
+      cleanupEnabled,
+      llmProvider,
+      llmEndpoint,
+      llmApiKey,
+      llmModel,
+      editModeEnabled,
+      mediaControlEnabled,
+      autoUpdateEnabled,
+      autoLaunchEnabled,
+      recordingPrunePolicy,
+      analyticsEnabled,
+    ],
+  );
+
+  const saveSettingsNow = useCallback(
+    (overrides?: SaveSettingsOverrides) => {
+      const args = buildSettingsArgs(overrides);
+      if (overrides?.localModel !== undefined && !args.localModel) {
+        return Promise.resolve();
+      }
+      const save = settingsSaveRef.current
+        .catch(() => {})
+        .then(async () => {
+          isSavingRef.current = true;
+          try {
+            await invoke("update_settings", { args });
+            setError(null);
+          } catch (err) {
+            console.error(err);
+            setError(String(err));
+          } finally {
+            isSavingRef.current = false;
+          }
+        });
+
+      settingsSaveRef.current = save;
+      return save;
+    },
+    [buildSettingsArgs],
+  );
+
+  const saveSettingsNowRef = useRef(saveSettingsNow);
+  saveSettingsNowRef.current = saveSettingsNow;
+
+  const clearPendingSettingsSave = useCallback(() => {
+    if (saveTimeoutRef.current === null) return;
+    clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = null;
+  }, []);
+
+  const flushPendingSettingsSave = useCallback(() => {
+    if (saveTimeoutRef.current === null) return;
+    clearPendingSettingsSave();
+    void saveSettingsNowRef.current();
+  }, [clearPendingSettingsSave]);
+
+  const finalizeCapture = useCallback(async () => {
+    flushPendingSettingsSave();
     captureActiveRef.current = null;
     setCaptureActive(null);
-  }, []);
+    await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+  }, [flushPendingSettingsSave]);
 
   const { resetCaptureState } = useShortcutCapture({
     active: captureActive !== null,
     onCancel: finalizeCapture,
     onPreviewChange: setCapturePreview,
     onShortcutCaptured: (combo) => {
+      clearPendingSettingsSave();
       if (captureActive === "smart") {
         setSmartShortcut(combo);
+        void saveSettingsNow({ smartShortcut: combo });
       } else if (captureActive === "hold") {
         setHoldShortcut(combo);
+        void saveSettingsNow({ holdShortcut: combo });
       } else if (captureActive === "toggle") {
         setToggleShortcut(combo);
+        void saveSettingsNow({ toggleShortcut: combo });
       }
       setError(null);
     },
@@ -322,29 +445,47 @@ export function useSettingsForm({
   }, [isOpen, initialTab]);
 
   useEffect(() => {
-    if (!isOpen) {
-      didHydrateRef.current = false;
-      if (captureActive) {
-        finalizeCapture();
-        resetCaptureState();
-      }
+    if (isOpen) return;
+    flushPendingSettingsSave();
+    didHydrateRef.current = false;
+    suppressAutosaveAfterHydrationRef.current = false;
+    if (captureActive) {
+      finalizeCapture();
+      resetCaptureState();
     }
-  }, [captureActive, finalizeCapture, isOpen, resetCaptureState]);
+  }, [
+    captureActive,
+    finalizeCapture,
+    flushPendingSettingsSave,
+    isOpen,
+    resetCaptureState,
+  ]);
 
   useEffect(() => {
     return () => {
+      flushPendingSettingsSave();
       invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+      for (const timeout of downloadResetTimeoutsRef.current) {
+        clearTimeout(timeout);
+      }
+      downloadResetTimeoutsRef.current.clear();
     };
-  }, []);
+  }, [flushPendingSettingsSave]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlisten: (() => void) | undefined;
     listen("open_whats_new", () => {
       setWhatsNewOpen(true);
     }).then((fn) => {
-      unlisten = fn;
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
     });
     return () => {
+      cancelled = true;
       unlisten?.();
     };
   }, []);
@@ -454,39 +595,24 @@ export function useSettingsForm({
     hydrateFromSettings(settingsQuery.data);
   }, [hydrateFromSettings, isOpen, settingsQuery.data, settingsQuery.error]);
 
-  const refreshModelStatus = useCallback((modelKey: string) => {
-    invoke<ModelStatus>("check_model_status", { model: modelKey })
-      .then((status) => {
-        setModelStatus((prev) => ({ ...prev, [modelKey]: status }));
-      })
-      .catch((err) => {
-        console.error(err);
-        setModelStatus((prev) => ({
-          ...prev,
-          [modelKey]: {
-            key: modelKey,
-            installed: false,
-            bytes_on_disk: 0,
-            missing_files: [],
-            directory: "",
-          },
-        }));
+  const invalidateModelStatus = useCallback(
+    (modelKey: string) => {
+      void queryClient.invalidateQueries({
+        queryKey: modelKeys.status(modelKey),
       });
-  }, []);
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     if (!isOpen || modelCatalog.length === 0) return;
-
-    for (const model of modelCatalog) {
-      void refreshModelStatus(model.key);
-    }
 
     setLocalModel((current) =>
       modelCatalog.some((model) => model.key === current)
         ? current
         : (modelCatalog[0]?.key ?? ""),
     );
-  }, [isOpen, modelCatalog, refreshModelStatus]);
+  }, [isOpen, modelCatalog]);
 
   useModelDownloadEvents({
     enabled: isOpen,
@@ -512,7 +638,7 @@ export function useSettingsForm({
           total: prev[model]?.total ?? 0,
         },
       }));
-      refreshModelStatus(model);
+      invalidateModelStatus(model);
     },
     onError: ({ model, error }) => {
       if (error.toLowerCase().includes("cancelled")) return;
@@ -546,92 +672,27 @@ export function useSettingsForm({
     return () => window.removeEventListener("keydown", handleEscape);
   }, [finalizeCapture, isOpen, onClose, resetCaptureState]);
 
-  const isSavingRef = useRef(false);
-
   useEffect(() => {
     if (loading) return;
     if (!didHydrateRef.current) {
       didHydrateRef.current = true;
+      suppressAutosaveAfterHydrationRef.current = true;
       return;
     }
 
-    const saveSettings = async () => {
-      if (!localModel) return;
+    if (suppressAutosaveAfterHydrationRef.current) {
+      suppressAutosaveAfterHydrationRef.current = false;
+      return;
+    }
 
-      isSavingRef.current = true;
-      try {
-        await invoke("update_settings", {
-          args: {
-            smartShortcut,
-            smartEnabled,
-            holdShortcut,
-            holdEnabled,
-            toggleShortcut,
-            toggleEnabled,
-            transcriptionMode,
-            localModel,
-            microphoneDevice,
-            language,
-            appLocale,
-            themeMode,
-
-            llmEnabled: aiFeaturesReady,
-            cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
-            llmProvider,
-            llmEndpoint,
-            llmApiKey,
-            llmModel,
-            editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
-            mediaControlEnabled,
-            autoUpdateEnabled,
-            autoLaunchEnabled,
-            recordingPrunePolicy,
-            analyticsEnabled,
-          },
-        });
-        setError(null);
-      } catch (err) {
-        console.error(err);
-        setError(String(err));
-      } finally {
-        isSavingRef.current = false;
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      saveSettings();
+    if (saveTimeoutRef.current !== null) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveTimeoutRef.current = null;
+      void saveSettingsNow();
     }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [
-    loading,
-    smartShortcut,
-    smartEnabled,
-    holdShortcut,
-    holdEnabled,
-    toggleShortcut,
-    toggleEnabled,
-    transcriptionMode,
-    localModel,
-    microphoneDevice,
-    language,
-    appLocale,
-    themeMode,
-
-    llmEnabled,
-    cleanupEnabled,
-    llmProvider,
-    llmEndpoint,
-    llmApiKey,
-    llmModel,
-    editModeEnabled,
-    mediaControlEnabled,
-    autoUpdateEnabled,
-    autoLaunchEnabled,
-    recordingPrunePolicy,
-    analyticsEnabled,
-    aiFeaturesReady,
-  ]);
+  }, [loading, saveSettingsNow]);
 
   const handleOpenDataDir = useCallback(async () => {
     if (!appInfo?.data_dir_path) return;
@@ -663,6 +724,15 @@ export function useSettingsForm({
       });
     },
     [captureActive, finalizeCapture, resetCaptureState],
+  );
+
+  const handleLocalModelChange = useCallback(
+    (modelKey: string) => {
+      clearPendingSettingsSave();
+      setLocalModel(modelKey);
+      void saveSettingsNow({ localModel: modelKey });
+    },
+    [clearPendingSettingsSave, saveSettingsNow],
   );
 
   const handleSignOut = useCallback(async () => {
@@ -708,7 +778,7 @@ export function useSettingsForm({
       }));
       try {
         await invoke("download_model", { model: modelKey });
-        refreshModelStatus(modelKey);
+        invalidateModelStatus(modelKey);
       } catch (err) {
         const errorMsg = String(err);
         if (errorMsg.toLowerCase().includes("cancelled")) return;
@@ -725,7 +795,7 @@ export function useSettingsForm({
         }));
       }
     },
-    [refreshModelStatus],
+    [invalidateModelStatus],
   );
 
   const handleDelete = useCallback(
@@ -742,11 +812,11 @@ export function useSettingsForm({
             (m) => m.key !== modelKey && modelStatus[m.key]?.installed,
           );
           if (otherInstalledModel) {
-            setLocalModel(otherInstalledModel.key);
+            handleLocalModelChange(otherInstalledModel.key);
           }
         }
 
-        refreshModelStatus(modelKey);
+        invalidateModelStatus(modelKey);
       } catch (err) {
         console.error(err);
         setDownloadState((prev) => ({
@@ -761,7 +831,13 @@ export function useSettingsForm({
         }));
       }
     },
-    [localModel, modelCatalog, modelStatus, refreshModelStatus],
+    [
+      handleLocalModelChange,
+      invalidateModelStatus,
+      localModel,
+      modelCatalog,
+      modelStatus,
+    ],
   );
 
   const handleCancelDownload = useCallback(async (modelKey: string) => {
@@ -776,7 +852,8 @@ export function useSettingsForm({
           total: 0,
         },
       }));
-      setTimeout(() => {
+      const resetTimeout = setTimeout(() => {
+        downloadResetTimeoutsRef.current.delete(resetTimeout);
         setDownloadState((prev) => {
           if (prev[modelKey]?.status === "cancelled") {
             return {
@@ -792,6 +869,7 @@ export function useSettingsForm({
           return prev;
         });
       }, 1500);
+      downloadResetTimeoutsRef.current.add(resetTimeout);
     } catch (err) {
       console.error("Failed to cancel download:", err);
     }
@@ -828,7 +906,7 @@ export function useSettingsForm({
     transcriptionMode,
     setTranscriptionMode,
     localModel,
-    setLocalModel,
+    setLocalModel: handleLocalModelChange,
     microphoneDevice,
     setMicrophoneDevice,
     language: displayedLanguage,
