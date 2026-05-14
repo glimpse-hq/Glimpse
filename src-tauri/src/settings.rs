@@ -386,6 +386,15 @@ fn default_recording_prune_policy() -> RecordingPrunePolicy {
     RecordingPrunePolicy::Never
 }
 
+pub fn canonicalize_recording_prune_policy(
+    policy: RecordingPrunePolicy,
+) -> RecordingPrunePolicy {
+    match policy {
+        RecordingPrunePolicy::ThreeMonths => RecordingPrunePolicy::Year,
+        policy => policy,
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum ThemeMode {
@@ -701,6 +710,13 @@ impl SettingsStore {
 
         if matches!(settings.transcription_mode, TranscriptionMode::Cloud) {
             settings.transcription_mode = TranscriptionMode::Local;
+            should_persist = true;
+        }
+
+        let canonical_prune_policy =
+            canonicalize_recording_prune_policy(settings.recording_prune_policy);
+        if settings.recording_prune_policy != canonical_prune_policy {
+            settings.recording_prune_policy = canonical_prune_policy;
             should_persist = true;
         }
 

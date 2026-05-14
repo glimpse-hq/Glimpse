@@ -667,6 +667,8 @@ impl AppState {
         if matches!(next.transcription_mode, TranscriptionMode::Cloud) {
             next.transcription_mode = TranscriptionMode::Local;
         }
+        next.recording_prune_policy =
+            settings::canonicalize_recording_prune_policy(next.recording_prune_policy);
 
         self.settings_store.save(&next)?;
         *self.settings.lock() = next.clone();

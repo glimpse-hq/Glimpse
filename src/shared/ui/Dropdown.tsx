@@ -30,6 +30,9 @@ interface DropdownProps<T extends string | number> {
     className?: string;
     buttonClassName?: string;
     menuClassName?: string;
+    valueClassName?: string;
+    optionClassName?: string;
+    optionLabelClassName?: string;
     onOpen?: () => void;
     disabled?: boolean;
 }
@@ -46,6 +49,9 @@ export function Dropdown<T extends string | number>({
     className = "",
     buttonClassName,
     menuClassName = "",
+    valueClassName = "",
+    optionClassName = "",
+    optionLabelClassName = "ui-text-body-sm-strong",
     onOpen,
     disabled = false,
 }: DropdownProps<T>) {
@@ -176,7 +182,7 @@ export function Dropdown<T extends string | number>({
                 <div className="flex items-center gap-2 min-w-0">
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
                     {label && <span className="text-content-muted shrink-0">{label}</span>}
-                    <span className={`truncate ${selectedOption ? "text-content-primary" : "text-content-muted"}`}>
+                    <span className={`truncate ${valueClassName} ${selectedOption ? "text-content-primary" : "text-content-muted"}`}>
                         {selectedOption ? selectedOption.label : resolvedPlaceholder}
                     </span>
                 </div>
@@ -241,13 +247,13 @@ export function Dropdown<T extends string | number>({
                                                 onChange(option.value);
                                                 closeDropdown();
                                             }}
-                                            className={`w-full text-left px-3 py-2 transition-colors flex items-center justify-between group ${value === option.value
+                                            className={`w-full text-left px-3 py-2 transition-colors flex items-center justify-between group ${optionClassName} ${value === option.value
                                                 ? "bg-[var(--color-interactive-10)] text-[var(--color-interactive)]"
                                                 : "text-content-secondary hover:bg-surface-elevated hover:text-content-primary"
                                                 }`}
                                         >
                                             <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                                                <span className="ui-text-body-sm-strong flex min-w-0 items-center gap-2">
+                                                <span className={`${optionLabelClassName} flex min-w-0 items-center gap-2`}>
                                                     {option.icon && <span aria-hidden="true" className="shrink-0">{option.icon}</span>}
                                                     <span className="truncate">{option.label}</span>
                                                 </span>

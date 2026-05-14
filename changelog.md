@@ -1,4 +1,9 @@
 0.8.5
+### Improvements
+- UI refinements
+---
+
+0.8.5
 
 ### Improvements
 - Keybinds should feel much more reliable, especially with repeated presses and custom shortcuts.
