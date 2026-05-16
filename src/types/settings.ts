@@ -45,6 +45,18 @@ export type Personality = {
     instructions: string[];
 };
 
+export type ShortcutBinding = {
+    shortcut: string;
+    temporary: boolean;
+    cleanup_enabled: boolean;
+};
+
+export type ShortcutBindings = {
+    smart: ShortcutBinding[];
+    hold: ShortcutBinding[];
+    toggle: ShortcutBinding[];
+};
+
 export type StoredSettings = {
     onboarding_completed: boolean;
     smart_shortcut: string;
@@ -53,6 +65,7 @@ export type StoredSettings = {
     hold_enabled: boolean;
     toggle_shortcut: string;
     toggle_enabled: boolean;
+    shortcut_bindings: ShortcutBindings;
     transcription_mode: TranscriptionMode;
     local_model: string;
     microphone_device: string | null;

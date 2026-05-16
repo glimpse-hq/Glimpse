@@ -669,6 +669,7 @@ impl AppState {
         if matches!(next.transcription_mode, TranscriptionMode::Cloud) {
             next.transcription_mode = TranscriptionMode::Local;
         }
+        settings::sync_legacy_shortcuts_from_bindings(&mut next);
         next.recording_prune_policy =
             settings::canonicalize_recording_prune_policy(next.recording_prune_policy);
 
@@ -1271,6 +1272,7 @@ pub(crate) fn persist_recording_async(
     app: AppHandle<AppRuntime>,
     recording: CompletedRecording,
     settings: settings::UserSettings,
+    temporary: bool,
 ) {
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
@@ -1289,7 +1291,13 @@ pub(crate) fn persist_recording_async(
         let task =
             async_runtime::spawn_blocking(move || recorder::persist_recording(base_dir, recording));
         match task.await {
-            Ok(Ok(saved)) => emit_complete(&app, saved, recording_for_transcription, settings),
+            Ok(Ok(saved)) => emit_complete(
+                &app,
+                saved,
+                recording_for_transcription,
+                settings,
+                temporary,
+            ),
             Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
             Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
         }
@@ -1301,6 +1309,7 @@ fn emit_complete(
     saved: RecordingSaved,
     recording: CompletedRecording,
     settings: settings::UserSettings,
+    temporary: bool,
 ) {
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
@@ -1328,7 +1337,7 @@ fn emit_complete(
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording, settings);
+    transcribe::queue_transcription(app, saved, recording, settings, temporary);
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {

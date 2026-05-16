@@ -1,4 +1,8 @@
 0.8.6
+
+### Features
+- Keybinds can now have temporary mode and cleanup set individually. You can find more in the General settings tab's Shortcuts info button.
+- Auto Dictionary: Corrected words are now automatically detected, with prompts to add them to your dictionary.
 ### Improvements
 - UI refinements
 ---

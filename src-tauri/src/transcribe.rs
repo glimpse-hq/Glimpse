@@ -50,6 +50,7 @@ struct CompletionInput {
     llm_cleaned: bool,
     metadata: storage::TranscriptionMetadata,
     mode: &'static str,
+    temporary: bool,
 }
 
 pub(crate) fn queue_transcription(
@@ -57,6 +58,7 @@ pub(crate) fn queue_transcription(
     saved: RecordingSaved,
     recording: CompletedRecording,
     settings: UserSettings,
+    temporary: bool,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -239,6 +241,7 @@ pub(crate) fn queue_transcription(
                         llm_cleaned: processed.llm_cleaned,
                         metadata,
                         mode: "local",
+                        temporary,
                     },
                 );
 
@@ -633,6 +636,7 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
         llm_cleaned,
         metadata,
         mode,
+        temporary,
     } = input;
 
     analytics::track_transcription_completed(app, mode, Some(&metadata.speech_model), llm_cleaned);
@@ -648,6 +652,11 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
     );
 
     app.state::<AppState>().pill().finish_processing(app);
+
+    if temporary {
+        let _ = std::fs::remove_file(&audio_path);
+        return;
+    }
 
     if llm_cleaned {
         let _ = app
@@ -1225,6 +1234,7 @@ pub(crate) fn finalize_streaming_transcription(
     duration_seconds: f32,
     audio_path: PathBuf,
     settings: UserSettings,
+    temporary: bool,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -1309,6 +1319,7 @@ pub(crate) fn finalize_streaming_transcription(
                 llm_cleaned: processed.llm_cleaned,
                 metadata,
                 mode: "local_streaming",
+                temporary,
             },
         );
         app_handle.state::<AppState>().set_pending_path(None);

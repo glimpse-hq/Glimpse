@@ -4,7 +4,7 @@ use tauri::{AppHandle, Emitter};
 use super::hotkeys;
 use crate::settings::{
     canonicalize_app_locale, canonicalize_app_locale_or_default, LlmProvider, RecordingPrunePolicy,
-    ThemeMode, TranscriptionMode, UserSettings,
+    ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode, UserSettings,
 };
 
 use crate::{
@@ -21,6 +21,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub hold_enabled: bool,
     pub toggle_shortcut: String,
     pub toggle_enabled: bool,
+    pub shortcut_bindings: ShortcutBindings,
     pub transcription_mode: TranscriptionMode,
     pub local_model: String,
     pub microphone_device: Option<String>,
@@ -49,47 +50,87 @@ fn canonicalize_shortcut_for_storage(shortcut: &str) -> Result<String, String> {
     Ok(hotkey.to_string())
 }
 
+fn canonicalize_shortcut_binding(binding: &ShortcutBinding) -> Result<ShortcutBinding, String> {
+    Ok(ShortcutBinding {
+        shortcut: canonicalize_shortcut_for_storage(&binding.shortcut)?,
+        temporary: binding.temporary,
+        cleanup_enabled: binding.cleanup_enabled,
+    })
+}
+
+fn canonicalize_shortcut_bindings(args: &UpdateSettingsArgs) -> Result<ShortcutBindings, String> {
+    let normalize_mode = |bindings: &[ShortcutBinding]| -> Result<Vec<ShortcutBinding>, String> {
+        let mut normalized = Vec::new();
+        for binding in bindings.iter().take(3) {
+            if binding.shortcut.trim().is_empty() {
+                continue;
+            }
+            normalized.push(canonicalize_shortcut_binding(binding)?);
+        }
+        Ok(normalized)
+    };
+
+    Ok(ShortcutBindings {
+        smart: normalize_mode(&args.shortcut_bindings.smart)?,
+        hold: normalize_mode(&args.shortcut_bindings.hold)?,
+        toggle: normalize_mode(&args.shortcut_bindings.toggle)?,
+    })
+}
+
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
-    if args.smart_enabled && args.smart_shortcut.trim().is_empty() {
-        return Err("Smart shortcut cannot be empty when enabled".into());
-    }
-
-    if args.hold_enabled && args.hold_shortcut.trim().is_empty() {
-        return Err("Hold shortcut cannot be empty when enabled".into());
-    }
-
-    if args.toggle_enabled && args.toggle_shortcut.trim().is_empty() {
-        return Err("Toggle shortcut cannot be empty when enabled".into());
-    }
-
     if !args.smart_enabled && !args.hold_enabled && !args.toggle_enabled {
         return Err("At least one recording mode must be enabled".into());
     }
 
     let mut enabled_shortcuts: Vec<(&str, hotkeys::Hotkey)> = vec![];
     if args.smart_enabled {
-        let raw = args.smart_shortcut.trim();
-        let normalized = hotkeys::parse_shortcut(raw)
-            .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-        hotkeys::validate_recording_shortcut(&normalized)
-            .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Smart", normalized));
+        for binding in &args.shortcut_bindings.smart {
+            let raw = binding.shortcut.trim();
+            if raw.is_empty() {
+                continue;
+            }
+            let normalized = hotkeys::parse_shortcut(raw)
+                .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
+            hotkeys::validate_recording_shortcut(&normalized)
+                .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
+            enabled_shortcuts.push(("Smart", normalized));
+        }
     }
     if args.hold_enabled {
-        let raw = args.hold_shortcut.trim();
-        let normalized = hotkeys::parse_shortcut(raw)
-            .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-        hotkeys::validate_recording_shortcut(&normalized)
-            .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Hold", normalized));
+        for binding in &args.shortcut_bindings.hold {
+            let raw = binding.shortcut.trim();
+            if raw.is_empty() {
+                continue;
+            }
+            let normalized = hotkeys::parse_shortcut(raw)
+                .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
+            hotkeys::validate_recording_shortcut(&normalized)
+                .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
+            enabled_shortcuts.push(("Hold", normalized));
+        }
     }
     if args.toggle_enabled {
-        let raw = args.toggle_shortcut.trim();
-        let normalized = hotkeys::parse_shortcut(raw)
-            .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-        hotkeys::validate_recording_shortcut(&normalized)
-            .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-        enabled_shortcuts.push(("Toggle", normalized));
+        for binding in &args.shortcut_bindings.toggle {
+            let raw = binding.shortcut.trim();
+            if raw.is_empty() {
+                continue;
+            }
+            let normalized = hotkeys::parse_shortcut(raw)
+                .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
+            hotkeys::validate_recording_shortcut(&normalized)
+                .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
+            enabled_shortcuts.push(("Toggle", normalized));
+        }
+    }
+
+    if args.smart_enabled && !enabled_shortcuts.iter().any(|(name, _)| *name == "Smart") {
+        return Err("Smart shortcut cannot be empty when enabled".into());
+    }
+    if args.hold_enabled && !enabled_shortcuts.iter().any(|(name, _)| *name == "Hold") {
+        return Err("Hold shortcut cannot be empty when enabled".into());
+    }
+    if args.toggle_enabled && !enabled_shortcuts.iter().any(|(name, _)| *name == "Toggle") {
+        return Err("Toggle shortcut cannot be empty when enabled".into());
     }
 
     for i in 0..enabled_shortcuts.len() {
@@ -202,26 +243,31 @@ pub(crate) fn update_settings(
     state: &AppState,
 ) -> Result<UserSettings, String> {
     validate_update_settings_args(&args)?;
+    let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
     let mut next = state.current_settings();
     let prev = next.clone();
-    next.smart_shortcut = if args.smart_enabled {
-        canonicalize_shortcut_for_storage(&args.smart_shortcut)?
-    } else {
-        args.smart_shortcut
-    };
+    next.shortcut_bindings = shortcut_bindings;
+    next.smart_shortcut = next
+        .shortcut_bindings
+        .smart
+        .first()
+        .map(|binding| binding.shortcut.clone())
+        .unwrap_or(args.smart_shortcut);
     next.smart_enabled = args.smart_enabled;
-    next.hold_shortcut = if args.hold_enabled {
-        canonicalize_shortcut_for_storage(&args.hold_shortcut)?
-    } else {
-        args.hold_shortcut
-    };
+    next.hold_shortcut = next
+        .shortcut_bindings
+        .hold
+        .first()
+        .map(|binding| binding.shortcut.clone())
+        .unwrap_or(args.hold_shortcut);
     next.hold_enabled = args.hold_enabled;
-    next.toggle_shortcut = if args.toggle_enabled {
-        canonicalize_shortcut_for_storage(&args.toggle_shortcut)?
-    } else {
-        args.toggle_shortcut
-    };
+    next.toggle_shortcut = next
+        .shortcut_bindings
+        .toggle
+        .first()
+        .map(|binding| binding.shortcut.clone())
+        .unwrap_or(args.toggle_shortcut);
     next.toggle_enabled = args.toggle_enabled;
     next.transcription_mode = args.transcription_mode;
     next.local_model = args.local_model;
@@ -299,7 +345,7 @@ pub(crate) fn update_settings(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::settings::default_local_model;
+    use crate::settings::{default_local_model, default_shortcut_bindings};
 
     fn base_args() -> UpdateSettingsArgs {
         UpdateSettingsArgs {
@@ -309,6 +355,7 @@ mod tests {
             hold_enabled: false,
             toggle_shortcut: "Control+Alt+Space".to_string(),
             toggle_enabled: false,
+            shortcut_bindings: default_shortcut_bindings(),
             transcription_mode: TranscriptionMode::Local,
             local_model: default_local_model(),
             microphone_device: None,
@@ -329,6 +376,30 @@ mod tests {
             auto_launch_enabled: false,
             recording_prune_policy: RecordingPrunePolicy::Never,
             analytics_enabled: true,
+        }
+    }
+
+    fn set_primary_shortcut(args: &mut UpdateSettingsArgs, mode: &str, shortcut: &str) {
+        let binding = ShortcutBinding {
+            shortcut: shortcut.to_string(),
+            temporary: false,
+            cleanup_enabled: false,
+        };
+
+        match mode {
+            "Smart" => {
+                args.smart_shortcut = shortcut.to_string();
+                args.shortcut_bindings.smart = vec![binding];
+            }
+            "Hold" => {
+                args.hold_shortcut = shortcut.to_string();
+                args.shortcut_bindings.hold = vec![binding];
+            }
+            "Toggle" => {
+                args.toggle_shortcut = shortcut.to_string();
+                args.shortcut_bindings.toggle = vec![binding];
+            }
+            _ => unreachable!("unknown shortcut mode"),
         }
     }
 
@@ -359,7 +430,7 @@ mod tests {
     fn rejects_shortcut_collisions_after_normalization() {
         let mut args = base_args();
         args.hold_enabled = true;
-        args.hold_shortcut = "Ctrl+Space".to_string();
+        set_primary_shortcut(&mut args, "Hold", "Ctrl+Space");
 
         let err = validate_update_settings_args(&args).unwrap_err();
 
@@ -369,7 +440,7 @@ mod tests {
     #[test]
     fn accepts_modifier_only_recording_shortcut() {
         let mut args = base_args();
-        args.smart_shortcut = "Ctrl".to_string();
+        set_primary_shortcut(&mut args, "Smart", "Ctrl");
 
         validate_update_settings_args(&args).unwrap();
     }
@@ -377,7 +448,7 @@ mod tests {
     #[test]
     fn rejects_capslock_recording_shortcut() {
         let mut args = base_args();
-        args.smart_shortcut = "CapsLock".to_string();
+        set_primary_shortcut(&mut args, "Smart", "CapsLock");
 
         let err = validate_update_settings_args(&args).unwrap_err();
 

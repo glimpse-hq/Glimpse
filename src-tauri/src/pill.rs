@@ -135,6 +135,7 @@ pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
     shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
+    recording_options: Mutex<hotkeys::ShortcutOptions>,
     recording_settings: Mutex<Option<UserSettings>>,
     smart_press_time: Mutex<Option<DateTime<Local>>>,
     hold_key_down: Mutex<bool>,
@@ -150,6 +151,7 @@ impl PillController {
             status: Mutex::new(PillStatus::Idle),
             recording_mode: Mutex::new(None),
             shortcut_origin: Mutex::new(None),
+            recording_options: Mutex::new(hotkeys::ShortcutOptions::default()),
             recording_settings: Mutex::new(None),
             smart_press_time: Mutex::new(None),
             hold_key_down: Mutex::new(false),
@@ -338,6 +340,7 @@ impl PillController {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
         *self.shortcut_origin.lock() = None;
+        *self.recording_options.lock() = hotkeys::ShortcutOptions::default();
         *self.recording_settings.lock() = None;
         *self.smart_press_time.lock() = None;
         // Stop-processing cleanup should not invent a release event.
@@ -371,13 +374,19 @@ impl PillController {
         *self.recording_mode.lock()
     }
 
-    fn try_start_recording(&self, mode: RecordingMode, origin: hotkeys::ShortcutAction) -> bool {
+    fn try_start_recording(
+        &self,
+        mode: RecordingMode,
+        origin: hotkeys::ShortcutAction,
+        options: hotkeys::ShortcutOptions,
+    ) -> bool {
         let mut current_mode = self.recording_mode.lock();
         if current_mode.is_some() {
             return false;
         }
         *current_mode = Some(mode);
         *self.shortcut_origin.lock() = Some(origin);
+        *self.recording_options.lock() = options;
         if mode == RecordingMode::Hold {
             self.set_hold_key_down(true);
         }
@@ -406,6 +415,7 @@ impl PillController {
         if self.status() == PillStatus::Idle {
             let _ = self.recording_mode.lock().take();
             let _ = self.shortcut_origin.lock().take();
+            *self.recording_options.lock() = hotkeys::ShortcutOptions::default();
             self.set_hold_key_down(false);
             let _ = self.smart_press_time.lock().take();
         }
@@ -432,17 +442,19 @@ impl PillController {
         app: &AppHandle<AppRuntime>,
         mode: RecordingMode,
         origin: hotkeys::ShortcutAction,
+        options: hotkeys::ShortcutOptions,
     ) -> bool {
         if !check_mic_permission(app) {
             return false;
         }
 
-        if !self.try_start_recording(mode, origin) {
+        if !self.try_start_recording(mode, origin, options) {
             return false;
         }
 
         let state = app.state::<AppState>();
-        let settings = state.current_settings();
+        let mut settings = state.current_settings();
+        settings.cleanup_enabled = options.cleanup_enabled;
         *self.recording_settings.lock() = Some(settings.clone());
 
         self.preload_local_model_if_needed(app, &settings);
@@ -482,12 +494,13 @@ impl PillController {
         &self,
         app: &AppHandle<AppRuntime>,
         origin: hotkeys::ShortcutAction,
+        options: hotkeys::ShortcutOptions,
     ) -> bool {
         if !self.prepare_shortcut_press(app, origin) {
             return false;
         }
 
-        self.start_recording(app, RecordingMode::Hold, origin)
+        self.start_recording(app, RecordingMode::Hold, origin, options)
     }
 
     fn handle_hold_release(&self, app: &AppHandle<AppRuntime>) {
@@ -502,7 +515,7 @@ impl PillController {
         self.stop_and_process(app);
     }
 
-    fn handle_toggle_press(&self, app: &AppHandle<AppRuntime>) {
+    fn handle_toggle_press(&self, app: &AppHandle<AppRuntime>, options: hotkeys::ShortcutOptions) {
         let origin = hotkeys::ShortcutAction::Toggle;
         if !self.prepare_shortcut_press(app, origin) {
             return;
@@ -515,11 +528,11 @@ impl PillController {
         if self.is_recording() {
             self.stop_and_process(app);
         } else {
-            self.start_recording(app, RecordingMode::Toggle, origin);
+            self.start_recording(app, RecordingMode::Toggle, origin, options);
         }
     }
 
-    fn handle_smart_press(&self, app: &AppHandle<AppRuntime>) {
+    fn handle_smart_press(&self, app: &AppHandle<AppRuntime>, options: hotkeys::ShortcutOptions) {
         let press_time = Local::now();
 
         let origin = hotkeys::ShortcutAction::Smart;
@@ -528,7 +541,7 @@ impl PillController {
         }
 
         if self.is_recording() && self.active_mode() == Some(RecordingMode::Toggle) {
-            self.handle_toggle_press(app);
+            self.handle_toggle_press(app, options);
             return;
         }
 
@@ -536,7 +549,7 @@ impl PillController {
             return;
         }
 
-        if self.handle_hold_press(app, origin) {
+        if self.handle_hold_press(app, origin, options) {
             *self.smart_press_time.lock() = Some(press_time);
         }
     }
@@ -567,6 +580,7 @@ impl PillController {
             .lock()
             .take()
             .unwrap_or_else(|| app.state::<AppState>().current_settings());
+        let recording_options = *self.recording_options.lock();
         self.capture_selected_text_if_enabled(app, &settings);
 
         let state = app.state::<AppState>();
@@ -632,6 +646,7 @@ impl PillController {
                             (duration_ms.max(0) as f32) / 1000.0,
                             saved.path,
                             settings_for_transcription,
+                            recording_options.temporary,
                         );
                     }
                     Ok(None) => {
@@ -681,6 +696,7 @@ impl PillController {
                             app_handle,
                             recording,
                             settings_for_transcription,
+                            recording_options.temporary,
                         );
                     }
                     Ok(None) => {
@@ -815,6 +831,7 @@ pub(crate) fn handle_registered_hotkey_event(
     app: &AppHandle<AppRuntime>,
     action: hotkeys::ShortcutAction,
     state: HotkeyState,
+    options: hotkeys::ShortcutOptions,
 ) {
     if shortcuts_paused(app) {
         return;
@@ -825,18 +842,18 @@ pub(crate) fn handle_registered_hotkey_event(
 
     match action {
         hotkeys::ShortcutAction::Smart => match state {
-            HotkeyState::Pressed => pill.handle_smart_press(app),
+            HotkeyState::Pressed => pill.handle_smart_press(app, options),
             HotkeyState::Released => pill.handle_smart_release(app),
         },
         hotkeys::ShortcutAction::Hold => match state {
             HotkeyState::Pressed => {
-                let _ = pill.handle_hold_press(app, action);
+                let _ = pill.handle_hold_press(app, action, options);
             }
             HotkeyState::Released => pill.handle_hold_release(app),
         },
         hotkeys::ShortcutAction::Toggle => {
             if state == HotkeyState::Pressed {
-                pill.handle_toggle_press(app);
+                pill.handle_toggle_press(app, options);
             }
         }
     }
@@ -855,7 +872,8 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     let mut add_binding = |label: &'static str,
                            enabled: bool,
                            raw_shortcut: &str,
-                           action: hotkeys::ShortcutAction| {
+                           action: hotkeys::ShortcutAction,
+                           options: hotkeys::ShortcutOptions| {
         if !enabled {
             return;
         }
@@ -884,27 +902,49 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
         }
 
         parsed_shortcuts.push((label, hotkey));
-        bindings.push(hotkeys::RegisteredHotkey { hotkey, action });
+        bindings.push(hotkeys::RegisteredHotkey {
+            hotkey,
+            action,
+            options,
+        });
     };
 
-    add_binding(
-        "Smart",
-        settings.smart_enabled,
-        &settings.smart_shortcut,
-        hotkeys::ShortcutAction::Smart,
-    );
-    add_binding(
-        "Hold",
-        settings.hold_enabled,
-        &settings.hold_shortcut,
-        hotkeys::ShortcutAction::Hold,
-    );
-    add_binding(
-        "Toggle",
-        settings.toggle_enabled,
-        &settings.toggle_shortcut,
-        hotkeys::ShortcutAction::Toggle,
-    );
+    for binding in &settings.shortcut_bindings.smart {
+        add_binding(
+            "Smart",
+            settings.smart_enabled,
+            &binding.shortcut,
+            hotkeys::ShortcutAction::Smart,
+            hotkeys::ShortcutOptions {
+                temporary: binding.temporary,
+                cleanup_enabled: binding.cleanup_enabled,
+            },
+        );
+    }
+    for binding in &settings.shortcut_bindings.hold {
+        add_binding(
+            "Hold",
+            settings.hold_enabled,
+            &binding.shortcut,
+            hotkeys::ShortcutAction::Hold,
+            hotkeys::ShortcutOptions {
+                temporary: binding.temporary,
+                cleanup_enabled: binding.cleanup_enabled,
+            },
+        );
+    }
+    for binding in &settings.shortcut_bindings.toggle {
+        add_binding(
+            "Toggle",
+            settings.toggle_enabled,
+            &binding.shortcut,
+            hotkeys::ShortcutAction::Toggle,
+            hotkeys::ShortcutOptions {
+                temporary: binding.temporary,
+                cleanup_enabled: binding.cleanup_enabled,
+            },
+        );
+    }
 
     state.hotkeys.replace_registrations(app, bindings)
 }

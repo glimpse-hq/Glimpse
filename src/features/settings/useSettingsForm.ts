@@ -39,6 +39,8 @@ import type {
   TextSizeMode,
   ThemeMode,
   StoredSettings,
+  ShortcutBinding,
+  ShortcutBindings,
   DownloadEvent,
   LlmProvider,
   RecordingPrunePolicy,
@@ -49,12 +51,60 @@ import type {
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
 type ActiveTab = "general" | "models" | "about" | "account" | "app";
+type ShortcutMode = "smart" | "hold" | "toggle";
+type CaptureTarget = { mode: ShortcutMode; index: number } | null;
 type ShortcutOverrides = Partial<
   Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
 >;
 type SaveSettingsOverrides = ShortcutOverrides & {
   localModel?: string;
+  shortcutBindings?: ShortcutBindings;
 };
+
+const defaultShortcutBindings = (): ShortcutBindings => ({
+  smart: [{ shortcut: "Control+Space", temporary: false, cleanup_enabled: false }],
+  hold: [{ shortcut: "Control+Shift+Space", temporary: false, cleanup_enabled: false }],
+  toggle: [{ shortcut: "Control+Alt+Space", temporary: false, cleanup_enabled: false }],
+});
+
+const bindingsFromSettings = (settings: StoredSettings): ShortcutBindings => ({
+  smart:
+    settings.shortcut_bindings?.smart?.length > 0
+      ? settings.shortcut_bindings.smart
+      : [
+          {
+            shortcut: settings.smart_shortcut,
+            temporary: false,
+            cleanup_enabled: settings.cleanup_enabled ?? false,
+          },
+        ],
+  hold:
+    settings.shortcut_bindings?.hold?.length > 0
+      ? settings.shortcut_bindings.hold
+      : [
+          {
+            shortcut: settings.hold_shortcut,
+            temporary: false,
+            cleanup_enabled: settings.cleanup_enabled ?? false,
+          },
+        ],
+  toggle:
+    settings.shortcut_bindings?.toggle?.length > 0
+      ? settings.shortcut_bindings.toggle
+      : [
+          {
+            shortcut: settings.toggle_shortcut,
+            temporary: false,
+            cleanup_enabled: settings.cleanup_enabled ?? false,
+          },
+        ],
+});
+
+const primaryShortcut = (
+  bindings: ShortcutBindings,
+  mode: ShortcutMode,
+  fallback: string,
+) => bindings[mode][0]?.shortcut ?? fallback;
 
 interface UseSettingsFormOptions {
   isOpen: boolean;
@@ -79,6 +129,10 @@ export function useSettingsForm({
   const [holdEnabled, setHoldEnabled] = useState(false);
   const [toggleShortcut, setToggleShortcut] = useState("Control+Alt+Space");
   const [toggleEnabled, setToggleEnabled] = useState(false);
+  const [shortcutBindings, setShortcutBindings] = useState<ShortcutBindings>(
+    defaultShortcutBindings,
+  );
+  const shortcutBindingsRef = useRef<ShortcutBindings>(defaultShortcutBindings());
   const [transcriptionMode, setTranscriptionModeRaw] =
     useState<TranscriptionMode>(initialTranscriptionMode);
   const [localModel, setLocalModel] = useState("");
@@ -90,14 +144,11 @@ export function useSettingsForm({
   >({});
   const [error, setError] = useState<string | null>(null);
   const [errorCopied, setErrorCopied] = useState(false);
-  const [captureActive, setCaptureActive] = useState<
-    "smart" | "hold" | "toggle" | null
-  >(null);
+  const [captureActive, setCaptureActive] = useState<CaptureTarget>(null);
   const [capturePreview, setCapturePreview] = useState<string>("");
-  const captureActiveRef = useRef<"smart" | "hold" | "toggle" | null>(null);
+  const captureActiveRef = useRef<CaptureTarget>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("general");
   const [llmEnabled, setLlmEnabledRaw] = useState(false);
-  const [cleanupEnabled, setCleanupEnabled] = useState(false);
   const [llmProvider, setLlmProviderRaw] = useState<LlmProvider>("none");
   const [llmEndpoint, setLlmEndpointRaw] = useState("");
   const [llmApiKey, setLlmApiKeyRaw] = useState("");
@@ -166,7 +217,6 @@ export function useSettingsForm({
   const setLlmEnabled = useCallback((value: boolean) => {
     setLlmEnabledRaw(value);
     if (!value) {
-      setCleanupEnabled(false);
       setEditModeEnabled(false);
       setError(null);
     }
@@ -213,12 +263,15 @@ export function useSettingsForm({
   }, []);
 
   const hydrateFromSettings = useCallback((s: StoredSettings) => {
+    const hydratedBindings = bindingsFromSettings(s);
     setSmartShortcut(s.smart_shortcut);
     setSmartEnabled(s.smart_enabled);
     setHoldShortcut(s.hold_shortcut);
     setHoldEnabled(s.hold_enabled);
     setToggleShortcut(s.toggle_shortcut);
     setToggleEnabled(s.toggle_enabled);
+    shortcutBindingsRef.current = hydratedBindings;
+    setShortcutBindings(hydratedBindings);
     setTranscriptionModeRaw(s.transcription_mode);
     setLocalModel(s.local_model);
     setMicrophoneDevice(s.microphone_device);
@@ -226,7 +279,6 @@ export function useSettingsForm({
     setAppLocale(s.app_locale ?? "system");
 
     setLlmEnabledRaw(s.llm_enabled ?? false);
-    setCleanupEnabled(s.cleanup_enabled ?? false);
     setLlmProviderRaw(s.llm_provider ?? "none");
     setLlmEndpointRaw(s.llm_endpoint ?? "");
     setLlmApiKeyRaw(s.llm_api_key ?? "");
@@ -314,12 +366,31 @@ export function useSettingsForm({
 
   const buildSettingsArgs = useCallback(
     (overrides: SaveSettingsOverrides = {}) => ({
-      smartShortcut: overrides.smartShortcut ?? smartShortcut,
+      smartShortcut:
+        overrides.smartShortcut ??
+        primaryShortcut(
+          overrides.shortcutBindings ?? shortcutBindings,
+          "smart",
+          smartShortcut,
+        ),
       smartEnabled,
-      holdShortcut: overrides.holdShortcut ?? holdShortcut,
+      holdShortcut:
+        overrides.holdShortcut ??
+        primaryShortcut(
+          overrides.shortcutBindings ?? shortcutBindings,
+          "hold",
+          holdShortcut,
+        ),
       holdEnabled,
-      toggleShortcut: overrides.toggleShortcut ?? toggleShortcut,
+      toggleShortcut:
+        overrides.toggleShortcut ??
+        primaryShortcut(
+          overrides.shortcutBindings ?? shortcutBindings,
+          "toggle",
+          toggleShortcut,
+        ),
       toggleEnabled,
+      shortcutBindings: overrides.shortcutBindings ?? shortcutBindings,
       transcriptionMode,
       localModel: overrides.localModel ?? localModel,
       microphoneDevice,
@@ -328,7 +399,7 @@ export function useSettingsForm({
       themeMode,
 
       llmEnabled: aiFeaturesReady,
-      cleanupEnabled: aiFeaturesReady ? cleanupEnabled : false,
+      cleanupEnabled: false,
       llmProvider,
       llmEndpoint,
       llmApiKey,
@@ -343,6 +414,7 @@ export function useSettingsForm({
     }),
     [
       smartShortcut,
+      shortcutBindings,
       smartEnabled,
       holdShortcut,
       holdEnabled,
@@ -355,7 +427,6 @@ export function useSettingsForm({
       appLocale,
       themeMode,
       aiFeaturesReady,
-      cleanupEnabled,
       llmProvider,
       llmEndpoint,
       llmApiKey,
@@ -413,9 +484,27 @@ export function useSettingsForm({
     void saveSettingsNowRef.current();
   }, [clearPendingSettingsSave]);
 
+  const discardEmptyCaptureDraft = useCallback(() => {
+    const target = captureActiveRef.current;
+    if (target) {
+      const current = shortcutBindingsRef.current;
+      const binding = current[target.mode][target.index];
+      if (binding && binding.shortcut.trim() === "" && current[target.mode].length > 1) {
+        const next = {
+          ...current,
+          [target.mode]: current[target.mode].filter(
+            (_, bindingIndex) => bindingIndex !== target.index,
+          ),
+        };
+        shortcutBindingsRef.current = next;
+        setShortcutBindings(next);
+      }
+    }
+    captureActiveRef.current = null;
+  }, []);
+
   const finalizeCapture = useCallback(async () => {
     flushPendingSettingsSave();
-    captureActiveRef.current = null;
     setCaptureActive(null);
     await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
   }, [flushPendingSettingsSave]);
@@ -423,18 +512,33 @@ export function useSettingsForm({
   const { resetCaptureState } = useShortcutCapture({
     active: captureActive !== null,
     onCancel: finalizeCapture,
+    onCaptureCancelled: discardEmptyCaptureDraft,
     onPreviewChange: setCapturePreview,
     onShortcutCaptured: (combo) => {
       clearPendingSettingsSave();
-      if (captureActive === "smart") {
-        setSmartShortcut(combo);
-        void saveSettingsNow({ smartShortcut: combo });
-      } else if (captureActive === "hold") {
-        setHoldShortcut(combo);
-        void saveSettingsNow({ holdShortcut: combo });
-      } else if (captureActive === "toggle") {
-        setToggleShortcut(combo);
-        void saveSettingsNow({ toggleShortcut: combo });
+      const target = captureActiveRef.current;
+      if (target) {
+        setShortcutBindings((current) => {
+          const next = {
+            ...current,
+            [target.mode]: current[target.mode].map((binding, index) =>
+              index === target.index ? { ...binding, shortcut: combo } : binding,
+            ),
+          };
+          shortcutBindingsRef.current = next;
+          const primary = primaryShortcut(next, target.mode, combo);
+          if (target.mode === "smart") setSmartShortcut(primary);
+          if (target.mode === "hold") setHoldShortcut(primary);
+          if (target.mode === "toggle") setToggleShortcut(primary);
+          void saveSettingsNow({
+            shortcutBindings: next,
+            smartShortcut: primaryShortcut(next, "smart", smartShortcut),
+            holdShortcut: primaryShortcut(next, "hold", holdShortcut),
+            toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
+          });
+          return next;
+        });
+        captureActiveRef.current = null;
       }
       setError(null);
     },
@@ -451,7 +555,6 @@ export function useSettingsForm({
 
   useEffect(() => {
     if (aiFeaturesReady) return;
-    setCleanupEnabled(false);
     setEditModeEnabled(false);
   }, [aiFeaturesReady]);
 
@@ -680,6 +783,7 @@ export function useSettingsForm({
       if (captureActiveRef.current) {
         e.preventDefault();
         finalizeCapture();
+        discardEmptyCaptureDraft();
         resetCaptureState();
         return;
       }
@@ -687,10 +791,17 @@ export function useSettingsForm({
     };
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [finalizeCapture, isOpen, onClose, resetCaptureState]);
+  }, [
+    discardEmptyCaptureDraft,
+    finalizeCapture,
+    isOpen,
+    onClose,
+    resetCaptureState,
+  ]);
 
   useEffect(() => {
     if (loading) return;
+    if (captureActiveRef.current) return;
     if (!didHydrateRef.current) {
       didHydrateRef.current = true;
       suppressAutosaveAfterHydrationRef.current = true;
@@ -721,16 +832,17 @@ export function useSettingsForm({
   }, [appInfo?.data_dir_path]);
 
   const handleStartCapture = useCallback(
-    (mode: "smart" | "hold" | "toggle") => {
-      if (captureActive === mode) {
+    (mode: ShortcutMode, index = 0) => {
+      if (captureActive?.mode === mode && captureActive.index === index) {
         finalizeCapture();
         resetCaptureState();
         setError(null);
         return;
       }
       resetCaptureState();
-      captureActiveRef.current = mode;
-      setCaptureActive(mode);
+      const target = { mode, index };
+      captureActiveRef.current = target;
+      setCaptureActive(target);
       setError(null);
       invoke("set_shortcut_capture_active", { active: true }).catch((err) => {
         console.error("Failed to disable shortcuts for capture", err);
@@ -741,6 +853,78 @@ export function useSettingsForm({
       });
     },
     [captureActive, finalizeCapture, resetCaptureState],
+  );
+
+  const updateShortcutBindings = useCallback(
+    (updater: (current: ShortcutBindings) => ShortcutBindings) => {
+      clearPendingSettingsSave();
+      setShortcutBindings((current) => {
+        const next = updater(current);
+        shortcutBindingsRef.current = next;
+        setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
+        setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
+        setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
+        void saveSettingsNow({
+          shortcutBindings: next,
+          smartShortcut: primaryShortcut(next, "smart", smartShortcut),
+          holdShortcut: primaryShortcut(next, "hold", holdShortcut),
+          toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
+        });
+        return next;
+      });
+    },
+    [
+      clearPendingSettingsSave,
+      holdShortcut,
+      saveSettingsNow,
+      smartShortcut,
+      toggleShortcut,
+    ],
+  );
+
+  const updateShortcutBinding = useCallback(
+    (mode: ShortcutMode, index: number, patch: Partial<ShortcutBinding>) => {
+      updateShortcutBindings((current) => ({
+        ...current,
+        [mode]: current[mode].map((binding, bindingIndex) =>
+          bindingIndex === index ? { ...binding, ...patch } : binding,
+        ),
+      }));
+    },
+    [updateShortcutBindings],
+  );
+
+  const addShortcutBinding = useCallback(
+    (mode: ShortcutMode) => {
+      clearPendingSettingsSave();
+      const current = shortcutBindingsRef.current;
+      if (current[mode].length >= 3) return;
+      const nextIndex = current[mode].length;
+      const next = {
+        ...current,
+        [mode]: [
+          ...current[mode],
+          { shortcut: "", temporary: false, cleanup_enabled: false },
+        ],
+      };
+      shortcutBindingsRef.current = next;
+      setShortcutBindings(next);
+      handleStartCapture(mode, nextIndex);
+    },
+    [clearPendingSettingsSave, handleStartCapture],
+  );
+
+  const removeShortcutBinding = useCallback(
+    (mode: ShortcutMode, index: number) => {
+      updateShortcutBindings((current) => {
+        if (current[mode].length <= 1) return current;
+        return {
+          ...current,
+          [mode]: current[mode].filter((_, bindingIndex) => bindingIndex !== index),
+        };
+      });
+    },
+    [updateShortcutBindings],
   );
 
   const handleLocalModelChange = useCallback(
@@ -912,6 +1096,7 @@ export function useSettingsForm({
     setErrorCopied,
 
     smartShortcut,
+    shortcutBindings,
     smartEnabled,
     setSmartEnabled,
     holdShortcut,
@@ -944,6 +1129,9 @@ export function useSettingsForm({
     captureActive,
     capturePreview,
     handleStartCapture,
+    updateShortcutBinding,
+    addShortcutBinding,
+    removeShortcutBinding,
 
     llmEnabled,
     setLlmEnabled,
@@ -959,8 +1147,6 @@ export function useSettingsForm({
     aiFeaturesReady,
     availableModels,
     fetchAvailableModels,
-    cleanupEnabled,
-    setCleanupEnabled,
     editModeEnabled,
     setEditModeEnabled,
     autoDictionaryEnabled,
