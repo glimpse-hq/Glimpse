@@ -122,9 +122,15 @@ pub fn set_dictionary(
     let cleaned = sanitize_dictionary_entries(&entries);
     let mut settings = state.current_settings();
     settings.dictionary = cleaned.clone();
+    settings.auto_dictionary_ignored =
+        crate::auto_dictionary::remove_dictionary_entries_from_ignored(
+            settings.auto_dictionary_ignored,
+            &cleaned,
+        );
     state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
+    crate::auto_dictionary::sync_ignored_dictionary_entries(&cleaned);
     Ok(cleaned)
 }
 

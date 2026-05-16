@@ -6,8 +6,9 @@ use tokio_util::sync::CancellationToken;
 use webrtc_vad::VadMode;
 
 use crate::{
-    accessibility_context, analytics, assistive, dictionary, llm_cleanup, mode_context,
-    model_manager,
+    accessibility_context, analytics, assistive, auto_dictionary, dictionary, llm_cleanup,
+    mode_context, model_manager,
+    model_manager::{model_supports_capability, MODEL_CAPABILITY_DICTIONARY},
     recorder::{speech_percentage_i16_with_mode, CompletedRecording, RecordingSaved},
     settings::{Personality, UserSettings},
     storage, toast, transcription_api, update_checker, AppRuntime, AppState,
@@ -342,9 +343,32 @@ async fn process_transcript_text(
     let mut pasted = false;
     if auto_paste && !final_transcript.trim().is_empty() {
         let text = final_transcript.clone();
-        match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await {
-            Ok(Ok(())) => pasted = true,
-            Ok(Err(err)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
+        let should_watch_auto_dictionary = settings.auto_dictionary_enabled
+            && !is_edit_mode
+            && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY)
+            && cfg!(any(target_os = "macos", target_os = "windows"));
+        let paste_result = async_runtime::spawn_blocking(move || {
+            let pre_paste_snapshot = should_watch_auto_dictionary
+                .then(assistive::focused_text_snapshot)
+                .flatten();
+            let result = assistive::paste_text(&text);
+            (result, pre_paste_snapshot)
+        })
+        .await;
+        match paste_result {
+            Ok((Ok(()), pre_paste_snapshot)) => {
+                pasted = true;
+                if let Some(pre_paste_snapshot) = pre_paste_snapshot {
+                    auto_dictionary::start_after_paste(
+                        app.clone(),
+                        pre_paste_snapshot,
+                        final_transcript.clone(),
+                        settings.dictionary.clone(),
+                        settings.auto_dictionary_ignored.clone(),
+                    );
+                }
+            }
+            Ok((Err(err), _)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
             Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
         }
     }
@@ -684,6 +708,8 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
             mode: None,
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 
@@ -726,6 +752,8 @@ fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {
             mode: Some("local".into()),
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }
@@ -793,6 +821,8 @@ fn emit_transcription_error_inner(
             mode: Some("local".into()),
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 
@@ -1094,6 +1124,8 @@ fn maybe_warn_llm_unavailable(app: &AppHandle<AppRuntime>, is_edit_mode: bool) {
                 mode: None,
                 action: Some("open_llm_cleanup_settings".to_string()),
                 action_label: Some("Open Settings".to_string()),
+                secondary_action: None,
+                secondary_action_label: None,
             },
         );
     } else {

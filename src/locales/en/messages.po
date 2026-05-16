@@ -520,11 +520,6 @@ msgid "settings.models.installed_count"
 msgstr "{installedCount} installed"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.day"
-msgstr "A Day"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.single"
 msgstr "1 entry"
@@ -535,24 +530,9 @@ msgid "library.import.summary.single"
 msgstr "1 file"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.month"
-msgstr "A Month"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.count.single"
 msgstr "1 replacement"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.week"
-msgstr "A Week"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.year"
-msgstr "A Year"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -566,8 +546,18 @@ msgstr "a day"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.day"
+msgstr "A Day"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.month"
 msgstr "a month"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.month"
+msgstr "A Month"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -576,8 +566,18 @@ msgstr "a week"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.week"
+msgstr "A Week"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.year"
 msgstr "a year"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.year"
+msgstr "A Year"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -778,6 +778,11 @@ msgstr "Auto"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings.body"
 msgstr "Auto deletes local audio files."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary"
+msgstr "Auto Dictionary"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1403,6 +1408,11 @@ msgid "dictionary.delete_entry"
 msgstr "Delete {entry}"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.full_add_prompt"
+msgstr "Delete an entry before adding another."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.delete.failed"
 msgstr "Delete failed"
@@ -1457,6 +1467,11 @@ msgstr "Dictionary"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.combined.title"
 msgstr "Dictionary & Replacements"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.full_hint"
+msgstr "Dictionary is full"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
@@ -2696,6 +2711,11 @@ msgstr "Required to capture your voice for transcription."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary.unsupported_body"
+msgstr "requires a model with dictionary support"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.help_requirement"
 msgstr "Requires an enabled and configured language model in the Models tab."
 
@@ -2863,6 +2883,11 @@ msgstr "Search applications..."
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model.search"
 msgstr "Search available models..."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.search_only"
+msgstr "Search dictionary..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3162,6 +3187,11 @@ msgid "settings.account.subscription"
 msgstr "Subscription"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary.body"
+msgstr "suggests names and terms after you correct dictated text"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.label"
 msgstr "Support"
@@ -3325,6 +3355,11 @@ msgstr "Toggle {label} shortcut"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.toggle"
 msgstr "Toggle AI features"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary.toggle_aria"
+msgstr "Toggle Auto Dictionary"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx

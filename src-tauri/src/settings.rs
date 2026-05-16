@@ -31,6 +31,8 @@ const KEY_LLM_MODEL: &str = "llm_model";
 const KEY_USER_NAME: &str = "user_name";
 const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
+const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
+const KEY_AUTO_DICTIONARY_IGNORED: &str = "auto_dictionary_ignored";
 const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
@@ -108,6 +110,10 @@ pub struct UserSettings {
     pub personalities_notes_seeded: bool,
     #[serde(default)]
     pub dictionary: Vec<String>,
+    #[serde(default)]
+    pub auto_dictionary_enabled: bool,
+    #[serde(default)]
+    pub auto_dictionary_ignored: Vec<String>,
     #[serde(default)]
     pub replacements: Vec<Replacement>,
     #[serde(default = "default_personalities")]
@@ -344,6 +350,8 @@ impl Default for UserSettings {
             user_name: String::new(),
             personalities_notes_seeded: false,
             dictionary: Vec::new(),
+            auto_dictionary_enabled: false,
+            auto_dictionary_ignored: Vec::new(),
             replacements: Vec::new(),
             personalities: default_personalities(),
             edit_mode_enabled: false,
@@ -386,9 +394,7 @@ fn default_recording_prune_policy() -> RecordingPrunePolicy {
     RecordingPrunePolicy::Never
 }
 
-pub fn canonicalize_recording_prune_policy(
-    policy: RecordingPrunePolicy,
-) -> RecordingPrunePolicy {
+pub fn canonicalize_recording_prune_policy(policy: RecordingPrunePolicy) -> RecordingPrunePolicy {
     match policy {
         RecordingPrunePolicy::ThreeMonths => RecordingPrunePolicy::Year,
         policy => policy,
@@ -625,6 +631,16 @@ impl SettingsStore {
             )?;
             settings.dictionary =
                 self.read_value(&conn, KEY_DICTIONARY, settings.dictionary.clone())?;
+            settings.auto_dictionary_enabled = self.read_value(
+                &conn,
+                KEY_AUTO_DICTIONARY_ENABLED,
+                settings.auto_dictionary_enabled,
+            )?;
+            settings.auto_dictionary_ignored = self.read_value(
+                &conn,
+                KEY_AUTO_DICTIONARY_IGNORED,
+                settings.auto_dictionary_ignored.clone(),
+            )?;
             settings.replacements =
                 self.read_value(&conn, KEY_REPLACEMENTS, settings.replacements.clone())?;
             settings.personalities =
@@ -794,6 +810,16 @@ impl SettingsStore {
             &settings.personalities_notes_seeded,
         )?;
         self.write_value(&conn, KEY_DICTIONARY, &settings.dictionary)?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_DICTIONARY_ENABLED,
+            &settings.auto_dictionary_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_DICTIONARY_IGNORED,
+            &settings.auto_dictionary_ignored,
+        )?;
         self.write_value(&conn, KEY_REPLACEMENTS, &settings.replacements)?;
         self.write_value(&conn, KEY_PERSONALITIES, &settings.personalities)?;
         self.write_value(&conn, KEY_EDIT_MODE_ENABLED, &settings.edit_mode_enabled)?;

@@ -2,6 +2,7 @@ mod accessibility_context;
 mod analytics;
 mod assistive;
 mod audio;
+mod auto_dictionary;
 mod core;
 mod crypto;
 mod data_migration;
@@ -405,6 +406,8 @@ pub fn run() {
             dictionary::set_dictionary,
             dictionary::get_replacements,
             dictionary::set_replacements,
+            auto_dictionary::accept_auto_dictionary_suggestion,
+            auto_dictionary::reject_auto_dictionary_suggestion,
             personalization::get_personalities,
             personalization::set_personalities,
             personalization::list_installed_apps,

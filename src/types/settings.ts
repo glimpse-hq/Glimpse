@@ -67,6 +67,8 @@ export type StoredSettings = {
     llm_model: string;
     user_name: string;
     dictionary: string[];
+    auto_dictionary_enabled: boolean;
+    auto_dictionary_ignored: string[];
     replacements: Replacement[];
     personalities: Personality[];
     edit_mode_enabled: boolean;

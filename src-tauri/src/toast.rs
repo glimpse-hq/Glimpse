@@ -22,6 +22,10 @@ pub struct Payload {
     pub action: Option<String>,
     #[serde(rename = "actionLabel")]
     pub action_label: Option<String>,
+    #[serde(rename = "secondaryAction")]
+    pub secondary_action: Option<String>,
+    #[serde(rename = "secondaryActionLabel")]
+    pub secondary_action_label: Option<String>,
 }
 
 pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
@@ -45,6 +49,8 @@ pub fn show(app: &AppHandle<AppRuntime>, toast_type: &str, title: Option<&str>, 
             mode: None,
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }
@@ -69,6 +75,8 @@ pub fn show_with_action(
             mode: None,
             action: Some(action.to_string()),
             action_label: Some(action_label.to_string()),
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }
@@ -137,6 +145,8 @@ fn monitor_containing_cursor(window: &WebviewWindow<AppRuntime>) -> Option<Monit
 
 #[tauri::command]
 pub fn toast_dismissed(app: AppHandle<AppRuntime>) {
+    crate::auto_dictionary::clear_pending_suggestion();
+
     let state = app.state::<AppState>();
     if state.pill().status() == pill::PillStatus::Error {
         state.pill().reset(&app);
@@ -164,6 +174,8 @@ pub fn debug_show_toast(
             mode: None,
             action,
             action_label,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }
@@ -183,6 +195,8 @@ pub fn show_celebration_toast(app: AppHandle<AppRuntime>) {
             mode: None,
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }

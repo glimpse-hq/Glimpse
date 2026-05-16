@@ -7,7 +7,10 @@ use crate::settings::{
     ThemeMode, TranscriptionMode, UserSettings,
 };
 
-use crate::{analytics, model_manager, pill, tray, AppRuntime, AppState, EVENT_SETTINGS_CHANGED};
+use crate::{
+    analytics, auto_dictionary, model_manager, pill, tray, AppRuntime, AppState,
+    EVENT_SETTINGS_CHANGED,
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -32,6 +35,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_api_key: String,
     pub llm_model: String,
     pub edit_mode_enabled: bool,
+    pub auto_dictionary_enabled: bool,
     pub media_control_enabled: bool,
     pub auto_update_enabled: bool,
     pub auto_launch_enabled: bool,
@@ -233,6 +237,7 @@ pub(crate) fn update_settings(
     next.llm_api_key = args.llm_api_key;
     next.llm_model = args.llm_model.trim().to_string();
     next.edit_mode_enabled = args.edit_mode_enabled;
+    next.auto_dictionary_enabled = args.auto_dictionary_enabled;
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
     next.auto_launch_enabled = args.auto_launch_enabled;
@@ -261,6 +266,7 @@ pub(crate) fn update_settings(
             return Err(err.to_string());
         }
     };
+    auto_dictionary::sync_ignored_dictionary_entries(&next.dictionary);
 
     state.request_preflight_refresh();
 
@@ -317,6 +323,7 @@ mod tests {
             llm_api_key: String::new(),
             llm_model: String::new(),
             edit_mode_enabled: false,
+            auto_dictionary_enabled: false,
             media_control_enabled: true,
             auto_update_enabled: true,
             auto_launch_enabled: false,

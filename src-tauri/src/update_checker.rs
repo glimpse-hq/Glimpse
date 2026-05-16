@@ -370,6 +370,8 @@ pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdate
             mode: None,
             action: Some("open_about_page".to_string()),
             action_label: Some("Update".to_string()),
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }

@@ -173,6 +173,15 @@ const ToastOverlay: React.FC = () => {
     }
   };
 
+  const handleToastAction = async (action: string) => {
+    try {
+      await invoke(action);
+      dismissWithCleanup();
+    } catch (err) {
+      console.error("Action failed:", err);
+    }
+  };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && toast) {
@@ -362,23 +371,37 @@ const ToastOverlay: React.FC = () => {
                     })}
               </button>
             )}
-            {toast.action && toast.actionLabel && (
-              <button
-                type="button"
-                onClick={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  try {
-                    await invoke(toast.action!);
-                    dismissWithCleanup();
-                  } catch (err) {
-                    console.error("Action failed:", err);
-                  }
-                }}
-                className={`mt-2 ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : "ui-color-info-strong"} ui-hover-on-solid transition-colors block font-medium`}
-              >
-                {toast.actionLabel} →
-              </button>
+            {((toast.action && toast.actionLabel) ||
+              (toast.secondaryAction && toast.secondaryActionLabel)) && (
+              <div className="mt-2 flex items-end justify-between gap-6">
+                {toast.action && toast.actionLabel && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void handleToastAction(toast.action!);
+                    }}
+                    className={`ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : "ui-color-info-strong"} ui-hover-on-solid transition-colors font-medium`}
+                  >
+                    {toast.actionLabel} →
+                  </button>
+                )}
+                <span aria-hidden="true" className="flex-1" />
+                {toast.secondaryAction && toast.secondaryActionLabel && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      void handleToastAction(toast.secondaryAction!);
+                    }}
+                    className="ui-text-body-sm ui-color-error-soft ui-hover-error-strong transition-colors font-medium"
+                  >
+                    {toast.secondaryActionLabel}
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>

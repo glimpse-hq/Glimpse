@@ -394,6 +394,8 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
                 mode: None,
                 action: None,
                 action_label: None,
+                secondary_action: None,
+                secondary_action_label: None,
             },
         );
     }

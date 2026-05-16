@@ -56,6 +56,9 @@ type GeneralTabProps = {
   setErrorCopied: (value: boolean) => void;
   editModeEnabled: boolean;
   setEditModeEnabled: (value: boolean) => void;
+  autoDictionaryEnabled: boolean;
+  autoDictionarySupported: boolean;
+  setAutoDictionaryEnabled: (value: boolean) => void;
   cleanupEnabled: boolean;
   setCleanupEnabled: (value: boolean) => void;
   aiFeaturesReady: boolean;
@@ -93,6 +96,9 @@ const GeneralTab = ({
   setErrorCopied,
   editModeEnabled,
   setEditModeEnabled,
+  autoDictionaryEnabled,
+  autoDictionarySupported,
+  setAutoDictionaryEnabled,
   cleanupEnabled,
   setCleanupEnabled,
   aiFeaturesReady,
@@ -110,6 +116,15 @@ const GeneralTab = ({
   } = useMicrophoneTest(inputDevices, microphoneDevice);
   const aiFeaturesDisabled = transcriptionMode === "local" && !aiFeaturesReady;
   const localModelStatus = localModel ? modelStatus[localModel] : undefined;
+  const autoDictionaryBody = autoDictionarySupported
+    ? t({
+        id: "settings.general.auto_dictionary.body",
+        message: "suggests names and terms after you correct dictated text",
+      })
+    : t({
+        id: "settings.general.auto_dictionary.unsupported_body",
+        message: "requires a model with dictionary support",
+      });
   const systemDefaultLabel = t({
     id: "settings.general.system_default",
     message: "System Default",
@@ -669,6 +684,35 @@ const GeneralTab = ({
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-surface-surface">
+            <div className="py-2 px-2.5">
+              <div className="flex items-center justify-between">
+                <span className="ui-text-label-strong ui-color-primary">
+                  {t({
+                    id: "settings.general.auto_dictionary",
+                    message: "Auto Dictionary",
+                  })}
+                </span>
+                <ToggleSwitch
+                  enabled={autoDictionarySupported && autoDictionaryEnabled}
+                  disabled={!autoDictionarySupported}
+                  onToggle={() => {
+                    if (autoDictionarySupported) {
+                      setAutoDictionaryEnabled(!autoDictionaryEnabled);
+                    }
+                  }}
+                  ariaLabel={t({
+                    id: "settings.general.auto_dictionary.toggle_aria",
+                    message: "Toggle Auto Dictionary",
+                  })}
+                />
+              </div>
+              <span className="ui-text-meta ui-color-muted block mt-0.5">
+                {autoDictionaryBody}
+              </span>
             </div>
           </div>
 

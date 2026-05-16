@@ -17,6 +17,10 @@ import {
 import { getPlatformCapabilities } from "../../platform/service";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
 import { parseTextSizeMode } from "../../shared/lib/textSize";
+import {
+  hasModelCapability,
+  MODEL_CAPABILITY_DICTIONARY,
+} from "../../shared/lib/modelCapabilities";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { logout, type User as AuthUser } from "../auth/api";
 import {
@@ -100,6 +104,7 @@ export function useSettingsForm({
   const [llmModel, setLlmModel] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
+  const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
   const [autoLaunchEnabled, setAutoLaunchEnabled] = useState(false);
@@ -227,6 +232,7 @@ export function useSettingsForm({
     setLlmApiKeyRaw(s.llm_api_key ?? "");
     setLlmModel(s.llm_model ?? "");
     setEditModeEnabled(s.edit_mode_enabled ?? false);
+    setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
     setMediaControlEnabled(s.media_control_enabled ?? false);
     setAutoUpdateEnabled(s.auto_update_enabled ?? false);
     setAutoLaunchEnabled(s.auto_launch_enabled ?? false);
@@ -262,6 +268,14 @@ export function useSettingsForm({
     catalogTranscriptionEngines,
   ]);
   const showLanguageSupportBadges = installedTranscriptionEngines.length > 1;
+  const activeLocalModel = useMemo(
+    () => modelCatalog.find((model) => model.key === localModel),
+    [modelCatalog, localModel],
+  );
+  const autoDictionarySupported = hasModelCapability(
+    activeLocalModel,
+    MODEL_CAPABILITY_DICTIONARY,
+  );
   const autoTranscriptionLanguageLabel = i18n._(
     msg({
       id: "transcription.language.auto",
@@ -320,6 +334,7 @@ export function useSettingsForm({
       llmApiKey,
       llmModel,
       editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
+      autoDictionaryEnabled: autoDictionarySupported ? autoDictionaryEnabled : false,
       mediaControlEnabled,
       autoUpdateEnabled,
       autoLaunchEnabled,
@@ -346,6 +361,8 @@ export function useSettingsForm({
       llmApiKey,
       llmModel,
       editModeEnabled,
+      autoDictionarySupported,
+      autoDictionaryEnabled,
       mediaControlEnabled,
       autoUpdateEnabled,
       autoLaunchEnabled,
@@ -946,6 +963,9 @@ export function useSettingsForm({
     setCleanupEnabled,
     editModeEnabled,
     setEditModeEnabled,
+    autoDictionaryEnabled,
+    autoDictionarySupported,
+    setAutoDictionaryEnabled,
     mediaControlEnabled,
     setMediaControlEnabled,
     autoUpdateEnabled,
