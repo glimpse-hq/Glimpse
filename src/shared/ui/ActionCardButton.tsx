@@ -4,12 +4,12 @@ import type {
   ReactNode,
 } from "react";
 
-export type ActionCardAccent = {
+type ActionCardAccent = {
   borderColor: string;
   backgroundColor: string;
 };
 
-export const ACTION_CARD_BUTTON_ACCENTS = {
+const ACTION_CARD_BUTTON_ACCENTS = {
   interactive: {
     borderColor: "var(--color-interactive-30)",
     backgroundColor: "var(--color-interactive-10)",

@@ -10,7 +10,7 @@ import type { LibraryItem, ModelInfo } from "../../../types";
 const isTimestampSupported = (model?: ModelInfo | null) =>
     hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
 
-export type LibraryRetranscribeOptions = {
+type LibraryRetranscribeOptions = {
     model_key: string;
     show_timestamps: boolean;
 };

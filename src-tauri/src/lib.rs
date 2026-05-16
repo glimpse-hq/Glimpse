@@ -416,7 +416,6 @@ pub fn run() {
             open_data_dir,
             get_transcriptions,
             delete_transcription,
-            delete_all_transcriptions,
             retry_transcription,
             retry_llm_cleanup,
             undo_llm_cleanup,
@@ -1212,33 +1211,6 @@ fn delete_transcription(
     }
 
     Ok(result)
-}
-
-#[tauri::command]
-fn delete_all_transcriptions(
-    app: AppHandle<AppRuntime>,
-    state: tauri::State<AppState>,
-) -> Result<u32, String> {
-    let audio_paths = state
-        .storage()
-        .delete_all()
-        .map_err(|err| format!("Failed to delete all transcriptions: {err}"))?;
-
-    let deleted_count = audio_paths.len() as u32;
-    for audio_path in audio_paths {
-        let _ = std::fs::remove_file(audio_path);
-    }
-
-    let settings = state.current_settings();
-    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = set_app_menu(&app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
-
-    Ok(deleted_count)
 }
 
 #[tauri::command]

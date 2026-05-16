@@ -228,10 +228,8 @@ impl RegisteredShortcutState {
 
         if event.is_key_down && !event.repeat {
             for (id, binding) in self.bindings.iter().enumerate() {
-                if binding.hotkey.matches_event(&event) {
-                    if self.pressed.insert(id) {
-                        emitted.push((binding.action, HotkeyState::Pressed));
-                    }
+                if binding.hotkey.matches_event(&event) && self.pressed.insert(id) {
+                    emitted.push((binding.action, HotkeyState::Pressed));
                 }
             }
         }

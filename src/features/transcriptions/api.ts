@@ -26,7 +26,3 @@ export async function retryLlmCleanup(id: string): Promise<void> {
 export async function undoLlmCleanup(id: string): Promise<void> {
   await invoke("undo_llm_cleanup", { id });
 }
-
-export async function deleteAllTranscriptions(): Promise<void> {
-  await invoke("delete_all_transcriptions");
-}
