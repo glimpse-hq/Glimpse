@@ -177,7 +177,6 @@ export function useSettingsForm({
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
-  const suppressAutosaveAfterHydrationRef = useRef(false);
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve());
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -568,7 +567,6 @@ export function useSettingsForm({
     if (isOpen) return;
     flushPendingSettingsSave();
     didHydrateRef.current = false;
-    suppressAutosaveAfterHydrationRef.current = false;
     if (captureActive) {
       finalizeCapture();
       resetCaptureState();
@@ -804,12 +802,6 @@ export function useSettingsForm({
     if (captureActiveRef.current) return;
     if (!didHydrateRef.current) {
       didHydrateRef.current = true;
-      suppressAutosaveAfterHydrationRef.current = true;
-      return;
-    }
-
-    if (suppressAutosaveAfterHydrationRef.current) {
-      suppressAutosaveAfterHydrationRef.current = false;
       return;
     }
 

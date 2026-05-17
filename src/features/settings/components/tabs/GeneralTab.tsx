@@ -1287,6 +1287,19 @@ const ShortcutBindingsList = ({
   onAddBinding: (mode: ShortcutMode) => void;
   onRemoveBinding: (mode: ShortcutMode, index: number) => void;
 }) => {
+  const { t } = useLingui();
+  const addShortcutLabel = t({
+    id: "settings.general.shortcuts.add_shortcut",
+    message: "+ Add shortcut",
+  });
+  const temporaryLabel = t({
+    id: "settings.general.shortcuts.temporary",
+    message: "Temporary",
+  });
+  const cleanupLabel = t({
+    id: "settings.general.shortcuts.cleanup",
+    message: "Cleanup",
+  });
   const visibleBindings =
     bindings.length > 0
       ? bindings
@@ -1298,7 +1311,7 @@ const ShortcutBindingsList = ({
     captureActive?.mode === mode && captureActive.index === 0;
   const primaryDisplay = primaryBinding.shortcut
     ? formatShortcutForDisplay(primaryBinding.shortcut)
-    : "+ Add shortcut";
+    : addShortcutLabel;
 
   return (
     <div className="w-full">
@@ -1339,7 +1352,7 @@ const ShortcutBindingsList = ({
         </button>
 
         <ShortcutIconToggle
-          label="Temporary"
+          label={temporaryLabel}
           tone="local"
           active={primaryBinding.temporary}
           disabled={false}
@@ -1352,7 +1365,7 @@ const ShortcutBindingsList = ({
           <Ghost size={13} aria-hidden="true" />
         </ShortcutIconToggle>
         <ShortcutIconToggle
-          label="Cleanup"
+          label={cleanupLabel}
           tone="cloud"
           active={primaryBinding.cleanup_enabled}
           disabled={false}
@@ -1373,7 +1386,17 @@ const ShortcutBindingsList = ({
             type="button"
             onClick={onToggleExpand}
             aria-expanded={isExpanded}
-            aria-label={isExpanded ? "Hide shortcuts" : "Show shortcuts"}
+            aria-label={
+              isExpanded
+                ? t({
+                    id: "settings.general.shortcuts.hide_shortcuts",
+                    message: "Hide shortcuts",
+                  })
+                : t({
+                    id: "settings.general.shortcuts.show_shortcuts",
+                    message: "Show shortcuts",
+                  })
+            }
             className="flex w-10 shrink-0 items-center justify-center gap-1 rounded px-1.5 py-0.5 ui-text-meta ui-color-muted transition-colors hover:bg-surface-overlay hover:ui-color-secondary"
           >
             <span className="flex w-5 items-center justify-center">
@@ -1431,7 +1454,7 @@ const ShortcutBindingsList = ({
                   captureActive?.mode === mode && captureActive.index === index;
                 const displayShortcut = binding.shortcut
                   ? formatShortcutForDisplay(binding.shortcut)
-                  : "+ Add shortcut";
+                  : addShortcutLabel;
 
                 return (
                   <div
@@ -1470,7 +1493,7 @@ const ShortcutBindingsList = ({
                     </button>
 
                     <ShortcutIconToggle
-                      label="Temporary"
+                      label={temporaryLabel}
                       tone="local"
                       active={binding.temporary}
                       disabled={false}
@@ -1483,7 +1506,7 @@ const ShortcutBindingsList = ({
                       <Ghost size={13} aria-hidden="true" />
                     </ShortcutIconToggle>
                     <ShortcutIconToggle
-                      label="Cleanup"
+                      label={cleanupLabel}
                       tone="cloud"
                       active={binding.cleanup_enabled}
                       disabled={false}
@@ -1498,7 +1521,10 @@ const ShortcutBindingsList = ({
                     <button
                       type="button"
                       onClick={() => onRemoveBinding(mode, index)}
-                      aria-label="Remove shortcut"
+                      aria-label={t({
+                        id: "settings.general.shortcuts.remove_shortcut",
+                        message: "Remove shortcut",
+                      })}
                       className="ui-button-ghost ui-hover-error-strong h-5 w-5"
                     >
                       <X size={13} aria-hidden="true" />
@@ -1513,7 +1539,7 @@ const ShortcutBindingsList = ({
                   onClick={() => onAddBinding(mode)}
                   className="h-6 w-full border-b border-dashed border-border-primary text-left ui-text-meta ui-color-disabled transition-colors hover:border-border-secondary hover:ui-color-muted"
                 >
-                  + Add shortcut
+                  {addShortcutLabel}
                 </button>
               )}
             </div>
