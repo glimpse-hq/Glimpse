@@ -5,6 +5,7 @@
 - Auto Dictionary: Corrected words are now automatically detected, with prompts to add them to your dictionary.
 ### Improvements
 - UI refinements
+- On supported text fields, captilization automatically matches previous text.
 ---
 
 0.8.5

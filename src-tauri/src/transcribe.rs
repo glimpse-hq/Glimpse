@@ -345,33 +345,41 @@ async fn process_transcript_text(
 
     let mut pasted = false;
     if auto_paste && !final_transcript.trim().is_empty() {
-        let text = final_transcript.clone();
-        let should_watch_auto_dictionary = settings.auto_dictionary_enabled
-            && !is_edit_mode
-            && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY)
-            && cfg!(any(target_os = "macos", target_os = "windows"));
+        let can_read_field = !is_edit_mode && cfg!(any(target_os = "macos", target_os = "windows"));
+        let should_watch_auto_dictionary = can_read_field
+            && settings.auto_dictionary_enabled
+            && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY);
+        let transcript_to_paste = final_transcript.clone();
         let paste_result = async_runtime::spawn_blocking(move || {
-            let pre_paste_snapshot = should_watch_auto_dictionary
+            let pre_paste_snapshot = can_read_field
                 .then(assistive::focused_text_snapshot)
                 .flatten();
+            let text = pre_paste_snapshot
+                .as_ref()
+                .map(|snapshot| {
+                    match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
+                })
+                .unwrap_or(transcript_to_paste);
             let result = assistive::paste_text(&text);
-            (result, pre_paste_snapshot)
+            (result, pre_paste_snapshot, text)
         })
         .await;
         match paste_result {
-            Ok((Ok(()), pre_paste_snapshot)) => {
+            Ok((Ok(()), pre_paste_snapshot, pasted_text)) => {
                 pasted = true;
-                if let Some(pre_paste_snapshot) = pre_paste_snapshot {
+                if let (true, Some(pre_paste_snapshot)) =
+                    (should_watch_auto_dictionary, pre_paste_snapshot)
+                {
                     auto_dictionary::start_after_paste(
                         app.clone(),
                         pre_paste_snapshot,
-                        final_transcript.clone(),
+                        pasted_text,
                         settings.dictionary.clone(),
                         settings.auto_dictionary_ignored.clone(),
                     );
                 }
             }
-            Ok((Err(err), _)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
+            Ok((Err(err), _, _)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
             Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
         }
     }
@@ -917,6 +925,25 @@ fn compute_audio_duration_seconds(saved: &RecordingSaved) -> f32 {
 
 pub(crate) fn count_words(text: &str) -> u32 {
     text.split_whitespace().count() as u32
+}
+
+fn match_insertion_capitalization(text: &str, field_value: &str) -> String {
+    let Some(last_field_char) = field_value.trim_end().chars().last() else {
+        return text.to_string();
+    };
+    if matches!(last_field_char, '.' | '!' | '?' | '…') {
+        return text.to_string();
+    }
+
+    let Some((index, first_letter)) = text.char_indices().find(|(_, ch)| ch.is_alphabetic()) else {
+        return text.to_string();
+    };
+
+    let mut result = String::with_capacity(text.len());
+    result.push_str(&text[..index]);
+    result.extend(first_letter.to_lowercase());
+    result.push_str(&text[index + first_letter.len_utf8()..]);
+    result
 }
 
 pub(crate) fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
