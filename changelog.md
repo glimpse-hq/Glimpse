@@ -3,9 +3,12 @@
 ### Features
 - Keybinds can now have temporary mode and cleanup set individually. You can find more in the General settings tab's Shortcuts info button.
 - Auto Dictionary: Corrected words are now automatically detected, with prompts to add them to your dictionary.
+- Personalization entries now support snippets, allowing you to add dynamic information like {{time}} or {{site}}
+
 ### Improvements
 - UI refinements
 - On supported text fields, captilization automatically matches previous text.
+- 
 ---
 
 0.8.5

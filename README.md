@@ -56,11 +56,11 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 - [x] Audio & video transcription
 - [x] Auto media pausing
 - [x] Recording auto deletion
-- [ ] Temporary mode (transcribe without saving)
+- [x] Temporary mode (transcribe without saving)
 - [x] App localization
 - [x] Better customizable keybinds
 - [x] Auto-dictionary
-- [ ] Personalization snippets
+- [x] Personalization snippets
 - [x] Windows support
 
 ## Contributing

@@ -17,6 +17,7 @@ mod model_manager;
 mod music;
 mod permissions;
 mod personalization;
+mod personalization_snippets;
 mod pill;
 mod platform;
 mod recent_transcriptions;

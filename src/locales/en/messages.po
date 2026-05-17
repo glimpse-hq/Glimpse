@@ -429,14 +429,59 @@ msgstr ""
 #~ msgstr "Auto-delete Recordings after"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.after_suffix"
-msgstr " after"
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcut.capture_placeholder"
+#~ msgstr "..."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcut.capture_placeholder"
-msgstr "..."
+#~ msgid "settings.general.cleanup.help"
+#~ msgstr "Cleans up transcripts after transcription while keeping the original meaning intact."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup"
+#~ msgstr "Cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.configure_prefix"
+#~ msgstr "Configure a language model in"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.info_aria"
+#~ msgstr "More information about Cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcut.record_aria"
+#~ msgstr "Record new shortcut for {label}, currently {shortcut}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.body"
+#~ msgstr "remove filler words and polish transcripts"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.help_requirement"
+#~ msgstr "Requires an enabled and configured language model in the Models tab."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.models_suffix"
+#~ msgstr "to use Cleanup."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.toggle_aria"
+#~ msgstr "Toggle Cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete_recordings.after_suffix"
+msgstr " after"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -970,16 +1015,6 @@ msgid "transcriptions.item.cleaning"
 msgstr "Cleaning..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.help"
-msgstr "Cleans up transcripts after transcription while keeping the original meaning intact."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup"
-msgstr "Cleanup"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.search.clear"
 msgstr "Clear search"
@@ -1107,11 +1142,6 @@ msgstr "Common questions about Glimpse"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.configure_prefix"
-msgstr "Configure a language model in"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.configure_prefix"
 msgstr "Configure a language model in"
 
 #. js-lingui-explicit-id
@@ -1746,6 +1776,11 @@ msgid "faq.title"
 msgstr "Frequently Asked Questions"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.snippets.full_list"
+msgstr "Full snippet list"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.section.general"
 msgstr "General"
@@ -2101,6 +2136,11 @@ msgid "updates.whats_new.major_release"
 msgstr "Major Release"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.help_temporary"
+msgstr "Makes a shortcut temporary. It will not save audio, transcript, or history."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.description"
 msgstr "Import audio and video files for transcription."
@@ -2193,13 +2233,13 @@ msgstr "More info"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.info_aria"
-msgstr "More information about Cleanup"
+msgid "settings.general.edit_mode.info_aria"
+msgstr "More information about Edit Mode"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.info_aria"
-msgstr "More information about Edit Mode"
+msgid "settings.general.shortcuts.info_aria"
+msgstr "More information about shortcut options"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2599,11 +2639,6 @@ msgid "settings.models.recommended"
 msgstr "Recommended"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcut.record_aria"
-msgstr "Record new shortcut for {label}, currently {shortcut}"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: formatShortcutForDisplay(smartShortcut)
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.ready.smart.capture_aria"
@@ -2653,11 +2688,6 @@ msgstr "Remove {tag}"
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.tags.remove"
 msgstr "Remove {tag}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.body"
-msgstr "remove filler words and polish transcripts"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -2717,11 +2747,6 @@ msgstr "requires a model with dictionary support"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.help_requirement"
-msgstr "Requires an enabled and configured language model in the Models tab."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.help_requirement"
 msgstr "Requires an enabled and configured language model in the Models tab."
 
 #. js-lingui-explicit-id
@@ -2843,6 +2868,11 @@ msgstr "right now"
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.run_cleanup"
 msgstr "Run cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.help_cleanup"
+msgstr "Runs Cleanup for that shortcut only."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3064,6 +3094,11 @@ msgstr "Show more"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.password.show"
 msgstr "Show password"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.snippets.info"
+msgstr "Show personalization snippet examples"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3323,11 +3358,6 @@ msgstr "Timestamps"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.models_suffix"
-msgstr "to use Cleanup."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.models_suffix"
 msgstr "to use Edit Mode."
 
@@ -3370,11 +3400,6 @@ msgstr "Toggle auto-pause media while recording"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update.toggle_aria"
 msgstr "Toggle auto-update"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.toggle_aria"
-msgstr "Toggle Cleanup"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3495,6 +3520,11 @@ msgstr "Usage Analytics"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.use"
 msgstr "Use"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.snippets.summary"
+msgstr "Use snippets to pass live context to the language model, like"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
