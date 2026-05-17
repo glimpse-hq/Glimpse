@@ -1,5 +1,7 @@
 use std::sync::OnceLock;
-use std::{env, process::Command};
+use std::env;
+#[cfg(target_os = "macos")]
+use std::process::Command;
 
 use chrono::{Datelike, Local};
 
@@ -122,6 +124,7 @@ fn truncate_dynamic_text(value: String) -> Option<String> {
     Some(trimmed.chars().take(MAX_DYNAMIC_TEXT_LEN).collect())
 }
 
+#[cfg(target_os = "macos")]
 fn run_command(program: &str, args: &[&str]) -> Option<String> {
     let output = Command::new(program).args(args).output().ok()?;
     if !output.status.success() {
