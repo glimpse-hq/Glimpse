@@ -804,6 +804,7 @@ export function useSettingsForm({
   ]);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (loading) return;
     if (captureActiveRef.current) return;
     if (!didHydrateRef.current) {
@@ -818,7 +819,7 @@ export function useSettingsForm({
       saveTimeoutRef.current = null;
       void saveSettingsNow();
     }, 500);
-  }, [loading, saveSettingsNow]);
+  }, [isOpen, loading, saveSettingsNow]);
 
   const handleOpenDataDir = useCallback(async () => {
     if (!appInfo?.data_dir_path) return;

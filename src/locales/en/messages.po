@@ -480,6 +480,11 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.threshold.three_months"
+#~ msgstr "3 months"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings.after_suffix"
 msgstr " after"
 
@@ -565,6 +570,11 @@ msgid "settings.models.installed_count"
 msgstr "{installedCount} installed"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.add_shortcut"
+msgstr "+ Add shortcut"
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.single"
 msgstr "1 entry"
@@ -578,11 +588,6 @@ msgstr "1 file"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.count.single"
 msgstr "1 replacement"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.three_months"
-msgstr "3 months"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1013,6 +1018,11 @@ msgstr "Choose your local model"
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.cleaning"
 msgstr "Cleaning..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.cleanup"
+msgstr "Cleanup"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -1881,6 +1891,11 @@ msgid "settings.account.password.hide"
 msgstr "Hide password"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.hide_shortcuts"
+msgstr "Hide shortcuts"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.history_sync"
 msgstr "History Sync"
@@ -2690,6 +2705,11 @@ msgid "library.modal.tags.remove"
 msgstr "Remove {tag}"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.remove_shortcut"
+msgstr "Remove shortcut"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.rename"
 msgstr "Rename"
@@ -3101,6 +3121,11 @@ msgid "personalization.modal.snippets.info"
 msgstr "Show personalization snippet examples"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.show_shortcuts"
+msgstr "Show shortcuts"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.show_timestamps"
 msgstr "Show timestamps"
@@ -3295,6 +3320,11 @@ msgstr "tap to toggle, hold to talk"
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.ready.smart.description"
 msgstr "tap to toggle, hold to talk"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.temporary"
+msgstr "Temporary"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
