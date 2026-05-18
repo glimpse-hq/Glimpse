@@ -1,7 +1,7 @@
-use std::sync::OnceLock;
 use std::env;
 #[cfg(target_os = "macos")]
 use std::process::Command;
+use std::sync::OnceLock;
 
 use chrono::{Datelike, Local};
 
