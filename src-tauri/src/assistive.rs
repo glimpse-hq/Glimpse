@@ -389,14 +389,17 @@ mod windows_uia {
 
     impl ComGuard {
         fn new() -> Option<Self> {
-            match unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) } {
-                Ok(()) => Some(Self {
+            let result = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+            if result.is_ok() {
+                Some(Self {
                     uninitialize_on_drop: true,
-                }),
-                Err(err) if err.code() == RPC_E_CHANGED_MODE => Some(Self {
+                })
+            } else if result == RPC_E_CHANGED_MODE {
+                Some(Self {
                     uninitialize_on_drop: false,
-                }),
-                Err(_) => None,
+                })
+            } else {
+                None
             }
         }
     }
