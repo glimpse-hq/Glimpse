@@ -20,7 +20,11 @@ import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEvents";
 import { useSettings } from "../../settings/queries";
-import { useModelCatalog } from "../../settings/models-queries";
+import {
+    modelKeys as settingsModelKeys,
+    useModelCatalog,
+    useModelStatuses,
+} from "../../settings/models-queries";
 import LibraryImportModal from "./LibraryImportModal";
 import LibraryCard from "./LibraryCard";
 import LibraryModal from "./LibraryModal";
@@ -47,7 +51,6 @@ import type {
     LibraryFilter,
     LibraryItem,
     LibraryItemPatch,
-    ModelStatus,
 } from "../../../types";
 
 type LibraryViewProps = {
@@ -69,7 +72,6 @@ const LibraryView = ({
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-    const [modelStatus, setModelStatus] = useState<Record<string, ModelStatus>>({});
     const [editingNameId, setEditingNameId] = useState<string | null>(null);
     const [editingNameDraft, setEditingNameDraft] = useState("");
     const [editingTagId, setEditingTagId] = useState<string | null>(null);
@@ -97,6 +99,14 @@ const LibraryView = ({
 
     const { data: availableTags = [] } = useLibraryTags(isActive);
     const { data: modelCatalog = [] } = useModelCatalog(isActive);
+    const modelCatalogKeys = useMemo(
+        () => modelCatalog.map((model) => model.key),
+        [modelCatalog],
+    );
+    const { statusByModel: modelStatus } = useModelStatuses(
+        modelCatalogKeys,
+        isActive,
+    );
     const { data: defaultModelKey = "" } = useSettings(
         (settings) => settings.local_model,
         isActive,
@@ -148,30 +158,10 @@ const LibraryView = ({
     }, [modelCatalog, modelStatus]);
 
     const refreshModelStatus = useCallback((modelKey: string) => {
-        invoke<ModelStatus>("check_model_status", { model: modelKey })
-            .then((status) => {
-                setModelStatus((prev) => ({ ...prev, [modelKey]: status }));
-            })
-            .catch((err) => {
-                console.error("Failed to check model status:", err);
-                setModelStatus((prev) => ({
-                    ...prev,
-                    [modelKey]: {
-                        key: modelKey,
-                        installed: false,
-                        bytes_on_disk: 0,
-                        missing_files: [],
-                        directory: "",
-                    },
-                }));
-            });
-    }, []);
-
-    useEffect(() => {
-        if (!isActive || modelCatalog.length === 0) return;
-
-        modelCatalog.forEach((model) => refreshModelStatus(model.key));
-    }, [isActive, modelCatalog, refreshModelStatus]);
+        void queryClient.invalidateQueries({
+            queryKey: settingsModelKeys.status(modelKey),
+        });
+    }, [queryClient]);
 
     useModelDownloadEvents({
         enabled: isActive,

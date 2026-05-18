@@ -29,6 +29,7 @@ import type { Replacement } from "../../../types";
 const normalizeEntry = (value: string) => value.trim();
 const toErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error);
+const DICTIONARY_ENTRY_LIMIT = 64;
 
 type QueuedPersistOptions<T> = {
   value: T;
@@ -177,7 +178,12 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const handleAdd = async () => {
     const value = normalizeEntry(newEntry);
     const currentEntries = entriesRef.current;
-    if (!value || currentEntries.includes(value)) return;
+    if (
+      !value ||
+      currentEntries.length >= DICTIONARY_ENTRY_LIMIT ||
+      currentEntries.includes(value)
+    )
+      return;
     await persistEntries([...currentEntries, value]);
   };
 
@@ -285,12 +291,18 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
       : entryCountLabel;
   const isEditingDictionary = editingIndex !== null;
   const isEditingReplacement = editingReplacementIndex !== null;
+  const isDictionaryFull = entries.length >= DICTIONARY_ENTRY_LIMIT;
   const editHintLabel = t({
     id: "dictionary.edit_hint",
     message: "Press Enter to save · Esc to cancel",
   });
   const dictionaryHintLabel = isEditingDictionary
     ? editHintLabel
+    : isDictionaryFull
+      ? t({
+          id: "dictionary.full_hint",
+          message: "Dictionary is full",
+        })
     : isSearching && entries.length > 0
       ? t({
           id: "dictionary.press_enter_to_add_match",
@@ -305,6 +317,15 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     : t({
         id: "dictionary.replacements.press_enter_to_add",
         message: "Press Enter in either field to add",
+      });
+  const dictionaryInputPlaceholder = isDictionaryFull
+    ? t({
+        id: "dictionary.search_only",
+        message: "Search dictionary...",
+      })
+    : t({
+        id: "dictionary.search_or_add",
+        message: "Search or add a word...",
       });
   const panelBodyClassName =
     "mt-4 min-h-[16rem] max-h-[calc(100vh-330px)] overflow-x-hidden overflow-y-auto custom-scrollbar";
@@ -416,10 +437,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                   handleAdd();
                 }
               }}
-              placeholder={t({
-                id: "dictionary.search_or_add",
-                message: "Search or add a word...",
-              })}
+              placeholder={dictionaryInputPlaceholder}
               aria-label={t({
                 id: "dictionary.search_or_add_aria",
                 message: "Add or search dictionary entry",
@@ -467,10 +485,16 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                         })}
                       </p>
                       <p className="ui-text-body-sm ui-color-muted">
-                        {t({
-                          id: "dictionary.add_prompt",
-                          message: `Press Enter to add "${newEntry.trim()}" as a new entry.`,
-                        })}
+                        {isDictionaryFull
+                          ? t({
+                              id: "dictionary.full_add_prompt",
+                              message:
+                                "Delete an entry before adding another.",
+                            })
+                          : t({
+                              id: "dictionary.add_prompt",
+                              message: `Press Enter to add "${newEntry.trim()}" as a new entry.`,
+                            })}
                       </p>
                     </>
                   ) : (

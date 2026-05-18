@@ -2,6 +2,7 @@ mod accessibility_context;
 mod analytics;
 mod assistive;
 mod audio;
+mod auto_dictionary;
 mod core;
 mod crypto;
 mod data_migration;
@@ -16,6 +17,7 @@ mod model_manager;
 mod music;
 mod permissions;
 mod personalization;
+mod personalization_snippets;
 mod pill;
 mod platform;
 mod recent_transcriptions;
@@ -405,6 +407,8 @@ pub fn run() {
             dictionary::set_dictionary,
             dictionary::get_replacements,
             dictionary::set_replacements,
+            auto_dictionary::accept_auto_dictionary_suggestion,
+            auto_dictionary::reject_auto_dictionary_suggestion,
             personalization::get_personalities,
             personalization::set_personalities,
             personalization::list_installed_apps,
@@ -413,7 +417,6 @@ pub fn run() {
             open_data_dir,
             get_transcriptions,
             delete_transcription,
-            delete_all_transcriptions,
             retry_transcription,
             retry_llm_cleanup,
             undo_llm_cleanup,
@@ -667,6 +670,9 @@ impl AppState {
         if matches!(next.transcription_mode, TranscriptionMode::Cloud) {
             next.transcription_mode = TranscriptionMode::Local;
         }
+        settings::sync_legacy_shortcuts_from_bindings(&mut next);
+        next.recording_prune_policy =
+            settings::canonicalize_recording_prune_policy(next.recording_prune_policy);
 
         self.settings_store.save(&next)?;
         *self.settings.lock() = next.clone();
@@ -1210,33 +1216,6 @@ fn delete_transcription(
 }
 
 #[tauri::command]
-fn delete_all_transcriptions(
-    app: AppHandle<AppRuntime>,
-    state: tauri::State<AppState>,
-) -> Result<u32, String> {
-    let audio_paths = state
-        .storage()
-        .delete_all()
-        .map_err(|err| format!("Failed to delete all transcriptions: {err}"))?;
-
-    let deleted_count = audio_paths.len() as u32;
-    for audio_path in audio_paths {
-        let _ = std::fs::remove_file(audio_path);
-    }
-
-    let settings = state.current_settings();
-    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = set_app_menu(&app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
-    }
-
-    Ok(deleted_count)
-}
-
-#[tauri::command]
 async fn retry_transcription(
     id: String,
     app: AppHandle<AppRuntime>,
@@ -1294,6 +1273,7 @@ pub(crate) fn persist_recording_async(
     app: AppHandle<AppRuntime>,
     recording: CompletedRecording,
     settings: settings::UserSettings,
+    temporary: bool,
 ) {
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
@@ -1312,7 +1292,13 @@ pub(crate) fn persist_recording_async(
         let task =
             async_runtime::spawn_blocking(move || recorder::persist_recording(base_dir, recording));
         match task.await {
-            Ok(Ok(saved)) => emit_complete(&app, saved, recording_for_transcription, settings),
+            Ok(Ok(saved)) => emit_complete(
+                &app,
+                saved,
+                recording_for_transcription,
+                settings,
+                temporary,
+            ),
             Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
             Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
         }
@@ -1324,6 +1310,7 @@ fn emit_complete(
     saved: RecordingSaved,
     recording: CompletedRecording,
     settings: settings::UserSettings,
+    temporary: bool,
 ) {
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
@@ -1351,7 +1338,7 @@ fn emit_complete(
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording, settings);
+    transcribe::queue_transcription(app, saved, recording, settings, temporary);
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {

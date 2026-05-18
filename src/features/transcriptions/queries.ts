@@ -111,14 +111,3 @@ export function useUndoLlmCleanup() {
     },
   });
 }
-
-export function useDeleteAllTranscriptions() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: transcriptionsApi.deleteAllTranscriptions,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-    },
-  });
-}

@@ -6,8 +6,9 @@ use tokio_util::sync::CancellationToken;
 use webrtc_vad::VadMode;
 
 use crate::{
-    accessibility_context, analytics, assistive, dictionary, llm_cleanup, mode_context,
-    model_manager,
+    accessibility_context, analytics, assistive, auto_dictionary, dictionary, llm_cleanup,
+    mode_context, model_manager,
+    model_manager::{model_supports_capability, MODEL_CAPABILITY_DICTIONARY},
     recorder::{speech_percentage_i16_with_mode, CompletedRecording, RecordingSaved},
     settings::{Personality, UserSettings},
     storage, toast, transcription_api, update_checker, AppRuntime, AppState,
@@ -49,6 +50,7 @@ struct CompletionInput {
     llm_cleaned: bool,
     metadata: storage::TranscriptionMetadata,
     mode: &'static str,
+    temporary: bool,
 }
 
 pub(crate) fn queue_transcription(
@@ -56,6 +58,7 @@ pub(crate) fn queue_transcription(
     saved: RecordingSaved,
     recording: CompletedRecording,
     settings: UserSettings,
+    temporary: bool,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -170,12 +173,14 @@ pub(crate) fn queue_transcription(
                 }
 
                 if pending_selected_text.is_some() && !llm_cleanup::is_llm_available(&settings) {
-                    emit_transcription_error(
+                    emit_transcription_error_inner(
                         &app_handle,
                         "Edit mode requires a selected language model. Choose one in Settings -> Models."
                             .to_string(),
                         "edit_mode",
                         saved_for_task.path.display().to_string(),
+                        true,
+                        temporary,
                     );
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
@@ -238,6 +243,7 @@ pub(crate) fn queue_transcription(
                         llm_cleaned: processed.llm_cleaned,
                         metadata,
                         mode: "local",
+                        temporary,
                     },
                 );
 
@@ -252,11 +258,13 @@ pub(crate) fn queue_transcription(
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
-                emit_transcription_error(
+                emit_transcription_error_inner(
                     &app_handle,
                     format!("Transcription failed: {err}"),
                     "local",
                     saved_for_task.path.display().to_string(),
+                    true,
+                    temporary,
                 );
                 app_handle.state::<AppState>().set_pending_path(None);
             }
@@ -341,10 +349,41 @@ async fn process_transcript_text(
 
     let mut pasted = false;
     if auto_paste && !final_transcript.trim().is_empty() {
-        let text = final_transcript.clone();
-        match async_runtime::spawn_blocking(move || assistive::paste_text(&text)).await {
-            Ok(Ok(())) => pasted = true,
-            Ok(Err(err)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
+        let can_read_field = !is_edit_mode && cfg!(any(target_os = "macos", target_os = "windows"));
+        let should_watch_auto_dictionary = can_read_field
+            && settings.auto_dictionary_enabled
+            && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY);
+        let transcript_to_paste = final_transcript.clone();
+        let paste_result = async_runtime::spawn_blocking(move || {
+            let pre_paste_snapshot = can_read_field
+                .then(assistive::focused_text_snapshot)
+                .flatten();
+            let text = pre_paste_snapshot
+                .as_ref()
+                .map(|snapshot| {
+                    match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
+                })
+                .unwrap_or(transcript_to_paste);
+            let result = assistive::paste_text(&text);
+            (result, pre_paste_snapshot, text)
+        })
+        .await;
+        match paste_result {
+            Ok((Ok(()), pre_paste_snapshot, pasted_text)) => {
+                pasted = true;
+                if let (true, Some(pre_paste_snapshot)) =
+                    (should_watch_auto_dictionary, pre_paste_snapshot)
+                {
+                    auto_dictionary::start_after_paste(
+                        app.clone(),
+                        pre_paste_snapshot,
+                        pasted_text,
+                        settings.dictionary.clone(),
+                        settings.auto_dictionary_ignored.clone(),
+                    );
+                }
+            }
+            Ok((Err(err), _, _)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
             Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
         }
     }
@@ -609,6 +648,7 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
         llm_cleaned,
         metadata,
         mode,
+        temporary,
     } = input;
 
     analytics::track_transcription_completed(app, mode, Some(&metadata.speech_model), llm_cleaned);
@@ -624,6 +664,11 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
     );
 
     app.state::<AppState>().pill().finish_processing(app);
+
+    if temporary {
+        let _ = std::fs::remove_file(&audio_path);
+        return;
+    }
 
     if llm_cleaned {
         let _ = app
@@ -684,6 +729,8 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
             mode: None,
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 
@@ -708,7 +755,7 @@ pub(crate) fn emit_transcription_error(
     stage: &str,
     audio_path: String,
 ) {
-    emit_transcription_error_inner(app, message, stage, audio_path, true);
+    emit_transcription_error_inner(app, message, stage, audio_path, true, false);
 }
 
 fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {
@@ -726,6 +773,8 @@ fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {
             mode: Some("local".into()),
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }
@@ -736,6 +785,7 @@ fn emit_transcription_error_inner(
     stage: &str,
     audio_path: String,
     reset_state: bool,
+    temporary: bool,
 ) {
     let reason = if message.contains("No speech") || message.contains("empty") {
         "no_speech"
@@ -764,17 +814,21 @@ fn emit_transcription_error_inner(
         ..Default::default()
     };
 
-    let record_result = state.storage().save_transcription(
-        String::new(),
-        audio_path.clone(),
-        storage::TranscriptionStatus::Error,
-        Some(toast_message.clone()),
-        metadata,
-        None,
-    );
+    if temporary {
+        let _ = std::fs::remove_file(&audio_path);
+    } else {
+        let record_result = state.storage().save_transcription(
+            String::new(),
+            audio_path.clone(),
+            storage::TranscriptionStatus::Error,
+            Some(toast_message.clone()),
+            metadata,
+            None,
+        );
 
-    if let Err(err) = record_result {
-        eprintln!("Failed to persist failed transcription: {err}");
+        if let Err(err) = record_result {
+            eprintln!("Failed to persist failed transcription: {err}");
+        }
     }
 
     if state.pill().status() == crate::pill::PillStatus::Listening {
@@ -793,6 +847,8 @@ fn emit_transcription_error_inner(
             mode: Some("local".into()),
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 
@@ -878,6 +934,57 @@ fn compute_audio_duration_seconds(saved: &RecordingSaved) -> f32 {
 
 pub(crate) fn count_words(text: &str) -> u32 {
     text.split_whitespace().count() as u32
+}
+
+fn match_insertion_capitalization(text: &str, field_value: &str) -> String {
+    let field_tail = field_value.trim_end_matches([' ', '\t']);
+    let Some(last_field_char) = field_tail.chars().last() else {
+        return text.to_string();
+    };
+    if matches!(last_field_char, '.' | '!' | '?' | '…' | ':' | '\n' | '\r')
+        || field_tail
+            .lines()
+            .next_back()
+            .is_some_and(line_is_list_marker)
+    {
+        return text.to_string();
+    }
+
+    let Some((index, first_letter)) = text.char_indices().find(|(_, ch)| ch.is_alphabetic()) else {
+        return text.to_string();
+    };
+    if preserves_leading_token_case(text, index) {
+        return text.to_string();
+    }
+
+    let mut result = String::with_capacity(text.len());
+    result.push_str(&text[..index]);
+    result.extend(first_letter.to_lowercase());
+    result.push_str(&text[index + first_letter.len_utf8()..]);
+    result
+}
+
+fn preserves_leading_token_case(text: &str, start: usize) -> bool {
+    let token: String = text[start..]
+        .chars()
+        .take_while(|ch| ch.is_alphabetic())
+        .collect();
+    if token.chars().count() <= 1 {
+        return false;
+    }
+
+    token.chars().all(|ch| !ch.is_lowercase()) || token.chars().skip(1).any(|ch| ch.is_uppercase())
+}
+
+fn line_is_list_marker(line: &str) -> bool {
+    let marker = line.trim();
+    if matches!(marker, "-" | "*" | "+" | "•") {
+        return true;
+    }
+
+    marker
+        .strip_suffix(['.', ')'])
+        .is_some_and(|prefix| !prefix.is_empty() && prefix.chars().all(|ch| ch.is_ascii_digit()))
 }
 
 pub(crate) fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
@@ -1094,6 +1201,8 @@ fn maybe_warn_llm_unavailable(app: &AppHandle<AppRuntime>, is_edit_mode: bool) {
                 mode: None,
                 action: Some("open_llm_cleanup_settings".to_string()),
                 action_label: Some("Open Settings".to_string()),
+                secondary_action: None,
+                secondary_action_label: None,
             },
         );
     } else {
@@ -1193,6 +1302,7 @@ pub(crate) fn finalize_streaming_transcription(
     duration_seconds: f32,
     audio_path: PathBuf,
     settings: UserSettings,
+    temporary: bool,
 ) {
     let state = app.state::<AppState>();
     state.clear_cancellation();
@@ -1277,6 +1387,7 @@ pub(crate) fn finalize_streaming_transcription(
                 llm_cleaned: processed.llm_cleaned,
                 metadata,
                 mode: "local_streaming",
+                temporary,
             },
         );
         app_handle.state::<AppState>().set_pending_path(None);

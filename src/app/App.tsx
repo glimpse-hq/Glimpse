@@ -1,15 +1,16 @@
-import { useState, useEffect, ComponentType } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import PillOverlay from "../features/pill/PillOverlay";
-import ToastOverlay from "../features/toast/ToastOverlay";
-import Home from "../Home";
-import OnboardingScreen from "../features/onboarding/OnboardingScreen";
 import { useSettings } from "../features/settings/queries";
 import type { TextSizeMode, ThemeMode } from "../types";
 import { detectAppPlatform } from "../platform/service";
 import { parseTextSizeMode, resolveTextScale } from "../shared/lib/textSize";
 import "./App.css";
+
+const Home = lazy(() => import("../Home"));
+const OnboardingScreen = lazy(() => import("../features/onboarding/OnboardingScreen"));
+const ToastOverlay = lazy(() => import("../features/toast/ToastOverlay"));
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
@@ -137,27 +138,40 @@ function App() {
     }
 
     return (
-      <div className="settings-view h-screen w-screen overflow-hidden">
-        {showOnboarding ? (
-          <OnboardingScreen onComplete={() => {}} />
-        ) : (
-          <Home />
-        )}
+      <Suspense
+        fallback={
+          <div className="settings-view h-screen w-screen overflow-hidden bg-surface-secondary" />
+        }
+      >
+        <div className="settings-view h-screen w-screen overflow-hidden">
+          {showOnboarding ? (
+            <OnboardingScreen onComplete={() => {}} />
+          ) : (
+            <Home />
+          )}
+        </div>
+      </Suspense>
+    );
+  }
+
+  if (windowLabel !== "toast") {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
+        <PillOverlay />
       </div>
     );
   }
 
-  const overlayRegistry: Record<string, ComponentType<Record<string, never>>> = {
-    main: PillOverlay,
-    pill: PillOverlay,
-    toast: ToastOverlay,
-  };
-
-  const ActiveOverlay = overlayRegistry[windowLabel] ?? PillOverlay;
   return (
-    <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
-      <ActiveOverlay />
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex h-screen w-screen items-center justify-center overflow-hidden" />
+      }
+    >
+      <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
+        <ToastOverlay />
+      </div>
+    </Suspense>
   );
 }
 

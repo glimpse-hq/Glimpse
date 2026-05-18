@@ -2,7 +2,8 @@ import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { Check, ExternalLink, Info, Pencil, Plus, Trash2, X } from "lucide-react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { Dropdown } from "../../../shared/ui/Dropdown";
 import type { Personality } from "../../../types";
@@ -116,6 +117,9 @@ type PersonalityModalProps = {
   onUpdateList: (updater: (current: Personality) => Personality) => void;
   onDelete: () => void;
 };
+
+const PERSONALIZATION_SNIPPETS_WIKI_URL =
+  "https://github.com/LegendarySpy/Glimpse/wiki/Personalization-Snippets";
 
 const PersonalityModal = ({
   personality,
@@ -467,12 +471,55 @@ const PersonalityModal = ({
 
           <div className="flex flex-col gap-4 p-4 flex-1 min-h-0">
             <section className="space-y-0.5">
-              <p className="ui-text-section-label-sm ui-color-muted">
-                {t({
-                  id: "personalization.modal.custom_instructions",
-                  message: "Custom instructions",
-                })}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className="ui-text-section-label-sm ui-color-muted">
+                  {t({
+                    id: "personalization.modal.custom_instructions",
+                    message: "Custom instructions",
+                  })}
+                </p>
+                <div className="group/snippets relative">
+                  <button
+                    type="button"
+                    className="flex h-4 w-4 items-center justify-center rounded-sm text-content-disabled transition-colors hover:text-content-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-hover"
+                    aria-label={t({
+                      id: "personalization.modal.snippets.info",
+                      message: "Show personalization snippet examples",
+                    })}
+                  >
+                    <Info size={11} aria-hidden="true" />
+                  </button>
+                  <div
+                    role="tooltip"
+                    className="absolute left-full top-1/2 z-30 hidden -translate-y-[42%] pl-2 group-hover/snippets:block group-focus-within/snippets:block"
+                  >
+                    <div className="w-72 rounded-lg border border-border-secondary bg-surface-overlay px-3 py-2.5 text-left shadow-lg">
+                      <p className="ui-text-meta ui-color-primary">
+                        {t({
+                          id: "personalization.modal.snippets.summary",
+                          message:
+                            "Use snippets to pass live context to the language model, like",
+                        })}{" "}
+                        <code>{"{{date}}"}</code>, <code>{"{{app}}"}</code>,{" "}
+                        <code>{"{{window}}"}</code>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void openUrl(PERSONALIZATION_SNIPPETS_WIKI_URL);
+                        }}
+                        className="mt-2 inline-flex items-center gap-1 ui-text-meta ui-color-muted underline decoration-border-hover underline-offset-2 transition-colors hover:text-content-secondary"
+                      >
+                        {t({
+                          id: "personalization.modal.snippets.full_list",
+                          message: "Full snippet list",
+                        })}
+                        <ExternalLink size={10} aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="relative rounded-xl border border-border-primary bg-surface-surface p-2 px-3">
                 <textarea
                   value={instructionsText}

@@ -10,4 +10,6 @@ export type ToastPayload = {
     mode?: "local" | "cloud";
     action?: string;
     actionLabel?: string;
+    secondaryAction?: string;
+    secondaryActionLabel?: string;
 };

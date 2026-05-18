@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as authApi from "./api";
-import type { User } from "./api";
 
 export const authKeys = {
   user: () => ["auth", "user"] as const,
@@ -25,5 +24,3 @@ export function useCurrentUser() {
       queryClient.invalidateQueries({ queryKey: authKeys.user() }),
   };
 }
-
-export type { User };

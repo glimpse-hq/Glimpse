@@ -29,10 +29,26 @@ pub(crate) enum ShortcutAction {
     Toggle,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ShortcutOptions {
+    pub temporary: bool,
+    pub cleanup_enabled: bool,
+}
+
+impl Default for ShortcutOptions {
+    fn default() -> Self {
+        Self {
+            temporary: false,
+            cleanup_enabled: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RegisteredHotkey {
     pub hotkey: Hotkey,
     pub action: ShortcutAction,
+    pub options: ShortcutOptions,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -74,15 +90,20 @@ impl HotkeyCoordinator {
                             break;
                         };
 
-                        for (action, hotkey_state) in state.process(event) {
-                            pill::handle_registered_hotkey_event(&app_handle, action, hotkey_state);
+                        for (action, hotkey_state, options) in state.process(event) {
+                            pill::handle_registered_hotkey_event(
+                                &app_handle,
+                                action,
+                                hotkey_state,
+                                options,
+                            );
                         }
                     }
                 }
             }
 
-            for (action, hotkey_state) in state.release_all() {
-                pill::handle_registered_hotkey_event(&app_handle, action, hotkey_state);
+            for (action, hotkey_state, options) in state.release_all() {
+                pill::handle_registered_hotkey_event(&app_handle, action, hotkey_state, options);
             }
             Ok(())
         })?;
@@ -198,7 +219,7 @@ impl RegisteredShortcutState {
         }
     }
 
-    fn process(&mut self, event: KeyEvent) -> Vec<(ShortcutAction, HotkeyState)> {
+    fn process(&mut self, event: KeyEvent) -> Vec<(ShortcutAction, HotkeyState, ShortcutOptions)> {
         if event.releases_everything() {
             return self.release_all();
         }
@@ -223,15 +244,13 @@ impl RegisteredShortcutState {
         for id in released {
             self.pressed.remove(&id);
             let binding = &self.bindings[id];
-            emitted.push((binding.action, HotkeyState::Released));
+            emitted.push((binding.action, HotkeyState::Released, binding.options));
         }
 
         if event.is_key_down && !event.repeat {
             for (id, binding) in self.bindings.iter().enumerate() {
-                if binding.hotkey.matches_event(&event) {
-                    if self.pressed.insert(id) {
-                        emitted.push((binding.action, HotkeyState::Pressed));
-                    }
+                if binding.hotkey.matches_event(&event) && self.pressed.insert(id) {
+                    emitted.push((binding.action, HotkeyState::Pressed, binding.options));
                 }
             }
         }
@@ -239,7 +258,7 @@ impl RegisteredShortcutState {
         emitted
     }
 
-    fn release_all(&mut self) -> Vec<(ShortcutAction, HotkeyState)> {
+    fn release_all(&mut self) -> Vec<(ShortcutAction, HotkeyState, ShortcutOptions)> {
         let mut pressed: Vec<usize> = self.pressed.drain().collect();
         pressed.sort_unstable();
         pressed
@@ -247,7 +266,7 @@ impl RegisteredShortcutState {
             .filter_map(|id| {
                 self.bindings
                     .get(id)
-                    .map(|binding| (binding.action, HotkeyState::Released))
+                    .map(|binding| (binding.action, HotkeyState::Released, binding.options))
             })
             .collect()
     }
@@ -490,15 +509,24 @@ mod tests {
         let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
             hotkey: Hotkey::new(Modifiers::CTRL, Key::Space).unwrap(),
             action: ShortcutAction::Hold,
+            options: ShortcutOptions::default(),
         }]);
 
         assert_eq!(
             state.process(event(Modifiers::CTRL_LEFT, Some(Key::Space), true)),
-            vec![(ShortcutAction::Hold, HotkeyState::Pressed)]
+            vec![(
+                ShortcutAction::Hold,
+                HotkeyState::Pressed,
+                ShortcutOptions::default()
+            )]
         );
         assert_eq!(
             state.process(event(Modifiers::empty(), None, false)),
-            vec![(ShortcutAction::Hold, HotkeyState::Released)]
+            vec![(
+                ShortcutAction::Hold,
+                HotkeyState::Released,
+                ShortcutOptions::default()
+            )]
         );
     }
 
@@ -507,12 +535,17 @@ mod tests {
         let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
             hotkey: Hotkey::new(Modifiers::CTRL, Key::Space).unwrap(),
             action: ShortcutAction::Smart,
+            options: ShortcutOptions::default(),
         }]);
 
         state.process(event(Modifiers::CTRL_LEFT, Some(Key::Space), true));
         assert_eq!(
             state.process(event(Modifiers::empty(), None, false)),
-            vec![(ShortcutAction::Smart, HotkeyState::Released)]
+            vec![(
+                ShortcutAction::Smart,
+                HotkeyState::Released,
+                ShortcutOptions::default()
+            )]
         );
     }
 
@@ -521,6 +554,7 @@ mod tests {
         let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
             hotkey: Hotkey::new(Modifiers::OPT_RIGHT, None).unwrap(),
             action: ShortcutAction::Hold,
+            options: ShortcutOptions::default(),
         }]);
 
         let press = KeyEvent {
@@ -533,7 +567,11 @@ mod tests {
 
         assert_eq!(
             state.process(press),
-            vec![(ShortcutAction::Hold, HotkeyState::Pressed)]
+            vec![(
+                ShortcutAction::Hold,
+                HotkeyState::Pressed,
+                ShortcutOptions::default()
+            )]
         );
         assert!(state.process(press).is_empty());
     }

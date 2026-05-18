@@ -12,6 +12,7 @@ type UseShortcutCaptureOptions = {
   onCancel: () => void | Promise<void>;
   onPreviewChange: (preview: string) => void;
   onShortcutCaptured: (shortcut: string) => void;
+  onCaptureCancelled?: () => void;
   onError?: (message: string) => void;
   onCaptureInput?: () => void;
 };
@@ -23,6 +24,7 @@ export function useShortcutCapture({
   onCancel,
   onPreviewChange,
   onShortcutCaptured,
+  onCaptureCancelled,
   onError,
   onCaptureInput,
 }: UseShortcutCaptureOptions) {
@@ -61,6 +63,7 @@ export function useShortcutCapture({
       } catch (error) {
         onError?.(String(error));
       } finally {
+        onCaptureCancelled?.();
         resetCaptureState();
       }
     };
@@ -127,6 +130,7 @@ export function useShortcutCapture({
   }, [
     active,
     onCancel,
+    onCaptureCancelled,
     onCaptureInput,
     onError,
     onPreviewChange,

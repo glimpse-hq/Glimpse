@@ -20,6 +20,32 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
     VIRTUAL_KEY, VK_C, VK_CONTROL, VK_V,
 };
 
+const MAX_FOCUSED_TEXT_SNAPSHOT_LEN: usize = 20_000;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FocusedTextSnapshot {
+    pub pid: i32,
+    pub role: Option<String>,
+    pub subrole: Option<String>,
+    pub value: String,
+    pub frame: Option<(f64, f64, f64, f64)>,
+}
+
+#[cfg(target_os = "macos")]
+pub fn focused_text_snapshot() -> Option<FocusedTextSnapshot> {
+    macos_ax::focused_text_snapshot()
+}
+
+#[cfg(target_os = "windows")]
+pub fn focused_text_snapshot() -> Option<FocusedTextSnapshot> {
+    windows_uia::focused_text_snapshot()
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+pub fn focused_text_snapshot() -> Option<FocusedTextSnapshot> {
+    None
+}
+
 #[cfg(target_os = "macos")]
 pub fn get_selected_text_ax() -> Option<String> {
     match macos_ax::probe_selection() {
@@ -64,12 +90,26 @@ mod macos_ax {
     type AXUIElementRef = *mut c_void;
     type AXError = i32;
     const AX_ERROR_SUCCESS: AXError = 0;
+    const AX_VALUE_TYPE_CG_POINT: u32 = 1;
+    const AX_VALUE_TYPE_CG_SIZE: u32 = 2;
     const AX_VALUE_TYPE_CF_RANGE: u32 = 4;
 
     #[repr(C)]
     struct CFRange {
         location: isize,
         length: isize,
+    }
+
+    #[repr(C)]
+    struct CGPoint {
+        x: f64,
+        y: f64,
+    }
+
+    #[repr(C)]
+    struct CGSize {
+        width: f64,
+        height: f64,
     }
 
     #[link(name = "ApplicationServices", kind = "framework")]
@@ -80,6 +120,7 @@ mod macos_ax {
             attribute: *const c_void,
             value: *mut *mut c_void,
         ) -> i32;
+        fn AXUIElementGetPid(element: *mut c_void, pid: *mut i32) -> i32;
         fn AXValueGetValue(value: *const c_void, ax_type: u32, value_ptr: *mut c_void) -> bool;
         fn AXIsProcessTrusted() -> u8;
     }
@@ -91,14 +132,63 @@ mod macos_ax {
     }
 
     pub(super) fn probe_selection() -> SelectionProbe {
-        if unsafe { AXIsProcessTrusted() } == 0 {
+        let Some(focused) = copy_focused_element() else {
             return SelectionProbe::Unknown;
+        };
+
+        unsafe {
+            let result = probe_focused(focused);
+            CFRelease(focused as CFTypeRef);
+            result
+        }
+    }
+
+    pub(super) fn focused_text_snapshot() -> Option<super::FocusedTextSnapshot> {
+        let focused = copy_focused_element()?;
+
+        unsafe {
+            let role = read_string_attribute(focused, "AXRole");
+            let subrole = read_string_attribute(focused, "AXSubrole");
+            if is_secure_text_field(role.as_deref(), subrole.as_deref()) {
+                CFRelease(focused as CFTypeRef);
+                return None;
+            }
+
+            let Some(value) = read_string_attribute(focused, "AXValue") else {
+                CFRelease(focused as CFTypeRef);
+                return None;
+            };
+            if value.len() > super::MAX_FOCUSED_TEXT_SNAPSHOT_LEN {
+                CFRelease(focused as CFTypeRef);
+                return None;
+            }
+
+            let frame = read_frame(focused);
+            let Some(pid) = read_pid(focused) else {
+                CFRelease(focused as CFTypeRef);
+                return None;
+            };
+            CFRelease(focused as CFTypeRef);
+
+            Some(super::FocusedTextSnapshot {
+                pid,
+                role,
+                subrole,
+                value,
+                frame,
+            })
+        }
+    }
+
+    fn copy_focused_element() -> Option<AXUIElementRef> {
+        if unsafe { AXIsProcessTrusted() } == 0 {
+            return None;
         }
 
         unsafe {
             let system = AXUIElementCreateSystemWide();
             if system.is_null() {
-                return SelectionProbe::Unknown;
+                return None;
             }
 
             let focused_attr = CFString::new("AXFocusedUIElement");
@@ -111,13 +201,15 @@ mod macos_ax {
             CFRelease(system as CFTypeRef);
 
             if err != AX_ERROR_SUCCESS || focused.is_null() {
-                return SelectionProbe::Unknown;
+                return None;
             }
 
-            let result = probe_focused(focused);
-            CFRelease(focused as CFTypeRef);
-            result
+            Some(focused)
         }
+    }
+
+    fn is_secure_text_field(role: Option<&str>, subrole: Option<&str>) -> bool {
+        matches!(role, Some("AXSecureTextField")) || matches!(subrole, Some("AXSecureTextField"))
     }
 
     unsafe fn probe_focused(focused: AXUIElementRef) -> SelectionProbe {
@@ -160,6 +252,40 @@ mod macos_ax {
         ok.then_some(range)
     }
 
+    unsafe fn read_pid(element: AXUIElementRef) -> Option<i32> {
+        let mut pid = 0;
+        let err = AXUIElementGetPid(element, &mut pid);
+        (err == AX_ERROR_SUCCESS).then_some(pid)
+    }
+
+    unsafe fn read_frame(element: AXUIElementRef) -> Option<(f64, f64, f64, f64)> {
+        let position_value = copy_attribute(element, "AXPosition")?;
+        let Some(size_value) = copy_attribute(element, "AXSize") else {
+            CFRelease(position_value as CFTypeRef);
+            return None;
+        };
+
+        let mut point = CGPoint { x: 0.0, y: 0.0 };
+        let mut size = CGSize {
+            width: 0.0,
+            height: 0.0,
+        };
+        let point_ok = AXValueGetValue(
+            position_value,
+            AX_VALUE_TYPE_CG_POINT,
+            &mut point as *mut CGPoint as *mut c_void,
+        );
+        let size_ok = AXValueGetValue(
+            size_value,
+            AX_VALUE_TYPE_CG_SIZE,
+            &mut size as *mut CGSize as *mut c_void,
+        );
+        CFRelease(position_value as CFTypeRef);
+        CFRelease(size_value as CFTypeRef);
+
+        (point_ok && size_ok).then_some((point.x, point.y, size.width, size.height))
+    }
+
     unsafe fn copy_attribute(element: AXUIElementRef, attribute: &str) -> Option<*mut c_void> {
         let attribute = CFString::new(attribute);
         let mut value: *mut c_void = ptr::null_mut();
@@ -174,6 +300,118 @@ mod macos_ax {
         }
 
         None
+    }
+}
+
+#[cfg(target_os = "windows")]
+mod windows_uia {
+    use super::{FocusedTextSnapshot, MAX_FOCUSED_TEXT_SNAPSHOT_LEN};
+    use windows::Win32::{
+        Foundation::RPC_E_CHANGED_MODE,
+        System::Com::{
+            CoCreateInstance, CoInitializeEx, CoUninitialize, CLSCTX_INPROC_SERVER,
+            COINIT_APARTMENTTHREADED,
+        },
+        UI::Accessibility::{
+            CUIAutomation, IUIAutomation, IUIAutomationElement, IUIAutomationTextPattern,
+            IUIAutomationValuePattern, UIA_TextPatternId, UIA_ValuePatternId,
+        },
+    };
+
+    pub(super) fn focused_text_snapshot() -> Option<FocusedTextSnapshot> {
+        unsafe {
+            let _guard = ComGuard::new()?;
+            let automation: IUIAutomation =
+                CoCreateInstance(&CUIAutomation, None, CLSCTX_INPROC_SERVER).ok()?;
+            let element = automation.GetFocusedElement().ok()?;
+
+            if element.CurrentIsPassword().ok()?.as_bool() {
+                return None;
+            }
+
+            let value = read_text_value(&element)?;
+            if value.len() > MAX_FOCUSED_TEXT_SNAPSHOT_LEN {
+                return None;
+            }
+
+            let pid = element.CurrentProcessId().ok()?;
+            let role = element
+                .CurrentControlType()
+                .ok()
+                .map(|control_type| control_type.0.to_string());
+            let subrole = element
+                .CurrentLocalizedControlType()
+                .ok()
+                .map(|control_type| control_type.to_string());
+            let frame = element.CurrentBoundingRectangle().ok().map(|rect| {
+                (
+                    rect.left as f64,
+                    rect.top as f64,
+                    (rect.right - rect.left) as f64,
+                    (rect.bottom - rect.top) as f64,
+                )
+            });
+
+            Some(FocusedTextSnapshot {
+                pid,
+                role,
+                subrole,
+                value,
+                frame,
+            })
+        }
+    }
+
+    fn read_text_value(element: &IUIAutomationElement) -> Option<String> {
+        unsafe {
+            if let Ok(pattern) =
+                element.GetCurrentPatternAs::<IUIAutomationValuePattern>(UIA_ValuePatternId)
+            {
+                return Some(pattern.CurrentValue().ok()?.to_string());
+            }
+
+            let pattern = element
+                .GetCurrentPatternAs::<IUIAutomationTextPattern>(UIA_TextPatternId)
+                .ok()?;
+            let range = pattern.DocumentRange().ok()?;
+            let max_length = MAX_FOCUSED_TEXT_SNAPSHOT_LEN
+                .saturating_add(1)
+                .try_into()
+                .ok()?;
+
+            Some(range.GetText(max_length).ok()?.to_string())
+        }
+    }
+
+    struct ComGuard {
+        uninitialize_on_drop: bool,
+    }
+
+    impl ComGuard {
+        fn new() -> Option<Self> {
+            let result = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
+            if result.is_ok() {
+                Some(Self {
+                    uninitialize_on_drop: true,
+                })
+            } else if result == RPC_E_CHANGED_MODE {
+                Some(Self {
+                    uninitialize_on_drop: false,
+                })
+            } else {
+                None
+            }
+        }
+    }
+
+    impl Drop for ComGuard {
+        fn drop(&mut self) {
+            if self.uninitialize_on_drop {
+                unsafe {
+                    CoUninitialize();
+                }
+            }
+        }
     }
 }
 

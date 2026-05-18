@@ -419,9 +419,69 @@ msgstr ""
 #~ msgstr "What's Glimpse Cloud?"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.prune.three_months"
+#~ msgstr "3 Months"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.after"
+#~ msgstr "Auto-delete Recordings after"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcut.capture_placeholder"
-msgstr "..."
+#~ msgid "settings.general.shortcut.capture_placeholder"
+#~ msgstr "..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.help"
+#~ msgstr "Cleans up transcripts after transcription while keeping the original meaning intact."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup"
+#~ msgstr "Cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.configure_prefix"
+#~ msgstr "Configure a language model in"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.info_aria"
+#~ msgstr "More information about Cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcut.record_aria"
+#~ msgstr "Record new shortcut for {label}, currently {shortcut}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.body"
+#~ msgstr "remove filler words and polish transcripts"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.help_requirement"
+#~ msgstr "Requires an enabled and configured language model in the Models tab."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.models_suffix"
+#~ msgstr "to use Cleanup."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.cleanup.toggle_aria"
+#~ msgstr "Toggle Cleanup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete_recordings.after_suffix"
+msgstr " after"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -505,16 +565,6 @@ msgid "settings.models.installed_count"
 msgstr "{installedCount} installed"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.day"
-msgstr "1 day"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.day"
-msgstr "1 Day"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.single"
 msgstr "1 entry"
@@ -525,39 +575,9 @@ msgid "library.import.summary.single"
 msgstr "1 file"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.month"
-msgstr "1 month"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.month"
-msgstr "1 Month"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.count.single"
 msgstr "1 replacement"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.week"
-msgstr "1 week"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.week"
-msgstr "1 Week"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.threshold.year"
-msgstr "1 year"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.year"
-msgstr "1 Year"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -566,8 +586,43 @@ msgstr "3 months"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune.three_months"
-msgstr "3 Months"
+msgid "settings.app.prune.threshold.day"
+msgstr "a day"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.day"
+msgstr "A Day"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.threshold.month"
+msgstr "a month"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.month"
+msgstr "A Month"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.threshold.week"
+msgstr "a week"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.week"
+msgstr "A Week"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.threshold.year"
+msgstr "a year"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.year"
+msgstr "A Year"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -770,6 +825,11 @@ msgid "settings.app.auto_delete_recordings.body"
 msgstr "Auto deletes local audio files."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary"
+msgstr "Auto Dictionary"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings"
 msgstr "Auto-delete Recordings"
@@ -955,16 +1015,6 @@ msgid "transcriptions.item.cleaning"
 msgstr "Cleaning..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.help"
-msgstr "Cleans up transcripts after transcription while keeping the original meaning intact."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup"
-msgstr "Cleanup"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.search.clear"
 msgstr "Clear search"
@@ -1092,11 +1142,6 @@ msgstr "Common questions about Glimpse"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.configure_prefix"
-msgstr "Configure a language model in"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.configure_prefix"
 msgstr "Configure a language model in"
 
 #. js-lingui-explicit-id
@@ -1393,6 +1438,11 @@ msgid "dictionary.delete_entry"
 msgstr "Delete {entry}"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.full_add_prompt"
+msgstr "Delete an entry before adding another."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.delete.failed"
 msgstr "Delete failed"
@@ -1447,6 +1497,11 @@ msgstr "Dictionary"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.combined.title"
 msgstr "Dictionary & Replacements"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.full_hint"
+msgstr "Dictionary is full"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
@@ -1719,6 +1774,11 @@ msgstr "Free, no account required"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.title"
 msgstr "Frequently Asked Questions"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.snippets.full_list"
+msgstr "Full snippet list"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -2076,6 +2136,11 @@ msgid "updates.whats_new.major_release"
 msgstr "Major Release"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.help_temporary"
+msgstr "Makes a shortcut temporary. It will not save audio, transcript, or history."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.description"
 msgstr "Import audio and video files for transcription."
@@ -2168,13 +2233,13 @@ msgstr "More info"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.info_aria"
-msgstr "More information about Cleanup"
+msgid "settings.general.edit_mode.info_aria"
+msgstr "More information about Edit Mode"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.info_aria"
-msgstr "More information about Edit Mode"
+msgid "settings.general.shortcuts.info_aria"
+msgstr "More information about shortcut options"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2574,11 +2639,6 @@ msgid "settings.models.recommended"
 msgstr "Recommended"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcut.record_aria"
-msgstr "Record new shortcut for {label}, currently {shortcut}"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: formatShortcutForDisplay(smartShortcut)
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.ready.smart.capture_aria"
@@ -2628,11 +2688,6 @@ msgstr "Remove {tag}"
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.tags.remove"
 msgstr "Remove {tag}"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.body"
-msgstr "remove filler words and polish transcripts"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -2686,12 +2741,12 @@ msgstr "Required to capture your voice for transcription."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.help_requirement"
-msgstr "Requires an enabled and configured language model in the Models tab."
+msgid "settings.general.auto_dictionary.unsupported_body"
+msgstr "requires a model with dictionary support"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.help_requirement"
+msgid "settings.general.edit_mode.help_requirement"
 msgstr "Requires an enabled and configured language model in the Models tab."
 
 #. js-lingui-explicit-id
@@ -2816,6 +2871,11 @@ msgstr "Run cleanup"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.help_cleanup"
+msgstr "Runs Cleanup for that shortcut only."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.local.description"
 msgstr "Runs entirely on your device"
 
@@ -2853,6 +2913,11 @@ msgstr "Search applications..."
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model.search"
 msgstr "Search available models..."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.search_only"
+msgstr "Search dictionary..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3031,6 +3096,11 @@ msgid "settings.account.password.show"
 msgstr "Show password"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.snippets.info"
+msgstr "Show personalization snippet examples"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.show_timestamps"
 msgstr "Show timestamps"
@@ -3150,6 +3220,11 @@ msgstr "Store original file"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.subscription"
 msgstr "Subscription"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary.body"
+msgstr "suggests names and terms after you correct dictated text"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3283,11 +3358,6 @@ msgstr "Timestamps"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.models_suffix"
-msgstr "to use Cleanup."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.models_suffix"
 msgstr "to use Edit Mode."
 
@@ -3317,6 +3387,11 @@ msgid "settings.language_model.toggle"
 msgstr "Toggle AI features"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.auto_dictionary.toggle_aria"
+msgstr "Toggle Auto Dictionary"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.toggle_aria"
 msgstr "Toggle auto-pause media while recording"
@@ -3325,11 +3400,6 @@ msgstr "Toggle auto-pause media while recording"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update.toggle_aria"
 msgstr "Toggle auto-update"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cleanup.toggle_aria"
-msgstr "Toggle Cleanup"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3450,6 +3520,11 @@ msgstr "Usage Analytics"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.use"
 msgstr "Use"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.snippets.summary"
+msgstr "Use snippets to pass live context to the language model, like"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx

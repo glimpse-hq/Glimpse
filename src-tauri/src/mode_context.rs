@@ -1,5 +1,8 @@
 use crate::settings::{Personality, UserSettings};
-use crate::{accessibility_context, permissions};
+use crate::{
+    accessibility_context, permissions,
+    personalization_snippets::{expand_personalization_snippets, SnippetContext},
+};
 
 #[derive(Debug, Clone)]
 pub struct ModeContextMode {
@@ -90,7 +93,37 @@ fn mode_matches(mode: &Personality, context: &accessibility_context::ActiveConte
     app_match || site_match
 }
 
-fn resolve_mode_context(settings: &UserSettings) -> Option<Vec<ModeContextMode>> {
+fn format_mode_context_with_snippets(
+    modes: &[ModeContextMode],
+    snippet_context: Option<&SnippetContext>,
+) -> String {
+    let mut lines = Vec::new();
+    for mode in modes {
+        let normalized_instructions: Vec<String> = mode
+            .instructions
+            .iter()
+            .filter_map(|instruction| {
+                let normalized = instruction.trim().trim_start_matches('-').trim();
+                if normalized.is_empty() {
+                    return None;
+                }
+                let expanded = expand_personalization_snippets(normalized, snippet_context);
+                Some(format!("- {}", expanded))
+            })
+            .collect();
+
+        if normalized_instructions.is_empty() {
+            continue;
+        }
+
+        lines.push(format!("Mode: {}", mode.name));
+        lines.extend(normalized_instructions);
+    }
+
+    lines.join("\n")
+}
+
+pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<String> {
     if !permissions::check_accessibility_permission() {
         return None;
     }
@@ -111,35 +144,8 @@ fn resolve_mode_context(settings: &UserSettings) -> Option<Vec<ModeContextMode>>
         return None;
     }
 
-    Some(modes)
-}
-
-pub fn format_mode_context(modes: &[ModeContextMode]) -> String {
-    let mut lines = Vec::new();
-    for mode in modes {
-        let normalized_instructions: Vec<String> = mode
-            .instructions
-            .iter()
-            .filter_map(|instruction| {
-                let normalized = instruction.trim().trim_start_matches('-').trim();
-                (!normalized.is_empty()).then(|| format!("- {}", normalized))
-            })
-            .collect();
-
-        if normalized_instructions.is_empty() {
-            continue;
-        }
-
-        lines.push(format!("Mode: {}", mode.name));
-        lines.extend(normalized_instructions);
-    }
-
-    lines.join("\n")
-}
-
-pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<String> {
-    let modes = resolve_mode_context(settings)?;
-    let instructions = format_mode_context(&modes);
+    let snippet_context = SnippetContext::from_active_context(&context);
+    let instructions = format_mode_context_with_snippets(&modes, Some(&snippet_context));
     if instructions.is_empty() {
         None
     } else {
@@ -148,11 +154,18 @@ pub fn format_active_cleanup_style_guidance(settings: &UserSettings) -> Option<S
 }
 
 pub fn format_cleanup_style_guidance_for_personality(personality: &Personality) -> Option<String> {
+    let snippet_context = if permissions::check_accessibility_permission() {
+        accessibility_context::get_active_context()
+            .as_ref()
+            .map(SnippetContext::from_active_context)
+    } else {
+        None
+    };
     let mode = ModeContextMode {
         name: personality.name.clone(),
         instructions: personality.instructions.clone(),
     };
-    let instructions = format_mode_context(&[mode]);
+    let instructions = format_mode_context_with_snippets(&[mode], snippet_context.as_ref());
     if instructions.is_empty() {
         None
     } else {

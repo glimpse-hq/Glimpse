@@ -14,6 +14,7 @@ const KEY_HOLD_SHORTCUT: &str = "hold_shortcut";
 const KEY_HOLD_ENABLED: &str = "hold_enabled";
 const KEY_TOGGLE_SHORTCUT: &str = "toggle_shortcut";
 const KEY_TOGGLE_ENABLED: &str = "toggle_enabled";
+const KEY_SHORTCUT_BINDINGS: &str = "shortcut_bindings";
 const KEY_TRANSCRIPTION_MODE: &str = "transcription_mode";
 const KEY_LOCAL_MODEL: &str = "local_model";
 const KEY_MICROPHONE_DEVICE: &str = "microphone_device";
@@ -31,6 +32,8 @@ const KEY_LLM_MODEL: &str = "llm_model";
 const KEY_USER_NAME: &str = "user_name";
 const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
+const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
+const KEY_AUTO_DICTIONARY_IGNORED: &str = "auto_dictionary_ignored";
 const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
@@ -60,6 +63,25 @@ pub struct Personality {
     pub instructions: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ShortcutBinding {
+    pub shortcut: String,
+    #[serde(default)]
+    pub temporary: bool,
+    #[serde(default)]
+    pub cleanup_enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ShortcutBindings {
+    #[serde(default)]
+    pub smart: Vec<ShortcutBinding>,
+    #[serde(default)]
+    pub hold: Vec<ShortcutBinding>,
+    #[serde(default)]
+    pub toggle: Vec<ShortcutBinding>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserSettings {
     #[serde(default)]
@@ -78,6 +100,8 @@ pub struct UserSettings {
     pub toggle_shortcut: String,
     #[serde(default)]
     pub toggle_enabled: bool,
+    #[serde(default = "default_shortcut_bindings")]
+    pub shortcut_bindings: ShortcutBindings,
     #[serde(default = "default_transcription_mode")]
     pub transcription_mode: TranscriptionMode,
     #[serde(default = "default_local_model")]
@@ -109,6 +133,10 @@ pub struct UserSettings {
     #[serde(default)]
     pub dictionary: Vec<String>,
     #[serde(default)]
+    pub auto_dictionary_enabled: bool,
+    #[serde(default)]
+    pub auto_dictionary_ignored: Vec<String>,
+    #[serde(default)]
     pub replacements: Vec<Replacement>,
     #[serde(default = "default_personalities")]
     pub personalities: Vec<Personality>,
@@ -138,6 +166,58 @@ fn default_hold_shortcut() -> String {
 
 fn default_toggle_shortcut() -> String {
     "Control+Alt+Space".to_string()
+}
+
+pub fn default_shortcut_bindings() -> ShortcutBindings {
+    ShortcutBindings {
+        smart: vec![ShortcutBinding {
+            shortcut: default_smart_shortcut(),
+            temporary: false,
+            cleanup_enabled: false,
+        }],
+        hold: vec![ShortcutBinding {
+            shortcut: default_hold_shortcut(),
+            temporary: false,
+            cleanup_enabled: false,
+        }],
+        toggle: vec![ShortcutBinding {
+            shortcut: default_toggle_shortcut(),
+            temporary: false,
+            cleanup_enabled: false,
+        }],
+    }
+}
+
+pub fn shortcut_bindings_from_legacy(settings: &UserSettings) -> ShortcutBindings {
+    ShortcutBindings {
+        smart: vec![ShortcutBinding {
+            shortcut: settings.smart_shortcut.clone(),
+            temporary: false,
+            cleanup_enabled: settings.cleanup_enabled,
+        }],
+        hold: vec![ShortcutBinding {
+            shortcut: settings.hold_shortcut.clone(),
+            temporary: false,
+            cleanup_enabled: settings.cleanup_enabled,
+        }],
+        toggle: vec![ShortcutBinding {
+            shortcut: settings.toggle_shortcut.clone(),
+            temporary: false,
+            cleanup_enabled: settings.cleanup_enabled,
+        }],
+    }
+}
+
+pub fn sync_legacy_shortcuts_from_bindings(settings: &mut UserSettings) {
+    if let Some(binding) = settings.shortcut_bindings.smart.first() {
+        settings.smart_shortcut = binding.shortcut.clone();
+    }
+    if let Some(binding) = settings.shortcut_bindings.hold.first() {
+        settings.hold_shortcut = binding.shortcut.clone();
+    }
+    if let Some(binding) = settings.shortcut_bindings.toggle.first() {
+        settings.toggle_shortcut = binding.shortcut.clone();
+    }
 }
 
 fn default_true() -> bool {
@@ -328,6 +408,7 @@ impl Default for UserSettings {
             hold_enabled: false,
             toggle_shortcut: default_toggle_shortcut(),
             toggle_enabled: false,
+            shortcut_bindings: default_shortcut_bindings(),
             transcription_mode: default_transcription_mode(),
             local_model: default_local_model(),
             microphone_device: None,
@@ -344,6 +425,8 @@ impl Default for UserSettings {
             user_name: String::new(),
             personalities_notes_seeded: false,
             dictionary: Vec::new(),
+            auto_dictionary_enabled: false,
+            auto_dictionary_ignored: Vec::new(),
             replacements: Vec::new(),
             personalities: default_personalities(),
             edit_mode_enabled: false,
@@ -384,6 +467,13 @@ pub enum RecordingPrunePolicy {
 
 fn default_recording_prune_policy() -> RecordingPrunePolicy {
     RecordingPrunePolicy::Never
+}
+
+pub fn canonicalize_recording_prune_policy(policy: RecordingPrunePolicy) -> RecordingPrunePolicy {
+    match policy {
+        RecordingPrunePolicy::ThreeMonths => RecordingPrunePolicy::Year,
+        policy => policy,
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -546,6 +636,7 @@ impl SettingsStore {
         let llm_enabled_exists: bool;
         let cleanup_enabled_exists: bool;
         let theme_mode_exists: bool;
+        let shortcut_bindings_exists: bool;
         {
             let conn = self.conn.lock();
 
@@ -566,6 +657,12 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_TOGGLE_SHORTCUT, settings.toggle_shortcut.clone())?;
             settings.toggle_enabled =
                 self.read_value(&conn, KEY_TOGGLE_ENABLED, settings.toggle_enabled)?;
+            let shortcut_bindings =
+                self.read_optional_value::<ShortcutBindings>(&conn, KEY_SHORTCUT_BINDINGS)?;
+            shortcut_bindings_exists = shortcut_bindings.is_some();
+            if let Some(shortcut_bindings) = shortcut_bindings {
+                settings.shortcut_bindings = shortcut_bindings;
+            }
             settings.transcription_mode = self.read_value(
                 &conn,
                 KEY_TRANSCRIPTION_MODE,
@@ -616,6 +713,16 @@ impl SettingsStore {
             )?;
             settings.dictionary =
                 self.read_value(&conn, KEY_DICTIONARY, settings.dictionary.clone())?;
+            settings.auto_dictionary_enabled = self.read_value(
+                &conn,
+                KEY_AUTO_DICTIONARY_ENABLED,
+                settings.auto_dictionary_enabled,
+            )?;
+            settings.auto_dictionary_ignored = self.read_value(
+                &conn,
+                KEY_AUTO_DICTIONARY_IGNORED,
+                settings.auto_dictionary_ignored.clone(),
+            )?;
             settings.replacements =
                 self.read_value(&conn, KEY_REPLACEMENTS, settings.replacements.clone())?;
             settings.personalities =
@@ -694,6 +801,29 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        if !shortcut_bindings_exists {
+            settings.shortcut_bindings = shortcut_bindings_from_legacy(&settings);
+            should_persist = true;
+        }
+
+        if settings.cleanup_enabled {
+            if !shortcut_bindings_exists {
+                for binding in settings
+                    .shortcut_bindings
+                    .smart
+                    .iter_mut()
+                    .chain(settings.shortcut_bindings.hold.iter_mut())
+                    .chain(settings.shortcut_bindings.toggle.iter_mut())
+                {
+                    binding.cleanup_enabled = true;
+                }
+            }
+            settings.cleanup_enabled = false;
+            should_persist = true;
+        }
+
+        sync_legacy_shortcuts_from_bindings(&mut settings);
+
         if crate::model_manager::definition(&settings.local_model).is_none() {
             settings.local_model = default_local_model();
             should_persist = true;
@@ -701,6 +831,13 @@ impl SettingsStore {
 
         if matches!(settings.transcription_mode, TranscriptionMode::Cloud) {
             settings.transcription_mode = TranscriptionMode::Local;
+            should_persist = true;
+        }
+
+        let canonical_prune_policy =
+            canonicalize_recording_prune_policy(settings.recording_prune_policy);
+        if settings.recording_prune_policy != canonical_prune_policy {
+            settings.recording_prune_policy = canonical_prune_policy;
             should_persist = true;
         }
 
@@ -757,6 +894,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_HOLD_ENABLED, &settings.hold_enabled)?;
         self.write_value(&conn, KEY_TOGGLE_SHORTCUT, &settings.toggle_shortcut)?;
         self.write_value(&conn, KEY_TOGGLE_ENABLED, &settings.toggle_enabled)?;
+        self.write_value(&conn, KEY_SHORTCUT_BINDINGS, &settings.shortcut_bindings)?;
         self.write_value(&conn, KEY_TRANSCRIPTION_MODE, &settings.transcription_mode)?;
         self.write_value(&conn, KEY_LOCAL_MODEL, &settings.local_model)?;
         self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
@@ -778,6 +916,16 @@ impl SettingsStore {
             &settings.personalities_notes_seeded,
         )?;
         self.write_value(&conn, KEY_DICTIONARY, &settings.dictionary)?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_DICTIONARY_ENABLED,
+            &settings.auto_dictionary_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_DICTIONARY_IGNORED,
+            &settings.auto_dictionary_ignored,
+        )?;
         self.write_value(&conn, KEY_REPLACEMENTS, &settings.replacements)?;
         self.write_value(&conn, KEY_PERSONALITIES, &settings.personalities)?;
         self.write_value(&conn, KEY_EDIT_MODE_ENABLED, &settings.edit_mode_enabled)?;
@@ -912,9 +1060,24 @@ mod tests {
         let loaded = store.load().expect("load settings");
 
         assert!(loaded.llm_enabled);
-        assert!(loaded.cleanup_enabled);
+        assert!(!loaded.cleanup_enabled);
+        assert!(loaded
+            .shortcut_bindings
+            .smart
+            .iter()
+            .all(|binding| binding.cleanup_enabled));
+        assert!(loaded
+            .shortcut_bindings
+            .hold
+            .iter()
+            .all(|binding| binding.cleanup_enabled));
+        assert!(loaded
+            .shortcut_bindings
+            .toggle
+            .iter()
+            .all(|binding| binding.cleanup_enabled));
         assert!(read_bool_setting(&store, KEY_LLM_ENABLED));
-        assert!(read_bool_setting(&store, KEY_CLEANUP_ENABLED));
+        assert!(!read_bool_setting(&store, KEY_CLEANUP_ENABLED));
         let conn = store.conn.lock();
         let legacy_raw = store
             .read_optional_raw_value_from_conn(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)
@@ -932,9 +1095,24 @@ mod tests {
         let loaded = store.load().expect("load settings");
 
         assert!(!loaded.llm_enabled);
-        assert!(loaded.cleanup_enabled);
+        assert!(!loaded.cleanup_enabled);
+        assert!(loaded
+            .shortcut_bindings
+            .smart
+            .iter()
+            .all(|binding| binding.cleanup_enabled));
+        assert!(loaded
+            .shortcut_bindings
+            .hold
+            .iter()
+            .all(|binding| binding.cleanup_enabled));
+        assert!(loaded
+            .shortcut_bindings
+            .toggle
+            .iter()
+            .all(|binding| binding.cleanup_enabled));
         assert!(!read_bool_setting(&store, KEY_LLM_ENABLED));
-        assert!(read_bool_setting(&store, KEY_CLEANUP_ENABLED));
+        assert!(!read_bool_setting(&store, KEY_CLEANUP_ENABLED));
         let conn = store.conn.lock();
         let legacy_raw = store
             .read_optional_raw_value_from_conn(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)

@@ -104,6 +104,8 @@ pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcriptio
             mode: None,
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }
@@ -121,6 +123,8 @@ fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
             mode: None,
             action: None,
             action_label: None,
+            secondary_action: None,
+            secondary_action_label: None,
         },
     );
 }

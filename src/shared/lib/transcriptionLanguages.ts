@@ -2,7 +2,7 @@ import type { ModelInfo, ModelStatus } from "../../types";
 
 export type TranscriptionEngineId = string;
 
-export type LanguageSupportBadge = {
+type LanguageSupportBadge = {
     engine: TranscriptionEngineId;
     label: string;
     highlighted: boolean;

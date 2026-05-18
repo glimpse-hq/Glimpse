@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { usePillState } from "./usePillState";
@@ -172,13 +172,17 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const { t } = useLingui();
   const {
     pillStatus,
-    spectrumBins,
-    lastSpectrumAt,
+    spectrumBinsRef,
+    lastSpectrumAtRef,
     isErrorFlashing,
     isExpanded,
     expandedText,
     dismiss,
   } = usePillState();
+  const expandedTextSegments = useMemo(
+    () => (expandedText ? getExpandedTextSegments(expandedText) : []),
+    [expandedText],
+  );
 
   // Primary canvas (small pill dots)
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -481,14 +485,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     drawStaticIconRef.current = drawStaticIcon;
   }, [drawAudioFrame, drawProcessingFrame, drawErrorFrame, drawBaseDots, drawStaticIcon]);
 
-  const spectrumBinsRef = useRef(spectrumBins);
-  const lastSpectrumAtRef = useRef(lastSpectrumAt);
-
-  useEffect(() => {
-    spectrumBinsRef.current = spectrumBins;
-    lastSpectrumAtRef.current = lastSpectrumAt;
-  }, [spectrumBins, lastSpectrumAt]);
-
   useEffect(() => {
     stopAllAnimations();
 
@@ -744,7 +740,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                       wordBreak: "break-word",
                     }}
                   >
-                    {expandedText ? getExpandedTextSegments(expandedText).map(({ key, text, isWhitespace }) => {
+                    {expandedTextSegments.map(({ key, text, isWhitespace }) => {
                       if (isWhitespace) {
                         return (
                           <motion.span
@@ -774,7 +770,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                           {text}
                         </motion.span>
                       );
-                    }) : null}
+                    })}
                   </p>
                 </motion.div>
               </div>

@@ -3,7 +3,7 @@ import * as dictionaryApi from "./api";
 import { settingsKeys } from "../settings/queries";
 import type { Replacement, StoredSettings } from "../../types";
 
-export const dictionaryKeys = {
+const dictionaryKeys = {
   all: ["dictionary"] as const,
   replacements: () => [...dictionaryKeys.all, "replacements"] as const,
 };

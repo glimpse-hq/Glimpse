@@ -1,8 +1,19 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { Check, Copy, Info, Mic, Square } from "lucide-react";
+import {
+  BrushCleaning,
+  Check,
+  ChevronRight,
+  Copy,
+  Ghost,
+  Info,
+  Mic,
+  Square,
+  X,
+} from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { formatShortcutForDisplay } from "../../../../shared/lib/shortcuts";
@@ -15,9 +26,11 @@ import type {
   LanguageBadgeColumn,
   TranscriptionLanguageOption,
 } from "../../../../shared/lib/transcriptionLanguages";
+import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
 
-type CaptureMode = "smart" | "hold" | "toggle" | null;
-type HelpTooltipId = "edit-mode" | "cleanup";
+type ShortcutMode = "smart" | "hold" | "toggle";
+type CaptureMode = { mode: ShortcutMode; index: number } | null;
+type HelpTooltipId = "shortcuts" | "edit-mode";
 type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
 type MicrophoneTestLevels = {
   left: number;
@@ -39,25 +52,31 @@ type GeneralTabProps = {
   languages: TranscriptionLanguageOption[];
   languageBadgeColumns: LanguageBadgeColumn[];
   showLanguageSupportBadges: boolean;
-  smartShortcut: string;
   smartEnabled: boolean;
   setSmartEnabled: (value: boolean) => void;
-  holdShortcut: string;
   holdEnabled: boolean;
   setHoldEnabled: (value: boolean) => void;
-  toggleShortcut: string;
   toggleEnabled: boolean;
   setToggleEnabled: (value: boolean) => void;
+  shortcutBindings: ShortcutBindings;
   captureActive: CaptureMode;
   capturePreview: string;
-  onStartCapture: (mode: Exclude<CaptureMode, null>) => void;
+  onStartCapture: (mode: ShortcutMode, index?: number) => void;
+  updateShortcutBinding: (
+    mode: ShortcutMode,
+    index: number,
+    patch: Partial<ShortcutBinding>,
+  ) => void;
+  addShortcutBinding: (mode: ShortcutMode) => void;
+  removeShortcutBinding: (mode: ShortcutMode, index: number) => void;
   error: string | null;
   errorCopied: boolean;
   setErrorCopied: (value: boolean) => void;
   editModeEnabled: boolean;
   setEditModeEnabled: (value: boolean) => void;
-  cleanupEnabled: boolean;
-  setCleanupEnabled: (value: boolean) => void;
+  autoDictionaryEnabled: boolean;
+  autoDictionarySupported: boolean;
+  setAutoDictionaryEnabled: (value: boolean) => void;
   aiFeaturesReady: boolean;
 };
 
@@ -76,30 +95,34 @@ const GeneralTab = ({
   languages,
   languageBadgeColumns,
   showLanguageSupportBadges,
-  smartShortcut,
   smartEnabled,
   setSmartEnabled,
-  holdShortcut,
   holdEnabled,
   setHoldEnabled,
-  toggleShortcut,
   toggleEnabled,
   setToggleEnabled,
+  shortcutBindings,
   captureActive,
   capturePreview,
   onStartCapture,
+  updateShortcutBinding,
+  addShortcutBinding,
+  removeShortcutBinding,
   error,
   errorCopied,
   setErrorCopied,
   editModeEnabled,
   setEditModeEnabled,
-  cleanupEnabled,
-  setCleanupEnabled,
+  autoDictionaryEnabled,
+  autoDictionarySupported,
+  setAutoDictionaryEnabled,
   aiFeaturesReady,
 }: GeneralTabProps) => {
   const { t } = useLingui();
   const [openHelpTooltip, setOpenHelpTooltip] =
     useState<HelpTooltipId | null>(null);
+  const [expandedShortcut, setExpandedShortcut] =
+    useState<ShortcutMode | null>(null);
   const {
     activeDeviceLabel,
     error: microphoneTestError,
@@ -110,6 +133,15 @@ const GeneralTab = ({
   } = useMicrophoneTest(inputDevices, microphoneDevice);
   const aiFeaturesDisabled = transcriptionMode === "local" && !aiFeaturesReady;
   const localModelStatus = localModel ? modelStatus[localModel] : undefined;
+  const autoDictionaryBody = autoDictionarySupported
+    ? t({
+        id: "settings.general.auto_dictionary.body",
+        message: "suggests names and terms after you correct dictated text",
+      })
+    : t({
+        id: "settings.general.auto_dictionary.unsupported_body",
+        message: "requires a model with dictionary support",
+      });
   const systemDefaultLabel = t({
     id: "settings.general.system_default",
     message: "System Default",
@@ -474,15 +506,82 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-2">
-        <h2 className="ui-text-section-label ui-color-muted">
-          {t({
-            id: "settings.general.shortcuts",
-            message: "Shortcuts",
-          })}
-        </h2>
+        <div className="flex h-5 items-center gap-1">
+          <h2 className="ui-text-section-label ui-color-muted">
+            {t({
+              id: "settings.general.shortcuts",
+              message: "Shortcuts",
+            })}
+          </h2>
+          <div
+            className="relative"
+            onMouseEnter={() => showHelpTooltip("shortcuts")}
+            onMouseLeave={() => hideHelpTooltip("shortcuts")}
+          >
+            <button
+              type="button"
+              className="flex h-4 w-4 items-center justify-center text-content-disabled transition-colors hover:text-content-muted"
+              aria-label={t({
+                id: "settings.general.shortcuts.info_aria",
+                message: "More information about shortcut options",
+              })}
+              aria-expanded={openHelpTooltip === "shortcuts"}
+              aria-controls="shortcuts-help-tooltip"
+              onFocus={() => showHelpTooltip("shortcuts")}
+              onBlur={() => hideHelpTooltip("shortcuts")}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  hideHelpTooltip("shortcuts");
+                }
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  toggleHelpTooltip("shortcuts");
+                }
+              }}
+            >
+              <Info size={10} aria-hidden="true" />
+            </button>
+            <div
+              id="shortcuts-help-tooltip"
+              role="tooltip"
+              className={`absolute left-0 bottom-full mb-1 z-20 ${
+                openHelpTooltip === "shortcuts" ? "block" : "hidden"
+              }`}
+            >
+              <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
+                <p>
+                  <Ghost size={10} className="mr-1 inline-block align-[-1px]" aria-hidden="true" />
+                  {t({
+                    id: "settings.general.shortcuts.help_temporary",
+                    message:
+                      "Makes a shortcut temporary. It will not save audio, transcript, or history.",
+                  })}
+                </p>
+                <p className="mt-1">
+                  <BrushCleaning
+                    size={10}
+                    className="mr-1 inline-block align-[-1px]"
+                    aria-hidden="true"
+                  />
+                  {t({
+                    id: "settings.general.shortcuts.help_cleanup",
+                    message:
+                      "Runs Cleanup for that shortcut only.",
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
+        <div className="relative space-y-3 rounded-lg bg-surface-surface p-2.5">
           <ShortcutRow
+            mode="smart"
+            isExpanded={expandedShortcut === "smart"}
+            onToggleExpand={() =>
+              setExpandedShortcut(expandedShortcut === "smart" ? null : "smart")
+            }
             label={t({
               id: "settings.general.shortcuts.smart",
               message: "Smart",
@@ -491,21 +590,29 @@ const GeneralTab = ({
               id: "settings.general.shortcuts.smart_description",
               message: "tap to toggle, hold to talk",
             })}
-            shortcut={smartShortcut}
+            bindings={shortcutBindings.smart}
             enabled={smartEnabled}
-            isCapturing={captureActive === "smart"}
+            captureActive={captureActive}
             capturePreview={capturePreview}
             onToggle={() => {
               if (!smartEnabled && !holdEnabled && !toggleEnabled) return;
               setSmartEnabled(!smartEnabled);
             }}
-            onCapture={() => {
+            onCapture={(index) => {
               if (!smartEnabled) return;
-              onStartCapture("smart");
+              onStartCapture("smart", index);
             }}
+            onUpdateBinding={updateShortcutBinding}
+            onAddBinding={addShortcutBinding}
+            onRemoveBinding={removeShortcutBinding}
             canDisable={holdEnabled || toggleEnabled}
           />
           <ShortcutRow
+            mode="hold"
+            isExpanded={expandedShortcut === "hold"}
+            onToggleExpand={() =>
+              setExpandedShortcut(expandedShortcut === "hold" ? null : "hold")
+            }
             label={t({
               id: "settings.general.shortcuts.hold",
               message: "Hold",
@@ -514,21 +621,31 @@ const GeneralTab = ({
               id: "settings.general.shortcuts.hold_description",
               message: "hold to talk, release to stop",
             })}
-            shortcut={holdShortcut}
+            bindings={shortcutBindings.hold}
             enabled={holdEnabled}
-            isCapturing={captureActive === "hold"}
+            captureActive={captureActive}
             capturePreview={capturePreview}
             onToggle={() => {
               if (!holdEnabled && !toggleEnabled && !smartEnabled) return;
               setHoldEnabled(!holdEnabled);
             }}
-            onCapture={() => {
+            onCapture={(index) => {
               if (!holdEnabled) return;
-              onStartCapture("hold");
+              onStartCapture("hold", index);
             }}
+            onUpdateBinding={updateShortcutBinding}
+            onAddBinding={addShortcutBinding}
+            onRemoveBinding={removeShortcutBinding}
             canDisable={smartEnabled || toggleEnabled}
           />
           <ShortcutRow
+            mode="toggle"
+            isExpanded={expandedShortcut === "toggle"}
+            onToggleExpand={() =>
+              setExpandedShortcut(
+                expandedShortcut === "toggle" ? null : "toggle",
+              )
+            }
             label={t({
               id: "settings.general.shortcuts.toggle",
               message: "Toggle",
@@ -537,18 +654,21 @@ const GeneralTab = ({
               id: "settings.general.shortcuts.toggle_description",
               message: "tap to start, tap to stop",
             })}
-            shortcut={toggleShortcut}
+            bindings={shortcutBindings.toggle}
             enabled={toggleEnabled}
-            isCapturing={captureActive === "toggle"}
+            captureActive={captureActive}
             capturePreview={capturePreview}
             onToggle={() => {
               if (!toggleEnabled && !holdEnabled && !smartEnabled) return;
               setToggleEnabled(!toggleEnabled);
             }}
-            onCapture={() => {
+            onCapture={(index) => {
               if (!toggleEnabled) return;
-              onStartCapture("toggle");
+              onStartCapture("toggle", index);
             }}
+            onUpdateBinding={updateShortcutBinding}
+            onAddBinding={addShortcutBinding}
+            onRemoveBinding={removeShortcutBinding}
             canDisable={smartEnabled || holdEnabled}
           />
         </div>
@@ -677,109 +797,30 @@ const GeneralTab = ({
               <div className="flex items-center justify-between">
                 <span className="ui-text-label-strong ui-color-primary">
                   {t({
-                    id: "settings.general.cleanup",
-                    message: "Cleanup",
+                    id: "settings.general.auto_dictionary",
+                    message: "Auto Dictionary",
                   })}
                 </span>
                 <ToggleSwitch
-                  enabled={cleanupEnabled}
-                  onToggle={() => aiFeaturesReady && setCleanupEnabled(!cleanupEnabled)}
+                  enabled={autoDictionarySupported && autoDictionaryEnabled}
+                  disabled={!autoDictionarySupported}
+                  onToggle={() => {
+                    if (autoDictionarySupported) {
+                      setAutoDictionaryEnabled(!autoDictionaryEnabled);
+                    }
+                  }}
                   ariaLabel={t({
-                    id: "settings.general.cleanup.toggle_aria",
-                    message: "Toggle Cleanup",
+                    id: "settings.general.auto_dictionary.toggle_aria",
+                    message: "Toggle Auto Dictionary",
                   })}
-                  disabled={aiFeaturesDisabled}
                 />
               </div>
-              <div className="flex items-center justify-between mt-0.5">
-                <span className="ui-text-meta ui-color-muted">
-                  {aiFeaturesDisabled ? (
-                    <>
-                      {t({
-                        id: "settings.general.cleanup.configure_prefix",
-                        message: "Configure a language model in",
-                      })}{" "}
-                      <button
-                        type="button"
-                        onClick={onOpenModelsTab}
-                        className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
-                      >
-                        {t({
-                          id: "settings.general.models_tab",
-                          message: "Models",
-                        })}
-                      </button>{" "}
-                      {t({
-                        id: "settings.general.cleanup.models_suffix",
-                        message: "to use Cleanup.",
-                      })}
-                    </>
-                  ) : (
-                    t({
-                      id: "settings.general.cleanup.body",
-                      message: "remove filler words and polish transcripts",
-                    })
-                  )}
-                </span>
-                <div
-                  className="relative"
-                  onMouseEnter={() => showHelpTooltip("cleanup")}
-                  onMouseLeave={() => hideHelpTooltip("cleanup")}
-                >
-                  <button
-                    type="button"
-                    className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
-                    aria-label={t({
-                      id: "settings.general.cleanup.info_aria",
-                      message: "More information about Cleanup",
-                    })}
-                    aria-expanded={openHelpTooltip === "cleanup"}
-                    aria-controls="cleanup-help-tooltip"
-                    onFocus={() => showHelpTooltip("cleanup")}
-                    onBlur={() => hideHelpTooltip("cleanup")}
-                    onKeyDown={(event) => {
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        hideHelpTooltip("cleanup");
-                      }
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        toggleHelpTooltip("cleanup");
-                      }
-                    }}
-                  >
-                    <Info size={10} aria-hidden="true" />
-                  </button>
-                  <div
-                    id="cleanup-help-tooltip"
-                    role="tooltip"
-                    className={`absolute right-0 bottom-full mb-1 z-10 ${
-                      openHelpTooltip === "cleanup" ? "block" : "hidden"
-                    }`}
-                  >
-                    <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
-                      <p>
-                        {t({
-                          id: "settings.general.cleanup.help",
-                          message:
-                            "Cleans up transcripts after transcription while keeping the original meaning intact.",
-                        })}
-                      </p>
-                      {transcriptionMode === "local" && !aiFeaturesReady && (
-                        <p className="text-warning mt-1">
-                          {t({
-                            id: "settings.general.cleanup.help_requirement",
-                            message:
-                              "Requires an enabled and configured language model in the Models tab.",
-                          })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <span className="ui-text-meta ui-color-muted block mt-0.5">
+                {autoDictionaryBody}
+              </span>
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -1217,35 +1258,381 @@ const formatMicrophoneTestError = (err: unknown) => {
   });
 };
 
+const ShortcutBindingsList = ({
+  mode,
+  bindings,
+  enabled,
+  isExpanded,
+  captureActive,
+  capturePreview,
+  onCapture,
+  onToggleExpand,
+  onUpdateBinding,
+  onAddBinding,
+  onRemoveBinding,
+}: {
+  mode: ShortcutMode;
+  bindings: ShortcutBinding[];
+  enabled: boolean;
+  isExpanded: boolean;
+  captureActive: CaptureMode;
+  capturePreview: string;
+  onCapture: (index: number) => void;
+  onToggleExpand: () => void;
+  onUpdateBinding: (
+    mode: ShortcutMode,
+    index: number,
+    patch: Partial<ShortcutBinding>,
+  ) => void;
+  onAddBinding: (mode: ShortcutMode) => void;
+  onRemoveBinding: (mode: ShortcutMode, index: number) => void;
+}) => {
+  const { t } = useLingui();
+  const addShortcutLabel = t({
+    id: "settings.general.shortcuts.add_shortcut",
+    message: "+ Add shortcut",
+  });
+  const temporaryLabel = t({
+    id: "settings.general.shortcuts.temporary",
+    message: "Temporary",
+  });
+  const cleanupLabel = t({
+    id: "settings.general.shortcuts.cleanup",
+    message: "Cleanup",
+  });
+  const visibleBindings =
+    bindings.length > 0
+      ? bindings
+      : [{ shortcut: "", temporary: false, cleanup_enabled: false }];
+  const primaryBinding = visibleBindings[0];
+  const alternateCount = Math.max(visibleBindings.length - 1, 0);
+  const canAdd = visibleBindings.length < 3;
+  const primaryCapturing =
+    captureActive?.mode === mode && captureActive.index === 0;
+  const primaryDisplay = primaryBinding.shortcut
+    ? formatShortcutForDisplay(primaryBinding.shortcut)
+    : addShortcutLabel;
+
+  return (
+    <div className="w-full">
+      <div
+        className={`flex min-h-7 items-center gap-1.5 border-b py-1 ui-text-kbd transition-colors ${
+          primaryCapturing
+            ? "border-border-hover ui-color-primary"
+            : enabled
+              ? "border-border-primary ui-color-secondary hover:border-border-secondary"
+              : "border-border-primary ui-color-disabled"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => onCapture(0)}
+          className={`flex min-w-0 flex-1 items-center gap-1.5 text-left ${
+            enabled ? "hover:text-content-primary" : ""
+          }`}
+        >
+          {primaryCapturing ? (
+            <>
+              <motion.span
+                className="h-1 w-1 rounded-full bg-cloud"
+                animate={{ opacity: [0.3, 1, 0.3] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              />
+              <span
+                className={`truncate ${
+                  capturePreview ? "ui-color-primary" : "ui-color-muted"
+                }`}
+              >
+                {capturePreview || "..."}
+              </span>
+            </>
+          ) : (
+            <span className="truncate">{primaryDisplay}</span>
+          )}
+        </button>
+
+        <ShortcutIconToggle
+          label={temporaryLabel}
+          tone="local"
+          active={primaryBinding.temporary}
+          disabled={false}
+          onClick={() =>
+            onUpdateBinding(mode, 0, {
+              temporary: !primaryBinding.temporary,
+            })
+          }
+        >
+          <Ghost size={13} aria-hidden="true" />
+        </ShortcutIconToggle>
+        <ShortcutIconToggle
+          label={cleanupLabel}
+          tone="cloud"
+          active={primaryBinding.cleanup_enabled}
+          disabled={false}
+          onClick={() =>
+            onUpdateBinding(mode, 0, {
+              cleanup_enabled: !primaryBinding.cleanup_enabled,
+            })
+          }
+        >
+          <BrushCleaning
+            size={13}
+            aria-hidden="true"
+          />
+        </ShortcutIconToggle>
+
+        {(alternateCount > 0 || canAdd) && (
+          <button
+            type="button"
+            onClick={onToggleExpand}
+            aria-expanded={isExpanded}
+            aria-label={
+              isExpanded
+                ? t({
+                    id: "settings.general.shortcuts.hide_shortcuts",
+                    message: "Hide shortcuts",
+                  })
+                : t({
+                    id: "settings.general.shortcuts.show_shortcuts",
+                    message: "Show shortcuts",
+                  })
+            }
+            className="flex w-10 shrink-0 items-center justify-center gap-1 rounded px-1.5 py-0.5 ui-text-meta ui-color-muted transition-colors hover:bg-surface-overlay hover:ui-color-secondary"
+          >
+            <span className="flex w-5 items-center justify-center">
+              <motion.span
+                animate={{ x: alternateCount > 0 ? -2 : 0 }}
+                transition={{ duration: 0.14, ease: "easeOut" }}
+              >
+                +
+              </motion.span>
+              <span className="relative ml-0.5 inline-flex h-3 w-1.5 overflow-hidden">
+                {[1, 2].map((count) => (
+                  <motion.span
+                    key={count}
+                    className="absolute inset-0 flex items-center justify-start"
+                    animate={{
+                      opacity: alternateCount === count ? 1 : 0,
+                      y:
+                        alternateCount === count
+                          ? 0
+                          : alternateCount > count
+                            ? -3
+                            : 3,
+                    }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                  >
+                    {count}
+                  </motion.span>
+                ))}
+              </span>
+            </span>
+            <motion.span
+              animate={{ rotate: isExpanded ? 90 : 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex items-center"
+            >
+              <ChevronRight size={12} aria-hidden="true" />
+            </motion.span>
+          </button>
+        )}
+      </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="overflow-hidden"
+          >
+            <div className="space-y-1 pt-1">
+              {visibleBindings.slice(1).map((binding, offset) => {
+                const index = offset + 1;
+                const isCapturing =
+                  captureActive?.mode === mode && captureActive.index === index;
+                const displayShortcut = binding.shortcut
+                  ? formatShortcutForDisplay(binding.shortcut)
+                  : addShortcutLabel;
+
+                return (
+                  <div
+                    key={`${mode}-${index}`}
+                    className={`flex min-h-7 items-center gap-1.5 border-b py-1 ui-text-kbd transition-colors ${
+                      isCapturing
+                        ? "border-border-hover ui-color-primary"
+                        : "border-border-primary ui-color-muted hover:border-border-secondary hover:ui-color-secondary"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => onCapture(index)}
+                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left hover:text-content-primary"
+                    >
+                      {isCapturing ? (
+                        <>
+                          <motion.span
+                            className="h-1 w-1 rounded-full bg-cloud"
+                            animate={{ opacity: [0.3, 1, 0.3] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          />
+                          <span
+                            className={`truncate ${
+                              capturePreview
+                                ? "ui-color-primary"
+                                : "ui-color-muted"
+                            }`}
+                          >
+                            {capturePreview || "..."}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="truncate">{displayShortcut}</span>
+                      )}
+                    </button>
+
+                    <ShortcutIconToggle
+                      label={temporaryLabel}
+                      tone="local"
+                      active={binding.temporary}
+                      disabled={false}
+                      onClick={() =>
+                        onUpdateBinding(mode, index, {
+                          temporary: !binding.temporary,
+                        })
+                      }
+                    >
+                      <Ghost size={13} aria-hidden="true" />
+                    </ShortcutIconToggle>
+                    <ShortcutIconToggle
+                      label={cleanupLabel}
+                      tone="cloud"
+                      active={binding.cleanup_enabled}
+                      disabled={false}
+                      onClick={() =>
+                        onUpdateBinding(mode, index, {
+                          cleanup_enabled: !binding.cleanup_enabled,
+                        })
+                      }
+                    >
+                      <BrushCleaning size={13} aria-hidden="true" />
+                    </ShortcutIconToggle>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveBinding(mode, index)}
+                      aria-label={t({
+                        id: "settings.general.shortcuts.remove_shortcut",
+                        message: "Remove shortcut",
+                      })}
+                      className="ui-button-ghost ui-hover-error-strong h-5 w-5"
+                    >
+                      <X size={13} aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
+
+              {canAdd && (
+                <button
+                  type="button"
+                  onClick={() => onAddBinding(mode)}
+                  className="h-6 w-full border-b border-dashed border-border-primary text-left ui-text-meta ui-color-disabled transition-colors hover:border-border-secondary hover:ui-color-muted"
+                >
+                  {addShortcutLabel}
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+const ShortcutIconToggle = ({
+  label,
+  tone,
+  active,
+  disabled,
+  onClick,
+  children,
+}: {
+  label: string;
+  tone: "local" | "cloud";
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) => {
+  const activeClass =
+    tone === "local"
+      ? "text-[var(--color-local)] bg-[var(--color-local-10)] border-[var(--color-local-30)]"
+      : "text-[var(--color-cloud)] bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      aria-pressed={active}
+      title={label}
+      className={`box-border flex h-5 w-5 shrink-0 items-center justify-center rounded-md border leading-none transition-colors [&_svg]:block [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-40 ${
+        active
+          ? activeClass
+          : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
+      }`}
+    >
+      {children}
+    </button>
+  );
+};
+
 type ShortcutRowProps = {
+  mode: ShortcutMode;
   label: string;
   description: string;
-  shortcut: string;
+  bindings: ShortcutBinding[];
   enabled: boolean;
-  isCapturing: boolean;
+  isExpanded: boolean;
+  captureActive: CaptureMode;
   capturePreview: string;
   onToggle: () => void;
-  onCapture: () => void;
+  onCapture: (index: number) => void;
+  onToggleExpand: () => void;
+  onUpdateBinding: (
+    mode: ShortcutMode,
+    index: number,
+    patch: Partial<ShortcutBinding>,
+  ) => void;
+  onAddBinding: (mode: ShortcutMode) => void;
+  onRemoveBinding: (mode: ShortcutMode, index: number) => void;
   canDisable: boolean;
 };
 
 const ShortcutRow = ({
+  mode,
   label,
   description,
-  shortcut,
+  bindings,
   enabled,
-  isCapturing,
+  isExpanded,
+  captureActive,
   capturePreview,
   onToggle,
   onCapture,
+  onToggleExpand,
+  onUpdateBinding,
+  onAddBinding,
+  onRemoveBinding,
   canDisable,
 }: ShortcutRowProps) => {
   const { t } = useLingui();
-  const displayShortcut = formatShortcutForDisplay(shortcut);
 
   return (
     <div
-      className={`space-y-1.5 px-2 py-1.5 transition-opacity ${
+      className={`space-y-1.5 px-2 py-1.5 ${
         enabled ? "opacity-100" : "opacity-80"
       }`}
     >
@@ -1266,44 +1653,19 @@ const ShortcutRow = ({
           disabled={enabled && !canDisable}
         />
       </div>
-      <motion.button
-        onClick={onCapture}
-        disabled={!enabled}
-        aria-label={t({
-          id: "settings.general.shortcut.record_aria",
-          message: `Record new shortcut for ${label}, currently ${displayShortcut}`,
-        })}
-        className={`w-full border-b pb-1 pt-1 text-left ui-text-kbd transition-colors flex items-center ${
-          isCapturing
-            ? "ui-color-primary border-border-hover"
-            : enabled
-              ? "ui-color-secondary border-border-primary hover:border-border-secondary hover:text-content-primary"
-              : "ui-color-disabled border-border-primary cursor-not-allowed"
-        }`}
-      >
-        <div className="flex min-w-0 items-center gap-1.5 h-5">
-          {isCapturing ? (
-            <>
-              <motion.span
-                className="w-1 h-1 rounded-full bg-cloud"
-                animate={{ opacity: [0.3, 1, 0.3] }}
-                transition={{ duration: 1, repeat: Infinity }}
-              />
-              <span
-                className={`truncate ${capturePreview ? "ui-color-primary" : "ui-color-muted"}`}
-              >
-                {capturePreview ||
-                  t({
-                    id: "settings.general.shortcut.capture_placeholder",
-                    message: "...",
-                  })}
-              </span>
-            </>
-          ) : (
-            <span className="block truncate">{displayShortcut}</span>
-          )}
-        </div>
-      </motion.button>
+      <ShortcutBindingsList
+        mode={mode}
+        bindings={bindings}
+        enabled={enabled}
+        isExpanded={isExpanded}
+        captureActive={captureActive}
+        capturePreview={capturePreview}
+        onCapture={onCapture}
+        onToggleExpand={onToggleExpand}
+        onUpdateBinding={onUpdateBinding}
+        onAddBinding={onAddBinding}
+        onRemoveBinding={onRemoveBinding}
+      />
     </div>
   );
 };

@@ -84,7 +84,7 @@ const SettingsModal = ({
           />
 
           <motion.div
-            className="relative flex h-[625px] w-[850px] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50"
+            className="relative flex h-[655px] w-[850px] max-h-[calc(100vh-32px)] max-w-[calc(100vw-32px)] overflow-hidden rounded-2xl border border-border-secondary bg-surface-overlay shadow-2xl shadow-black/50"
             variants={modalVariants}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
@@ -206,133 +206,140 @@ const SettingsModal = ({
                 style={{ scrollbarGutter: "stable" }}
               >
                 {form.loading ? null : (
-                <AnimatePresence mode="wait">
-                  {form.activeTab === "account" && (
-                    <AccountTab
-                      key="account"
-                      variants={tabContentVariants}
-                      authLoading={form.authLoading}
-                      currentUser={form.currentUser}
-                      cloudSyncEnabled={form.cloudSyncEnabled}
-                      setCloudSyncEnabled={form.setCloudSyncEnabled}
-                      onUpdateUser={form.onUpdateUser}
-                      handleSignOut={form.handleSignOut}
-                      handleCancelAuth={form.handleCancelAuth}
-                    />
-                  )}
+                  <AnimatePresence mode="wait">
+                    {form.activeTab === "account" && (
+                      <AccountTab
+                        key="account"
+                        variants={tabContentVariants}
+                        authLoading={form.authLoading}
+                        currentUser={form.currentUser}
+                        cloudSyncEnabled={form.cloudSyncEnabled}
+                        setCloudSyncEnabled={form.setCloudSyncEnabled}
+                        onUpdateUser={form.onUpdateUser}
+                        handleSignOut={form.handleSignOut}
+                        handleCancelAuth={form.handleCancelAuth}
+                      />
+                    )}
 
-                  {form.activeTab === "general" && (
-                    <GeneralTab
-                      key="general"
-                      variants={tabContentVariants}
-                      transcriptionMode={form.transcriptionMode}
-                      onTranscriptionModeChange={form.setTranscriptionMode}
-                      modelStatus={form.modelStatus}
-                      localModel={form.localModel}
-                      onOpenModelsTab={() => form.setActiveTab("models")}
-                      inputDevices={form.inputDevices}
-                      microphoneDevice={form.microphoneDevice}
-                      onMicrophoneDeviceChange={form.setMicrophoneDevice}
-                      language={form.language}
-                      onLanguageChange={form.setLanguage}
-                      languages={form.languages}
-                      languageBadgeColumns={form.languageBadgeColumns}
-                      showLanguageSupportBadges={form.showLanguageSupportBadges}
-                      smartShortcut={form.smartShortcut}
-                      smartEnabled={form.smartEnabled}
-                      setSmartEnabled={form.setSmartEnabled}
-                      holdShortcut={form.holdShortcut}
-                      holdEnabled={form.holdEnabled}
-                      setHoldEnabled={form.setHoldEnabled}
-                      toggleShortcut={form.toggleShortcut}
-                      toggleEnabled={form.toggleEnabled}
-                      setToggleEnabled={form.setToggleEnabled}
-                      captureActive={form.captureActive}
-                      capturePreview={form.capturePreview}
-                      onStartCapture={form.handleStartCapture}
-                      error={form.error}
-                      errorCopied={form.errorCopied}
-                      setErrorCopied={form.setErrorCopied}
-                      editModeEnabled={form.editModeEnabled}
-                      setEditModeEnabled={form.setEditModeEnabled}
-                      cleanupEnabled={form.cleanupEnabled}
-                      setCleanupEnabled={form.setCleanupEnabled}
-                      aiFeaturesReady={form.aiFeaturesReady}
-                    />
-                  )}
+                    {form.activeTab === "general" && (
+                      <GeneralTab
+                        key="general"
+                        variants={tabContentVariants}
+                        transcriptionMode={form.transcriptionMode}
+                        onTranscriptionModeChange={form.setTranscriptionMode}
+                        modelStatus={form.modelStatus}
+                        localModel={form.localModel}
+                        onOpenModelsTab={() => form.setActiveTab("models")}
+                        inputDevices={form.inputDevices}
+                        microphoneDevice={form.microphoneDevice}
+                        onMicrophoneDeviceChange={form.setMicrophoneDevice}
+                        language={form.language}
+                        onLanguageChange={form.setLanguage}
+                        languages={form.languages}
+                        languageBadgeColumns={form.languageBadgeColumns}
+                        showLanguageSupportBadges={
+                          form.showLanguageSupportBadges
+                        }
+                        smartEnabled={form.smartEnabled}
+                        setSmartEnabled={form.setSmartEnabled}
+                        holdEnabled={form.holdEnabled}
+                        setHoldEnabled={form.setHoldEnabled}
+                        toggleEnabled={form.toggleEnabled}
+                        setToggleEnabled={form.setToggleEnabled}
+                        shortcutBindings={form.shortcutBindings}
+                        captureActive={form.captureActive}
+                        capturePreview={form.capturePreview}
+                        onStartCapture={form.handleStartCapture}
+                        updateShortcutBinding={form.updateShortcutBinding}
+                        addShortcutBinding={form.addShortcutBinding}
+                        removeShortcutBinding={form.removeShortcutBinding}
+                        error={form.error}
+                        errorCopied={form.errorCopied}
+                        setErrorCopied={form.setErrorCopied}
+                        editModeEnabled={form.editModeEnabled}
+                        setEditModeEnabled={form.setEditModeEnabled}
+                        autoDictionaryEnabled={form.autoDictionaryEnabled}
+                        autoDictionarySupported={form.autoDictionarySupported}
+                        setAutoDictionaryEnabled={form.setAutoDictionaryEnabled}
+                        aiFeaturesReady={form.aiFeaturesReady}
+                      />
+                    )}
 
-                  {form.activeTab === "models" && (
-                    <ModelsTab
-                      key="models"
-                      variants={tabContentVariants}
-                      llmEnabled={form.llmEnabled}
-                      setLlmEnabled={form.setLlmEnabled}
-                      llmProvider={form.llmProvider}
-                      setLlmProvider={form.setLlmProvider}
-                      llmEndpoint={form.llmEndpoint}
-                      setLlmEndpoint={form.setLlmEndpoint}
-                      llmApiKey={form.llmApiKey}
-                      setLlmApiKey={form.setLlmApiKey}
-                      llmModel={form.llmModel}
-                      setLlmModel={form.setLlmModel}
-                      availableModels={form.availableModels}
-                      fetchAvailableModels={form.fetchAvailableModels}
-                      modelCatalog={form.modelCatalog}
-                      modelStatus={form.modelStatus}
-                      downloadState={form.downloadState}
-                      localModel={form.localModel}
-                      setLocalModel={form.setLocalModel}
-                      handleDownload={form.handleDownload}
-                      handleDelete={form.handleDelete}
-                      handleCancelDownload={form.handleCancelDownload}
-                      formatBytes={form.formatBytes}
-                    />
-                  )}
+                    {form.activeTab === "models" && (
+                      <ModelsTab
+                        key="models"
+                        variants={tabContentVariants}
+                        llmEnabled={form.llmEnabled}
+                        setLlmEnabled={form.setLlmEnabled}
+                        llmProvider={form.llmProvider}
+                        setLlmProvider={form.setLlmProvider}
+                        llmEndpoint={form.llmEndpoint}
+                        setLlmEndpoint={form.setLlmEndpoint}
+                        llmApiKey={form.llmApiKey}
+                        setLlmApiKey={form.setLlmApiKey}
+                        llmModel={form.llmModel}
+                        setLlmModel={form.setLlmModel}
+                        availableModels={form.availableModels}
+                        fetchAvailableModels={form.fetchAvailableModels}
+                        modelCatalog={form.modelCatalog}
+                        modelStatus={form.modelStatus}
+                        downloadState={form.downloadState}
+                        localModel={form.localModel}
+                        setLocalModel={form.setLocalModel}
+                        handleDownload={form.handleDownload}
+                        handleDelete={form.handleDelete}
+                        handleCancelDownload={form.handleCancelDownload}
+                        formatBytes={form.formatBytes}
+                      />
+                    )}
 
-                  {form.activeTab === "app" && (
-                    <AppTab
-                      key="app"
-                      variants={tabContentVariants}
-                      micPermission={form.micPermission}
-                      accessibilityPermission={form.accessibilityPermission}
-                      inputMonitoringPermission={form.inputMonitoringPermission}
-                      onRequestMicrophonePermission={
-                        form.handleRequestMicrophonePermission
-                      }
-                      textSizeMode={form.textSizeMode}
-                      onTextSizeModeChange={form.setTextSizeMode}
-                      themeMode={form.themeMode}
-                      onThemeModeChange={form.setThemeMode}
-                      appLocale={form.appLocale}
-                      onAppLocaleChange={form.setAppLocale}
-                      mediaControlEnabled={form.mediaControlEnabled}
-                      onMediaControlEnabledChange={
-                        form.setMediaControlEnabled
-                      }
-                      autoUpdateEnabled={form.autoUpdateEnabled}
-                      onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
-                      autoLaunchEnabled={form.autoLaunchEnabled}
-                      onAutoLaunchEnabledChange={form.setAutoLaunchEnabled}
-                      recordingPrunePolicy={form.recordingPrunePolicy}
-                      onRecordingPrunePolicyChange={form.setRecordingPrunePolicy}
-                      analyticsEnabled={form.analyticsEnabled}
-                      onAnalyticsEnabledChange={form.setAnalyticsEnabled}
-                      platformCapabilities={form.platformCapabilities}
-                    />
-                  )}
+                    {form.activeTab === "app" && (
+                      <AppTab
+                        key="app"
+                        variants={tabContentVariants}
+                        micPermission={form.micPermission}
+                        accessibilityPermission={form.accessibilityPermission}
+                        inputMonitoringPermission={
+                          form.inputMonitoringPermission
+                        }
+                        onRequestMicrophonePermission={
+                          form.handleRequestMicrophonePermission
+                        }
+                        textSizeMode={form.textSizeMode}
+                        onTextSizeModeChange={form.setTextSizeMode}
+                        themeMode={form.themeMode}
+                        onThemeModeChange={form.setThemeMode}
+                        appLocale={form.appLocale}
+                        onAppLocaleChange={form.setAppLocale}
+                        mediaControlEnabled={form.mediaControlEnabled}
+                        onMediaControlEnabledChange={
+                          form.setMediaControlEnabled
+                        }
+                        autoUpdateEnabled={form.autoUpdateEnabled}
+                        onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
+                        autoLaunchEnabled={form.autoLaunchEnabled}
+                        onAutoLaunchEnabledChange={form.setAutoLaunchEnabled}
+                        recordingPrunePolicy={form.recordingPrunePolicy}
+                        onRecordingPrunePolicyChange={
+                          form.setRecordingPrunePolicy
+                        }
+                        analyticsEnabled={form.analyticsEnabled}
+                        onAnalyticsEnabledChange={form.setAnalyticsEnabled}
+                        platformCapabilities={form.platformCapabilities}
+                      />
+                    )}
 
-                  {form.activeTab === "about" && (
-                    <AboutTab
-                      key="about"
-                      variants={tabContentVariants}
-                      appInfo={form.appInfo}
-                      formatBytes={form.formatBytes}
-                      onOpenDataDir={form.handleOpenDataDir}
-                      onOpenFAQ={() => form.setShowFAQModal(true)}
-                    />
-
-                  )}
-                </AnimatePresence>
+                    {form.activeTab === "about" && (
+                      <AboutTab
+                        key="about"
+                        variants={tabContentVariants}
+                        appInfo={form.appInfo}
+                        formatBytes={form.formatBytes}
+                        onOpenDataDir={form.handleOpenDataDir}
+                        onOpenFAQ={() => form.setShowFAQModal(true)}
+                      />
+                    )}
+                  </AnimatePresence>
                 )}
               </div>
             </main>
@@ -350,7 +357,6 @@ const SettingsModal = ({
         isOpen={form.whatsNewOpen}
         onClose={() => form.setWhatsNewOpen(false)}
       />
-
     </AnimatePresence>
   );
 };
@@ -380,7 +386,15 @@ const ModalNavItem = ({
     }`}
     whileTap={disabled ? undefined : { scale: 0.98 }}
   >
-    <div className={disabled ? "text-content-disabled/50" : active ? "text-cloud/80" : "text-content-disabled"}>
+    <div
+      className={
+        disabled
+          ? "text-content-disabled/50"
+          : active
+            ? "text-cloud/80"
+            : "text-content-disabled"
+      }
+    >
       {icon}
     </div>
     {label}

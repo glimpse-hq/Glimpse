@@ -4,7 +4,7 @@ import {
 } from "../../platform/service";
 import type { AppPlatformId } from "../../shared/lib/platform";
 
-export type OnboardingPlatformId = AppPlatformId;
+type OnboardingPlatformId = AppPlatformId;
 
 export type OnboardingStep =
   | "welcome"

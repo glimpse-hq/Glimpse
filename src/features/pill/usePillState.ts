@@ -10,19 +10,15 @@ import type {
 const EMPTY_SPECTRUM = new Uint8Array(256);
 const ERROR_FLASH_MS = 1200;
 
-function emptySpectrum() {
-  return new Uint8Array(EMPTY_SPECTRUM);
-}
-
 export function usePillState() {
   const [pillStatus, setPillStatus] = useState<PillStatus>("idle");
-  const [spectrumBins, setSpectrumBins] = useState(() => emptySpectrum());
-  const [lastSpectrumAt, setLastSpectrumAt] = useState(0);
   const [isErrorFlashing, setIsErrorFlashing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedText, setExpandedText] = useState("");
 
   const statusRef = useRef<PillStatus>("idle");
+  const spectrumBinsRef = useRef<Uint8Array>(EMPTY_SPECTRUM);
+  const lastSpectrumAtRef = useRef(0);
   const errorFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -34,8 +30,8 @@ export function usePillState() {
   }, []);
 
   const resetAudioState = useCallback(() => {
-    setSpectrumBins(emptySpectrum());
-    setLastSpectrumAt(0);
+    spectrumBinsRef.current = EMPTY_SPECTRUM;
+    lastSpectrumAtRef.current = 0;
   }, []);
 
   const triggerErrorFlash = useCallback(() => {
@@ -114,8 +110,8 @@ export function usePillState() {
 
     register<AudioSpectrumPayload>("audio:spectrum", ({ bins }) => {
       if (statusRef.current !== "listening") return;
-      setSpectrumBins(new Uint8Array(bins));
-      setLastSpectrumAt(performance.now());
+      spectrumBinsRef.current = new Uint8Array(bins);
+      lastSpectrumAtRef.current = performance.now();
     });
 
     register<PillModePayload>("pill:mode", ({ expanded, text }) => {
@@ -133,8 +129,8 @@ export function usePillState() {
 
   return {
     pillStatus,
-    spectrumBins,
-    lastSpectrumAt,
+    spectrumBinsRef,
+    lastSpectrumAtRef,
     isErrorFlashing,
     isExpanded,
     expandedText,

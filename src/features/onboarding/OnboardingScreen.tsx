@@ -396,6 +396,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           llmApiKey: "",
           llmModel: "",
           editModeEnabled: false,
+          autoDictionaryEnabled: false,
           mediaControlEnabled: true,
           autoUpdateEnabled: true,
           autoLaunchEnabled: false,

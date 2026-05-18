@@ -45,6 +45,7 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 - **Custom dictionary.** Teach it *Tauri*, *Groq*, or your coworker's hard-to-spell last name.
 - **Replacements.** Say *"my address"*, get `221B Baker Street`.
 - **Library.** Drop in an `.mp4`, scrub the synced transcript, export to `.srt`, `.txt`, or `.json`.
+- **Auto Dictionary.** Glimpse automatically learns your custom words.
 
 ## Roadmap
 
@@ -55,11 +56,11 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 - [x] Audio & video transcription
 - [x] Auto media pausing
 - [x] Recording auto deletion
-- [ ] Temporary mode (transcribe without saving)
+- [x] Temporary mode (transcribe without saving)
 - [x] App localization
 - [x] Better customizable keybinds
-- [ ] Auto-dictionary
-- [ ] Personalization snippets
+- [x] Auto-dictionary
+- [x] Personalization snippets
 - [x] Windows support
 
 ## Contributing
