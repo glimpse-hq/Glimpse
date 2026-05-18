@@ -165,7 +165,14 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("LLM cannot be enabled when provider is None".into());
     }
 
-    if args.cleanup_enabled && !args.llm_enabled {
+    let shortcut_cleanup_enabled = args
+        .shortcut_bindings
+        .smart
+        .iter()
+        .chain(args.shortcut_bindings.hold.iter())
+        .chain(args.shortcut_bindings.toggle.iter())
+        .any(|binding| binding.cleanup_enabled);
+    if (args.cleanup_enabled || shortcut_cleanup_enabled) && !args.llm_enabled {
         return Err("AI Cleanup cannot be enabled without an active language model".into());
     }
 

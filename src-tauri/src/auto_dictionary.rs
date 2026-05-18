@@ -123,7 +123,7 @@ pub(crate) fn accept_auto_dictionary_suggestion(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<Vec<String>, String> {
-    let Some(suggestion) = take_pending_suggestion() else {
+    let Some(suggestion) = get_pending_suggestion() else {
         return Ok(state.current_settings().dictionary);
     };
 
@@ -138,6 +138,7 @@ pub(crate) fn accept_auto_dictionary_suggestion(
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
     clear_ignored_suggestion(&suggestion.value);
+    clear_pending_suggestion_value(&suggestion.value);
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
         eprintln!("Failed to emit settings change: {err}");
@@ -148,21 +149,28 @@ pub(crate) fn accept_auto_dictionary_suggestion(
 
 #[tauri::command]
 pub(crate) fn reject_auto_dictionary_suggestion(
+    app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<Vec<String>, String> {
-    let Some(suggestion) = take_pending_suggestion() else {
+    let Some(suggestion) = get_pending_suggestion() else {
         return Ok(state.current_settings().auto_dictionary_ignored);
     };
 
-    remember_ignored_suggestion(&suggestion.value);
-
     let mut settings = state.current_settings();
-    settings.auto_dictionary_ignored.push(suggestion.value);
+    settings
+        .auto_dictionary_ignored
+        .push(suggestion.value.clone());
     settings.auto_dictionary_ignored =
         sanitize_ignored_suggestions(&settings.auto_dictionary_ignored);
     let saved = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
+    remember_ignored_suggestion(&suggestion.value);
+    clear_pending_suggestion_value(&suggestion.value);
+
+    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
+        eprintln!("Failed to emit settings change: {err}");
+    }
 
     Ok(saved.auto_dictionary_ignored)
 }
@@ -226,6 +234,20 @@ fn set_pending_suggestion(value: String) {
 
 fn take_pending_suggestion() -> Option<PendingSuggestion> {
     pending_suggestion().lock().take()
+}
+
+fn get_pending_suggestion() -> Option<PendingSuggestion> {
+    pending_suggestion().lock().clone()
+}
+
+fn clear_pending_suggestion_value(value: &str) {
+    let mut pending = pending_suggestion().lock();
+    if pending
+        .as_ref()
+        .is_some_and(|suggestion| suggestion.value == value)
+    {
+        *pending = None;
+    }
 }
 
 fn ignored_suggestions() -> &'static Mutex<HashSet<String>> {

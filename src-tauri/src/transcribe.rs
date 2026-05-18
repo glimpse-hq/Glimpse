@@ -173,12 +173,14 @@ pub(crate) fn queue_transcription(
                 }
 
                 if pending_selected_text.is_some() && !llm_cleanup::is_llm_available(&settings) {
-                    emit_transcription_error(
+                    emit_transcription_error_inner(
                         &app_handle,
                         "Edit mode requires a selected language model. Choose one in Settings -> Models."
                             .to_string(),
                         "edit_mode",
                         saved_for_task.path.display().to_string(),
+                        true,
+                        temporary,
                     );
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
@@ -256,11 +258,13 @@ pub(crate) fn queue_transcription(
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
-                emit_transcription_error(
+                emit_transcription_error_inner(
                     &app_handle,
                     format!("Transcription failed: {err}"),
                     "local",
                     saved_for_task.path.display().to_string(),
+                    true,
+                    temporary,
                 );
                 app_handle.state::<AppState>().set_pending_path(None);
             }
@@ -751,7 +755,7 @@ pub(crate) fn emit_transcription_error(
     stage: &str,
     audio_path: String,
 ) {
-    emit_transcription_error_inner(app, message, stage, audio_path, true);
+    emit_transcription_error_inner(app, message, stage, audio_path, true, false);
 }
 
 fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {
@@ -781,6 +785,7 @@ fn emit_transcription_error_inner(
     stage: &str,
     audio_path: String,
     reset_state: bool,
+    temporary: bool,
 ) {
     let reason = if message.contains("No speech") || message.contains("empty") {
         "no_speech"
@@ -809,17 +814,21 @@ fn emit_transcription_error_inner(
         ..Default::default()
     };
 
-    let record_result = state.storage().save_transcription(
-        String::new(),
-        audio_path.clone(),
-        storage::TranscriptionStatus::Error,
-        Some(toast_message.clone()),
-        metadata,
-        None,
-    );
+    if temporary {
+        let _ = std::fs::remove_file(&audio_path);
+    } else {
+        let record_result = state.storage().save_transcription(
+            String::new(),
+            audio_path.clone(),
+            storage::TranscriptionStatus::Error,
+            Some(toast_message.clone()),
+            metadata,
+            None,
+        );
 
-    if let Err(err) = record_result {
-        eprintln!("Failed to persist failed transcription: {err}");
+        if let Err(err) = record_result {
+            eprintln!("Failed to persist failed transcription: {err}");
+        }
     }
 
     if state.pill().status() == crate::pill::PillStatus::Listening {
@@ -928,22 +937,54 @@ pub(crate) fn count_words(text: &str) -> u32 {
 }
 
 fn match_insertion_capitalization(text: &str, field_value: &str) -> String {
-    let Some(last_field_char) = field_value.trim_end().chars().last() else {
+    let field_tail = field_value.trim_end_matches([' ', '\t']);
+    let Some(last_field_char) = field_tail.chars().last() else {
         return text.to_string();
     };
-    if matches!(last_field_char, '.' | '!' | '?' | '…') {
+    if matches!(last_field_char, '.' | '!' | '?' | '…' | ':' | '\n' | '\r')
+        || field_tail
+            .lines()
+            .next_back()
+            .is_some_and(line_is_list_marker)
+    {
         return text.to_string();
     }
 
     let Some((index, first_letter)) = text.char_indices().find(|(_, ch)| ch.is_alphabetic()) else {
         return text.to_string();
     };
+    if preserves_leading_token_case(text, index) {
+        return text.to_string();
+    }
 
     let mut result = String::with_capacity(text.len());
     result.push_str(&text[..index]);
     result.extend(first_letter.to_lowercase());
     result.push_str(&text[index + first_letter.len_utf8()..]);
     result
+}
+
+fn preserves_leading_token_case(text: &str, start: usize) -> bool {
+    let token: String = text[start..]
+        .chars()
+        .take_while(|ch| ch.is_alphabetic())
+        .collect();
+    if token.chars().count() <= 1 {
+        return false;
+    }
+
+    token.chars().all(|ch| !ch.is_lowercase()) || token.chars().skip(1).any(|ch| ch.is_uppercase())
+}
+
+fn line_is_list_marker(line: &str) -> bool {
+    let marker = line.trim();
+    if matches!(marker, "-" | "*" | "+" | "•") {
+        return true;
+    }
+
+    marker
+        .strip_suffix(['.', ')'])
+        .is_some_and(|prefix| !prefix.is_empty() && prefix.chars().all(|ch| ch.is_ascii_digit()))
 }
 
 pub(crate) fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, u32)> {

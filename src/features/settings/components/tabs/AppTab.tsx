@@ -33,7 +33,7 @@ type PendingPruneConfirmation = {
 const recordingPrunePolicySeverity: Record<RecordingPrunePolicy, number> = {
   never: 0,
   year: 1,
-  three_months: 2,
+  three_months: 1,
   month: 3,
   week: 4,
   day: 5,
@@ -247,11 +247,6 @@ const AppTab = ({
           id: "settings.app.prune.threshold.month",
           message: "a month",
         });
-      case "three_months":
-        return t({
-          id: "settings.app.prune.threshold.three_months",
-          message: "3 months",
-        });
       case "year":
         return t({
           id: "settings.app.prune.threshold.year",
@@ -382,7 +377,7 @@ const AppTab = ({
       ? t({
           id: "settings.app.auto_delete_recordings.confirm.unknown_count",
           message:
-            "We couldn't count them right now, but the cleanup will still run as soon as you save this change.",
+            "We couldn't count them right now, but auto-delete will still run as soon as you save this change.",
         })
       : t({
           id: "settings.app.auto_delete_recordings.confirm.audio_only",
@@ -807,6 +802,7 @@ const AppTab = ({
                       valueClassName="text-right"
                       optionClassName="!px-2 !py-1.5"
                       optionLabelClassName="ui-text-meta font-medium"
+                      truncate={false}
                       disabled={isPreviewingPrune}
                     />
                   </div>

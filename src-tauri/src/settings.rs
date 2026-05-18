@@ -807,14 +807,16 @@ impl SettingsStore {
         }
 
         if settings.cleanup_enabled {
-            for binding in settings
-                .shortcut_bindings
-                .smart
-                .iter_mut()
-                .chain(settings.shortcut_bindings.hold.iter_mut())
-                .chain(settings.shortcut_bindings.toggle.iter_mut())
-            {
-                binding.cleanup_enabled = true;
+            if !shortcut_bindings_exists {
+                for binding in settings
+                    .shortcut_bindings
+                    .smart
+                    .iter_mut()
+                    .chain(settings.shortcut_bindings.hold.iter_mut())
+                    .chain(settings.shortcut_bindings.toggle.iter_mut())
+                {
+                    binding.cleanup_enabled = true;
+                }
             }
             settings.cleanup_enabled = false;
             should_persist = true;

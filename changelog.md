@@ -7,8 +7,7 @@
 
 ### Improvements
 - UI refinements
-- On supported text fields, captilization automatically matches previous text.
-- 
+- On supported text fields, capitalization automatically matches previous text.
 ---
 
 0.8.5

@@ -6,7 +6,6 @@ use std::process::Command;
 use chrono::{Datelike, Local};
 
 use crate::accessibility_context::ActiveContext;
-use crate::assistive;
 
 const MAX_DYNAMIC_TEXT_LEN: usize = 20_000;
 
@@ -47,7 +46,9 @@ fn extract_host(candidate: &str) -> Option<String> {
         value = value[(index + 3)..].to_string();
     }
 
-    let end_index = value.find(['/', '?', '#']).unwrap_or(value.len());
+    let end_index = value
+        .find(|ch: char| ch == '/' || ch == '?' || ch == '#' || ch.is_whitespace())
+        .unwrap_or(value.len());
     let host_port = &value[..end_index];
     let host_port = host_port.split('@').next_back().unwrap_or(host_port);
     let host = if let Some(rest) = host_port.strip_prefix('[') {
@@ -93,8 +94,6 @@ fn snippet_value(name: &str, context: Option<&SnippetContext>) -> Option<String>
         "browser" => context
             .and_then(|context| context.app_name.as_deref())
             .and_then(normalize_browser_name),
-        "selection" | "selected_text" => read_selected_text(),
-        "clipboard" => read_clipboard_text(),
         "user_name" => user_name(),
         "first_name" => {
             user_name().and_then(|name| name.split_whitespace().next().map(str::to_string))
@@ -133,15 +132,6 @@ fn run_command(program: &str, args: &[&str]) -> Option<String> {
     String::from_utf8(output.stdout)
         .ok()
         .and_then(truncate_dynamic_text)
-}
-
-fn read_clipboard_text() -> Option<String> {
-    let mut clipboard = arboard::Clipboard::new().ok()?;
-    clipboard.get_text().ok().and_then(truncate_dynamic_text)
-}
-
-fn read_selected_text() -> Option<String> {
-    assistive::get_selected_text_ax().and_then(truncate_dynamic_text)
 }
 
 fn normalize_browser_name(app_name: &str) -> Option<String> {

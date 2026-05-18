@@ -501,8 +501,7 @@ const PersonalityModal = ({
                             "Use snippets to pass live context to the language model, like",
                         })}{" "}
                         <code>{"{{date}}"}</code>, <code>{"{{app}}"}</code>,{" "}
-                        <code>{"{{selection}}"}</code>,{" "}
-                        <code>{"{{clipboard}}"}</code>.
+                        <code>{"{{window}}"}</code>.
                       </p>
                       <button
                         type="button"
