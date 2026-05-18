@@ -175,7 +175,13 @@ const ToastOverlay: React.FC = () => {
 
   const handleToastAction = async (action: string) => {
     try {
-      await invoke(action);
+      const args =
+        toast?.retryId &&
+        (action === "accept_auto_dictionary_suggestion" ||
+          action === "reject_auto_dictionary_suggestion")
+          ? { suggestion: toast.retryId }
+          : undefined;
+      await invoke(action, args);
       dismissWithCleanup();
     } catch (err) {
       console.error("Action failed:", err);
