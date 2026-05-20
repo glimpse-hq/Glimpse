@@ -484,6 +484,36 @@ msgstr ""
 #~ msgstr "3 months"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.system.empty_description"
+#~ msgstr "Background processing models like speaker diarization will appear here as they become available."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.system.empty_title"
+#~ msgstr "No system models yet"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.category.speech"
+#~ msgstr "Speech"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.category.system"
+#~ msgstr "System"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+#~ msgid "settings.modal.tab.language_model"
+#~ msgstr "AI Providers"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.language_model_tab"
+#~ msgstr "AI Providers"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings.after_suffix"
 msgstr " after"
@@ -868,11 +898,6 @@ msgstr "Back"
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.background_visualizer"
 msgstr "Background audio visualizer"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.system.empty_description"
-msgstr "Background processing models like speaker diarization will appear here as they become available."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2418,11 +2443,6 @@ msgid "personalization.no_sites"
 msgstr "No sites yet"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.system.empty_title"
-msgstr "No system models yet"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.no_tags_yet"
 msgstr "No tags yet"
@@ -3191,11 +3211,6 @@ msgid "transcriptions.list.sort.aria"
 msgstr "Sort transcriptions"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.category.speech"
-msgstr "Speech"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.download.starting"
 msgstr "starting..."
@@ -3284,11 +3299,6 @@ msgstr "System"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.system"
-msgstr "System"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.category.system"
 msgstr "System"
 
 #. js-lingui-explicit-id
