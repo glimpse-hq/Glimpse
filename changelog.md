@@ -1,3 +1,9 @@
+0.8.7
+
+### Improvements
+- LLM cleanup has been improved for mid conversation corrections.
+---
+
 0.8.6
 
 ### Features
@@ -8,6 +14,7 @@
 ### Improvements
 - UI refinements
 - On supported text fields, capitalization automatically matches previous text.
+- Background system commands on Windows run silently now, preventing brief command prompt window flashes.
 ---
 
 0.8.5
