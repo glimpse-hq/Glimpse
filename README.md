@@ -9,7 +9,7 @@
   />
   <p>
     <a href="https://github.com/LegendarySpy/Glimpse/releases/latest">Download</a> ·
-    <a href="#roadmap">Roadmap</a> ·
+    <a href="#roadmap 1.0+">Roadmap</a> ·
     <a href="https://github.com/LegendarySpy/Glimpse/wiki/Analytics">Privacy</a>
   </p>
   <p>
@@ -41,27 +41,16 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 
 - **Local transcription.** Unplug your wifi. It still works.
 - **Edit mode.** Highlight a sentence, say *"make it less formal,"* watch it rewrite in place.
-- **Personalization.** Casual one-liners in Slack, full sentences in email. Different rules per app.
+- **Personalization.** Set different tones for each app and enhance them with [snippets](https://github.com/LegendarySpy/Glimpse/wiki/snippets).
 - **Custom dictionary.** Teach it *Tauri*, *Groq*, or your coworker's hard-to-spell last name.
 - **Replacements.** Say *"my address"*, get `221B Baker Street`.
 - **Library.** Drop in an `.mp4`, scrub the synced transcript, export to `.srt`, `.txt`, or `.json`.
 - **Auto Dictionary.** Glimpse automatically learns your custom words.
+- And much much more!
 
-## Roadmap
+## Roadmap 1.0+
 
-- [x] Custom dictionary
-- [x] Built-in updater
-- [x] Per-app personalization
-- [x] Edit mode
-- [x] Audio & video transcription
-- [x] Auto media pausing
-- [x] Recording auto deletion
-- [x] Temporary mode (transcribe without saving)
-- [x] App localization
-- [x] Better customizable keybinds
-- [x] Auto-dictionary
-- [x] Personalization snippets
-- [x] Windows support
+- [ ] Meeting mode
 
 ## Contributing
 
