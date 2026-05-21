@@ -128,6 +128,8 @@
   --ui-pill-dot-base-rgb: 40, 40, 40;
   --ui-pill-dot-highlight-rgb: 255, 255, 255;
   --ui-pill-dot-error-rgb: 239, 68, 68;
+  --ui-pill-cleanup-rgb: 251, 191, 36;
+  --ui-pill-cleanup-field-opacity: 0.68;
   --ui-pill-shell-bg: var(--color-bg-primary);
   --ui-pill-shell-border: var(--color-border-primary);
   --ui-scroll-fade-panel: var(--color-bg-secondary);
@@ -309,6 +311,8 @@
   --ui-avatar-gradient-end: #d5d1ca;
   --ui-pill-shell-bg: var(--color-bg-primary);
   --ui-pill-shell-border: var(--color-border-secondary);
+  --ui-pill-cleanup-rgb: 180, 83, 9;
+  --ui-pill-cleanup-field-opacity: 0.44;
   --ui-scroll-fade-panel: var(--color-bg-secondary);
 
   --color-section-marker: var(--color-text-secondary);
@@ -1608,6 +1612,36 @@ body {
 
 .animate-toast-out {
   animation: toast-out 0.15s ease-in forwards;
+}
+
+.pill-cleanup-field {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(var(--ui-pill-cleanup-rgb), 0.18) 0 0.75px,
+      transparent 0.85px
+    )
+    0 0 / 3px 3px,
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(var(--ui-pill-cleanup-rgb), 0.12) 42%,
+      rgba(var(--ui-pill-cleanup-rgb), 0.24) 50%,
+      rgba(var(--ui-pill-cleanup-rgb), 0.12) 58%,
+      transparent 100%
+    );
+  mix-blend-mode: screen;
+  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pill-shell-cleanup .pill-cleanup-field {
+  opacity: var(--ui-pill-cleanup-field-opacity);
 }
 
 @keyframes twinkle {

@@ -2,6 +2,7 @@
 
 ### Improvements
 - LLM cleanup has been improved for mid conversation corrections.
+- The pill now has animations and has a different background based on the stage of processing.
 ---
 
 0.8.6

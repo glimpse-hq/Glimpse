@@ -5,6 +5,7 @@ import type {
   PillModePayload,
   PillStatePayload,
   PillStatus,
+  PillTone,
 } from "../../types";
 
 const EMPTY_SPECTRUM = new Uint8Array(256);
@@ -15,6 +16,7 @@ export function usePillState() {
   const [isErrorFlashing, setIsErrorFlashing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedText, setExpandedText] = useState("");
+  const [pillTone, setPillTone] = useState<PillTone>("default");
 
   const statusRef = useRef<PillStatus>("idle");
   const spectrumBinsRef = useRef<Uint8Array>(EMPTY_SPECTRUM);
@@ -60,11 +62,13 @@ export function usePillState() {
         setIsErrorFlashing(false);
         setIsExpanded(false);
         setExpandedText("");
+        setPillTone("default");
         return;
       }
 
       if (next === "listening") {
         resetAudioState();
+        setPillTone("default");
         return;
       }
 
@@ -114,10 +118,11 @@ export function usePillState() {
       lastSpectrumAtRef.current = performance.now();
     });
 
-    register<PillModePayload>("pill:mode", ({ expanded, text }) => {
+    register<PillModePayload>("pill:mode", ({ expanded, text, tone }) => {
       if (statusRef.current === "idle") return;
       setIsExpanded(expanded);
       setExpandedText(expanded ? (text ?? "") : "");
+      setPillTone(tone ?? "default");
     });
 
     return () => {
@@ -134,6 +139,7 @@ export function usePillState() {
     isErrorFlashing,
     isExpanded,
     expandedText,
+    pillTone,
     dismiss,
   };
 }

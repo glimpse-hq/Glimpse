@@ -29,19 +29,10 @@ pub(crate) enum ShortcutAction {
     Toggle,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(crate) struct ShortcutOptions {
     pub temporary: bool,
     pub cleanup_enabled: bool,
-}
-
-impl Default for ShortcutOptions {
-    fn default() -> Self {
-        Self {
-            temporary: false,
-            cleanup_enabled: false,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
