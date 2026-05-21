@@ -46,13 +46,13 @@ const AppIconBadge = ({
   if (iconUrl) {
     return (
       <span
-        className={`${baseClass} overflow-hidden rounded-md border border-border-secondary/70 bg-surface-overlay p-0.5`}
+        className={`${baseClass} overflow-visible`}
         aria-hidden="true"
       >
         <img
           src={iconUrl}
           alt=""
-          className="h-full w-full object-contain"
+          className="h-full w-full object-contain scale-[1.18]"
           loading="lazy"
         />
       </span>
