@@ -10,7 +10,7 @@ interface SigninStepProps {
 
 export function SigninStep({ stepMotionProps, onNext }: SigninStepProps) {
   const { t } = useLingui();
-  const syncStatus = t({
+  const cloudStatus = t({
     id: "onboarding.signin.status",
     message: "in development",
   });
@@ -28,13 +28,13 @@ export function SigninStep({ stepMotionProps, onNext }: SigninStepProps) {
       <h2 className="ui-text-title-lg font-semibold text-content-primary mb-2">
         {t({
           id: "onboarding.signin.title",
-          message: "Transcription Sync",
+          message: "Glimpse Cloud",
         })}
       </h2>
       <p className="ui-text-body-lg text-content-muted mb-2 leading-relaxed">
         {t({
           id: "onboarding.signin.subtitle",
-          message: `Cloud sync is currently ${syncStatus}.`,
+          message: `Cloud accounts are currently ${cloudStatus}.`,
         })}
       </p>
       <p className="ui-text-body-sm text-content-disabled mb-7 leading-relaxed">

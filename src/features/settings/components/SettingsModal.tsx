@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import { type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AppWindow, Cpu, Info, Keyboard, User, X } from "lucide-react";
+import { AppWindow, Check, Copy, Cpu, Info, Keyboard, User, X } from "lucide-react";
 import FAQModal from "../../../shared/ui/FAQModal";
 import WhatsNewModal from "../../updates/components/WhatsNewModal";
 import AboutTab from "./tabs/AboutTab";
@@ -198,6 +198,13 @@ const SettingsModal = ({
                   )}
                 </AnimatePresence>
               </nav>
+              <div className="px-2 pb-2">
+                <SettingsErrorBanner
+                  error={form.error}
+                  sourceTab={form.errorSourceTab}
+                  onOpenTab={form.setActiveTab}
+                />
+              </div>
             </aside>
 
             <main className="flex flex-1 flex-col min-h-0 bg-surface-overlay">
@@ -213,8 +220,6 @@ const SettingsModal = ({
                         variants={tabContentVariants}
                         authLoading={form.authLoading}
                         currentUser={form.currentUser}
-                        cloudSyncEnabled={form.cloudSyncEnabled}
-                        setCloudSyncEnabled={form.setCloudSyncEnabled}
                         onUpdateUser={form.onUpdateUser}
                         handleSignOut={form.handleSignOut}
                         handleCancelAuth={form.handleCancelAuth}
@@ -247,15 +252,13 @@ const SettingsModal = ({
                         toggleEnabled={form.toggleEnabled}
                         setToggleEnabled={form.setToggleEnabled}
                         shortcutBindings={form.shortcutBindings}
+                        invalidShortcutDrafts={form.invalidShortcutDrafts}
                         captureActive={form.captureActive}
                         capturePreview={form.capturePreview}
                         onStartCapture={form.handleStartCapture}
                         updateShortcutBinding={form.updateShortcutBinding}
                         addShortcutBinding={form.addShortcutBinding}
                         removeShortcutBinding={form.removeShortcutBinding}
-                        error={form.error}
-                        errorCopied={form.errorCopied}
-                        setErrorCopied={form.setErrorCopied}
                         editModeEnabled={form.editModeEnabled}
                         setEditModeEnabled={form.setEditModeEnabled}
                         autoDictionaryEnabled={form.autoDictionaryEnabled}
@@ -357,6 +360,87 @@ const SettingsModal = ({
         isOpen={form.whatsNewOpen}
         onClose={() => form.setWhatsNewOpen(false)}
       />
+    </AnimatePresence>
+  );
+};
+
+const SettingsErrorBanner = ({
+  error,
+  sourceTab,
+  onOpenTab,
+}: {
+  error: string | null;
+  sourceTab: "general" | "models" | "about" | "app" | null;
+  onOpenTab: (tab: "general" | "models" | "about" | "app") => void;
+}) => {
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimeoutRef.current !== null) {
+        window.clearTimeout(copiedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopy = () => {
+    if (!error) return;
+    navigator.clipboard
+      .writeText(error)
+      .then(() => {
+        setCopied(true);
+        if (copiedTimeoutRef.current !== null) {
+          window.clearTimeout(copiedTimeoutRef.current);
+        }
+        copiedTimeoutRef.current = window.setTimeout(() => {
+          setCopied(false);
+          copiedTimeoutRef.current = null;
+        }, 1500);
+      })
+      .catch(() => {});
+  };
+
+  return (
+    <AnimatePresence initial={false}>
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 4 }}
+          transition={{ duration: 0.12, ease: "easeOut" }}
+          className={`rounded-lg border border-error/20 bg-error/5 px-2 py-1.5 ${
+            sourceTab ? "cursor-pointer transition-colors hover:bg-error/10" : ""
+          }`}
+          role={sourceTab ? "button" : undefined}
+          tabIndex={sourceTab ? 0 : undefined}
+          onClick={() => {
+            if (sourceTab) onOpenTab(sourceTab);
+          }}
+          onKeyDown={(event) => {
+            if (!sourceTab) return;
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onOpenTab(sourceTab);
+            }
+          }}
+        >
+          <p className="ui-text-meta ui-color-error leading-snug">
+            <span>{error}</span>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleCopy();
+              }}
+              className="ml-1 inline-flex align-[-2px] text-error/60 transition-colors hover:text-error"
+              aria-label="Copy error"
+            >
+              {copied ? <Check size={11} /> : <Copy size={11} />}
+            </button>
+          </p>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 };

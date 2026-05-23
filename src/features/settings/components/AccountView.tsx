@@ -2,7 +2,6 @@ import { useLingui } from "@lingui/react/macro";
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { motion, AnimatePresence } from "framer-motion";
-import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import {
     Lock,
     Loader2,
@@ -64,16 +63,12 @@ import DotMatrix from "../../../shared/ui/DotMatrix";
 
 interface AccountViewProps {
     currentUser: AuthUser | null;
-    cloudSyncEnabled: boolean;
-    onCloudSyncToggle: () => void;
     onUserUpdate: () => void;
     onSignOut: () => void;
 }
 
 const AccountView = ({
     currentUser,
-    cloudSyncEnabled,
-    onCloudSyncToggle,
     onUserUpdate,
     onSignOut
 }: AccountViewProps) => {
@@ -394,40 +389,6 @@ const AccountView = ({
                                 message: "In development",
                             })}
                         </span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 transition-colors">
-                        <div className="flex items-center gap-3">
-                            <div>
-                                <div className={`ui-text-body-strong ${isSubscriber ? "ui-color-primary" : "ui-color-muted"}`}>
-                                    {t({
-                                        id: "settings.account.history_sync",
-                                        message: "History Sync",
-                                    })}
-                                </div>
-                                <div className="ui-text-label ui-color-muted">
-                                    {isSubscriber
-                                        ? t({
-                                            id: "settings.account.history_sync.cloud_description",
-                                            message: "Sync transcriptions across devices",
-                                        })
-                                        : t({
-                                            id: "settings.account.history_sync.cloud_feature",
-                                            message: "Cloud feature",
-                                        })}
-                                </div>
-                            </div>
-                        </div>
-                        {isSubscriber ? (
-                            <ToggleSwitch
-                                enabled={cloudSyncEnabled}
-                                onToggle={onCloudSyncToggle}
-                                ariaLabel={t({
-                                    id: "settings.account.history_sync.toggle",
-                                    message: "Toggle History Sync",
-                                })}
-                            />
-                        ) : null}
                     </div>
                 </div>
             </div>

@@ -521,11 +521,6 @@ msgid "library.filter.all"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:40
-msgid "faq.cloud.answer"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx:340
 msgid "settings.app.analytics.body"
 msgstr ""
@@ -868,11 +863,6 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AccountTab.tsx:101
 msgid "settings.account.cloud.body"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx:414
-msgid "settings.account.history_sync.cloud_feature"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -1678,11 +1668,6 @@ msgstr ""
 #: src/features/settings/components/AccountView.tsx:751
 #: src/features/settings/components/AccountView.tsx:786
 msgid "settings.account.password.hide"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx:403
-msgid "settings.account.history_sync"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -3003,11 +2988,6 @@ msgid "dictionary.section.replacements_description"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx:410
-msgid "settings.account.history_sync.cloud_description"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx:168
 msgid "settings.models.category.system"
 msgstr ""
@@ -3135,11 +3115,6 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx:501
 msgid "settings.general.edit_mode.toggle_aria"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx:425
-msgid "settings.account.history_sync.toggle"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -3290,11 +3265,6 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx:56
 msgid "faq.delete.question"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx:36
-msgid "faq.cloud.question"
 msgstr ""
 
 #. js-lingui-explicit-id

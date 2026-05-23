@@ -409,16 +409,6 @@ msgstr ""
 #~ msgstr "Private, fast, and runs entirely on your machine."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-#~ msgid "faq.cloud.answer"
-#~ msgstr "An optional paid upgrade with cross-device sync, faster cloud processing, and better AI models."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-#~ msgid "faq.cloud.question"
-#~ msgstr "What's Glimpse Cloud?"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 #~ msgid "settings.app.prune.three_months"
 #~ msgstr "3 Months"
@@ -1127,12 +1117,7 @@ msgstr "Cloud (API Key)"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AccountTab.tsx
 msgid "settings.account.cloud.body"
-msgstr "Cloud accounts, subscriptions, and sync are currently {status}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.history_sync.cloud_feature"
-msgstr "Cloud feature"
+msgstr "Cloud accounts and subscriptions are currently {cloudStatus}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -1142,7 +1127,7 @@ msgstr "Cloud processing (Coming soon)"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SigninStep.tsx
 msgid "onboarding.signin.subtitle"
-msgstr "Cloud sync is currently {status}."
+msgstr "Cloud accounts are currently {cloudStatus}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -1919,11 +1904,6 @@ msgstr "Hide password"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hide_shortcuts"
 msgstr "Hide shortcuts"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.history_sync"
-msgstr "History Sync"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3287,11 +3267,6 @@ msgid "dictionary.section.replacements_description"
 msgstr "Swap common phrases automatically after transcription."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.history_sync.cloud_description"
-msgstr "Sync transcriptions across devices"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.system"
 msgstr "System"
@@ -3447,11 +3422,6 @@ msgid "settings.general.edit_mode.toggle_aria"
 msgstr "Toggle Edit Mode"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.history_sync.toggle"
-msgstr "Toggle History Sync"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_launch.toggle_aria"
 msgstr "Toggle launch at login"
@@ -3489,7 +3459,7 @@ msgstr "Transcription Language"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SigninStep.tsx
 msgid "onboarding.signin.title"
-msgstr "Transcription Sync"
+msgstr "Glimpse Cloud"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

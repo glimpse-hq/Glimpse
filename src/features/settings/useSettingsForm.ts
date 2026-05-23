@@ -53,12 +53,18 @@ const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 type ActiveTab = "general" | "models" | "about" | "account" | "app";
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureTarget = { mode: ShortcutMode; index: number } | null;
+type ShortcutTarget = { mode: ShortcutMode; index: number };
 type ShortcutOverrides = Partial<
   Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
 >;
+type SettingsErrorSourceTab = Exclude<ActiveTab, "account">;
+type InvalidShortcutDrafts = Partial<Record<ShortcutMode, Record<number, string>>>;
+type InvalidShortcutDraft = { target: ShortcutTarget; message: string } | null;
+
 type SaveSettingsOverrides = ShortcutOverrides & {
   localModel?: string;
   shortcutBindings?: ShortcutBindings;
+  shortcutDraftTarget?: ShortcutTarget;
 };
 
 const defaultShortcutBindings = (): ShortcutBindings => ({
@@ -112,6 +118,34 @@ const primaryShortcut = (
   fallback: string,
 ) => bindings[mode][0]?.shortcut ?? fallback;
 
+const sanitizeInvalidShortcutDraft = (
+  bindings: ShortcutBindings,
+  invalidDraft: InvalidShortcutDraft,
+  persistedBindings: ShortcutBindings,
+): ShortcutBindings => {
+  if (!invalidDraft) return bindings;
+
+  const { mode, index } = invalidDraft.target;
+  const modeBindings = bindings[mode];
+  if (!modeBindings[index]) return bindings;
+
+  const persistedBinding = persistedBindings[mode][index];
+  if (!persistedBinding && index > 0) {
+    return {
+      ...bindings,
+      [mode]: modeBindings.filter((_, bindingIndex) => bindingIndex !== index),
+    };
+  }
+  if (!persistedBinding) return bindings;
+
+  return {
+    ...bindings,
+    [mode]: modeBindings.map((binding, bindingIndex) =>
+      bindingIndex === index ? persistedBinding : binding,
+    ),
+  };
+};
+
 interface UseSettingsFormOptions {
   isOpen: boolean;
   onClose: () => void;
@@ -139,6 +173,10 @@ export function useSettingsForm({
     defaultShortcutBindings,
   );
   const shortcutBindingsRef = useRef<ShortcutBindings>(defaultShortcutBindings());
+  const persistedShortcutBindingsRef = useRef<ShortcutBindings>(defaultShortcutBindings());
+  const [invalidShortcutDraft, setInvalidShortcutDraftState] =
+    useState<InvalidShortcutDraft>(null);
+  const invalidShortcutDraftRef = useRef<InvalidShortcutDraft>(null);
   const [transcriptionMode, setTranscriptionModeRaw] =
     useState<TranscriptionMode>(initialTranscriptionMode);
   const [localModel, setLocalModel] = useState("");
@@ -149,7 +187,8 @@ export function useSettingsForm({
     Record<string, DownloadEvent>
   >({});
   const [error, setError] = useState<string | null>(null);
-  const [errorCopied, setErrorCopied] = useState(false);
+  const [errorSourceTab, setErrorSourceTab] =
+    useState<SettingsErrorSourceTab | null>(null);
   const [captureActive, setCaptureActive] = useState<CaptureTarget>(null);
   const [capturePreview, setCapturePreview] = useState<string>("");
   const captureActiveRef = useRef<CaptureTarget>(null);
@@ -214,18 +253,66 @@ export function useSettingsForm({
       inputDevicesQuery.isLoading ||
       appInfoQuery.isLoading);
 
-  const [cloudSyncEnabled, setCloudSyncEnabledRaw] = useState(() => {
-    const stored = localStorage.getItem("glimpse_cloud_sync_enabled");
-    return stored !== null ? stored === "true" : false;
-  });
+  const clearSettingsError = useCallback(() => {
+    setError(null);
+    setErrorSourceTab(null);
+  }, []);
+
+  const clearSettingsErrorIfNoInvalidDrafts = useCallback(() => {
+    if (!invalidShortcutDraftRef.current) {
+      clearSettingsError();
+    }
+  }, [clearSettingsError]);
+
+  const showSettingsError = useCallback(
+    (
+      message: string,
+      sourceTab: SettingsErrorSourceTab =
+        activeTab === "account" ? "general" : activeTab,
+    ) => {
+      setError(message);
+      setErrorSourceTab(sourceTab);
+    },
+    [activeTab],
+  );
+
+  const setInvalidShortcutDraft = useCallback(
+    (target: ShortcutTarget, message: string) => {
+      const next = { target, message };
+      invalidShortcutDraftRef.current = next;
+      setInvalidShortcutDraftState(next);
+    },
+    [],
+  );
+
+  const clearInvalidShortcutDraft = useCallback((target: ShortcutTarget) => {
+    const current = invalidShortcutDraftRef.current;
+    if (
+      current?.target.mode !== target.mode ||
+      current.target.index !== target.index
+    ) {
+      return;
+    }
+    invalidShortcutDraftRef.current = null;
+    setInvalidShortcutDraftState(null);
+  }, []);
+
+  const invalidShortcutDrafts = useMemo<InvalidShortcutDrafts>(() => {
+    if (!invalidShortcutDraft) return {};
+    return {
+      [invalidShortcutDraft.target.mode]: {
+        [invalidShortcutDraft.target.index]: invalidShortcutDraft.message,
+      },
+    };
+  }, [invalidShortcutDraft]);
 
   const setLlmEnabled = useCallback((value: boolean) => {
     setLlmEnabledRaw(value);
     if (!value) {
       setEditModeEnabled(false);
-      setError(null);
+      clearSettingsErrorIfNoInvalidDrafts();
     }
-  }, []);
+  }, [clearSettingsErrorIfNoInvalidDrafts]);
 
   const setTranscriptionMode = useCallback(
     (mode: TranscriptionMode) => {
@@ -236,12 +323,6 @@ export function useSettingsForm({
     },
     [activeTab],
   );
-
-  const setCloudSyncEnabled = useCallback((value: boolean) => {
-    setCloudSyncEnabledRaw(value);
-    localStorage.setItem("glimpse_cloud_sync_enabled", String(value));
-    emit("auth:changed").catch(() => {});
-  }, []);
 
   const setTextSizeMode = useCallback((mode: TextSizeMode) => {
     setTextSizeModeRaw(mode);
@@ -269,6 +350,9 @@ export function useSettingsForm({
 
   const hydrateFromSettings = useCallback((s: StoredSettings) => {
     const hydratedBindings = bindingsFromSettings(s);
+    persistedShortcutBindingsRef.current = hydratedBindings;
+    invalidShortcutDraftRef.current = null;
+    setInvalidShortcutDraftState(null);
     setSmartShortcut(s.smart_shortcut);
     setSmartEnabled(s.smart_enabled);
     setHoldShortcut(s.hold_shortcut);
@@ -297,8 +381,6 @@ export function useSettingsForm({
     setAnalyticsEnabled(s.analytics_enabled ?? true);
     setThemeModeRaw(s.theme_mode ?? "system");
   }, []);
-
-  const isSubscriber = currentUser?.labels?.includes("cloud") ?? false;
 
   const activeTranscriptionEngine = useMemo(
     () => getActiveTranscriptionEngine(modelCatalog, localModel),
@@ -372,9 +454,19 @@ export function useSettingsForm({
   const buildSettingsArgs = useCallback(
     (overrides: SaveSettingsOverrides = {}) => {
       const rawShortcutBindings = overrides.shortcutBindings ?? shortcutBindings;
-      const savedShortcutBindings = aiFeaturesReady
+      const shouldTryDraftShortcut =
+        overrides.shortcutBindings !== undefined &&
+        overrides.shortcutDraftTarget !== undefined;
+      const bindingsForSave = shouldTryDraftShortcut
         ? rawShortcutBindings
-        : withoutShortcutCleanup(rawShortcutBindings);
+        : sanitizeInvalidShortcutDraft(
+            rawShortcutBindings,
+            invalidShortcutDraftRef.current,
+            persistedShortcutBindingsRef.current,
+          );
+      const savedShortcutBindings = aiFeaturesReady
+        ? bindingsForSave
+        : withoutShortcutCleanup(bindingsForSave);
 
       return {
         smartShortcut:
@@ -454,10 +546,18 @@ export function useSettingsForm({
           isSavingRef.current = true;
           try {
             await invoke("update_settings", { args });
-            setError(null);
+            persistedShortcutBindingsRef.current = args.shortcutBindings;
+            if (overrides?.shortcutDraftTarget) {
+              clearInvalidShortcutDraft(overrides.shortcutDraftTarget);
+            }
+            clearSettingsErrorIfNoInvalidDrafts();
           } catch (err) {
             console.error(err);
-            setError(String(err));
+            const message = String(err);
+            if (overrides?.shortcutDraftTarget) {
+              setInvalidShortcutDraft(overrides.shortcutDraftTarget, message);
+            }
+            showSettingsError(message);
           } finally {
             isSavingRef.current = false;
           }
@@ -466,7 +566,13 @@ export function useSettingsForm({
       settingsSaveRef.current = save;
       return save;
     },
-    [buildSettingsArgs],
+    [
+      buildSettingsArgs,
+      clearInvalidShortcutDraft,
+      clearSettingsErrorIfNoInvalidDrafts,
+      setInvalidShortcutDraft,
+      showSettingsError,
+    ],
   );
 
   const saveSettingsNowRef = useRef(saveSettingsNow);
@@ -532,6 +638,7 @@ export function useSettingsForm({
           if (target.mode === "toggle") setToggleShortcut(primary);
           void saveSettingsNow({
             shortcutBindings: next,
+            shortcutDraftTarget: target,
             smartShortcut: primaryShortcut(next, "smart", smartShortcut),
             holdShortcut: primaryShortcut(next, "hold", holdShortcut),
             toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
@@ -540,18 +647,11 @@ export function useSettingsForm({
         });
         captureActiveRef.current = null;
       }
-      setError(null);
+      clearSettingsErrorIfNoInvalidDrafts();
     },
-    onError: setError,
-    onCaptureInput: () => setError(null),
+    onError: (message) => showSettingsError(message, "general"),
+    onCaptureInput: clearSettingsErrorIfNoInvalidDrafts,
   });
-
-  // Guard: non-subscribers can't have cloud sync
-  useEffect(() => {
-    if (currentUser && !isSubscriber && cloudSyncEnabled) {
-      setCloudSyncEnabled(false);
-    }
-  }, [currentUser, isSubscriber, cloudSyncEnabled, setCloudSyncEnabled]);
 
   useEffect(() => {
     if (aiFeaturesReady) return;
@@ -710,14 +810,14 @@ export function useSettingsForm({
 
     if (settingsQuery.error) {
       console.error("Failed to load settings:", settingsQuery.error);
-      setError("Failed to load settings");
+      showSettingsError("Failed to load settings", "general");
       return;
     }
 
     if (!settingsQuery.data || isSavingRef.current) return;
 
     hydrateFromSettings(settingsQuery.data);
-  }, [hydrateFromSettings, isOpen, settingsQuery.data, settingsQuery.error]);
+  }, [hydrateFromSettings, isOpen, settingsQuery.data, settingsQuery.error, showSettingsError]);
 
   const invalidateModelStatus = useCallback(
     (modelKey: string) => {
@@ -832,28 +932,36 @@ export function useSettingsForm({
 
   const handleStartCapture = useCallback(
     (mode: ShortcutMode, index = 0) => {
+      clearInvalidShortcutDraft({ mode, index });
       if (captureActive?.mode === mode && captureActive.index === index) {
         captureActiveRef.current = null;
         setCaptureActive(null);
         finalizeCapture();
         resetCaptureState();
-        setError(null);
+        clearSettingsErrorIfNoInvalidDrafts();
         return;
       }
       resetCaptureState();
       const target = { mode, index };
       captureActiveRef.current = target;
       setCaptureActive(target);
-      setError(null);
+      clearSettingsErrorIfNoInvalidDrafts();
       invoke("set_shortcut_capture_active", { active: true }).catch((err) => {
         console.error("Failed to disable shortcuts for capture", err);
         captureActiveRef.current = null;
         setCaptureActive(null);
         resetCaptureState();
-        setError(String(err));
+        showSettingsError(String(err), "general");
       });
     },
-    [captureActive, finalizeCapture, resetCaptureState],
+    [
+      captureActive,
+      clearInvalidShortcutDraft,
+      clearSettingsErrorIfNoInvalidDrafts,
+      finalizeCapture,
+      resetCaptureState,
+      showSettingsError,
+    ],
   );
 
   const updateShortcutBindings = useCallback(
@@ -885,6 +993,9 @@ export function useSettingsForm({
 
   const updateShortcutBinding = useCallback(
     (mode: ShortcutMode, index: number, patch: Partial<ShortcutBinding>) => {
+      if (patch.shortcut !== undefined) {
+        clearInvalidShortcutDraft({ mode, index });
+      }
       updateShortcutBindings((current) => ({
         ...current,
         [mode]: current[mode].map((binding, bindingIndex) =>
@@ -892,7 +1003,7 @@ export function useSettingsForm({
         ),
       }));
     },
-    [updateShortcutBindings],
+    [clearInvalidShortcutDraft, updateShortcutBindings],
   );
 
   const addShortcutBinding = useCallback(
@@ -931,6 +1042,7 @@ export function useSettingsForm({
           setCaptureActive(nextTarget);
         }
       }
+      clearInvalidShortcutDraft({ mode, index });
       updateShortcutBindings((current) => {
         return {
           ...current,
@@ -938,7 +1050,7 @@ export function useSettingsForm({
         };
       });
     },
-    [resetCaptureState, updateShortcutBindings],
+    [clearInvalidShortcutDraft, resetCaptureState, updateShortcutBindings],
   );
 
   const handleLocalModelChange = useCallback(
@@ -1106,11 +1218,11 @@ export function useSettingsForm({
     setActiveTab,
     loading,
     error,
-    errorCopied,
-    setErrorCopied,
+    errorSourceTab,
 
     smartShortcut,
     shortcutBindings,
+    invalidShortcutDrafts,
     smartEnabled,
     setSmartEnabled,
     holdShortcut,
@@ -1180,8 +1292,6 @@ export function useSettingsForm({
 
     authLoading,
     currentUser,
-    cloudSyncEnabled,
-    setCloudSyncEnabled,
     handleSignOut,
     handleCancelAuth,
 
