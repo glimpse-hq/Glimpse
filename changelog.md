@@ -1,3 +1,13 @@
+0.8.7
+
+### Improvements
+- LLM cleanup has been improved for mid-conversation corrections.
+- The pill now has animations and has a different background based on the stage of processing.
+- Settings errors now show in the sidebar, so they are easier to find without jumping back to General.
+- Shortcut conflicts should feel less weird while editing. Bad shortcuts stay visible until you fix them instead of silently changing.
+- Cleaned up a few Settings spacing and text-size issues, especially around shortcuts and permissions.
+---
+
 0.8.6
 
 ### Features
@@ -8,6 +18,7 @@
 ### Improvements
 - UI refinements
 - On supported text fields, capitalization automatically matches previous text.
+- Background system commands on Windows run silently now, preventing brief command prompt window flashes.
 ---
 
 0.8.5

@@ -8,8 +8,6 @@ type AccountTabProps = {
     variants: Variants;
     authLoading: boolean;
     currentUser: AuthUser | null;
-    cloudSyncEnabled: boolean;
-    setCloudSyncEnabled: (value: boolean) => void;
     onUpdateUser: () => Promise<void>;
     handleSignOut: () => Promise<void>;
     handleCancelAuth: () => void;
@@ -19,8 +17,6 @@ const AccountTab = ({
     variants,
     authLoading,
     currentUser,
-    cloudSyncEnabled,
-    setCloudSyncEnabled,
     onUpdateUser,
     handleSignOut,
     handleCancelAuth,
@@ -77,8 +73,6 @@ const AccountTab = ({
         ) : currentUser ? (
             <AccountView
                 currentUser={currentUser}
-                cloudSyncEnabled={cloudSyncEnabled}
-                onCloudSyncToggle={() => setCloudSyncEnabled(!cloudSyncEnabled)}
                 onUserUpdate={async () => {
                     await onUpdateUser();
                 }}
@@ -100,7 +94,7 @@ const AccountTab = ({
                         <p className="mt-1 ui-text-label ui-color-muted leading-relaxed">
                             {t({
                                 id: "settings.account.cloud.body",
-                                message: `Cloud accounts, subscriptions, and sync are currently ${cloudStatus}.`,
+                                message: `Cloud accounts and subscriptions are currently ${cloudStatus}.`,
                             })}
                         </p>
                         <div className="mt-3 ui-text-meta ui-color-disabled">

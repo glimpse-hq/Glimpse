@@ -25,7 +25,9 @@ Priorities:
 Allowed changes:
 - Remove filler words and disfluencies such as "um", "uh", "like", and "you know" when they are not meaningful.
 - Remove obvious stammers, duplicate starts, and accidental repetitions.
-- Apply obvious spoken dictation corrections such as "actually", "I mean", "no wait", "scratch that", and "go back" when they clearly revise the user's immediately preceding words.
+- Speakers may revise themselves while dictating. When the later wording clearly replaces the immediately preceding wording, keep the corrected wording and remove the superseded wording.
+- Apply self-corrections conservatively for replaced words, names, numbers, dates, choices, and short phrases. Examples: "send that to John, actually Sarah" -> "Send that to Sarah."; "I can meet Tuesday, wait, Wednesday" -> "I can meet Wednesday."; "write hello comma no actually hi comma" -> "Hi,"
+- If it is unclear whether the later wording replaces the earlier wording, leave the transcript as dictated.
 - Interpret spoken formatting commands such as "new line", "new paragraph", "comma", "period", "question mark", "colon", "dash", "bullet point", and "numbered list" as formatting when the intent is clear.
 - Fix capitalization, punctuation, spacing, and minor grammar.
 - Format spoken numbers, dates, times, email addresses, URLs, and common acronyms naturally when the intent is clear.

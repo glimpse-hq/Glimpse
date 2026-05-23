@@ -7,7 +7,6 @@ import {
   BrushCleaning,
   Check,
   ChevronRight,
-  Copy,
   Ghost,
   Info,
   Mic,
@@ -30,6 +29,7 @@ import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
 
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureMode = { mode: ShortcutMode; index: number } | null;
+type InvalidShortcutDrafts = Partial<Record<ShortcutMode, Record<number, string>>>;
 type HelpTooltipId = "shortcuts" | "edit-mode";
 type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
 type MicrophoneTestLevels = {
@@ -59,6 +59,7 @@ type GeneralTabProps = {
   toggleEnabled: boolean;
   setToggleEnabled: (value: boolean) => void;
   shortcutBindings: ShortcutBindings;
+  invalidShortcutDrafts: InvalidShortcutDrafts;
   captureActive: CaptureMode;
   capturePreview: string;
   onStartCapture: (mode: ShortcutMode, index?: number) => void;
@@ -69,9 +70,6 @@ type GeneralTabProps = {
   ) => void;
   addShortcutBinding: (mode: ShortcutMode) => void;
   removeShortcutBinding: (mode: ShortcutMode, index: number) => void;
-  error: string | null;
-  errorCopied: boolean;
-  setErrorCopied: (value: boolean) => void;
   editModeEnabled: boolean;
   setEditModeEnabled: (value: boolean) => void;
   autoDictionaryEnabled: boolean;
@@ -102,15 +100,13 @@ const GeneralTab = ({
   toggleEnabled,
   setToggleEnabled,
   shortcutBindings,
+  invalidShortcutDrafts,
   captureActive,
   capturePreview,
   onStartCapture,
   updateShortcutBinding,
   addShortcutBinding,
   removeShortcutBinding,
-  error,
-  errorCopied,
-  setErrorCopied,
   editModeEnabled,
   setEditModeEnabled,
   autoDictionaryEnabled,
@@ -187,7 +183,7 @@ const GeneralTab = ({
     className="space-y-6"
   >
     <div className="space-y-2">
-      <h2 className="ui-text-section-label ui-color-muted">
+      <h2 className="ui-text-section-label-sm ui-color-muted">
         {t({
           id: "settings.general.processing",
           message: "Processing",
@@ -507,7 +503,7 @@ const GeneralTab = ({
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-2">
         <div className="flex h-5 items-center gap-1">
-          <h2 className="ui-text-section-label ui-color-muted">
+          <h2 className="ui-text-section-label-sm ui-color-muted">
             {t({
               id: "settings.general.shortcuts",
               message: "Shortcuts",
@@ -591,6 +587,7 @@ const GeneralTab = ({
               message: "tap to toggle, hold to talk",
             })}
             bindings={shortcutBindings.smart}
+            invalidDrafts={invalidShortcutDrafts.smart}
             enabled={smartEnabled}
             captureActive={captureActive}
             capturePreview={capturePreview}
@@ -622,6 +619,7 @@ const GeneralTab = ({
               message: "hold to talk, release to stop",
             })}
             bindings={shortcutBindings.hold}
+            invalidDrafts={invalidShortcutDrafts.hold}
             enabled={holdEnabled}
             captureActive={captureActive}
             capturePreview={capturePreview}
@@ -655,6 +653,7 @@ const GeneralTab = ({
               message: "tap to start, tap to stop",
             })}
             bindings={shortcutBindings.toggle}
+            invalidDrafts={invalidShortcutDrafts.toggle}
             enabled={toggleEnabled}
             captureActive={captureActive}
             capturePreview={capturePreview}
@@ -675,7 +674,7 @@ const GeneralTab = ({
       </div>
 
       <div className="space-y-2">
-        <h2 className="ui-text-section-label ui-color-muted">
+        <h2 className="ui-text-section-label-sm ui-color-muted">
           {t({
             id: "settings.general.features",
             message: "Features",
@@ -825,29 +824,6 @@ const GeneralTab = ({
       </div>
     </div>
 
-    <AnimatePresence>
-      {error && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-        >
-          <div className="flex items-center gap-2 ui-text-label ui-color-error">
-            <span className="flex-1">{error}</span>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(error || "");
-                setErrorCopied(true);
-                setTimeout(() => setErrorCopied(false), 1500);
-              }}
-              className="text-error/60 hover:text-error transition-colors"
-            >
-              {errorCopied ? <Check size={11} /> : <Copy size={11} />}
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
     </motion.div>
   );
 };
@@ -1261,6 +1237,7 @@ const formatMicrophoneTestError = (err: unknown) => {
 const ShortcutBindingsList = ({
   mode,
   bindings,
+  invalidDrafts,
   enabled,
   isExpanded,
   captureActive,
@@ -1273,6 +1250,7 @@ const ShortcutBindingsList = ({
 }: {
   mode: ShortcutMode;
   bindings: ShortcutBinding[];
+  invalidDrafts?: Record<number, string>;
   enabled: boolean;
   isExpanded: boolean;
   captureActive: CaptureMode;
@@ -1305,6 +1283,7 @@ const ShortcutBindingsList = ({
       ? bindings
       : [{ shortcut: "", temporary: false, cleanup_enabled: false }];
   const primaryBinding = visibleBindings[0];
+  const primaryInvalid = Boolean(invalidDrafts?.[0]);
   const alternateCount = Math.max(visibleBindings.length - 1, 0);
   const canAdd = visibleBindings.length < 3;
   const primaryCapturing =
@@ -1319,6 +1298,8 @@ const ShortcutBindingsList = ({
         className={`flex min-h-7 items-center gap-1.5 border-b py-1 ui-text-kbd transition-colors ${
           primaryCapturing
             ? "border-border-hover ui-color-primary"
+            : primaryInvalid
+              ? "border-error/40 ui-color-error"
             : enabled
               ? "border-border-primary ui-color-secondary hover:border-border-secondary"
               : "border-border-primary ui-color-disabled"
@@ -1452,6 +1433,7 @@ const ShortcutBindingsList = ({
                 const index = offset + 1;
                 const isCapturing =
                   captureActive?.mode === mode && captureActive.index === index;
+                const isInvalid = Boolean(invalidDrafts?.[index]);
                 const displayShortcut = binding.shortcut
                   ? formatShortcutForDisplay(binding.shortcut)
                   : addShortcutLabel;
@@ -1462,6 +1444,8 @@ const ShortcutBindingsList = ({
                     className={`flex min-h-7 items-center gap-1.5 border-b py-1 ui-text-kbd transition-colors ${
                       isCapturing
                         ? "border-border-hover ui-color-primary"
+                        : isInvalid
+                          ? "border-error/40 ui-color-error"
                         : "border-border-primary ui-color-muted hover:border-border-secondary hover:ui-color-secondary"
                     }`}
                   >
@@ -1594,6 +1578,7 @@ type ShortcutRowProps = {
   label: string;
   description: string;
   bindings: ShortcutBinding[];
+  invalidDrafts?: Record<number, string>;
   enabled: boolean;
   isExpanded: boolean;
   captureActive: CaptureMode;
@@ -1616,6 +1601,7 @@ const ShortcutRow = ({
   label,
   description,
   bindings,
+  invalidDrafts,
   enabled,
   isExpanded,
   captureActive,
@@ -1656,6 +1642,7 @@ const ShortcutRow = ({
       <ShortcutBindingsList
         mode={mode}
         bindings={bindings}
+        invalidDrafts={invalidDrafts}
         enabled={enabled}
         isExpanded={isExpanded}
         captureActive={captureActive}

@@ -299,6 +299,7 @@ async fn process_transcript_text(
     };
 
     let (final_transcript, llm_cleaned) = if should_use_llm {
+        crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
         if let Some(ref selected) = pending_selected_text {
             match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
                 Ok(edited) => (edited, true),
@@ -336,6 +337,9 @@ async fn process_transcript_text(
         }
         (raw_transcript.clone(), false)
     };
+    if should_use_llm {
+        crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_DEFAULT);
+    }
 
     let final_transcript =
         dictionary::apply_replacements(&final_transcript, &settings.replacements);

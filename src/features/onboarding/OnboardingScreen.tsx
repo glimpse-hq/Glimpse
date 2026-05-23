@@ -374,7 +374,6 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }
 
     try {
-      localStorage.setItem("glimpse_cloud_sync_enabled", "false");
       await invoke("update_settings", {
         args: {
           smartShortcut: ctx.smartShortcut,

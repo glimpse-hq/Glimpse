@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
@@ -29,6 +29,7 @@ const DOT_RADIUS = {
 const EXPANDED_WIDTH = 260;
 const EXPANDED_HEIGHT = 90;
 const EXPANDED_BORDER_RADIUS = 24;
+const WARM_ENTRY_IDLE_MS = 5 * 1000;
 const EXPANDED_TEXT_TOP_FADE =
   "linear-gradient(to bottom, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.38) 74%, transparent 100%)";
 
@@ -44,9 +45,9 @@ const ICONS = {
 
 // Transition timing — fast-start smooth-end (Apple-style spring)
 const EXPAND_TRANSITION = [
-  "width 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
-  "height 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
-  "border-radius 0.5s cubic-bezier(0.32, 0.72, 0, 1)",
+  "width 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)",
+  "height 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)",
+  "border-radius 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)",
 ].join(", ");
 
 /* ───────────────────────── Color Palette ───────────────────────── */
@@ -177,6 +178,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     isErrorFlashing,
     isExpanded,
     expandedText,
+    pillTone,
     dismiss,
   } = usePillState();
   const expandedTextSegments = useMemo(
@@ -202,6 +204,8 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const colorPaletteRef = useRef<PillColorPalette>(FALLBACK_PILL_COLOR_PALETTE);
   const audioReferenceLevelRef = useRef<number>(0);
   const audioFrameCountRef = useRef<number>(0);
+  const hasShownPillRef = useRef(false);
+  const lastIdleAtRef = useRef(0);
 
   /** Render to both canvases (primary + background). */
   const renderBoth = useCallback(
@@ -544,6 +548,17 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     }
   }, [pillStatus, isErrorFlashing, stopAllAnimations]);
 
+  useEffect(() => {
+    if (pillStatus === "idle") {
+      if (hasShownPillRef.current) {
+        lastIdleAtRef.current = performance.now();
+      }
+      return;
+    }
+
+    hasShownPillRef.current = true;
+  }, [pillStatus]);
+
   /* ───────────────────────── Window / Keyboard ───────────────────────── */
 
   const hideWindow = useCallback(async () => {
@@ -581,25 +596,26 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       hRef: React.MutableRefObject<number[]>,
     ) => {
       if (!canvas || !container) return;
-      const rect = container.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return;
+      const width = container.offsetWidth;
+      const height = container.offsetHeight;
+      if (width === 0 || height === 0) return;
 
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
 
       const ctx = canvas.getContext("2d");
       if (ctx) ctx.scale(dpr, dpr);
 
-      const cols = Math.floor(rect.width / DOT_SPACING);
-      const rows = Math.floor(rect.height / DOT_SPACING);
+      const cols = Math.floor(width / DOT_SPACING);
+      const rows = Math.floor(height / DOT_SPACING);
       gRef.current = {
         spacing: DOT_SPACING,
         cols,
         rows,
-        offsetX: (rect.width - cols * DOT_SPACING) / 2,
-        offsetY: (rect.height - rows * DOT_SPACING) / 2,
+        offsetX: (width - cols * DOT_SPACING) / 2,
+        offsetY: (height - rows * DOT_SPACING) / 2,
       };
 
       if (hRef.current.length !== cols) {
@@ -655,18 +671,54 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const shellRadius = isExpanded ? EXPANDED_BORDER_RADIUS : PILL_HEIGHT / 2;
   const shellTransition = isExpanded ? EXPAND_TRANSITION : "none";
   const expandedContentTransition = isExpanded
-    ? "opacity 0.35s ease 0.15s, flex 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
+    ? "opacity 0.24s ease 0.1s, flex 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)"
     : "none";
   const expandedPaddingTransition = isExpanded
-    ? "padding 0.5s cubic-bezier(0.32, 0.72, 0, 1)"
+    ? "padding 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)"
     : "none";
-  const topFadeTransition = isExpanded ? "opacity 0.3s ease" : "none";
+  const topFadeTransition = isExpanded ? "opacity 0.2s ease" : "none";
   const bgOpacityTransition = isExpanded
-    ? "opacity 0.6s ease 0.15s"
+    ? "opacity 0.32s ease 0.08s"
     : "none";
   const baseOpacityTransition = isExpanded
-    ? "opacity 0.4s ease"
+    ? "opacity 0.22s ease"
     : "none";
+  const isWarmEntry =
+    pillStatus !== "idle" &&
+    hasShownPillRef.current &&
+    performance.now() - lastIdleAtRef.current <= WARM_ENTRY_IDLE_MS;
+  const pillInitial = isWarmEntry
+    ? {
+        opacity: 0,
+        scaleX: 0.95,
+        scaleY: 0.98,
+        y: 2,
+        filter: "blur(2px)",
+      }
+    : {
+        opacity: 0,
+        scaleX: 0.78,
+        scaleY: 0.94,
+        y: 5,
+        filter: "blur(5px)",
+      };
+  const pillTransition = isWarmEntry
+    ? {
+        type: "spring" as const,
+        stiffness: 680,
+        damping: 36,
+        mass: 0.32,
+        filter: { duration: 0.08, ease: "easeOut" },
+        opacity: { duration: 0.08, ease: "easeOut" },
+      }
+    : {
+        type: "spring" as const,
+        stiffness: 760,
+        damping: 32,
+        mass: 0.36,
+        filter: { duration: 0.14, ease: "easeOut" },
+        opacity: { duration: 0.12, ease: "easeOut" },
+      };
 
   return (
     <div
@@ -678,155 +730,188 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         {getStatusMessage(pillStatus)}
       </div>
       <div className="relative flex flex-col items-center pb-2">
-        {/* Pill shell — transitions between basic and dynamic modes */}
-        <div
-          className={`relative overflow-hidden border flex flex-col ${isErrorFlashing ? "animate-shake" : ""}`}
-          style={{
-            width: shellWidth,
-            height: shellHeight,
-            borderRadius: shellRadius,
-            backgroundColor: "var(--ui-pill-shell-bg)",
-            borderColor: "var(--ui-pill-shell-border)",
-            boxShadow: "var(--ui-pill-shell-shadow)",
-            transition: shellTransition,
-          }}
-        >
-          {/* Expanded content area — positioned above background dots */}
-          <div
-            className="pill-expanded-content relative z-10"
-            style={{
-              flex: isExpanded ? 1 : 0,
-              opacity: isExpanded ? 1 : 0,
-              overflow: "hidden",
-              minHeight: 0,
-              transition: expandedContentTransition,
-            }}
-          >
-            <div
-              className="h-full w-full flex flex-col"
+        <AnimatePresence>
+          {pillStatus !== "idle" && (
+            <motion.div
+              className={`relative overflow-hidden border flex flex-col ${pillTone === "cleanup" ? "pill-shell-cleanup" : ""} ${isErrorFlashing ? "animate-shake" : ""}`}
+              initial={pillInitial}
+              animate={{
+                opacity: 1,
+                scaleX: 1,
+                scaleY: 1,
+                y: 0,
+                filter: "blur(0px)",
+              }}
+              exit={{
+                opacity: 0,
+                scaleX: 0.74,
+                scaleY: 0.92,
+                y: 5,
+                filter: "blur(4px)",
+                transition: {
+                  type: "spring",
+                  stiffness: 820,
+                  damping: 34,
+                  mass: 0.34,
+                  filter: { duration: 0.12, ease: "easeIn" },
+                  opacity: { duration: 0.12, ease: "easeIn" },
+                }
+              }}
+              transition={pillTransition}
               style={{
-                padding: isExpanded ? "14px 16px 14px" : "0 16px",
-                transition: expandedPaddingTransition,
-                position: "relative",
+                width: shellWidth,
+                height: shellHeight,
+                borderRadius: shellRadius,
+                backgroundColor: "var(--ui-pill-shell-bg)",
+                borderColor: "var(--ui-pill-shell-border)",
+                boxShadow: "var(--ui-pill-shell-shadow)",
+                transition: shellTransition,
+                transformOrigin: "bottom center",
               }}
             >
               <div
                 aria-hidden="true"
-                className="absolute left-0 right-0 top-0 pointer-events-none z-20"
+                className="pill-cleanup-field"
+              />
+
+              {/* Expanded content area — positioned above background dots */}
+              <div
+                className="pill-expanded-content relative z-10"
                 style={{
-                  height: 30,
-                  background: EXPANDED_TEXT_TOP_FADE,
+                  flex: isExpanded ? 1 : 0,
                   opacity: isExpanded ? 1 : 0,
-                  transition: topFadeTransition,
+                  overflow: "hidden",
+                  minHeight: 0,
+                  transition: expandedContentTransition,
                 }}
-              />
-
-              <div className="flex-1 w-full overflow-hidden flex flex-col justify-end relative z-10">
-                <motion.div
-                  layout="position"
-                  className="w-full flex flex-col justify-end"
+              >
+                <div
+                  className="h-full w-full flex flex-col"
+                  style={{
+                    padding: isExpanded ? "14px 16px 14px" : "0 16px",
+                    transition: expandedPaddingTransition,
+                    position: "relative",
+                  }}
                 >
-                  <p
+                  <div
+                    aria-hidden="true"
+                    className="absolute left-0 right-0 top-0 pointer-events-none z-20"
                     style={{
-                      margin: 0,
-                      fontSize: "13px",
-                      lineHeight: "1.5",
-                      fontFamily: "'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif",
-                      color: "rgba(255, 255, 255, 0.85)",
-                      fontWeight: 400,
-                      letterSpacing: "-0.01em",
-                      textAlign: "center",
-                      width: "100%",
-                      wordBreak: "break-word",
+                      height: 30,
+                      background: EXPANDED_TEXT_TOP_FADE,
+                      opacity: isExpanded ? 1 : 0,
+                      transition: topFadeTransition,
                     }}
-                  >
-                    {expandedTextSegments.map(({ key, text, isWhitespace }) => {
-                      if (isWhitespace) {
-                        return (
-                          <motion.span
-                            key={key}
-                            layout="position"
-                            transition={{ layout: { type: "spring", bounce: 0, duration: 0.4 } }}
-                            style={{ display: "inline-block", whiteSpace: "pre" }}
-                          >
-                            {text}
-                          </motion.span>
-                        );
-                      }
-                      return (
-                        <motion.span
-                          key={key}
-                          layout="position"
-                          initial={{ opacity: 0, filter: "blur(4px)", y: 8 }}
-                          animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                          transition={{
-                            opacity: { duration: 0.4, ease: "easeOut" },
-                            filter: { duration: 0.4, ease: "easeOut" },
-                            y: { duration: 0.4, ease: "easeOut" },
-                            layout: { type: "spring", bounce: 0, duration: 0.4 }
-                          }}
-                          style={{ display: "inline-block", willChange: "transform, opacity, filter" }}
-                        >
-                          {text}
-                        </motion.span>
-                      );
-                    })}
-                  </p>
-                </motion.div>
+                  />
+
+                  <div className="flex-1 w-full overflow-hidden flex flex-col justify-end relative z-10">
+                    <motion.div
+                      layout="position"
+                      className="w-full flex flex-col justify-end"
+                    >
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "13px",
+                          lineHeight: "1.5",
+                          fontFamily: "'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif",
+                          color: "rgba(255, 255, 255, 0.85)",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          textAlign: "center",
+                          width: "100%",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {expandedTextSegments.map(({ key, text, isWhitespace }) => {
+                          if (isWhitespace) {
+                            return (
+                              <motion.span
+                                key={key}
+                                layout="position"
+                                transition={{ layout: { type: "spring", bounce: 0, duration: 0.24 } }}
+                                style={{ display: "inline-block", whiteSpace: "pre" }}
+                              >
+                                {text}
+                              </motion.span>
+                            );
+                          }
+                          return (
+                            <motion.span
+                              key={key}
+                              layout="position"
+                              initial={{ opacity: 0, filter: "blur(2px)", y: 4 }}
+                              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                              transition={{
+                                opacity: { duration: 0.2, ease: "easeOut" },
+                                filter: { duration: 0.18, ease: "easeOut" },
+                                y: { duration: 0.2, ease: "easeOut" },
+                                layout: { type: "spring", bounce: 0, duration: 0.24 }
+                              }}
+                              style={{ display: "inline-block", willChange: "transform, opacity, filter" }}
+                            >
+                              {text}
+                            </motion.span>
+                          );
+                        })}
+                      </p>
+                    </motion.div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Background canvas — full expanded size, fades in at low opacity */}
-          <div
-            className="absolute inset-0 pointer-events-none flex items-center justify-center z-[1]"
-            style={{
-              opacity: isExpanded ? 0.08 : 0,
-              transition: bgOpacityTransition,
-            }}
-          >
-            <div
-              ref={bgContainerRef}
-              className="relative overflow-hidden rounded-[inherit]"
-              style={{ width: EXPANDED_WIDTH, height: EXPANDED_HEIGHT }}
-            >
-              <canvas
-                ref={bgCanvasRef}
-                className="absolute inset-0 w-full h-full block"
-                role="img"
-                aria-label={t({
-                  id: "pill.background_visualizer",
-                  message: "Background audio visualizer",
-                })}
-              />
-            </div>
-          </div>
+              {/* Background canvas — full expanded size, fades in at low opacity */}
+              <div
+                className="absolute inset-0 pointer-events-none flex items-center justify-center z-[1]"
+                style={{
+                  opacity: isExpanded ? 0.08 : 0,
+                  transition: bgOpacityTransition,
+                }}
+              >
+                <div
+                  ref={bgContainerRef}
+                  className="relative overflow-hidden rounded-[inherit]"
+                  style={{ width: EXPANDED_WIDTH, height: EXPANDED_HEIGHT }}
+                >
+                  <canvas
+                    ref={bgCanvasRef}
+                    className="absolute inset-0 w-full h-full block"
+                    role="img"
+                    aria-label={t({
+                      id: "pill.background_visualizer",
+                      message: "Background audio visualizer",
+                    })}
+                  />
+                </div>
+              </div>
 
-          {/* Primary canvas — small pill dots, fades out when expanded */}
-          <div
-            className="absolute inset-0 pointer-events-none flex items-center justify-center z-[2]"
-            style={{
-              opacity: isExpanded ? 0 : 1,
-              transition: baseOpacityTransition,
-            }}
-          >
-            <div
-              ref={containerRef}
-              className="relative overflow-hidden rounded-full"
-              style={{ width: PILL_WIDTH, height: PILL_HEIGHT }}
-            >
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 w-full h-full block"
-                role="img"
-                aria-label={t({
-                  id: "pill.visualizer",
-                  message: "Audio visualizer",
-                })}
-              />
-            </div>
-          </div>
-        </div>
+              {/* Primary canvas — small pill dots, fades out when expanded */}
+              <div
+                className="absolute inset-0 pointer-events-none flex items-center justify-center z-[2]"
+                style={{
+                  opacity: isExpanded ? 0 : 1,
+                  transition: baseOpacityTransition,
+                }}
+              >
+                <div
+                  ref={containerRef}
+                  className="relative overflow-hidden rounded-full"
+                  style={{ width: PILL_WIDTH, height: PILL_HEIGHT }}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    className="absolute inset-0 w-full h-full block"
+                    role="img"
+                    aria-label={t({
+                      id: "pill.visualizer",
+                      message: "Audio visualizer",
+                    })}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

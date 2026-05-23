@@ -485,15 +485,15 @@ const AppTab = ({
               <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
                 {platformCapabilities.requiresNativeMicrophonePermission && (
                   <div className="px-2 py-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="ui-text-label-strong ui-color-primary">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="shrink-0 whitespace-nowrap ui-text-label-strong ui-color-primary">
                           {t({
                             id: "settings.app.microphone",
                             message: "Microphone",
                           })}
                         </span>
-                        <span className="truncate ui-text-meta ui-color-disabled">
+                        <span className="min-w-0 ui-text-meta ui-color-disabled">
                           {t({
                             id: "settings.app.microphone.description",
                             message: "required for transcription",
@@ -518,15 +518,15 @@ const AppTab = ({
 
                 {platformCapabilities.requiresAccessibilityPermission && (
                   <div className="px-2 py-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="ui-text-label-strong ui-color-primary">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="shrink-0 whitespace-nowrap ui-text-label-strong ui-color-primary">
                           {t({
                             id: "settings.app.accessibility",
                             message: "Accessibility",
                           })}
                         </span>
-                        <span className="truncate ui-text-meta ui-color-disabled">
+                        <span className="min-w-0 ui-text-meta ui-color-disabled">
                           {t({
                             id: "settings.app.accessibility.description",
                             message: "required for auto-paste",
@@ -558,15 +558,15 @@ const AppTab = ({
 
                 {platformCapabilities.requiresInputMonitoringPermission && (
                   <div className="px-2 py-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <span className="ui-text-label-strong ui-color-primary">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <span className="shrink-0 whitespace-nowrap ui-text-label-strong ui-color-primary">
                           {t({
                             id: "settings.app.input_monitoring",
                             message: "Input Monitoring",
                           })}
                         </span>
-                        <span className="truncate ui-text-meta ui-color-disabled">
+                        <span className="min-w-0 ui-text-meta ui-color-disabled">
                           {t({
                             id: "settings.app.input_monitoring.description",
                             message: "required for global shortcuts",

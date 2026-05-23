@@ -21,8 +21,11 @@ use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
+const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
+pub(crate) const PILL_TONE_DEFAULT: &str = "default";
+pub(crate) const PILL_TONE_CLEANUP: &str = "cleanup";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -287,7 +290,7 @@ impl PillController {
         if next == PillStatus::Idle {
             let app_handle = app.clone();
             std::thread::spawn(move || {
-                std::thread::sleep(std::time::Duration::from_millis(32));
+                std::thread::sleep(Duration::from_millis(OVERLAY_HIDE_AFTER_IDLE_MS));
                 if app_handle.state::<AppState>().pill().status() == PillStatus::Idle {
                     hide_overlay(&app_handle);
                 }
@@ -758,11 +761,20 @@ impl PillController {
 }
 
 pub(crate) fn emit_pill_mode(app: &AppHandle<AppRuntime>, expanded: bool, text: &str) {
+    emit_pill_mode_with_tone(app, expanded, text, PILL_TONE_DEFAULT);
+}
+
+pub(crate) fn emit_pill_mode_with_tone(
+    app: &AppHandle<AppRuntime>,
+    expanded: bool,
+    text: &str,
+    tone: &str,
+) {
     app.state::<AppState>().pill().set_expanded(expanded);
 
     if let Err(err) = app.emit(
         EVENT_PILL_MODE,
-        serde_json::json!({ "expanded": expanded, "text": text }),
+        serde_json::json!({ "expanded": expanded, "text": text, "tone": tone }),
     ) {
         eprintln!("Failed to emit pill mode: {err}");
     }
