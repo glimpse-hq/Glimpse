@@ -1,7 +1,7 @@
 0.8.7
 
 ### Improvements
-- LLM cleanup has been improved for mid conversation corrections.
+- LLM cleanup has been improved for mid-conversation corrections.
 - The pill now has animations and has a different background based on the stage of processing.
 - Settings errors now show in the sidebar, so they are easier to find without jumping back to General.
 - Shortcut conflicts should feel less weird while editing. Bad shortcuts stay visible until you fix them instead of silently changing.

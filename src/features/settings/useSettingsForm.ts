@@ -306,6 +306,25 @@ export function useSettingsForm({
     };
   }, [invalidShortcutDraft]);
 
+  const restoreInvalidShortcutDraft = useCallback(() => {
+    const current = invalidShortcutDraftRef.current;
+    if (!current) return;
+
+    const next = sanitizeInvalidShortcutDraft(
+      shortcutBindingsRef.current,
+      current,
+      persistedShortcutBindingsRef.current,
+    );
+
+    shortcutBindingsRef.current = next;
+    setShortcutBindings(next);
+    setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
+    setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
+    setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
+    invalidShortcutDraftRef.current = null;
+    setInvalidShortcutDraftState(null);
+  }, [holdShortcut, smartShortcut, toggleShortcut]);
+
   const setLlmEnabled = useCallback((value: boolean) => {
     setLlmEnabledRaw(value);
     if (!value) {
@@ -932,7 +951,15 @@ export function useSettingsForm({
 
   const handleStartCapture = useCallback(
     (mode: ShortcutMode, index = 0) => {
-      clearInvalidShortcutDraft({ mode, index });
+      const currentDraft = invalidShortcutDraftRef.current;
+      if (
+        currentDraft &&
+        (currentDraft.target.mode !== mode || currentDraft.target.index !== index)
+      ) {
+        restoreInvalidShortcutDraft();
+      } else {
+        clearInvalidShortcutDraft({ mode, index });
+      }
       if (captureActive?.mode === mode && captureActive.index === index) {
         captureActiveRef.current = null;
         setCaptureActive(null);
@@ -960,6 +987,7 @@ export function useSettingsForm({
       clearSettingsErrorIfNoInvalidDrafts,
       finalizeCapture,
       resetCaptureState,
+      restoreInvalidShortcutDraft,
       showSettingsError,
     ],
   );
