@@ -6,6 +6,7 @@
 - Settings errors now show in the sidebar, so they are easier to find without jumping back to General.
 - Shortcut conflicts should feel less weird while editing. Bad shortcuts stay visible until you fix them instead of silently changing.
 - Cleaned up a few Settings spacing and text-size issues, especially around shortcuts and permissions.
+- Fixed an onboarding bug preventing completion.
 ---
 
 0.8.6

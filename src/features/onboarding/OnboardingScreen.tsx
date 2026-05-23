@@ -374,14 +374,21 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }
 
     try {
+      const holdShortcut = "Control+Shift+Space";
+      const toggleShortcut = "Control+Alt+Space";
       await invoke("update_settings", {
         args: {
           smartShortcut: ctx.smartShortcut,
           smartEnabled: true,
-          holdShortcut: "Control+Shift+Space",
+          holdShortcut,
           holdEnabled: false,
-          toggleShortcut: "Control+Alt+Space",
+          toggleShortcut,
           toggleEnabled: false,
+          shortcutBindings: {
+            smart: [{ shortcut: ctx.smartShortcut, temporary: false, cleanupEnabled: false }],
+            hold: [{ shortcut: holdShortcut, temporary: false, cleanupEnabled: false }],
+            toggle: [{ shortcut: toggleShortcut, temporary: false, cleanupEnabled: false }],
+          },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
           microphoneDevice: null,
