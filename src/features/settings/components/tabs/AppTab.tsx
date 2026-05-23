@@ -649,7 +649,7 @@ const AppTab = ({
             )}
           </div>
 
-          <div className="space-y-2 flex flex-col pt-0.5">
+          <div className="space-y-2 flex flex-col">
             <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
               {t({
                 id: "settings.app.automation",

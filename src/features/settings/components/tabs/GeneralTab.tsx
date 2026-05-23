@@ -674,12 +674,14 @@ const GeneralTab = ({
       </div>
 
       <div className="space-y-2">
-        <h2 className="ui-text-section-label-sm ui-color-muted">
-          {t({
-            id: "settings.general.features",
-            message: "Features",
-          })}
-        </h2>
+        <div className="flex h-5 items-center">
+          <h2 className="ui-text-section-label-sm ui-color-muted">
+            {t({
+              id: "settings.general.features",
+              message: "Features",
+            })}
+          </h2>
+        </div>
 
         <div className="space-y-3">
           <div className="rounded-lg bg-surface-surface">
