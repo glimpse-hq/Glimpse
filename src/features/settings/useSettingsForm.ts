@@ -285,14 +285,7 @@ export function useSettingsForm({
     [],
   );
 
-  const clearInvalidShortcutDraft = useCallback((target: ShortcutTarget) => {
-    const current = invalidShortcutDraftRef.current;
-    if (
-      current?.target.mode !== target.mode ||
-      current.target.index !== target.index
-    ) {
-      return;
-    }
+  const clearInvalidShortcutDraft = useCallback(() => {
     invalidShortcutDraftRef.current = null;
     setInvalidShortcutDraftState(null);
   }, []);
@@ -306,7 +299,7 @@ export function useSettingsForm({
     };
   }, [invalidShortcutDraft]);
 
-  const restoreInvalidShortcutDraft = useCallback(() => {
+  const discardInvalidShortcutDraft = useCallback(() => {
     const current = invalidShortcutDraftRef.current;
     if (!current) return;
 
@@ -321,9 +314,8 @@ export function useSettingsForm({
     setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
     setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
     setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
-    invalidShortcutDraftRef.current = null;
-    setInvalidShortcutDraftState(null);
-  }, [holdShortcut, smartShortcut, toggleShortcut]);
+    clearInvalidShortcutDraft();
+  }, [clearInvalidShortcutDraft, holdShortcut, smartShortcut, toggleShortcut]);
 
   const setLlmEnabled = useCallback((value: boolean) => {
     setLlmEnabledRaw(value);
@@ -370,8 +362,7 @@ export function useSettingsForm({
   const hydrateFromSettings = useCallback((s: StoredSettings) => {
     const hydratedBindings = bindingsFromSettings(s);
     persistedShortcutBindingsRef.current = hydratedBindings;
-    invalidShortcutDraftRef.current = null;
-    setInvalidShortcutDraftState(null);
+    clearInvalidShortcutDraft();
     setSmartShortcut(s.smart_shortcut);
     setSmartEnabled(s.smart_enabled);
     setHoldShortcut(s.hold_shortcut);
@@ -399,7 +390,7 @@ export function useSettingsForm({
     setRecordingPrunePolicy(s.recording_prune_policy ?? "never");
     setAnalyticsEnabled(s.analytics_enabled ?? true);
     setThemeModeRaw(s.theme_mode ?? "system");
-  }, []);
+  }, [clearInvalidShortcutDraft]);
 
   const activeTranscriptionEngine = useMemo(
     () => getActiveTranscriptionEngine(modelCatalog, localModel),
@@ -567,7 +558,7 @@ export function useSettingsForm({
             await invoke("update_settings", { args });
             persistedShortcutBindingsRef.current = args.shortcutBindings;
             if (overrides?.shortcutDraftTarget) {
-              clearInvalidShortcutDraft(overrides.shortcutDraftTarget);
+              clearInvalidShortcutDraft();
             }
             clearSettingsErrorIfNoInvalidDrafts();
           } catch (err) {
@@ -951,15 +942,7 @@ export function useSettingsForm({
 
   const handleStartCapture = useCallback(
     (mode: ShortcutMode, index = 0) => {
-      const currentDraft = invalidShortcutDraftRef.current;
-      if (
-        currentDraft &&
-        (currentDraft.target.mode !== mode || currentDraft.target.index !== index)
-      ) {
-        restoreInvalidShortcutDraft();
-      } else {
-        clearInvalidShortcutDraft({ mode, index });
-      }
+      discardInvalidShortcutDraft();
       if (captureActive?.mode === mode && captureActive.index === index) {
         captureActiveRef.current = null;
         setCaptureActive(null);
@@ -983,11 +966,10 @@ export function useSettingsForm({
     },
     [
       captureActive,
-      clearInvalidShortcutDraft,
       clearSettingsErrorIfNoInvalidDrafts,
+      discardInvalidShortcutDraft,
       finalizeCapture,
       resetCaptureState,
-      restoreInvalidShortcutDraft,
       showSettingsError,
     ],
   );
@@ -995,19 +977,17 @@ export function useSettingsForm({
   const updateShortcutBindings = useCallback(
     (updater: (current: ShortcutBindings) => ShortcutBindings) => {
       clearPendingSettingsSave();
-      setShortcutBindings((current) => {
-        const next = updater(current);
-        shortcutBindingsRef.current = next;
-        setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
-        setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
-        setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
-        void saveSettingsNow({
-          shortcutBindings: next,
-          smartShortcut: primaryShortcut(next, "smart", smartShortcut),
-          holdShortcut: primaryShortcut(next, "hold", holdShortcut),
-          toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
-        });
-        return next;
+      const next = updater(shortcutBindingsRef.current);
+      shortcutBindingsRef.current = next;
+      setShortcutBindings(next);
+      setSmartShortcut(primaryShortcut(next, "smart", smartShortcut));
+      setHoldShortcut(primaryShortcut(next, "hold", holdShortcut));
+      setToggleShortcut(primaryShortcut(next, "toggle", toggleShortcut));
+      void saveSettingsNow({
+        shortcutBindings: next,
+        smartShortcut: primaryShortcut(next, "smart", smartShortcut),
+        holdShortcut: primaryShortcut(next, "hold", holdShortcut),
+        toggleShortcut: primaryShortcut(next, "toggle", toggleShortcut),
       });
     },
     [
@@ -1022,7 +1002,7 @@ export function useSettingsForm({
   const updateShortcutBinding = useCallback(
     (mode: ShortcutMode, index: number, patch: Partial<ShortcutBinding>) => {
       if (patch.shortcut !== undefined) {
-        clearInvalidShortcutDraft({ mode, index });
+        discardInvalidShortcutDraft();
       }
       updateShortcutBindings((current) => ({
         ...current,
@@ -1031,12 +1011,13 @@ export function useSettingsForm({
         ),
       }));
     },
-    [clearInvalidShortcutDraft, updateShortcutBindings],
+    [discardInvalidShortcutDraft, updateShortcutBindings],
   );
 
   const addShortcutBinding = useCallback(
     (mode: ShortcutMode) => {
       clearPendingSettingsSave();
+      discardInvalidShortcutDraft();
       const current = shortcutBindingsRef.current;
       if (current[mode].length >= 3) return;
       const nextIndex = current[mode].length;
@@ -1051,12 +1032,13 @@ export function useSettingsForm({
       setShortcutBindings(next);
       handleStartCapture(mode, nextIndex);
     },
-    [clearPendingSettingsSave, handleStartCapture],
+    [clearPendingSettingsSave, discardInvalidShortcutDraft, handleStartCapture],
   );
 
   const removeShortcutBinding = useCallback(
     (mode: ShortcutMode, index: number) => {
       if (shortcutBindingsRef.current[mode].length <= 1) return;
+      discardInvalidShortcutDraft();
       const activeTarget = captureActiveRef.current;
       if (activeTarget?.mode === mode) {
         if (activeTarget.index === index) {
@@ -1070,7 +1052,6 @@ export function useSettingsForm({
           setCaptureActive(nextTarget);
         }
       }
-      clearInvalidShortcutDraft({ mode, index });
       updateShortcutBindings((current) => {
         return {
           ...current,
@@ -1078,7 +1059,11 @@ export function useSettingsForm({
         };
       });
     },
-    [clearInvalidShortcutDraft, resetCaptureState, updateShortcutBindings],
+    [
+      discardInvalidShortcutDraft,
+      resetCaptureState,
+      updateShortcutBindings,
+    ],
   );
 
   const handleLocalModelChange = useCallback(
