@@ -11,6 +11,8 @@ import {
   Info,
   HelpCircle,
   Bug,
+  Check,
+  Copy,
   X,
   ArrowUpCircle,
   Library,
@@ -49,6 +51,10 @@ const STATIC_LOGO_COORDS = [
     cy: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE,
   },
 ];
+
+const SUPPORT_GITHUB_URL =
+  "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
+const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
 const StaticGlimpseLogo = ({ isCloudMode }: { isCloudMode: boolean }) => {
   return (
@@ -124,6 +130,7 @@ const Home = () => {
   >("home");
   const { user: currentUser, refresh: refreshUser } = useCurrentUser();
   const [showSupportPopup, setShowSupportPopup] = useState(false);
+  const [supportEmailCopied, setSupportEmailCopied] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
   const supportMenuRef = useRef<HTMLDivElement>(null);
 
@@ -249,6 +256,23 @@ const Home = () => {
     () => setShowSupportPopup(false),
     showSupportPopup,
   );
+
+  useEffect(() => {
+    if (!showSupportPopup) {
+      setSupportEmailCopied(false);
+    }
+  }, [showSupportPopup]);
+
+  const copySupportEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      setSupportEmailCopied(true);
+      window.setTimeout(() => setSupportEmailCopied(false), 1200);
+    } catch (err) {
+      console.error("Failed to copy support email:", err);
+      setSupportEmailCopied(false);
+    }
+  };
 
   useEffect(() => {
     const handleCopy = (event: KeyboardEvent) => {
@@ -495,29 +519,55 @@ const Home = () => {
                         </div>
                       </div>
                     </button>
-                    <a
-                      href="https://github.com/LegendarySpy/Glimpse/issues/new/choose"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowSupportPopup(false)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group"
-                    >
-                      <Bug size={16} className="ui-color-secondary" />
-                      <div>
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors w-full">
+                      <Bug size={16} className="ui-color-secondary shrink-0" />
+                      <div className="min-w-0">
                         <div className="ui-text-body-sm-strong ui-color-primary">
                           {t({
-                            id: "home.support.github.title",
-                            message: "GitHub Issues",
+                            id: "home.support.feedback.title",
+                            message: "Feedback",
                           })}
                         </div>
-                        <div className="ui-text-meta ui-color-muted">
-                          {t({
-                            id: "home.support.github.subtitle",
-                            message: "Report bugs & request features",
-                          })}
+                        <div className="ui-text-meta ui-color-muted flex items-center flex-nowrap gap-x-1.5">
+                          <a
+                            href={SUPPORT_GITHUB_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setShowSupportPopup(false)}
+                            className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
+                          >
+                            <Bug size={10} aria-hidden="true" />
+                            {t({
+                              id: "home.support.feedback.github",
+                              message: "GitHub issue",
+                            })}
+                          </a>
+                          <span aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void copySupportEmail();
+                            }}
+                            className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
+                          >
+                            {supportEmailCopied ? (
+                              <Check size={10} aria-hidden="true" />
+                            ) : (
+                              <Copy size={10} aria-hidden="true" />
+                            )}
+                            {supportEmailCopied
+                              ? t({
+                                  id: "home.support.feedback.email_copied",
+                                  message: "Copied!",
+                                })
+                              : t({
+                                  id: "home.support.feedback.email",
+                                  message: "Email",
+                                })}
+                          </button>
                         </div>
                       </div>
-                    </a>
+                    </div>
                     <button
                       onClick={() => {
                         setShowSupportPopup(false);

@@ -574,6 +574,31 @@ msgstr ""
 #~ msgstr "Your data is your data. Not ours to share. We will never sell or share your data with third parties."
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.github.title"
+#~ msgstr "GitHub Issues"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.github.subtitle"
+#~ msgstr "Report bugs & request features"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.feedback.github_hint"
+#~ msgstr "Bugs & feature requests"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.feedback.email_hint"
+#~ msgstr "Direct help for specific questions"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.feedback.subtitle"
+#~ msgstr "Public issue or private email"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings.after_suffix"
 msgstr " after"
@@ -1311,6 +1336,11 @@ msgid "library.modal.copy.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.support.feedback.email_copied"
+msgstr "Copied!"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.copy"
 msgstr "Copy"
@@ -1701,6 +1731,11 @@ msgid "settings.account.name.edit_aria"
 msgstr "Edit name"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.support.feedback.email"
+msgstr "Email"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/AccessibilityStep.tsx
 msgid "onboarding.accessibility.enable"
 msgstr "Enable in Settings"
@@ -1816,6 +1851,11 @@ msgid "settings.general.features"
 msgstr "Features"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.support.feedback.title"
+msgstr "Feedback"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx
 msgid "onboarding.models.loading_body"
 msgstr "Fetching the available local transcription engines for this build."
@@ -1902,8 +1942,8 @@ msgstr "Get Support"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
-msgid "home.support.github.title"
-msgstr "GitHub Issues"
+msgid "home.support.feedback.github"
+msgstr "GitHub Issue"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -2141,13 +2181,13 @@ msgid "settings.app.auto_launch"
 msgstr "Launch at Login"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.storage.library"
+#: src/Home.tsx
+msgid "home.sidebar.library"
 msgstr "Library"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.sidebar.library"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.library"
 msgstr "Library"
 
 #. js-lingui-explicit-id
@@ -2332,13 +2372,13 @@ msgid "library.error_details.model_not_installed"
 msgstr "Model not installed."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.storage.models"
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.tab.models"
 msgstr "Models"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SettingsModal.tsx
-msgid "settings.modal.tab.models"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.models"
 msgstr "Models"
 
 #. js-lingui-explicit-id
@@ -2868,11 +2908,6 @@ msgstr "Replace with..."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.section.replacements_title"
 msgstr "Replacements"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.github.subtitle"
-msgstr "Report bugs & request features"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx

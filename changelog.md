@@ -7,6 +7,7 @@
 
 ### Improvements
 - Settings got reorganized into Core, Local, and Developer sections. Models is for speech models only; AI writing has its own Providers tab.
+- (i) has been updated to now support email support.
 - Redesigned About with Updates and FAQ up front, a clearer storage breakdown.
 - Models tab has been redesigned to work better at a glace. (or a Glimpse.. :) )
 - Fixed the home transcription list shifting around while it loads.
