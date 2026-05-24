@@ -13,6 +13,7 @@
 - Fixed the home transcription list shifting around while it loads.
 - Model downloads now use the shared Glimpse Speech model manager. Installs, progress, cancellation, and model metadata should feel more consistent.
 - Onboarding now keeps more of your existing setup when finishing, and does a better job picking the recommended local models.
+- Restarting onboarding is now a hold button to prevent accidental clicks.
 
 ---
 

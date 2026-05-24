@@ -3,12 +3,18 @@ import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
 import { HelpCircle, Info, Loader2, RotateCcw, Terminal } from "lucide-react";
 import ActionCardButton from "../../../../shared/ui/ActionCardButton";
+import HoldActionCardButton from "../../../../shared/ui/HoldActionCardButton";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
-import type { AppInfo, CliInstallStatus } from "../../../../types";
+import type {
+  AppInfo,
+  CliInstallStatus,
+  TranscriptionMode,
+} from "../../../../types";
 
 type AboutTabProps = {
   variants: Variants;
   appInfo: AppInfo | null;
+  transcriptionMode: TranscriptionMode;
   formatBytes: (bytes: number) => string;
   cliInstallStatus: CliInstallStatus | null;
   cliInstallBusy: boolean;
@@ -22,6 +28,7 @@ type AboutTabProps = {
 const AboutTab = ({
   variants,
   appInfo,
+  transcriptionMode,
   formatBytes,
   cliInstallStatus,
   cliInstallBusy,
@@ -32,6 +39,17 @@ const AboutTab = ({
   onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
+
+  const isCloudMode = transcriptionMode === "cloud";
+  const modeLabel = isCloudMode
+    ? t({
+        id: "settings.about.mode.cloud",
+        message: "Cloud",
+      })
+    : t({
+        id: "settings.about.mode.local",
+        message: "Local",
+      });
 
   const recordingsBytes = appInfo?.storage_breakdown?.recordings_bytes ?? 0;
   const libraryBytes = appInfo?.storage_breakdown?.library_bytes ?? 0;
@@ -129,6 +147,10 @@ const AboutTab = ({
           <span className="font-mono tabular-nums">
             {appInfo?.version ?? "-"}
           </span>
+          <span aria-hidden="true" className="mx-1.5 ui-color-disabled">
+            ·
+          </span>
+          <span>{modeLabel}</span>
         </p>
       </header>
 
@@ -141,31 +163,6 @@ const AboutTab = ({
             })}
           </h2>
           <UpdateChecker onOpenWhatsNew={onOpenWhatsNew} />
-        </div>
-
-        <div className="space-y-2">
-          <h2 className="ui-text-section-label-sm ui-color-muted">
-            {t({
-              id: "settings.about.help",
-              message: "Help",
-            })}
-          </h2>
-
-          <div className="h-[52px]">
-            <ActionCardButton
-              onClick={onOpenFAQ}
-              title={t({
-                id: "settings.about.faq_help",
-                message: "FAQ & Help",
-              })}
-              description={t({
-                id: "settings.about.faq_help_description",
-                message: "common questions",
-              })}
-              icon={<HelpCircle size={14} strokeWidth={2} />}
-              accentPreset="cloud"
-            />
-          </div>
         </div>
       </section>
 
@@ -213,23 +210,38 @@ const AboutTab = ({
         <h2 className="ui-text-section-label-sm ui-color-muted">
           {t({
             id: "settings.about.setup",
-            message: "Setup",
+            message: "Setup & help",
           })}
         </h2>
 
         <div className="grid grid-cols-2 gap-4">
-          <ActionCardButton
-            onClick={handleResetOnboarding}
+          <HoldActionCardButton
+            onConfirm={() => {
+              void handleResetOnboarding();
+            }}
+            accentPreset="accent"
             title={t({
               id: "settings.about.restart_onboarding",
               message: "Restart Onboarding",
             })}
             description={t({
               id: "settings.about.restart_onboarding_description",
-              message: "re-run setup wizard",
+              message: "hold to re-run setup experience",
             })}
             icon={<RotateCcw size={14} strokeWidth={2} />}
-            accentPreset="accent"
+          />
+          <ActionCardButton
+            onClick={onOpenFAQ}
+            title={t({
+              id: "settings.about.faq_help",
+              message: "FAQ & Help",
+            })}
+            description={t({
+              id: "settings.about.faq_help_description",
+              message: "common questions",
+            })}
+            icon={<HelpCircle size={14} strokeWidth={2} />}
+            accentPreset="cloud"
           />
         </div>
       </section>
@@ -278,7 +290,9 @@ const AboutTab = ({
                   <button
                     type="button"
                     onClick={cliInstalled ? onRemoveCli : onInstallCli}
-                    disabled={cliInstallBusy || (!cliInstalled && cliUnavailable)}
+                    disabled={
+                      cliInstallBusy || (!cliInstalled && cliUnavailable)
+                    }
                     className="inline-flex h-6 min-w-[4.75rem] shrink-0 items-center justify-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:pointer-events-none disabled:opacity-60"
                   >
                     {cliInstallBusy && (

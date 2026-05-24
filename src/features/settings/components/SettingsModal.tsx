@@ -388,6 +388,7 @@ const SettingsModal = ({
                         key="about"
                         variants={tabContentVariants}
                         appInfo={form.appInfo}
+                        transcriptionMode={form.transcriptionMode}
                         formatBytes={form.formatBytes}
                         cliInstallStatus={form.cliInstallStatus}
                         cliInstallBusy={form.cliInstallBusy}

@@ -599,6 +599,11 @@ msgstr ""
 #~ msgstr "Public issue or private email"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.help"
+#~ msgstr "Help"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings.after_suffix"
 msgstr " after"
@@ -1188,6 +1193,11 @@ msgstr "Close search"
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.close_button"
 msgstr "Close settings"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.mode.cloud"
+msgstr "Cloud"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2011,11 +2021,6 @@ msgid "onboarding.microphone.grant"
 msgstr "Grant Access"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.help"
-msgstr "Help"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.password.hide"
 msgstr "Hide password"
@@ -2029,6 +2034,11 @@ msgstr "Hide shortcuts"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hold"
 msgstr "Hold"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.restart_onboarding_description"
+msgstr "hold to re-run setup experience"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2249,6 +2259,11 @@ msgstr "Loading..."
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.loading_more"
 msgstr "Loading..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.mode.local"
+msgstr "Local"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2814,11 +2829,6 @@ msgid "library.modal.import_status.queued"
 msgstr "Queued for transcription..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.restart_onboarding_description"
-msgstr "re-run setup wizard"
-
-#. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.ready_to_install"
 msgstr "Ready to install"
@@ -3263,7 +3273,7 @@ msgstr "Settings"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.setup"
-msgstr "Setup"
+msgstr "Setup & help"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
