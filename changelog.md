@@ -1,14 +1,17 @@
 0.9.0
 
 ### Features
-- Local API! You can now start a local OpenAI-compatible endpoint from Settings, choose the host/port/model, add an API key, enable CORS, and optionally start it on launch.
-- Added an optional `glimpse` command line install from About, for using Glimpse from the terminal.
+- Local API! You can now start a local OpenAI-compatible endpoint from Settings → Developer → API Server, choose the host/port/model, add an API key, enable CORS, and optionally start it on launch.
+- Added a new Providers tab split from models, witha fresh new design.
+- Added an optional `glimpse` command line install from About → Advanced, for using Glimpse from the terminal.
 
 ### Improvements
+- Settings got reorganized into Core, Local, and Developer sections. Models is for speech models only; AI writing has its own Providers tab.
+- Redesigned About with Updates and FAQ up front, a clearer storage breakdown.
+- Models tab has been redesigned to work better at a glace. (or a Glimpse.. :) )
+- Fixed the home transcription list shifting around while it loads.
 - Model downloads now use the shared Glimpse Speech model manager. Installs, progress, cancellation, and model metadata should feel more consistent.
-- About now has a cleaner storage breakdown for recordings, library files, databases, and models.
 - Onboarding now keeps more of your existing setup when finishing, and does a better job picking the recommended local models.
-- Small settings and update UI cleanups.
 
 ---
 

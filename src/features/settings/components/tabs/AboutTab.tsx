@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
-import { HelpCircle, Loader2, RotateCcw, Terminal } from "lucide-react";
+import { HelpCircle, Info, Loader2, RotateCcw, Terminal } from "lucide-react";
 import ActionCardButton from "../../../../shared/ui/ActionCardButton";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
 import type { AppInfo, CliInstallStatus } from "../../../../types";
@@ -16,6 +16,7 @@ type AboutTabProps = {
   onRemoveCli: () => void;
   onOpenDataDir: () => void;
   onOpenFAQ: () => void;
+  onOpenWhatsNew: () => void;
 };
 
 const AboutTab = ({
@@ -28,26 +29,72 @@ const AboutTab = ({
   onRemoveCli,
   onOpenDataDir,
   onOpenFAQ,
+  onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
-
-  const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
-  const cliInstalled = cliInstallStatus?.installed ?? false;
-  const cliInstallPath = cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
-  const cliDescription = cliUnavailable
-    ? "CLI binary unavailable in this build"
-    : cliInstalled
-      ? `Installed at ${cliInstallPath}`
-      : cliInstallStatus && !cliInstallStatus.pathInShell
-        ? `Installs ${cliInstallStatus.command} to ${cliInstallPath}, which is not on your shell PATH`
-        : `Optional terminal access via ${cliInstallStatus?.command ?? "glimpse"}`;
 
   const recordingsBytes = appInfo?.storage_breakdown?.recordings_bytes ?? 0;
   const libraryBytes = appInfo?.storage_breakdown?.library_bytes ?? 0;
   const databasesBytes = appInfo?.storage_breakdown?.databases_bytes ?? 0;
   const modelsBytes = appInfo?.storage_breakdown?.models_bytes ?? 0;
   const totalBytes =
-    appInfo?.storage_breakdown?.total_bytes ?? appInfo?.data_dir_size_bytes ?? 0;
+    appInfo?.storage_breakdown?.total_bytes ??
+    appInfo?.data_dir_size_bytes ??
+    0;
+  const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
+  const cliInstalled = cliInstallStatus?.installed ?? false;
+  const cliInstallPath =
+    cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
+  const cliInfo = cliUnavailable
+    ? "This build does not include the command line helper."
+    : cliInstalled
+      ? `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`
+      : cliInstallStatus && !cliInstallStatus.pathInShell
+        ? `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`
+        : `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`;
+  const cliSubtitle = cliUnavailable
+    ? "Not available in this build"
+    : cliInstalled
+      ? `Installed at ${cliInstallPath}`
+      : "Use Glimpse from Terminal or scripts";
+  const storageRows = [
+    {
+      label: t({
+        id: "settings.about.storage.recordings",
+        message: "Recordings",
+      }),
+      value: recordingsBytes,
+    },
+    {
+      label: t({
+        id: "settings.about.storage.library",
+        message: "Library",
+      }),
+      value: libraryBytes,
+    },
+    {
+      label: t({
+        id: "settings.about.storage.models",
+        message: "Models",
+      }),
+      value: modelsBytes,
+    },
+    {
+      label: t({
+        id: "settings.about.storage.database",
+        message: "Database",
+      }),
+      value: databasesBytes,
+    },
+    {
+      label: t({
+        id: "settings.about.storage.total",
+        message: "Total",
+      }),
+      value: totalBytes,
+      primary: true,
+    },
+  ];
 
   const handleResetOnboarding = async () => {
     try {
@@ -65,51 +112,95 @@ const AboutTab = ({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="space-y-6"
+      className="space-y-5"
     >
-      <section className="space-y-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <h2 className="ui-text-section-label-sm ui-color-muted">
-            {t({
-              id: "settings.about.storage",
-              message: "Storage",
-            })}
-          </h2>
-          <span className="ui-text-micro ui-color-disabled font-mono tabular-nums">
-            {t({
-              id: "settings.about.version_label",
-              message: "Glimpse",
-            })}{" "}
+      <header>
+        <h1 className="ui-text-title-lg font-medium ui-color-primary">
+          {t({
+            id: "settings.about.version_label",
+            message: "Glimpse",
+          })}
+        </h1>
+        <p className="mt-1 ui-text-body-sm ui-color-muted">
+          {t({
+            id: "settings.about.version",
+            message: "Version",
+          })}{" "}
+          <span className="font-mono tabular-nums">
             {appInfo?.version ?? "-"}
           </span>
+        </p>
+      </header>
+
+      <section className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <h2 className="ui-text-section-label-sm ui-color-muted">
+            {t({
+              id: "settings.about.updates",
+              message: "Updates",
+            })}
+          </h2>
+          <UpdateChecker onOpenWhatsNew={onOpenWhatsNew} />
         </div>
 
-        <div className="rounded-lg bg-surface-surface px-3 py-2">
-          <div className="flex items-baseline justify-between gap-4">
-            <span className="ui-text-label-strong ui-color-primary">
-              {t({
-                id: "settings.about.storage_used",
-                message: "Storage Used",
-              })}
-            </span>
-            <span className="ui-text-label-strong ui-color-primary font-mono tabular-nums shrink-0">
-              {formatBytes(totalBytes)}
-            </span>
-          </div>
+        <div className="space-y-2">
+          <h2 className="ui-text-section-label-sm ui-color-muted">
+            {t({
+              id: "settings.about.help",
+              message: "Help",
+            })}
+          </h2>
 
-          {totalBytes > 0 && (
-            <p className="ui-text-meta ui-color-disabled mt-0.5">
-              {formatBytes(recordingsBytes)} rec · {formatBytes(libraryBytes)} lib ·{" "}
-              {formatBytes(databasesBytes)} db · {formatBytes(modelsBytes)} models
-            </p>
-          )}
+          <div className="h-[52px]">
+            <ActionCardButton
+              onClick={onOpenFAQ}
+              title={t({
+                id: "settings.about.faq_help",
+                message: "FAQ & Help",
+              })}
+              description={t({
+                id: "settings.about.faq_help_description",
+                message: "common questions",
+              })}
+              icon={<HelpCircle size={14} strokeWidth={2} />}
+              accentPreset="cloud"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="ui-text-section-label-sm ui-color-muted">
+          {t({
+            id: "settings.about.storage",
+            message: "Storage",
+          })}
+        </h2>
+
+        <div className="rounded-lg bg-surface-surface p-2.5">
+          <div className="grid grid-cols-5 gap-3 px-2 py-2">
+            {storageRows.map((row) => (
+              <div key={row.label} className="min-w-0">
+                <p className="ui-text-micro ui-color-disabled">{row.label}</p>
+                <p
+                  className={`mt-0.5 truncate font-mono tabular-nums ${
+                    row.primary
+                      ? "ui-text-label-strong ui-color-primary"
+                      : "ui-text-meta ui-color-muted"
+                  }`}
+                >
+                  {formatBytes(row.value)}
+                </p>
+              </div>
+            ))}
+          </div>
 
           <button
             type="button"
             onClick={onOpenDataDir}
             disabled={!appInfo?.data_dir_path}
             title={appInfo?.data_dir_path}
-            className="mt-1.5 block w-full min-w-0 truncate text-left ui-text-meta font-mono ui-color-muted transition-colors hover:ui-color-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-1 block w-full min-w-0 truncate px-2 py-1 text-left ui-text-meta font-mono ui-color-muted transition-colors hover:ui-color-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="border-b border-dotted border-content-disabled/70 pb-px">
               {appInfo?.data_dir_path ?? "-"}
@@ -121,36 +212,12 @@ const AboutTab = ({
       <section className="space-y-2">
         <h2 className="ui-text-section-label-sm ui-color-muted">
           {t({
-            id: "settings.about.updates",
-            message: "Updates",
-          })}
-        </h2>
-        <UpdateChecker />
-      </section>
-
-      <section className="space-y-2">
-        <h2 className="ui-text-section-label-sm ui-color-muted">
-          {t({
-            id: "settings.about.help_and_setup",
-            message: "Help & Setup",
+            id: "settings.about.setup",
+            message: "Setup",
           })}
         </h2>
 
-        <div className="grid grid-cols-2 gap-3">
-          <ActionCardButton
-            onClick={onOpenFAQ}
-            title={t({
-              id: "settings.about.faq_help",
-              message: "FAQ & Help",
-            })}
-            description={t({
-              id: "settings.about.faq_help_description",
-              message: "common questions",
-            })}
-            icon={<HelpCircle size={14} strokeWidth={2} />}
-            accentPreset="cloud"
-          />
-
+        <div className="grid grid-cols-2 gap-4">
           <ActionCardButton
             onClick={handleResetOnboarding}
             title={t({
@@ -165,42 +232,76 @@ const AboutTab = ({
             accentPreset="accent"
           />
         </div>
+      </section>
 
-        <div className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5">
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-5 shrink-0 items-center justify-center ui-color-primary">
-              <Terminal size={14} strokeWidth={2} aria-hidden="true" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <span className="ui-text-label-strong ui-color-primary block">
-                {t({
-                  id: "settings.about.command_line",
-                  message: "Command line",
-                })}
+      <section className="space-y-2">
+        <h2 className="ui-text-section-label-sm ui-color-muted">
+          {t({
+            id: "settings.about.advanced",
+            message: "Advanced",
+          })}
+        </h2>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-lg bg-surface-surface p-2.5">
+            <div className="flex min-h-[52px] gap-2.5 px-1 py-0.5">
+              <span className="flex size-5 shrink-0 self-center items-center justify-center ui-color-muted">
+                <Terminal size={14} strokeWidth={2} aria-hidden="true" />
               </span>
-              <span className="ui-text-micro ui-color-disabled block truncate" title={cliDescription}>
-                {cliDescription}
-              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                    <span className="truncate ui-text-label-strong ui-color-primary">
+                      {t({
+                        id: "settings.about.command_line",
+                        message: "Command line",
+                      })}
+                    </span>
+                    <div className="relative group shrink-0">
+                      <button
+                        type="button"
+                        className="flex size-4 items-center justify-center ui-color-disabled transition-colors hover:ui-color-muted focus:ui-color-muted focus:outline-none"
+                        aria-label={t({
+                          id: "settings.about.command_line.info_aria",
+                          message: "More information about command line tools",
+                        })}
+                      >
+                        <Info size={10} aria-hidden="true" />
+                      </button>
+                      <div className="absolute left-1/2 bottom-full z-20 mb-1 hidden -translate-x-1/2 group-hover:block group-focus-within:block">
+                        <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
+                          {cliInfo}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cliInstalled ? onRemoveCli : onInstallCli}
+                    disabled={cliInstallBusy || (!cliInstalled && cliUnavailable)}
+                    className="inline-flex h-6 min-w-[4.75rem] shrink-0 items-center justify-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:pointer-events-none disabled:opacity-60"
+                  >
+                    {cliInstallBusy && (
+                      <Loader2 size={10} className="animate-spin" />
+                    )}
+                    <span>
+                      {cliInstalled
+                        ? t({
+                            id: "settings.about.uninstall_cli",
+                            message: "Uninstall",
+                          })
+                        : t({
+                            id: "settings.about.install_cli",
+                            message: "Install CLI",
+                          })}
+                    </span>
+                  </button>
+                </div>
+                <p className="mt-1 truncate ui-text-meta ui-color-muted">
+                  {cliSubtitle}
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={cliInstalled ? onRemoveCli : onInstallCli}
-              disabled={cliInstallBusy || (!cliInstalled && cliUnavailable)}
-              className="inline-flex h-7 min-w-[5.25rem] shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md border border-border-secondary bg-surface-elevated px-2 ui-text-meta font-medium ui-color-muted outline-hidden hover:ui-color-primary hover:border-border-hover transition-colors disabled:pointer-events-none disabled:opacity-60"
-            >
-              {cliInstallBusy && <Loader2 size={10} className="animate-spin" />}
-              <span>
-                {cliInstalled
-                  ? t({
-                      id: "settings.about.uninstall_cli",
-                      message: "Uninstall",
-                    })
-                  : t({
-                      id: "settings.about.install_cli",
-                      message: "Install CLI",
-                    })}
-              </span>
-            </button>
           </div>
         </div>
       </section>

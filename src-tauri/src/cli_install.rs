@@ -48,24 +48,32 @@ pub fn install_cli() -> Result<CliInstallStatus, String> {
 
 #[tauri::command]
 pub fn remove_cli() -> Result<CliInstallStatus, String> {
-    let destination = default_install_path()?;
-    let source = cli_source_binary()?;
+    #[cfg(unix)]
+    {
+        let destination = default_install_path()?;
+        let source = cli_source_binary()?;
 
-    match fs::read_link(&destination) {
-        Ok(_) if cli_link_owned_by_glimpse(&destination, Some(&source)) => {
-            fs::remove_file(&destination)
-                .map_err(|err| format!("Failed to remove CLI shortcut: {err}"))?;
-            Ok(cli_install_status())
+        match fs::read_link(&destination) {
+            Ok(_) if cli_link_owned_by_glimpse(&destination, Some(&source)) => {
+                fs::remove_file(&destination)
+                    .map_err(|err| format!("Failed to remove CLI shortcut: {err}"))?;
+                Ok(cli_install_status())
+            }
+            Ok(_) => Err(format!(
+                "{} is not a Glimpse CLI shortcut",
+                destination.to_string_lossy()
+            )),
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(cli_install_status()),
+            Err(_) => Err(format!(
+                "{} is not a Glimpse CLI shortcut",
+                destination.to_string_lossy()
+            )),
         }
-        Ok(_) => Err(format!(
-            "{} is not a Glimpse CLI shortcut",
-            destination.to_string_lossy()
-        )),
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(cli_install_status()),
-        Err(_) => Err(format!(
-            "{} is not a Glimpse CLI shortcut",
-            destination.to_string_lossy()
-        )),
+    }
+
+    #[cfg(not(unix))]
+    {
+        Err("CLI removal is not supported on this platform yet".to_string())
     }
 }
 

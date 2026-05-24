@@ -54,7 +54,14 @@ import type {
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
-type ActiveTab = "general" | "models" | "local-api" | "about" | "account" | "app";
+type ActiveTab =
+  | "general"
+  | "models"
+  | "providers"
+  | "local-api"
+  | "about"
+  | "account"
+  | "app";
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureTarget = { mode: ShortcutMode; index: number } | null;
 type ShortcutTarget = { mode: ShortcutMode; index: number };
@@ -353,7 +360,7 @@ export function useSettingsForm({
   const setTranscriptionMode = useCallback(
     (mode: TranscriptionMode) => {
       setTranscriptionModeRaw(mode);
-      if (mode === "cloud" && (activeTab === "models" || activeTab === "local-api")) {
+      if (mode === "cloud" && (activeTab === "models" || activeTab === "providers")) {
         setActiveTab("general");
       }
     },
@@ -1329,7 +1336,7 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "local-api");
+      showSettingsError(String(err), "about");
     } finally {
       setLocalApiBusy(false);
     }
@@ -1353,7 +1360,7 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "local-api");
+      showSettingsError(String(err), "about");
     } finally {
       setLocalApiBusy(false);
     }
@@ -1366,7 +1373,7 @@ export function useSettingsForm({
       await modelsApi.stopLocalApi();
       const stopped = await waitForLocalApiStopped();
       if (stopped.running) {
-        throw new Error("Local API did not stop before restart");
+        throw new Error("API server did not stop before restart");
       }
       const status = await modelsApi.startLocalApi({
         host: localApiHost,
@@ -1410,7 +1417,7 @@ export function useSettingsForm({
       setCliInstallStatus(status);
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "about");
+      showSettingsError(String(err), "local-api");
     } finally {
       setCliInstallBusy(false);
     }
@@ -1423,7 +1430,7 @@ export function useSettingsForm({
       setCliInstallStatus(status);
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "about");
+      showSettingsError(String(err), "local-api");
     } finally {
       setCliInstallBusy(false);
     }

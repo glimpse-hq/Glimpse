@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AppWindow, Check, Copy, Cpu, Info, Keyboard, Server, User, X } from "lucide-react";
+import { AppWindow, Check, Copy, Cpu, Info, Key, Keyboard, Server, User, X } from "lucide-react";
 import FAQModal from "../../../shared/ui/FAQModal";
 import WhatsNewModal from "../../updates/components/WhatsNewModal";
 import AboutTab from "./tabs/AboutTab";
@@ -10,6 +10,7 @@ import GeneralTab from "./tabs/GeneralTab";
 import LocalApiTab from "./tabs/LocalApiTab";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
+import ProvidersTab from "./tabs/ProvidersTab";
 import type { User as AuthUser } from "../../auth/api";
 import type { TranscriptionMode } from "../../../types";
 import { useSettingsForm } from "../useSettingsForm";
@@ -17,7 +18,7 @@ import { useSettingsForm } from "../useSettingsForm";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "general" | "account" | "models" | "local-api" | "about" | "app";
+  initialTab?: "general" | "account" | "models" | "providers" | "local-api" | "about" | "app";
   currentUser: AuthUser | null;
   onUpdateUser: () => Promise<void>;
   transcriptionMode: TranscriptionMode;
@@ -118,12 +119,6 @@ const SettingsModal = ({
               </div>
               <nav className="flex-1 px-2 space-y-4">
                 <div className="space-y-1">
-                  <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">
-                    {t({
-                      id: "settings.modal.section.account",
-                      message: "Account",
-                    })}
-                  </p>
                   <ModalNavItem
                     icon={<User size={14} aria-hidden="true" />}
                     label={t({
@@ -139,8 +134,8 @@ const SettingsModal = ({
                 <div className="space-y-1">
                   <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">
                     {t({
-                      id: "settings.modal.section.general",
-                      message: "General",
+                      id: "settings.modal.section.core",
+                      message: "Core",
                     })}
                   </p>
                   <ModalNavItem
@@ -172,42 +167,52 @@ const SettingsModal = ({
                   />
                 </div>
 
-                <AnimatePresence>
-                  {!form.loading && form.transcriptionMode === "local" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.15 }}
-                      className="space-y-1"
-                    >
-                      <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">
-                        {t({
-                          id: "settings.modal.section.local",
-                          message: "Local",
-                        })}
-                      </p>
-                      <ModalNavItem
-                        icon={<Cpu size={14} aria-hidden="true" />}
-                        label={t({
-                          id: "settings.modal.tab.models",
-                          message: "Models",
-                        })}
-                        active={form.activeTab === "models"}
-                        onClick={() => form.setActiveTab("models")}
-                      />
-                      <ModalNavItem
-                        icon={<Server size={14} aria-hidden="true" />}
-                        label={t({
-                          id: "settings.modal.tab.local_api",
-                          message: "Local API",
-                        })}
-                        active={form.activeTab === "local-api"}
-                        onClick={() => form.setActiveTab("local-api")}
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {!form.loading && form.transcriptionMode === "local" && (
+                  <div className="space-y-1">
+                    <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">
+                      {t({
+                        id: "settings.modal.section.local",
+                        message: "Local",
+                      })}
+                    </p>
+                    <ModalNavItem
+                      icon={<Cpu size={14} aria-hidden="true" />}
+                      label={t({
+                        id: "settings.modal.tab.models",
+                        message: "Models",
+                      })}
+                      active={form.activeTab === "models"}
+                      onClick={() => form.setActiveTab("models")}
+                    />
+                    <ModalNavItem
+                      icon={<Key size={14} aria-hidden="true" />}
+                      label={t({
+                        id: "settings.modal.tab.providers",
+                        message: "Providers",
+                      })}
+                      active={form.activeTab === "providers"}
+                      onClick={() => form.setActiveTab("providers")}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-1">
+                  <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">
+                    {t({
+                      id: "settings.modal.section.developer",
+                      message: "Developer",
+                    })}
+                  </p>
+                  <ModalNavItem
+                    icon={<Server size={14} aria-hidden="true" />}
+                    label={t({
+                      id: "settings.modal.tab.api_server",
+                      message: "API Server",
+                    })}
+                    active={form.activeTab === "local-api"}
+                    onClick={() => form.setActiveTab("local-api")}
+                  />
+                </div>
               </nav>
               <div className="px-2 pb-2">
                 <SettingsErrorBanner
@@ -246,6 +251,7 @@ const SettingsModal = ({
                         modelStatus={form.modelStatus}
                         localModel={form.localModel}
                         onOpenModelsTab={() => form.setActiveTab("models")}
+                        onOpenProvidersTab={() => form.setActiveTab("providers")}
                         inputDevices={form.inputDevices}
                         microphoneDevice={form.microphoneDevice}
                         onMicrophoneDeviceChange={form.setMicrophoneDevice}
@@ -283,6 +289,22 @@ const SettingsModal = ({
                       <ModelsTab
                         key="models"
                         variants={tabContentVariants}
+                        modelCatalog={form.modelCatalog}
+                        modelStatus={form.modelStatus}
+                        downloadState={form.downloadState}
+                        localModel={form.localModel}
+                        setLocalModel={form.setLocalModel}
+                        handleDownload={form.handleDownload}
+                        handleDelete={form.handleDelete}
+                        handleCancelDownload={form.handleCancelDownload}
+                        formatBytes={form.formatBytes}
+                      />
+                    )}
+
+                    {form.activeTab === "providers" && (
+                      <ProvidersTab
+                        key="providers"
+                        variants={tabContentVariants}
                         llmEnabled={form.llmEnabled}
                         setLlmEnabled={form.setLlmEnabled}
                         llmProvider={form.llmProvider}
@@ -295,15 +317,6 @@ const SettingsModal = ({
                         setLlmModel={form.setLlmModel}
                         availableModels={form.availableModels}
                         fetchAvailableModels={form.fetchAvailableModels}
-                        modelCatalog={form.modelCatalog}
-                        modelStatus={form.modelStatus}
-                        downloadState={form.downloadState}
-                        localModel={form.localModel}
-                        setLocalModel={form.setLocalModel}
-                        handleDownload={form.handleDownload}
-                        handleDelete={form.handleDelete}
-                        handleCancelDownload={form.handleCancelDownload}
-                        formatBytes={form.formatBytes}
                       />
                     )}
 
@@ -382,6 +395,7 @@ const SettingsModal = ({
                         onRemoveCli={form.handleRemoveCli}
                         onOpenDataDir={form.handleOpenDataDir}
                         onOpenFAQ={() => form.setShowFAQModal(true)}
+                        onOpenWhatsNew={() => form.setWhatsNewOpen(true)}
                       />
                     )}
                   </AnimatePresence>
@@ -412,8 +426,8 @@ const SettingsErrorBanner = ({
   onOpenTab,
 }: {
   error: string | null;
-  sourceTab: "general" | "models" | "local-api" | "about" | "app" | null;
-  onOpenTab: (tab: "general" | "models" | "local-api" | "about" | "app") => void;
+  sourceTab: "general" | "models" | "providers" | "local-api" | "about" | "app" | null;
+  onOpenTab: (tab: "general" | "models" | "providers" | "local-api" | "about" | "app") => void;
 }) => {
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<number | null>(null);

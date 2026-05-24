@@ -510,11 +510,6 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
-#~ msgid "settings.about.advanced"
-#~ msgstr "Advanced"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
 #~ msgid "settings.about.app_info"
 #~ msgstr "App Info"
 
@@ -529,14 +524,54 @@ msgstr ""
 #~ msgstr "Remove"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-#~ msgid "settings.about.setup"
-#~ msgstr "Setup"
+#: src/features/settings/components/SettingsModal.tsx
+#~ msgid "settings.modal.section.account"
+#~ msgstr "Account"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+#~ msgid "settings.modal.section.general"
+#~ msgstr "General"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.brand"
+#~ msgstr "Glimpse"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.confirm"
+#~ msgstr "Got it"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
-#~ msgid "settings.about.version"
-#~ msgstr "Version"
+#~ msgid "settings.about.help_and_setup"
+#~ msgstr "Help & Setup"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.data_use.question"
+#~ msgstr "How is my data used?"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+#~ msgid "settings.modal.tab.local_api"
+#~ msgstr "Local API"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.models_tab"
+#~ msgstr "Models"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.storage_used"
+#~ msgstr "Storage Used"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.data_use.answer"
+#~ msgstr "Your data is your data. Not ours to share. We will never sell or share your data with third parties."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -711,11 +746,6 @@ msgstr "Account"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
-msgid "settings.modal.section.account"
-msgstr "Account"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.account"
 msgstr "Account"
 
@@ -800,6 +830,11 @@ msgid "dictionary.no_entries.description"
 msgstr "Add words, phrases, or names above and press Enter to save them here."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.advanced"
+msgstr "Advanced"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.all"
 msgstr "All"
@@ -813,6 +848,11 @@ msgstr "anonymous, no transcripts or audio shared."
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key"
 msgstr "API Key"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.tab.api_server"
+msgstr "API Server"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -1190,16 +1230,6 @@ msgid "home.support.faq.subtitle"
 msgstr "Common questions"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.subtitle"
-msgstr "Common questions about Glimpse"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.configure_prefix"
-msgstr "Configure a language model in"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.confirm"
 msgstr "Confirm"
@@ -1213,6 +1243,11 @@ msgstr "Confirm new password"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.password.confirm_aria"
 msgstr "Confirm new password"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.description"
+msgstr "Connect local-mode AI providers for Cleanup, Edit Mode, and Personalization."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/AccessibilityStep.tsx
@@ -1299,6 +1334,16 @@ msgstr "Copy selection"
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_transcription"
 msgstr "Copy transcription"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.section.core"
+msgstr "Core"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.free.answer"
+msgstr "Core dictation uses open-source models that run on your device, so there are no per-minute fees or subscriptions for the main experience. Optional AI writing uses your own provider and API key if you choose to enable it."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1426,6 +1471,11 @@ msgid "settings.app.theme.dark"
 msgstr "Dark"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.database"
+msgstr "Database"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.playback.decrease"
 msgstr "Decrease playback speed"
@@ -1520,7 +1570,7 @@ msgstr "Delete older recordings now?"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.delete.answer"
-msgstr "Delete recordings locally to remove them."
+msgstr "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. You can also open your Glimpse data folder from About → Storage to manage files directly."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: replacement.from
@@ -1532,6 +1582,11 @@ msgstr "Delete replacement for {0}"
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "Delete this item?"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.section.developer"
+msgstr "Developer"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1832,11 +1887,6 @@ msgstr "Full snippet list"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
-msgid "settings.modal.section.general"
-msgstr "General"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.general"
 msgstr "General"
 
@@ -1863,11 +1913,6 @@ msgstr "GitHub may be temporarily unavailable. Check your connection and try aga
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.version_label"
-msgstr "Glimpse"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.brand"
 msgstr "Glimpse"
 
 #. js-lingui-explicit-id
@@ -1906,11 +1951,6 @@ msgid "settings.account.name.default"
 msgstr "Glimpse User"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer"
-msgstr "Glimpse uses on-device OSS AI models for transcription, so there are no ongoing costs for the core experience."
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.greeting.afternoon"
 msgstr "Good afternoon"
@@ -1926,19 +1966,14 @@ msgid "home.greeting.morning"
 msgstr "Good morning"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.confirm"
-msgstr "Got it"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/MicrophoneStep.tsx
 msgid "onboarding.microphone.grant"
 msgstr "Grant Access"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.help_and_setup"
-msgstr "Help & Setup"
+msgid "settings.about.help"
+msgstr "Help"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -1967,13 +2002,23 @@ msgstr "Home"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "How is Glimpse free?"
+msgid "faq.delete.question"
+msgstr "How do I manage or delete my data?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.data_use.question"
-msgstr "How is my data used?"
+msgid "faq.how_it_works.question"
+msgstr "How does Glimpse work?"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.subtitle"
+msgstr "How Glimpse works, privacy, and AI writing"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.free.question"
+msgstr "How is Glimpse free?"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -2071,11 +2116,6 @@ msgid "settings.app.prune.instantly"
 msgstr "Instantly"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.privacy.question"
-msgstr "Is my data private?"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.store_original.description"
 msgstr "Keep a copy inside the library folder"
@@ -2091,11 +2131,6 @@ msgid "settings.general.language_info.installed"
 msgstr "Language list is filtered to the models you have installed."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.title"
-msgstr "Language Model Provider"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.large"
 msgstr "Large"
@@ -2104,6 +2139,11 @@ msgstr "Large"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_launch"
 msgstr "Launch at Login"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.library"
+msgstr "Library"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2196,11 +2236,6 @@ msgid "onboarding.welcome.local.title"
 msgstr "Local"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SettingsModal.tsx
-msgid "settings.modal.tab.local_api"
-msgstr "Local API"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.longest"
 msgstr "Longest"
@@ -2246,6 +2281,11 @@ msgid "onboarding.microphone.title"
 msgstr "Microphone Access"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer"
+msgstr "Microphone access to record your voice, and Accessibility access to insert text and read selected text for Edit Mode. Glimpse only uses these while you are actively dictating."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Microphone access was denied."
@@ -2259,6 +2299,11 @@ msgstr "Microphone testing isn't available in this window."
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.cloud_usage.minutes_unit"
 msgstr "min"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.model"
+msgstr "Model"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -2287,13 +2332,13 @@ msgid "library.error_details.model_not_installed"
 msgstr "Model not installed."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SettingsModal.tsx
-msgid "settings.modal.tab.models"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.models"
 msgstr "Models"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.models_tab"
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.tab.models"
 msgstr "Models"
 
 #. js-lingui-explicit-id
@@ -2305,6 +2350,11 @@ msgstr "Models"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.more_info"
 msgstr "More info"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.command_line.info_aria"
+msgstr "More information about command line tools"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2558,6 +2608,11 @@ msgid "onboarding.welcome.local.feature.models"
 msgstr "On-device transcription models"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.ai_writing.answer"
+msgstr "Only if you enable AI writing and set up a provider under Settings → Providers. Cleanup, Edit Mode, and Personalization then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.open_settings"
 msgstr "Open Settings"
@@ -2654,6 +2709,11 @@ msgid "onboarding.ready.smart.capture_prompt"
 msgstr "Press new shortcut..."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.how_it_works.answer"
+msgstr "Press your dictation shortcut, speak, and release. Glimpse transcribes on your device and inserts the text where your cursor is. Core dictation works offline. No account required."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.ready.smart.capture_help_active"
 msgstr "Press your new shortcut, or hit Esc to cancel."
@@ -2662,6 +2722,11 @@ msgstr "Press your new shortcut, or hit Esc to cancel."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Privacy & Permissions"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.link"
+msgstr "Privacy policy"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2689,6 +2754,21 @@ msgid "settings.language_model.provider"
 msgstr "Provider"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.tab.providers"
+msgstr "Providers"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.providers_tab"
+msgstr "Providers"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.title"
+msgstr "Providers"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.import_status.queued"
 msgstr "Queued for transcription..."
@@ -2713,6 +2793,11 @@ msgstr "Recommended"
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.ready.smart.capture_aria"
 msgstr "Record new shortcut for Smart, currently {shortcut}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.recordings"
+msgstr "Recordings"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3116,6 +3201,11 @@ msgid "library.import_error.model_not_installed"
 msgstr "Selected model isn't installed. Download one in Settings -> Models."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.edit_mode.configure_prefix"
+msgstr "Configure a language model in"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.settings"
 msgstr "Settings"
@@ -3136,9 +3226,9 @@ msgid "library.modal.settings"
 msgstr "Settings"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.description"
-msgstr "Shared by Cleanup, Edit Mode, and Personalization."
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.setup"
+msgstr "Setup"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3275,11 +3365,6 @@ msgstr "Stop transcription"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.storage"
 msgstr "Storage"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.storage_used"
-msgstr "Storage Used"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3452,11 +3537,6 @@ msgid "settings.general.shortcut.toggle_aria"
 msgstr "Toggle {label} shortcut"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.toggle"
-msgstr "Toggle AI features"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.auto_dictionary.toggle_aria"
 msgstr "Toggle Auto Dictionary"
@@ -3485,6 +3565,11 @@ msgstr "Toggle launch at login"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.toggle_aria"
 msgstr "Toggle usage analytics"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage.total"
+msgstr "Total"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -3592,6 +3677,16 @@ msgid "personalization.modal.snippets.summary"
 msgstr "Use snippets to pass live context to the language model, like"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.toggle"
+msgstr "Toggle AI features"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.description"
+msgstr "Shared by Cleanup, Edit Mode, and Personalization."
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.about.version_mode"
 msgstr "v{version} • {mode}"
@@ -3600,6 +3695,11 @@ msgstr "v{version} • {mode}"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.available_version"
 msgstr "v{version} available"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.version"
+msgstr "Version"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -3633,8 +3733,8 @@ msgstr "Welcome"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.delete.question"
-msgstr "What if I want to delete my data?"
+msgid "faq.permissions.question"
+msgstr "What permissions does Glimpse need?"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -3648,8 +3748,23 @@ msgstr "What's new?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.privacy.answer"
-msgstr "Yes. All your audio and transcriptions stay on your device. We never collect or transmit your recordings."
+msgid "faq.ai_writing.question"
+msgstr "When does text leave my device?"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.question"
+msgstr "Where does my data go?"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.providers.writing_section"
+msgstr "Writing"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.title"
+msgstr "Language Model Provider"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3678,8 +3793,8 @@ msgstr "You're up to date"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.data_use.answer"
-msgstr "Your data is your data. Not ours to share. We will never sell or share your data with third parties."
+msgid "faq.privacy.answer"
+msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

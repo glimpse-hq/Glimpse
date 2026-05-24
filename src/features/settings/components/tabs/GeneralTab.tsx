@@ -44,6 +44,7 @@ type GeneralTabProps = {
   modelStatus: Record<string, ModelStatus>;
   localModel: string;
   onOpenModelsTab: () => void;
+  onOpenProvidersTab: () => void;
   inputDevices: DeviceInfo[];
   microphoneDevice: string | null;
   onMicrophoneDeviceChange: (deviceId: string | null) => void;
@@ -85,6 +86,7 @@ const GeneralTab = ({
   modelStatus,
   localModel,
   onOpenModelsTab,
+  onOpenProvidersTab,
   inputDevices,
   microphoneDevice,
   onMicrophoneDeviceChange,
@@ -709,16 +711,16 @@ const GeneralTab = ({
                     <>
                       {t({
                         id: "settings.general.edit_mode.configure_prefix",
-                        message: "Configure a language model in",
+                        message: "Set up AI writing in",
                       })}{" "}
                       <button
                         type="button"
-                        onClick={onOpenModelsTab}
+                        onClick={onOpenProvidersTab}
                         className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
                       >
                         {t({
-                          id: "settings.general.models_tab",
-                          message: "Models",
+                          id: "settings.general.providers_tab",
+                          message: "Providers",
                         })}
                       </button>{" "}
                       {t({
@@ -782,7 +784,7 @@ const GeneralTab = ({
                           {t({
                             id: "settings.general.edit_mode.help_requirement",
                             message:
-                              "Requires an enabled and configured language model in the Models tab.",
+                              "Requires an enabled and configured writing provider.",
                           })}
                         </p>
                       )}

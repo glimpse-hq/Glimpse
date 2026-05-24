@@ -14,6 +14,7 @@ import { updateKeys, useUpdateStatus } from "../queries"
 
 interface UpdateCheckerProps {
     autoCheck?: boolean
+    onOpenWhatsNew?: () => void
 }
 
 
@@ -44,6 +45,7 @@ const formatError = (err: unknown): string => {
 
 export function UpdateChecker({
     autoCheck = true,
+    onOpenWhatsNew,
 }: UpdateCheckerProps) {
     const { t } = useLingui()
     const queryClient = useQueryClient()
@@ -327,7 +329,13 @@ export function UpdateChecker({
                     </>
                 )}
                 <button
-                    onClick={() => setWhatsNewOpen(true)}
+                    onClick={() => {
+                        if (onOpenWhatsNew) {
+                            onOpenWhatsNew()
+                        } else {
+                            setWhatsNewOpen(true)
+                        }
+                    }}
                     className="ui-text-label ui-color-muted hover:text-content-secondary underline underline-offset-2 transition-colors shrink-0"
                 >
                     {t({
@@ -353,10 +361,12 @@ export function UpdateChecker({
                     <RefreshCw size={14} />
                 </motion.button>
             </div>
-            <WhatsNewModal
-                isOpen={whatsNewOpen}
-                onClose={() => setWhatsNewOpen(false)}
-            />
+            {!onOpenWhatsNew && (
+                <WhatsNewModal
+                    isOpen={whatsNewOpen}
+                    onClose={() => setWhatsNewOpen(false)}
+                />
+            )}
 
         </>
     )

@@ -11,7 +11,7 @@
     <a href="https://github.com/LegendarySpy/Glimpse/releases/latest">Download</a> ·
     <a href="https://tryglimpse.cc/">Website</a> ·
     <a href="#roadmap-10">Roadmap</a> ·
-    <a href="https://github.com/LegendarySpy/Glimpse/wiki/Analytics">Privacy</a>
+    <a href="https://tryglimpse.cc/privacy">Privacy</a>
   </p>
   <p>
     <img src="https://img.shields.io/badge/Beta-FF8C42?style=for-the-badge&labelColor=2b2b2b" alt="Beta" />
@@ -57,6 +57,8 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 - [ ] Remote mode
 - [ ] Cloud mode
 - [ ] Library overhaul
+- [ ] BYOK STT
+- [ ] Import from other apps
 
 ## Contributing
 

@@ -2,7 +2,11 @@ import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import { motion, type Variants } from "framer-motion";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
-import type { LocalApiStatus, ModelInfo, ModelStatus } from "../../../../types";
+import type {
+  LocalApiStatus,
+  ModelInfo,
+  ModelStatus,
+} from "../../../../types";
 
 type LocalApiTabProps = {
   variants: Variants;
@@ -156,6 +160,9 @@ const LocalApiTab = ({
     >
       <div className="flex items-end justify-between gap-4">
         <div>
+          <p className="ui-text-section-label-sm ui-color-muted mb-1">
+            API Server
+          </p>
           <div className="flex items-center gap-2.5">
             <span
               className={`w-2 h-2 rounded-full shrink-0 transition-all duration-300 ${running ? "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]" : "bg-content-disabled"}`}
