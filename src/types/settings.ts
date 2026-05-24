@@ -91,4 +91,10 @@ export type StoredSettings = {
     recording_prune_policy: RecordingPrunePolicy;
     analytics_enabled: boolean;
     analytics_install_id: string;
+    local_api_key: string;
+    local_api_port: number;
+    local_api_model: string;
+    local_api_host: string;
+    local_api_start_on_launch: boolean;
+    local_api_cors: boolean;
 };

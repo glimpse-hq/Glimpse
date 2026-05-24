@@ -116,7 +116,7 @@ const Home = () => {
   const { t } = useLingui();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<
-    "general" | "account" | "models" | "about" | "app"
+    "general" | "account" | "models" | "local-api" | "about" | "app"
   >("general");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<

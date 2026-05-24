@@ -1330,7 +1330,7 @@ const ShortcutBindingsList = ({
               </span>
             </>
           ) : (
-            <span className="truncate">{primaryDisplay}</span>
+              <span className="truncate">{primaryDisplay}</span>
           )}
         </button>
 

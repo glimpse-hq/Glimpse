@@ -25,6 +25,9 @@ interface UpdateDownloadProgressPayload {
 
 const PENDING_RESTART_KEY = "glimpse_update_pending_restart"
 
+const UPDATE_BOX_CLASS =
+    "flex w-full min-w-0 items-center gap-2 rounded-lg px-3 py-2 h-[52px]"
+
 const formatError = (err: unknown): string => {
     if (err instanceof Error) {
         return err.message
@@ -169,7 +172,7 @@ export function UpdateChecker({
             <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 rounded-lg border border-green-500/20 bg-green-500/10 px-3 py-2 h-[52px]"
+                className={`${UPDATE_BOX_CLASS} border border-green-500/20 bg-green-500/10`}
             >
                 <CheckCircle size={16} className="ui-color-success-strong shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -205,7 +208,7 @@ export function UpdateChecker({
             <motion.div
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 rounded-lg border border-amber-400/20 bg-amber-400/5 px-3 py-2 h-[52px]"
+                className={`${UPDATE_BOX_CLASS} border border-amber-400/20 bg-amber-400/5`}
             >
                 <Download size={16} className="ui-color-warning-strong shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -272,7 +275,7 @@ export function UpdateChecker({
 
     if (error) {
         return (
-            <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 h-[52px]">
+            <div className={`${UPDATE_BOX_CLASS} border border-red-500/20 bg-red-500/5`}>
                 <AlertCircle size={16} className="ui-color-error-strong shrink-0" />
                 <div className="flex-1 min-w-0">
                     <p className="ui-text-body-sm-strong ui-color-error-strong">
@@ -301,7 +304,7 @@ export function UpdateChecker({
 
     return (
         <>
-            <div className="flex items-center gap-2 rounded-lg bg-surface-surface px-3 py-2 h-[52px]">
+            <div className={`${UPDATE_BOX_CLASS} bg-surface-surface`}>
                 {checking ? (
                     <>
                         <Loader2 size={16} className="text-content-muted animate-spin shrink-0" />

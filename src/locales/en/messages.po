@@ -504,6 +504,41 @@ msgstr ""
 #~ msgstr "AI Providers"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli_installed"
+#~ msgstr "CLI installed"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.advanced"
+#~ msgstr "Advanced"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.app_info"
+#~ msgstr "App Info"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.data_location"
+#~ msgstr "Data Location"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.remove_cli"
+#~ msgstr "Remove"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.setup"
+#~ msgstr "Setup"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.version"
+#~ msgstr "Version"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete_recordings.after_suffix"
 msgstr " after"
@@ -783,11 +818,6 @@ msgstr "API Key"
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.app"
 msgstr "App"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.app_info"
-msgstr "App Info"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1120,14 +1150,14 @@ msgid "settings.account.cloud.body"
 msgstr "Cloud accounts and subscriptions are currently {cloudStatus}."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.cloud.aria"
-msgstr "Cloud processing (Coming soon)"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/SigninStep.tsx
 msgid "onboarding.signin.subtitle"
 msgstr "Cloud accounts are currently {cloudStatus}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.cloud.aria"
+msgstr "Cloud processing (Coming soon)"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -1143,6 +1173,11 @@ msgstr "Collapse sidebar"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.cloud.badge"
 msgstr "coming soon"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.command_line"
+msgstr "Command line"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -1389,11 +1424,6 @@ msgstr "Custom instructions"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.dark"
 msgstr "Dark"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.data_location"
-msgstr "Data Location"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -1831,6 +1861,11 @@ msgid "updates.whats_new.github_unavailable"
 msgstr "GitHub may be temporarily unavailable. Check your connection and try again."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.version_label"
+msgstr "Glimpse"
+
+#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.brand"
 msgstr "Glimpse"
@@ -1848,6 +1883,11 @@ msgstr "Glimpse"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AccountTab.tsx
 msgid "settings.account.cloud.title"
+msgstr "Glimpse Cloud"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SigninStep.tsx
+msgid "onboarding.signin.title"
 msgstr "Glimpse Cloud"
 
 #. js-lingui-explicit-id
@@ -1894,6 +1934,11 @@ msgstr "Got it"
 #: src/features/onboarding/steps/MicrophoneStep.tsx
 msgid "onboarding.microphone.grant"
 msgstr "Grant Access"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.help_and_setup"
+msgstr "Help & Setup"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -2014,6 +2059,11 @@ msgstr "Increase playback speed"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.input_monitoring"
 msgstr "Input Monitoring"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.install_cli"
+msgstr "Install CLI"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2144,6 +2194,11 @@ msgstr "Local"
 #: src/features/onboarding/steps/WelcomeStep.tsx
 msgid "onboarding.welcome.local.title"
 msgstr "Local"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.tab.local_api"
+msgstr "Local API"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3081,11 +3136,6 @@ msgid "library.modal.settings"
 msgstr "Settings"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.setup"
-msgstr "Setup"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.description"
 msgstr "Shared by Cleanup, Edit Mode, and Personalization."
@@ -3220,6 +3270,11 @@ msgstr "Stop downloading {modelLabel}"
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.stop_retry"
 msgstr "Stop transcription"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.storage"
+msgstr "Storage"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3457,11 +3512,6 @@ msgid "settings.general.transcription_language"
 msgstr "Transcription Language"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SigninStep.tsx
-msgid "onboarding.signin.title"
-msgstr "Glimpse Cloud"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.cloud_usage.transcriptions"
 msgstr "Transcriptions"
@@ -3470,6 +3520,11 @@ msgstr "Transcriptions"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.body"
 msgstr "transform selected text with voice"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.uninstall_cli"
+msgstr "Uninstall"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3545,11 +3600,6 @@ msgstr "v{version} • {mode}"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.available_version"
 msgstr "v{version} available"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.version"
-msgstr "Version"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx

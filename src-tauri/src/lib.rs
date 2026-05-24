@@ -3,13 +3,14 @@ mod analytics;
 mod assistive;
 mod audio;
 mod auto_dictionary;
+mod cli_install;
 mod core;
 mod crypto;
 mod data_migration;
 mod dictionary;
-mod downloader;
 mod library;
 mod llm_cleanup;
+mod local_api;
 mod local_transcription;
 mod mode_context;
 mod model_language_table;
@@ -318,6 +319,10 @@ pub fn run() {
             }
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            {
+                let settings = handle.state::<AppState>().current_settings();
+                local_api::start_from_settings(handle, &settings);
+            }
             library::commands::recover_interrupted_library_items(handle);
 
             #[cfg(target_os = "macos")]
@@ -434,6 +439,13 @@ pub fn run() {
             model_manager::download_model,
             model_manager::delete_model,
             model_manager::cancel_download,
+            local_api::get_local_api_status,
+            local_api::start_local_api,
+            local_api::stop_local_api,
+            local_api::clear_local_api_logs,
+            cli_install::get_cli_install_status,
+            cli_install::install_cli,
+            cli_install::remove_cli,
             audio::list_input_devices,
             toast::toast_dismissed,
             open_accessibility_settings,
@@ -534,6 +546,7 @@ pub struct AppState {
     library_queue: parking_lot::Mutex<VecDeque<LibraryJob>>,
     library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    pub(crate) local_api: Arc<local_api::LocalApiController>,
     update_state: update_checker::SharedUpdateState,
     auto_update_completed: AtomicBool,
     preflight_cancel: CancellationToken,
@@ -571,7 +584,10 @@ impl AppState {
 
         let recorder = Arc::new(RecorderManager::new());
 
-        let local_transcriber = Arc::new(local_transcription::LocalTranscriber::new());
+        let model_cache_dir = model_manager::model_cache_dir(app_handle)
+            .expect("Failed to resolve local model cache directory");
+        let local_transcriber =
+            Arc::new(local_transcription::LocalTranscriber::new(model_cache_dir));
         local_transcriber.start_idle_monitor();
 
         Self {
@@ -595,6 +611,7 @@ impl AppState {
             library_queue: parking_lot::Mutex::new(VecDeque::new()),
             library_active: parking_lot::Mutex::new(None),
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
+            local_api: Arc::new(local_api::LocalApiController::default()),
             update_state: update_checker::create_state(),
             auto_update_completed: AtomicBool::new(false),
             preflight_cancel: CancellationToken::new(),
@@ -1047,10 +1064,20 @@ fn set_user_name(
 }
 
 #[derive(Serialize)]
+struct StorageBreakdown {
+    recordings_bytes: u64,
+    library_bytes: u64,
+    databases_bytes: u64,
+    models_bytes: u64,
+    total_bytes: u64,
+}
+
+#[derive(Serialize)]
 struct AppInfo {
     version: String,
     data_dir_size_bytes: u64,
     data_dir_path: String,
+    storage_breakdown: StorageBreakdown,
 }
 
 #[tauri::command]
@@ -1064,12 +1091,40 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
 
     let data_dir_path = data_dir.display().to_string();
 
-    let data_dir_size_bytes = calculate_dir_size(&data_dir).unwrap_or(0);
+    let recordings_bytes = calculate_dir_size(&data_dir.join("recordings")).unwrap_or(0);
+    let library_bytes = calculate_dir_size(&data_dir.join("library")).unwrap_or(0);
+
+    let databases_bytes = [
+        "transcriptions.db",
+        "transcriptions.db-wal",
+        "transcriptions.db-shm",
+    ]
+    .iter()
+    .map(|name| {
+        std::fs::metadata(data_dir.join(name))
+            .map(|m| m.len())
+            .unwrap_or(0)
+    })
+    .sum::<u64>();
+
+    let models_bytes = model_manager::model_cache_dir(&app)
+        .ok()
+        .map(|p| calculate_dir_size(&p).unwrap_or(0))
+        .unwrap_or(0);
+
+    let total_bytes = recordings_bytes + library_bytes + databases_bytes + models_bytes;
 
     Ok(AppInfo {
         version,
-        data_dir_size_bytes,
+        data_dir_size_bytes: total_bytes,
         data_dir_path,
+        storage_breakdown: StorageBreakdown {
+            recordings_bytes,
+            library_bytes,
+            databases_bytes,
+            models_bytes,
+            total_bytes,
+        },
     })
 }
 

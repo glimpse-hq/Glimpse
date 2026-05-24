@@ -1,12 +1,13 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AppWindow, Check, Copy, Cpu, Info, Keyboard, User, X } from "lucide-react";
+import { AppWindow, Check, Copy, Cpu, Info, Keyboard, Server, User, X } from "lucide-react";
 import FAQModal from "../../../shared/ui/FAQModal";
 import WhatsNewModal from "../../updates/components/WhatsNewModal";
 import AboutTab from "./tabs/AboutTab";
 import AccountTab from "./tabs/AccountTab";
 import GeneralTab from "./tabs/GeneralTab";
+import LocalApiTab from "./tabs/LocalApiTab";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
 import type { User as AuthUser } from "../../auth/api";
@@ -16,7 +17,7 @@ import { useSettingsForm } from "../useSettingsForm";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "general" | "account" | "models" | "about" | "app";
+  initialTab?: "general" | "account" | "models" | "local-api" | "about" | "app";
   currentUser: AuthUser | null;
   onUpdateUser: () => Promise<void>;
   transcriptionMode: TranscriptionMode;
@@ -178,6 +179,7 @@ const SettingsModal = ({
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.15 }}
+                      className="space-y-1"
                     >
                       <p className="px-2.5 pb-1.5 ui-text-uppercase-meta ui-color-disabled font-semibold">
                         {t({
@@ -193,6 +195,15 @@ const SettingsModal = ({
                         })}
                         active={form.activeTab === "models"}
                         onClick={() => form.setActiveTab("models")}
+                      />
+                      <ModalNavItem
+                        icon={<Server size={14} aria-hidden="true" />}
+                        label={t({
+                          id: "settings.modal.tab.local_api",
+                          message: "Local API",
+                        })}
+                        active={form.activeTab === "local-api"}
+                        onClick={() => form.setActiveTab("local-api")}
                       />
                     </motion.div>
                   )}
@@ -296,6 +307,33 @@ const SettingsModal = ({
                       />
                     )}
 
+                    {form.activeTab === "local-api" && (
+                      <LocalApiTab
+                        key="local-api"
+                        variants={tabContentVariants}
+                        modelCatalog={form.modelCatalog}
+                        modelStatus={form.modelStatus}
+                        apiKey={form.localApiKey}
+                        setApiKey={form.setLocalApiKey}
+                        port={form.localApiPort}
+                        setPort={form.setLocalApiPort}
+                        model={form.localApiModel}
+                        setModel={form.setLocalApiModel}
+                        host={form.localApiHost}
+                        setHost={form.setLocalApiHost}
+                        startOnLaunch={form.localApiStartOnLaunch}
+                        setStartOnLaunch={form.setLocalApiStartOnLaunch}
+                        cors={form.localApiCors}
+                        setCors={form.setLocalApiCors}
+                        status={form.localApiStatus}
+                        busy={form.localApiBusy}
+                        onStart={form.handleStartLocalApi}
+                        onStop={form.handleStopLocalApi}
+                        onRestart={form.handleRestartLocalApi}
+                        onClearLogs={form.handleClearLocalApiLogs}
+                      />
+                    )}
+
                     {form.activeTab === "app" && (
                       <AppTab
                         key="app"
@@ -338,6 +376,10 @@ const SettingsModal = ({
                         variants={tabContentVariants}
                         appInfo={form.appInfo}
                         formatBytes={form.formatBytes}
+                        cliInstallStatus={form.cliInstallStatus}
+                        cliInstallBusy={form.cliInstallBusy}
+                        onInstallCli={form.handleInstallCli}
+                        onRemoveCli={form.handleRemoveCli}
                         onOpenDataDir={form.handleOpenDataDir}
                         onOpenFAQ={() => form.setShowFAQModal(true)}
                       />
@@ -370,8 +412,8 @@ const SettingsErrorBanner = ({
   onOpenTab,
 }: {
   error: string | null;
-  sourceTab: "general" | "models" | "about" | "app" | null;
-  onOpenTab: (tab: "general" | "models" | "about" | "app") => void;
+  sourceTab: "general" | "models" | "local-api" | "about" | "app" | null;
+  onOpenTab: (tab: "general" | "models" | "local-api" | "about" | "app") => void;
 }) => {
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<number | null>(null);

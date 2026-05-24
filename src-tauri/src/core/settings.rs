@@ -42,6 +42,12 @@ pub(crate) struct UpdateSettingsArgs {
     pub auto_launch_enabled: bool,
     pub recording_prune_policy: RecordingPrunePolicy,
     pub analytics_enabled: bool,
+    pub local_api_key: String,
+    pub local_api_port: u16,
+    pub local_api_model: String,
+    pub local_api_host: String,
+    pub local_api_start_on_launch: bool,
+    pub local_api_cors: bool,
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> Result<String, String> {
@@ -188,6 +194,19 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         }
     }
 
+    if args.local_api_port == 0 {
+        return Err("Local API port must be between 1 and 65535".into());
+    }
+
+    if args.local_api_model != "auto" && model_manager::definition(&args.local_api_model).is_none()
+    {
+        return Err("Unknown local API model selection".into());
+    }
+
+    if args.local_api_host != "127.0.0.1" && args.local_api_host != "0.0.0.0" {
+        return Err("Unknown local API host selection".into());
+    }
+
     Ok(())
 }
 
@@ -296,6 +315,12 @@ pub(crate) fn update_settings(
     next.auto_launch_enabled = args.auto_launch_enabled;
     next.recording_prune_policy = args.recording_prune_policy;
     next.analytics_enabled = args.analytics_enabled;
+    next.local_api_key = args.local_api_key.trim().to_string();
+    next.local_api_port = args.local_api_port;
+    next.local_api_model = args.local_api_model;
+    next.local_api_host = crate::settings::canonicalize_local_api_host(&args.local_api_host);
+    next.local_api_start_on_launch = args.local_api_start_on_launch;
+    next.local_api_cors = args.local_api_cors;
 
     let launch_changed = prev.auto_launch_enabled != next.auto_launch_enabled;
     if launch_changed {
@@ -383,6 +408,12 @@ mod tests {
             auto_launch_enabled: false,
             recording_prune_policy: RecordingPrunePolicy::Never,
             analytics_enabled: true,
+            local_api_key: String::new(),
+            local_api_port: crate::settings::default_local_api_port(),
+            local_api_model: crate::settings::default_local_api_model(),
+            local_api_host: crate::settings::default_local_api_host(),
+            local_api_start_on_launch: false,
+            local_api_cors: crate::settings::default_local_api_cors(),
         }
     }
 

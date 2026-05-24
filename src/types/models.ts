@@ -37,3 +37,31 @@ export type DownloadEvent =
     | { status: "complete"; percent: number; downloaded: number; total: number }
     | { status: "cancelled"; percent: number; downloaded: number; total: number }
     | { status: "error"; percent: number; downloaded: number; total: number; message: string };
+
+export type LocalApiLogEntry = {
+    id: number;
+    timestamp_ms: number;
+    level: string;
+    message: string;
+};
+
+export type LocalApiStatus = {
+    running: boolean;
+    host: string;
+    port: number;
+    model: string;
+    loaded_model: string | null;
+    api_key_required: boolean;
+    config_id: number | null;
+    cors: boolean;
+    logs: LocalApiLogEntry[];
+};
+
+export type CliInstallStatus = {
+    installed: boolean;
+    sourceAvailable: boolean;
+    installPath: string | null;
+    sourcePath: string | null;
+    command: string;
+    pathInShell: boolean;
+};

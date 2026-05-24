@@ -33,6 +33,7 @@ import {
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
+import * as modelsApi from "./models-api";
 import { modelKeys, useModelCatalog, useModelStatuses } from "./models-queries";
 import type {
   TranscriptionMode,
@@ -45,12 +46,15 @@ import type {
   LlmProvider,
   RecordingPrunePolicy,
   AppLocaleSetting,
+  CliInstallStatus,
+  LocalApiLogEntry,
+  LocalApiStatus,
 } from "../../types";
 
 
 const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
-type ActiveTab = "general" | "models" | "about" | "account" | "app";
+type ActiveTab = "general" | "models" | "local-api" | "about" | "account" | "app";
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureTarget = { mode: ShortcutMode; index: number } | null;
 type ShortcutTarget = { mode: ShortcutMode; index: number };
@@ -66,6 +70,16 @@ type SaveSettingsOverrides = ShortcutOverrides & {
   shortcutBindings?: ShortcutBindings;
   shortcutDraftTarget?: ShortcutTarget;
 };
+
+async function waitForLocalApiStopped(timeoutMs = 2500): Promise<LocalApiStatus> {
+  const started = Date.now();
+  let latest = await modelsApi.getLocalApiStatus();
+  while (latest.running && Date.now() - started < timeoutMs) {
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+    latest = await modelsApi.getLocalApiStatus();
+  }
+  return latest;
+}
 
 const defaultShortcutBindings = (): ShortcutBindings => ({
   smart: [{ shortcut: "Control+Space", temporary: false, cleanup_enabled: false }],
@@ -207,6 +221,17 @@ export function useSettingsForm({
   const [recordingPrunePolicy, setRecordingPrunePolicy] =
     useState<RecordingPrunePolicy>("never");
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
+  const [localApiKey, setLocalApiKey] = useState("");
+  const [localApiPort, setLocalApiPort] = useState(11435);
+  const [localApiModel, setLocalApiModel] = useState("auto");
+  const [localApiHost, setLocalApiHost] = useState("127.0.0.1");
+  const [localApiStartOnLaunch, setLocalApiStartOnLaunch] = useState(false);
+  const [localApiCors, setLocalApiCors] = useState(false);
+  const [localApiStatus, setLocalApiStatus] = useState<LocalApiStatus | null>(null);
+  const [localApiBusy, setLocalApiBusy] = useState(false);
+  const [cliInstallStatus, setCliInstallStatus] =
+    useState<CliInstallStatus | null>(null);
+  const [cliInstallBusy, setCliInstallBusy] = useState(false);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
@@ -328,7 +353,7 @@ export function useSettingsForm({
   const setTranscriptionMode = useCallback(
     (mode: TranscriptionMode) => {
       setTranscriptionModeRaw(mode);
-      if (mode === "cloud" && activeTab === "models") {
+      if (mode === "cloud" && (activeTab === "models" || activeTab === "local-api")) {
         setActiveTab("general");
       }
     },
@@ -389,6 +414,12 @@ export function useSettingsForm({
     setAutoLaunchEnabled(s.auto_launch_enabled ?? false);
     setRecordingPrunePolicy(s.recording_prune_policy ?? "never");
     setAnalyticsEnabled(s.analytics_enabled ?? true);
+    setLocalApiKey(s.local_api_key ?? "");
+    setLocalApiPort(s.local_api_port ?? 11435);
+    setLocalApiModel(s.local_api_model ?? "auto");
+    setLocalApiHost(s.local_api_host ?? "127.0.0.1");
+    setLocalApiStartOnLaunch(s.local_api_start_on_launch ?? false);
+    setLocalApiCors(s.local_api_cors ?? false);
     setThemeModeRaw(s.theme_mode ?? "system");
   }, [clearInvalidShortcutDraft]);
 
@@ -512,6 +543,12 @@ export function useSettingsForm({
         autoLaunchEnabled,
         recordingPrunePolicy,
         analyticsEnabled,
+        localApiKey,
+        localApiPort,
+        localApiModel,
+        localApiHost,
+        localApiStartOnLaunch,
+        localApiCors,
       };
     },
     [
@@ -541,6 +578,12 @@ export function useSettingsForm({
       autoLaunchEnabled,
       recordingPrunePolicy,
       analyticsEnabled,
+      localApiKey,
+      localApiPort,
+      localApiModel,
+      localApiHost,
+      localApiStartOnLaunch,
+      localApiCors,
     ],
   );
 
@@ -828,6 +871,61 @@ export function useSettingsForm({
 
     hydrateFromSettings(settingsQuery.data);
   }, [hydrateFromSettings, isOpen, settingsQuery.data, settingsQuery.error, showSettingsError]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    let unlistenLog: UnlistenFn | null = null;
+    let unlistenStatus: UnlistenFn | null = null;
+
+    modelsApi
+      .getLocalApiStatus()
+      .then((status) => {
+        if (!cancelled) setLocalApiStatus(status);
+      })
+      .catch((err) => console.error("Failed to load local API status:", err));
+    modelsApi
+      .getCliInstallStatus()
+      .then((status) => {
+        if (!cancelled) setCliInstallStatus(status);
+      })
+      .catch((err) => console.error("Failed to load CLI install status:", err));
+
+    listen<LocalApiLogEntry>("local-api:log", (event) => {
+      if (cancelled) return;
+      setLocalApiStatus((current) => {
+        if (!current) return current;
+        const previousLogs = current.logs ?? [];
+        return {
+          running: current.running,
+          host: current.host,
+          port: current.port,
+          model: current.model,
+          loaded_model: current.loaded_model,
+          api_key_required: current.api_key_required,
+          config_id: current.config_id,
+          cors: current.cors,
+          logs: [...previousLogs, event.payload].slice(-200),
+        };
+      });
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenLog = fn;
+    });
+
+    listen<LocalApiStatus>("local-api:status", (event) => {
+      if (!cancelled) setLocalApiStatus(event.payload);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenStatus = fn;
+    });
+
+    return () => {
+      cancelled = true;
+      unlistenLog?.();
+      unlistenStatus?.();
+    };
+  }, [isOpen]);
 
   const invalidateModelStatus = useCallback(
     (modelKey: string) => {
@@ -1215,6 +1313,122 @@ export function useSettingsForm({
     }
   }, []);
 
+  const handleStartLocalApi = useCallback(async () => {
+    flushPendingSettingsSave();
+    setLocalApiBusy(true);
+    try {
+      await saveSettingsNowRef.current();
+      const status = await modelsApi.startLocalApi({
+        host: localApiHost,
+        port: localApiPort,
+        model: localApiModel,
+        apiKey: localApiKey,
+        cors: localApiCors,
+      });
+      setLocalApiStatus(status);
+      clearSettingsError();
+    } catch (err) {
+      console.error(err);
+      showSettingsError(String(err), "local-api");
+    } finally {
+      setLocalApiBusy(false);
+    }
+  }, [
+    clearSettingsError,
+    flushPendingSettingsSave,
+    localApiCors,
+    localApiHost,
+    localApiKey,
+    localApiModel,
+    localApiPort,
+    showSettingsError,
+  ]);
+
+  const handleStopLocalApi = useCallback(async () => {
+    setLocalApiBusy(true);
+    try {
+      await modelsApi.stopLocalApi();
+      const status = await waitForLocalApiStopped();
+      setLocalApiStatus(status);
+      clearSettingsError();
+    } catch (err) {
+      console.error(err);
+      showSettingsError(String(err), "local-api");
+    } finally {
+      setLocalApiBusy(false);
+    }
+  }, [clearSettingsError, showSettingsError]);
+
+  const handleRestartLocalApi = useCallback(async () => {
+    setLocalApiBusy(true);
+    try {
+      await saveSettingsNowRef.current();
+      await modelsApi.stopLocalApi();
+      const stopped = await waitForLocalApiStopped();
+      if (stopped.running) {
+        throw new Error("Local API did not stop before restart");
+      }
+      const status = await modelsApi.startLocalApi({
+        host: localApiHost,
+        port: localApiPort,
+        model: localApiModel,
+        apiKey: localApiKey,
+        cors: localApiCors,
+      });
+      setLocalApiStatus(status);
+      clearSettingsError();
+    } catch (err) {
+      console.error(err);
+      showSettingsError(String(err), "local-api");
+    } finally {
+      setLocalApiBusy(false);
+    }
+  }, [
+    clearSettingsError,
+    localApiCors,
+    localApiHost,
+    localApiKey,
+    localApiModel,
+    localApiPort,
+    showSettingsError,
+  ]);
+
+  const handleClearLocalApiLogs = useCallback(async () => {
+    try {
+      const status = await modelsApi.clearLocalApiLogs();
+      setLocalApiStatus(status);
+    } catch (err) {
+      console.error(err);
+      showSettingsError(String(err), "local-api");
+    }
+  }, [showSettingsError]);
+
+  const handleInstallCli = useCallback(async () => {
+    setCliInstallBusy(true);
+    try {
+      const status = await modelsApi.installCli();
+      setCliInstallStatus(status);
+    } catch (err) {
+      console.error(err);
+      showSettingsError(String(err), "about");
+    } finally {
+      setCliInstallBusy(false);
+    }
+  }, [showSettingsError]);
+
+  const handleRemoveCli = useCallback(async () => {
+    setCliInstallBusy(true);
+    try {
+      const status = await modelsApi.removeCli();
+      setCliInstallStatus(status);
+    } catch (err) {
+      console.error(err);
+      showSettingsError(String(err), "about");
+    } finally {
+      setCliInstallBusy(false);
+    }
+  }, [showSettingsError]);
+
   const formatBytes = useCallback((bytes: number) => {
     if (bytes === 0) return "0 B";
     const k = 1024;
@@ -1301,6 +1515,28 @@ export function useSettingsForm({
     setRecordingPrunePolicy,
     analyticsEnabled,
     setAnalyticsEnabled,
+    localApiKey,
+    setLocalApiKey,
+    localApiPort,
+    setLocalApiPort,
+    localApiModel,
+    setLocalApiModel,
+    localApiHost,
+    setLocalApiHost,
+    localApiStartOnLaunch,
+    setLocalApiStartOnLaunch,
+    localApiCors,
+    setLocalApiCors,
+    localApiStatus,
+    localApiBusy,
+    cliInstallStatus,
+    cliInstallBusy,
+    handleStartLocalApi,
+    handleStopLocalApi,
+    handleRestartLocalApi,
+    handleClearLocalApiLogs,
+    handleInstallCli,
+    handleRemoveCli,
     platformCapabilities,
 
     authLoading,

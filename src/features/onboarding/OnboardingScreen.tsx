@@ -122,6 +122,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   );
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedThemeMode = settingsQuery.data?.theme_mode ?? "system";
+  const persistedSettings = settingsQuery.data;
   const selectedModel = ctx.localModelChoice ||
     pickDefaultOnboardingModel(onboardingModelCatalog, persistedLocalModel);
   const statusModelKeys = useMemo(
@@ -357,6 +358,17 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleComplete = useCallback(async () => {
+    if (settingsQuery.isLoading || settingsQuery.isError || !persistedSettings) {
+      send({
+        type: "COMPLETE_ERROR",
+        error: t({
+          id: "onboarding.complete.failed",
+          message: "Could not finish setup. Check your settings and try again.",
+        }),
+      });
+      return;
+    }
+
     const resolvedLocalModel = selectedModel;
 
     send({ type: "COMPLETING" });
@@ -385,15 +397,15 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           toggleShortcut,
           toggleEnabled: false,
           shortcutBindings: {
-            smart: [{ shortcut: ctx.smartShortcut, temporary: false, cleanupEnabled: false }],
-            hold: [{ shortcut: holdShortcut, temporary: false, cleanupEnabled: false }],
-            toggle: [{ shortcut: toggleShortcut, temporary: false, cleanupEnabled: false }],
+            smart: [{ shortcut: ctx.smartShortcut, temporary: false, cleanup_enabled: false }],
+            hold: [{ shortcut: holdShortcut, temporary: false, cleanup_enabled: false }],
+            toggle: [{ shortcut: toggleShortcut, temporary: false, cleanup_enabled: false }],
           },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
-          microphoneDevice: null,
-          language: "en",
-          appLocale: "system",
+          microphoneDevice: persistedSettings?.microphone_device ?? null,
+          language: persistedSettings?.language ?? "en",
+          appLocale: persistedSettings?.app_locale ?? "system",
           themeMode: persistedThemeMode,
           llmEnabled: false,
           cleanupEnabled: false,
@@ -406,8 +418,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           mediaControlEnabled: true,
           autoUpdateEnabled: true,
           autoLaunchEnabled: false,
-          recordingPrunePolicy: "never",
-          analyticsEnabled: true,
+          recordingPrunePolicy: persistedSettings?.recording_prune_policy ?? "never",
+          analyticsEnabled: persistedSettings?.analytics_enabled ?? true,
+          localApiKey: persistedSettings?.local_api_key ?? "",
+          localApiPort: persistedSettings?.local_api_port ?? 11435,
+          localApiModel: persistedSettings?.local_api_model ?? "auto",
+          localApiHost: persistedSettings?.local_api_host ?? "127.0.0.1",
+          localApiStartOnLaunch: persistedSettings?.local_api_start_on_launch ?? false,
+          localApiCors: persistedSettings?.local_api_cors ?? false,
         },
       });
       await invoke("complete_onboarding");
@@ -430,9 +448,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     ctx.selectedMode,
     ctx.smartShortcut,
     onComplete,
+    persistedSettings,
     persistedThemeMode,
     selectedModel,
     send,
+    settingsQuery.isError,
+    settingsQuery.isLoading,
     t,
   ]);
 

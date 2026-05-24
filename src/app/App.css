@@ -554,6 +554,24 @@
     color: var(--color-text-disabled);
   }
 
+  .ui-color-api-log {
+    color: var(--color-text-muted);
+    color: color-mix(
+      in srgb,
+      var(--color-text-muted) 70%,
+      var(--color-text-secondary)
+    );
+  }
+
+  .ui-color-api-log-level {
+    color: var(--color-text-disabled);
+    color: color-mix(
+      in srgb,
+      var(--color-text-disabled) 65%,
+      var(--color-text-muted)
+    );
+  }
+
   .ui-color-cloud {
     color: var(--color-cloud);
   }
