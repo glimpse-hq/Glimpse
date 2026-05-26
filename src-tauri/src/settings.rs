@@ -541,10 +541,6 @@ fn default_auto_delete_target() -> AutoDeleteTarget {
     AutoDeleteTarget::Transcripts
 }
 
-fn default_auto_delete_duration() -> RecordingPrunePolicy {
-    RecordingPrunePolicy::Never
-}
-
 pub fn auto_delete_recording_policy(settings: &UserSettings) -> RecordingPrunePolicy {
     settings.auto_delete_duration
 }
