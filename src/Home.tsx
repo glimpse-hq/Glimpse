@@ -26,6 +26,8 @@ import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
 import { useLicenseGate } from "./features/license/queries";
+// TODO: REMOVE after next update — beta gift promo chip.
+import BetaGiftChip from "./features/license/components/BetaGiftChip";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
@@ -656,6 +658,8 @@ const Home = () => {
 
       <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
+        {/* TODO: REMOVE after next update — hardcoded beta discount chip. */}
+        {activeView === "home" ? <BetaGiftChip /> : null}
 
         <div className="flex-1 flex flex-col px-8 pb-6 min-h-0">
           <div
