@@ -1,3 +1,6 @@
+// Windows wrapper for `tauri dev` / `tauri build`:
+// - short CARGO_TARGET_DIR + TEMP to avoid MAX_PATH in whisper Vulkan builds
+// - VsDevCmd when needed so MSVC/link.exe are on PATH outside a VS developer shell
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -6,14 +9,64 @@ import process from "node:process";
 const env = { ...process.env };
 const args = process.argv.slice(2);
 
-if (process.platform === "win32" && !env.CARGO_TARGET_DIR) {
-  env.CARGO_TARGET_DIR =
-    env.GLIMPSE_CARGO_TARGET_DIR ??
-    (env.CI && env.RUNNER_TEMP ? env.RUNNER_TEMP : defaultWindowsCargoTargetDir());
+if (process.platform === "win32") {
+  configureWindowsEnv();
 }
 
 function defaultWindowsCargoTargetDir() {
   return path.join(path.parse(process.cwd()).root, ".glimpse-cargo-target");
+}
+
+function configureWindowsEnv() {
+  if (!env.CARGO_TARGET_DIR) {
+    env.CARGO_TARGET_DIR =
+      env.GLIMPSE_CARGO_TARGET_DIR ??
+      (env.CI && env.RUNNER_TEMP ? env.RUNNER_TEMP : defaultWindowsCargoTargetDir());
+  }
+
+  fs.mkdirSync(env.CARGO_TARGET_DIR, { recursive: true });
+
+  const shortTemp = path.join(env.CARGO_TARGET_DIR, "tmp");
+  fs.mkdirSync(shortTemp, { recursive: true });
+  env.TEMP = shortTemp;
+  env.TMP = shortTemp;
+}
+
+function findVsDevCmd() {
+  const explicit = env.VSDEVCMD_PATH;
+  if (explicit && fs.existsSync(explicit)) {
+    return explicit;
+  }
+
+  const programFiles = env.ProgramFiles ?? "C:\\Program Files";
+  const programFilesX86 = env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)";
+  const years = ["2022", "2019"];
+  const editions = ["Community", "Professional", "Enterprise", "BuildTools"];
+
+  for (const root of [programFiles, programFilesX86]) {
+    for (const year of years) {
+      for (const edition of editions) {
+        const candidate = path.join(
+          root,
+          "Microsoft Visual Studio",
+          year,
+          edition,
+          "Common7",
+          "Tools",
+          "VsDevCmd.bat",
+        );
+        if (fs.existsSync(candidate)) {
+          return candidate;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function quoteCmd(value) {
+  return `"${value.replace(/"/g, '""')}"`;
 }
 
 const tauriCli = path.join(
@@ -24,10 +77,51 @@ const tauriCli = path.join(
   "tauri.js",
 );
 
-const child = spawn(process.execPath, [tauriCli, ...args], {
-  env,
-  stdio: "inherit",
-});
+function spawnTauriCli() {
+  const needsNativeBuild = args[0] === "dev" || args[0] === "build";
+
+  if (process.platform === "win32") {
+    const vsDevCmd = findVsDevCmd();
+
+    if (!vsDevCmd && needsNativeBuild) {
+      console.warn(
+        "Glimpse: VsDevCmd.bat not found. Install Visual Studio 2022 (Desktop development with C++) or Build Tools, or set VSDEVCMD_PATH.",
+      );
+    }
+
+    if (vsDevCmd && needsNativeBuild) {
+      const command = [
+        quoteCmd(process.execPath),
+        quoteCmd(tauriCli),
+        ...args.map((arg) => quoteCmd(arg)),
+      ].join(" ");
+      const targetDir = env.CARGO_TARGET_DIR;
+      const batPath = path.join(targetDir, "glimpse-tauri.cmd");
+      const batContents = [
+        "@echo off",
+        `call ${quoteCmd(vsDevCmd)} -no_logo`,
+        `set "CARGO_TARGET_DIR=${targetDir}"`,
+        `set "TEMP=${env.TEMP}"`,
+        `set "TMP=${env.TMP}"`,
+        command,
+        "",
+      ].join("\r\n");
+      fs.writeFileSync(batPath, batContents);
+
+      return spawn("cmd.exe", ["/d", "/c", batPath], {
+        env,
+        stdio: "inherit",
+      });
+    }
+  }
+
+  return spawn(process.execPath, [tauriCli, ...args], {
+    env,
+    stdio: "inherit",
+  });
+}
+
+const child = spawnTauriCli();
 
 child.on("error", (error) => {
   console.error(`Failed to spawn Tauri CLI at ${tauriCli}: ${error.message}`);

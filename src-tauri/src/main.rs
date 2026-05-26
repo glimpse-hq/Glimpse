@@ -14,13 +14,24 @@ fn main() {
 }
 
 fn launched_as_cli() -> bool {
-    std::env::args_os()
-        .next()
-        .and_then(|arg| {
-            std::path::PathBuf::from(arg)
-                .file_stem()
-                .and_then(|name| name.to_str())
-                .map(str::to_string)
-        })
-        .is_some_and(|name| name == "glimpse" || name == "glimpse-cli")
+    let mut args = std::env::args_os();
+    let Some(first) = args.next() else {
+        return false;
+    };
+    let exe = std::path::PathBuf::from(first);
+    let Some(stem) = exe.file_stem().and_then(|name| name.to_str()) else {
+        return false;
+    };
+
+    if stem == "glimpse-cli" {
+        return true;
+    }
+
+    if !stem.eq_ignore_ascii_case("glimpse") {
+        return false;
+    }
+
+    // Unix installs expose a `glimpse` symlink. On Windows, Glimpse.exe is the
+    // GUI entry point and glimpse.cmd forwards CLI args when invoking it.
+    cfg!(unix) || args.next().is_some()
 }

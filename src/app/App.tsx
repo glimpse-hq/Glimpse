@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import PillOverlay from "../features/pill/PillOverlay";
+import ToastOverlay from "../features/toast/ToastOverlay";
 import { useSettings } from "../features/settings/queries";
 import type { TextSizeMode, ThemeMode } from "../types";
 import { detectAppPlatform } from "../platform/service";
@@ -14,7 +15,6 @@ import "./App.css";
 
 const Home = lazy(() => import("../Home"));
 const OnboardingScreen = lazy(() => import("../features/onboarding/OnboardingScreen"));
-const ToastOverlay = lazy(() => import("../features/toast/ToastOverlay"));
 
 const parseThemeMode = (value: string | null): ThemeMode =>
   value === "light" || value === "dark" || value === "system" ? value : "system";
@@ -165,15 +165,9 @@ function App() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen w-screen items-center justify-center overflow-hidden" />
-      }
-    >
-      <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
-        <ToastOverlay />
-      </div>
-    </Suspense>
+    <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
+      <ToastOverlay />
+    </div>
   );
 }
 

@@ -120,10 +120,12 @@ export const CARD_WIDTH = 400;
 export const CARD_STAMP_SLOT_WIDTH = 132;
 export const CARD_STAMP_SLOT_HEIGHT = 38;
 export const CARD_HEADER_HEIGHT = CARD_STAMP_SLOT_HEIGHT;
-export const CARD_HEADLINE_HEIGHT = 56;
+export const CARD_HEADLINE_HEIGHT = 58;
+export const CARD_HEADLINE_OVERLAP = 12;
 export const CARD_DETAILS_HEIGHT = 88;
-export const CARD_TITLE_LINE_HEIGHT = 32;
-export const CARD_SUBTITLE_LINE_HEIGHT = 20;
+export const CARD_TITLE_ROW_HEIGHT = 36;
+export const CARD_SUBTITLE_ROW_HEIGHT = 18;
+export const CARD_HEADLINE_GAP = 4;
 export const CARD_STRIPE_DENSITY = 0.26;
 export const CARD_STRIPE_GAP = 10;
 export const CARD_RADIUS = 8;
@@ -139,12 +141,12 @@ export const CARD_TITLE_FONT =
 export function getCardContentHeight(): number {
   return (
     CARD_HEADER_HEIGHT +
-    4 +
     CARD_HEADLINE_HEIGHT +
     8 +
     CARD_DETAILS_HEIGHT +
     CARD_STRIPE_GAP +
-    STRIPE_HEIGHT
+    STRIPE_HEIGHT -
+    CARD_HEADLINE_OVERLAP
   );
 }
 
@@ -764,24 +766,22 @@ export const CardHeadlineBlock = ({
   subtitle: ReactNode;
 }) => (
   <div
-    className="relative mt-1 min-w-0 shrink-0"
-    style={{ height: `${CARD_HEADLINE_HEIGHT}px` }}
+    className="flex min-w-0 shrink-0 flex-col"
+    style={{
+      marginTop: `-${CARD_HEADLINE_OVERLAP}px`,
+      gap: `${CARD_HEADLINE_GAP}px`,
+      height: `${CARD_HEADLINE_HEIGHT}px`,
+    }}
   >
     <div
-      className="absolute inset-x-0 top-0 truncate"
-      style={{
-        height: `${CARD_TITLE_LINE_HEIGHT}px`,
-        lineHeight: `${CARD_TITLE_LINE_HEIGHT}px`,
-      }}
+      className="min-w-0 overflow-hidden"
+      style={{ height: `${CARD_TITLE_ROW_HEIGHT}px` }}
     >
       {title}
     </div>
     <div
-      className="absolute inset-x-0 truncate"
-      style={{
-        top: `${CARD_TITLE_LINE_HEIGHT + 4}px`,
-        height: `${CARD_SUBTITLE_LINE_HEIGHT}px`,
-      }}
+      className="min-w-0 overflow-hidden"
+      style={{ height: `${CARD_SUBTITLE_ROW_HEIGHT}px` }}
     >
       {subtitle}
     </div>

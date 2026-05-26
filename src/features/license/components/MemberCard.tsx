@@ -178,7 +178,8 @@ const MemberCardInner = ({
   const titleStyle = {
     fontFamily: CARD_TITLE_FONT,
     fontSize: "1.625rem",
-    lineHeight: 1.12,
+    lineHeight: 1.35,
+    margin: 0,
     color:
       showName && displayTitle
         ? palette.textPrimary
@@ -190,6 +191,8 @@ const MemberCardInner = ({
   const subtitleStyle = {
     fontSize: "13px",
     fontWeight: 500,
+    lineHeight: 1.35,
+    margin: 0,
     color: palette.textDisabled,
   } as const;
 

@@ -113,8 +113,8 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force C:\t | Out-Null
-          "CARGO_TARGET_DIR=C:/t" >> $env:GITHUB_ENV
+          New-Item -ItemType Directory -Force C:\.glimpse-cargo-target | Out-Null
+          "CARGO_TARGET_DIR=C:/.glimpse-cargo-target" >> $env:GITHUB_ENV
 
       - name: install Vulkan SDK
         if: matrix.platform == 'windows-latest'
@@ -146,7 +146,7 @@ jobs:
           key: ${{ matrix.platform }}-${{ matrix.rust-targets }}
           workspaces: src-tauri -> target
           cache-directories: |
-            C:/t
+            C:/.glimpse-cargo-target
           cache-on-failure: true
 
       - name: install frontend dependencies
@@ -198,6 +198,10 @@ jobs:
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          GLIMPSE_POLAR_BENEFIT_PERSONAL: ${{ secrets.GLIMPSE_POLAR_BENEFIT_PERSONAL }}
+          GLIMPSE_POLAR_BENEFIT_COMMERCIAL: ${{ secrets.GLIMPSE_POLAR_BENEFIT_COMMERCIAL }}
+          GLIMPSE_POLAR_BENEFIT_FOUNDER: ${{ secrets.GLIMPSE_POLAR_BENEFIT_FOUNDER }}
+          GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR: ${{ secrets.GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR }}
         with:
           releaseId: ${{ needs.create-release.outputs.release-id }}
           tagName: v__VERSION__
@@ -217,6 +221,10 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          GLIMPSE_POLAR_BENEFIT_PERSONAL: ${{ secrets.GLIMPSE_POLAR_BENEFIT_PERSONAL }}
+          GLIMPSE_POLAR_BENEFIT_COMMERCIAL: ${{ secrets.GLIMPSE_POLAR_BENEFIT_COMMERCIAL }}
+          GLIMPSE_POLAR_BENEFIT_FOUNDER: ${{ secrets.GLIMPSE_POLAR_BENEFIT_FOUNDER }}
+          GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR: ${{ secrets.GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR }}
         with:
           releaseId: ${{ needs.create-release.outputs.release-id }}
           tagName: v__VERSION__

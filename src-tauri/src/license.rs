@@ -33,6 +33,7 @@ const KEY_LICENSE_LIMIT_ACTIVATIONS: &str = "license_limit_activations";
 const KEY_LICENSE_ACTIVATIONS_COUNT: &str = "license_activations_count";
 const KEY_LICENSE_PURCHASED_AT: &str = "license_purchased_at";
 const KEY_LICENSE_BENEFIT_ID: &str = "license_benefit_id";
+const KEY_LICENSE_EDITION: &str = "license_edition";
 
 const TRIAL_DAYS: i64 = 14;
 // Cache is trusted offline for this many days after last successful validate.
@@ -74,6 +75,27 @@ pub enum LicenseEdition {
     Commercial,
     Founder,
     Contributor,
+}
+
+impl LicenseEdition {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Personal => "personal",
+            Self::Commercial => "commercial",
+            Self::Founder => "founder",
+            Self::Contributor => "contributor",
+        }
+    }
+
+    fn parse(value: &str) -> Option<Self> {
+        match value {
+            "personal" => Some(Self::Personal),
+            "commercial" => Some(Self::Commercial),
+            "founder" => Some(Self::Founder),
+            "contributor" => Some(Self::Contributor),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -249,7 +271,11 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
     };
 
     let edition = if license_active {
-        Some(resolve_edition(benefit_id.as_deref()))
+        Some(
+            read_optional_string(store, KEY_LICENSE_EDITION)?
+                .and_then(|value| LicenseEdition::parse(&value))
+                .unwrap_or_else(|| resolve_edition(benefit_id.as_deref())),
+        )
     } else {
         None
     };
@@ -412,6 +438,8 @@ fn write_cache_from_polar(
 ) -> Result<(), String> {
     let now = Utc::now().to_rfc3339();
     write_optional_string(store, KEY_LICENSE_BENEFIT_ID, license.benefit_id.as_deref())?;
+    let edition = resolve_edition(license.benefit_id.as_deref());
+    write_string(store, KEY_LICENSE_EDITION, edition.as_str())?;
     write_string(store, KEY_LICENSE_STATUS, &license.status)?;
     if read_optional_string(store, KEY_LICENSE_ACTIVATED_AT)?.is_none() {
         write_string(store, KEY_LICENSE_ACTIVATED_AT, &now)?;
@@ -473,6 +501,7 @@ fn clear_cache(store: &SettingsStore) -> Result<(), String> {
         KEY_LICENSE_ACTIVATIONS_COUNT,
         KEY_LICENSE_PURCHASED_AT,
         KEY_LICENSE_BENEFIT_ID,
+        KEY_LICENSE_EDITION,
     ] {
         write_string(store, key, "")?;
     }
@@ -731,6 +760,21 @@ mod tests {
             resolve_edition(Some("ben_unrecognized")),
             LicenseEdition::Personal
         );
+    }
+
+    #[test]
+    fn license_edition_parse_round_trips() {
+        for edition in [
+            LicenseEdition::Personal,
+            LicenseEdition::Commercial,
+            LicenseEdition::Founder,
+            LicenseEdition::Contributor,
+        ] {
+            assert_eq!(
+                LicenseEdition::parse(edition.as_str()),
+                Some(edition)
+            );
+        }
     }
 
     #[test]

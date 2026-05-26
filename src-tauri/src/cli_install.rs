@@ -5,6 +5,8 @@ use std::{
 
 use serde::Serialize;
 
+const WINDOWS_SHIM_TARGET_MARKER: &str = "REM glimpse-cli-target=";
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CliInstallStatus {
@@ -24,58 +26,55 @@ pub fn get_cli_install_status() -> Result<CliInstallStatus, String> {
 #[tauri::command]
 pub fn install_cli(state: tauri::State<crate::AppState>) -> Result<CliInstallStatus, String> {
     crate::license::require_license_gate(&state.settings_store, "the CLI")?;
-
-    #[cfg(unix)]
-    {
-        let source = cli_source_binary()?;
-        let destination = default_install_path()?;
-
-        if let Some(parent) = destination.parent() {
-            fs::create_dir_all(parent)
-                .map_err(|err| format!("Failed to create CLI install directory: {err}"))?;
-        }
-
-        prepare_install_destination(&destination, &source)?;
-        std::os::unix::fs::symlink(&source, &destination)
-            .map_err(|err| format!("Failed to install CLI: {err}"))?;
-
-        Ok(cli_install_status())
-    }
-
-    #[cfg(not(unix))]
-    {
-        Err("CLI install is not supported on this platform yet".to_string())
-    }
+    install_cli_link()?;
+    Ok(cli_install_status())
 }
 
 #[tauri::command]
 pub fn remove_cli() -> Result<CliInstallStatus, String> {
-    #[cfg(unix)]
-    {
-        let destination = default_install_path()?;
-        let source = cli_source_binary()?;
+    remove_cli_link()?;
+    Ok(cli_install_status())
+}
 
-        match fs::read_link(&destination) {
-            Ok(_) if cli_link_owned_by_glimpse(&destination, Some(&source)) => {
-                fs::remove_file(&destination)
-                    .map_err(|err| format!("Failed to remove CLI shortcut: {err}"))?;
-                Ok(cli_install_status())
-            }
-            Ok(_) => Err(format!(
-                "{} is not a Glimpse CLI shortcut",
-                destination.to_string_lossy()
-            )),
-            Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(cli_install_status()),
-            Err(_) => Err(format!(
-                "{} is not a Glimpse CLI shortcut",
-                destination.to_string_lossy()
-            )),
-        }
+fn install_cli_link() -> Result<(), String> {
+    let source = cli_source_binary()?;
+    let destination = default_install_path()?;
+
+    if let Some(parent) = destination.parent() {
+        fs::create_dir_all(parent)
+            .map_err(|err| format!("Failed to create CLI install directory: {err}"))?;
     }
 
-    #[cfg(not(unix))]
-    {
-        Err("CLI removal is not supported on this platform yet".to_string())
+    prepare_install_destination(&destination, &source)?;
+
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&source, &destination)
+        .map_err(|err| format!("Failed to install CLI: {err}"))?;
+
+    #[cfg(windows)]
+    write_windows_shim(&destination, &source)?;
+
+    Ok(())
+}
+
+fn remove_cli_link() -> Result<(), String> {
+    let destination = default_install_path()?;
+    let source = cli_source_binary()?;
+
+    match fs::symlink_metadata(&destination) {
+        Ok(_) if cli_link_owned_by_glimpse(&destination, Some(&source)) => {
+            fs::remove_file(&destination)
+                .map_err(|err| format!("Failed to remove CLI shortcut: {err}"))
+        }
+        Ok(_) => Err(format!(
+            "{} is not a Glimpse CLI shortcut",
+            destination.to_string_lossy()
+        )),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(_) => Err(format!(
+            "{} is not a Glimpse CLI shortcut",
+            destination.to_string_lossy()
+        )),
     }
 }
 
@@ -110,16 +109,33 @@ fn cli_source_binary() -> Result<PathBuf, String> {
     }
 }
 
-fn default_install_path() -> Result<PathBuf, String> {
-    let home = env::var_os("HOME")
+fn home_dir() -> Result<PathBuf, String> {
+    env::var_os("USERPROFILE")
+        .or_else(|| env::var_os("HOME"))
         .map(PathBuf::from)
-        .ok_or_else(|| "Could not find your home directory".to_string())?;
-    Ok(home.join(".local/bin/glimpse"))
+        .ok_or_else(|| "Could not find your home directory".to_string())
+}
+
+fn default_install_path() -> Result<PathBuf, String> {
+    let home = home_dir()?;
+    Ok(home.join(default_install_relative_path()))
+}
+
+fn default_install_relative_path() -> PathBuf {
+    #[cfg(unix)]
+    {
+        PathBuf::from(".local/bin/glimpse")
+    }
+
+    #[cfg(windows)]
+    {
+        PathBuf::from(".local/bin/glimpse.cmd")
+    }
 }
 
 fn prepare_install_destination(destination: &Path, source: &Path) -> Result<(), String> {
     match fs::symlink_metadata(destination) {
-        Ok(metadata) if metadata.file_type().is_symlink() => {
+        Ok(metadata) if is_cli_install_artifact(&metadata) => {
             if !cli_link_owned_by_glimpse(destination, Some(source)) {
                 return Err(format!(
                     "{} already exists and is not a Glimpse CLI shortcut",
@@ -130,7 +146,7 @@ fn prepare_install_destination(destination: &Path, source: &Path) -> Result<(), 
                 .map_err(|err| format!("Failed to replace existing CLI shortcut: {err}"))
         }
         Ok(_) => Err(format!(
-            "{} already exists and is not a symlink",
+            "{} already exists and is not a Glimpse CLI shortcut",
             destination.to_string_lossy()
         )),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
@@ -138,6 +154,17 @@ fn prepare_install_destination(destination: &Path, source: &Path) -> Result<(), 
     }
 }
 
+#[cfg(unix)]
+fn is_cli_install_artifact(metadata: &fs::Metadata) -> bool {
+    metadata.file_type().is_symlink()
+}
+
+#[cfg(windows)]
+fn is_cli_install_artifact(metadata: &fs::Metadata) -> bool {
+    metadata.is_file()
+}
+
+#[cfg(unix)]
 fn cli_link_owned_by_glimpse(destination: &Path, source: Option<&Path>) -> bool {
     let Ok(target) = fs::read_link(destination) else {
         return false;
@@ -147,6 +174,40 @@ fn cli_link_owned_by_glimpse(destination: &Path, source: Option<&Path>) -> bool 
         .is_some_and(|source| paths_equivalent(&resolve_link_target(destination, &target), source))
 }
 
+#[cfg(windows)]
+fn cli_link_owned_by_glimpse(destination: &Path, source: Option<&Path>) -> bool {
+    let _ = source;
+    let Ok(content) = fs::read_to_string(destination) else {
+        return false;
+    };
+    parse_windows_shim_target(&content).is_some_and(|target| is_glimpse_binary(&target))
+}
+
+#[cfg(windows)]
+fn is_glimpse_binary(path: &Path) -> bool {
+    path.file_stem()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.eq_ignore_ascii_case("glimpse"))
+}
+
+#[cfg(windows)]
+fn write_windows_shim(destination: &Path, source: &Path) -> Result<(), String> {
+    let source_display = source.to_string_lossy();
+    let content = format!(
+        "@echo off\r\n{WINDOWS_SHIM_TARGET_MARKER}{source_display}\r\n\"{source_display}\" %*\r\n"
+    );
+    fs::write(destination, content).map_err(|err| format!("Failed to install CLI: {err}"))
+}
+
+fn parse_windows_shim_target(content: &str) -> Option<PathBuf> {
+    content.lines().find_map(|line| {
+        let line = line.trim();
+        line.strip_prefix(WINDOWS_SHIM_TARGET_MARKER)
+            .map(|path| PathBuf::from(path.trim()))
+    })
+}
+
+#[cfg(unix)]
 fn resolve_link_target(destination: &Path, target: &Path) -> PathBuf {
     if target.is_absolute() {
         return target.to_path_buf();
@@ -160,8 +221,25 @@ fn resolve_link_target(destination: &Path, target: &Path) -> PathBuf {
 
 fn paths_equivalent(left: &Path, right: &Path) -> bool {
     match (left.canonicalize(), right.canonicalize()) {
-        (Ok(left), Ok(right)) => left == right,
+        (Ok(left), Ok(right)) => equivalent_canonical_paths(&left, &right),
         _ => left == right,
+    }
+}
+
+fn equivalent_canonical_paths(left: &Path, right: &Path) -> bool {
+    if left == right {
+        return true;
+    }
+
+    #[cfg(windows)]
+    {
+        left.to_string_lossy()
+            .eq_ignore_ascii_case(&right.to_string_lossy())
+    }
+
+    #[cfg(not(windows))]
+    {
+        false
     }
 }
 
@@ -187,4 +265,45 @@ fn is_executable_file(path: &Path) -> bool {
 #[cfg(not(unix))]
 fn is_executable_file(path: &Path) -> bool {
     path.is_file()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_windows_shim_target_reads_marker_line() {
+        let content = concat!(
+            "@echo off\r\n",
+            "REM glimpse-cli-target=C:\\Glimpse\\Glimpse.exe\r\n",
+            "\"C:\\Glimpse\\Glimpse.exe\" %*\r\n"
+        );
+
+        assert_eq!(
+            parse_windows_shim_target(content),
+            Some(PathBuf::from(r"C:\Glimpse\Glimpse.exe"))
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_shim_is_owned_from_marker_target() {
+        let temp = std::env::temp_dir().join(format!(
+            "glimpse-cli-shim-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_file(&temp);
+        let shim_target = r"C:\Apps\Glimpse\Glimpse.exe";
+        fs::write(
+            &temp,
+            format!(
+                "@echo off\r\n{WINDOWS_SHIM_TARGET_MARKER}{shim_target}\r\n\"{shim_target}\" %*\r\n"
+            ),
+        )
+        .expect("write temp shim");
+
+        assert!(cli_link_owned_by_glimpse(&temp, None));
+
+        let _ = fs::remove_file(temp);
+    }
 }
