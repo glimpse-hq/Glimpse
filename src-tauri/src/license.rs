@@ -148,9 +148,17 @@ struct PolarConditions<'a> {
 }
 
 pub fn license_gate_active(store: &SettingsStore) -> bool {
+    if developer_license_bypass_active() {
+        return true;
+    }
+
     get_license_state(store)
         .map(|state| state.license_gate_active)
         .unwrap_or(false)
+}
+
+fn developer_license_bypass_active() -> bool {
+    cfg!(debug_assertions) && option_env!("GLIMPSE_FORCE_LICENSE_GATE") != Some("1")
 }
 
 /// Guard for license-gated tauri commands and background tasks. Returns `Ok`
@@ -223,7 +231,7 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
     };
 
     Ok(LicenseState {
-        license_gate_active: license_active || trial_active,
+        license_gate_active: license_active || trial_active || developer_license_bypass_active(),
         trial_active,
         trial_started_at: trial_started_at.to_rfc3339(),
         trial_ends_at: trial_ends_at.to_rfc3339(),
