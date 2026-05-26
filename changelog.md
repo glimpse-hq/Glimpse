@@ -13,6 +13,7 @@
 - (i) has been updated to now support email support.
 - Redesigned About with Updates and FAQ up front, plus a clearer storage breakdown.
 - Small redesign in personalization to look cleaner.
+- Fixed a bug where the app would resize on startup to large or small.
 - Improved button rendering across the app for different view sizes.
 - Models tab has been redesigned to work better at a glance. (or a Glimpse.. :) )
 - Fixed the home transcription list shifting around while it loads.

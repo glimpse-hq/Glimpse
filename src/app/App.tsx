@@ -5,14 +5,16 @@ import PillOverlay from "../features/pill/PillOverlay";
 import { useSettings } from "../features/settings/queries";
 import type { TextSizeMode, ThemeMode } from "../types";
 import { detectAppPlatform } from "../platform/service";
-import { parseTextSizeMode, resolveTextScale } from "../shared/lib/textSize";
+import {
+  parseTextSizeMode,
+  resolveTextScale,
+  TEXT_SIZE_MODE_STORAGE_KEY,
+} from "../shared/lib/textSize";
 import "./App.css";
 
 const Home = lazy(() => import("../Home"));
 const OnboardingScreen = lazy(() => import("../features/onboarding/OnboardingScreen"));
 const ToastOverlay = lazy(() => import("../features/toast/ToastOverlay"));
-
-const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
 const parseThemeMode = (value: string | null): ThemeMode =>
   value === "light" || value === "dark" || value === "system" ? value : "system";

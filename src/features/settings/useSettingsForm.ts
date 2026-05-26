@@ -16,7 +16,10 @@ import {
 } from "../../shared/lib/macosPermissions";
 import { getPlatformCapabilities } from "../../platform/service";
 import { getProviderPreset } from "../../shared/lib/llmProviders";
-import { parseTextSizeMode } from "../../shared/lib/textSize";
+import {
+  parseTextSizeMode,
+  TEXT_SIZE_MODE_STORAGE_KEY,
+} from "../../shared/lib/textSize";
 import {
   hasModelCapability,
   MODEL_CAPABILITY_DICTIONARY,
@@ -51,9 +54,6 @@ import type {
   LocalApiLogEntry,
   LocalApiStatus,
 } from "../../types";
-
-
-const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
 
 type ActiveTab =
   | "general"
