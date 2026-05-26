@@ -22,7 +22,6 @@ import {
   formatCardDate,
   getCardShellStyle,
   getMemberCardHeight,
-  MEMBER_CARD_LAYOUT_ID,
   MemberCardFrame,
   MemberCardPaletteProvider,
   MemberCardPaperOverlays,
@@ -210,9 +209,7 @@ const MemberCardInner = ({
   const memberSinceValue = memberSince ?? PLACEHOLDER;
 
   return (
-    <motion.article
-      layoutId={MEMBER_CARD_LAYOUT_ID}
-      layout={false}
+    <article
       className="relative flex flex-col overflow-visible text-left"
       style={getCardShellStyle(palette)}
       aria-label={
@@ -482,7 +479,7 @@ const MemberCardInner = ({
           transitionMode={stripeDotTransition}
         />
       </MemberCardFrame>
-    </motion.article>
+    </article>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { estimateTypewriterMs } from "../../../shared/ui/TypewriterText";
 
 export type CardRevealStage =
@@ -85,7 +85,7 @@ export function useCardActivationSequence(
     }
   }, [activating]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (licenseLoading) return;
 
     if (active && stage === "draft" && !userActivatedRef.current) {
