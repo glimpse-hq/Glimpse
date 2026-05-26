@@ -107,31 +107,14 @@ where
 {
     for raw_url in urls {
         let raw_url = raw_url.as_ref();
-        if !is_license_deep_link(raw_url) {
+        if !license::is_license_deep_link(raw_url) {
             continue;
         }
 
-        if let Err(err) = tray::toggle_settings_window(app) {
-            eprintln!("Failed to open settings for license deep link: {err}");
-        }
-
-        if let Err(err) = app.emit(EVENT_LICENSE_CHECKOUT_RETURNED, ()) {
-            eprintln!("Failed to emit license deep link event: {err}");
+        if let Err(err) = license::handle_deep_link(app) {
+            eprintln!("{err}");
         }
     }
-}
-
-fn is_license_deep_link(raw_url: &str) -> bool {
-    let Ok(url) = reqwest::Url::parse(raw_url) else {
-        return false;
-    };
-    if url.scheme() != "glimpse" {
-        return false;
-    }
-
-    let host = url.host_str().unwrap_or_default();
-    let path = url.path().trim_start_matches('/');
-    host == "license" || path.starts_with("license")
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
@@ -1274,7 +1257,7 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
         .map(|p| calculate_dir_size(&p).unwrap_or(0))
         .unwrap_or(0);
 
-    let total_bytes = recordings_bytes + library_bytes + databases_bytes + models_bytes;
+    let total_bytes = calculate_dir_size(&data_dir).unwrap_or(0);
 
     Ok(AppInfo {
         version,

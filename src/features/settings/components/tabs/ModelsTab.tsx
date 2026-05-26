@@ -264,7 +264,6 @@ const ModelRow = ({
   const visibleTags = model.tags.filter(
     (tag) => tag.toLowerCase() !== "recommended",
   );
-
   return (
     <div className="group rounded-md px-2 py-2 transition-colors hover:bg-surface-elevated/40">
       <div className="flex items-center gap-3">

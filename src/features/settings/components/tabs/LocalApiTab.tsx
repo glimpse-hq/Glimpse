@@ -1,3 +1,4 @@
+import { useLingui } from "@lingui/react/macro";
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import { motion, type Variants } from "framer-motion";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
@@ -55,6 +56,7 @@ const LocalApiTab = ({
   onRestart,
   onClearLogs,
 }: LocalApiTabProps) => {
+  const { t } = useLingui();
   const [copied, setCopied] = useState(false);
   const [logsCopied, setLogsCopied] = useState(false);
   const [runningApiKeySnapshot, setRunningApiKeySnapshot] = useState<{
@@ -62,6 +64,8 @@ const LocalApiTab = ({
     value: string;
   } | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const copyBaseUrlTimeoutRef = useRef<number | null>(null);
+  const copyLogsTimeoutRef = useRef<number | null>(null);
   const installedModels = modelCatalog.filter(
     (entry) => modelStatus[entry.key]?.installed,
   );
@@ -90,23 +94,49 @@ const LocalApiTab = ({
 
   const modelOptions = useMemo(() => {
     return [
-      { value: "auto", label: "None" },
+      {
+        value: "auto",
+        label: t({
+          id: "settings.local_api.model.none",
+          message: "None",
+        }),
+      },
       ...installedModels.map((entry) => ({
         value: entry.key,
         label: entry.label,
       })),
     ];
-  }, [installedModels]);
+  }, [installedModels, t]);
 
   const modelLabelByKey = useMemo(() => {
     const map = new Map(modelCatalog.map((entry) => [entry.key, entry.label]));
-    map.set("auto", "None");
+    map.set(
+      "auto",
+      t({
+        id: "settings.local_api.model.none",
+        message: "None",
+      }),
+    );
     return map;
-  }, [modelCatalog]);
+  }, [modelCatalog, t]);
 
   const loadedModelLabel = status?.loaded_model
     ? (modelLabelByKey.get(status.loaded_model) ?? status.loaded_model)
-    : "None";
+    : t({
+        id: "settings.local_api.model.none",
+        message: "None",
+      });
+
+  useEffect(() => {
+    return () => {
+      if (copyBaseUrlTimeoutRef.current !== null) {
+        window.clearTimeout(copyBaseUrlTimeoutRef.current);
+      }
+      if (copyLogsTimeoutRef.current !== null) {
+        window.clearTimeout(copyLogsTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -129,7 +159,13 @@ const LocalApiTab = ({
     try {
       await navigator.clipboard.writeText(baseUrl);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
+      if (copyBaseUrlTimeoutRef.current !== null) {
+        window.clearTimeout(copyBaseUrlTimeoutRef.current);
+      }
+      copyBaseUrlTimeoutRef.current = window.setTimeout(() => {
+        setCopied(false);
+        copyBaseUrlTimeoutRef.current = null;
+      }, 1200);
     } catch {
       setCopied(false);
     }
@@ -143,7 +179,13 @@ const LocalApiTab = ({
     try {
       await navigator.clipboard.writeText(text);
       setLogsCopied(true);
-      window.setTimeout(() => setLogsCopied(false), 1200);
+      if (copyLogsTimeoutRef.current !== null) {
+        window.clearTimeout(copyLogsTimeoutRef.current);
+      }
+      copyLogsTimeoutRef.current = window.setTimeout(() => {
+        setLogsCopied(false);
+        copyLogsTimeoutRef.current = null;
+      }, 1200);
     } catch {
       setLogsCopied(false);
     }
@@ -161,14 +203,25 @@ const LocalApiTab = ({
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="ui-text-section-label-sm ui-color-muted mb-1">
-            API Server
+            {t({
+              id: "settings.local_api.title",
+              message: "API Server",
+            })}
           </p>
           <div className="flex items-center gap-2.5">
             <span
               className={`w-2 h-2 rounded-full shrink-0 transition-all duration-300 ${running ? "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]" : "bg-content-disabled"}`}
             />
             <h1 className="ui-text-title-lg font-medium ui-color-primary">
-              {running ? "Running" : "Stopped"}
+              {running
+                ? t({
+                    id: "settings.local_api.status.running",
+                    message: "Running",
+                  })
+                : t({
+                    id: "settings.local_api.status.stopped",
+                    message: "Stopped",
+                  })}
             </h1>
           </div>
           <button
@@ -176,7 +229,14 @@ const LocalApiTab = ({
             onClick={copyBaseUrl}
             type="button"
           >
-            <span>{copied ? "Copied!" : baseUrl}</span>
+            <span>
+              {copied
+                ? t({
+                    id: "settings.local_api.copy.copied_exclaim",
+                    message: "Copied!",
+                  })
+                : baseUrl}
+            </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="12"
@@ -200,7 +260,12 @@ const LocalApiTab = ({
             disabled={busy || !restartRequired || !running || lanRequiresApiKey}
             className={`mt-0.5 ui-text-label ui-color-warning flex items-center gap-1 hover:brightness-110 transition-opacity duration-200 group ${restartRequired ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           >
-            <span>Restart to apply changes</span>
+            <span>
+              {t({
+                id: "settings.local_api.restart_required",
+                message: "Restart to apply changes",
+              })}
+            </span>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="11"
@@ -227,7 +292,10 @@ const LocalApiTab = ({
               onClick={onStop}
               disabled={busy}
             >
-              Stop API
+              {t({
+                id: "settings.local_api.stop",
+                message: "Stop API",
+              })}
             </button>
           ) : (
             <button
@@ -235,7 +303,10 @@ const LocalApiTab = ({
               onClick={onStart}
               disabled={busy || lanRequiresApiKey}
             >
-              Start API
+              {t({
+                id: "settings.local_api.start",
+                message: "Start API",
+              })}
             </button>
           )}
         </div>
@@ -244,14 +315,20 @@ const LocalApiTab = ({
       <div className="grid grid-cols-2 gap-3 items-stretch">
         <div className="space-y-2 flex flex-col">
           <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
-            Configuration
+            {t({
+              id: "settings.local_api.configuration",
+              message: "Configuration",
+            })}
           </h2>
 
           <div className="flex-1 rounded-lg bg-surface-surface p-2.5 space-y-6">
             <div className="px-2 py-1.5 flex gap-5">
               <label className="shrink-0">
                 <span className="ui-text-label-strong ui-color-primary block">
-                  Port
+                  {t({
+                    id: "settings.local_api.port",
+                    message: "Port",
+                  })}
                 </span>
                 <input
                   className="mt-1.5 w-[46px] border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary focus:outline-none focus:border-content-primary transition-colors tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -267,18 +344,34 @@ const LocalApiTab = ({
               </label>
               <div className="flex-1 min-w-0">
                 <span className="ui-text-label-strong ui-color-primary block">
-                  API key
+                  {t({
+                    id: "settings.local_api.api_key",
+                    message: "API key",
+                  })}
                 </span>
                 <input
                   className="mt-1.5 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary focus:outline-none focus:border-content-primary transition-colors"
                   type="password"
                   value={apiKey}
                   onChange={(event) => setApiKey(event.target.value)}
-                  placeholder={lanEnabled ? "Required for LAN access" : "Optional - blank to disable"}
+                  placeholder={
+                    lanEnabled
+                      ? t({
+                          id: "settings.local_api.api_key.placeholder_required",
+                          message: "Required for LAN access",
+                        })
+                      : t({
+                          id: "settings.local_api.api_key.placeholder_optional",
+                          message: "Optional - blank to disable",
+                        })
+                  }
                 />
                 {lanRequiresApiKey && (
                   <span className="ui-text-micro ui-color-warning block mt-1">
-                    Required when listening on LAN
+                    {t({
+                      id: "settings.local_api.api_key.lan_required",
+                      message: "Required when listening on LAN",
+                    })}
                   </span>
                 )}
               </div>
@@ -286,7 +379,10 @@ const LocalApiTab = ({
 
             <div className="px-2 py-1.5">
               <span className="ui-text-label-strong ui-color-primary block">
-                Preloaded model
+                {t({
+                  id: "settings.local_api.preloaded_model",
+                  message: "Preloaded model",
+                })}
               </span>
               <div className="mt-1.5 relative z-10">
                 <Dropdown
@@ -300,9 +396,18 @@ const LocalApiTab = ({
               <span className="ui-text-micro ui-color-disabled block mt-1">
                 {model === "auto"
                   ? running && status?.loaded_model
-                    ? `currently loaded: ${loadedModelLabel}`
-                    : "no model held in memory between requests"
-                  : "kept warm in memory for fast responses"}
+                    ? t({
+                        id: "settings.local_api.model.currently_loaded",
+                        message: `currently loaded: ${loadedModelLabel}`,
+                      })
+                    : t({
+                        id: "settings.local_api.model.none_held",
+                        message: "no model held in memory between requests",
+                      })
+                  : t({
+                      id: "settings.local_api.model.kept_warm",
+                      message: "kept warm in memory for fast responses",
+                    })}
               </span>
             </div>
           </div>
@@ -310,57 +415,87 @@ const LocalApiTab = ({
 
         <div className="space-y-2 flex flex-col">
           <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
-            Behavior
+            {t({
+              id: "settings.local_api.behavior",
+              message: "Behavior",
+            })}
           </h2>
 
           <div className="flex-1 rounded-lg bg-surface-surface p-2.5 space-y-6">
             <div className="px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="ui-text-label-strong ui-color-primary">
-                  Listen on LAN
+                  {t({
+                    id: "settings.local_api.listen_on_lan",
+                    message: "Listen on LAN",
+                  })}
                 </span>
                 <ToggleSwitch
                   enabled={lanEnabled}
                   onToggle={() =>
                     setHost(lanEnabled ? "127.0.0.1" : "0.0.0.0")
                   }
-                  ariaLabel="Listen on LAN"
+                  ariaLabel={t({
+                    id: "settings.local_api.listen_on_lan_aria",
+                    message: "Listen on LAN",
+                  })}
                 />
               </div>
               <span className="ui-text-micro ui-color-disabled block mt-0.5">
-                expose to other devices on your network
+                {t({
+                  id: "settings.local_api.listen_on_lan_help",
+                  message: "expose to other devices on your network",
+                })}
               </span>
             </div>
 
             <div className="px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="ui-text-label-strong ui-color-primary">
-                  Start on launch
+                  {t({
+                    id: "settings.local_api.start_on_launch",
+                    message: "Start on launch",
+                  })}
                 </span>
                 <ToggleSwitch
                   enabled={startOnLaunch}
                   onToggle={() => setStartOnLaunch(!startOnLaunch)}
-                  ariaLabel="Start local API when Glimpse opens"
+                  ariaLabel={t({
+                    id: "settings.local_api.start_on_launch_aria",
+                    message: "Start local API when Glimpse opens",
+                  })}
                 />
               </div>
               <span className="ui-text-micro ui-color-disabled block mt-0.5">
-                automatically start when Glimpse opens
+                {t({
+                  id: "settings.local_api.start_on_launch_help",
+                  message: "automatically start when Glimpse opens",
+                })}
               </span>
             </div>
 
             <div className="px-2 py-1.5">
               <div className="flex items-center justify-between gap-2">
                 <span className="ui-text-label-strong ui-color-primary">
-                  Allow browser requests
+                  {t({
+                    id: "settings.local_api.allow_browser_requests",
+                    message: "Allow browser requests",
+                  })}
                 </span>
                 <ToggleSwitch
                   enabled={cors}
                   onToggle={() => setCors(!cors)}
-                  ariaLabel="Allow cross-origin browser requests"
+                  ariaLabel={t({
+                    id: "settings.local_api.allow_browser_requests_aria",
+                    message: "Allow cross-origin browser requests",
+                  })}
                 />
               </div>
               <span className="ui-text-micro ui-color-disabled block mt-0.5">
-                send CORS headers so web apps can call the API
+                {t({
+                  id: "settings.local_api.allow_browser_requests_help",
+                  message: "send CORS headers so web apps can call the API",
+                })}
               </span>
             </div>
           </div>
@@ -369,7 +504,12 @@ const LocalApiTab = ({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between border-b border-border-primary pb-2">
-          <h2 className="ui-text-section-label-sm ui-color-disabled">Logs</h2>
+          <h2 className="ui-text-section-label-sm ui-color-disabled">
+            {t({
+              id: "settings.local_api.logs",
+              message: "Logs",
+            })}
+          </h2>
           <div
             className={`flex items-center gap-3 transition-opacity ${logs.length > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           >
@@ -377,7 +517,10 @@ const LocalApiTab = ({
               className="ui-text-meta ui-color-muted hover:ui-color-primary transition-colors inline-flex items-center gap-1"
               onClick={copyLogs}
               type="button"
-              aria-label="Copy logs"
+              aria-label={t({
+                id: "settings.local_api.logs.copy_aria",
+                message: "Copy logs",
+              })}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -394,21 +537,39 @@ const LocalApiTab = ({
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
-              <span>{logsCopied ? "Copied" : "Copy"}</span>
+              <span>
+                {logsCopied
+                  ? t({
+                      id: "settings.local_api.logs.copied",
+                      message: "Copied",
+                    })
+                  : t({
+                      id: "settings.local_api.logs.copy",
+                      message: "Copy",
+                    })}
+              </span>
             </button>
             <button
               className="ui-text-meta ui-color-muted hover:text-red-400 transition-colors"
               onClick={onClearLogs}
               type="button"
             >
-              Clear
+              {t({
+                id: "settings.local_api.logs.clear",
+                message: "Clear",
+              })}
             </button>
           </div>
         </div>
 
         <div className="h-[210px] overflow-y-auto">
           {logs.length === 0 ? (
-            <p className="ui-text-label ui-color-disabled">No logs yet.</p>
+            <p className="ui-text-label ui-color-disabled">
+              {t({
+                id: "settings.local_api.logs.empty",
+                message: "No logs yet.",
+              })}
+            </p>
           ) : (
             <div className="space-y-px selectable">
               {logs.map((entry) => (

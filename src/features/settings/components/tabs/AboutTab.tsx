@@ -67,21 +67,48 @@ const AboutTab = ({
   const cliInstallPath =
     cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
   const cliInfo = cliUnavailable
-    ? "This build does not include the command line helper."
+    ? t({
+        id: "settings.about.cli.unavailable_info",
+        message: "This build does not include the command line helper.",
+      })
     : cliInstallLocked
-      ? "Command line install requires an active license."
+      ? t({
+          id: "settings.about.cli.locked_info",
+          message: "Command line install requires an active license.",
+        })
     : cliInstalled
-      ? `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`
-      : cliInstallStatus && !cliInstallStatus.pathInShell
-        ? `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`
-        : `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`;
+      ? t({
+          id: "settings.about.cli.installed_info",
+          message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
+        })
+    : cliInstallStatus && !cliInstallStatus.pathInShell
+      ? t({
+          id: "settings.about.cli.path_missing_info",
+          message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
+        })
+      : t({
+          id: "settings.about.cli.default_info",
+          message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
+        });
   const cliSubtitle = cliUnavailable
-    ? "Not available in this build"
+    ? t({
+        id: "settings.about.cli.unavailable_subtitle",
+        message: "Not available in this build",
+      })
     : cliInstallLocked
-      ? "Requires an active license"
+      ? t({
+          id: "settings.about.cli.locked_subtitle",
+          message: "Requires an active license",
+        })
     : cliInstalled
-      ? `Installed at ${cliInstallPath}`
-      : "Use Glimpse from Terminal or scripts";
+      ? t({
+          id: "settings.about.cli.installed_subtitle",
+          message: `Installed at ${cliInstallPath}`,
+        })
+      : t({
+          id: "settings.about.cli.default_subtitle",
+          message: "Use Glimpse from Terminal or scripts",
+        });
   const storageRows = [
     {
       label: t({
@@ -234,6 +261,10 @@ const AboutTab = ({
             description={t({
               id: "settings.about.restart_onboarding_description",
               message: "hold to re-run setup experience",
+            })}
+            ariaLabel={t({
+              id: "settings.about.restart_onboarding_hold_aria",
+              message: "Restart Onboarding. Hold to confirm.",
             })}
             icon={<RotateCcw size={14} strokeWidth={2} />}
           />

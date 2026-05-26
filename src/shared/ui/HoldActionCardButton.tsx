@@ -6,40 +6,14 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import {
+  ACTION_CARD_BUTTON_ACCENTS,
+  type ActionCardAccentPreset,
+} from "./actionCardButtonAccents";
 
 const HOLD_DURATION_MS = 2000;
 const HOLD_RING_RADIUS = 10;
 const HOLD_RING_CIRCUMFERENCE = 2 * Math.PI * HOLD_RING_RADIUS;
-
-type ActionCardAccent = {
-  borderColor: string;
-  backgroundColor: string;
-};
-
-const ACTION_CARD_BUTTON_ACCENTS = {
-  interactive: {
-    borderColor: "var(--color-interactive-30)",
-    backgroundColor: "var(--color-interactive-10)",
-  },
-  cloud: {
-    borderColor: "var(--color-cloud-30)",
-    backgroundColor: "var(--color-cloud-10)",
-  },
-  local: {
-    borderColor: "var(--color-local-30)",
-    backgroundColor: "var(--color-local-10)",
-  },
-  accent: {
-    borderColor: "var(--color-accent-30)",
-    backgroundColor: "var(--color-accent-10)",
-  },
-  error: {
-    borderColor: "rgba(239, 68, 68, 0.3)",
-    backgroundColor: "rgba(239, 68, 68, 0.08)",
-  },
-} satisfies Record<string, ActionCardAccent>;
-
-type ActionCardAccentPreset = keyof typeof ACTION_CARD_BUTTON_ACCENTS;
 
 type HoldActionCardButtonProps = {
   title: string;
@@ -48,6 +22,7 @@ type HoldActionCardButtonProps = {
   onConfirm: () => void;
   disabled?: boolean;
   accentPreset?: ActionCardAccentPreset;
+  ariaLabel?: string;
 };
 
 const joinClasses = (...classes: Array<string | false | null | undefined>) =>
@@ -60,6 +35,7 @@ const HoldActionCardButton = ({
   onConfirm,
   disabled = false,
   accentPreset = "accent",
+  ariaLabel,
 }: HoldActionCardButtonProps) => {
   const [progress, setProgress] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -139,6 +115,20 @@ const HoldActionCardButton = ({
     frameRef.current = requestAnimationFrame(stepHold);
   };
 
+  const handleKeyboardDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
+    if (holdingRef.current) return;
+
+    event.preventDefault();
+    event.currentTarget.dataset.holding = "true";
+    delete event.currentTarget.dataset.ready;
+    holdingRef.current = true;
+    readyRef.current = false;
+    startTimeRef.current = performance.now();
+    setProgress(0);
+    frameRef.current = requestAnimationFrame(stepHold);
+  };
+
   const handlePointerUp = () => {
     if (!holdingRef.current) return;
 
@@ -147,6 +137,12 @@ const HoldActionCardButton = ({
     }
 
     cancelHold();
+  };
+
+  const handleKeyboardUp = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    handlePointerUp();
   };
 
   const handlePointerLeave = (event: React.PointerEvent<HTMLButtonElement>) => {
@@ -163,11 +159,14 @@ const HoldActionCardButton = ({
       ref={buttonRef}
       type="button"
       disabled={disabled}
-      aria-label={`${title}. Hold to confirm.`}
+      aria-label={ariaLabel}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
       onPointerCancel={cancelHold}
+      onKeyDown={handleKeyboardDown}
+      onKeyUp={handleKeyboardUp}
+      onBlur={cancelHold}
       style={actionStyle}
       className={joinClasses(
         "group relative w-full overflow-hidden rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5 text-left outline-hidden select-none touch-none [box-shadow:var(--action-card-rest-shadow)] transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-border-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-border-primary disabled:hover:bg-surface-surface disabled:hover:[box-shadow:var(--action-card-rest-shadow)]",

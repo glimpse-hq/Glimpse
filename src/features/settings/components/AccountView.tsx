@@ -78,8 +78,10 @@ const AccountView = ({
 
   const submitActivation = (event: React.FormEvent) => {
     event.preventDefault();
+    const trimmedKey = licenseKey.trim();
+    if (trimmedKey.length === 0) return;
     setActivationAttempt((attempt) => attempt + 1);
-    onActivateLicense(licenseKey);
+    onActivateLicense(trimmedKey);
   };
 
   const handleDeactivateClick = () => {

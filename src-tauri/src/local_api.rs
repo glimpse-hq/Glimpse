@@ -72,6 +72,7 @@ struct RunningLocalApi {
     config_id: u64,
     cors: bool,
     shutdown: Option<oneshot::Sender<()>>,
+    stopped: Option<oneshot::Receiver<()>>,
 }
 
 impl LocalApiController {
@@ -104,6 +105,7 @@ impl LocalApiController {
         let config_id = self.next_config_id.fetch_add(1, Ordering::Relaxed) + 1;
 
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
+        let (stopped_tx, stopped_rx) = oneshot::channel();
         let (ready_tx, ready_rx) = oneshot::channel();
         let ready_signal = Arc::new(parking_lot::Mutex::new(Some(ready_tx)));
         {
@@ -120,6 +122,7 @@ impl LocalApiController {
                 config_id,
                 cors: args.cors,
                 shutdown: Some(shutdown_tx),
+                stopped: Some(stopped_rx),
             });
         }
 
@@ -170,6 +173,7 @@ impl LocalApiController {
                     let message = format!("Local API error: {err}");
                     controller.push_log(&app, "error", message.clone());
                     controller.mark_stopped(&app);
+                    let _ = stopped_tx.send(());
                     if let Some(sender) = ready_signal.lock().take() {
                         let _ = sender.send(Err(message));
                     }
@@ -177,6 +181,7 @@ impl LocalApiController {
                 }
             }
             controller.mark_stopped(&app);
+            let _ = stopped_tx.send(());
             if let Some(sender) = ready_signal.lock().take() {
                 let _ = sender.send(Err("Local API stopped before it was ready".to_string()));
             }
@@ -193,13 +198,13 @@ impl LocalApiController {
         }
     }
 
-    pub fn stop(&self, app: &AppHandle<AppRuntime>) -> Result<LocalApiStatus, String> {
-        let shutdown = {
+    pub async fn stop(&self, app: &AppHandle<AppRuntime>) -> Result<LocalApiStatus, String> {
+        let (shutdown, stopped) = {
             let mut state = self.inner.lock();
-            state
-                .running
-                .as_mut()
-                .and_then(|running| running.shutdown.take())
+            match state.running.as_mut() {
+                Some(running) => (running.shutdown.take(), running.stopped.take()),
+                None => return Ok(status_from_state(&state)),
+            }
         };
 
         let Some(shutdown) = shutdown else {
@@ -208,7 +213,9 @@ impl LocalApiController {
 
         self.push_log(app, "info", "Stopping local API".to_string());
         let _ = shutdown.send(());
-        self.mark_stopped(app);
+        if let Some(stopped) = stopped {
+            let _ = stopped.await;
+        }
         Ok(self.status())
     }
 
@@ -309,11 +316,11 @@ pub async fn start_local_api(
 }
 
 #[tauri::command]
-pub fn stop_local_api(
+pub async fn stop_local_api(
     app: AppHandle<AppRuntime>,
-    state: tauri::State<crate::AppState>,
+    state: tauri::State<'_, crate::AppState>,
 ) -> Result<LocalApiStatus, String> {
-    state.local_api.stop(&app)
+    state.local_api.stop(&app).await
 }
 
 #[tauri::command]

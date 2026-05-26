@@ -6,8 +6,9 @@
 use chrono::{DateTime, Duration, Utc};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Emitter};
 
-use crate::settings::SettingsStore;
+use crate::{settings::SettingsStore, tray, AppRuntime, EVENT_LICENSE_CHECKOUT_RETURNED};
 
 // Credentials — opaque tokens that mean nothing without a live Polar validate.
 const KEY_LICENSE_KEY: &str = "license_key";
@@ -159,6 +160,26 @@ pub fn license_gate_active(store: &SettingsStore) -> bool {
 
 fn developer_license_bypass_active() -> bool {
     cfg!(debug_assertions) && option_env!("GLIMPSE_FORCE_LICENSE_GATE") != Some("1")
+}
+
+pub fn is_license_deep_link(raw_url: &str) -> bool {
+    let Ok(url) = reqwest::Url::parse(raw_url) else {
+        return false;
+    };
+    if url.scheme() != "glimpse" {
+        return false;
+    }
+
+    let host = url.host_str().unwrap_or_default();
+    let path = url.path().trim_start_matches('/');
+    host == "license" || path.starts_with("license")
+}
+
+pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    tray::toggle_settings_window(app)
+        .map_err(|err| format!("Failed to open settings for license deep link: {err}"))?;
+    app.emit(EVENT_LICENSE_CHECKOUT_RETURNED, ())
+        .map_err(|err| format!("Failed to emit license deep link event: {err}"))
 }
 
 /// Guard for license-gated tauri commands and background tasks. Returns `Ok`

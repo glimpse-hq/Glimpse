@@ -304,7 +304,7 @@ pub async fn download_model(
                 file: event.file,
                 downloaded: event.downloaded,
                 total: event.total,
-                percent: event.percent as f64,
+                percent: event.percent,
             },
         );
     };

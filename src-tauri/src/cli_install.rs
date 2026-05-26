@@ -143,14 +143,19 @@ fn cli_link_owned_by_glimpse(destination: &Path, source: Option<&Path>) -> bool 
         return false;
     };
 
-    if source.is_some_and(|source| paths_equivalent(&target, source)) {
-        return true;
+    source
+        .is_some_and(|source| paths_equivalent(&resolve_link_target(destination, &target), source))
+}
+
+fn resolve_link_target(destination: &Path, target: &Path) -> PathBuf {
+    if target.is_absolute() {
+        return target.to_path_buf();
     }
 
-    target
-        .file_name()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name.starts_with("glimpse-cli"))
+    destination
+        .parent()
+        .map(|parent| parent.join(target))
+        .unwrap_or_else(|| target.to_path_buf())
 }
 
 fn paths_equivalent(left: &Path, right: &Path) -> bool {

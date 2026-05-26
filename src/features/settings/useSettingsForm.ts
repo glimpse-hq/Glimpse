@@ -250,7 +250,7 @@ export function useSettingsForm({
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
   const isSavingRef = useRef(false);
-  const settingsSaveRef = useRef(Promise.resolve());
+  const settingsSaveRef = useRef(Promise.resolve(true));
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const downloadResetTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(
     new Set(),
@@ -533,7 +533,7 @@ export function useSettingsForm({
         appLocale,
         themeMode,
 
-        llmEnabled: aiFeaturesReady,
+        llmEnabled: licenseGateActive ? llmEnabled : false,
         cleanupEnabled: false,
         llmProvider,
         llmEndpoint,
@@ -550,7 +550,7 @@ export function useSettingsForm({
         localApiPort,
         localApiModel,
         localApiHost,
-        localApiStartOnLaunch,
+        localApiStartOnLaunch: licenseGateActive ? localApiStartOnLaunch : false,
         localApiCors,
       };
     },
@@ -570,6 +570,7 @@ export function useSettingsForm({
       themeMode,
       aiFeaturesReady,
       licenseGateActive,
+      llmEnabled,
       llmProvider,
       llmEndpoint,
       llmApiKey,
@@ -595,10 +596,10 @@ export function useSettingsForm({
     (overrides?: SaveSettingsOverrides) => {
       const args = buildSettingsArgs(overrides);
       if (overrides?.localModel !== undefined && !args.localModel) {
-        return Promise.resolve();
+        return Promise.resolve(false);
       }
       const save = settingsSaveRef.current
-        .catch(() => {})
+        .catch(() => false)
         .then(async () => {
           isSavingRef.current = true;
           try {
@@ -608,6 +609,7 @@ export function useSettingsForm({
               clearInvalidShortcutDraft();
             }
             clearSettingsErrorIfNoInvalidDrafts();
+            return true;
           } catch (err) {
             console.error(err);
             const message = String(err);
@@ -615,6 +617,7 @@ export function useSettingsForm({
               setInvalidShortcutDraft(overrides.shortcutDraftTarget, message);
             }
             showSettingsError(message);
+            return false;
           } finally {
             isSavingRef.current = false;
           }
@@ -1305,7 +1308,7 @@ export function useSettingsForm({
     flushPendingSettingsSave();
     setLocalApiBusy(true);
     try {
-      await saveSettingsNowRef.current();
+      if (!(await saveSettingsNowRef.current())) return;
       const status = await modelsApi.startLocalApi({
         host: localApiHost,
         port: localApiPort,
@@ -1317,7 +1320,7 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "about");
+      showSettingsError(String(err), "local-api");
     } finally {
       setLocalApiBusy(false);
     }
@@ -1341,7 +1344,7 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "about");
+      showSettingsError(String(err), "local-api");
     } finally {
       setLocalApiBusy(false);
     }
@@ -1350,7 +1353,7 @@ export function useSettingsForm({
   const handleRestartLocalApi = useCallback(async () => {
     setLocalApiBusy(true);
     try {
-      await saveSettingsNowRef.current();
+      if (!(await saveSettingsNowRef.current())) return;
       await modelsApi.stopLocalApi();
       const stopped = await waitForLocalApiStopped();
       if (stopped.running) {
