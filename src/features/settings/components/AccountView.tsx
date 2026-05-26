@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { Loader2, LogOut, RefreshCw, ArrowRight } from "lucide-react";
+import { Loader2, LogOut, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import MemberCard from "../../license/components/MemberCard";
 import type { LicenseState } from "../../license/api";
@@ -11,7 +11,6 @@ type AccountViewProps = {
   licenseState: LicenseState | null;
   licenseLoading: boolean;
   activating: boolean;
-  refreshing: boolean;
   deactivating: boolean;
   openingTarget: AccountOpeningTarget;
   openError: string | null;
@@ -19,7 +18,6 @@ type AccountViewProps = {
   deactivationError: string | null;
   onOpenCheckout: (tier: PurchaseTier) => void;
   onActivateLicense: (key: string) => void;
-  onRefreshLicense: () => void;
   onDeactivateLicense: () => void;
 };
 
@@ -29,7 +27,6 @@ const AccountView = ({
   licenseState,
   licenseLoading,
   activating,
-  refreshing,
   deactivating,
   openingTarget,
   openError,
@@ -37,44 +34,24 @@ const AccountView = ({
   deactivationError,
   onOpenCheckout,
   onActivateLicense,
-  onRefreshLicense,
   onDeactivateLicense,
 }: AccountViewProps) => {
   const { t } = useLingui();
   const [licenseKey, setLicenseKey] = useState("");
   const [activationAttempt, setActivationAttempt] = useState(0);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
-  const [forceSpinRefresh, setForceSpinRefresh] = useState(false);
   const confirmTimeoutRef = useRef<number | null>(null);
-  const refreshFloorRef = useRef<number | null>(null);
 
-  const handleRefresh = () => {
-    setForceSpinRefresh(true);
-    onRefreshLicense();
-    if (refreshFloorRef.current !== null) {
-      window.clearTimeout(refreshFloorRef.current);
-    }
-    refreshFloorRef.current = window.setTimeout(() => {
-      setForceSpinRefresh(false);
-      refreshFloorRef.current = null;
-    }, 700);
-  };
-
-  const isRefreshing = refreshing || forceSpinRefresh;
+  const isActive = licenseState?.status === "active";
+  const isTrialing = !isActive && (licenseState?.trialActive ?? false);
 
   useEffect(() => {
     return () => {
       if (confirmTimeoutRef.current !== null) {
         window.clearTimeout(confirmTimeoutRef.current);
       }
-      if (refreshFloorRef.current !== null) {
-        window.clearTimeout(refreshFloorRef.current);
-      }
     };
   }, []);
-
-  const isActive = licenseState?.status === "active";
-  const isTrialing = !isActive && (licenseState?.trialActive ?? false);
 
   const submitActivation = (event: React.FormEvent) => {
     event.preventDefault();
@@ -126,19 +103,6 @@ const AccountView = ({
         {isActive ? (
           <>
             <div className="flex w-full max-w-[400px] items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing || licenseLoading}
-                aria-label={t({
-                  id: "settings.account.action.refresh",
-                  message: "Refresh",
-                })}
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary disabled:opacity-50"
-              >
-                <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-              </button>
-
               {confirmDeactivate ? (
                 <div className="flex items-center gap-1.5">
                   <button
@@ -208,18 +172,6 @@ const AccountView = ({
               >
                 {trialLine(licenseLoading, isTrialing, licenseState, t)}
               </p>
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={isRefreshing || licenseLoading}
-                aria-label={t({
-                  id: "settings.account.action.refresh",
-                  message: "Refresh",
-                })}
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary disabled:opacity-50"
-              >
-                <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
-              </button>
             </div>
 
             {openError ? (
@@ -231,20 +183,12 @@ const AccountView = ({
 
       {!isActive && (
         <section className="mx-auto max-w-[400px] border-t border-border-primary pt-5">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className="ui-text-label-strong ui-color-primary">
-              {t({
-                id: "settings.account.section.activate",
-                message: "Already bought?",
-              })}
-            </h2>
-            <p className="ui-text-meta ui-color-muted">
-              {t({
-                id: "settings.account.activate.body",
-                message: "Paste your activation code from Polar.",
-              })}
-            </p>
-          </div>
+          <h2 className="ui-text-label-strong ui-color-primary">
+            {t({
+              id: "settings.account.section.activate",
+              message: "Paste your license below",
+            })}
+          </h2>
           <form
             onSubmit={submitActivation}
             className="mt-3 flex items-center gap-2 border-b border-border-secondary transition-colors focus-within:border-content-primary"
@@ -258,7 +202,7 @@ const AccountView = ({
               })}
               aria-label={t({
                 id: "settings.account.activate.input_aria",
-                message: "Activation code",
+                message: "License key",
               })}
               className="min-w-0 flex-1 bg-transparent px-0.5 py-2 font-mono ui-text-body-sm ui-color-primary placeholder-content-disabled outline-none"
             />
@@ -314,10 +258,11 @@ function trialLine(
 
   if (trialEndsAt) {
     const formattedDate = formatDate(trialEndsAt) ?? "-";
-    return t({
+    const prefix = t({
       id: "settings.account.trial.text_ended_on",
-      message: `Your trial ended on ${{ date: formattedDate }}`,
+      message: "Your trial ended on",
     });
+    return `${prefix} ${formattedDate}`;
   }
 
   return t({

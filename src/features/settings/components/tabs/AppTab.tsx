@@ -56,7 +56,8 @@ const inlineAutoDeleteDropdownProps = {
     "!h-[22px] !w-auto !rounded-md !border-transparent !bg-transparent !px-1 !py-0 ui-text-label-strong hover:!bg-surface-elevated focus:!border-transparent",
   valueClassName: "text-left",
   optionClassName: "!px-2 !py-1.5",
-  optionLabelClassName: "ui-text-meta font-medium",
+  optionLabelClassName: "ui-text-meta font-medium whitespace-nowrap",
+  menuClassName: "w-max min-w-full !right-auto",
   truncate: false as const,
   fitButtonToWidestOption: true as const,
 };
@@ -807,15 +808,21 @@ const AppTab = ({
                   })}
                 </span>
               </div>
-              <div className="relative px-2 py-1.5">
-                <div className="flex items-center gap-x-1 whitespace-nowrap">
-                  <span className="ui-text-label-strong ui-color-primary">
+              <div className="relative px-2 py-1.5 overflow-visible">
+                <div
+                  className={
+                    textSizeMode === "large"
+                      ? "flex flex-wrap items-center gap-x-1 gap-y-1"
+                      : "flex items-center gap-x-1 whitespace-nowrap"
+                  }
+                >
+                  <span className="ui-text-label-strong ui-color-primary shrink-0">
                     {t({
                       id: "settings.app.auto_delete",
                       message: "Auto-delete",
                     })}
                   </span>
-                  <div className="shrink-0 relative z-30">
+                  <div className="relative z-30 shrink-0">
                     <Dropdown
                       value={autoDeleteTarget}
                       onChange={(value) => {
@@ -826,13 +833,13 @@ const AppTab = ({
                       {...inlineAutoDeleteDropdownProps}
                     />
                   </div>
-                  <span className="ui-text-label-strong ui-color-muted">
+                  <span className="ui-text-label-strong ui-color-muted shrink-0">
                     {t({
                       id: "settings.app.auto_delete.after",
                       message: "after",
                     })}
                   </span>
-                  <div className="shrink-0 relative z-20">
+                  <div className="relative z-20 shrink-0">
                     <Dropdown
                       value={autoDeleteDuration}
                       onChange={(value) => {

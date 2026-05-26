@@ -9,7 +9,6 @@ import {
   useActivateLicense,
   useDeactivateLicense,
   useLicenseState,
-  useRefreshLicense,
 } from "../../../license/queries";
 import AccountView from "../AccountView";
 
@@ -20,7 +19,6 @@ type AccountTabProps = {
 const AccountTab = ({ variants }: AccountTabProps) => {
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
-  const refreshLicense = useRefreshLicense();
   const deactivateLicense = useDeactivateLicense();
   const [openingTarget, setOpeningTarget] = useState<PurchaseTier | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
@@ -55,7 +53,6 @@ const AccountTab = ({ variants }: AccountTabProps) => {
         licenseState={licenseQuery.data ?? null}
         licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
         activating={activateLicense.isPending}
-        refreshing={refreshLicense.isPending}
         deactivating={deactivateLicense.isPending}
         openingTarget={openingTarget}
         openError={openError}
@@ -75,7 +72,6 @@ const AccountTab = ({ variants }: AccountTabProps) => {
         }
         onOpenCheckout={openCheckout}
         onActivateLicense={(key) => activateLicense.mutate(key)}
-        onRefreshLicense={() => refreshLicense.mutate()}
         onDeactivateLicense={() => deactivateLicense.mutate()}
       />
     </motion.div>

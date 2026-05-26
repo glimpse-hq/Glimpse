@@ -12,6 +12,8 @@
 - Auto-delete in Settings → App now lets you choose **Audio** or **Transcripts**, not just local recordings. Audio-only keeps your transcript history; deleting transcripts also removes the audio they reference.
 - (i) has been updated to now support email support.
 - Redesigned About with Updates and FAQ up front, plus a clearer storage breakdown.
+- Small redesign in personalization to look cleaner.
+- Improved button rendering across the app for different view sizes.
 - Models tab has been redesigned to work better at a glance. (or a Glimpse.. :) )
 - Fixed the home transcription list shifting around while it loads.
 - Model downloads now use the shared Glimpse Speech model manager. Installs, progress, cancellation, and model metadata should feel more consistent.
