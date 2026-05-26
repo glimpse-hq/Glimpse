@@ -39,7 +39,7 @@ const BetaGiftChip = () => {
   return (
     <div className="pointer-events-auto absolute right-8 top-9 z-20 flex items-center gap-2 whitespace-nowrap rounded-lg border border-[var(--color-cloud-30)] bg-surface-overlay px-2.5 py-1.5 shadow-sm">
       <p className="shrink-0 ui-text-meta ui-color-secondary">
-        Thanks for being an early believer. Use code for a free lifetime license
+        Thanks for being an early user. Use code for a free lifetime license
       </p>
       <button
         type="button"

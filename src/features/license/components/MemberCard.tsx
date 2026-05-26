@@ -163,7 +163,7 @@ const MemberCardInner = ({
 
   const idlePrompt = t({
     id: "member_card.draft_idle",
-    message: "Choose a license.",
+    message: "Pick a license",
   });
 
   const coverageBase = editionInfo(edition).blurb;

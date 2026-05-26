@@ -6,7 +6,7 @@ import { getLicenseState, type LicenseStatus } from "../api";
 export const BETA_DISCOUNT_CODE = "THANKYOU";
 
 // TODO: REMOVE after next update — beta gift startup toast copy.
-export const BETA_GIFT_TOAST_MESSAGE = `Thanks for being an early believer. Use code ${BETA_DISCOUNT_CODE} for a free lifetime license.`;
+export const BETA_GIFT_TOAST_MESSAGE = `Thanks for being an early user. Use code ${BETA_DISCOUNT_CODE} for a free lifetime license.`;
 
 let toastScheduled = false;
 

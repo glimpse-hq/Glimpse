@@ -86,6 +86,39 @@ const AccountView = ({
     setConfirmDeactivate(false);
   };
 
+  const trialDaysRemaining = licenseState?.trialDaysRemaining ?? 0;
+  const trialEndsAt = licenseState?.trialEndsAt ?? null;
+  const trialStatusText = (() => {
+    if (licenseLoading) return "\u00a0";
+
+    if (isTrialing) {
+      if (trialDaysRemaining === 1) {
+        return t({
+          id: "settings.account.trial.text_one",
+          message: "Trial · 1 day left",
+        });
+      }
+      return t({
+        id: "settings.account.trial.text",
+        message: `Trial · ${{ remaining: trialDaysRemaining }} of ${{ total: TRIAL_TOTAL_DAYS }} days left`,
+      });
+    }
+
+    if (trialEndsAt) {
+      const formattedDate = formatDate(trialEndsAt) ?? "-";
+      const prefix = t({
+        id: "settings.account.trial.text_ended_on",
+        message: "Your trial ended on",
+      });
+      return `${prefix} ${formattedDate}`;
+    }
+
+    return t({
+      id: "settings.account.trial.text_ended",
+      message: "Your trial has ended",
+    });
+  })();
+
   return (
     <div className="mx-auto w-full max-w-[460px] space-y-6">
       <div className="flex flex-col items-center gap-3">
@@ -170,7 +203,7 @@ const AccountView = ({
                     : "var(--color-text-muted)",
                 }}
               >
-                {trialLine(licenseLoading, isTrialing, licenseState, t)}
+                {trialStatusText}
               </p>
             </div>
 
@@ -229,47 +262,6 @@ const AccountView = ({
     </div>
   );
 };
-
-type Translator = ReturnType<typeof useLingui>["t"];
-
-function trialLine(
-  licenseLoading: boolean,
-  isTrialing: boolean,
-  licenseState: LicenseState | null,
-  t: Translator,
-): string {
-  if (licenseLoading) return " ";
-
-  const trialDaysRemaining = licenseState?.trialDaysRemaining ?? 0;
-  const trialEndsAt = licenseState?.trialEndsAt ?? null;
-
-  if (isTrialing) {
-    if (trialDaysRemaining === 1) {
-      return t({
-        id: "settings.account.trial.text_one",
-        message: "Trial · 1 day left",
-      });
-    }
-    return t({
-      id: "settings.account.trial.text",
-      message: `Trial · ${{ remaining: trialDaysRemaining }} of ${{ total: TRIAL_TOTAL_DAYS }} days left`,
-    });
-  }
-
-  if (trialEndsAt) {
-    const formattedDate = formatDate(trialEndsAt) ?? "-";
-    const prefix = t({
-      id: "settings.account.trial.text_ended_on",
-      message: "Your trial ended on",
-    });
-    return `${prefix} ${formattedDate}`;
-  }
-
-  return t({
-    id: "settings.account.trial.text_ended",
-    message: "Your trial has ended",
-  });
-}
 
 function formatDate(value: string | null | undefined): string | null {
   if (!value) return null;

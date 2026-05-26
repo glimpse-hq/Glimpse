@@ -1,11 +1,13 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import MemberCard from "../../license/components/MemberCard";
 import type { LicenseState } from "../../license/api";
 import type { PurchaseTier } from "../../../shared/lib/purchaseConfig";
 import type { StepMotionProps } from "./shared";
+
+const LICENSE_KEY_PRIMARY_ACTIVATE_MIN_LENGTH = 20;
 
 interface LicenseStepProps {
   stepMotionProps: StepMotionProps;
@@ -40,6 +42,9 @@ export function LicenseStep({
   const [licenseKey, setLicenseKey] = useState("");
   const [activationAttempt, setActivationAttempt] = useState(0);
   const isActive = licenseState?.status === "active";
+  const trimmedKey = licenseKey.trim();
+  const showPrimaryActivate =
+    !isActive && trimmedKey.length >= LICENSE_KEY_PRIMARY_ACTIVATE_MIN_LENGTH;
 
   useEffect(() => {
     if (isActive) {
@@ -47,12 +52,25 @@ export function LicenseStep({
     }
   }, [isActive]);
 
-  const submitActivation = (event: React.FormEvent) => {
-    event.preventDefault();
-    const trimmedKey = licenseKey.trim();
+  const submitActivation = () => {
     if (trimmedKey.length === 0) return;
     setActivationAttempt((attempt) => attempt + 1);
     onActivateLicense(trimmedKey);
+  };
+
+  const submitActivationForm = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (showPrimaryActivate) {
+      submitActivation();
+    }
+  };
+
+  const handlePrimaryAction = () => {
+    if (showPrimaryActivate) {
+      submitActivation();
+      return;
+    }
+    onComplete();
   };
 
   return (
@@ -96,8 +114,8 @@ export function LicenseStep({
 
       {!isActive && (
         <form
-          onSubmit={submitActivation}
-          className="mt-5 flex w-full max-w-[400px] items-center gap-2 border-b border-border-secondary transition-colors focus-within:border-content-primary"
+          onSubmit={submitActivationForm}
+          className="mt-5 w-full max-w-[400px] border-b border-border-secondary transition-colors focus-within:border-content-primary"
         >
           <input
             value={licenseKey}
@@ -110,20 +128,9 @@ export function LicenseStep({
               id: "onboarding.license.activate.input_aria",
               message: "Activation code",
             })}
-            className="min-w-0 flex-1 bg-transparent px-0.5 py-2 font-mono ui-text-body-sm ui-color-primary placeholder-content-disabled outline-none"
+            disabled={activating}
+            className="w-full bg-transparent px-0.5 py-2 font-mono ui-text-body-sm ui-color-primary placeholder-content-disabled outline-none disabled:opacity-40"
           />
-          <button
-            type="submit"
-            disabled={activating || licenseKey.trim().length === 0}
-            className="inline-flex h-7 items-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:opacity-40"
-          >
-            {activating ? <Loader2 size={12} className="animate-spin" /> : null}
-            {t({
-              id: "onboarding.license.activate.submit",
-              message: "Activate",
-            })}
-            {!activating && <ArrowRight size={12} aria-hidden="true" />}
-          </button>
         </form>
       )}
 
@@ -135,9 +142,9 @@ export function LicenseStep({
 
       <button
         type="button"
-        onClick={onComplete}
-        disabled={isCompleting}
-        aria-busy={isCompleting}
+        onClick={handlePrimaryAction}
+        disabled={isCompleting || (showPrimaryActivate && activating)}
+        aria-busy={isCompleting || (showPrimaryActivate && activating)}
         className="mt-6 flex items-center justify-center gap-2 rounded-lg bg-amber-400 px-6 py-2.5 ui-text-body-lg font-semibold ui-color-on-warning transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isCompleting ? (
@@ -148,10 +155,23 @@ export function LicenseStep({
               message: "Saving...",
             })}
           </>
+        ) : showPrimaryActivate && activating ? (
+          <>
+            <Loader2 size={14} className="animate-spin" />
+            {t({
+              id: "onboarding.license.activate.submit",
+              message: "Activate",
+            })}
+          </>
         ) : isActive ? (
           t({
             id: "onboarding.license.continue_active",
             message: "Get Started",
+          })
+        ) : showPrimaryActivate ? (
+          t({
+            id: "onboarding.license.activate.submit",
+            message: "Activate",
           })
         ) : (
           t({

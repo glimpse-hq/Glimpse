@@ -15,8 +15,105 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.after_suffix"
-msgstr " after"
+#~ msgid "settings.app.auto_delete_recordings.after_suffix"
+#~ msgstr " after"
+
+#. placeholder {0}: personality.apps.length
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.applications.selected"
+#~ msgstr "{0} selected"
+
+#. placeholder {0}: personality.websites.length
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.websites.count"
+#~ msgstr "{0} sites"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.apply"
+#~ msgstr "Apply anyway"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.body"
+#~ msgstr "Auto deletes local audio files."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings"
+#~ msgstr "Auto-delete Recordings"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.threshold.unknown_count"
+#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete local recordings that are already older than {threshold}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.immediately.unknown_count"
+#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete your existing local recordings."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.immediately.known_count"
+#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# existing local recording} other {# existing local recordings}}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.threshold.known_count"
+#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# local recording that is already older than {threshold}} other {# local recordings that are already older than {threshold}}}."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.preview.loading"
+#~ msgstr "Checking how many recordings would be deleted"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.confirm.checking"
+#~ msgstr "Checking..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.confirm"
+#~ msgstr "Confirm"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.title"
+#~ msgstr "Delete older recordings now?"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.body"
+#~ msgstr "Paste your activation code from Polar."
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.header"
+#~ msgstr "Personalization"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.action.refresh"
+#~ msgstr "Refresh"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.applications.search"
+#~ msgstr "Search applications..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.audio_only"
+#~ msgstr "This only removes saved local audio files, not your transcript history."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_delete_recordings.confirm.unknown_count"
+#~ msgstr "We couldn't count them right now, but the cleanup will still run as soon as you save this change."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -58,18 +155,6 @@ msgstr "{0} of {1} matches"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.count.multiple"
 msgstr "{0} replacements"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: personality.apps.length
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.applications.selected"
-msgstr "{0} selected"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: personality.websites.length
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.websites.count"
-msgstr "{0} sites"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -192,11 +277,6 @@ msgid "settings.general.edit_mode.license_prefix"
 msgstr "Activate Glimpse Personal in"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.input_aria"
-msgstr "Activation code"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license.activate.input_aria"
 msgstr "Activation code"
@@ -267,6 +347,11 @@ msgid "settings.about.advanced"
 msgstr "Advanced"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after"
+msgstr "after"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.all"
 msgstr "All"
@@ -280,11 +365,6 @@ msgstr "Allow browser requests"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Allow cross-origin browser requests"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.section.activate"
-msgstr "Already bought?"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -302,13 +382,13 @@ msgid "settings.language_model.api_key"
 msgstr "API Key"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.title"
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.tab.api_server"
 msgstr "API Server"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SettingsModal.tsx
-msgid "settings.modal.tab.api_server"
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.title"
 msgstr "API Server"
 
 #. js-lingui-explicit-id
@@ -328,13 +408,18 @@ msgstr "Applications"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.apply"
+msgid "settings.app.auto_delete.confirm.apply"
 msgstr "Apply anyway"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.apps"
 msgstr "Apps"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune_target.audio"
+msgstr "Audio"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -345,6 +430,16 @@ msgstr "Audio"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.file_filter"
 msgstr "Audio & Video"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.noun.audio.one"
+msgstr "audio file"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.noun.audio.other"
+msgstr "audio files"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -367,19 +462,14 @@ msgid "transcription.language.auto"
 msgstr "Auto"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.body"
-msgstr "Auto deletes local audio files."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.auto_dictionary"
 msgstr "Auto Dictionary"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings"
-msgstr "Auto-delete Recordings"
+msgid "settings.app.auto_delete"
+msgstr "Auto-delete"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -493,23 +583,23 @@ msgstr "Cancelled"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.threshold.unknown_count"
-msgstr "Changing auto-delete to {policyLabel} may immediately delete local recordings that are already older than {threshold}."
+msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
+msgstr "Changing auto-delete to {policyLabel} may immediately delete {noun} already older than {threshold}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.immediately.unknown_count"
-msgstr "Changing auto-delete to {policyLabel} may immediately delete your existing local recordings."
+msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
+msgstr "Changing auto-delete to {policyLabel} may immediately delete your existing {noun}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.immediately.known_count"
-msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# existing local recording} other {# existing local recordings}}."
+msgid "settings.app.auto_delete.confirm.threshold.known_count"
+msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount} {noun} already older than {threshold}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.threshold.known_count"
-msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# local recording that is already older than {threshold}} other {# local recordings that are already older than {threshold}}}."
+msgid "settings.app.auto_delete.confirm.immediately.known_count"
+msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount} existing {noun}."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -528,28 +618,13 @@ msgstr "Checking for updates..."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.preview.loading"
-msgstr "Checking how many recordings would be deleted"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.checking"
 msgstr "Checking permission"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.confirm.checking"
-msgstr "Checking..."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/shared.tsx
 msgid "onboarding.status.checking"
 msgstr "Checking..."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.draft_idle"
-msgstr "Choose a license."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
@@ -702,11 +777,6 @@ msgid "settings.local_api.configuration"
 msgstr "Configuration"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.confirm"
-msgstr "Confirm"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.description"
 msgstr "Connect local-mode AI providers for Cleanup, Edit Mode, and Personalization."
@@ -773,11 +843,6 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "Converting audio... {0}%"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.logs.copied"
-msgstr "Copied"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copied"
 msgstr "Copied"
@@ -788,18 +853,23 @@ msgid "toast.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.logs.copied"
+msgstr "Copied"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.copy.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.copy.copied_exclaim"
+#: src/Home.tsx
+msgid "home.support.feedback.email_copied"
 msgstr "Copied!"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.feedback.email_copied"
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.copy.copied_exclaim"
 msgstr "Copied!"
 
 #. js-lingui-explicit-id
@@ -1061,8 +1131,8 @@ msgstr "Delete model"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.title"
-msgstr "Delete older recordings now?"
+msgid "settings.app.auto_delete.confirm.title"
+msgstr "Delete older items now?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -1079,6 +1149,16 @@ msgstr "Delete replacement for {0}"
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "Delete this item?"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.confirm.audio_too"
+msgstr "Deleting transcripts also removes the audio they reference."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.body"
+msgstr "Deleting transcripts also removes their saved audio."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -1670,6 +1750,11 @@ msgid "home.drag_import.eyebrow"
 msgstr "Library Import"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.input_aria"
+msgstr "Activation code"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Light"
@@ -2158,8 +2243,8 @@ msgstr "Optional - blank to disable"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.body"
-msgstr "Paste your activation code from Polar."
+msgid "settings.account.section.activate"
+msgstr "Already bought?"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -2187,14 +2272,14 @@ msgid "home.sidebar.personalization"
 msgstr "Personalization"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.header"
-msgstr "Personalization"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.title"
 msgstr "Personalization"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_idle"
+msgstr "Pick a license"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -2332,11 +2417,6 @@ msgstr "Record new shortcut for Smart, currently {shortcut}"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.storage.recordings"
 msgstr "Recordings"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.action.refresh"
-msgstr "Refresh"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2602,11 +2682,6 @@ msgstr "Saving..."
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.placeholder_short"
 msgstr "Search"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.applications.search"
-msgstr "Search applications..."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3052,8 +3127,8 @@ msgstr "This Mac is licensed and ready."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.audio_only"
-msgstr "This only removes saved local audio files, not your transcript history."
+msgid "settings.app.auto_delete.confirm.audio_only"
+msgstr "This only removes saved audio files, not your transcripts."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -3089,6 +3164,11 @@ msgstr "Toggle"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcut.toggle_aria"
 msgstr "Toggle {label} shortcut"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+msgid "personalization.modal.applications.toggle_list"
+msgstr "Toggle application list"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3131,6 +3211,11 @@ msgid "library.modal.transcribing"
 msgstr "Transcribing..."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.noun.transcripts.one"
+msgstr "transcript"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.transcript_placeholder"
 msgstr "Transcript will appear here."
@@ -3151,9 +3236,29 @@ msgid "settings.general.transcription_language"
 msgstr "Transcription Language"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune.noun.transcripts.other"
+msgstr "transcripts"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune_target.transcripts"
+msgstr "Transcripts"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.body"
 msgstr "transform selected text with voice"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.trial.text"
+msgstr "Trial · {remaining} of {total} days left"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.trial.text_one"
+msgstr "Trial · 1 day left"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3262,8 +3367,8 @@ msgstr "Warning: model compatibility issue"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_delete_recordings.confirm.unknown_count"
-msgstr "We couldn't count them right now, but the cleanup will still run as soon as you save this change."
+msgid "settings.app.auto_delete.confirm.unknown_count"
+msgstr "We couldn't count them right now, but auto-delete will still run as soon as you save this change."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -3349,3 +3454,13 @@ msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect re
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "Your recent transcriptions will appear here"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.trial.text_ended_on"
+msgstr "Your trial ended on"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.trial.text_ended"
+msgstr "Your trial has ended"
