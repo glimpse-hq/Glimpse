@@ -1,6 +1,4 @@
 import { useLingui } from "@lingui/react/macro";
-import { AnimatePresence, motion } from "framer-motion";
-import { Key, Server } from "lucide-react";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import {
   CLOUD_PROVIDERS,
@@ -47,232 +45,221 @@ const LanguageModelPanel = ({
   );
 
   return (
-    <div className="rounded-xl border border-border-primary bg-surface-surface shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]">
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="ui-text-body-strong ui-color-primary">
+    <div className="space-y-2">
+      <h2 className="ui-text-section-label-sm ui-color-muted">
+        {t({
+          id: "settings.providers.writing_section",
+          message: "Writing",
+        })}
+      </h2>
+
+      <div className="rounded-lg bg-surface-surface p-2.5">
+        <div className="px-2 py-1.5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h3 className="ui-text-label-strong ui-color-primary">
               {t({
                 id: "settings.language_model.title",
-                message: "Language Model Provider",
+                message: "Writing Model Provider",
               })}
-            </h3>
-            <p className="ui-text-label ui-color-disabled">
+              </h3>
+              <p className="mt-0.5 ui-text-meta ui-color-muted">
               {t({
                 id: "settings.language_model.description",
-                message: "Shared by Cleanup, Edit Mode, and Personalization.",
+                message: "Used by Cleanup, Edit Mode, and Personalization.",
               })}
-            </p>
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center">
+              <ToggleSwitch
+                enabled={llmEnabled}
+                onToggle={() => setLlmEnabled(!llmEnabled)}
+                ariaLabel={t({
+                  id: "settings.language_model.toggle",
+                  message: "Use this provider for AI writing features",
+                })}
+                size="md"
+              />
+            </div>
           </div>
-          <ToggleSwitch
-            enabled={llmEnabled}
-            onToggle={() => setLlmEnabled(!llmEnabled)}
-            ariaLabel={t({
-              id: "settings.language_model.toggle",
-              message: "Toggle AI features",
-            })}
-            size="md"
-          />
         </div>
 
-        <AnimatePresence initial={false}>
-          {llmEnabled && (
-            <motion.div
-              initial={{ height: 0, opacity: 0, overflow: "hidden" }}
-              animate={{
-                height: "auto",
-                opacity: 1,
-                transitionEnd: { overflow: "visible" },
+        <div className="grid grid-cols-2 gap-5 px-2 py-1.5">
+          <div className="relative z-20">
+            <label className="ui-text-label-strong ui-color-primary block">
+              {t({
+                id: "settings.language_model.provider",
+                message: "Provider",
+              })}
+            </label>
+            <Dropdown
+              value={llmProvider}
+              onChange={(val) => {
+                setLlmProvider(val);
+                const preset = getProviderPreset(val);
+                if (preset) {
+                  setLlmEndpoint(preset.endpoint);
+                  setLlmModel(preset.defaultModel);
+                }
               }}
-              exit={{ height: 0, opacity: 0, overflow: "hidden" }}
-              transition={{ type: "spring", stiffness: 400, damping: 35 }}
-            >
-              <div className="pt-3 border-t border-border-primary space-y-3">
-                <div className="space-y-1.5">
-                  <label className="ui-text-label-strong ui-color-muted ml-1">
-                    {t({
-                      id: "settings.language_model.provider",
-                      message: "Provider",
-                    })}
-                  </label>
-                  <Dropdown
-                    value={llmProvider}
-                    onChange={(val) => {
-                      setLlmProvider(val);
-                      const preset = getProviderPreset(val);
-                      if (preset) {
-                        setLlmEndpoint(preset.endpoint);
-                        setLlmModel(preset.defaultModel);
-                      }
-                    }}
-                    options={[
-                      {
-                        value: "custom" as LlmProvider,
-                        label: t({
-                          id: "settings.language_model.provider.custom",
-                          message: "Custom",
-                        }),
-                      },
-                      {
-                        value: "_local_header" as LlmProvider,
-                        label: t({
-                          id: "settings.language_model.provider.local",
-                          message: "Local",
-                        }),
-                        isHeader: true,
-                      },
-                      ...LOCAL_PROVIDERS.filter((p) => p.id !== "custom").map(
-                        (p) => ({
-                          value: p.id,
-                          label: p.label,
-                        }),
-                      ),
-                      {
-                        value: "_cloud_header" as LlmProvider,
-                        label: t({
-                          id: "settings.language_model.provider.cloud",
-                          message: "Cloud (API Key)",
-                        }),
-                        isHeader: true,
-                      },
-                      ...CLOUD_PROVIDERS.map((p) => ({
-                        value: p.id,
-                        label: p.label,
-                      })),
-                    ]}
-                    placeholder={t({
-                      id: "settings.language_model.provider.select",
-                      message: "Select provider...",
-                    })}
-                    searchable
-                    searchPlaceholder={t({
-                      id: "settings.language_model.provider.search",
-                      message: "Search providers...",
-                    })}
-                  />
-                </div>
+              options={[
+                {
+                  value: "custom" as LlmProvider,
+                  label: t({
+                    id: "settings.language_model.provider.custom",
+                    message: "Custom",
+                  }),
+                },
+                {
+                  value: "_local_header" as LlmProvider,
+                  label: t({
+                    id: "settings.language_model.provider.local",
+                    message: "Local",
+                  }),
+                  isHeader: true,
+                },
+                ...LOCAL_PROVIDERS.filter((p) => p.id !== "custom").map((p) => ({
+                  value: p.id,
+                  label: p.label,
+                })),
+                {
+                  value: "_cloud_header" as LlmProvider,
+                  label: t({
+                    id: "settings.language_model.provider.cloud",
+                    message: "Cloud (API Key)",
+                  }),
+                  isHeader: true,
+                },
+                ...CLOUD_PROVIDERS.map((p) => ({
+                  value: p.id,
+                  label: p.label,
+                })),
+              ]}
+              placeholder={t({
+                id: "settings.language_model.provider.select",
+                message: "Select provider...",
+              })}
+              searchable
+              searchPlaceholder={t({
+                id: "settings.language_model.provider.search",
+                message: "Search providers...",
+              })}
+              className="mt-1.5"
+              buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
+              menuClassName="min-w-[240px]"
+            />
+          </div>
 
-                {hasSelectedProvider && (
-                  <>
-                    <div className="space-y-1.5">
-                      <label className="ui-text-label-strong ui-color-muted ml-1">
-                        {t({
-                          id: "settings.language_model.endpoint",
-                          message: "Endpoint",
-                        })}{" "}
-                        {llmProvider !== "custom" && (
-                          <span className="text-content-disabled">
-                            {t({
-                              id: "settings.language_model.endpoint.autofilled",
-                              message: "(auto-filled)",
-                            })}
-                          </span>
-                        )}
-                      </label>
-                      <div className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 min-h-[40px] focus-within:border-border-hover transition-colors">
-                        <Server
-                          size={12}
-                          className="text-content-muted shrink-0"
-                          aria-hidden="true"
-                        />
-                        <input
-                          type="text"
-                          value={llmEndpoint}
-                          onChange={(e) => setLlmEndpoint(e.target.value)}
-                          placeholder={
-                            providerPreset?.endpoint ??
-                            t({
-                              id: "settings.language_model.endpoint.placeholder",
-                              message: "https://your-llm-endpoint.com",
-                            })
-                          }
-                          aria-label={t({
-                            id: "settings.language_model.endpoint.aria",
-                            message: "LLM Endpoint URL",
-                          })}
-                          className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden"
-                        />
-                      </div>
-                    </div>
+          <label>
+            <span className="ui-text-label-strong ui-color-primary block">
+              {t({
+                id: "settings.language_model.endpoint",
+                message: "Endpoint",
+              })}{" "}
+              {hasSelectedProvider && llmProvider !== "custom" && (
+                <span className="ui-color-disabled">
+                  {t({
+                    id: "settings.language_model.endpoint.autofilled",
+                    message: "(auto-filled)",
+                  })}
+                </span>
+              )}
+            </span>
+            <input
+              type="text"
+              value={llmEndpoint}
+              onChange={(e) => setLlmEndpoint(e.target.value)}
+              placeholder={
+                providerPreset?.endpoint ??
+                t({
+                  id: "settings.language_model.endpoint.placeholder",
+                  message: "https://your-llm-endpoint.com",
+                })
+              }
+              aria-label={t({
+                id: "settings.language_model.endpoint.aria",
+                message: "LLM Endpoint URL",
+              })}
+              className="mt-1.5 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
+            />
+          </label>
+        </div>
 
-                    <div className="space-y-1.5">
-                      <label className="ui-text-label-strong ui-color-muted ml-1">
-                        {t({
-                          id: "settings.language_model.api_key",
-                          message: "API Key",
-                        })}{" "}
-                        {!providerPreset?.apiKeyRequired && (
-                          <span className="text-content-disabled">
-                            {t({
-                              id: "settings.language_model.api_key.optional_hint",
-                              message: "(if required)",
-                            })}
-                          </span>
-                        )}
-                      </label>
-                      <div className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-3 py-1.5 min-h-[40px] focus-within:border-border-hover transition-colors">
-                        <Key
-                          size={12}
-                          className="text-content-muted shrink-0"
-                          aria-hidden="true"
-                        />
-                        <input
-                          type="password"
-                          value={llmApiKey}
-                          onChange={(e) => setLlmApiKey(e.target.value)}
-                          placeholder={
-                            providerPreset?.apiKeyRequired
-                              ? t({
-                                  id: "settings.language_model.api_key.required",
-                                  message: "Required",
-                                })
-                              : t({
-                                  id: "settings.language_model.api_key.optional",
-                                  message: "Optional",
-                                })
-                          }
-                          aria-label={t({
-                            id: "settings.language_model.api_key.aria",
-                            message: "LLM API Key",
-                          })}
-                          className="w-full bg-transparent ui-text-input ui-color-primary placeholder-content-disabled outline-hidden"
-                        />
-                      </div>
-                    </div>
+        <div className="grid grid-cols-2 gap-5 px-2 py-1.5">
+          <label>
+            <span className="ui-text-label-strong ui-color-primary block">
+              {t({
+                id: "settings.language_model.api_key",
+                message: "API Key",
+              })}{" "}
+              {!providerPreset?.apiKeyRequired && (
+                <span className="ui-color-disabled">
+                  {t({
+                    id: "settings.language_model.api_key.optional_hint",
+                    message: "(if required)",
+                  })}
+                </span>
+              )}
+            </span>
+            <input
+              type="password"
+              value={llmApiKey}
+              onChange={(e) => setLlmApiKey(e.target.value)}
+              placeholder={
+                providerPreset?.apiKeyRequired
+                  ? t({
+                      id: "settings.language_model.api_key.required",
+                      message: "Required",
+                    })
+                  : t({
+                      id: "settings.language_model.api_key.optional",
+                      message: "Optional",
+                    })
+              }
+              aria-label={t({
+                id: "settings.language_model.api_key.aria",
+                message: "LLM API Key",
+              })}
+              className="mt-1.5 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
+            />
+          </label>
 
-                    <div className="relative z-0">
-                      <Dropdown
-                        value={llmModel}
-                        onChange={(val) => setLlmModel(val)}
-                        onOpen={
-                          hasSelectedProvider ? fetchAvailableModels : undefined
-                        }
-                        options={[
-                          ...uniqueModels.map((model) => ({
-                            value: model,
-                            label: model,
-                          })),
-                          ...(llmModel && !uniqueModels.includes(llmModel)
-                            ? [{ value: llmModel, label: llmModel }]
-                            : []),
-                        ]}
-                        placeholder={t({
-                          id: "settings.language_model.model.placeholder",
-                          message: `Model (default: ${providerPreset?.defaultModel || "none"})`,
-                        })}
-                        searchable
-                        searchPlaceholder={t({
-                          id: "settings.language_model.model.search",
-                          message: "Search available models...",
-                        })}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          <div className="relative z-10">
+            <span className="ui-text-label-strong ui-color-primary block">
+              {t({
+                id: "settings.language_model.model",
+                message: "Model",
+              })}
+            </span>
+            <Dropdown
+              value={llmModel}
+              onChange={(val) => setLlmModel(val)}
+              onOpen={hasSelectedProvider ? fetchAvailableModels : undefined}
+              options={[
+                ...uniqueModels.map((model) => ({
+                  value: model,
+                  label: model,
+                })),
+                ...(llmModel && !uniqueModels.includes(llmModel)
+                  ? [{ value: llmModel, label: llmModel }]
+                  : []),
+              ]}
+              placeholder={t({
+                id: "settings.language_model.model.placeholder",
+                message: `Model (default: ${providerPreset?.defaultModel || "none"})`,
+              })}
+              searchable
+              searchPlaceholder={t({
+                id: "settings.language_model.model.search",
+                message: "Search available models...",
+              })}
+              className="mt-1.5"
+              buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
+              menuClassName="min-w-[260px]"
+            />
+          </div>
+        </div>
+
       </div>
     </div>
   );

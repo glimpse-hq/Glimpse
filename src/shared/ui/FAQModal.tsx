@@ -1,55 +1,116 @@
 import { useLingui } from "@lingui/react/macro";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import { GlimpseLogo } from "./GlimpseLogo";
+import type { ReactNode } from "react";
 
 interface FAQModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+const PRIVACY_URL = "https://tryglimpse.cc/privacy";
+
+const openExternal = (url: string) => {
+    openUrl(url).catch((err) => {
+        console.error("Failed to open URL:", url, err);
+    });
+};
+
+const FaqLink = ({ href, children }: { href: string; children: ReactNode }) => (
+    <button
+        type="button"
+        onClick={() => openExternal(href)}
+        className="ui-color-muted hover:text-content-secondary transition-colors underline"
+    >
+        {children}
+    </button>
+);
+
 const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
     const { t } = useLingui();
 
-    const faqItems = [
+    const faqItems: Array<{ id: string; question: string; answer: ReactNode }> = [
         {
+            id: "how-it-works",
+            question: t({
+                id: "faq.how_it_works.question",
+                message: "How does Glimpse work?",
+            }),
+            answer: t({
+                id: "faq.how_it_works.answer",
+                message:
+                    "Press your dictation shortcut, speak, and release. Glimpse transcribes on your device and inserts the text where your cursor is. Core dictation works offline. No account required.",
+            }),
+        },
+        {
+            id: "privacy",
+            question: t({
+                id: "faq.privacy.question",
+                message: "Where does my data go?",
+            }),
+            answer: (
+                <>
+                    {t({
+                        id: "faq.privacy.answer",
+                        message:
+                            "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
+                    })}{" "}
+                    <FaqLink href={PRIVACY_URL}>
+                        {t({
+                            id: "faq.privacy.link",
+                            message: "Privacy policy",
+                        })}
+                    </FaqLink>
+                </>
+            ),
+        },
+        {
+            id: "ai-writing",
+            question: t({
+                id: "faq.ai_writing.question",
+                message: "When does text leave my device?",
+            }),
+            answer: t({
+                id: "faq.ai_writing.answer",
+                message:
+                    "Only if you enable AI writing and set up a provider under Settings → Providers. Cleanup, Edit Mode, and Personalization then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse.",
+            }),
+        },
+        {
+            id: "free",
             question: t({
                 id: "faq.free.question",
-                message: "How is Glimpse free?",
+                message: "What is free vs Glimpse Personal?",
             }),
             answer: t({
                 id: "faq.free.answer",
-                message: "Glimpse uses on-device OSS AI models for transcription, so there are no ongoing costs for the core experience.",
+                message:
+                    "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a one-time Personal or Commercial license in Settings → Account.",
             }),
         },
         {
-            question: t({
-                id: "faq.privacy.question",
-                message: "Is my data private?",
-            }),
-            answer: t({
-                id: "faq.privacy.answer",
-                message: "Yes. All your audio and transcriptions stay on your device. We never collect or transmit your recordings.",
-            }),
-        },
-        {
-            question: t({
-                id: "faq.data_use.question",
-                message: "How is my data used?",
-            }),
-            answer: t({
-                id: "faq.data_use.answer",
-                message: "Your data is your data. Not ours to share. We will never sell or share your data with third parties.",
-            }),
-        },
-        {
+            id: "delete",
             question: t({
                 id: "faq.delete.question",
-                message: "What if I want to delete my data?",
+                message: "How do I manage or delete my data?",
             }),
             answer: t({
                 id: "faq.delete.answer",
-                message: "Delete recordings locally to remove them.",
+                message:
+                    "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. Settings → App can auto-delete Audio only or full Transcripts (including linked audio). You can also open your Glimpse data folder from About → Storage to manage files directly.",
+            }),
+        },
+        {
+            id: "permissions",
+            question: t({
+                id: "faq.permissions.question",
+                message: "What permissions does Glimpse need?",
+            }),
+            answer: t({
+                id: "faq.permissions.answer",
+                message:
+                    "Microphone access to record your voice, and Accessibility access to insert text and read selected text for Edit Mode. Glimpse only uses these while you are actively dictating.",
             }),
         },
     ];
@@ -73,9 +134,9 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                         exit={{ opacity: 0, scale: 0.95, y: 10 }}
                         transition={{ type: "spring", stiffness: 400, damping: 30 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="relative w-full max-w-lg h-[75vh] bg-surface-tertiary rounded-2xl border border-border-secondary shadow-2xl shadow-black/50 overflow-hidden flex flex-col"
+                        className="relative w-full max-w-lg h-[85vh] bg-surface-tertiary rounded-2xl border border-border-secondary shadow-2xl shadow-black/50 overflow-hidden flex flex-col"
                     >
-                        <div className="flex items-center justify-between px-7 pt-6 pb-2 shrink-0">
+                        <div className="flex items-center justify-between px-7 pt-6 pb-4 shrink-0">
                             <div>
                                 <h2 id="faq-title" className="ui-text-display font-normal ui-color-primary tracking-tight">
                                     {t({
@@ -86,7 +147,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                                 <p className="ui-text-meta ui-color-muted mt-1">
                                     {t({
                                         id: "faq.subtitle",
-                                        message: "Common questions about Glimpse",
+                                        message: "How Glimpse works, privacy, and AI writing",
                                     })}
                                 </p>
                             </div>
@@ -113,16 +174,16 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                                 style={{ background: "linear-gradient(to top, var(--color-bg-tertiary), transparent)" }}
                                 aria-hidden="true"
                             />
-                            <div className="h-full overflow-y-auto settings-scroll px-7 pt-5 pb-7">
+                            <div className="h-full overflow-y-auto settings-scroll px-7 pb-8">
                                 <div className="space-y-8">
                                     {faqItems.map((item, index) => (
-                                        <div key={index}>
+                                        <div key={item.id}>
                                             <h3 className="ui-text-body-lg-strong ui-color-primary mb-2">
                                                 {item.question}
                                             </h3>
-                                            <p className="ui-text-body leading-relaxed ui-color-secondary">
+                                            <div className="ui-text-body leading-relaxed ui-color-secondary">
                                                 {item.answer}
-                                            </p>
+                                            </div>
                                             {index < faqItems.length - 1 && (
                                                 <div className="border-t border-border-primary mt-6" />
                                             )}
@@ -130,27 +191,6 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                                     ))}
                                 </div>
                             </div>
-                        </div>
-
-                        <div className="flex flex-row items-center justify-between px-7 py-4 border-t border-border-primary bg-surface-primary shrink-0">
-                            <div className="flex items-center gap-3">
-                                <GlimpseLogo size="sm" />
-                                <span className="ui-text-meta ui-color-disabled font-medium">
-                                    {t({
-                                        id: "faq.brand",
-                                        message: "Glimpse",
-                                    })}
-                                </span>
-                            </div>
-                            <button
-                                onClick={onClose}
-                                className="px-4 py-2 rounded-lg bg-surface-elevated border border-border-secondary ui-text-body-sm-strong ui-color-secondary ui-hover-on-solid hover:border-border-hover transition-colors"
-                            >
-                                {t({
-                                    id: "faq.confirm",
-                                    message: "Got it",
-                                })}
-                            </button>
                         </div>
                     </motion.div>
                 </motion.div>

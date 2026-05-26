@@ -1,9 +1,10 @@
 use std::{collections::HashSet, fs, path::PathBuf, sync::OnceLock};
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Days, Local, Months};
 use parking_lot::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 const SETTINGS_DB_FILE_NAME: &str = "settings.db";
@@ -40,9 +41,18 @@ const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
 const KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
 const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
 const KEY_AUTO_LAUNCH_ENABLED: &str = "auto_launch_enabled";
-const KEY_RECORDING_PRUNE_POLICY: &str = "recording_prune_policy";
+const KEY_AUTO_DELETE_TARGET: &str = "auto_delete_target";
+const KEY_AUTO_DELETE_DURATION: &str = "auto_delete_duration";
+const LEGACY_KEY_RECORDING_PRUNE_POLICY: &str = "recording_prune_policy";
+const LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY: &str = "transcription_prune_policy";
 const KEY_ANALYTICS_ENABLED: &str = "analytics_enabled";
 const KEY_ANALYTICS_INSTALL_ID: &str = "analytics_install_id";
+const KEY_LOCAL_API_KEY: &str = "local_api_key";
+const KEY_LOCAL_API_PORT: &str = "local_api_port";
+const KEY_LOCAL_API_MODEL: &str = "local_api_model";
+const KEY_LOCAL_API_HOST: &str = "local_api_host";
+const KEY_LOCAL_API_START_ON_LAUNCH: &str = "local_api_start_on_launch";
+const KEY_LOCAL_API_CORS: &str = "local_api_cors";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Replacement {
@@ -148,12 +158,25 @@ pub struct UserSettings {
     pub auto_update_enabled: bool,
     #[serde(default)]
     pub auto_launch_enabled: bool,
-    #[serde(default = "default_recording_prune_policy")]
-    pub recording_prune_policy: RecordingPrunePolicy,
+    #[serde(default = "default_auto_delete_target")]
+    pub auto_delete_target: AutoDeleteTarget,
+    #[serde(default = "default_auto_delete_duration")]
+    pub auto_delete_duration: RecordingPrunePolicy,
     #[serde(default = "default_true")]
     pub analytics_enabled: bool,
     #[serde(default)]
     pub analytics_install_id: String,
+    pub local_api_key: String,
+    #[serde(default = "default_local_api_port")]
+    pub local_api_port: u16,
+    #[serde(default = "default_local_api_model")]
+    pub local_api_model: String,
+    #[serde(default = "default_local_api_host")]
+    pub local_api_host: String,
+    #[serde(default)]
+    pub local_api_start_on_launch: bool,
+    #[serde(default = "default_local_api_cors")]
+    pub local_api_cors: bool,
 }
 
 fn default_smart_shortcut() -> String {
@@ -433,10 +456,41 @@ impl Default for UserSettings {
             media_control_enabled: false,
             auto_update_enabled: false,
             auto_launch_enabled: false,
-            recording_prune_policy: default_recording_prune_policy(),
+            auto_delete_target: default_auto_delete_target(),
+            auto_delete_duration: default_auto_delete_duration(),
             analytics_enabled: true,
             analytics_install_id: String::new(),
+            local_api_key: String::new(),
+            local_api_port: default_local_api_port(),
+            local_api_model: default_local_api_model(),
+            local_api_host: default_local_api_host(),
+            local_api_start_on_launch: false,
+            local_api_cors: default_local_api_cors(),
         }
+    }
+}
+
+pub fn default_local_api_port() -> u16 {
+    11435
+}
+
+pub fn default_local_api_cors() -> bool {
+    false
+}
+
+pub fn default_local_api_model() -> String {
+    "auto".to_string()
+}
+
+pub fn default_local_api_host() -> String {
+    "127.0.0.1".to_string()
+}
+
+pub fn canonicalize_local_api_host(value: &str) -> String {
+    if value == "0.0.0.0" {
+        "0.0.0.0".to_string()
+    } else {
+        default_local_api_host()
     }
 }
 
@@ -465,7 +519,7 @@ pub enum RecordingPrunePolicy {
     Year,
 }
 
-fn default_recording_prune_policy() -> RecordingPrunePolicy {
+fn default_auto_delete_duration() -> RecordingPrunePolicy {
     RecordingPrunePolicy::Never
 }
 
@@ -473,6 +527,64 @@ pub fn canonicalize_recording_prune_policy(policy: RecordingPrunePolicy) -> Reco
     match policy {
         RecordingPrunePolicy::ThreeMonths => RecordingPrunePolicy::Year,
         policy => policy,
+    }
+}
+
+pub(crate) fn recording_prune_cutoff(
+    policy: RecordingPrunePolicy,
+    now: DateTime<Local>,
+) -> Option<DateTime<Local>> {
+    match policy {
+        RecordingPrunePolicy::Never => None,
+        RecordingPrunePolicy::Immediately => Some(now),
+        RecordingPrunePolicy::Day => now.checked_sub_days(Days::new(1)),
+        RecordingPrunePolicy::Week => now.checked_sub_days(Days::new(7)),
+        RecordingPrunePolicy::Month => now.checked_sub_months(Months::new(1)),
+        RecordingPrunePolicy::ThreeMonths => now.checked_sub_months(Months::new(3)),
+        RecordingPrunePolicy::Year => now.checked_sub_months(Months::new(12)),
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum AutoDeleteTarget {
+    #[default]
+    Transcripts,
+    Audio,
+}
+
+fn default_auto_delete_target() -> AutoDeleteTarget {
+    AutoDeleteTarget::Transcripts
+}
+
+pub fn auto_delete_recording_policy(settings: &UserSettings) -> RecordingPrunePolicy {
+    match settings.auto_delete_target {
+        AutoDeleteTarget::Audio => settings.auto_delete_duration,
+        AutoDeleteTarget::Transcripts => RecordingPrunePolicy::Never,
+    }
+}
+
+pub fn auto_delete_transcription_policy(settings: &UserSettings) -> RecordingPrunePolicy {
+    match settings.auto_delete_target {
+        AutoDeleteTarget::Audio => RecordingPrunePolicy::Never,
+        AutoDeleteTarget::Transcripts => settings.auto_delete_duration,
+    }
+}
+
+fn migrate_auto_delete_from_legacy(
+    settings: &mut UserSettings,
+    legacy_recording: RecordingPrunePolicy,
+    legacy_transcription: RecordingPrunePolicy,
+) {
+    if legacy_transcription != RecordingPrunePolicy::Never {
+        settings.auto_delete_target = AutoDeleteTarget::Transcripts;
+        settings.auto_delete_duration = canonicalize_recording_prune_policy(legacy_transcription);
+        return;
+    }
+
+    if legacy_recording != RecordingPrunePolicy::Never {
+        settings.auto_delete_target = AutoDeleteTarget::Audio;
+        settings.auto_delete_duration = canonicalize_recording_prune_policy(legacy_recording);
     }
 }
 
@@ -593,6 +705,7 @@ pub fn canonicalize_app_locale_or_default(value: &str) -> String {
 pub struct SettingsStore {
     conn: Mutex<Connection>,
     llm_api_key_ciphertext: Mutex<Option<String>>,
+    local_api_key_ciphertext: Mutex<Option<String>>,
 }
 
 impl SettingsStore {
@@ -609,6 +722,7 @@ impl SettingsStore {
         let store = Self {
             conn: Mutex::new(conn),
             llm_api_key_ciphertext: Mutex::new(None),
+            local_api_key_ciphertext: Mutex::new(None),
         };
 
         store.init_schema()?;
@@ -631,7 +745,9 @@ impl SettingsStore {
         let mut settings = UserSettings::default();
         let mut should_persist = false;
         let mut llm_api_key_ciphertext: Option<String> = None;
-        let encrypted_key: String;
+        let mut local_api_key_ciphertext: Option<String> = None;
+        let encrypted_llm_api_key: String;
+        let encrypted_local_api_key: String;
         let legacy_llm_cleanup_enabled_exists: bool;
         let llm_enabled_exists: bool;
         let cleanup_enabled_exists: bool;
@@ -700,7 +816,7 @@ impl SettingsStore {
             settings.llm_endpoint =
                 self.read_value(&conn, KEY_LLM_ENDPOINT, settings.llm_endpoint.clone())?;
 
-            encrypted_key = self.read_value(&conn, KEY_LLM_API_KEY, String::new())?;
+            encrypted_llm_api_key = self.read_value(&conn, KEY_LLM_API_KEY, String::new())?;
 
             settings.llm_model =
                 self.read_value(&conn, KEY_LLM_MODEL, settings.llm_model.clone())?;
@@ -738,11 +854,30 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =
                 self.read_value(&conn, KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
-            settings.recording_prune_policy = self.read_value(
-                &conn,
-                KEY_RECORDING_PRUNE_POLICY,
-                settings.recording_prune_policy,
-            )?;
+            settings.auto_delete_target =
+                self.read_value(&conn, KEY_AUTO_DELETE_TARGET, settings.auto_delete_target)?;
+            let auto_delete_duration =
+                self.read_optional_value::<RecordingPrunePolicy>(&conn, KEY_AUTO_DELETE_DURATION)?;
+            if let Some(duration) = auto_delete_duration {
+                settings.auto_delete_duration = duration;
+            } else {
+                let legacy_recording = self.read_value(
+                    &conn,
+                    LEGACY_KEY_RECORDING_PRUNE_POLICY,
+                    RecordingPrunePolicy::Never,
+                )?;
+                let legacy_transcription = self.read_value(
+                    &conn,
+                    LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY,
+                    RecordingPrunePolicy::Never,
+                )?;
+                migrate_auto_delete_from_legacy(
+                    &mut settings,
+                    legacy_recording,
+                    legacy_transcription,
+                );
+                should_persist = true;
+            }
             settings.analytics_enabled =
                 self.read_value(&conn, KEY_ANALYTICS_ENABLED, settings.analytics_enabled)?;
             settings.analytics_install_id = self.read_value(
@@ -750,23 +885,37 @@ impl SettingsStore {
                 KEY_ANALYTICS_INSTALL_ID,
                 settings.analytics_install_id.clone(),
             )?;
+            encrypted_local_api_key = self.read_value(&conn, KEY_LOCAL_API_KEY, String::new())?;
+            settings.local_api_port =
+                self.read_value(&conn, KEY_LOCAL_API_PORT, settings.local_api_port)?;
+            settings.local_api_model =
+                self.read_value(&conn, KEY_LOCAL_API_MODEL, settings.local_api_model.clone())?;
+            settings.local_api_host =
+                self.read_value(&conn, KEY_LOCAL_API_HOST, settings.local_api_host.clone())?;
+            settings.local_api_start_on_launch = self.read_value(
+                &conn,
+                KEY_LOCAL_API_START_ON_LAUNCH,
+                settings.local_api_start_on_launch,
+            )?;
+            settings.local_api_cors =
+                self.read_value(&conn, KEY_LOCAL_API_CORS, settings.local_api_cors)?;
         }
 
-        if !encrypted_key.is_empty() {
-            let key_looks_encrypted = crate::crypto::looks_encrypted(&encrypted_key);
+        if !encrypted_llm_api_key.is_empty() {
+            let key_looks_encrypted = crate::crypto::looks_encrypted(&encrypted_llm_api_key);
             if let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() {
-                match crate::crypto::decrypt(&encrypted_key, &hardware_uuid) {
+                match crate::crypto::decrypt(&encrypted_llm_api_key, &hardware_uuid) {
                     Ok(decrypted) => settings.llm_api_key = decrypted,
                     Err(e) => {
                         if !key_looks_encrypted {
-                            settings.llm_api_key = encrypted_key;
+                            settings.llm_api_key = encrypted_llm_api_key;
                         } else {
                             eprintln!(
                                 "Error: Failed to decrypt API key: {}. Preserving encrypted value.",
                                 e
                             );
                             settings.llm_api_key = String::new();
-                            llm_api_key_ciphertext = Some(encrypted_key);
+                            llm_api_key_ciphertext = Some(encrypted_llm_api_key);
                         }
                     }
                 }
@@ -774,13 +923,43 @@ impl SettingsStore {
                 eprintln!("Warning: Could not get hardware UUID, preserving stored API key");
                 if key_looks_encrypted {
                     settings.llm_api_key = String::new();
-                    llm_api_key_ciphertext = Some(encrypted_key);
+                    llm_api_key_ciphertext = Some(encrypted_llm_api_key);
                 } else {
-                    settings.llm_api_key = encrypted_key;
+                    settings.llm_api_key = encrypted_llm_api_key;
                 }
             }
         }
         *self.llm_api_key_ciphertext.lock() = llm_api_key_ciphertext;
+
+        if !encrypted_local_api_key.is_empty() {
+            let key_looks_encrypted = crate::crypto::looks_encrypted(&encrypted_local_api_key);
+            if let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() {
+                match crate::crypto::decrypt(&encrypted_local_api_key, &hardware_uuid) {
+                    Ok(decrypted) => settings.local_api_key = decrypted,
+                    Err(e) => {
+                        if !key_looks_encrypted {
+                            settings.local_api_key = encrypted_local_api_key;
+                        } else {
+                            eprintln!(
+                                "Error: Failed to decrypt Local API key: {}. Preserving encrypted value.",
+                                e
+                            );
+                            settings.local_api_key = String::new();
+                            local_api_key_ciphertext = Some(encrypted_local_api_key);
+                        }
+                    }
+                }
+            } else {
+                eprintln!("Warning: Could not get hardware UUID, preserving stored Local API key");
+                if key_looks_encrypted {
+                    settings.local_api_key = String::new();
+                    local_api_key_ciphertext = Some(encrypted_local_api_key);
+                } else {
+                    settings.local_api_key = encrypted_local_api_key;
+                }
+            }
+        }
+        *self.local_api_key_ciphertext.lock() = local_api_key_ciphertext;
 
         if settings.analytics_install_id.is_empty() {
             settings.analytics_install_id = uuid::Uuid::new_v4().to_string();
@@ -834,16 +1013,35 @@ impl SettingsStore {
             should_persist = true;
         }
 
-        let canonical_prune_policy =
-            canonicalize_recording_prune_policy(settings.recording_prune_policy);
-        if settings.recording_prune_policy != canonical_prune_policy {
-            settings.recording_prune_policy = canonical_prune_policy;
+        let canonical_auto_delete_duration =
+            canonicalize_recording_prune_policy(settings.auto_delete_duration);
+        if settings.auto_delete_duration != canonical_auto_delete_duration {
+            settings.auto_delete_duration = canonical_auto_delete_duration;
             should_persist = true;
         }
 
         let canonical_locale = canonicalize_app_locale_or_default(&settings.app_locale);
         if settings.app_locale != canonical_locale {
             settings.app_locale = canonical_locale;
+            should_persist = true;
+        }
+
+        if settings.local_api_port == 0 {
+            settings.local_api_port = default_local_api_port();
+            should_persist = true;
+        }
+
+        if settings.local_api_model.trim().is_empty()
+            || (settings.local_api_model != "auto"
+                && crate::model_manager::definition(&settings.local_api_model).is_none())
+        {
+            settings.local_api_model = default_local_api_model();
+            should_persist = true;
+        }
+
+        let canonical_host = canonicalize_local_api_host(&settings.local_api_host);
+        if settings.local_api_host != canonical_host {
+            settings.local_api_host = canonical_host;
             should_persist = true;
         }
 
@@ -879,6 +1077,27 @@ impl SettingsStore {
                 *llm_api_key_ciphertext = None;
                 eprintln!("Warning: Could not get hardware UUID, storing API key unencrypted");
                 settings.llm_api_key.clone()
+            }
+        };
+        let stored_local_api_key = {
+            let mut local_api_key_ciphertext = self.local_api_key_ciphertext.lock();
+            if settings.local_api_key.is_empty() {
+                local_api_key_ciphertext.clone().unwrap_or_default()
+            } else if local_api_key_ciphertext
+                .as_ref()
+                .is_some_and(|ciphertext| ciphertext == &settings.local_api_key)
+            {
+                settings.local_api_key.clone()
+            } else if let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() {
+                *local_api_key_ciphertext = None;
+                crate::crypto::encrypt(&settings.local_api_key, &hardware_uuid)
+                    .map_err(|e| anyhow::anyhow!("Failed to encrypt Local API key: {}", e))?
+            } else {
+                *local_api_key_ciphertext = None;
+                eprintln!(
+                    "Warning: Could not get hardware UUID, storing Local API key unencrypted"
+                );
+                settings.local_api_key.clone()
             }
         };
 
@@ -944,10 +1163,11 @@ impl SettingsStore {
             KEY_AUTO_LAUNCH_ENABLED,
             &settings.auto_launch_enabled,
         )?;
+        self.write_value(&conn, KEY_AUTO_DELETE_TARGET, &settings.auto_delete_target)?;
         self.write_value(
             &conn,
-            KEY_RECORDING_PRUNE_POLICY,
-            &settings.recording_prune_policy,
+            KEY_AUTO_DELETE_DURATION,
+            &settings.auto_delete_duration,
         )?;
         self.write_value(&conn, KEY_ANALYTICS_ENABLED, &settings.analytics_enabled)?;
         self.write_value(
@@ -955,6 +1175,16 @@ impl SettingsStore {
             KEY_ANALYTICS_INSTALL_ID,
             &settings.analytics_install_id,
         )?;
+        self.write_value(&conn, KEY_LOCAL_API_KEY, &stored_local_api_key)?;
+        self.write_value(&conn, KEY_LOCAL_API_PORT, &settings.local_api_port)?;
+        self.write_value(&conn, KEY_LOCAL_API_MODEL, &settings.local_api_model)?;
+        self.write_value(&conn, KEY_LOCAL_API_HOST, &settings.local_api_host)?;
+        self.write_value(
+            &conn,
+            KEY_LOCAL_API_START_ON_LAUNCH,
+            &settings.local_api_start_on_launch,
+        )?;
+        self.write_value(&conn, KEY_LOCAL_API_CORS, &settings.local_api_cors)?;
         Ok(())
     }
 
@@ -967,6 +1197,16 @@ impl SettingsStore {
         } else {
             Ok(default)
         }
+    }
+
+    pub(crate) fn read_app_value<T: DeserializeOwned>(&self, key: &str, default: T) -> Result<T> {
+        let conn = self.conn.lock();
+        self.read_value(&conn, key, default)
+    }
+
+    pub(crate) fn write_app_value<T: Serialize>(&self, key: &str, value: &T) -> Result<()> {
+        let conn = self.conn.lock();
+        self.write_value(&conn, key, value)
     }
 
     fn read_optional_value<T>(&self, conn: &Connection, key: &str) -> Result<Option<T>>
@@ -1032,6 +1272,7 @@ mod tests {
         let store = SettingsStore {
             conn: Mutex::new(Connection::open_in_memory().expect("open in-memory sqlite DB")),
             llm_api_key_ciphertext: Mutex::new(None),
+            local_api_key_ciphertext: Mutex::new(None),
         };
         store.init_schema().expect("init settings schema");
         store

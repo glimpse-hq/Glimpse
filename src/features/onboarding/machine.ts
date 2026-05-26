@@ -44,13 +44,9 @@ export type OnboardingEvent =
   | { type: "TOGGLE_FAQ"; show: boolean };
 
 function getSteps(
-  mode: TranscriptionMode,
   platform: OnboardingPlatform = getOnboardingPlatform(),
 ): OnboardingStep[] {
-  const steps: OnboardingStep[] =
-    mode === "cloud"
-      ? ["welcome", "localSignin", "localModel"]
-      : ["welcome", "localModel"];
+  const steps: OnboardingStep[] = ["welcome", "localModel"];
 
   if (platform.requiresMicrophonePermission) {
     steps.push("microphone");
@@ -60,7 +56,7 @@ function getSteps(
     steps.push("accessibility");
   }
 
-  steps.push("ready");
+  steps.push("ready", "license");
   return steps;
 }
 
@@ -137,28 +133,9 @@ export const onboardingMachine = setup({
   states: {
     welcome: {
       on: {
-        NEXT: [
-          {
-            target: "localSignin",
-            guard: ({ context }) => context.selectedMode === "cloud",
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "localModel",
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-        ],
-      },
-    },
-    localSignin: {
-      on: {
         NEXT: {
           target: "localModel",
           actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
-        BACK: {
-          target: "welcome",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
         },
       },
     },
@@ -180,17 +157,10 @@ export const onboardingMachine = setup({
             actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
           },
         ],
-        BACK: [
-          {
-            target: "localSignin",
-            guard: ({ context }) => context.selectedMode === "cloud",
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "welcome",
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-        ],
+        BACK: {
+          target: "welcome",
+          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+        },
       },
     },
     microphone: {
@@ -233,6 +203,10 @@ export const onboardingMachine = setup({
     },
     ready: {
       on: {
+        NEXT: {
+          target: "license",
+          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+        },
         BACK: [
           {
             target: "accessibility",
@@ -249,6 +223,14 @@ export const onboardingMachine = setup({
             actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
           },
         ],
+      },
+    },
+    license: {
+      on: {
+        BACK: {
+          target: "ready",
+          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+        },
       },
     },
   },

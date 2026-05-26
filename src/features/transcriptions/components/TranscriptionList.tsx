@@ -279,31 +279,22 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     setSearchQuery("");
   };
 
-  if (
+  const showInitialLoading =
     isLoading &&
     transcriptions.length === 0 &&
     !debouncedSearchQuery &&
-    !isFetched
-  ) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <DotMatrix
-          rows={2}
-          cols={8}
-          activeDots={[0, 1, 2, 3, 4, 5, 6, 7]}
-          dotSize={3}
-          gap={3}
-          color="var(--color-text-muted)"
-          animated
-          className="opacity-50"
-        />
-      </div>
-    );
-  }
-
+    !isFetched;
   const hasAnyResults = sortedTranscriptions.length > 0;
   const showEmptyState =
-    totalCount === 0 && !debouncedSearchQuery && !isLoading;
+    isFetched && totalCount === 0 && !debouncedSearchQuery && !isLoading;
+  const showNoResults =
+    !showInitialLoading &&
+    !showEmptyState &&
+    !isLoading &&
+    isFetched &&
+    !hasAnyResults &&
+    Boolean(debouncedSearchQuery);
+  const listEntries = showInitialLoading ? [] : entries;
 
   return (
     <motion.div
@@ -468,21 +459,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
               })}
             </p>
           </div>
-        ) : hasAnyResults || isLoading ? (
-          <Virtuoso
-            style={{ height: "100%" }}
-            data={entries}
-            defaultItemHeight={90}
-            overscan={400}
-            increaseViewportBy={200}
-            computeItemKey={(_index, entry) =>
-              entry.type === "header" ? entry.id : entry.record.id
-            }
-            components={virtuosoComponents}
-            itemContent={renderEntry}
-            className="custom-scrollbar scrollbar-gutter"
-          />
-        ) : (
+        ) : showNoResults ? (
           <div className="h-full flex flex-col items-center justify-center">
             <Search
               size={18}
@@ -496,6 +473,36 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
               })}
             </p>
           </div>
+        ) : (
+          <>
+            {showInitialLoading && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                <DotMatrix
+                  rows={2}
+                  cols={8}
+                  activeDots={[0, 1, 2, 3, 4, 5, 6, 7]}
+                  dotSize={3}
+                  gap={3}
+                  color="var(--color-text-muted)"
+                  animated
+                  className="opacity-50"
+                />
+              </div>
+            )}
+            <Virtuoso
+              style={{ height: "100%" }}
+              data={listEntries}
+              defaultItemHeight={124}
+              overscan={400}
+              increaseViewportBy={200}
+              computeItemKey={(_index, entry) =>
+                entry.type === "header" ? entry.id : entry.record.id
+              }
+              components={virtuosoComponents}
+              itemContent={renderEntry}
+              className="custom-scrollbar scrollbar-gutter"
+            />
+          </>
         )}
       </div>
     </motion.div>

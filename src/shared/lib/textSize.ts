@@ -1,6 +1,8 @@
 import type { TextSizeMode } from "../../types";
 import type { AppPlatformId } from "./platform";
 
+export const TEXT_SIZE_MODE_STORAGE_KEY = "glimpse_text_size_mode";
+
 const isTextSizeMode = (value: string | null): value is TextSizeMode =>
   value === "small" || value === "default" || value === "large";
 

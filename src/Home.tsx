@@ -7,10 +7,11 @@ import {
   Home as HomeIcon,
   Book,
   Brain,
-  User,
   Info,
   HelpCircle,
   Bug,
+  Check,
+  Copy,
   X,
   ArrowUpCircle,
   Library,
@@ -24,7 +25,9 @@ import TranscriptionList from "./features/transcriptions/components/Transcriptio
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
-import { useCurrentUser } from "./features/auth/queries";
+import { useLicenseGate } from "./features/license/queries";
+// TODO: REMOVE after next update — beta gift promo chip.
+import BetaGiftChip from "./features/license/components/BetaGiftChip";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
@@ -49,6 +52,10 @@ const STATIC_LOGO_COORDS = [
     cy: STATIC_LOGO_RADIUS + STATIC_LOGO_DISTANCE,
   },
 ];
+
+const SUPPORT_GITHUB_URL =
+  "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
+const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
 const StaticGlimpseLogo = ({ isCloudMode }: { isCloudMode: boolean }) => {
   return (
@@ -83,18 +90,21 @@ const SidebarItem = ({
   label,
   active = false,
   collapsed,
+  disabled = false,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
   collapsed: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
     data-active={active ? "true" : "false"}
-    className={`ui-nav-item group h-9 pl-[17px] pr-3 mb-[2px] ${
+    className={`ui-nav-item group h-9 pl-[17px] pr-3 mb-[2px] disabled:pointer-events-none disabled:opacity-45 ${
       collapsed ? "gap-0" : "gap-3"
     }`}
   >
@@ -116,14 +126,15 @@ const Home = () => {
   const { t } = useLingui();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<
-    "general" | "account" | "models" | "about" | "app"
+    "general" | "account" | "models" | "providers" | "local-api" | "about" | "app"
   >("general");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<
     "home" | "dictionary" | "brain" | "library"
   >("home");
-  const { user: currentUser, refresh: refreshUser } = useCurrentUser();
+  const licenseGateActive = useLicenseGate();
   const [showSupportPopup, setShowSupportPopup] = useState(false);
+  const [supportEmailCopied, setSupportEmailCopied] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
   const supportMenuRef = useRef<HTMLDivElement>(null);
 
@@ -131,6 +142,7 @@ const Home = () => {
   const [pendingImportPaths, setPendingImportPaths] = useState<string[] | null>(
     null,
   );
+  const licenseGateActiveRef = useRef(false);
 
   const { data: settings } = useSettings();
   const { data: updateStatus } = useUpdateStatus();
@@ -141,11 +153,16 @@ const Home = () => {
   const appVersion = appInfoData?.version ?? "-";
   const updateAvailable = updateStatus?.available ?? false;
 
+  useEffect(() => {
+    licenseGateActiveRef.current = licenseGateActive;
+    if (!licenseGateActive && (activeView === "brain" || activeView === "library")) {
+      setActiveView("home");
+      setDragActive(false);
+      setPendingImportPaths(null);
+    }
+  }, [activeView, licenseGateActive]);
+
   const sidebarWidth = isSidebarCollapsed ? 68 : 200;
-  const currentUserAvatar =
-    currentUser && typeof currentUser.prefs.avatar === "string"
-      ? currentUser.prefs.avatar
-      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -156,7 +173,7 @@ const Home = () => {
     let unlistenDragLeave: UnlistenFn | null = null;
     let unlistenDragDrop: UnlistenFn | null = null;
     let unlistenOpenImport: UnlistenFn | null = null;
-    let unlistenSignIn: UnlistenFn | null = null;
+    let unlistenLicenseReturn: UnlistenFn | null = null;
 
     listen("navigate:about", () => {
       setSettingsTab("about");
@@ -178,6 +195,7 @@ const Home = () => {
     });
 
     listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) setDragActive(true);
     }).then((fn) => {
       if (cancelled) fn();
@@ -185,6 +203,7 @@ const Home = () => {
     });
 
     listen<{ paths?: string[] }>("tauri://drag-over", (event) => {
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) setDragActive(true);
     }).then((fn) => {
       if (cancelled) fn();
@@ -200,6 +219,7 @@ const Home = () => {
 
     listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
       setDragActive(false);
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) {
         setPendingImportPaths(Array.from(new Set(event.payload.paths)));
         setActiveView("library");
@@ -210,6 +230,7 @@ const Home = () => {
     });
 
     listen<string[]>("library:open_import", (event) => {
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.length) {
         setPendingImportPaths(Array.from(new Set(event.payload)));
         setActiveView("library");
@@ -223,12 +244,12 @@ const Home = () => {
       }
     });
 
-    listen("navigate:sign-in", () => {
+    listen("license:checkout-returned", () => {
       setSettingsTab("account");
       setIsSettingsOpen(true);
     }).then((fn) => {
       if (cancelled) fn();
-      else unlistenSignIn = fn;
+      else unlistenLicenseReturn = fn;
     });
 
     return () => {
@@ -240,7 +261,7 @@ const Home = () => {
       unlistenDragLeave?.();
       unlistenDragDrop?.();
       unlistenOpenImport?.();
-      unlistenSignIn?.();
+      unlistenLicenseReturn?.();
     };
   }, []);
 
@@ -249,6 +270,23 @@ const Home = () => {
     () => setShowSupportPopup(false),
     showSupportPopup,
   );
+
+  useEffect(() => {
+    if (!showSupportPopup) {
+      setSupportEmailCopied(false);
+    }
+  }, [showSupportPopup]);
+
+  const copySupportEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      setSupportEmailCopied(true);
+      window.setTimeout(() => setSupportEmailCopied(false), 1200);
+    } catch (err) {
+      console.error("Failed to copy support email:", err);
+      setSupportEmailCopied(false);
+    }
+  };
 
   useEffect(() => {
     const handleCopy = (event: KeyboardEvent) => {
@@ -281,7 +319,7 @@ const Home = () => {
 
   const isCloudMode = transcriptionMode === "cloud";
 
-  const showCleanupButtons = isCloudMode || llmEnabled;
+  const showCleanupButtons = isCloudMode || (llmEnabled && licenseGateActive);
   const currentModeLabel = isCloudMode
     ? t({
         id: "home.mode.cloud",
@@ -371,6 +409,7 @@ const Home = () => {
               })}
               active={activeView === "brain"}
               collapsed={isSidebarCollapsed}
+              disabled={!licenseGateActive}
               onClick={() => setActiveView("brain")}
             />
             <SidebarItem
@@ -381,6 +420,7 @@ const Home = () => {
               })}
               active={activeView === "library"}
               collapsed={isSidebarCollapsed}
+              disabled={!licenseGateActive}
               onClick={() => setActiveView("library")}
             />
           </div>
@@ -495,29 +535,55 @@ const Home = () => {
                         </div>
                       </div>
                     </button>
-                    <a
-                      href="https://github.com/LegendarySpy/Glimpse/issues/new/choose"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowSupportPopup(false)}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group"
-                    >
-                      <Bug size={16} className="ui-color-secondary" />
-                      <div>
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors w-full">
+                      <Bug size={16} className="ui-color-secondary shrink-0" />
+                      <div className="min-w-0">
                         <div className="ui-text-body-sm-strong ui-color-primary">
                           {t({
-                            id: "home.support.github.title",
-                            message: "GitHub Issues",
+                            id: "home.support.feedback.title",
+                            message: "Feedback",
                           })}
                         </div>
-                        <div className="ui-text-meta ui-color-muted">
-                          {t({
-                            id: "home.support.github.subtitle",
-                            message: "Report bugs & request features",
-                          })}
+                        <div className="ui-text-meta ui-color-muted flex items-center flex-nowrap gap-x-1.5">
+                          <a
+                            href={SUPPORT_GITHUB_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setShowSupportPopup(false)}
+                            className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
+                          >
+                            <Bug size={10} aria-hidden="true" />
+                            {t({
+                              id: "home.support.feedback.github",
+                              message: "GitHub issue",
+                            })}
+                          </a>
+                          <span aria-hidden="true">·</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void copySupportEmail();
+                            }}
+                            className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
+                          >
+                            {supportEmailCopied ? (
+                              <Check size={10} aria-hidden="true" />
+                            ) : (
+                              <Copy size={10} aria-hidden="true" />
+                            )}
+                            {supportEmailCopied
+                              ? t({
+                                  id: "home.support.feedback.email_copied",
+                                  message: "Copied!",
+                                })
+                              : t({
+                                  id: "home.support.feedback.email",
+                                  message: "Email",
+                                })}
+                          </button>
                         </div>
                       </div>
-                    </a>
+                    </div>
                     <button
                       onClick={() => {
                         setShowSupportPopup(false);
@@ -592,36 +658,8 @@ const Home = () => {
 
       <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
-
-        {currentUser && (
-          <button
-            onClick={() => {
-              setSettingsTab("account");
-              setIsSettingsOpen(true);
-            }}
-            className="fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-primary bg-surface-surface hover:bg-[var(--surface-interactive)] hover:border-border-secondary transition-colors z-10 shadow-[var(--shadow-sm)]"
-          >
-            <div className="w-6 h-6 rounded-full bg-surface-elevated border border-border-secondary flex items-center justify-center overflow-hidden">
-              {currentUserAvatar ? (
-                <img
-                  src={currentUserAvatar}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={14} className="text-content-muted" />
-              )}
-            </div>
-            <span className="ui-text-meta ui-color-secondary max-w-[100px] truncate">
-              {currentUser.name ||
-                currentUser.email?.split("@")[0] ||
-                t({
-                  id: "home.account.fallback",
-                  message: "Account",
-                })}
-            </span>
-          </button>
-        )}
+        {/* TODO: REMOVE after next update — hardcoded beta discount chip. */}
+        {activeView === "home" ? <BetaGiftChip /> : null}
 
         <div className="flex-1 flex flex-col px-8 pb-6 min-h-0">
           <div
@@ -646,7 +684,9 @@ const Home = () => {
           <div
             className={`w-full max-w-5xl mx-auto pt-8 ${activeView === "brain" ? "" : "hidden"}`}
           >
-            <PersonalizationView isActive={activeView === "brain"} />
+            <PersonalizationView
+              isActive={activeView === "brain" && licenseGateActive}
+            />
           </div>
 
           <div
@@ -656,7 +696,7 @@ const Home = () => {
               pendingImportPaths={pendingImportPaths}
               onSetImportPaths={setPendingImportPaths}
               sidebarWidth={sidebarWidth}
-              isActive={activeView === "library"}
+              isActive={activeView === "library" && licenseGateActive}
             />
           </div>
         </div>
@@ -708,8 +748,6 @@ const Home = () => {
           setSettingsTab("general");
         }}
         initialTab={settingsTab}
-        currentUser={currentUser}
-        onUpdateUser={refreshUser}
         transcriptionMode={transcriptionMode}
       />
 

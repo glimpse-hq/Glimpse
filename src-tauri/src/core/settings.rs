@@ -1,16 +1,14 @@
 use serde::Deserialize;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 use super::hotkeys;
 use crate::settings::{
-    canonicalize_app_locale, canonicalize_app_locale_or_default, LlmProvider, RecordingPrunePolicy,
-    ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode, UserSettings,
+    canonicalize_app_locale, canonicalize_app_locale_or_default, AutoDeleteTarget, LlmProvider,
+    RecordingPrunePolicy, ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode,
+    UserSettings,
 };
 
-use crate::{
-    analytics, auto_dictionary, model_manager, pill, tray, AppRuntime, AppState,
-    EVENT_SETTINGS_CHANGED,
-};
+use crate::{analytics, auto_dictionary, model_manager, pill, tray, AppRuntime, AppState};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,8 +38,15 @@ pub(crate) struct UpdateSettingsArgs {
     pub media_control_enabled: bool,
     pub auto_update_enabled: bool,
     pub auto_launch_enabled: bool,
-    pub recording_prune_policy: RecordingPrunePolicy,
+    pub auto_delete_target: AutoDeleteTarget,
+    pub auto_delete_duration: RecordingPrunePolicy,
     pub analytics_enabled: bool,
+    pub local_api_key: String,
+    pub local_api_port: u16,
+    pub local_api_model: String,
+    pub local_api_host: String,
+    pub local_api_start_on_launch: bool,
+    pub local_api_cors: bool,
 }
 
 fn canonicalize_shortcut_for_storage(shortcut: &str) -> Result<String, String> {
@@ -188,6 +193,19 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         }
     }
 
+    if args.local_api_port == 0 {
+        return Err("Local API port must be between 1 and 65535".into());
+    }
+
+    if args.local_api_model != "auto" && model_manager::definition(&args.local_api_model).is_none()
+    {
+        return Err("Unknown local API model selection".into());
+    }
+
+    if args.local_api_host != "127.0.0.1" && args.local_api_host != "0.0.0.0" {
+        return Err("Unknown local API host selection".into());
+    }
+
     Ok(())
 }
 
@@ -195,15 +213,13 @@ pub(crate) fn complete_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked()?;
     settings.onboarding_completed = true;
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
     analytics::track_onboarding_completed(app);
     Ok(())
@@ -213,15 +229,13 @@ pub(crate) fn reset_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked()?;
     settings.onboarding_completed = false;
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
     Ok(())
 }
@@ -231,17 +245,15 @@ pub(crate) fn set_user_name(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked()?;
     settings.user_name = name.trim().to_string();
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
-    Ok(next)
+    Ok(state.settings_for_response(next))
 }
 
 pub(crate) fn update_settings(
@@ -250,9 +262,30 @@ pub(crate) fn update_settings(
     state: &AppState,
 ) -> Result<UserSettings, String> {
     validate_update_settings_args(&args)?;
+    let shortcut_cleanup_enabled = args
+        .shortcut_bindings
+        .smart
+        .iter()
+        .chain(args.shortcut_bindings.hold.iter())
+        .chain(args.shortcut_bindings.toggle.iter())
+        .any(|binding| binding.cleanup_enabled);
+    let license_gated_requested = args.llm_enabled
+        || args.cleanup_enabled
+        || shortcut_cleanup_enabled
+        || args.edit_mode_enabled
+        || args.local_api_start_on_launch;
+    if license_gated_requested {
+        crate::license::require_license_gate(
+            &state.settings_store,
+            "AI writing, Edit Mode, and the API server",
+        )?;
+    }
+    let license_active = crate::license::license_gate_active(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
-    let mut next = state.current_settings();
+    // Read truth directly from the store so the gated-feature mask the frontend
+    // sees (when the license is inactive) can't round-trip back to disk.
+    let mut next = state.settings_store.load().map_err(|err| err.to_string())?;
     let prev = next.clone();
     next.shortcut_bindings = shortcut_bindings;
     next.smart_shortcut = next
@@ -282,20 +315,55 @@ pub(crate) fn update_settings(
     next.language = args.language;
     next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
     next.theme_mode = args.theme_mode;
-    next.llm_enabled = args.llm_enabled;
-
-    next.cleanup_enabled = args.cleanup_enabled;
+    if license_active {
+        // License-gated fields are only writable when the license is active.
+        // Otherwise the frontend's masked view (which shows them disabled) would
+        // round-trip false back to disk on the next unrelated save.
+        next.llm_enabled = args.llm_enabled;
+        next.cleanup_enabled = args.cleanup_enabled;
+        next.edit_mode_enabled = args.edit_mode_enabled;
+        next.local_api_start_on_launch = args.local_api_start_on_launch;
+        // shortcut_bindings is already set above; cleanup_enabled fields within
+        // each binding are gated through canonicalize_shortcut_bindings: they
+        // come from args and are subject to the require_license_gate check.
+    } else {
+        // Restore the on-disk truth for shortcut binding cleanup flags, since
+        // canonicalize_shortcut_bindings just wrote args-derived values.
+        for (next_bindings, prev_bindings) in [
+            (
+                &mut next.shortcut_bindings.smart,
+                &prev.shortcut_bindings.smart,
+            ),
+            (
+                &mut next.shortcut_bindings.hold,
+                &prev.shortcut_bindings.hold,
+            ),
+            (
+                &mut next.shortcut_bindings.toggle,
+                &prev.shortcut_bindings.toggle,
+            ),
+        ] {
+            for (out, before) in next_bindings.iter_mut().zip(prev_bindings.iter()) {
+                out.cleanup_enabled = before.cleanup_enabled;
+            }
+        }
+    }
     next.llm_provider = args.llm_provider;
     next.llm_endpoint = args.llm_endpoint;
     next.llm_api_key = args.llm_api_key;
     next.llm_model = args.llm_model.trim().to_string();
-    next.edit_mode_enabled = args.edit_mode_enabled;
     next.auto_dictionary_enabled = args.auto_dictionary_enabled;
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
     next.auto_launch_enabled = args.auto_launch_enabled;
-    next.recording_prune_policy = args.recording_prune_policy;
+    next.auto_delete_target = args.auto_delete_target;
+    next.auto_delete_duration = args.auto_delete_duration;
     next.analytics_enabled = args.analytics_enabled;
+    next.local_api_key = args.local_api_key.trim().to_string();
+    next.local_api_port = args.local_api_port;
+    next.local_api_model = args.local_api_model;
+    next.local_api_host = crate::settings::canonicalize_local_api_host(&args.local_api_host);
+    next.local_api_cors = args.local_api_cors;
 
     let launch_changed = prev.auto_launch_enabled != next.auto_launch_enabled;
     if launch_changed {
@@ -338,15 +406,21 @@ pub(crate) fn update_settings(
         }
     }
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
-    if prev.recording_prune_policy != next.recording_prune_policy {
+    if crate::settings::auto_delete_recording_policy(&prev)
+        != crate::settings::auto_delete_recording_policy(&next)
+    {
         crate::schedule_recording_prune(app.clone(), next.clone());
     }
 
-    Ok(next)
+    if crate::settings::auto_delete_transcription_policy(&prev)
+        != crate::settings::auto_delete_transcription_policy(&next)
+    {
+        crate::schedule_transcription_prune(app.clone(), next.clone());
+    }
+
+    Ok(state.settings_for_response(next))
 }
 
 #[cfg(test)]
@@ -381,8 +455,15 @@ mod tests {
             media_control_enabled: true,
             auto_update_enabled: true,
             auto_launch_enabled: false,
-            recording_prune_policy: RecordingPrunePolicy::Never,
+            auto_delete_target: AutoDeleteTarget::Transcripts,
+            auto_delete_duration: RecordingPrunePolicy::Never,
             analytics_enabled: true,
+            local_api_key: String::new(),
+            local_api_port: crate::settings::default_local_api_port(),
+            local_api_model: crate::settings::default_local_api_model(),
+            local_api_host: crate::settings::default_local_api_host(),
+            local_api_start_on_launch: false,
+            local_api_cors: crate::settings::default_local_api_cors(),
         }
     }
 

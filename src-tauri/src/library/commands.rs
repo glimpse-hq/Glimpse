@@ -59,6 +59,10 @@ enum LibraryDeleteScope {
     DeleteDirectory(PathBuf),
 }
 
+fn require_library_license(state: &AppState) -> Result<(), String> {
+    crate::license::require_license_gate(&state.settings_store, "Library")
+}
+
 #[tauri::command]
 pub fn create_library_item(
     path: String,
@@ -66,6 +70,8 @@ pub fn create_library_item(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<LibraryItem, String> {
+    require_library_license(&state)?;
+
     let source_path = PathBuf::from(path);
     let storage = state.storage();
     let item = create_item_from_path(&app, storage, &source_path, &options)
@@ -107,6 +113,8 @@ pub fn update_library_item(
     patch: LibraryItemPatch,
     state: tauri::State<'_, AppState>,
 ) -> Result<LibraryItem, String> {
+    require_library_license(&state)?;
+
     let storage = state.storage();
     let updated = storage
         .update_library_item(&id, patch.clone())
@@ -196,6 +204,8 @@ pub fn retry_library_transcription(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
+    require_library_license(&state)?;
+
     let storage = state.storage();
     let item = storage
         .get_library_item(&id)
@@ -235,6 +245,8 @@ pub fn export_library_item_to_path(
     output_path: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
+    require_library_license(&state)?;
+
     let item = state
         .storage()
         .get_library_item(&id)
@@ -280,6 +292,10 @@ pub fn get_library_tags(state: tauri::State<'_, AppState>) -> Result<Vec<String>
 
 pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
+    if !crate::license::license_gate_active(&state.settings_store) {
+        return;
+    }
+
     let storage = state.storage();
     let items = match storage.get_recoverable_library_items() {
         Ok(items) => items,
@@ -338,6 +354,14 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
 
 #[cfg(target_os = "macos")]
 pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> Result<()> {
+    let state = app.state::<AppState>();
+    if require_library_license(&state).is_err() {
+        if let Err(err) = crate::tray::toggle_settings_window(app) {
+            eprintln!("Failed to open settings window: {err}");
+        }
+        return Ok(());
+    }
+
     let paths: Vec<String> = urls
         .into_iter()
         .filter(|path| path.is_file())

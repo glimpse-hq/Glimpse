@@ -12,6 +12,8 @@ export type RecordingPrunePolicy =
     | "three_months"
     | "year";
 
+export type AutoDeleteTarget = "audio" | "transcripts";
+
 export type LlmProvider =
     | "none"
     | "lmstudio"
@@ -88,7 +90,14 @@ export type StoredSettings = {
     media_control_enabled: boolean;
     auto_update_enabled: boolean;
     auto_launch_enabled: boolean;
-    recording_prune_policy: RecordingPrunePolicy;
+    auto_delete_target: AutoDeleteTarget;
+    auto_delete_duration: RecordingPrunePolicy;
     analytics_enabled: boolean;
     analytics_install_id: string;
+    local_api_key: string;
+    local_api_port: number;
+    local_api_model: string;
+    local_api_host: string;
+    local_api_start_on_launch: boolean;
+    local_api_cors: boolean;
 };

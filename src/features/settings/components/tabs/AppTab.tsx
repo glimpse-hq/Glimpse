@@ -1,6 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { plural } from "@lingui/core/macro";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { AlertTriangle, Check, Loader2 } from "lucide-react";
@@ -16,6 +15,7 @@ import { Dropdown } from "../../../../shared/ui/Dropdown";
 import type { PlatformCapabilities } from "../../../../shared/lib/platform";
 import type {
   AppLocaleSetting,
+  AutoDeleteTarget,
   RecordingPrunePolicy,
   TextSizeMode,
   ThemeMode,
@@ -25,10 +25,23 @@ type RecordingPrunePreview = {
   candidate_count: number;
 };
 
+type PruneTarget = AutoDeleteTarget;
+
 type PendingPruneConfirmation = {
-  policy: RecordingPrunePolicy;
+  target: PruneTarget;
+  duration: RecordingPrunePolicy;
   candidateCount: number | null;
 };
+
+const recordingPrunePolicyFor = (
+  target: PruneTarget,
+  duration: RecordingPrunePolicy,
+) => (target === "audio" ? duration : "never");
+
+const transcriptionPrunePolicyFor = (
+  target: PruneTarget,
+  duration: RecordingPrunePolicy,
+) => (target === "transcripts" ? duration : "never");
 
 const recordingPrunePolicySeverity: Record<RecordingPrunePolicy, number> = {
   never: 0,
@@ -38,6 +51,18 @@ const recordingPrunePolicySeverity: Record<RecordingPrunePolicy, number> = {
   week: 4,
   day: 5,
   immediately: 6,
+};
+
+const inlineAutoDeleteDropdownProps = {
+  className: "w-fit",
+  buttonClassName:
+    "!h-[22px] !w-auto !rounded-md !border-transparent !bg-transparent !px-1 !py-0 ui-text-label-strong hover:!bg-surface-elevated focus:!border-transparent",
+  valueClassName: "text-left",
+  optionClassName: "!px-2 !py-1.5",
+  optionLabelClassName: "ui-text-meta font-medium whitespace-nowrap",
+  menuClassName: "w-max min-w-full !right-auto",
+  truncate: false as const,
+  fitButtonToWidestOption: true as const,
 };
 
 const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
@@ -96,8 +121,10 @@ type AppTabProps = {
   onAutoUpdateEnabledChange: (enabled: boolean) => void;
   autoLaunchEnabled: boolean;
   onAutoLaunchEnabledChange: (enabled: boolean) => void;
-  recordingPrunePolicy: RecordingPrunePolicy;
-  onRecordingPrunePolicyChange: (policy: RecordingPrunePolicy) => void;
+  autoDeleteTarget: AutoDeleteTarget;
+  onAutoDeleteTargetChange: (target: AutoDeleteTarget) => void;
+  autoDeleteDuration: RecordingPrunePolicy;
+  onAutoDeleteDurationChange: (duration: RecordingPrunePolicy) => void;
   analyticsEnabled: boolean;
   onAnalyticsEnabledChange: (enabled: boolean) => void;
   platformCapabilities: PlatformCapabilities;
@@ -121,15 +148,15 @@ const AppTab = ({
   onAutoUpdateEnabledChange,
   autoLaunchEnabled,
   onAutoLaunchEnabledChange,
-  recordingPrunePolicy,
-  onRecordingPrunePolicyChange,
+  autoDeleteTarget,
+  onAutoDeleteTargetChange,
+  autoDeleteDuration,
+  onAutoDeleteDurationChange,
   analyticsEnabled,
   onAnalyticsEnabledChange,
   platformCapabilities,
 }: AppTabProps) => {
   const { t } = useLingui();
-  const [draftPolicy, setDraftPolicy] =
-    useState<RecordingPrunePolicy>(recordingPrunePolicy);
   const [isPreviewingPrune, setIsPreviewingPrune] = useState(false);
   const [pendingPruneConfirmation, setPendingPruneConfirmation] =
     useState<PendingPruneConfirmation | null>(null);
@@ -194,25 +221,26 @@ const AppTab = ({
     },
   ];
 
+  const pruneTargetOptions: Array<{ value: PruneTarget; label: string }> = [
+    {
+      value: "audio",
+      label: t({ id: "settings.app.prune_target.audio", message: "Audio" }),
+    },
+    {
+      value: "transcripts",
+      label: t({
+        id: "settings.app.prune_target.transcripts",
+        message: "Transcripts",
+      }),
+    },
+  ];
+
   const appLanguageOptions = buildAppLocaleOptions(
     t({
       id: "settings.app.language.system",
       message: "System",
     }),
   );
-
-  useEffect(() => {
-    setDraftPolicy(recordingPrunePolicy);
-  }, [recordingPrunePolicy]);
-
-  const isDirty = draftPolicy !== recordingPrunePolicy;
-  const shouldShowPruneAfterLabel =
-    draftPolicy !== "never" && draftPolicy !== "immediately";
-  const pruneAfterSuffix = t({
-    id: "settings.app.auto_delete_recordings.after_suffix",
-    message: " after",
-  });
-  const visiblePruneAfterSuffix = pruneAfterSuffix.replace(/^ /, "\u00a0");
 
   const isMoreAggressivePolicy = (
     nextPolicy: RecordingPrunePolicy,
@@ -259,87 +287,149 @@ const AppTab = ({
   };
 
   const buildPruneConfirmationMessage = (
-    policy: RecordingPrunePolicy,
+    target: PruneTarget,
+    duration: RecordingPrunePolicy,
     candidateCount: number | null,
   ) => {
-    const policyLabel = getRecordingPrunePolicyLabel(policy);
-    if (policy === "immediately") {
+    const policyLabel = getRecordingPrunePolicyLabel(duration);
+    const noun =
+      target === "audio"
+        ? candidateCount === 1
+          ? t({
+              id: "settings.app.prune.noun.audio.one",
+              message: "audio file",
+            })
+          : t({
+              id: "settings.app.prune.noun.audio.other",
+              message: "audio files",
+            })
+        : candidateCount === 1
+          ? t({
+              id: "settings.app.prune.noun.transcripts.one",
+              message: "transcript",
+            })
+          : t({
+              id: "settings.app.prune.noun.transcripts.other",
+              message: "transcripts",
+            });
+
+    if (duration === "immediately") {
       if (candidateCount === null) {
         return t({
-          id: "settings.app.auto_delete_recordings.confirm.immediately.unknown_count",
-          message: `Changing auto-delete to ${{ policyLabel }} may immediately delete your existing local recordings.`,
+          id: "settings.app.auto_delete.confirm.immediately.unknown_count",
+          message: `Changing auto-delete to ${{ policyLabel }} may immediately delete your existing ${{ noun }}.`,
         });
       }
       return t({
-        id: "settings.app.auto_delete_recordings.confirm.immediately.known_count",
-        message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${plural(
-          candidateCount,
-          {
-            one: "# existing local recording",
-            other: "# existing local recordings",
-          },
-        )}.`,
+        id: "settings.app.auto_delete.confirm.immediately.known_count",
+        message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${candidateCount} existing ${{ noun }}.`,
       });
     }
 
-    const threshold = describeRecordingPruneThreshold(policy);
+    const threshold = describeRecordingPruneThreshold(duration);
     if (!threshold) {
       return "";
     }
 
     if (candidateCount === null) {
       return t({
-        id: "settings.app.auto_delete_recordings.confirm.threshold.unknown_count",
-        message: `Changing auto-delete to ${{ policyLabel }} may immediately delete local recordings that are already older than ${{ threshold }}.`,
+        id: "settings.app.auto_delete.confirm.threshold.unknown_count",
+        message: `Changing auto-delete to ${{ policyLabel }} may immediately delete ${{ noun }} already older than ${{ threshold }}.`,
       });
     }
 
     return t({
-      id: "settings.app.auto_delete_recordings.confirm.threshold.known_count",
-      message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${plural(
-        candidateCount,
-        {
-          one: `# local recording that is already older than ${{ threshold }}`,
-          other: `# local recordings that are already older than ${{ threshold }}`,
-        },
-      )}.`,
+      id: "settings.app.auto_delete.confirm.threshold.known_count",
+      message: `Changing auto-delete to ${{ policyLabel }} will immediately delete ${candidateCount} ${{ noun }} already older than ${{ threshold }}.`,
     });
   };
 
-  const handleApply = async () => {
-    if (!isDirty) {
+  const applyAutoDeleteChange = async (
+    nextTarget: PruneTarget,
+    nextDuration: RecordingPrunePolicy,
+  ) => {
+    if (isPreviewingPrune) return;
+    if (
+      nextTarget === autoDeleteTarget &&
+      nextDuration === autoDeleteDuration
+    ) {
       return;
     }
 
-    if (!isMoreAggressivePolicy(draftPolicy, recordingPrunePolicy)) {
-      onRecordingPrunePolicyChange(draftPolicy);
+    const nextRecordingPolicy = recordingPrunePolicyFor(
+      nextTarget,
+      nextDuration,
+    );
+    const nextTranscriptionPolicy = transcriptionPrunePolicyFor(
+      nextTarget,
+      nextDuration,
+    );
+    const currentRecordingPolicy = recordingPrunePolicyFor(
+      autoDeleteTarget,
+      autoDeleteDuration,
+    );
+    const currentTranscriptionPolicy = transcriptionPrunePolicyFor(
+      autoDeleteTarget,
+      autoDeleteDuration,
+    );
+
+    const recordingMoreAggressive = isMoreAggressivePolicy(
+      nextRecordingPolicy,
+      currentRecordingPolicy,
+    );
+    const transcriptionMoreAggressive = isMoreAggressivePolicy(
+      nextTranscriptionPolicy,
+      currentTranscriptionPolicy,
+    );
+
+    const commitChange = () => {
+      onAutoDeleteTargetChange(nextTarget);
+      onAutoDeleteDurationChange(nextDuration);
+    };
+
+    if (!recordingMoreAggressive && !transcriptionMoreAggressive) {
+      commitChange();
       return;
     }
 
-    const previewedPolicy = draftPolicy;
     setIsPreviewingPrune(true);
     try {
-      const preview = await invoke<RecordingPrunePreview>(
-        "preview_recording_prune",
-        {
-          policy: previewedPolicy,
-        },
-      );
+      let total = 0;
+      let unknown = false;
+      if (recordingMoreAggressive) {
+        try {
+          const preview = await invoke<RecordingPrunePreview>(
+            "preview_recording_prune",
+            { policy: nextRecordingPolicy },
+          );
+          total += preview.candidate_count;
+        } catch (error) {
+          console.error("Failed to preview recording prune impact", error);
+          unknown = true;
+        }
+      }
+      if (transcriptionMoreAggressive) {
+        try {
+          const preview = await invoke<RecordingPrunePreview>(
+            "preview_transcription_prune",
+            { policy: nextTranscriptionPolicy },
+          );
+          total += preview.candidate_count;
+        } catch (error) {
+          console.error("Failed to preview transcription prune impact", error);
+          unknown = true;
+        }
+      }
 
-      if (preview.candidate_count <= 0) {
-        onRecordingPrunePolicyChange(previewedPolicy);
+      if (!unknown && total <= 0) {
+        commitChange();
         return;
       }
 
       setPendingPruneConfirmation({
-        policy: previewedPolicy,
-        candidateCount: preview.candidate_count,
-      });
-    } catch (error) {
-      console.error("Failed to preview recording prune impact", error);
-      setPendingPruneConfirmation({
-        policy: previewedPolicy,
-        candidateCount: null,
+        target: nextTarget,
+        duration: nextDuration,
+        candidateCount: unknown ? null : total,
       });
     } finally {
       setIsPreviewingPrune(false);
@@ -350,8 +440,8 @@ const AppTab = ({
     if (!pendingPruneConfirmation) {
       return;
     }
-
-    onRecordingPrunePolicyChange(pendingPruneConfirmation.policy);
+    onAutoDeleteTargetChange(pendingPruneConfirmation.target);
+    onAutoDeleteDurationChange(pendingPruneConfirmation.duration);
     setPendingPruneConfirmation(null);
   };
 
@@ -359,15 +449,10 @@ const AppTab = ({
     setPendingPruneConfirmation(null);
   };
 
-  const handleCancel = () => {
-    setPendingPruneConfirmation(null);
-    setIsPreviewingPrune(false);
-    setDraftPolicy(recordingPrunePolicy);
-  };
-
   const pruneConfirmationMessage = pendingPruneConfirmation
     ? buildPruneConfirmationMessage(
-        pendingPruneConfirmation.policy,
+        pendingPruneConfirmation.target,
+        pendingPruneConfirmation.duration,
         pendingPruneConfirmation.candidateCount,
       )
     : "";
@@ -375,32 +460,22 @@ const AppTab = ({
   const pruneConfirmationFootnote =
     pendingPruneConfirmation?.candidateCount === null
       ? t({
-          id: "settings.app.auto_delete_recordings.confirm.unknown_count",
+          id: "settings.app.auto_delete.confirm.unknown_count",
           message:
             "We couldn't count them right now, but auto-delete will still run as soon as you save this change.",
         })
-      : t({
-          id: "settings.app.auto_delete_recordings.confirm.audio_only",
-          message:
-            "This only removes saved local audio files, not your transcript history.",
-        });
+      : pendingPruneConfirmation?.target === "audio"
+        ? t({
+            id: "settings.app.auto_delete.confirm.audio_only",
+            message:
+              "This only removes saved audio files, not your transcripts.",
+          })
+        : t({
+            id: "settings.app.auto_delete.confirm.audio_too",
+            message:
+              "Deleting transcripts also removes the audio they reference.",
+          });
 
-  const confirmButtonLabel = isPreviewingPrune
-    ? t({
-        id: "settings.app.confirm.checking",
-        message: "Checking...",
-      })
-    : t({
-        id: "settings.app.confirm",
-        message: "Confirm",
-      });
-
-  const confirmButtonAriaLabel = isPreviewingPrune
-    ? t({
-        id: "settings.app.auto_delete_recordings.preview.loading",
-        message: "Checking how many recordings would be deleted",
-      })
-    : confirmButtonLabel;
   const hasPermissionRows =
     platformCapabilities.requiresNativeMicrophonePermission ||
     platformCapabilities.requiresAccessibilityPermission ||
@@ -649,7 +724,7 @@ const AppTab = ({
             )}
           </div>
 
-          <div className="space-y-2 flex flex-col pt-0.5">
+          <div className="space-y-2 flex flex-col">
             <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
               {t({
                 id: "settings.app.automation",
@@ -742,108 +817,56 @@ const AppTab = ({
                   })}
                 </span>
               </div>
-              <div className="relative px-2 py-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="ui-text-label-strong ui-color-primary whitespace-nowrap">
+              <div className="relative px-2 py-1.5 overflow-visible">
+                <div
+                  className={
+                    textSizeMode === "large"
+                      ? "flex flex-wrap items-center gap-x-1 gap-y-1"
+                      : "flex items-center gap-x-1 whitespace-nowrap"
+                  }
+                >
+                  <span className="ui-text-label-strong ui-color-primary shrink-0">
                     {t({
-                      id: "settings.app.auto_delete_recordings",
-                      message: "Auto-delete Recordings",
+                      id: "settings.app.auto_delete",
+                      message: "Auto-delete",
                     })}
-                    <span className="relative inline-block" aria-hidden="true">
-                      <span className="invisible">
-                        {visiblePruneAfterSuffix}
-                      </span>
-                      <AnimatePresence initial={false}>
-                        {shouldShowPruneAfterLabel ? (
-                          <motion.span
-                            key="after-suffix"
-                            className="absolute left-0 top-0 inline-flex whitespace-nowrap"
-                            initial="hidden"
-                            animate="visible"
-                            exit="hidden"
-                          >
-                            {visiblePruneAfterSuffix
-                              .split("")
-                              .map((letter, index) => (
-                                <motion.span
-                                  key={`${letter}-${index}`}
-                                  variants={{
-                                    hidden: { opacity: 0, y: 2 },
-                                    visible: { opacity: 1, y: 0 },
-                                  }}
-                                  transition={{
-                                    duration: 0.14,
-                                    delay: index * 0.025,
-                                    ease: "easeOut",
-                                  }}
-                                >
-                                  {letter}
-                                </motion.span>
-                              ))}
-                          </motion.span>
-                        ) : null}
-                      </AnimatePresence>
-                    </span>
-                    {shouldShowPruneAfterLabel ? (
-                      <span className="sr-only">{pruneAfterSuffix}</span>
-                    ) : null}
                   </span>
-                  <div className="shrink-0 relative z-20">
+                  <div className="relative z-30 shrink-0">
                     <Dropdown
-                      value={draftPolicy}
+                      value={autoDeleteTarget}
                       onChange={(value) => {
-                        if (!isPreviewingPrune) {
-                          setDraftPolicy(value);
-                        }
+                        void applyAutoDeleteChange(value, autoDeleteDuration);
+                      }}
+                      options={pruneTargetOptions}
+                      disabled={isPreviewingPrune}
+                      {...inlineAutoDeleteDropdownProps}
+                    />
+                  </div>
+                  <span className="ui-text-label-strong ui-color-muted shrink-0">
+                    {t({
+                      id: "settings.app.auto_delete.after",
+                      message: "after",
+                    })}
+                  </span>
+                  <div className="relative z-20 shrink-0">
+                    <Dropdown
+                      value={autoDeleteDuration}
+                      onChange={(value) => {
+                        void applyAutoDeleteChange(autoDeleteTarget, value);
                       }}
                       options={recordingPruneOptions}
-                      className="w-fit min-w-[86px]"
-                      buttonClassName="!h-[22px] !w-auto !rounded-md !border-transparent !bg-transparent !px-1.5 !py-0 ui-text-label-strong hover:!bg-surface-elevated focus:!border-transparent"
-                      valueClassName="text-right"
-                      optionClassName="!px-2 !py-1.5"
-                      optionLabelClassName="ui-text-meta font-medium"
-                      truncate={false}
                       disabled={isPreviewingPrune}
+                      {...inlineAutoDeleteDropdownProps}
                     />
                   </div>
                 </div>
-                <span className="ui-text-micro ui-color-disabled block mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                <span className="ui-text-micro ui-color-disabled block mt-1">
                   {t({
-                    id: "settings.app.auto_delete_recordings.body",
-                    message: "Auto deletes local audio files.",
+                    id: "settings.app.auto_delete.body",
+                    message:
+                      "Deleting transcripts also removes their saved audio.",
                   })}
                 </span>
-                <div
-                  className={`absolute right-2 top-[31px] flex items-center justify-end gap-1.5 transition-opacity ${isDirty ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-                >
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    disabled={isPreviewingPrune}
-                    className="rounded-md px-2 py-0.5 ui-text-meta ui-color-muted hover:bg-surface-elevated hover:text-content-secondary transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    {t({
-                      id: "settings.app.cancel",
-                      message: "Cancel",
-                    })}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void handleApply();
-                    }}
-                    disabled={isPreviewingPrune}
-                    aria-label={confirmButtonAriaLabel}
-                    className="rounded-md border border-border-primary bg-surface-surface px-2.5 py-0.5 ui-text-meta font-medium ui-color-primary transition-colors hover:bg-surface-elevated hover:border-border-secondary active:bg-surface-tertiary disabled:opacity-60 disabled:pointer-events-none"
-                  >
-                    <span className="flex items-center gap-1.5">
-                      {isPreviewingPrune ? (
-                        <Loader2 size={10} className="animate-spin" />
-                      ) : null}
-                      <span>{confirmButtonLabel}</span>
-                    </span>
-                  </button>
-                </div>
               </div>
             </div>
             <p className="ui-text-micro px-0.5 invisible" aria-hidden="true">
@@ -872,8 +895,8 @@ const AppTab = ({
               role="dialog"
               aria-modal="true"
               aria-label={t({
-                id: "settings.app.auto_delete_recordings.confirm.title",
-                message: "Delete older recordings now?",
+                id: "settings.app.auto_delete.confirm.title",
+                message: "Delete older items now?",
               })}
             >
               <div className="mb-3 flex items-start gap-3">
@@ -884,8 +907,8 @@ const AppTab = ({
                 <div className="min-w-0">
                   <p className="ui-text-body-lg font-semibold ui-color-error-strong leading-tight">
                     {t({
-                      id: "settings.app.auto_delete_recordings.confirm.title",
-                      message: "Delete older recordings now?",
+                      id: "settings.app.auto_delete.confirm.title",
+                      message: "Delete older items now?",
                     })}
                   </p>
                   <p className="mt-1 ui-text-body text-content-primary leading-relaxed">
@@ -911,7 +934,7 @@ const AppTab = ({
                   className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid hover:bg-red-500 transition-colors"
                 >
                   {t({
-                    id: "settings.app.auto_delete_recordings.confirm.apply",
+                    id: "settings.app.auto_delete.confirm.apply",
                     message: "Apply anyway",
                   })}
                 </button>

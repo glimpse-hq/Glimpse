@@ -1,51 +1,27 @@
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::AppRuntime;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
+use glimpse_speech::models as speech_models;
 use serde::Serialize;
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-use crate::downloader::{download_model_files, ModelFileDescriptor};
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 use crate::model_language_table::{nemotron_supported_languages, parakeet_v3_supported_languages};
 use crate::model_language_table::{whisper_supported_languages, SupportedLanguageInfo};
 
-const MODELS_ROOT: &str = "models";
 pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
-pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
-pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
+pub const MODEL_CAPABILITY_TIMESTAMPS: &str = speech_models::MODEL_CAPABILITY_TIMESTAMPS;
+pub const MODEL_CAPABILITY_STREAMING: &str = speech_models::MODEL_CAPABILITY_STREAMING;
+
+pub use speech_models::ModelEngine as LocalModelEngine;
 
 #[derive(Debug, Clone)]
-pub enum ModelStorage {
-    #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
-    Directory,
-    File {
-        artifact: &'static str,
-    },
-}
-
-#[derive(Debug, Clone)]
-pub enum LocalModelEngine {
-    #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
-    Nemotron,
-    #[cfg_attr(all(target_os = "macos", target_arch = "x86_64"), allow(dead_code))]
-    Parakeet,
-    Whisper,
-}
-
-#[derive(Debug, Clone)]
-pub struct ModelDefinition {
-    pub key: &'static str,
-    pub label: &'static str,
-    pub description: &'static str,
-    pub size_mb: f32,
-    pub files: &'static [ModelFileDescriptor],
-    pub engine: LocalModelEngine,
-    pub variant: &'static str,
-    pub storage: ModelStorage,
-    pub tags: &'static [&'static str],
-    pub capabilities: &'static [&'static str],
+struct ModelPresentation {
+    key: &'static str,
+    label: &'static str,
+    description: &'static str,
+    tags: &'static [&'static str],
 }
 
 #[derive(Debug, Clone)]
@@ -53,142 +29,6 @@ pub struct ReadyModel {
     pub key: String,
     pub path: PathBuf,
     pub engine: LocalModelEngine,
-}
-
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-const PARAKEET_TDT_INT8_FILES: [ModelFileDescriptor; 3] = [
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/encoder-model.int8.onnx",
-        name: "encoder-model.int8.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/decoder_joint-model.int8.onnx",
-        name: "decoder_joint-model.int8.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx/resolve/main/vocab.txt",
-        name: "vocab.txt",
-    },
-];
-
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-const NEMOTRON_STREAMING_FILES: [ModelFileDescriptor; 4] = [
-    ModelFileDescriptor {
-        url: "https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8/resolve/main/encoder.onnx",
-        name: "encoder.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/altunenes/parakeet-rs/resolve/main/nemotron-speech-streaming-en-0.6b/encoder.onnx.data",
-        name: "encoder.onnx.data",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8/resolve/main/decoder_joint.onnx",
-        name: "decoder_joint.onnx",
-    },
-    ModelFileDescriptor {
-        url: "https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8/resolve/main/tokenizer.model",
-        name: "tokenizer.model",
-    },
-];
-
-const WHISPER_SMALL_Q5_FILES: [ModelFileDescriptor; 1] = [ModelFileDescriptor {
-    url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small-q5_1.bin",
-    name: "ggml-small-q5_1.bin",
-}];
-
-const WHISPER_LARGE_V3_TURBO_Q8_FILES: [ModelFileDescriptor; 1] = [ModelFileDescriptor {
-    url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q8_0.bin",
-    name: "ggml-large-v3-turbo-q8_0.bin",
-}];
-
-pub const MODEL_DEFINITIONS: &[ModelDefinition] = &[
-    ModelDefinition {
-        key: "whisper_large_v3_turbo_q8",
-        label: "Whisper Large V3 Turbo",
-        description:
-            "Great quality local Whisper model with multilingual support and dictionary support.",
-        size_mb: 880.0,
-        files: &WHISPER_LARGE_V3_TURBO_Q8_FILES,
-        engine: LocalModelEngine::Whisper,
-        variant: "Q8_0",
-        storage: ModelStorage::File {
-            artifact: "ggml-large-v3-turbo-q8_0.bin",
-        },
-        tags: &["Recommended", "Dictionary", "Multilingual"],
-        capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
-    },
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    ModelDefinition {
-        key: "parakeet_tdt_int8",
-        label: "Parakeet TDT 0.6B (Int8)",
-        description:
-            "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
-        size_mb: 670.0,
-        files: &PARAKEET_TDT_INT8_FILES,
-        engine: LocalModelEngine::Parakeet,
-        variant: "Int8",
-        storage: ModelStorage::Directory,
-        tags: &["Multilingual", "Fast"],
-        capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
-    },
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    ModelDefinition {
-        key: "nemotron_streaming_en",
-        label: "Nemotron Streaming 0.6B",
-        description: "Real-time streaming transcription. Text appears as you speak.",
-        size_mb: 895.0,
-        files: &NEMOTRON_STREAMING_FILES,
-        engine: LocalModelEngine::Nemotron,
-        variant: "Int8",
-        storage: ModelStorage::Directory,
-        tags: &["English", "Streaming"],
-        capabilities: &[MODEL_CAPABILITY_STREAMING],
-    },
-    ModelDefinition {
-        key: "whisper_small_q5",
-        label: "Whisper Small",
-        description: "Small & fast with dictionary support.",
-        size_mb: 190.0,
-        files: &WHISPER_SMALL_Q5_FILES,
-        engine: LocalModelEngine::Whisper,
-        variant: "Q5_1",
-        storage: ModelStorage::File {
-            artifact: "ggml-small-q5_1.bin",
-        },
-        tags: &["English", "Dictionary", "Compute Friendly"],
-        capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
-    },
-];
-
-pub fn definition(key: &str) -> Option<&'static ModelDefinition> {
-    MODEL_DEFINITIONS.iter().find(|def| def.key == key)
-}
-
-pub fn get_model_dir<R: Runtime>(app: &AppHandle<R>, key: &str) -> Result<PathBuf> {
-    let mut dir = app
-        .path()
-        .app_data_dir()
-        .context("Unable to resolve app data directory")?;
-    dir.push(MODELS_ROOT);
-    dir.push(key);
-    Ok(dir)
-}
-
-fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
-    let mut dir = app
-        .path()
-        .app_data_dir()
-        .context("Unable to resolve app data directory")?;
-    dir.push(MODELS_ROOT);
-    fs::create_dir_all(&dir).context("Failed to prepare models directory")?;
-    Ok(dir)
-}
-
-fn artifact_path(dir: &Path, storage: &ModelStorage) -> PathBuf {
-    match storage {
-        ModelStorage::Directory => dir.to_path_buf(),
-        ModelStorage::File { artifact } => dir.join(artifact),
-    }
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -206,16 +46,6 @@ pub struct ModelInfo {
     pub supported_languages: Vec<SupportedLanguageInfo>,
 }
 
-pub fn model_supports_capability(model_key: &str, capability: &str) -> bool {
-    definition(model_key)
-        .map(|def| {
-            def.capabilities
-                .iter()
-                .any(|entry| entry.eq_ignore_ascii_case(capability))
-        })
-        .unwrap_or(false)
-}
-
 #[derive(Debug, Serialize, Clone)]
 pub struct ModelStatus {
     pub key: String,
@@ -223,6 +53,109 @@ pub struct ModelStatus {
     pub bytes_on_disk: u64,
     pub missing_files: Vec<String>,
     pub directory: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct EngineGroup {
+    pub name: String,
+    pub models: Vec<ModelInfo>,
+}
+
+#[derive(Serialize, Clone)]
+struct DownloadProgressPayload {
+    model: String,
+    file: String,
+    downloaded: u64,
+    total: u64,
+    percent: f64,
+}
+
+#[derive(Serialize, Clone)]
+struct DownloadCompletePayload {
+    model: String,
+}
+
+#[derive(Serialize, Clone)]
+struct DownloadErrorPayload {
+    model: String,
+    error: String,
+}
+
+const MODEL_PRESENTATION: &[ModelPresentation] = &[
+    ModelPresentation {
+        key: "whisper_large_v3_turbo_q8",
+        label: "Whisper Large V3 Turbo",
+        description:
+            "Great quality local Whisper model with multilingual support and dictionary support.",
+        tags: &["Recommended", "Dictionary", "Multilingual"],
+    },
+    ModelPresentation {
+        key: "parakeet_tdt_int8",
+        label: "Parakeet TDT 0.6B (Int8)",
+        description:
+            "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
+        tags: &["Multilingual", "Fast"],
+    },
+    ModelPresentation {
+        key: "nemotron_streaming_en",
+        label: "Nemotron Streaming 0.6B",
+        description: "Real-time streaming transcription. Text appears as you speak.",
+        tags: &["English", "Streaming"],
+    },
+    ModelPresentation {
+        key: "whisper_small_q5",
+        label: "Whisper Small",
+        description: "Small & fast with dictionary support.",
+        tags: &["English", "Dictionary", "Compute Friendly"],
+    },
+];
+
+const MODELS_ROOT: &str = "models";
+
+pub fn definition(key: &str) -> Option<&'static speech_models::ModelManifest> {
+    speech_models::definition(key)
+}
+
+pub fn model_label(key: &str) -> String {
+    presentation(key)
+        .map(|entry| entry.label.to_string())
+        .unwrap_or_else(|| key.to_string())
+}
+
+pub fn model_supports_capability(model_key: &str, capability: &str) -> bool {
+    let backend_capability = match capability {
+        MODEL_CAPABILITY_DICTIONARY => speech_models::MODEL_CAPABILITY_DICTIONARY_PROMPT,
+        other => other,
+    };
+    speech_models::model_supports_capability(model_key, backend_capability)
+}
+
+pub fn is_streaming_model(model_key: &str) -> bool {
+    model_supports_capability(model_key, MODEL_CAPABILITY_STREAMING)
+}
+
+pub fn model_cache_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
+    let mut dir = app
+        .path()
+        .app_data_dir()
+        .context("Unable to resolve app data directory")?;
+    dir.push(MODELS_ROOT);
+    Ok(dir)
+}
+
+fn model_manager<R: Runtime>(app: &AppHandle<R>) -> Result<speech_models::ModelInstallManager> {
+    let dir = model_cache_dir(app)?;
+    Ok(speech_models::ModelInstallManager::new(dir))
+}
+
+fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
+    let dir = model_cache_dir(app)?;
+    std::fs::create_dir_all(&dir).context("Failed to prepare models directory")?;
+    Ok(dir)
+}
+
+fn presentation(key: &str) -> Option<&'static ModelPresentation> {
+    MODEL_PRESENTATION.iter().find(|entry| entry.key == key)
 }
 
 fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
@@ -253,101 +186,62 @@ fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> 
     }
 }
 
-impl ModelStatus {
-    fn from_definition(dir: &Path, def: &ModelDefinition) -> Self {
-        let missing_files = missing_files(dir, def);
-        let installed = missing_files.is_empty() && dir.exists();
-        let bytes_on_disk = if dir.exists() {
-            calculate_dir_size(dir).unwrap_or(0)
-        } else {
-            0
-        };
-        let artifact = artifact_path(dir, &def.storage);
-
-        Self {
-            key: def.key.to_string(),
-            installed,
-            bytes_on_disk,
-            missing_files,
-            directory: artifact.display().to_string(),
-        }
-    }
-}
-
-fn missing_files(dir: &Path, def: &ModelDefinition) -> Vec<String> {
-    def.files
-        .iter()
-        .filter_map(|descriptor| {
-            let file_path = dir.join(descriptor.name);
-            if file_path.exists() {
-                None
-            } else {
-                Some(descriptor.name.to_string())
-            }
-        })
-        .collect()
-}
-
-fn calculate_dir_size(dir: &Path) -> Result<u64> {
-    let mut total = 0u64;
-    if dir.is_dir() {
-        for entry in fs::read_dir(dir)? {
-            let entry = entry?;
-            let metadata = entry.metadata()?;
-            if metadata.is_dir() {
-                total += calculate_dir_size(&entry.path())?;
-            } else {
-                total += metadata.len();
-            }
-        }
-    }
-    Ok(total)
-}
-
 fn engine_label(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Nemotron => "NVIDIA",
-        LocalModelEngine::Parakeet => "NVIDIA",
+        LocalModelEngine::Nemotron | LocalModelEngine::Parakeet => "NVIDIA",
         LocalModelEngine::Whisper => "Whisper",
     }
 }
 
 fn engine_id(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Nemotron => "nvidia",
-        LocalModelEngine::Parakeet => "nvidia",
+        LocalModelEngine::Nemotron | LocalModelEngine::Parakeet => "nvidia",
         LocalModelEngine::Whisper => "whisper",
     }
 }
 
-pub fn is_streaming_model(model_key: &str) -> bool {
-    model_supports_capability(model_key, MODEL_CAPABILITY_STREAMING)
+fn map_capabilities(capabilities: &[&str]) -> Vec<String> {
+    capabilities
+        .iter()
+        .map(|capability| match *capability {
+            speech_models::MODEL_CAPABILITY_DICTIONARY_PROMPT => MODEL_CAPABILITY_DICTIONARY,
+            other => other,
+        })
+        .map(str::to_string)
+        .collect()
+}
+
+fn map_status(status: speech_models::ModelStatus) -> ModelStatus {
+    ModelStatus {
+        key: status.id,
+        installed: status.installed,
+        bytes_on_disk: status.bytes_on_disk,
+        missing_files: status.missing_files,
+        directory: status.directory,
+    }
 }
 
 #[tauri::command]
 pub fn list_models() -> Vec<ModelInfo> {
-    MODEL_DEFINITIONS
+    speech_models::list_models()
         .iter()
-        .map(|def| ModelInfo {
-            key: def.key.to_string(),
-            label: def.label.to_string(),
-            description: def.description.to_string(),
-            size_mb: def.size_mb,
-            file_count: def.files.len(),
-            engine_id: engine_id(&def.engine).to_string(),
-            engine: engine_label(&def.engine).to_string(),
-            variant: def.variant.to_string(),
-            tags: def.tags.iter().map(|s| s.to_string()).collect(),
-            capabilities: def.capabilities.iter().map(|s| s.to_string()).collect(),
-            supported_languages: supported_languages(&def.engine),
+        .filter_map(|manifest| {
+            let presentation = presentation(manifest.id)?;
+            Some(ModelInfo {
+                key: manifest.id.to_string(),
+                label: presentation.label.to_string(),
+                description: presentation.description.to_string(),
+                size_mb: manifest.size_bytes.unwrap_or(0) as f32 / 1_000_000.0,
+                file_count: manifest.files.len(),
+                engine_id: engine_id(&manifest.engine).to_string(),
+                engine: engine_label(&manifest.engine).to_string(),
+                variant: manifest.variant.to_string(),
+                tags: presentation.tags.iter().map(|s| s.to_string()).collect(),
+                capabilities: map_capabilities(manifest.capabilities),
+                supported_languages: supported_languages(&manifest.engine),
+            })
         })
         .collect()
-}
-
-#[derive(Debug, Clone)]
-pub struct EngineGroup {
-    pub name: String,
-    pub models: Vec<ModelInfo>,
 }
 
 pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
@@ -386,9 +280,10 @@ pub fn check_model_status<R: Runtime>(
     app: AppHandle<R>,
     model: String,
 ) -> Result<ModelStatus, String> {
-    let def = definition(&model).ok_or_else(|| "Unknown model".to_string())?;
-    let dir = get_model_dir(&app, &model).map_err(|err| err.to_string())?;
-    Ok(ModelStatus::from_definition(&dir, def))
+    model_manager(&app)
+        .and_then(|manager| manager.model_status(&model))
+        .map(map_status)
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -397,38 +292,72 @@ pub async fn download_model(
     state: tauri::State<'_, crate::AppState>,
     model: String,
 ) -> Result<ModelStatus, String> {
-    let def = definition(&model).ok_or_else(|| "Unknown model".to_string())?;
+    let manager = model_manager(&app).map_err(|err| err.to_string())?;
     ensure_models_root(&app).map_err(|err| err.to_string())?;
-    let dir = get_model_dir(&app, &model).map_err(|err| err.to_string())?;
-    let client = state.http();
     let cancel_token = state.create_download_token(&model);
+    let progress_app = app.clone();
+    let progress = |event: speech_models::ModelDownloadProgress| {
+        let _ = progress_app.emit(
+            "download:progress",
+            DownloadProgressPayload {
+                model: event.model,
+                file: event.file,
+                downloaded: event.downloaded,
+                total: event.total,
+                percent: event.percent,
+            },
+        );
+    };
 
-    let result = download_model_files(&app, &client, &model, def.files, &dir, &cancel_token).await;
+    let result = manager
+        .install_model(
+            &model,
+            speech_models::InstallOptions {
+                cancel_token: Some(cancel_token),
+                progress: Some(&progress),
+            },
+        )
+        .await;
 
     state.clear_download_token(&model);
 
-    result.map_err(|err| err.to_string())?;
+    let status = match result {
+        Ok(status) => status,
+        Err(err) => {
+            let _ = app.emit(
+                "download:error",
+                DownloadErrorPayload {
+                    model,
+                    error: err.to_string(),
+                },
+            );
+            return Err(err.to_string());
+        }
+    };
 
-    crate::analytics::track_model_downloaded(&app, &model);
+    let _ = app.emit(
+        "download:complete",
+        DownloadCompletePayload {
+            model: status.id.clone(),
+        },
+    );
 
-    let status = ModelStatus::from_definition(&dir, def);
+    crate::analytics::track_model_downloaded(&app, &status.id);
 
     let settings = state.current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
         eprintln!("Failed to refresh tray menu after download: {err}");
     }
 
-    Ok(status)
+    Ok(map_status(status))
 }
 
 #[tauri::command]
 pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelStatus, String> {
-    let def = definition(&model).ok_or_else(|| "Unknown model".to_string())?;
-    let dir = get_model_dir(&app, &model).map_err(|err| err.to_string())?;
-    if dir.exists() {
-        fs::remove_dir_all(&dir).map_err(|err| err.to_string())?;
-    }
-    let status = ModelStatus::from_definition(&dir, def);
+    let status = model_manager(&app)
+        .and_then(|manager| manager.delete_model(&model))
+        .map(map_status)
+        .map_err(|err| err.to_string())?;
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();
@@ -449,20 +378,10 @@ pub fn cancel_download(
 }
 
 pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result<ReadyModel> {
-    let def = definition(model).ok_or_else(|| anyhow!("Unknown model"))?;
-    let dir = get_model_dir(app, model)?;
-    let status = ModelStatus::from_definition(&dir, def);
-    if !status.installed {
-        return Err(anyhow!(
-            "{} is not fully installed. Missing: {}",
-            def.label,
-            status.missing_files.join(", ")
-        ));
-    }
-
+    let resolved = model_manager(app)?.resolve_model(model)?;
     Ok(ReadyModel {
-        key: def.key.to_string(),
-        path: artifact_path(&dir, &def.storage),
-        engine: def.engine.clone(),
+        key: resolved.id,
+        path: resolved.path,
+        engine: resolved.engine,
     })
 }

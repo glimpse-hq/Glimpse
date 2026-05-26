@@ -1,21 +1,17 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { useState } from "react";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   AlertCircle,
   Check,
-  ChevronRight,
   Download,
   Square,
   Trash2,
 } from "lucide-react";
 import DotMatrix from "../../../../shared/ui/DotMatrix";
 import { i18n } from "../../../../i18n";
-import LanguageModelPanel from "../LanguageModelPanel";
 import type {
   DownloadEvent,
-  LlmProvider,
   ModelInfo,
   ModelStatus,
 } from "../../../../types";
@@ -69,18 +65,6 @@ const enginePriority = (engineId: string): number => {
 
 type ModelsTabProps = {
   variants: Variants;
-  llmEnabled: boolean;
-  setLlmEnabled: (value: boolean) => void;
-  llmProvider: LlmProvider;
-  setLlmProvider: (value: LlmProvider) => void;
-  llmEndpoint: string;
-  setLlmEndpoint: (value: string) => void;
-  llmApiKey: string;
-  setLlmApiKey: (value: string) => void;
-  llmModel: string;
-  setLlmModel: (value: string) => void;
-  availableModels: string[];
-  fetchAvailableModels: () => void;
   modelCatalog: ModelInfo[];
   modelStatus: Record<string, ModelStatus>;
   downloadState: Record<string, DownloadEvent>;
@@ -94,18 +78,6 @@ type ModelsTabProps = {
 
 const ModelsTab = ({
   variants,
-  llmEnabled,
-  setLlmEnabled,
-  llmProvider,
-  setLlmProvider,
-  llmEndpoint,
-  setLlmEndpoint,
-  llmApiKey,
-  setLlmApiKey,
-  llmModel,
-  setLlmModel,
-  availableModels,
-  fetchAvailableModels,
   modelCatalog,
   modelStatus,
   downloadState,
@@ -117,7 +89,6 @@ const ModelsTab = ({
   formatBytes,
 }: ModelsTabProps) => {
   const { t } = useLingui();
-  const [expandedEngine, setExpandedEngine] = useState<string | null>(null);
 
   const groupedMap = new Map<string, ModelInfo[]>();
   for (const model of modelCatalog) {
@@ -149,10 +120,6 @@ const ModelsTab = ({
       return a.label.localeCompare(b.label);
     });
 
-  const toggleEngine = (engineId: string) => {
-    setExpandedEngine((prev) => (prev === engineId ? null : engineId));
-  };
-
   return (
     <motion.div
       key="models"
@@ -172,76 +139,43 @@ const ModelsTab = ({
         <p className="mt-1 ui-text-body-sm ui-color-muted">
           {t({
             id: "settings.models.description",
-            message: "Manage transcription engines and AI provider settings.",
+            message: "Manage local transcription engines and downloaded speech models.",
           })}
         </p>
       </header>
 
-      <LanguageModelPanel
-        llmEnabled={llmEnabled}
-        setLlmEnabled={setLlmEnabled}
-        llmProvider={llmProvider}
-        setLlmProvider={setLlmProvider}
-        llmEndpoint={llmEndpoint}
-        setLlmEndpoint={setLlmEndpoint}
-        llmApiKey={llmApiKey}
-        setLlmApiKey={setLlmApiKey}
-        llmModel={llmModel}
-        setLlmModel={setLlmModel}
-        availableModels={availableModels}
-        fetchAvailableModels={fetchAvailableModels}
-      />
-
-      <div>
-        <h3 className="ui-text-section-label-sm ui-color-disabled mb-3">
+      <div className="space-y-2">
+        <h3 className="ui-text-section-label-sm ui-color-muted">
           {t({
             id: "settings.models.transcription_engines",
             message: "Transcription Engines",
           })}
         </h3>
-        <div className="rounded-xl border border-border-primary bg-surface-surface overflow-hidden divide-y divide-border-primary shadow-[var(--shadow-sm)]">
+        <div className="space-y-4">
           {groupedModels.map((group, groupIndex) => {
-            const isExpanded = expandedEngine === group.id;
             const installedCount = group.models.filter(
               (m) => modelStatus[m.key]?.installed,
             ).length;
             const hasActiveModel = group.models.some(
               (m) => localModel === m.key && modelStatus[m.key]?.installed,
             );
-            const activeModel = group.models.find(
-              (m) => localModel === m.key && modelStatus[m.key]?.installed,
-            );
-
             return (
-              <div key={group.id || `model-group-${groupIndex}`}>
-                <button
-                  onClick={() => toggleEngine(group.id)}
-                  className="w-full px-4 py-3 flex items-center gap-3 hover:bg-surface-elevated/50 transition-colors"
-                  aria-expanded={isExpanded}
-                >
-                  <motion.div
-                    animate={{ rotate: isExpanded ? 90 : 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="text-content-disabled"
-                  >
-                    <ChevronRight size={14} aria-hidden="true" />
-                  </motion.div>
-                  <div className="flex-1 text-left">
-                    <div className="flex items-center gap-2">
-                      <span className="ui-text-body-strong ui-color-primary">
+              <div
+                key={group.id || `model-group-${groupIndex}`}
+                className="rounded-lg bg-surface-surface p-2.5"
+              >
+                <div className="flex items-start justify-between gap-3 px-2 py-1.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0 ui-text-body-strong ui-color-primary">
                         {group.label}
                       </span>
                       {group.recommended && (
-                        <span className="ui-text-meta ui-color-local">
+                        <span className="shrink-0 ui-text-meta ui-color-local">
                           {t({
                             id: "settings.models.recommended",
                             message: "Recommended",
                           })}
-                        </span>
-                      )}
-                      {hasActiveModel && activeModel && (
-                        <span className="ui-text-meta ui-color-muted">
-                          {activeModel.label}
                         </span>
                       )}
                     </div>
@@ -249,58 +183,43 @@ const ModelsTab = ({
                       {group.description}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {hasActiveModel && (
-                      <span className="flex items-center gap-1 ui-text-meta ui-color-local">
-                        <Check size={12} aria-hidden="true" />
-                        {t({
+                  <span
+                    className={`flex min-w-[4.75rem] shrink-0 items-center justify-end gap-1 ui-text-meta ${
+                      hasActiveModel ? "ui-color-local" : "ui-color-disabled"
+                    } ${!hasActiveModel && installedCount === 0 ? "invisible" : ""}`}
+                  >
+                    {hasActiveModel && <Check size={12} aria-hidden="true" />}
+                    {hasActiveModel
+                      ? t({
                           id: "settings.models.active",
                           message: "Active",
-                        })}
-                      </span>
-                    )}
-                    {!hasActiveModel && installedCount > 0 && (
-                      <span className="ui-text-meta ui-color-disabled">
-                        {t({
+                        })
+                      : t({
                           id: "settings.models.installed_count",
                           message: `${installedCount} installed`,
                         })}
-                      </span>
-                    )}
-                  </div>
-                </button>
+                  </span>
+                </div>
 
-                <AnimatePresence initial={false}>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0 }}
-                      animate={{ height: "auto" }}
-                      exit={{ height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden bg-surface-elevated/30"
-                    >
-                      <div className="px-4 py-2 space-y-1">
-                        {group.models.map((model, modelIndex) => (
-                          <ModelRow
-                            key={model.key || `group-model-${groupIndex}-${modelIndex}`}
-                            model={model}
-                            modelStatus={modelStatus[model.key]}
-                            downloadState={downloadState[model.key]}
-                            isActive={
-                              localModel === model.key &&
-                              modelStatus[model.key]?.installed
-                            }
-                            onUse={() => setLocalModel(model.key)}
-                            onDownload={() => handleDownload(model.key)}
-                            onDelete={() => handleDelete(model.key)}
-                            onCancel={() => handleCancelDownload(model.key)}
-                            formatBytes={formatBytes}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <div className="mt-1 space-y-1 px-2 pb-1">
+                  {group.models.map((model, modelIndex) => (
+                    <ModelRow
+                      key={model.key || `group-model-${groupIndex}-${modelIndex}`}
+                      model={model}
+                      modelStatus={modelStatus[model.key]}
+                      downloadState={downloadState[model.key]}
+                      isActive={
+                        localModel === model.key &&
+                        modelStatus[model.key]?.installed
+                      }
+                      onUse={() => setLocalModel(model.key)}
+                      onDownload={() => handleDownload(model.key)}
+                      onDelete={() => handleDelete(model.key)}
+                      onCancel={() => handleCancelDownload(model.key)}
+                      formatBytes={formatBytes}
+                    />
+                  ))}
+                </div>
               </div>
             );
           })}
@@ -345,9 +264,8 @@ const ModelRow = ({
   const visibleTags = model.tags.filter(
     (tag) => tag.toLowerCase() !== "recommended",
   );
-
   return (
-    <div className="group rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-elevated/50">
+    <div className="group rounded-md px-2 py-2 transition-colors hover:bg-surface-elevated/40">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -362,15 +280,17 @@ const ModelRow = ({
                 })}
               </span>
             )}
-            {isActive && (
-              <span className="flex items-center gap-1 ui-text-meta ui-color-local">
-                <Check size={10} aria-hidden="true" />
-                {t({
-                  id: "settings.models.active",
-                  message: "Active",
-                })}
-              </span>
-            )}
+            <span
+              className={`flex w-12 shrink-0 items-center gap-1 ui-text-meta ui-color-local ${
+                isActive ? "" : "invisible"
+              }`}
+            >
+              <Check size={10} aria-hidden="true" />
+              {t({
+                id: "settings.models.active",
+                message: "Active",
+              })}
+            </span>
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span
@@ -434,10 +354,15 @@ const ModelRow = ({
         )}
 
         <div className="flex items-center gap-2 shrink-0">
-          {installed && !isActive && (
+          {installed && (
             <button
               onClick={onUse}
-              className="px-2.5 py-1 rounded-md border border-border-primary bg-surface-surface ui-text-button-sm ui-color-secondary hover:border-local-30 hover:bg-local-5 hover:text-local transition-colors"
+              disabled={isActive}
+              className={`min-w-7 px-0.5 py-1 ui-text-button-sm transition-colors ${
+                isActive
+                  ? "invisible pointer-events-none"
+                  : "ui-color-secondary hover:text-local"
+              }`}
             >
               {t({
                 id: "settings.models.use",

@@ -300,6 +300,16 @@ impl StorageManager {
         Ok(records)
     }
 
+    pub fn total_word_count(&self) -> Result<u64> {
+        let conn = self.connection.lock();
+        let value: Option<i64> = conn.query_row(
+            "SELECT COALESCE(SUM(word_count), 0) FROM transcriptions WHERE status = 'success'",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(value.unwrap_or(0).max(0) as u64)
+    }
+
     pub fn delete(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection.lock();
         let record = Self::get_record(&conn, id)?;
@@ -307,6 +317,43 @@ impl StorageManager {
             conn.execute("DELETE FROM transcriptions WHERE id = ?1", params![id])?;
         }
         Ok(record.map(|r| r.audio_path))
+    }
+
+    pub fn count_prunable_before(&self, cutoff_millis: i64) -> Result<u32> {
+        let conn = self.connection.lock();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcriptions WHERE timestamp <= ?1",
+            params![cutoff_millis],
+            |row| row.get(0),
+        )?;
+        Ok(count.max(0) as u32)
+    }
+
+    pub fn prune_before(&self, cutoff_millis: i64) -> Result<Vec<String>> {
+        let conn = self.connection.lock();
+        let mut stmt =
+            conn.prepare("SELECT audio_path FROM transcriptions WHERE timestamp <= ?1")?;
+        let audio_paths: Vec<String> = stmt
+            .query_map(params![cutoff_millis], |row| row.get::<_, String>(0))?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        drop(stmt);
+        conn.execute(
+            "DELETE FROM transcriptions WHERE timestamp <= ?1",
+            params![cutoff_millis],
+        )?;
+        Ok(audio_paths)
+    }
+
+    pub fn prune_before_and_remove_files(&self, cutoff_millis: i64) -> Result<u32> {
+        let audio_paths = self.prune_before(cutoff_millis)?;
+        let count = audio_paths.len() as u32;
+        for audio_path in audio_paths {
+            let path = PathBuf::from(audio_path);
+            if path.exists() {
+                let _ = fs::remove_file(path);
+            }
+        }
+        Ok(count)
     }
 
     pub fn get_by_id(&self, id: &str) -> Option<TranscriptionRecord> {

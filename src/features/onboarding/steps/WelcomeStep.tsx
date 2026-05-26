@@ -43,7 +43,7 @@ export function WelcomeStep({
       </p>
 
       <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        {/* Cloud card — in progress, not selectable */}
+        {/* Cloud card: in progress, not selectable */}
         <div
           className="relative w-full rounded-2xl border border-border-primary bg-surface-tertiary overflow-hidden opacity-45 cursor-not-allowed"
           aria-disabled="true"
@@ -76,7 +76,7 @@ export function WelcomeStep({
           </div>
         </div>
 
-        {/* Local card — selectable, the main path */}
+        {/* Local card: selectable, the main path */}
         <button
           type="button"
           onClick={() => onSelectMode("local")}
@@ -88,10 +88,10 @@ export function WelcomeStep({
           aria-pressed={selectedMode === "local"}
           aria-label={t({
             id: "onboarding.welcome.local.aria",
-            message: "Select Local mode — privacy-first, on-device transcription",
+            message: "Select Local mode: privacy-first, on-device transcription",
           })}
         >
-          {/* Animated dot field — shifts on hover */}
+          {/* Animated dot field: shifts on hover */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.07] transition-opacity duration-300 group-hover:opacity-[0.12]">
             <DotMatrix
               rows={10}
@@ -130,7 +130,7 @@ export function WelcomeStep({
               </div>
             </div>
 
-            {/* Features — dot-matrix bullets, mode-specific only */}
+            {/* Features: dot-matrix bullets, mode-specific only */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
                 <DotMatrix rows={1} cols={3} activeDots={[0, 1, 2]} dotSize={3} gap={2} color="var(--color-local-80)" />
