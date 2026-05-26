@@ -11,13 +11,11 @@ interface ReadyStepProps {
   smartShortcut: string;
   captureActive: boolean;
   capturePreview: string;
-  isCompleting: boolean;
-  completionError: string | null;
   onStartCapture: () => void;
   onEndCapture: (shortcut?: string) => void;
   onSetPreview: (preview: string) => void;
   onSetShortcut: (shortcut: string) => void;
-  onComplete: () => void;
+  onNext: () => void;
 }
 
 export function ReadyStep({
@@ -25,13 +23,11 @@ export function ReadyStep({
   smartShortcut,
   captureActive,
   capturePreview,
-  isCompleting,
-  completionError,
   onStartCapture,
   onEndCapture,
   onSetPreview,
   onSetShortcut,
-  onComplete,
+  onNext,
 }: ReadyStepProps) {
   const { t } = useLingui();
 
@@ -160,20 +156,14 @@ export function ReadyStep({
 
       <button
         type="button"
-        onClick={onComplete}
-        disabled={captureActive || isCompleting}
-        aria-busy={isCompleting}
+        onClick={onNext}
+        disabled={captureActive}
         className="mt-6 flex items-center gap-2 rounded-lg bg-amber-400 px-6 py-2.5 ui-text-body-lg font-semibold ui-color-on-warning hover:bg-amber-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isCompleting
-          ? t({
-              id: "onboarding.ready.saving",
-              message: "Saving...",
-            })
-          : t({
-              id: "onboarding.ready.get_started",
-              message: "Get Started",
-            })}
+        {t({
+          id: "onboarding.ready.continue",
+          message: "Continue",
+        })}
       </button>
 
       <p className="mt-3 ui-text-micro ui-color-disabled text-center">
@@ -184,11 +174,6 @@ export function ReadyStep({
         })}
       </p>
 
-      {completionError && (
-        <p className="mt-3 ui-text-label text-error text-center">
-          {completionError}
-        </p>
-      )}
     </motion.div>
   );
 }

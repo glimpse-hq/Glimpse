@@ -600,13 +600,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       const height = container.offsetHeight;
       if (width === 0 || height === 0) return;
 
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
 
       const ctx = canvas.getContext("2d");
-      if (ctx) ctx.scale(dpr, dpr);
+      if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const cols = Math.floor(width / DOT_SPACING);
       const rows = Math.floor(height / DOT_SPACING);

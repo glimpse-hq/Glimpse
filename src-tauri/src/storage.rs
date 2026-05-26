@@ -300,6 +300,16 @@ impl StorageManager {
         Ok(records)
     }
 
+    pub fn total_word_count(&self) -> Result<u64> {
+        let conn = self.connection.lock();
+        let value: Option<i64> = conn.query_row(
+            "SELECT COALESCE(SUM(word_count), 0) FROM transcriptions WHERE status = 'success'",
+            [],
+            |row| row.get(0),
+        )?;
+        Ok(value.unwrap_or(0).max(0) as u64)
+    }
+
     pub fn delete(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection.lock();
         let record = Self::get_record(&conn, id)?;

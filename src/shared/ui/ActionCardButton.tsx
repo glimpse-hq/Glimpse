@@ -3,40 +3,18 @@ import type {
   CSSProperties,
   ReactNode,
 } from "react";
-
-type ActionCardAccent = {
-  borderColor: string;
-  backgroundColor: string;
-};
-
-const ACTION_CARD_BUTTON_ACCENTS = {
-  interactive: {
-    borderColor: "var(--color-interactive-30)",
-    backgroundColor: "var(--color-interactive-10)",
-  },
-  cloud: {
-    borderColor: "var(--color-cloud-30)",
-    backgroundColor: "var(--color-cloud-10)",
-  },
-  local: {
-    borderColor: "var(--color-local-30)",
-    backgroundColor: "var(--color-local-10)",
-  },
-  accent: {
-    borderColor: "var(--color-accent-30)",
-    backgroundColor: "var(--color-accent-10)",
-  },
-  error: {
-    borderColor: "rgba(239, 68, 68, 0.3)",
-    backgroundColor: "rgba(239, 68, 68, 0.08)",
-  },
-} satisfies Record<string, ActionCardAccent>;
+import {
+  ACTION_CARD_BUTTON_ACCENTS,
+  type ActionCardAccent,
+  type ActionCardAccentPreset,
+} from "./actionCardButtonAccents";
 
 type ActionCardButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   title: string;
   description?: string;
   icon?: ReactNode;
   accent?: Partial<ActionCardAccent>;
+  accentPreset?: ActionCardAccentPreset;
   iconClassName?: string;
   titleClassName?: string;
   descriptionClassName?: string;
@@ -52,6 +30,7 @@ const ActionCardButton = ({
   description,
   icon,
   accent,
+  accentPreset,
   iconClassName,
   titleClassName,
   descriptionClassName,
@@ -62,10 +41,14 @@ const ActionCardButton = ({
   type = "button",
   ...props
 }: ActionCardButtonProps) => {
+  const presetAccent = accentPreset
+    ? ACTION_CARD_BUTTON_ACCENTS[accentPreset]
+    : ACTION_CARD_BUTTON_ACCENTS.interactive;
   const resolvedAccent = {
-    ...ACTION_CARD_BUTTON_ACCENTS.interactive,
+    ...presetAccent,
     ...accent,
   };
+  const isCardLayout = fullWidth || Boolean(description);
   const actionStyle = {
     "--action-card-border": resolvedAccent.borderColor,
     "--action-card-background": resolvedAccent.backgroundColor,
@@ -83,8 +66,11 @@ const ActionCardButton = ({
       type={type}
       className={joinClasses(
         "group rounded-lg border border-border-primary bg-surface-surface text-left [box-shadow:var(--action-card-rest-shadow)] outline-hidden transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--action-card-border)] hover:bg-[var(--action-card-background)] hover:[box-shadow:var(--action-card-hover-shadow)] active:[box-shadow:none] focus-visible:ring-2 focus-visible:ring-border-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-border-primary disabled:hover:bg-surface-surface disabled:hover:[box-shadow:var(--action-card-rest-shadow)]",
-        fullWidth
-          ? "w-full px-3 py-2.5 active:translate-y-[2px]"
+        isCardLayout
+          ? joinClasses(
+              "px-3 py-2.5",
+              fullWidth ? "w-full active:translate-y-[2px]" : "inline-flex w-fit",
+            )
           : "inline-flex w-auto px-2.5 py-1",
         className,
       )}
@@ -93,7 +79,9 @@ const ActionCardButton = ({
     >
       <div
         className={joinClasses(
-          fullWidth ? "flex items-start gap-3" : "flex w-full items-center gap-1.5",
+          isCardLayout
+            ? "flex items-center gap-2.5"
+            : "flex w-full items-center gap-1.5",
           contentClassName,
         )}
       >
@@ -101,8 +89,8 @@ const ActionCardButton = ({
           <span
             aria-hidden="true"
             className={joinClasses(
-              fullWidth
-                ? "mt-0.5 flex size-5 shrink-0 items-center justify-center ui-color-primary"
+              isCardLayout
+                ? "flex size-5 shrink-0 items-center justify-center ui-color-primary"
                 : "flex shrink-0 items-center justify-center text-[var(--color-text-muted)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]",
               iconClassName,
             )}
@@ -114,7 +102,7 @@ const ActionCardButton = ({
         <div className="min-w-0">
           <span
             className={joinClasses(
-              fullWidth
+              isCardLayout
                 ? "ui-text-label-strong ui-color-primary block"
                 : "ui-text-button ui-color-secondary block",
               titleClassName,

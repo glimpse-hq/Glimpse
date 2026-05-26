@@ -44,6 +44,8 @@ type GeneralTabProps = {
   modelStatus: Record<string, ModelStatus>;
   localModel: string;
   onOpenModelsTab: () => void;
+  onOpenProvidersTab: () => void;
+  onOpenAccountTab: () => void;
   inputDevices: DeviceInfo[];
   microphoneDevice: string | null;
   onMicrophoneDeviceChange: (deviceId: string | null) => void;
@@ -76,6 +78,7 @@ type GeneralTabProps = {
   autoDictionarySupported: boolean;
   setAutoDictionaryEnabled: (value: boolean) => void;
   aiFeaturesReady: boolean;
+  licenseGateActive: boolean;
 };
 
 const GeneralTab = ({
@@ -85,6 +88,8 @@ const GeneralTab = ({
   modelStatus,
   localModel,
   onOpenModelsTab,
+  onOpenProvidersTab,
+  onOpenAccountTab,
   inputDevices,
   microphoneDevice,
   onMicrophoneDeviceChange,
@@ -113,6 +118,7 @@ const GeneralTab = ({
   autoDictionarySupported,
   setAutoDictionaryEnabled,
   aiFeaturesReady,
+  licenseGateActive,
 }: GeneralTabProps) => {
   const { t } = useLingui();
   const [openHelpTooltip, setOpenHelpTooltip] =
@@ -127,7 +133,8 @@ const GeneralTab = ({
     start: startMicrophoneTest,
     status: microphoneTestStatus,
   } = useMicrophoneTest(inputDevices, microphoneDevice);
-  const aiFeaturesDisabled = transcriptionMode === "local" && !aiFeaturesReady;
+  const aiFeaturesDisabled = !aiFeaturesReady;
+  const aiFeaturesRequireLicense = !licenseGateActive;
   const localModelStatus = localModel ? modelStatus[localModel] : undefined;
   const autoDictionaryBody = autoDictionarySupported
     ? t({
@@ -603,6 +610,7 @@ const GeneralTab = ({
             onAddBinding={addShortcutBinding}
             onRemoveBinding={removeShortcutBinding}
             canDisable={holdEnabled || toggleEnabled}
+            cleanupDisabled={aiFeaturesDisabled}
           />
           <ShortcutRow
             mode="hold"
@@ -635,6 +643,7 @@ const GeneralTab = ({
             onAddBinding={addShortcutBinding}
             onRemoveBinding={removeShortcutBinding}
             canDisable={smartEnabled || toggleEnabled}
+            cleanupDisabled={aiFeaturesDisabled}
           />
           <ShortcutRow
             mode="toggle"
@@ -669,20 +678,27 @@ const GeneralTab = ({
             onAddBinding={addShortcutBinding}
             onRemoveBinding={removeShortcutBinding}
             canDisable={smartEnabled || holdEnabled}
+            cleanupDisabled={aiFeaturesDisabled}
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <h2 className="ui-text-section-label-sm ui-color-muted">
-          {t({
-            id: "settings.general.features",
-            message: "Features",
-          })}
-        </h2>
+        <div className="flex h-5 items-center">
+          <h2 className="ui-text-section-label-sm ui-color-muted">
+            {t({
+              id: "settings.general.features",
+              message: "Features",
+            })}
+          </h2>
+        </div>
 
         <div className="space-y-3">
-          <div className="rounded-lg bg-surface-surface">
+          <div
+            className={`relative z-30 rounded-lg bg-surface-surface transition-opacity ${
+              aiFeaturesDisabled ? "opacity-55" : "opacity-100"
+            }`}
+          >
             <div className="py-2 px-2.5">
               <div className="flex items-center justify-between">
                 <span className="ui-text-label-strong ui-color-primary">
@@ -705,19 +721,33 @@ const GeneralTab = ({
                 <span className="ui-text-meta ui-color-muted">
                   {aiFeaturesDisabled ? (
                     <>
-                      {t({
-                        id: "settings.general.edit_mode.configure_prefix",
-                        message: "Configure a language model in",
-                      })}{" "}
+                      {aiFeaturesRequireLicense
+                        ? t({
+                            id: "settings.general.edit_mode.license_prefix",
+                            message: "Activate Glimpse Personal in",
+                          })
+                        : t({
+                            id: "settings.general.edit_mode.configure_prefix",
+                            message: "Set up AI writing in",
+                          })}{" "}
                       <button
                         type="button"
-                        onClick={onOpenModelsTab}
+                        onClick={
+                          aiFeaturesRequireLicense
+                            ? onOpenAccountTab
+                            : onOpenProvidersTab
+                        }
                         className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
                       >
-                        {t({
-                          id: "settings.general.models_tab",
-                          message: "Models",
-                        })}
+                        {aiFeaturesRequireLicense
+                          ? t({
+                              id: "settings.general.account_tab",
+                              message: "Account",
+                            })
+                          : t({
+                              id: "settings.general.providers_tab",
+                              message: "Providers",
+                            })}
                       </button>{" "}
                       {t({
                         id: "settings.general.edit_mode.models_suffix",
@@ -733,21 +763,29 @@ const GeneralTab = ({
                 </span>
                 <div
                   className="relative"
-                  onMouseEnter={() => showHelpTooltip("edit-mode")}
+                  onMouseEnter={() => {
+                    if (!aiFeaturesDisabled) showHelpTooltip("edit-mode");
+                  }}
                   onMouseLeave={() => hideHelpTooltip("edit-mode")}
                 >
                   <button
                     type="button"
-                    className="p-0.5 text-content-disabled hover:text-content-muted transition-colors"
+                    disabled={aiFeaturesDisabled}
+                    className="p-0.5 text-content-disabled transition-colors enabled:hover:text-content-muted disabled:pointer-events-none"
                     aria-label={t({
                       id: "settings.general.edit_mode.info_aria",
                       message: "More information about Edit Mode",
                     })}
-                    aria-expanded={openHelpTooltip === "edit-mode"}
+                    aria-expanded={
+                      !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
+                    }
                     aria-controls="edit-mode-help-tooltip"
-                    onFocus={() => showHelpTooltip("edit-mode")}
+                    onFocus={() => {
+                      if (!aiFeaturesDisabled) showHelpTooltip("edit-mode");
+                    }}
                     onBlur={() => hideHelpTooltip("edit-mode")}
                     onKeyDown={(event) => {
+                      if (aiFeaturesDisabled) return;
                       if (event.key === "Escape") {
                         event.preventDefault();
                         hideHelpTooltip("edit-mode");
@@ -763,8 +801,10 @@ const GeneralTab = ({
                   <div
                     id="edit-mode-help-tooltip"
                     role="tooltip"
-                    className={`absolute right-0 bottom-full mb-1 z-10 ${
-                      openHelpTooltip === "edit-mode" ? "block" : "hidden"
+                    className={`absolute right-0 bottom-full mb-1 z-[80] ${
+                      !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
+                        ? "block"
+                        : "hidden"
                     }`}
                   >
                     <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
@@ -775,13 +815,18 @@ const GeneralTab = ({
                             'Select text in any app, and speak a command like "make this formal" or "fix my grammar".',
                         })}
                       </p>
-                      {transcriptionMode === "local" && !aiFeaturesReady && (
+                      {!aiFeaturesReady && (
                         <p className="text-warning mt-1">
-                          {t({
-                            id: "settings.general.edit_mode.help_requirement",
-                            message:
-                              "Requires an enabled and configured language model in the Models tab.",
-                          })}
+                          {aiFeaturesRequireLicense
+                            ? t({
+                                id: "settings.general.edit_mode.help_license_requirement",
+                                message: "Requires Glimpse Personal.",
+                              })
+                            : t({
+                                id: "settings.general.edit_mode.help_requirement",
+                                message:
+                                  "Requires an enabled and configured writing provider.",
+                              })}
                         </p>
                       )}
                     </div>
@@ -1247,6 +1292,7 @@ const ShortcutBindingsList = ({
   onUpdateBinding,
   onAddBinding,
   onRemoveBinding,
+  cleanupDisabled,
 }: {
   mode: ShortcutMode;
   bindings: ShortcutBinding[];
@@ -1264,6 +1310,7 @@ const ShortcutBindingsList = ({
   ) => void;
   onAddBinding: (mode: ShortcutMode) => void;
   onRemoveBinding: (mode: ShortcutMode, index: number) => void;
+  cleanupDisabled: boolean;
 }) => {
   const { t } = useLingui();
   const addShortcutLabel = t({
@@ -1328,7 +1375,7 @@ const ShortcutBindingsList = ({
               </span>
             </>
           ) : (
-            <span className="truncate">{primaryDisplay}</span>
+              <span className="truncate">{primaryDisplay}</span>
           )}
         </button>
 
@@ -1349,7 +1396,7 @@ const ShortcutBindingsList = ({
           label={cleanupLabel}
           tone="cloud"
           active={primaryBinding.cleanup_enabled}
-          disabled={false}
+          disabled={cleanupDisabled}
           onClick={() =>
             onUpdateBinding(mode, 0, {
               cleanup_enabled: !primaryBinding.cleanup_enabled,
@@ -1493,7 +1540,7 @@ const ShortcutBindingsList = ({
                       label={cleanupLabel}
                       tone="cloud"
                       active={binding.cleanup_enabled}
-                      disabled={false}
+                      disabled={cleanupDisabled}
                       onClick={() =>
                         onUpdateBinding(mode, index, {
                           cleanup_enabled: !binding.cleanup_enabled,
@@ -1594,6 +1641,7 @@ type ShortcutRowProps = {
   onAddBinding: (mode: ShortcutMode) => void;
   onRemoveBinding: (mode: ShortcutMode, index: number) => void;
   canDisable: boolean;
+  cleanupDisabled: boolean;
 };
 
 const ShortcutRow = ({
@@ -1613,6 +1661,7 @@ const ShortcutRow = ({
   onAddBinding,
   onRemoveBinding,
   canDisable,
+  cleanupDisabled,
 }: ShortcutRowProps) => {
   const { t } = useLingui();
 
@@ -1652,6 +1701,7 @@ const ShortcutRow = ({
         onUpdateBinding={onUpdateBinding}
         onAddBinding={onAddBinding}
         onRemoveBinding={onRemoveBinding}
+        cleanupDisabled={cleanupDisabled}
       />
     </div>
   );

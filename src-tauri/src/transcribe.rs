@@ -923,9 +923,7 @@ fn build_transcription_metadata(
 }
 
 fn resolve_speech_model_label(settings: &UserSettings) -> String {
-    model_manager::definition(&settings.local_model)
-        .map(|def| def.label.to_string())
-        .unwrap_or_else(|| settings.local_model.clone())
+    model_manager::model_label(&settings.local_model)
 }
 
 fn compute_audio_duration_seconds(saved: &RecordingSaved) -> f32 {

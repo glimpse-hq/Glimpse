@@ -3,13 +3,15 @@ mod analytics;
 mod assistive;
 mod audio;
 mod auto_dictionary;
+mod cli_install;
 mod core;
 mod crypto;
 mod data_migration;
 mod dictionary;
-mod downloader;
 mod library;
+mod license;
 mod llm_cleanup;
+mod local_api;
 mod local_transcription;
 mod mode_context;
 mod model_language_table;
@@ -59,6 +61,7 @@ use tauri::Emitter;
 #[cfg(target_os = "macos")]
 use tauri::Listener;
 use tauri::{AppHandle, Manager, Wry};
+use tauri_plugin_deep_link::DeepLinkExt;
 
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
@@ -73,6 +76,7 @@ pub(crate) const EVENT_AUDIO_SPECTRUM: &str = "audio:spectrum";
 pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
+pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
 #[cfg(target_os = "windows")]
 pub(crate) const FFMPEG_HELP_URL: &str =
@@ -82,6 +86,35 @@ pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimps
 
 fn launched_via_autostart() -> bool {
     std::env::args_os().any(|arg| arg == "--autostart")
+}
+
+fn register_deep_link_handlers(app: &tauri::App<AppRuntime>) {
+    let handle = app.handle().clone();
+
+    if let Ok(Some(urls)) = app.deep_link().get_current() {
+        handle_deep_link_urls(&handle, urls.into_iter().map(|url| url.to_string()));
+    }
+
+    app.deep_link().on_open_url(move |event| {
+        handle_deep_link_urls(&handle, event.urls().iter().map(|url| url.to_string()));
+    });
+}
+
+fn handle_deep_link_urls<I, S>(app: &AppHandle<AppRuntime>, urls: I)
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    for raw_url in urls {
+        let raw_url = raw_url.as_ref();
+        if !license::is_license_deep_link(raw_url) {
+            continue;
+        }
+
+        if let Err(err) = license::handle_deep_link(app) {
+            eprintln!("{err}");
+        }
+    }
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
@@ -164,7 +197,13 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 #[cfg(target_os = "macos")]
 fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::TranscriptionMode) {
     let state = app.state::<AppState>();
-    let mut current = state.current_settings();
+    let mut current = match state.current_settings_unmasked() {
+        Ok(settings) => settings,
+        Err(err) => {
+            eprintln!("Failed to load settings for transcription mode update: {err}");
+            return;
+        }
+    };
     if current.transcription_mode == mode {
         return;
     }
@@ -178,9 +217,7 @@ fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::Transcrip
             if let Err(err) = tray::refresh_tray_menu(app, &saved) {
                 eprintln!("Failed to refresh tray menu: {err}");
             }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
+            state.emit_settings_changed(app, &saved);
         }
         Err(err) => eprintln!("Failed to update transcription mode: {err}"),
     }
@@ -206,7 +243,13 @@ fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
     }
 
     let state = app.state::<AppState>();
-    let mut current = state.current_settings();
+    let mut current = match state.current_settings_unmasked() {
+        Ok(settings) => settings,
+        Err(err) => {
+            eprintln!("Failed to load settings for model selection: {err}");
+            return;
+        }
+    };
     if current.local_model == model_key {
         return;
     }
@@ -219,9 +262,7 @@ fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
             if let Err(err) = tray::refresh_tray_menu(app, &saved) {
                 eprintln!("Failed to refresh tray menu: {err}");
             }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
+            state.emit_settings_changed(app, &saved);
         }
         Err(err) => eprintln!("Failed to update model selection: {err}"),
     }
@@ -230,7 +271,13 @@ fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
 #[cfg(target_os = "macos")]
 fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     let state = app.state::<AppState>();
-    let mut current = state.current_settings();
+    let mut current = match state.current_settings_unmasked() {
+        Ok(settings) => settings,
+        Err(err) => {
+            eprintln!("Failed to load settings for microphone selection: {err}");
+            return;
+        }
+    };
     if current.microphone_device.as_deref() == device_id {
         return;
     }
@@ -243,9 +290,7 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
             if let Err(err) = tray::refresh_tray_menu(app, &saved) {
                 eprintln!("Failed to refresh tray menu: {err}");
             }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
+            state.emit_settings_changed(app, &saved);
         }
         Err(err) => eprintln!("Failed to update microphone selection: {err}"),
     }
@@ -318,7 +363,12 @@ pub fn run() {
             }
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            {
+                let settings = handle.state::<AppState>().current_settings();
+                local_api::start_from_settings(handle, &settings);
+            }
             library::commands::recover_interrupted_library_items(handle);
+            register_deep_link_handlers(app);
 
             #[cfg(target_os = "macos")]
             {
@@ -402,6 +452,12 @@ pub fn run() {
             get_settings,
             set_shortcut_capture_active,
             update_settings,
+            get_license_state,
+            activate_license,
+            refresh_license,
+            deactivate_license,
+            reveal_license_key,
+            get_dictation_stats,
             preview_recording_prune,
             set_user_name,
             dictionary::set_dictionary,
@@ -434,6 +490,13 @@ pub fn run() {
             model_manager::download_model,
             model_manager::delete_model,
             model_manager::cancel_download,
+            local_api::get_local_api_status,
+            local_api::start_local_api,
+            local_api::stop_local_api,
+            local_api::clear_local_api_logs,
+            cli_install::get_cli_install_status,
+            cli_install::install_cli,
+            cli_install::remove_cli,
             audio::list_input_devices,
             toast::toast_dismissed,
             open_accessibility_settings,
@@ -518,7 +581,7 @@ pub struct AppState {
     http: Client,
     pub(crate) local_transcriber: Arc<local_transcription::LocalTranscriber>,
     storage: Arc<storage::StorageManager>,
-    settings_store: Arc<SettingsStore>,
+    pub(crate) settings_store: Arc<SettingsStore>,
     settings: parking_lot::Mutex<UserSettings>,
     hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
@@ -534,6 +597,7 @@ pub struct AppState {
     library_queue: parking_lot::Mutex<VecDeque<LibraryJob>>,
     library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    pub(crate) local_api: Arc<local_api::LocalApiController>,
     update_state: update_checker::SharedUpdateState,
     auto_update_completed: AtomicBool,
     preflight_cancel: CancellationToken,
@@ -571,7 +635,10 @@ impl AppState {
 
         let recorder = Arc::new(RecorderManager::new());
 
-        let local_transcriber = Arc::new(local_transcription::LocalTranscriber::new());
+        let model_cache_dir = model_manager::model_cache_dir(app_handle)
+            .expect("Failed to resolve local model cache directory");
+        let local_transcriber =
+            Arc::new(local_transcription::LocalTranscriber::new(model_cache_dir));
         local_transcriber.start_idle_monitor();
 
         Self {
@@ -595,6 +662,7 @@ impl AppState {
             library_queue: parking_lot::Mutex::new(VecDeque::new()),
             library_active: parking_lot::Mutex::new(None),
             retry_tokens: parking_lot::Mutex::new(HashMap::new()),
+            local_api: Arc::new(local_api::LocalApiController::default()),
             update_state: update_checker::create_state(),
             auto_update_completed: AtomicBool::new(false),
             preflight_cancel: CancellationToken::new(),
@@ -656,13 +724,44 @@ impl AppState {
     pub fn current_settings(&self) -> UserSettings {
         match self.settings_store.load() {
             Ok(latest) => {
+                // Cache the unmasked truth so subsequent saves don't accidentally
+                // persist the license-gated mask back to disk. The masked view is
+                // only ever returned to the caller, never stored.
                 *self.settings.lock() = latest.clone();
-                latest
+                self.settings_for_response(latest)
             }
             Err(err) => {
                 eprintln!("Failed to load settings from DB, using cache: {err}");
-                self.settings.lock().clone()
+                self.settings_for_response(self.settings.lock().clone())
             }
+        }
+    }
+
+    pub(crate) fn current_settings_unmasked(&self) -> Result<UserSettings, String> {
+        match self.settings_store.load() {
+            Ok(latest) => {
+                *self.settings.lock() = latest.clone();
+                Ok(latest)
+            }
+            Err(err) => Err(err.to_string()),
+        }
+    }
+
+    pub(crate) fn settings_for_response(&self, mut settings: UserSettings) -> UserSettings {
+        if !license::license_gate_active(&self.settings_store) {
+            disable_license_gated_settings(&mut settings);
+        }
+        settings
+    }
+
+    pub(crate) fn emit_settings_changed(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        settings: &UserSettings,
+    ) {
+        let response = self.settings_for_response(settings.clone());
+        if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &response) {
+            eprintln!("Failed to emit settings change: {err}");
         }
     }
 
@@ -695,7 +794,7 @@ impl AppState {
         self.session_counters.lock().transcription_count += 1;
     }
 
-    fn http(&self) -> Client {
+    pub(crate) fn http(&self) -> Client {
         self.http.clone()
     }
 
@@ -911,6 +1010,22 @@ impl AppState {
     }
 }
 
+fn disable_license_gated_settings(settings: &mut UserSettings) {
+    settings.llm_enabled = false;
+    settings.cleanup_enabled = false;
+    settings.edit_mode_enabled = false;
+    settings.local_api_start_on_launch = false;
+    for binding in settings
+        .shortcut_bindings
+        .smart
+        .iter_mut()
+        .chain(settings.shortcut_bindings.hold.iter_mut())
+        .chain(settings.shortcut_bindings.toggle.iter_mut())
+    {
+        binding.cleanup_enabled = false;
+    }
+}
+
 #[tauri::command]
 fn get_settings(state: tauri::State<AppState>) -> Result<UserSettings, String> {
     Ok(state.current_settings())
@@ -1018,6 +1133,53 @@ fn update_settings(
     core::settings::update_settings(args, &app, &state)
 }
 
+#[tauri::command]
+fn get_license_state(state: tauri::State<AppState>) -> Result<license::LicenseState, String> {
+    license::get_license_state(&state.settings_store)
+}
+
+#[tauri::command]
+async fn activate_license(
+    state: tauri::State<'_, AppState>,
+    args: license::ActivateLicenseArgs,
+) -> Result<license::LicenseState, String> {
+    license::activate_license(state.http(), &state.settings_store, args).await
+}
+
+#[tauri::command]
+async fn refresh_license(
+    state: tauri::State<'_, AppState>,
+) -> Result<license::LicenseState, String> {
+    license::refresh_license(state.http(), &state.settings_store).await
+}
+
+#[tauri::command]
+async fn deactivate_license(
+    state: tauri::State<'_, AppState>,
+) -> Result<license::LicenseState, String> {
+    license::deactivate_license(state.http(), &state.settings_store).await
+}
+
+#[tauri::command]
+fn reveal_license_key(state: tauri::State<AppState>) -> Result<String, String> {
+    license::reveal_license_key(&state.settings_store)
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct DictationStats {
+    total_words: u64,
+}
+
+#[tauri::command]
+fn get_dictation_stats(state: tauri::State<AppState>) -> Result<DictationStats, String> {
+    let total_words = state
+        .storage()
+        .total_word_count()
+        .map_err(|err| err.to_string())?;
+    Ok(DictationStats { total_words })
+}
+
 #[derive(Serialize)]
 struct RecordingPrunePreview {
     candidate_count: u32,
@@ -1047,10 +1209,20 @@ fn set_user_name(
 }
 
 #[derive(Serialize)]
+struct StorageBreakdown {
+    recordings_bytes: u64,
+    library_bytes: u64,
+    databases_bytes: u64,
+    models_bytes: u64,
+    total_bytes: u64,
+}
+
+#[derive(Serialize)]
 struct AppInfo {
     version: String,
     data_dir_size_bytes: u64,
     data_dir_path: String,
+    storage_breakdown: StorageBreakdown,
 }
 
 #[tauri::command]
@@ -1064,12 +1236,40 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
 
     let data_dir_path = data_dir.display().to_string();
 
-    let data_dir_size_bytes = calculate_dir_size(&data_dir).unwrap_or(0);
+    let recordings_bytes = calculate_dir_size(&data_dir.join("recordings")).unwrap_or(0);
+    let library_bytes = calculate_dir_size(&data_dir.join("library")).unwrap_or(0);
+
+    let databases_bytes = [
+        "transcriptions.db",
+        "transcriptions.db-wal",
+        "transcriptions.db-shm",
+    ]
+    .iter()
+    .map(|name| {
+        std::fs::metadata(data_dir.join(name))
+            .map(|m| m.len())
+            .unwrap_or(0)
+    })
+    .sum::<u64>();
+
+    let models_bytes = model_manager::model_cache_dir(&app)
+        .ok()
+        .map(|p| calculate_dir_size(&p).unwrap_or(0))
+        .unwrap_or(0);
+
+    let total_bytes = calculate_dir_size(&data_dir).unwrap_or(0);
 
     Ok(AppInfo {
         version,
-        data_dir_size_bytes,
+        data_dir_size_bytes: total_bytes,
         data_dir_path,
+        storage_breakdown: StorageBreakdown {
+            recordings_bytes,
+            library_bytes,
+            databases_bytes,
+            models_bytes,
+            total_bytes,
+        },
     })
 }
 

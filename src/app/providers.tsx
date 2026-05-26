@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, type ReactNode } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { authKeys } from "../features/auth/queries";
 import { activateLocale, i18n } from "../i18n";
 import { settingsKeys, useSettings } from "../features/settings/queries";
 import { transcriptionKeys } from "../features/transcriptions/queries";
@@ -49,9 +48,6 @@ function QuerySyncBridge() {
     });
 
     if (isSettingsWindow) {
-      register("auth:changed", () => {
-        queryClient.invalidateQueries({ queryKey: authKeys.user() });
-      });
       register("update:available", () => {
         queryClient.invalidateQueries({ queryKey: updateKeys.status() });
       });

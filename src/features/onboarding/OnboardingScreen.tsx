@@ -10,8 +10,13 @@ import {
 import { AnimatePresence } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
+import {
+  checkoutUrlFor,
+  type PurchaseTier,
+} from "../../shared/lib/purchaseConfig";
 import { useSettings } from "../settings/queries";
 import {
   modelKeys,
@@ -24,8 +29,9 @@ import { ModelSelectionStep } from "./steps/ModelSelectionStep";
 import { MicrophoneStep } from "./steps/MicrophoneStep";
 import { AccessibilityStep } from "./steps/AccessibilityStep";
 import { ReadyStep } from "./steps/ReadyStep";
-import { SigninStep } from "./steps/SigninStep";
+import { LicenseStep } from "./steps/LicenseStep";
 import { GlimpseLogo, StepIndicator } from "./steps/shared";
+import { useActivateLicense, useLicenseState } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import type { ModelInfo, ModelStatus } from "../../types";
@@ -104,17 +110,22 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const [downloadStatus, setDownloadStatus] = useState<
     Record<string, LocalDownloadStatus>
   >({});
+  const [openingLicenseTarget, setOpeningLicenseTarget] =
+    useState<PurchaseTier | null>(null);
+  const [licenseOpenError, setLicenseOpenError] = useState<string | null>(null);
   const ctx = state.context;
   const queryClient = useQueryClient();
 
   const steps = useMemo(
-    () => getSteps(ctx.selectedMode, ctx.platform),
-    [ctx.platform, ctx.selectedMode],
+    () => getSteps(ctx.platform),
+    [ctx.platform],
   );
   const currentStep = state.value as string;
   const currentStepIndex = steps.indexOf(currentStep as typeof steps[number]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
+  const licenseQuery = useLicenseState();
+  const activateLicense = useActivateLicense();
 
   const onboardingModelCatalog = useMemo(
     () => pickOnboardingModels(modelCatalogQuery.data ?? []),
@@ -122,6 +133,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   );
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedThemeMode = settingsQuery.data?.theme_mode ?? "system";
+  const persistedSettings = settingsQuery.data;
   const selectedModel = ctx.localModelChoice ||
     pickDefaultOnboardingModel(onboardingModelCatalog, persistedLocalModel);
   const statusModelKeys = useMemo(
@@ -310,6 +322,24 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     requestAccessibilityPermission();
   }, [requestAccessibilityPermission]);
 
+  const openLicenseCheckout = useCallback(async (tier: PurchaseTier) => {
+    setLicenseOpenError(null);
+    setOpeningLicenseTarget(tier);
+    try {
+      const checkoutUrl = checkoutUrlFor(tier, "onboarding");
+      if (!checkoutUrl) {
+        throw new Error(
+          `${tier === "commercial" ? "Commercial" : "Personal"} checkout link is not configured for this build.`,
+        );
+      }
+      await openUrl(checkoutUrl);
+    } catch (err) {
+      setLicenseOpenError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setOpeningLicenseTarget(null);
+    }
+  }, []);
+
   const displayStateByModel = useMemo(() => {
     const buildState = (key: string): LocalDownloadStatus => {
       const installed = modelStatus[key]?.installed;
@@ -357,6 +387,17 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleComplete = useCallback(async () => {
+    if (settingsQuery.isLoading || settingsQuery.isError || !persistedSettings) {
+      send({
+        type: "COMPLETE_ERROR",
+        error: t({
+          id: "onboarding.complete.failed",
+          message: "Could not finish setup. Check your settings and try again.",
+        }),
+      });
+      return;
+    }
+
     const resolvedLocalModel = selectedModel;
 
     send({ type: "COMPLETING" });
@@ -385,15 +426,15 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           toggleShortcut,
           toggleEnabled: false,
           shortcutBindings: {
-            smart: [{ shortcut: ctx.smartShortcut, temporary: false, cleanupEnabled: false }],
-            hold: [{ shortcut: holdShortcut, temporary: false, cleanupEnabled: false }],
-            toggle: [{ shortcut: toggleShortcut, temporary: false, cleanupEnabled: false }],
+            smart: [{ shortcut: ctx.smartShortcut, temporary: false, cleanup_enabled: false }],
+            hold: [{ shortcut: holdShortcut, temporary: false, cleanup_enabled: false }],
+            toggle: [{ shortcut: toggleShortcut, temporary: false, cleanup_enabled: false }],
           },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
-          microphoneDevice: null,
-          language: "en",
-          appLocale: "system",
+          microphoneDevice: persistedSettings?.microphone_device ?? null,
+          language: persistedSettings?.language ?? "en",
+          appLocale: persistedSettings?.app_locale ?? "system",
           themeMode: persistedThemeMode,
           llmEnabled: false,
           cleanupEnabled: false,
@@ -406,8 +447,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           mediaControlEnabled: true,
           autoUpdateEnabled: true,
           autoLaunchEnabled: false,
-          recordingPrunePolicy: "never",
-          analyticsEnabled: true,
+          recordingPrunePolicy: persistedSettings?.recording_prune_policy ?? "never",
+          analyticsEnabled: persistedSettings?.analytics_enabled ?? true,
+          localApiKey: persistedSettings?.local_api_key ?? "",
+          localApiPort: persistedSettings?.local_api_port ?? 11435,
+          localApiModel: persistedSettings?.local_api_model ?? "auto",
+          localApiHost: persistedSettings?.local_api_host ?? "127.0.0.1",
+          localApiStartOnLaunch: persistedSettings?.local_api_start_on_launch ?? false,
+          localApiCors: persistedSettings?.local_api_cors ?? false,
         },
       });
       await invoke("complete_onboarding");
@@ -430,9 +477,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     ctx.selectedMode,
     ctx.smartShortcut,
     onComplete,
+    persistedSettings,
     persistedThemeMode,
     selectedModel,
     send,
+    settingsQuery.isError,
+    settingsQuery.isLoading,
     t,
   ]);
 
@@ -489,12 +539,28 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             onNext={goNext}
           />
         );
-      case "localSignin":
+      case "license":
         return (
-          <SigninStep
-            key="local-signin"
+          <LicenseStep
+            key="license"
             stepMotionProps={stepMotionProps}
-            onNext={goNext}
+            licenseState={licenseQuery.data ?? null}
+            licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
+            activating={activateLicense.isPending}
+            openingTarget={openingLicenseTarget}
+            openError={licenseOpenError}
+            isCompleting={ctx.isCompleting}
+            completionError={ctx.completionError}
+            activationError={
+              activateLicense.error instanceof Error
+                ? activateLicense.error.message
+                : activateLicense.error
+                  ? String(activateLicense.error)
+                  : null
+            }
+            onOpenCheckout={openLicenseCheckout}
+            onActivateLicense={(key) => activateLicense.mutate(key)}
+            onComplete={handleComplete}
           />
         );
       case "microphone":
@@ -527,13 +593,11 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             smartShortcut={ctx.smartShortcut}
             captureActive={ctx.captureActive}
             capturePreview={ctx.capturePreview}
-            isCompleting={ctx.isCompleting}
-            completionError={ctx.completionError}
             onStartCapture={() => send({ type: "CAPTURE_START" })}
             onEndCapture={(shortcut) => send({ type: "CAPTURE_END", shortcut })}
             onSetPreview={(preview) => send({ type: "SET_CAPTURE_PREVIEW", preview })}
             onSetShortcut={(shortcut) => send({ type: "SET_SHORTCUT", shortcut })}
-            onComplete={handleComplete}
+            onNext={goNext}
           />
         );
       default:

@@ -1,3 +1,23 @@
+0.9.0
+
+### Features
+- Glimpse Personal is here. Dictation is still free, but the more advanced stuff now has a one-time license so I can keep making this without exploding.
+- Local API! You can now start a local OpenAI-compatible endpoint from Settings → Developer → API Server, choose the host/port/model, add an API key, enable CORS, and optionally start it on launch.
+- Added an optional `glimpse` command line install from About → Advanced, for using Glimpse from the terminal.
+- Added a new Providers tab split from Models, with a fresh new design.
+
+### Improvements
+- Account has been replaced with a cleaner license view, including trial status, activation, and buying Personal / Commercial.
+- Settings got reorganized into Core, Local, and Developer sections. Models is for speech models only; AI writing has its own Providers tab.
+- (i) has been updated to now support email support.
+- Redesigned About with Updates and FAQ up front, plus a clearer storage breakdown.
+- Models tab has been redesigned to work better at a glance. (or a Glimpse.. :) )
+- Fixed the home transcription list shifting around while it loads.
+- Model downloads now use the shared Glimpse Speech model manager. Installs, progress, cancellation, and model metadata should feel more consistent.
+- Onboarding now keeps more of your existing setup when finishing, does a better job picking the recommended local models, and has a calmer license step at the end.
+
+---
+
 0.8.7
 
 ### Improvements
