@@ -236,7 +236,7 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         ((trial_ends_at - now).num_seconds() as f64 / 86_400.0).ceil() as i64;
     let trial_active = now < trial_ends_at;
 
-    let has_license_credential = read_license_key(store)?.is_some();
+    let has_license_credential = has_stored_license_key(store)?;
     let stored_status = read_optional_string(store, KEY_LICENSE_STATUS)?;
     let display_key = read_optional_string(store, KEY_LICENSE_DISPLAY_KEY)?;
     let customer_email = read_optional_string(store, KEY_LICENSE_CUSTOMER_EMAIL)?;
@@ -397,7 +397,14 @@ pub async fn deactivate_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
-    let key = read_license_key(store)?;
+    let key = match read_license_key(store) {
+        Ok(key) => key,
+        Err(err) => {
+            eprintln!("Clearing local license after decryption failure during deactivate: {err}");
+            clear_cache(store)?;
+            return get_license_state(store);
+        }
+    };
     let activation_id = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)?;
 
     if let (Some(key), Some(activation_id)) = (key.as_deref(), activation_id.as_deref()) {
@@ -506,6 +513,10 @@ fn clear_cache(store: &SettingsStore) -> Result<(), String> {
         write_string(store, key, "")?;
     }
     Ok(())
+}
+
+fn has_stored_license_key(store: &SettingsStore) -> Result<bool, String> {
+    read_optional_string(store, KEY_LICENSE_KEY).map(|key| key.is_some())
 }
 
 fn read_license_key(store: &SettingsStore) -> Result<Option<String>, String> {
