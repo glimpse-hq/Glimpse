@@ -2,6 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
 import type { LicenseState } from "../../license/api";
 import type { PurchaseTier } from "../../../shared/lib/purchaseConfig";
@@ -111,6 +112,10 @@ export function LicenseStep({
         checkoutDisabled={openingTarget !== null}
         onOpenCheckout={onOpenCheckout}
       />
+
+      <div className="mt-3 flex w-full max-w-[400px] items-center justify-end">
+        <CustomerPortalLink source="onboarding" />
+      </div>
 
       {!isActive && (
         <form

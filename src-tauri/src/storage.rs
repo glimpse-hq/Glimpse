@@ -331,9 +331,8 @@ impl StorageManager {
 
     pub fn prune_before(&self, cutoff_millis: i64) -> Result<Vec<String>> {
         let conn = self.connection.lock();
-        let mut stmt = conn.prepare(
-            "SELECT audio_path FROM transcriptions WHERE timestamp <= ?1",
-        )?;
+        let mut stmt =
+            conn.prepare("SELECT audio_path FROM transcriptions WHERE timestamp <= ?1")?;
         let audio_paths: Vec<String> = stmt
             .query_map(params![cutoff_millis], |row| row.get::<_, String>(0))?
             .collect::<rusqlite::Result<Vec<_>>>()?;

@@ -559,8 +559,7 @@ fn migrate_auto_delete_from_legacy(
 ) {
     if legacy_transcription != RecordingPrunePolicy::Never {
         settings.auto_delete_target = AutoDeleteTarget::Transcripts;
-        settings.auto_delete_duration =
-            canonicalize_recording_prune_policy(legacy_transcription);
+        settings.auto_delete_duration = canonicalize_recording_prune_policy(legacy_transcription);
         return;
     }
 
@@ -836,13 +835,10 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =
                 self.read_value(&conn, KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
-            settings.auto_delete_target = self.read_value(
-                &conn,
-                KEY_AUTO_DELETE_TARGET,
-                settings.auto_delete_target,
-            )?;
-            let auto_delete_duration = self
-                .read_optional_value::<RecordingPrunePolicy>(&conn, KEY_AUTO_DELETE_DURATION)?;
+            settings.auto_delete_target =
+                self.read_value(&conn, KEY_AUTO_DELETE_TARGET, settings.auto_delete_target)?;
+            let auto_delete_duration =
+                self.read_optional_value::<RecordingPrunePolicy>(&conn, KEY_AUTO_DELETE_DURATION)?;
             if let Some(duration) = auto_delete_duration {
                 settings.auto_delete_duration = duration;
             } else {
@@ -1148,11 +1144,7 @@ impl SettingsStore {
             KEY_AUTO_LAUNCH_ENABLED,
             &settings.auto_launch_enabled,
         )?;
-        self.write_value(
-            &conn,
-            KEY_AUTO_DELETE_TARGET,
-            &settings.auto_delete_target,
-        )?;
+        self.write_value(&conn, KEY_AUTO_DELETE_TARGET, &settings.auto_delete_target)?;
         self.write_value(
             &conn,
             KEY_AUTO_DELETE_DURATION,

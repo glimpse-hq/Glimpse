@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { Loader2, LogOut, ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
 import type { LicenseState } from "../../license/api";
 import type { PurchaseTier } from "../../../shared/lib/purchaseConfig";
@@ -135,7 +136,8 @@ const AccountView = ({
 
         {isActive ? (
           <>
-            <div className="flex w-full max-w-[400px] items-center justify-end gap-2">
+            <div className="flex w-full max-w-[400px] items-center justify-between gap-2">
+              <CustomerPortalLink source="settings_account" />
               {confirmDeactivate ? (
                 <div className="flex items-center gap-1.5">
                   <button

@@ -770,10 +770,7 @@ mod tests {
             LicenseEdition::Founder,
             LicenseEdition::Contributor,
         ] {
-            assert_eq!(
-                LicenseEdition::parse(edition.as_str()),
-                Some(edition)
-            );
+            assert_eq!(LicenseEdition::parse(edition.as_str()), Some(edition));
         }
     }
 

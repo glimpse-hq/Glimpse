@@ -1205,12 +1205,11 @@ async fn preview_transcription_prune(
     policy: RecordingPrunePolicy,
     app: AppHandle<AppRuntime>,
 ) -> Result<RecordingPrunePreview, String> {
-    let candidate_count = async_runtime::spawn_blocking(move || {
-        preview_transcription_prune_for_policy(&app, policy)
-    })
-    .await
-    .map_err(|err| err.to_string())?
-    .map_err(|err| err.to_string())?;
+    let candidate_count =
+        async_runtime::spawn_blocking(move || preview_transcription_prune_for_policy(&app, policy))
+            .await
+            .map_err(|err| err.to_string())?
+            .map_err(|err| err.to_string())?;
 
     Ok(RecordingPrunePreview { candidate_count })
 }

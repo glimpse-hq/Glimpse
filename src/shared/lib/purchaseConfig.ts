@@ -28,6 +28,11 @@ export function founderCheckoutUrl(): string | null {
   return url || null;
 }
 
+export function customerPortalUrl(): string | null {
+  const url = import.meta.env.VITE_GLIMPSE_CUSTOMER_PORTAL?.trim();
+  return url || null;
+}
+
 export function tierInfo(tier: PurchaseTier): TierInfo {
   if (tier === "commercial") {
     return {
@@ -58,6 +63,10 @@ export function checkoutUrlFor(
 // TODO: REMOVE after next update — beta gift founder checkout link builder.
 export function founderCheckoutUrlFor(source: PurchaseSource): string | null {
   return withCheckoutTracking(founderCheckoutUrl(), "founder_license", source);
+}
+
+export function customerPortalUrlFor(source: PurchaseSource): string | null {
+  return withCheckoutTracking(customerPortalUrl(), "customer_portal", source);
 }
 
 function withCheckoutTracking(

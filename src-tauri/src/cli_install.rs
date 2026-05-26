@@ -5,7 +5,10 @@ use std::{
 
 use serde::Serialize;
 
+#[cfg(windows)]
 const WINDOWS_SHIM_TARGET_MARKER: &str = "REM glimpse-cli-target=";
+#[cfg(windows)]
+const WINDOWS_CLI_SHIM_ENV: &str = "GLIMPSE_CLI_SHIM";
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -194,11 +197,12 @@ fn is_glimpse_binary(path: &Path) -> bool {
 fn write_windows_shim(destination: &Path, source: &Path) -> Result<(), String> {
     let source_display = source.to_string_lossy();
     let content = format!(
-        "@echo off\r\n{WINDOWS_SHIM_TARGET_MARKER}{source_display}\r\n\"{source_display}\" %*\r\n"
+        "@echo off\r\n{WINDOWS_SHIM_TARGET_MARKER}{source_display}\r\nset \"{WINDOWS_CLI_SHIM_ENV}=1\"\r\n\"{source_display}\" %*\r\n"
     );
     fs::write(destination, content).map_err(|err| format!("Failed to install CLI: {err}"))
 }
 
+#[cfg(windows)]
 fn parse_windows_shim_target(content: &str) -> Option<PathBuf> {
     content.lines().find_map(|line| {
         let line = line.trim();
@@ -271,6 +275,7 @@ fn is_executable_file(path: &Path) -> bool {
 mod tests {
     use super::*;
 
+    #[cfg(windows)]
     #[test]
     fn parse_windows_shim_target_reads_marker_line() {
         let content = concat!(
@@ -288,10 +293,8 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn windows_shim_is_owned_from_marker_target() {
-        let temp = std::env::temp_dir().join(format!(
-            "glimpse-cli-shim-test-{}",
-            std::process::id()
-        ));
+        let temp =
+            std::env::temp_dir().join(format!("glimpse-cli-shim-test-{}", std::process::id()));
         let _ = fs::remove_file(&temp);
         let shim_target = r"C:\Apps\Glimpse\Glimpse.exe";
         fs::write(

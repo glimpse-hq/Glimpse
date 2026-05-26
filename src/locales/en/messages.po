@@ -1023,6 +1023,11 @@ msgid "personalization.modal.custom_instructions"
 msgstr "Custom instructions"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/CustomerPortalLink.tsx
+msgid "license.customer_portal"
+msgstr "Customer portal"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.dark"
 msgstr "Dark"
