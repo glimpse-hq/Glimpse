@@ -22,7 +22,9 @@ pub fn get_cli_install_status() -> Result<CliInstallStatus, String> {
 }
 
 #[tauri::command]
-pub fn install_cli() -> Result<CliInstallStatus, String> {
+pub fn install_cli(state: tauri::State<crate::AppState>) -> Result<CliInstallStatus, String> {
+    crate::license::require_license_gate(&state.settings_store, "the CLI")?;
+
     #[cfg(unix)]
     {
         let source = cli_source_binary()?;

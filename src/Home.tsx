@@ -7,7 +7,6 @@ import {
   Home as HomeIcon,
   Book,
   Brain,
-  User,
   Info,
   HelpCircle,
   Bug,
@@ -26,7 +25,7 @@ import TranscriptionList from "./features/transcriptions/components/Transcriptio
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
-import { useCurrentUser } from "./features/auth/queries";
+import { useLicenseGate } from "./features/license/queries";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
@@ -89,18 +88,21 @@ const SidebarItem = ({
   label,
   active = false,
   collapsed,
+  disabled = false,
   onClick,
 }: {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
   collapsed: boolean;
+  disabled?: boolean;
   onClick?: () => void;
 }) => (
   <button
     onClick={onClick}
+    disabled={disabled}
     data-active={active ? "true" : "false"}
-    className={`ui-nav-item group h-9 pl-[17px] pr-3 mb-[2px] ${
+    className={`ui-nav-item group h-9 pl-[17px] pr-3 mb-[2px] disabled:pointer-events-none disabled:opacity-45 ${
       collapsed ? "gap-0" : "gap-3"
     }`}
   >
@@ -128,7 +130,7 @@ const Home = () => {
   const [activeView, setActiveView] = useState<
     "home" | "dictionary" | "brain" | "library"
   >("home");
-  const { user: currentUser, refresh: refreshUser } = useCurrentUser();
+  const licenseGateActive = useLicenseGate();
   const [showSupportPopup, setShowSupportPopup] = useState(false);
   const [supportEmailCopied, setSupportEmailCopied] = useState(false);
   const [showFAQ, setShowFAQ] = useState(false);
@@ -138,6 +140,7 @@ const Home = () => {
   const [pendingImportPaths, setPendingImportPaths] = useState<string[] | null>(
     null,
   );
+  const licenseGateActiveRef = useRef(false);
 
   const { data: settings } = useSettings();
   const { data: updateStatus } = useUpdateStatus();
@@ -148,11 +151,16 @@ const Home = () => {
   const appVersion = appInfoData?.version ?? "-";
   const updateAvailable = updateStatus?.available ?? false;
 
+  useEffect(() => {
+    licenseGateActiveRef.current = licenseGateActive;
+    if (!licenseGateActive && (activeView === "brain" || activeView === "library")) {
+      setActiveView("home");
+      setDragActive(false);
+      setPendingImportPaths(null);
+    }
+  }, [activeView, licenseGateActive]);
+
   const sidebarWidth = isSidebarCollapsed ? 68 : 200;
-  const currentUserAvatar =
-    currentUser && typeof currentUser.prefs.avatar === "string"
-      ? currentUser.prefs.avatar
-      : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -163,7 +171,7 @@ const Home = () => {
     let unlistenDragLeave: UnlistenFn | null = null;
     let unlistenDragDrop: UnlistenFn | null = null;
     let unlistenOpenImport: UnlistenFn | null = null;
-    let unlistenSignIn: UnlistenFn | null = null;
+    let unlistenLicenseReturn: UnlistenFn | null = null;
 
     listen("navigate:about", () => {
       setSettingsTab("about");
@@ -185,6 +193,7 @@ const Home = () => {
     });
 
     listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) setDragActive(true);
     }).then((fn) => {
       if (cancelled) fn();
@@ -192,6 +201,7 @@ const Home = () => {
     });
 
     listen<{ paths?: string[] }>("tauri://drag-over", (event) => {
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) setDragActive(true);
     }).then((fn) => {
       if (cancelled) fn();
@@ -207,6 +217,7 @@ const Home = () => {
 
     listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
       setDragActive(false);
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) {
         setPendingImportPaths(Array.from(new Set(event.payload.paths)));
         setActiveView("library");
@@ -217,6 +228,7 @@ const Home = () => {
     });
 
     listen<string[]>("library:open_import", (event) => {
+      if (!licenseGateActiveRef.current) return;
       if (event.payload?.length) {
         setPendingImportPaths(Array.from(new Set(event.payload)));
         setActiveView("library");
@@ -230,12 +242,12 @@ const Home = () => {
       }
     });
 
-    listen("navigate:sign-in", () => {
+    listen("license:checkout-returned", () => {
       setSettingsTab("account");
       setIsSettingsOpen(true);
     }).then((fn) => {
       if (cancelled) fn();
-      else unlistenSignIn = fn;
+      else unlistenLicenseReturn = fn;
     });
 
     return () => {
@@ -247,7 +259,7 @@ const Home = () => {
       unlistenDragLeave?.();
       unlistenDragDrop?.();
       unlistenOpenImport?.();
-      unlistenSignIn?.();
+      unlistenLicenseReturn?.();
     };
   }, []);
 
@@ -305,7 +317,7 @@ const Home = () => {
 
   const isCloudMode = transcriptionMode === "cloud";
 
-  const showCleanupButtons = isCloudMode || llmEnabled;
+  const showCleanupButtons = isCloudMode || (llmEnabled && licenseGateActive);
   const currentModeLabel = isCloudMode
     ? t({
         id: "home.mode.cloud",
@@ -395,6 +407,7 @@ const Home = () => {
               })}
               active={activeView === "brain"}
               collapsed={isSidebarCollapsed}
+              disabled={!licenseGateActive}
               onClick={() => setActiveView("brain")}
             />
             <SidebarItem
@@ -405,6 +418,7 @@ const Home = () => {
               })}
               active={activeView === "library"}
               collapsed={isSidebarCollapsed}
+              disabled={!licenseGateActive}
               onClick={() => setActiveView("library")}
             />
           </div>
@@ -643,36 +657,6 @@ const Home = () => {
       <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
 
-        {currentUser && (
-          <button
-            onClick={() => {
-              setSettingsTab("account");
-              setIsSettingsOpen(true);
-            }}
-            className="fixed top-10 right-6 flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-primary bg-surface-surface hover:bg-[var(--surface-interactive)] hover:border-border-secondary transition-colors z-10 shadow-[var(--shadow-sm)]"
-          >
-            <div className="w-6 h-6 rounded-full bg-surface-elevated border border-border-secondary flex items-center justify-center overflow-hidden">
-              {currentUserAvatar ? (
-                <img
-                  src={currentUserAvatar}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User size={14} className="text-content-muted" />
-              )}
-            </div>
-            <span className="ui-text-meta ui-color-secondary max-w-[100px] truncate">
-              {currentUser.name ||
-                currentUser.email?.split("@")[0] ||
-                t({
-                  id: "home.account.fallback",
-                  message: "Account",
-                })}
-            </span>
-          </button>
-        )}
-
         <div className="flex-1 flex flex-col px-8 pb-6 min-h-0">
           <div
             className={`w-full max-w-[680px] mx-auto pt-12 flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
@@ -696,7 +680,9 @@ const Home = () => {
           <div
             className={`w-full max-w-5xl mx-auto pt-8 ${activeView === "brain" ? "" : "hidden"}`}
           >
-            <PersonalizationView isActive={activeView === "brain"} />
+            <PersonalizationView
+              isActive={activeView === "brain" && licenseGateActive}
+            />
           </div>
 
           <div
@@ -706,7 +692,7 @@ const Home = () => {
               pendingImportPaths={pendingImportPaths}
               onSetImportPaths={setPendingImportPaths}
               sidebarWidth={sidebarWidth}
-              isActive={activeView === "library"}
+              isActive={activeView === "library" && licenseGateActive}
             />
           </div>
         </div>
@@ -758,8 +744,6 @@ const Home = () => {
           setSettingsTab("general");
         }}
         initialTab={settingsTab}
-        currentUser={currentUser}
-        onUpdateUser={refreshUser}
         transcriptionMode={transcriptionMode}
       />
 

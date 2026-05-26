@@ -11,7 +11,6 @@ import LocalApiTab from "./tabs/LocalApiTab";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
 import ProvidersTab from "./tabs/ProvidersTab";
-import type { User as AuthUser } from "../../auth/api";
 import type { TranscriptionMode } from "../../../types";
 import { useSettingsForm } from "../useSettingsForm";
 
@@ -19,8 +18,6 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: "general" | "account" | "models" | "providers" | "local-api" | "about" | "app";
-  currentUser: AuthUser | null;
-  onUpdateUser: () => Promise<void>;
   transcriptionMode: TranscriptionMode;
 }
 
@@ -55,8 +52,6 @@ const SettingsModal = ({
   isOpen,
   onClose,
   initialTab = "general",
-  currentUser,
-  onUpdateUser,
   transcriptionMode: initialTranscriptionMode,
 }: SettingsModalProps) => {
   const { t } = useLingui();
@@ -64,10 +59,24 @@ const SettingsModal = ({
     isOpen,
     onClose,
     initialTab,
-    currentUser,
-    onUpdateUser,
     transcriptionMode: initialTranscriptionMode,
   });
+  const { activeTab, licenseGateActive, setActiveTab } = form;
+  const licenseGateLocked = !licenseGateActive;
+
+  useEffect(() => {
+    if (!licenseGateLocked) return;
+    if (activeTab === "providers" || activeTab === "local-api") {
+      setActiveTab("general");
+    }
+  }, [activeTab, licenseGateLocked, setActiveTab]);
+
+  const handleOpenTab = (
+    tab: "general" | "models" | "providers" | "local-api" | "about" | "app",
+  ) => {
+    if (licenseGateLocked && (tab === "providers" || tab === "local-api")) return;
+    setActiveTab(tab);
+  };
 
   return (
     <AnimatePresence>
@@ -126,7 +135,6 @@ const SettingsModal = ({
                       message: "Account",
                     })}
                     active={form.activeTab === "account"}
-                    disabled
                     onClick={() => form.setActiveTab("account")}
                   />
                 </div>
@@ -191,6 +199,7 @@ const SettingsModal = ({
                         message: "Providers",
                       })}
                       active={form.activeTab === "providers"}
+                      disabled={licenseGateLocked}
                       onClick={() => form.setActiveTab("providers")}
                     />
                   </div>
@@ -210,6 +219,7 @@ const SettingsModal = ({
                       message: "API Server",
                     })}
                     active={form.activeTab === "local-api"}
+                    disabled={licenseGateLocked}
                     onClick={() => form.setActiveTab("local-api")}
                   />
                 </div>
@@ -218,7 +228,7 @@ const SettingsModal = ({
                 <SettingsErrorBanner
                   error={form.error}
                   sourceTab={form.errorSourceTab}
-                  onOpenTab={form.setActiveTab}
+                  onOpenTab={handleOpenTab}
                 />
               </div>
             </aside>
@@ -234,11 +244,6 @@ const SettingsModal = ({
                       <AccountTab
                         key="account"
                         variants={tabContentVariants}
-                        authLoading={form.authLoading}
-                        currentUser={form.currentUser}
-                        onUpdateUser={form.onUpdateUser}
-                        handleSignOut={form.handleSignOut}
-                        handleCancelAuth={form.handleCancelAuth}
                       />
                     )}
 
@@ -252,6 +257,7 @@ const SettingsModal = ({
                         localModel={form.localModel}
                         onOpenModelsTab={() => form.setActiveTab("models")}
                         onOpenProvidersTab={() => form.setActiveTab("providers")}
+                        onOpenAccountTab={() => form.setActiveTab("account")}
                         inputDevices={form.inputDevices}
                         microphoneDevice={form.microphoneDevice}
                         onMicrophoneDeviceChange={form.setMicrophoneDevice}
@@ -282,6 +288,7 @@ const SettingsModal = ({
                         autoDictionarySupported={form.autoDictionarySupported}
                         setAutoDictionaryEnabled={form.setAutoDictionaryEnabled}
                         aiFeaturesReady={form.aiFeaturesReady}
+                        licenseGateActive={form.licenseGateActive}
                       />
                     )}
 
@@ -301,7 +308,7 @@ const SettingsModal = ({
                       />
                     )}
 
-                    {form.activeTab === "providers" && (
+                    {form.activeTab === "providers" && !licenseGateLocked && (
                       <ProvidersTab
                         key="providers"
                         variants={tabContentVariants}
@@ -320,7 +327,7 @@ const SettingsModal = ({
                       />
                     )}
 
-                    {form.activeTab === "local-api" && (
+                    {form.activeTab === "local-api" && !licenseGateLocked && (
                       <LocalApiTab
                         key="local-api"
                         variants={tabContentVariants}
@@ -392,6 +399,7 @@ const SettingsModal = ({
                         formatBytes={form.formatBytes}
                         cliInstallStatus={form.cliInstallStatus}
                         cliInstallBusy={form.cliInstallBusy}
+                        licenseGateActive={form.licenseGateActive}
                         onInstallCli={form.handleInstallCli}
                         onRemoveCli={form.handleRemoveCli}
                         onOpenDataDir={form.handleOpenDataDir}

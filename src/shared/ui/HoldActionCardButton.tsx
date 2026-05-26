@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -7,6 +8,8 @@ import {
 } from "react";
 
 const HOLD_DURATION_MS = 2000;
+const HOLD_RING_RADIUS = 10;
+const HOLD_RING_CIRCUMFERENCE = 2 * Math.PI * HOLD_RING_RADIUS;
 
 type ActionCardAccent = {
   borderColor: string;
@@ -115,6 +118,14 @@ const HoldActionCardButton = ({
     frameRef.current = requestAnimationFrame(stepHold);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, []);
+
   const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled || event.button !== 0) return;
 
@@ -152,6 +163,7 @@ const HoldActionCardButton = ({
       ref={buttonRef}
       type="button"
       disabled={disabled}
+      aria-label={`${title}. Hold to confirm.`}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
@@ -160,16 +172,54 @@ const HoldActionCardButton = ({
       className={joinClasses(
         "group relative w-full overflow-hidden rounded-lg border border-border-primary bg-surface-surface px-3 py-2.5 text-left outline-hidden select-none touch-none [box-shadow:var(--action-card-rest-shadow)] transition-[transform,box-shadow,border-color,background-color] duration-200 ease-out focus-visible:ring-2 focus-visible:ring-border-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-border-primary disabled:hover:bg-surface-surface disabled:hover:[box-shadow:var(--action-card-rest-shadow)]",
         "hover:border-[var(--action-card-border)] hover:bg-[var(--action-card-background)] hover:[box-shadow:var(--action-card-hover-shadow)]",
-        "data-[holding=true]:translate-y-[2px] data-[holding=true]:border-[var(--action-card-border)] data-[holding=true]:bg-[var(--action-card-background)] data-[holding=true]:[box-shadow:none]",
-        "data-[ready=true]:border-[var(--color-accent-50)]",
+        "data-[holding=true]:border-[var(--action-card-border)] data-[holding=true]:bg-[var(--action-card-background)] data-[holding=true]:[box-shadow:none]",
+        "data-[ready=true]:border-[var(--color-accent-50)] data-[ready=true]:bg-[var(--action-card-background)] data-[ready=true]:[box-shadow:0_0_0_1px_var(--color-accent-20)]",
       )}
     >
+      <span
+        aria-hidden="true"
+        className={joinClasses(
+          "pointer-events-none absolute inset-0 z-0 origin-left rounded-lg bg-[var(--action-card-background)] opacity-0 transition-opacity duration-200 group-data-[holding=true]:opacity-100",
+          icon ? "hidden" : "block",
+        )}
+        style={{
+          transform: `scaleX(${progress})`,
+        }}
+      />
+
       <span className="relative z-[1] flex items-center gap-2.5">
         {icon ? (
           <span
             aria-hidden="true"
-            className="flex size-5 shrink-0 items-center justify-center ui-color-primary"
+            className="relative flex size-5 shrink-0 items-center justify-center ui-color-primary"
           >
+            <svg
+              className="pointer-events-none absolute -inset-1 size-7 opacity-0 transition-opacity duration-200 group-data-[holding=true]:opacity-100"
+              viewBox="0 0 28 28"
+              fill="none"
+              aria-hidden="true"
+            >
+              <circle
+                cx="14"
+                cy="14"
+                r={HOLD_RING_RADIUS}
+                stroke="var(--color-accent-20)"
+                strokeWidth="1.5"
+              />
+              <circle
+                cx="14"
+                cy="14"
+                r={HOLD_RING_RADIUS}
+                stroke="var(--color-accent)"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeDasharray={HOLD_RING_CIRCUMFERENCE}
+                strokeDashoffset={
+                  HOLD_RING_CIRCUMFERENCE * (1 - progress)
+                }
+                transform="rotate(-90 14 14)"
+              />
+            </svg>
             {icon}
           </span>
         ) : null}
@@ -183,40 +233,6 @@ const HoldActionCardButton = ({
             </span>
           ) : null}
         </span>
-      </span>
-
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-4 overflow-hidden opacity-0 transition-opacity duration-200 group-data-[holding=true]:opacity-100"
-      >
-        <span className="absolute inset-x-0 bottom-0 h-[2px] bg-[var(--color-accent-20)]" />
-
-        {progress > 0 ? (
-          <>
-            <span
-              className="absolute bottom-[2px] left-0 h-2 bg-gradient-to-t from-[var(--color-accent)]/16 to-transparent"
-              style={{
-                width: `${progress * 100}%`,
-                WebkitMaskImage:
-                  "linear-gradient(to right, black 0%, black calc(100% - 8px), transparent 100%)",
-                maskImage:
-                  "linear-gradient(to right, black 0%, black calc(100% - 8px), transparent 100%)",
-              }}
-            />
-            <span
-              className="absolute bottom-0 left-0 h-[2px]"
-              style={{
-                width: `${progress * 100}%`,
-                background:
-                  "linear-gradient(to right, var(--color-accent-dark), var(--color-accent))",
-                WebkitMaskImage:
-                  "linear-gradient(to right, black 0%, black calc(100% - 8px), transparent 100%)",
-                maskImage:
-                  "linear-gradient(to right, black 0%, black calc(100% - 8px), transparent 100%)",
-              }}
-            />
-          </>
-        ) : null}
       </span>
     </button>
   );

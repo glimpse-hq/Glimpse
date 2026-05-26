@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 use super::hotkeys;
 use crate::settings::{
@@ -7,10 +7,7 @@ use crate::settings::{
     ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode, UserSettings,
 };
 
-use crate::{
-    analytics, auto_dictionary, model_manager, pill, tray, AppRuntime, AppState,
-    EVENT_SETTINGS_CHANGED,
-};
+use crate::{analytics, auto_dictionary, model_manager, pill, tray, AppRuntime, AppState};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -214,15 +211,13 @@ pub(crate) fn complete_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked()?;
     settings.onboarding_completed = true;
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
     analytics::track_onboarding_completed(app);
     Ok(())
@@ -232,15 +227,13 @@ pub(crate) fn reset_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked()?;
     settings.onboarding_completed = false;
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
     Ok(())
 }
@@ -250,17 +243,15 @@ pub(crate) fn set_user_name(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked()?;
     settings.user_name = name.trim().to_string();
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
-    Ok(next)
+    Ok(state.settings_for_response(next))
 }
 
 pub(crate) fn update_settings(
@@ -269,9 +260,30 @@ pub(crate) fn update_settings(
     state: &AppState,
 ) -> Result<UserSettings, String> {
     validate_update_settings_args(&args)?;
+    let shortcut_cleanup_enabled = args
+        .shortcut_bindings
+        .smart
+        .iter()
+        .chain(args.shortcut_bindings.hold.iter())
+        .chain(args.shortcut_bindings.toggle.iter())
+        .any(|binding| binding.cleanup_enabled);
+    let license_gated_requested = args.llm_enabled
+        || args.cleanup_enabled
+        || shortcut_cleanup_enabled
+        || args.edit_mode_enabled
+        || args.local_api_start_on_launch;
+    if license_gated_requested {
+        crate::license::require_license_gate(
+            &state.settings_store,
+            "AI writing, Edit Mode, and the API server",
+        )?;
+    }
+    let license_active = crate::license::license_gate_active(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
-    let mut next = state.current_settings();
+    // Read truth directly from the store so the gated-feature mask the frontend
+    // sees (when the license is inactive) can't round-trip back to disk.
+    let mut next = state.settings_store.load().map_err(|err| err.to_string())?;
     let prev = next.clone();
     next.shortcut_bindings = shortcut_bindings;
     next.smart_shortcut = next
@@ -301,14 +313,41 @@ pub(crate) fn update_settings(
     next.language = args.language;
     next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
     next.theme_mode = args.theme_mode;
-    next.llm_enabled = args.llm_enabled;
-
-    next.cleanup_enabled = args.cleanup_enabled;
+    if license_active {
+        // License-gated fields are only writable when the license is active.
+        // Otherwise the frontend's masked view (which shows them disabled) would
+        // round-trip false back to disk on the next unrelated save.
+        next.llm_enabled = args.llm_enabled;
+        next.cleanup_enabled = args.cleanup_enabled;
+        next.edit_mode_enabled = args.edit_mode_enabled;
+        next.local_api_start_on_launch = args.local_api_start_on_launch;
+        // shortcut_bindings is already set above; cleanup_enabled fields within
+        // each binding are gated through canonicalize_shortcut_bindings — they
+        // come from args and are subject to the require_license_gate check.
+    } else {
+        // Restore the on-disk truth for shortcut binding cleanup flags, since
+        // canonicalize_shortcut_bindings just wrote args-derived values.
+        for (out, before) in next
+            .shortcut_bindings
+            .smart
+            .iter_mut()
+            .chain(next.shortcut_bindings.hold.iter_mut())
+            .chain(next.shortcut_bindings.toggle.iter_mut())
+            .zip(
+                prev.shortcut_bindings
+                    .smart
+                    .iter()
+                    .chain(prev.shortcut_bindings.hold.iter())
+                    .chain(prev.shortcut_bindings.toggle.iter()),
+            )
+        {
+            out.cleanup_enabled = before.cleanup_enabled;
+        }
+    }
     next.llm_provider = args.llm_provider;
     next.llm_endpoint = args.llm_endpoint;
     next.llm_api_key = args.llm_api_key;
     next.llm_model = args.llm_model.trim().to_string();
-    next.edit_mode_enabled = args.edit_mode_enabled;
     next.auto_dictionary_enabled = args.auto_dictionary_enabled;
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
@@ -319,7 +358,6 @@ pub(crate) fn update_settings(
     next.local_api_port = args.local_api_port;
     next.local_api_model = args.local_api_model;
     next.local_api_host = crate::settings::canonicalize_local_api_host(&args.local_api_host);
-    next.local_api_start_on_launch = args.local_api_start_on_launch;
     next.local_api_cors = args.local_api_cors;
 
     let launch_changed = prev.auto_launch_enabled != next.auto_launch_enabled;
@@ -363,15 +401,13 @@ pub(crate) fn update_settings(
         }
     }
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &next) {
-        eprintln!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(app, &next);
 
     if prev.recording_prune_policy != next.recording_prune_policy {
         crate::schedule_recording_prune(app.clone(), next.clone());
     }
 
-    Ok(next)
+    Ok(state.settings_for_response(next))
 }
 
 #[cfg(test)]

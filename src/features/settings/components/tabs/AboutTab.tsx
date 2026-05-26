@@ -18,6 +18,7 @@ type AboutTabProps = {
   formatBytes: (bytes: number) => string;
   cliInstallStatus: CliInstallStatus | null;
   cliInstallBusy: boolean;
+  licenseGateActive: boolean;
   onInstallCli: () => void;
   onRemoveCli: () => void;
   onOpenDataDir: () => void;
@@ -32,6 +33,7 @@ const AboutTab = ({
   formatBytes,
   cliInstallStatus,
   cliInstallBusy,
+  licenseGateActive,
   onInstallCli,
   onRemoveCli,
   onOpenDataDir,
@@ -61,10 +63,13 @@ const AboutTab = ({
     0;
   const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
   const cliInstalled = cliInstallStatus?.installed ?? false;
+  const cliInstallLocked = !licenseGateActive && !cliInstalled;
   const cliInstallPath =
     cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
   const cliInfo = cliUnavailable
     ? "This build does not include the command line helper."
+    : cliInstallLocked
+      ? "Command line install requires an active license."
     : cliInstalled
       ? `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`
       : cliInstallStatus && !cliInstallStatus.pathInShell
@@ -72,6 +77,8 @@ const AboutTab = ({
         : `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`;
   const cliSubtitle = cliUnavailable
     ? "Not available in this build"
+    : cliInstallLocked
+      ? "Requires an active license"
     : cliInstalled
       ? `Installed at ${cliInstallPath}`
       : "Use Glimpse from Terminal or scripts";
@@ -291,7 +298,8 @@ const AboutTab = ({
                     type="button"
                     onClick={cliInstalled ? onRemoveCli : onInstallCli}
                     disabled={
-                      cliInstallBusy || (!cliInstalled && cliUnavailable)
+                      cliInstallBusy ||
+                      (!cliInstalled && (cliUnavailable || !licenseGateActive))
                     }
                     className="inline-flex h-6 min-w-[4.75rem] shrink-0 items-center justify-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:pointer-events-none disabled:opacity-60"
                   >

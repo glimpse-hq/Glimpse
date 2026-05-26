@@ -145,7 +145,9 @@ impl LocalApiController {
         });
 
         let controller = Arc::clone(self);
+        let task_app = app.clone();
         tauri::async_runtime::spawn(async move {
+            let app = task_app;
             let result = glimpse_speech::api::serve_with_shutdown(
                 ApiConfig {
                     host,
@@ -181,7 +183,11 @@ impl LocalApiController {
         });
 
         match ready_rx.await {
-            Ok(Ok(())) => Ok(self.status()),
+            Ok(Ok(())) => {
+                let status = self.status();
+                self.emit_status(&app);
+                Ok(status)
+            }
             Ok(Err(err)) => Err(err),
             Err(_) => Err("Local API stopped before it was ready".to_string()),
         }
@@ -202,6 +208,7 @@ impl LocalApiController {
 
         self.push_log(app, "info", "Stopping local API".to_string());
         let _ = shutdown.send(());
+        self.mark_stopped(app);
         Ok(self.status())
     }
 
@@ -211,8 +218,13 @@ impl LocalApiController {
     }
 
     fn mark_stopped(&self, app: &AppHandle<AppRuntime>) {
-        self.inner.lock().running = None;
-        self.emit_status(app);
+        let was_running = {
+            let mut state = self.inner.lock();
+            state.running.take().is_some()
+        };
+        if was_running {
+            self.emit_status(app);
+        }
     }
 
     fn set_loaded_model(&self, app: &AppHandle<AppRuntime>, model_id: &str) {
@@ -291,6 +303,7 @@ pub async fn start_local_api(
     state: tauri::State<'_, crate::AppState>,
     args: StartLocalApiArgs,
 ) -> Result<LocalApiStatus, String> {
+    crate::license::require_license_gate(&state.settings_store, "the API server")?;
     let controller: Arc<LocalApiController> = Arc::clone(&state.local_api);
     controller.start(app, args).await
 }
@@ -312,6 +325,16 @@ pub fn clear_local_api_logs(
 
 pub fn start_from_settings(app: &AppHandle<AppRuntime>, settings: &crate::settings::UserSettings) {
     if !settings.local_api_start_on_launch {
+        return;
+    }
+
+    let state = app.state::<crate::AppState>();
+    if !crate::license::license_gate_active(&state.settings_store) {
+        state.local_api.push_log(
+            app,
+            "warn",
+            "API server start-on-launch skipped; Glimpse Personal is required.".to_string(),
+        );
         return;
     }
 

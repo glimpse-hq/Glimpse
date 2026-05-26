@@ -3,7 +3,7 @@ use std::{collections::HashSet, fs, path::PathBuf, sync::OnceLock};
 use anyhow::{Context, Result};
 use parking_lot::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 
 const SETTINGS_DB_FILE_NAME: &str = "settings.db";
@@ -160,7 +160,6 @@ pub struct UserSettings {
     pub analytics_enabled: bool,
     #[serde(default)]
     pub analytics_install_id: String,
-    #[serde(default)]
     pub local_api_key: String,
     #[serde(default = "default_local_api_port")]
     pub local_api_port: u16,
@@ -1113,6 +1112,16 @@ impl SettingsStore {
         } else {
             Ok(default)
         }
+    }
+
+    pub(crate) fn read_app_value<T: DeserializeOwned>(&self, key: &str, default: T) -> Result<T> {
+        let conn = self.conn.lock();
+        self.read_value(&conn, key, default)
+    }
+
+    pub(crate) fn write_app_value<T: Serialize>(&self, key: &str, value: &T) -> Result<()> {
+        let conn = self.conn.lock();
+        self.write_value(&conn, key, value)
     }
 
     fn read_optional_value<T>(&self, conn: &Connection, key: &str) -> Result<Option<T>>

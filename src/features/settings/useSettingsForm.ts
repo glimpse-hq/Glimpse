@@ -22,7 +22,7 @@ import {
   MODEL_CAPABILITY_DICTIONARY,
 } from "../../shared/lib/modelCapabilities";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
-import { logout, type User as AuthUser } from "../auth/api";
+import { useLicenseGate } from "../license/queries";
 import {
   buildTranscriptionLanguageView,
   getActiveTranscriptionEngine,
@@ -171,8 +171,6 @@ interface UseSettingsFormOptions {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: ActiveTab;
-  currentUser: AuthUser | null;
-  onUpdateUser: () => Promise<void>;
   transcriptionMode: TranscriptionMode;
 }
 
@@ -180,8 +178,6 @@ export function useSettingsForm({
   isOpen,
   onClose,
   initialTab = "general",
-  currentUser,
-  onUpdateUser,
   transcriptionMode: initialTranscriptionMode,
 }: UseSettingsFormOptions) {
   const [smartShortcut, setSmartShortcut] = useState("Control+Space");
@@ -243,7 +239,6 @@ export function useSettingsForm({
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
   const [themeMode, setThemeModeRaw] = useState<ThemeMode>("system");
-  const [authLoading, setAuthLoading] = useState(false);
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [accessibilityPermission, setAccessibilityPermission] = useState<
@@ -262,6 +257,7 @@ export function useSettingsForm({
   );
   const queryClient = useQueryClient();
   const settingsQuery = useSettings(undefined, isOpen);
+  const licenseGateActive = useLicenseGate();
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
@@ -497,7 +493,7 @@ export function useSettingsForm({
       (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
       llmModel.trim(),
   );
-  const aiFeaturesReady = llmEnabled && llmConfigReady;
+  const aiFeaturesReady = licenseGateActive && llmEnabled && llmConfigReady;
 
   const buildSettingsArgs = useCallback(
     (overrides: SaveSettingsOverrides = {}) => {
@@ -573,6 +569,7 @@ export function useSettingsForm({
       appLocale,
       themeMode,
       aiFeaturesReady,
+      licenseGateActive,
       llmProvider,
       llmEndpoint,
       llmApiKey,
@@ -1180,22 +1177,6 @@ export function useSettingsForm({
     [clearPendingSettingsSave, saveSettingsNow],
   );
 
-  const handleSignOut = useCallback(async () => {
-    setAuthLoading(true);
-    try {
-      await logout();
-      await onUpdateUser();
-    } catch (err) {
-      console.error("Sign out failed:", err);
-    } finally {
-      setAuthLoading(false);
-    }
-  }, [onUpdateUser]);
-
-  const handleCancelAuth = useCallback(() => {
-    setAuthLoading(false);
-  }, []);
-
   const fetchAvailableModels = useCallback(async () => {
     try {
       const models = await invoke<string[]>("fetch_llm_models", {
@@ -1505,6 +1486,7 @@ export function useSettingsForm({
     setLlmModel,
     llmConfigReady,
     aiFeaturesReady,
+    licenseGateActive,
     availableModels,
     fetchAvailableModels,
     editModeEnabled,
@@ -1546,11 +1528,6 @@ export function useSettingsForm({
     handleRemoveCli,
     platformCapabilities,
 
-    authLoading,
-    currentUser,
-    handleSignOut,
-    handleCancelAuth,
-
     micPermission,
     accessibilityPermission,
     inputMonitoringPermission,
@@ -1570,7 +1547,5 @@ export function useSettingsForm({
     handleCancelDownload,
     handleOpenDataDir,
     formatBytes,
-
-    onUpdateUser,
   };
 }

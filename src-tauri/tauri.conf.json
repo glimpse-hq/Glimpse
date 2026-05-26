@@ -94,6 +94,13 @@
     }
   },
   "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "glimpse"
+        ]
+      }
+    },
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIwRjZFNTY4MTZGNjc3RkQKUldUOWQvWVdhT1gySUtvN0IwSUQxTW8rWitVeHRlMC9FcjZ0TWp6RlVld0ltUnA5QVc2S0N0TVUK",
       "endpoints": [

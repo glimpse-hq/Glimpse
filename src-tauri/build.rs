@@ -11,7 +11,8 @@ fn main() {
             if let Some((key, value)) = line.split_once('=') {
                 let key = key.trim();
                 let value = value.trim();
-                if key == "POSTHOG_API_KEY" || key == "POSTHOG_HOST" {
+                if key == "POSTHOG_API_KEY" || key == "POSTHOG_HOST" || key.starts_with("GLIMPSE_")
+                {
                     println!("cargo:rustc-env={key}={value}");
                 }
             }
