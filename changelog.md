@@ -13,16 +13,16 @@
 - (i) has been updated to now support email support.
 - Redesigned About with Updates and FAQ up front, plus a clearer storage breakdown.
 - Small redesign in personalization to look cleaner.
-- Fixed a bug where the app would resize on startup to large or small.
 - Improved button rendering across the app for different view sizes.
 - Models tab has been redesigned to work better at a glance. (or a Glimpse.. :) )
-- Fixed the home transcription list shifting around while it loads.
 - Model downloads now use the shared Glimpse Speech model manager. Installs, progress, cancellation, and model metadata should feel more consistent.
 - Onboarding now keeps more of your existing setup when finishing, does a better job picking the recommended local models, and has a calmer license step at the end.
 
 ### Fixes
 - Fixed auto-delete forgetting whether you picked Audio or Transcripts when duration was set to Never, or after closing and reopening settings.
 - Fixed the auto-delete dropdowns resizing and scrolling awkwardly when switching between Audio and Transcripts.
+- Fixed the home transcription list shifting around while it loads.
+- Fixed a bug where the app would resize on startup to large or small.
 
 ---
 
