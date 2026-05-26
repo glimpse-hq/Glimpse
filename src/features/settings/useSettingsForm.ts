@@ -533,7 +533,7 @@ export function useSettingsForm({
         appLocale,
         themeMode,
 
-        llmEnabled: licenseGateActive ? llmEnabled : false,
+        llmEnabled: licenseGateActive && llmEnabled && llmConfigReady,
         cleanupEnabled: false,
         llmProvider,
         llmEndpoint,
