@@ -45,6 +45,7 @@ import type {
   DownloadEvent,
   LlmProvider,
   RecordingPrunePolicy,
+  AutoDeleteTarget,
   AppLocaleSetting,
   CliInstallStatus,
   LocalApiLogEntry,
@@ -221,7 +222,9 @@ export function useSettingsForm({
   const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
   const [autoLaunchEnabled, setAutoLaunchEnabled] = useState(false);
-  const [recordingPrunePolicy, setRecordingPrunePolicy] =
+  const [autoDeleteTarget, setAutoDeleteTarget] =
+    useState<AutoDeleteTarget>("transcripts");
+  const [autoDeleteDuration, setAutoDeleteDuration] =
     useState<RecordingPrunePolicy>("never");
   const [analyticsEnabled, setAnalyticsEnabled] = useState(true);
   const [localApiKey, setLocalApiKey] = useState("");
@@ -415,7 +418,8 @@ export function useSettingsForm({
     setMediaControlEnabled(s.media_control_enabled ?? false);
     setAutoUpdateEnabled(s.auto_update_enabled ?? false);
     setAutoLaunchEnabled(s.auto_launch_enabled ?? false);
-    setRecordingPrunePolicy(s.recording_prune_policy ?? "never");
+    setAutoDeleteTarget(s.auto_delete_target ?? "transcripts");
+    setAutoDeleteDuration(s.auto_delete_duration ?? "never");
     setAnalyticsEnabled(s.analytics_enabled ?? true);
     setLocalApiKey(s.local_api_key ?? "");
     setLocalApiPort(s.local_api_port ?? 11435);
@@ -544,7 +548,8 @@ export function useSettingsForm({
         mediaControlEnabled,
         autoUpdateEnabled,
         autoLaunchEnabled,
-        recordingPrunePolicy,
+        autoDeleteTarget,
+        autoDeleteDuration,
         analyticsEnabled,
         localApiKey,
         localApiPort,
@@ -581,7 +586,8 @@ export function useSettingsForm({
       mediaControlEnabled,
       autoUpdateEnabled,
       autoLaunchEnabled,
-      recordingPrunePolicy,
+      autoDeleteTarget,
+      autoDeleteDuration,
       analyticsEnabled,
       localApiKey,
       localApiPort,
@@ -1503,8 +1509,10 @@ export function useSettingsForm({
     setAutoUpdateEnabled,
     autoLaunchEnabled,
     setAutoLaunchEnabled,
-    recordingPrunePolicy,
-    setRecordingPrunePolicy,
+    autoDeleteTarget,
+    setAutoDeleteTarget,
+    autoDeleteDuration,
+    setAutoDeleteDuration,
     analyticsEnabled,
     setAnalyticsEnabled,
     localApiKey,

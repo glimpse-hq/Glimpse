@@ -319,6 +319,32 @@ impl StorageManager {
         Ok(record.map(|r| r.audio_path))
     }
 
+    pub fn count_prunable_before(&self, cutoff_millis: i64) -> Result<u32> {
+        let conn = self.connection.lock();
+        let count: i64 = conn.query_row(
+            "SELECT COUNT(*) FROM transcriptions WHERE timestamp <= ?1",
+            params![cutoff_millis],
+            |row| row.get(0),
+        )?;
+        Ok(count.max(0) as u32)
+    }
+
+    pub fn prune_before(&self, cutoff_millis: i64) -> Result<Vec<String>> {
+        let conn = self.connection.lock();
+        let mut stmt = conn.prepare(
+            "SELECT audio_path FROM transcriptions WHERE timestamp <= ?1",
+        )?;
+        let audio_paths: Vec<String> = stmt
+            .query_map(params![cutoff_millis], |row| row.get::<_, String>(0))?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        drop(stmt);
+        conn.execute(
+            "DELETE FROM transcriptions WHERE timestamp <= ?1",
+            params![cutoff_millis],
+        )?;
+        Ok(audio_paths)
+    }
+
     pub fn get_by_id(&self, id: &str) -> Option<TranscriptionRecord> {
         let conn = self.connection.lock();
         match Self::get_record(&conn, id) {

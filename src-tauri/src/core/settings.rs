@@ -3,8 +3,9 @@ use tauri::AppHandle;
 
 use super::hotkeys;
 use crate::settings::{
-    canonicalize_app_locale, canonicalize_app_locale_or_default, LlmProvider, RecordingPrunePolicy,
-    ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode, UserSettings,
+    canonicalize_app_locale, canonicalize_app_locale_or_default, AutoDeleteTarget, LlmProvider,
+    RecordingPrunePolicy, ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode,
+    UserSettings,
 };
 
 use crate::{analytics, auto_dictionary, model_manager, pill, tray, AppRuntime, AppState};
@@ -37,7 +38,8 @@ pub(crate) struct UpdateSettingsArgs {
     pub media_control_enabled: bool,
     pub auto_update_enabled: bool,
     pub auto_launch_enabled: bool,
-    pub recording_prune_policy: RecordingPrunePolicy,
+    pub auto_delete_target: AutoDeleteTarget,
+    pub auto_delete_duration: RecordingPrunePolicy,
     pub analytics_enabled: bool,
     pub local_api_key: String,
     pub local_api_port: u16,
@@ -352,7 +354,8 @@ pub(crate) fn update_settings(
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
     next.auto_launch_enabled = args.auto_launch_enabled;
-    next.recording_prune_policy = args.recording_prune_policy;
+    next.auto_delete_target = args.auto_delete_target;
+    next.auto_delete_duration = args.auto_delete_duration;
     next.analytics_enabled = args.analytics_enabled;
     next.local_api_key = args.local_api_key.trim().to_string();
     next.local_api_port = args.local_api_port;
@@ -403,8 +406,16 @@ pub(crate) fn update_settings(
 
     state.emit_settings_changed(app, &next);
 
-    if prev.recording_prune_policy != next.recording_prune_policy {
+    if crate::settings::auto_delete_recording_policy(&prev)
+        != crate::settings::auto_delete_recording_policy(&next)
+    {
         crate::schedule_recording_prune(app.clone(), next.clone());
+    }
+
+    if crate::settings::auto_delete_transcription_policy(&prev)
+        != crate::settings::auto_delete_transcription_policy(&next)
+    {
+        crate::schedule_transcription_prune(app.clone(), next.clone());
     }
 
     Ok(state.settings_for_response(next))
@@ -442,7 +453,8 @@ mod tests {
             media_control_enabled: true,
             auto_update_enabled: true,
             auto_launch_enabled: false,
-            recording_prune_policy: RecordingPrunePolicy::Never,
+            auto_delete_target: AutoDeleteTarget::Transcripts,
+            auto_delete_duration: RecordingPrunePolicy::Never,
             analytics_enabled: true,
             local_api_key: String::new(),
             local_api_port: crate::settings::default_local_api_port(),

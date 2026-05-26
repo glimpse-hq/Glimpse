@@ -40,7 +40,10 @@ const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
 const KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
 const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
 const KEY_AUTO_LAUNCH_ENABLED: &str = "auto_launch_enabled";
-const KEY_RECORDING_PRUNE_POLICY: &str = "recording_prune_policy";
+const KEY_AUTO_DELETE_TARGET: &str = "auto_delete_target";
+const KEY_AUTO_DELETE_DURATION: &str = "auto_delete_duration";
+const LEGACY_KEY_RECORDING_PRUNE_POLICY: &str = "recording_prune_policy";
+const LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY: &str = "transcription_prune_policy";
 const KEY_ANALYTICS_ENABLED: &str = "analytics_enabled";
 const KEY_ANALYTICS_INSTALL_ID: &str = "analytics_install_id";
 const KEY_LOCAL_API_KEY: &str = "local_api_key";
@@ -154,8 +157,10 @@ pub struct UserSettings {
     pub auto_update_enabled: bool,
     #[serde(default)]
     pub auto_launch_enabled: bool,
-    #[serde(default = "default_recording_prune_policy")]
-    pub recording_prune_policy: RecordingPrunePolicy,
+    #[serde(default = "default_auto_delete_target")]
+    pub auto_delete_target: AutoDeleteTarget,
+    #[serde(default = "default_auto_delete_duration")]
+    pub auto_delete_duration: RecordingPrunePolicy,
     #[serde(default = "default_true")]
     pub analytics_enabled: bool,
     #[serde(default)]
@@ -450,7 +455,8 @@ impl Default for UserSettings {
             media_control_enabled: false,
             auto_update_enabled: false,
             auto_launch_enabled: false,
-            recording_prune_policy: default_recording_prune_policy(),
+            auto_delete_target: default_auto_delete_target(),
+            auto_delete_duration: default_auto_delete_duration(),
             analytics_enabled: true,
             analytics_install_id: String::new(),
             local_api_key: String::new(),
@@ -512,7 +518,7 @@ pub enum RecordingPrunePolicy {
     Year,
 }
 
-fn default_recording_prune_policy() -> RecordingPrunePolicy {
+fn default_auto_delete_duration() -> RecordingPrunePolicy {
     RecordingPrunePolicy::Never
 }
 
@@ -520,6 +526,51 @@ pub fn canonicalize_recording_prune_policy(policy: RecordingPrunePolicy) -> Reco
     match policy {
         RecordingPrunePolicy::ThreeMonths => RecordingPrunePolicy::Year,
         policy => policy,
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum AutoDeleteTarget {
+    #[default]
+    Transcripts,
+    Audio,
+}
+
+fn default_auto_delete_target() -> AutoDeleteTarget {
+    AutoDeleteTarget::Transcripts
+}
+
+fn default_auto_delete_duration() -> RecordingPrunePolicy {
+    RecordingPrunePolicy::Never
+}
+
+pub fn auto_delete_recording_policy(settings: &UserSettings) -> RecordingPrunePolicy {
+    settings.auto_delete_duration
+}
+
+pub fn auto_delete_transcription_policy(settings: &UserSettings) -> RecordingPrunePolicy {
+    match settings.auto_delete_target {
+        AutoDeleteTarget::Audio => RecordingPrunePolicy::Never,
+        AutoDeleteTarget::Transcripts => settings.auto_delete_duration,
+    }
+}
+
+fn migrate_auto_delete_from_legacy(
+    settings: &mut UserSettings,
+    legacy_recording: RecordingPrunePolicy,
+    legacy_transcription: RecordingPrunePolicy,
+) {
+    if legacy_transcription != RecordingPrunePolicy::Never {
+        settings.auto_delete_target = AutoDeleteTarget::Transcripts;
+        settings.auto_delete_duration =
+            canonicalize_recording_prune_policy(legacy_transcription);
+        return;
+    }
+
+    if legacy_recording != RecordingPrunePolicy::Never {
+        settings.auto_delete_target = AutoDeleteTarget::Audio;
+        settings.auto_delete_duration = canonicalize_recording_prune_policy(legacy_recording);
     }
 }
 
@@ -789,11 +840,33 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =
                 self.read_value(&conn, KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
-            settings.recording_prune_policy = self.read_value(
+            settings.auto_delete_target = self.read_value(
                 &conn,
-                KEY_RECORDING_PRUNE_POLICY,
-                settings.recording_prune_policy,
+                KEY_AUTO_DELETE_TARGET,
+                settings.auto_delete_target,
             )?;
+            let auto_delete_duration = self
+                .read_optional_value::<RecordingPrunePolicy>(&conn, KEY_AUTO_DELETE_DURATION)?;
+            if let Some(duration) = auto_delete_duration {
+                settings.auto_delete_duration = duration;
+            } else {
+                let legacy_recording = self.read_value(
+                    &conn,
+                    LEGACY_KEY_RECORDING_PRUNE_POLICY,
+                    RecordingPrunePolicy::Never,
+                )?;
+                let legacy_transcription = self.read_value(
+                    &conn,
+                    LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY,
+                    RecordingPrunePolicy::Never,
+                )?;
+                migrate_auto_delete_from_legacy(
+                    &mut settings,
+                    legacy_recording,
+                    legacy_transcription,
+                );
+                should_persist = true;
+            }
             settings.analytics_enabled =
                 self.read_value(&conn, KEY_ANALYTICS_ENABLED, settings.analytics_enabled)?;
             settings.analytics_install_id = self.read_value(
@@ -929,10 +1002,10 @@ impl SettingsStore {
             should_persist = true;
         }
 
-        let canonical_prune_policy =
-            canonicalize_recording_prune_policy(settings.recording_prune_policy);
-        if settings.recording_prune_policy != canonical_prune_policy {
-            settings.recording_prune_policy = canonical_prune_policy;
+        let canonical_auto_delete_duration =
+            canonicalize_recording_prune_policy(settings.auto_delete_duration);
+        if settings.auto_delete_duration != canonical_auto_delete_duration {
+            settings.auto_delete_duration = canonical_auto_delete_duration;
             should_persist = true;
         }
 
@@ -1081,8 +1154,13 @@ impl SettingsStore {
         )?;
         self.write_value(
             &conn,
-            KEY_RECORDING_PRUNE_POLICY,
-            &settings.recording_prune_policy,
+            KEY_AUTO_DELETE_TARGET,
+            &settings.auto_delete_target,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_AUTO_DELETE_DURATION,
+            &settings.auto_delete_duration,
         )?;
         self.write_value(&conn, KEY_ANALYTICS_ENABLED, &settings.analytics_enabled)?;
         self.write_value(

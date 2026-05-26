@@ -705,7 +705,8 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
         eprintln!("Failed to refresh app menu: {err}");
     }
 
-    crate::schedule_recording_prune(app.clone(), settings);
+    crate::schedule_recording_prune(app.clone(), settings.clone());
+    crate::schedule_transcription_prune(app.clone(), settings);
 
     let update_state = app.state::<AppState>().update_state().clone();
     update_checker::maybe_show_update_toast(app, &update_state);
@@ -747,7 +748,9 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
         }
     }
 
-    crate::schedule_recording_prune(app.clone(), app.state::<AppState>().current_settings());
+    let prune_settings = app.state::<AppState>().current_settings();
+    crate::schedule_recording_prune(app.clone(), prune_settings.clone());
+    crate::schedule_transcription_prune(app.clone(), prune_settings);
 
     app.state::<AppState>().pill().finish_processing(app);
     app.state::<AppState>().set_pending_path(None);
@@ -856,7 +859,8 @@ fn emit_transcription_error_inner(
         },
     );
 
-    crate::schedule_recording_prune(app.clone(), settings);
+    crate::schedule_recording_prune(app.clone(), settings.clone());
+    crate::schedule_transcription_prune(app.clone(), settings);
 
     if reset_state {
         state.pill().reset(app);

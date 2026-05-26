@@ -36,6 +36,7 @@ interface DropdownProps<T extends string | number> {
     onOpen?: () => void;
     disabled?: boolean;
     truncate?: boolean;
+    fitButtonToWidestOption?: boolean;
 }
 
 const classNames = (...classes: Array<string | false | null | undefined>) =>
@@ -59,6 +60,7 @@ export function Dropdown<T extends string | number>({
     onOpen,
     disabled = false,
     truncate = true,
+    fitButtonToWidestOption = false,
 }: DropdownProps<T>) {
     const { t } = useLingui();
     const [isOpen, setIsOpen] = useState(false);
@@ -122,6 +124,14 @@ export function Dropdown<T extends string | number>({
             return false;
         })
         : options;
+
+    const selectableOptions = options.filter((option) => !option.isHeader);
+    const buttonWidthLabels = fitButtonToWidestOption
+        ? [
+            ...selectableOptions.map((option) => option.label),
+            ...(value === null ? [resolvedPlaceholder] : []),
+        ]
+        : [];
 
     const renderBadges = (
         badges?: DropdownOption<T>["badges"],
@@ -187,15 +197,38 @@ export function Dropdown<T extends string | number>({
                 <div className="flex items-center gap-2 min-w-0">
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
                     {label && <span className="text-content-muted shrink-0">{label}</span>}
-                    <span
-                        className={classNames(
-                            truncate && "truncate",
-                            selectedOption ? "text-content-primary" : "text-content-muted",
-                            valueClassName,
-                        )}
-                    >
-                        {selectedOption ? selectedOption.label : resolvedPlaceholder}
-                    </span>
+                    {fitButtonToWidestOption ? (
+                        <span
+                            className={classNames(
+                                "inline-grid",
+                                selectedOption ? "text-content-primary" : "text-content-muted",
+                                valueClassName,
+                            )}
+                        >
+                            {buttonWidthLabels.map((label) => (
+                                <span
+                                    key={label}
+                                    className="invisible col-start-1 row-start-1 whitespace-nowrap"
+                                    aria-hidden="true"
+                                >
+                                    {label}
+                                </span>
+                            ))}
+                            <span className="col-start-1 row-start-1 whitespace-nowrap">
+                                {selectedOption ? selectedOption.label : resolvedPlaceholder}
+                            </span>
+                        </span>
+                    ) : (
+                        <span
+                            className={classNames(
+                                truncate && "truncate",
+                                selectedOption ? "text-content-primary" : "text-content-muted",
+                                valueClassName,
+                            )}
+                        >
+                            {selectedOption ? selectedOption.label : resolvedPlaceholder}
+                        </span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
                     {renderBadges(selectedOption?.badges, selectedOption?.fixedBadgeSlots)}

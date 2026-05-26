@@ -459,6 +459,7 @@ pub fn run() {
             reveal_license_key,
             get_dictation_stats,
             preview_recording_prune,
+            preview_transcription_prune,
             set_user_name,
             dictionary::set_dictionary,
             dictionary::get_replacements,
@@ -770,8 +771,8 @@ impl AppState {
             next.transcription_mode = TranscriptionMode::Local;
         }
         settings::sync_legacy_shortcuts_from_bindings(&mut next);
-        next.recording_prune_policy =
-            settings::canonicalize_recording_prune_policy(next.recording_prune_policy);
+        next.auto_delete_duration =
+            settings::canonicalize_recording_prune_policy(next.auto_delete_duration);
 
         self.settings_store.save(&next)?;
         *self.settings.lock() = next.clone();
@@ -1200,6 +1201,21 @@ async fn preview_recording_prune(
 }
 
 #[tauri::command]
+async fn preview_transcription_prune(
+    policy: RecordingPrunePolicy,
+    app: AppHandle<AppRuntime>,
+) -> Result<RecordingPrunePreview, String> {
+    let candidate_count = async_runtime::spawn_blocking(move || {
+        preview_transcription_prune_for_policy(&app, policy)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+    .map_err(|err| err.to_string())?;
+
+    Ok(RecordingPrunePreview { candidate_count })
+}
+
+#[tauri::command]
 fn set_user_name(
     name: String,
     app: AppHandle<AppRuntime>,
@@ -1567,7 +1583,10 @@ pub(crate) fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<Path
 }
 
 pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {
-    if matches!(settings.recording_prune_policy, RecordingPrunePolicy::Never) {
+    if matches!(
+        settings::auto_delete_recording_policy(&settings),
+        RecordingPrunePolicy::Never
+    ) {
         return;
     }
 
@@ -1578,21 +1597,102 @@ pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: Use
         })
         .await
         {
-            Ok(Ok(count)) => {
-                if count > 0 {
-                    let _ = app.emit(
-                        EVENT_TRANSCRIPTION_COMPLETE,
-                        TranscriptionCompletePayload {
-                            transcript: String::new(),
-                            auto_paste: false,
-                        },
-                    );
-                }
-            }
+            Ok(Ok(count)) => emit_transcription_history_refresh(&app, count),
             Ok(Err(err)) => eprintln!("Failed to prune recordings: {err}"),
             Err(err) => eprintln!("Recording prune task failed: {err}"),
         }
     });
+}
+
+pub(crate) fn schedule_transcription_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {
+    if matches!(
+        settings::auto_delete_transcription_policy(&settings),
+        RecordingPrunePolicy::Never
+    ) {
+        return;
+    }
+
+    async_runtime::spawn(async move {
+        let app_handle = app.clone();
+        match async_runtime::spawn_blocking(move || {
+            prune_transcriptions_for_settings(&app_handle, &settings)
+        })
+        .await
+        {
+            Ok(Ok(count)) => emit_transcription_history_refresh(&app, count),
+            Ok(Err(err)) => eprintln!("Failed to prune transcriptions: {err}"),
+            Err(err) => eprintln!("Transcription prune task failed: {err}"),
+        }
+    });
+}
+
+fn emit_transcription_history_refresh(app: &AppHandle<AppRuntime>, deleted_count: u32) {
+    if deleted_count > 0 {
+        let _ = app.emit(
+            EVENT_TRANSCRIPTION_COMPLETE,
+            TranscriptionCompletePayload {
+                transcript: String::new(),
+                auto_paste: false,
+            },
+        );
+    }
+}
+
+fn prune_transcriptions_for_settings(
+    app: &AppHandle<AppRuntime>,
+    settings: &UserSettings,
+) -> GlimpseResult<u32> {
+    count_or_prune_transcriptions(
+        app,
+        settings::auto_delete_transcription_policy(settings),
+        Local::now(),
+        RecordingPruneAction::Delete,
+    )
+}
+
+fn preview_transcription_prune_for_policy(
+    app: &AppHandle<AppRuntime>,
+    policy: RecordingPrunePolicy,
+) -> GlimpseResult<u32> {
+    count_or_prune_transcriptions(app, policy, Local::now(), RecordingPruneAction::Count)
+}
+
+fn count_or_prune_transcriptions(
+    app: &AppHandle<AppRuntime>,
+    policy: RecordingPrunePolicy,
+    now: DateTime<Local>,
+    action: RecordingPruneAction,
+) -> GlimpseResult<u32> {
+    if matches!(policy, RecordingPrunePolicy::Never) {
+        return Ok(0);
+    }
+
+    let cutoff = recording_prune_cutoff(policy, now);
+    let cutoff_millis = match (policy, cutoff) {
+        (RecordingPrunePolicy::Immediately, _) => now.timestamp_millis(),
+        (_, Some(cutoff)) => cutoff.timestamp_millis(),
+        _ => return Ok(0),
+    };
+
+    let storage = app.state::<AppState>().storage();
+    match action {
+        RecordingPruneAction::Count => storage
+            .count_prunable_before(cutoff_millis)
+            .context("Failed to count prunable transcriptions"),
+        RecordingPruneAction::Delete => {
+            let audio_paths = storage
+                .prune_before(cutoff_millis)
+                .context("Failed to prune transcriptions")?;
+            let count = audio_paths.len() as u32;
+            for audio_path in audio_paths {
+                let path = PathBuf::from(audio_path);
+                if path.exists() {
+                    let _ = fs::remove_file(path);
+                }
+            }
+            Ok(count)
+        }
+    }
 }
 
 fn prune_recordings_for_settings(
@@ -1601,7 +1701,7 @@ fn prune_recordings_for_settings(
 ) -> GlimpseResult<u32> {
     count_or_prune_recordings(
         app,
-        settings.recording_prune_policy,
+        settings::auto_delete_recording_policy(settings),
         Local::now(),
         RecordingPruneAction::Delete,
     )

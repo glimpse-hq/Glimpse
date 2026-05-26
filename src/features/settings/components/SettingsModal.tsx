@@ -380,10 +380,10 @@ const SettingsModal = ({
                         onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
                         autoLaunchEnabled={form.autoLaunchEnabled}
                         onAutoLaunchEnabledChange={form.setAutoLaunchEnabled}
-                        recordingPrunePolicy={form.recordingPrunePolicy}
-                        onRecordingPrunePolicyChange={
-                          form.setRecordingPrunePolicy
-                        }
+                        autoDeleteTarget={form.autoDeleteTarget}
+                        onAutoDeleteTargetChange={form.setAutoDeleteTarget}
+                        autoDeleteDuration={form.autoDeleteDuration}
+                        onAutoDeleteDurationChange={form.setAutoDeleteDuration}
                         analyticsEnabled={form.analyticsEnabled}
                         onAnalyticsEnabledChange={form.setAnalyticsEnabled}
                         platformCapabilities={form.platformCapabilities}

@@ -9,12 +9,17 @@
 ### Improvements
 - Account has been replaced with a cleaner license view, including trial status, activation, and buying Personal / Commercial.
 - Settings got reorganized into Core, Local, and Developer sections. Models is for speech models only; AI writing has its own Providers tab.
+- Auto-delete in Settings → App now lets you choose **Audio** or **Transcripts**, not just local recordings. Audio-only keeps your transcript history; deleting transcripts also removes the audio they reference.
 - (i) has been updated to now support email support.
 - Redesigned About with Updates and FAQ up front, plus a clearer storage breakdown.
 - Models tab has been redesigned to work better at a glance. (or a Glimpse.. :) )
 - Fixed the home transcription list shifting around while it loads.
 - Model downloads now use the shared Glimpse Speech model manager. Installs, progress, cancellation, and model metadata should feel more consistent.
 - Onboarding now keeps more of your existing setup when finishing, does a better job picking the recommended local models, and has a calmer license step at the end.
+
+### Fixes
+- Fixed auto-delete forgetting whether you picked Audio or Transcripts when duration was set to Never, or after closing and reopening settings.
+- Fixed the auto-delete dropdowns resizing and scrolling awkwardly when switching between Audio and Transcripts.
 
 ---
 
