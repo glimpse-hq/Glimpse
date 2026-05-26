@@ -236,7 +236,9 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         ((trial_ends_at - now).num_seconds() as f64 / 86_400.0).ceil() as i64;
     let trial_active = now < trial_ends_at;
 
-    let has_license_credential = has_stored_license_key(store)?;
+    let license_credential = stored_license_credential_state(store)?;
+    let has_usable_license_credential =
+        matches!(license_credential, StoredLicenseCredential::Readable);
     let stored_status = read_optional_string(store, KEY_LICENSE_STATUS)?;
     let display_key = read_optional_string(store, KEY_LICENSE_DISPLAY_KEY)?;
     let customer_email = read_optional_string(store, KEY_LICENSE_CUSTOMER_EMAIL)?;
@@ -254,13 +256,16 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
 
     let cache_fresh = cache_is_fresh(now, last_validated_at.as_deref(), expires_at.as_deref());
     let license_active =
-        has_license_credential && stored_status.as_deref() == Some("granted") && cache_fresh;
+        has_usable_license_credential && stored_status.as_deref() == Some("granted") && cache_fresh;
 
     let status = if license_active {
         LicenseStatus::Active
-    } else if has_license_credential && stored_status.as_deref() == Some("granted") && !cache_fresh
+    } else if matches!(
+        license_credential,
+        StoredLicenseCredential::Readable | StoredLicenseCredential::Unreadable
+    ) && stored_status.as_deref() == Some("granted")
     {
-        // Have a key but cache is stale or expired; force re-validation.
+        // Have a key but cannot currently trust it for gated features.
         LicenseStatus::Expired
     } else if stored_status.as_deref() == Some("invalid") {
         LicenseStatus::Invalid
@@ -515,8 +520,31 @@ fn clear_cache(store: &SettingsStore) -> Result<(), String> {
     Ok(())
 }
 
-fn has_stored_license_key(store: &SettingsStore) -> Result<bool, String> {
-    read_optional_string(store, KEY_LICENSE_KEY).map(|key| key.is_some())
+enum StoredLicenseCredential {
+    Missing,
+    Readable,
+    Unreadable,
+}
+
+fn stored_license_credential_state(
+    store: &SettingsStore,
+) -> Result<StoredLicenseCredential, String> {
+    let Some(stored) = read_optional_string(store, KEY_LICENSE_KEY)? else {
+        return Ok(StoredLicenseCredential::Missing);
+    };
+
+    if !crate::crypto::looks_encrypted(&stored) {
+        return Ok(StoredLicenseCredential::Readable);
+    }
+
+    let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() else {
+        return Ok(StoredLicenseCredential::Unreadable);
+    };
+
+    match crate::crypto::decrypt(&stored, &hardware_uuid) {
+        Ok(_) => Ok(StoredLicenseCredential::Readable),
+        Err(_) => Ok(StoredLicenseCredential::Unreadable),
+    }
 }
 
 fn read_license_key(store: &SettingsStore) -> Result<Option<String>, String> {
