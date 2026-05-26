@@ -10,6 +10,13 @@ export function useTypewriter(
   useEffect(() => {
     setDisplayed("");
     if (!text) return undefined;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      setDisplayed(text);
+      return undefined;
+    }
 
     let cancelled = false;
     let index = 0;

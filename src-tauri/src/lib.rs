@@ -43,7 +43,7 @@ use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
 use anyhow::{Context, Result};
-use chrono::{DateTime, Days, Local, Months};
+use chrono::{DateTime, Local};
 use pill::PillController;
 use recorder::{
     validate_recording, CompletedRecording, RecorderManager, RecordingRejectionReason,
@@ -1205,11 +1205,12 @@ async fn preview_transcription_prune(
     policy: RecordingPrunePolicy,
     app: AppHandle<AppRuntime>,
 ) -> Result<RecordingPrunePreview, String> {
-    let candidate_count =
-        async_runtime::spawn_blocking(move || preview_transcription_prune_for_policy(&app, policy))
-            .await
-            .map_err(|err| err.to_string())?
-            .map_err(|err| err.to_string())?;
+    let candidate_count = async_runtime::spawn_blocking(move || {
+        transcribe::preview_transcription_prune_for_policy(&app, policy)
+    })
+    .await
+    .map_err(|err| err.to_string())?
+    .map_err(|err| err.to_string())?;
 
     Ok(RecordingPrunePreview { candidate_count })
 }
@@ -1596,7 +1597,7 @@ pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: Use
         })
         .await
         {
-            Ok(Ok(count)) => emit_transcription_history_refresh(&app, count),
+            Ok(Ok(count)) => emit_recording_history_refresh(&app, count),
             Ok(Err(err)) => eprintln!("Failed to prune recordings: {err}"),
             Err(err) => eprintln!("Recording prune task failed: {err}"),
         }
@@ -1604,28 +1605,21 @@ pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: Use
 }
 
 pub(crate) fn schedule_transcription_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {
-    if matches!(
-        settings::auto_delete_transcription_policy(&settings),
-        RecordingPrunePolicy::Never
-    ) {
-        return;
-    }
-
     async_runtime::spawn(async move {
         let app_handle = app.clone();
         match async_runtime::spawn_blocking(move || {
-            prune_transcriptions_for_settings(&app_handle, &settings)
+            transcribe::run_transcription_prune_for_settings(&app_handle, &settings)
         })
         .await
         {
-            Ok(Ok(count)) => emit_transcription_history_refresh(&app, count),
+            Ok(Ok(())) => {}
             Ok(Err(err)) => eprintln!("Failed to prune transcriptions: {err}"),
             Err(err) => eprintln!("Transcription prune task failed: {err}"),
         }
     });
 }
 
-fn emit_transcription_history_refresh(app: &AppHandle<AppRuntime>, deleted_count: u32) {
+fn emit_recording_history_refresh(app: &AppHandle<AppRuntime>, deleted_count: u32) {
     if deleted_count > 0 {
         let _ = app.emit(
             EVENT_TRANSCRIPTION_COMPLETE,
@@ -1634,63 +1628,6 @@ fn emit_transcription_history_refresh(app: &AppHandle<AppRuntime>, deleted_count
                 auto_paste: false,
             },
         );
-    }
-}
-
-fn prune_transcriptions_for_settings(
-    app: &AppHandle<AppRuntime>,
-    settings: &UserSettings,
-) -> GlimpseResult<u32> {
-    count_or_prune_transcriptions(
-        app,
-        settings::auto_delete_transcription_policy(settings),
-        Local::now(),
-        RecordingPruneAction::Delete,
-    )
-}
-
-fn preview_transcription_prune_for_policy(
-    app: &AppHandle<AppRuntime>,
-    policy: RecordingPrunePolicy,
-) -> GlimpseResult<u32> {
-    count_or_prune_transcriptions(app, policy, Local::now(), RecordingPruneAction::Count)
-}
-
-fn count_or_prune_transcriptions(
-    app: &AppHandle<AppRuntime>,
-    policy: RecordingPrunePolicy,
-    now: DateTime<Local>,
-    action: RecordingPruneAction,
-) -> GlimpseResult<u32> {
-    if matches!(policy, RecordingPrunePolicy::Never) {
-        return Ok(0);
-    }
-
-    let cutoff = recording_prune_cutoff(policy, now);
-    let cutoff_millis = match (policy, cutoff) {
-        (RecordingPrunePolicy::Immediately, _) => now.timestamp_millis(),
-        (_, Some(cutoff)) => cutoff.timestamp_millis(),
-        _ => return Ok(0),
-    };
-
-    let storage = app.state::<AppState>().storage();
-    match action {
-        RecordingPruneAction::Count => storage
-            .count_prunable_before(cutoff_millis)
-            .context("Failed to count prunable transcriptions"),
-        RecordingPruneAction::Delete => {
-            let audio_paths = storage
-                .prune_before(cutoff_millis)
-                .context("Failed to prune transcriptions")?;
-            let count = audio_paths.len() as u32;
-            for audio_path in audio_paths {
-                let path = PathBuf::from(audio_path);
-                if path.exists() {
-                    let _ = fs::remove_file(path);
-                }
-            }
-            Ok(count)
-        }
     }
 }
 
@@ -1729,27 +1666,12 @@ fn count_or_prune_recordings(
         return Ok(0);
     }
 
-    let cutoff = recording_prune_cutoff(policy, now);
+    let cutoff = settings::recording_prune_cutoff(policy, now);
     let (count, _) = match action {
         RecordingPruneAction::Count => count_prunable_recording_tree(&root, policy, cutoff)?,
         RecordingPruneAction::Delete => prune_recording_tree(&root, policy, cutoff)?,
     };
     Ok(count)
-}
-
-fn recording_prune_cutoff(
-    policy: RecordingPrunePolicy,
-    now: DateTime<Local>,
-) -> Option<DateTime<Local>> {
-    match policy {
-        RecordingPrunePolicy::Never => None,
-        RecordingPrunePolicy::Immediately => Some(now),
-        RecordingPrunePolicy::Day => now.checked_sub_days(Days::new(1)),
-        RecordingPrunePolicy::Week => now.checked_sub_days(Days::new(7)),
-        RecordingPrunePolicy::Month => now.checked_sub_months(Months::new(1)),
-        RecordingPrunePolicy::ThreeMonths => now.checked_sub_months(Months::new(3)),
-        RecordingPrunePolicy::Year => now.checked_sub_months(Months::new(12)),
-    }
 }
 
 fn prune_recording_tree(

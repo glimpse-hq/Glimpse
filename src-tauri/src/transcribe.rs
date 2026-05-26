@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
-use tauri::{async_runtime, AppHandle, Manager};
+use tauri::{async_runtime, AppHandle, Emitter, Manager};
 use tokio_util::sync::CancellationToken;
 use webrtc_vad::VadMode;
 
@@ -20,6 +20,64 @@ const WHISPER_CHUNK_SECONDS: f32 = 28.0;
 const WHISPER_CHUNK_OVERLAP_SECONDS: f32 = 2.0;
 const VAD_MIN_SPEECH_PERCENT_FILE: f32 = 2.0;
 const VAD_MIN_SPEECH_PERCENT_CHUNK: f32 = 5.0;
+
+pub(crate) fn run_transcription_prune_for_settings(
+    app: &AppHandle<AppRuntime>,
+    settings: &UserSettings,
+) -> Result<()> {
+    let count = count_or_prune_transcriptions(
+        app,
+        crate::settings::auto_delete_transcription_policy(settings),
+        chrono::Local::now(),
+        true,
+    )?;
+    if count > 0 {
+        app.emit(
+            EVENT_TRANSCRIPTION_COMPLETE,
+            TranscriptionCompletePayload {
+                transcript: String::new(),
+                auto_paste: false,
+            },
+        )?;
+    }
+    Ok(())
+}
+
+pub(crate) fn preview_transcription_prune_for_policy(
+    app: &AppHandle<AppRuntime>,
+    policy: crate::settings::RecordingPrunePolicy,
+) -> Result<u32> {
+    count_or_prune_transcriptions(app, policy, chrono::Local::now(), false)
+}
+
+fn count_or_prune_transcriptions(
+    app: &AppHandle<AppRuntime>,
+    policy: crate::settings::RecordingPrunePolicy,
+    now: chrono::DateTime<chrono::Local>,
+    delete: bool,
+) -> Result<u32> {
+    if matches!(policy, crate::settings::RecordingPrunePolicy::Never) {
+        return Ok(0);
+    }
+
+    let cutoff = crate::settings::recording_prune_cutoff(policy, now);
+    let cutoff_millis = match (policy, cutoff) {
+        (crate::settings::RecordingPrunePolicy::Immediately, _) => now.timestamp_millis(),
+        (_, Some(cutoff)) => cutoff.timestamp_millis(),
+        _ => return Ok(0),
+    };
+
+    let storage = app.state::<AppState>().storage();
+    if delete {
+        storage
+            .prune_before_and_remove_files(cutoff_millis)
+            .context("Failed to prune transcriptions")
+    } else {
+        storage
+            .count_prunable_before(cutoff_millis)
+            .context("Failed to count prunable transcriptions")
+    }
+}
 
 struct ProcessedTranscript {
     final_transcript: String,

@@ -344,6 +344,18 @@ impl StorageManager {
         Ok(audio_paths)
     }
 
+    pub fn prune_before_and_remove_files(&self, cutoff_millis: i64) -> Result<u32> {
+        let audio_paths = self.prune_before(cutoff_millis)?;
+        let count = audio_paths.len() as u32;
+        for audio_path in audio_paths {
+            let path = PathBuf::from(audio_path);
+            if path.exists() {
+                let _ = fs::remove_file(path);
+            }
+        }
+        Ok(count)
+    }
+
     pub fn get_by_id(&self, id: &str) -> Option<TranscriptionRecord> {
         let conn = self.connection.lock();
         match Self::get_record(&conn, id) {

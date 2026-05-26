@@ -69,6 +69,10 @@ function quoteCmd(value) {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+function windowsCmdPath() {
+  return "C:\\Windows\\System32\\cmd.exe";
+}
+
 const tauriCli = path.join(
   process.cwd(),
   "node_modules",
@@ -90,27 +94,20 @@ function spawnTauriCli() {
     }
 
     if (vsDevCmd && needsNativeBuild) {
-      const command = [
+      const tauriCommand = [
         quoteCmd(process.execPath),
         quoteCmd(tauriCli),
         ...args.map((arg) => quoteCmd(arg)),
       ].join(" ");
-      const targetDir = env.CARGO_TARGET_DIR;
-      const batPath = path.join(targetDir, "glimpse-tauri.cmd");
-      const batContents = [
-        "@echo off",
+      const cmdCommand = [
         `call ${quoteCmd(vsDevCmd)} -no_logo`,
-        `set "CARGO_TARGET_DIR=${targetDir}"`,
-        `set "TEMP=${env.TEMP}"`,
-        `set "TMP=${env.TMP}"`,
-        command,
-        "",
-      ].join("\r\n");
-      fs.writeFileSync(batPath, batContents);
+        tauriCommand,
+      ].join(" && ");
 
-      return spawn("cmd.exe", ["/d", "/c", batPath], {
+      return spawn(windowsCmdPath(), ["/d", "/s", "/c", cmdCommand], {
         env,
         stdio: "inherit",
+        shell: false,
       });
     }
   }

@@ -1,6 +1,6 @@
-import type { LicenseEdition, LicenseState } from "../../features/license/api";
+import type { LicenseEdition, LicenseState } from "../types/license";
 
-export type { LicenseEdition };
+export type { LicenseEdition, LicenseState };
 
 export type EditionInfo = {
   id: LicenseEdition;

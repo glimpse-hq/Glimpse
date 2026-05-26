@@ -14,8 +14,8 @@ import {
   mulberry32,
   seedFromLicenseKey,
   seededDotField,
-} from "../../../shared/lib/licenseFingerprint";
-import type { PurchaseTier } from "../../../shared/lib/purchaseConfig";
+} from "../licenseFingerprint";
+import type { PurchaseTier } from "../../license/purchaseConfig";
 import {
   EDITION_COLORS,
   type LicenseEdition,
@@ -90,6 +90,8 @@ export function MemberCardPaletteProvider({ children }: { children: ReactNode })
 
   useEffect(() => {
     const sync = () => setPalette(paletteForAppTheme(readAppTheme()));
+    let disposed = false;
+    let unlistenTheme: (() => void) | null = null;
 
     const observer = new MutationObserver(sync);
     observer.observe(document.documentElement, {
@@ -100,12 +102,20 @@ export function MemberCardPaletteProvider({ children }: { children: ReactNode })
     const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
     mediaQuery.addEventListener("change", sync);
 
-    const unlistenPromise = listen("ui:theme_changed", sync);
+    void listen("ui:theme_changed", sync).then((unlisten) => {
+      if (disposed) {
+        unlisten();
+      } else {
+        unlistenTheme = unlisten;
+      }
+    }).catch(() => {});
 
     return () => {
+      disposed = true;
       observer.disconnect();
       mediaQuery.removeEventListener("change", sync);
-      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
+      unlistenTheme?.();
+      unlistenTheme = null;
     };
   }, []);
 

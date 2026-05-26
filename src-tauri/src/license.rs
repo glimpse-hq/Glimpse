@@ -10,7 +10,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::{settings::SettingsStore, tray, AppRuntime, EVENT_LICENSE_CHECKOUT_RETURNED};
 
-// Credentials — opaque tokens that mean nothing without a live Polar validate.
+// Credentials: opaque tokens that mean nothing without a live Polar validate.
 const KEY_LICENSE_KEY: &str = "license_key";
 const KEY_LICENSE_ACTIVATION_ID: &str = "license_activation_id";
 
@@ -236,7 +236,7 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         ((trial_ends_at - now).num_seconds() as f64 / 86_400.0).ceil() as i64;
     let trial_active = now < trial_ends_at;
 
-    let has_license_credential = read_optional_string(store, KEY_LICENSE_KEY)?.is_some();
+    let has_license_credential = read_license_key(store)?.is_some();
     let stored_status = read_optional_string(store, KEY_LICENSE_STATUS)?;
     let display_key = read_optional_string(store, KEY_LICENSE_DISPLAY_KEY)?;
     let customer_email = read_optional_string(store, KEY_LICENSE_CUSTOMER_EMAIL)?;
@@ -336,7 +336,7 @@ pub async fn activate_license(
         .await
         .map_err(|err| format!("Polar returned an unreadable license response: {err}"))?;
 
-    write_string(store, KEY_LICENSE_KEY, &key)?;
+    write_license_key(store, Some(&key))?;
     write_string(store, KEY_LICENSE_ACTIVATION_ID, &activated.id)?;
     write_cache_from_polar(store, &activated.license_key)?;
     get_license_state(store)
@@ -346,7 +346,7 @@ pub async fn refresh_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
-    let Some(key) = read_optional_string(store, KEY_LICENSE_KEY)? else {
+    let Some(key) = read_license_key(store)? else {
         return get_license_state(store);
     };
     let activation_id = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)?;
@@ -374,7 +374,7 @@ pub async fn refresh_license(
         // clear the credential. Transient failures (5xx, 429) leave the cache
         // alone so a network blip doesn't downgrade the user.
         if matches!(status.as_u16(), 403 | 404 | 422) {
-            write_string(store, KEY_LICENSE_KEY, "")?;
+            write_license_key(store, None)?;
             write_string(store, KEY_LICENSE_ACTIVATION_ID, "")?;
             write_string(store, KEY_LICENSE_STATUS, "invalid")?;
         }
@@ -388,6 +388,7 @@ pub async fn refresh_license(
     if let Some(activation) = validated.activation.as_ref() {
         write_string(store, KEY_LICENSE_ACTIVATION_ID, &activation.id)?;
     }
+    write_license_key(store, Some(&key))?;
     write_cache_from_polar(store, &validated)?;
     get_license_state(store)
 }
@@ -396,7 +397,7 @@ pub async fn deactivate_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
-    let key = read_optional_string(store, KEY_LICENSE_KEY)?;
+    let key = read_license_key(store)?;
     let activation_id = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)?;
 
     if let (Some(key), Some(activation_id)) = (key.as_deref(), activation_id.as_deref()) {
@@ -416,7 +417,7 @@ pub async fn deactivate_license(
             .await
             .map_err(|err| format!("Could not reach Polar: {err}"))?;
         let status = response.status();
-        // 4xx beyond 404 still lets us clear locally — user explicitly asked to
+        // 4xx beyond 404 still lets us clear locally: user explicitly asked to
         // deactivate this device and Polar's view will eventually catch up.
         if status.is_server_error() {
             return Err(polar_error_message(status.as_u16()).to_string());
@@ -428,8 +429,7 @@ pub async fn deactivate_license(
 }
 
 pub fn reveal_license_key(store: &SettingsStore) -> Result<String, String> {
-    read_optional_string(store, KEY_LICENSE_KEY)?
-        .ok_or_else(|| "No license key is stored on this device.".to_string())
+    read_license_key(store)?.ok_or_else(|| "No license key is stored on this device.".to_string())
 }
 
 fn write_cache_from_polar(
@@ -506,6 +506,39 @@ fn clear_cache(store: &SettingsStore) -> Result<(), String> {
         write_string(store, key, "")?;
     }
     Ok(())
+}
+
+fn read_license_key(store: &SettingsStore) -> Result<Option<String>, String> {
+    let Some(stored) = read_optional_string(store, KEY_LICENSE_KEY)? else {
+        return Ok(None);
+    };
+
+    if !crate::crypto::looks_encrypted(&stored) {
+        return Ok(Some(stored));
+    }
+
+    let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() else {
+        return Err("Could not decrypt license key on this device.".to_string());
+    };
+
+    crate::crypto::decrypt(&stored, &hardware_uuid)
+        .map(Some)
+        .map_err(|err| format!("Failed to decrypt license key: {err}"))
+}
+
+fn write_license_key(store: &SettingsStore, key: Option<&str>) -> Result<(), String> {
+    let Some(key) = key.filter(|value| !value.trim().is_empty()) else {
+        return write_string(store, KEY_LICENSE_KEY, "");
+    };
+
+    let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() else {
+        eprintln!("Warning: Could not get hardware UUID, storing license key unencrypted");
+        return write_string(store, KEY_LICENSE_KEY, key);
+    };
+
+    let encrypted = crate::crypto::encrypt(key, &hardware_uuid)
+        .map_err(|err| format!("Failed to encrypt license key: {err}"))?;
+    write_string(store, KEY_LICENSE_KEY, &encrypted)
 }
 
 fn load_trial_started_at(store: &SettingsStore) -> Result<DateTime<Utc>, String> {

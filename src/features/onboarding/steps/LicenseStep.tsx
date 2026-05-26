@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
 import type { LicenseState } from "../../license/api";
-import type { PurchaseTier } from "../../../shared/lib/purchaseConfig";
+import type { PurchaseTier } from "../../license/purchaseConfig";
 import type { StepMotionProps } from "./shared";
 
 const LICENSE_KEY_PRIMARY_ACTIVATE_MIN_LENGTH = 20;
@@ -113,10 +113,6 @@ export function LicenseStep({
         onOpenCheckout={onOpenCheckout}
       />
 
-      <div className="mt-3 flex w-full max-w-[400px] items-center justify-end">
-        <CustomerPortalLink source="onboarding" />
-      </div>
-
       {!isActive && (
         <form
           onSubmit={submitActivationForm}
@@ -185,6 +181,10 @@ export function LicenseStep({
           })
         )}
       </button>
+
+      <div className="mt-3 flex w-full max-w-[400px] items-center justify-center">
+        <CustomerPortalLink source="onboarding" />
+      </div>
     </motion.div>
   );
 }

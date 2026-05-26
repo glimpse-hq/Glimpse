@@ -75,11 +75,12 @@ type InvalidShortcutDraft = { target: ShortcutTarget; message: string } | null;
 
 type SaveSettingsOverrides = ShortcutOverrides & {
   localModel?: string;
+  localApiModel?: string;
   shortcutBindings?: ShortcutBindings;
   shortcutDraftTarget?: ShortcutTarget;
 };
 
-async function waitForLocalApiStopped(timeoutMs = 2500): Promise<LocalApiStatus> {
+async function waitForLocalApiStopped(timeoutMs = 10000): Promise<LocalApiStatus> {
   const started = Date.now();
   let latest = await modelsApi.getLocalApiStatus();
   while (latest.running && Date.now() - started < timeoutMs) {
@@ -553,7 +554,7 @@ export function useSettingsForm({
         analyticsEnabled,
         localApiKey,
         localApiPort,
-        localApiModel,
+        localApiModel: overrides.localApiModel ?? localApiModel,
         localApiHost,
         localApiStartOnLaunch: licenseGateActive ? localApiStartOnLaunch : false,
         localApiCors,
@@ -1242,13 +1243,27 @@ export function useSettingsForm({
           [modelKey]: { status: "idle", percent: 0, downloaded: 0, total: 0 },
         }));
 
+        const otherInstalledModel = modelCatalog.find(
+          (m) => m.key !== modelKey && modelStatus[m.key]?.installed,
+        );
+        const settingsUpdates: SaveSettingsOverrides = {};
+
         if (localModel === modelKey) {
-          const otherInstalledModel = modelCatalog.find(
-            (m) => m.key !== modelKey && modelStatus[m.key]?.installed,
-          );
           if (otherInstalledModel) {
-            handleLocalModelChange(otherInstalledModel.key);
+            settingsUpdates.localModel = otherInstalledModel.key;
+            setLocalModel(otherInstalledModel.key);
           }
+        }
+
+        if (localApiModel === modelKey) {
+          const nextLocalApiModel = otherInstalledModel?.key ?? "auto";
+          settingsUpdates.localApiModel = nextLocalApiModel;
+          setLocalApiModel(nextLocalApiModel);
+        }
+
+        if (Object.keys(settingsUpdates).length > 0) {
+          clearPendingSettingsSave();
+          void saveSettingsNow(settingsUpdates);
         }
 
         invalidateModelStatus(modelKey);
@@ -1267,11 +1282,13 @@ export function useSettingsForm({
       }
     },
     [
-      handleLocalModelChange,
+      clearPendingSettingsSave,
       invalidateModelStatus,
+      localApiModel,
       localModel,
       modelCatalog,
       modelStatus,
+      saveSettingsNow,
     ],
   );
 

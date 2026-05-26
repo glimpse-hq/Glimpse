@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { estimateTypewriterMs } from "../../../shared/ui/TypewriterText";
 
 export type CardRevealStage =
@@ -46,29 +46,29 @@ export function useCardActivationSequence(
 
   headlineRef.current = headlineText;
 
-  const clearTimers = () => {
+  const clearTimers = useCallback(() => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
     timersRef.current = [];
-  };
+  }, []);
 
-  const schedule = (fn: () => void, delayMs: number) => {
+  const schedule = useCallback((fn: () => void, delayMs: number) => {
     timersRef.current.push(
       window.setTimeout(() => {
         fn();
       }, delayMs),
     );
-  };
+  }, []);
 
-  const beginUserReveal = () => {
+  const beginUserReveal = useCallback(() => {
     clearTimers();
     sequenceStartedRef.current = true;
     revealScheduledRef.current = false;
     wipeStartedAtRef.current = Date.now();
     setIsUserActivationReveal(true);
     setStage("wiping");
-  };
+  }, [clearTimers]);
 
-  useEffect(() => () => clearTimers(), []);
+  useEffect(() => () => clearTimers(), [clearTimers]);
 
   useEffect(() => {
     if (activationAttempt <= 0 || activationAttempt === lastAttemptRef.current) {
@@ -134,7 +134,7 @@ export function useCardActivationSequence(
     ) {
       beginUserReveal();
     }
-  }, [activating, active, activationAttempt]);
+  }, [activating, active, activationAttempt, beginUserReveal, clearTimers]);
 
   useEffect(() => {
     if (!active || stage !== "wiping" || revealScheduledRef.current || !licenseReady) {
@@ -171,7 +171,7 @@ export function useCardActivationSequence(
       () => setStage("done"),
       Math.max(REVEAL_FLOOR_MS - totalElapsed, cursor + 900),
     );
-  }, [active, stage, licenseReady]);
+  }, [active, stage, licenseReady, schedule]);
 
   const cinematic = stage !== "draft" && stage !== "done";
   const typingReveal = cinematic;

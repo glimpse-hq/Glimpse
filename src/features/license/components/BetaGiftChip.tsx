@@ -1,10 +1,10 @@
-// TODO: REMOVE after next update — entire file is temporary beta gift promo chip.
+// TODO: REMOVE after next update: entire file is temporary beta gift promo chip.
 import { useState } from "react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Check, Copy, ExternalLink, X } from "lucide-react";
-import { founderCheckoutUrlFor } from "../../../shared/lib/purchaseConfig"; // TODO: REMOVE after next update — beta gift founder checkout.
+import { founderCheckoutUrlFor } from "../../license/purchaseConfig"; // TODO: REMOVE after next update: beta gift founder checkout.
 import { useLicenseState } from "../queries";
-import { BETA_DISCOUNT_CODE, shouldShowBetaGiftPromo } from "./betaGiftPromo"; // TODO: REMOVE after next update — beta gift promo helpers.
+import { BETA_DISCOUNT_CODE, shouldShowBetaGiftPromo } from "./betaGiftPromo"; // TODO: REMOVE after next update: beta gift promo helpers.
 
 const BetaGiftChip = () => {
   const { data: licenseState } = useLicenseState();
@@ -26,7 +26,7 @@ const BetaGiftChip = () => {
   };
 
   const openCheckout = async () => {
-    // TODO: REMOVE after next update — beta gift founder checkout link.
+    // TODO: REMOVE after next update: beta gift founder checkout link.
     const checkoutUrl = founderCheckoutUrlFor("beta_gift");
     if (!checkoutUrl) return;
     try {
@@ -77,5 +77,5 @@ const BetaGiftChip = () => {
   );
 };
 
-// TODO: REMOVE after next update — beta gift promo chip export.
+// TODO: REMOVE after next update: beta gift promo chip export.
 export default BetaGiftChip;

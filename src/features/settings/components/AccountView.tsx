@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
 import type { LicenseState } from "../../license/api";
-import type { PurchaseTier } from "../../../shared/lib/purchaseConfig";
+import type { PurchaseTier } from "../../license/purchaseConfig";
 
 type AccountOpeningTarget = PurchaseTier | null;
 
@@ -99,10 +99,7 @@ const AccountView = ({
           message: "Trial · 1 day left",
         });
       }
-      return t({
-        id: "settings.account.trial.text",
-        message: `Trial · ${{ remaining: trialDaysRemaining }} of ${{ total: TRIAL_TOTAL_DAYS }} days left`,
-      });
+      return t`Trial · ${trialDaysRemaining} of ${TRIAL_TOTAL_DAYS} days left`;
     }
 
     if (trialEndsAt) {

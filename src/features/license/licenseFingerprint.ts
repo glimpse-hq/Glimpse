@@ -17,11 +17,6 @@ export function mulberry32(seed: number) {
   };
 }
 
-/**
- * Generate a deterministic set of active dot indices for a (rows × cols) grid,
- * seeded from the license key. Use this to fill an arbitrary dot field that's
- * unique per user.
- */
 export function seededDotField(
   key: string | null | undefined,
   rows: number,
@@ -36,17 +31,4 @@ export function seededDotField(
     if (rand() < density) active.add(i);
   }
   return active;
-}
-
-export function displayNameFromEmail(email: string | null | undefined): string | null {
-  if (!email) return null;
-  const local = email.split("@")[0]?.trim() ?? "";
-  if (!local) return null;
-
-  return local
-    .replace(/[._+-]+/g, " ")
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(" ");
 }

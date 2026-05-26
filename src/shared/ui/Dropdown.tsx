@@ -205,9 +205,9 @@ export function Dropdown<T extends string | number>({
                                 valueClassName,
                             )}
                         >
-                            {buttonWidthLabels.map((label) => (
+                            {buttonWidthLabels.map((label, index) => (
                                 <span
-                                    key={label}
+                                    key={`${label}-${index}`}
                                     className="invisible col-start-1 row-start-1 whitespace-nowrap"
                                     aria-hidden="true"
                                 >

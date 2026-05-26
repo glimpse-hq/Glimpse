@@ -16,7 +16,7 @@ import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermiss
 import {
   checkoutUrlFor,
   type PurchaseTier,
-} from "../../shared/lib/purchaseConfig";
+} from "../license/purchaseConfig";
 import { useSettings } from "../settings/queries";
 import {
   modelKeys,
@@ -34,7 +34,7 @@ import { GlimpseLogo, StepIndicator } from "./steps/shared";
 import { useActivateLicense, useLicenseState } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import WindowControls from "../../shared/ui/WindowControls";
-// TODO: REMOVE after next update — beta gift promo chip.
+// TODO: REMOVE after next update: beta gift promo chip.
 import BetaGiftChip from "../license/components/BetaGiftChip";
 import type { ModelInfo, ModelStatus } from "../../types";
 
@@ -612,7 +612,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
       <WindowControls />
       <div data-tauri-drag-region className="h-7 w-full shrink-0" />
-      {/* TODO: REMOVE after next update — hardcoded beta discount chip. */}
+      {/* TODO: REMOVE after next update: hardcoded beta discount chip. */}
       <BetaGiftChip />
 
       <div className="flex justify-center pt-6 pb-6">

@@ -2,7 +2,6 @@ import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { displayNameFromEmail } from "../../../shared/lib/licenseFingerprint";
 import {
   editionFromLicenseState,
   editionInfo,
@@ -10,7 +9,7 @@ import {
 import {
   tierInfo,
   type PurchaseTier,
-} from "../../../shared/lib/purchaseConfig";
+} from "../../license/purchaseConfig";
 import { TypewriterText } from "../../../shared/ui/TypewriterText";
 import type { LicenseState } from "../api";
 import { useDictationStats } from "../queries";
@@ -101,7 +100,7 @@ const MemberCardInner = ({
           ? t({ id: "member_card.tier_contributor", message: "Contributor" })
           : t({ id: "member_card.tier_personal", message: "Personal" });
   const editionColors = EDITION_STAMP_COLORS[edition];
-  const name = customerName?.trim() || displayNameFromEmail(email);
+  const name = customerName?.trim() || null;
   const displayTitle = name || email;
   const memberSince = formatCardDate(memberSinceISO);
   const dictationStatsQuery = useDictationStats();
@@ -148,11 +147,13 @@ const MemberCardInner = ({
     }
   }, [cinematic]);
 
-  if (stage === "draft") {
-    stripeSeedRef.current = "draft-glimpse";
-  } else if (displayKey) {
-    stripeSeedRef.current = displayKey;
-  }
+  useEffect(() => {
+    if (stage === "draft") {
+      stripeSeedRef.current = "draft-glimpse";
+    } else if (displayKey) {
+      stripeSeedRef.current = displayKey;
+    }
+  }, [stage, displayKey]);
 
   const visualSeed = stripeSeedRef.current;
   const stripeDotTransition =

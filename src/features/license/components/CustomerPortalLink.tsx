@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react";
 import {
   customerPortalUrlFor,
   type PurchaseSource,
-} from "../../../shared/lib/purchaseConfig";
+} from "../../license/purchaseConfig";
 
 type CustomerPortalLinkProps = {
   source: PurchaseSource;

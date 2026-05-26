@@ -324,26 +324,28 @@ pub(crate) fn update_settings(
         next.edit_mode_enabled = args.edit_mode_enabled;
         next.local_api_start_on_launch = args.local_api_start_on_launch;
         // shortcut_bindings is already set above; cleanup_enabled fields within
-        // each binding are gated through canonicalize_shortcut_bindings — they
+        // each binding are gated through canonicalize_shortcut_bindings: they
         // come from args and are subject to the require_license_gate check.
     } else {
         // Restore the on-disk truth for shortcut binding cleanup flags, since
         // canonicalize_shortcut_bindings just wrote args-derived values.
-        for (out, before) in next
-            .shortcut_bindings
-            .smart
-            .iter_mut()
-            .chain(next.shortcut_bindings.hold.iter_mut())
-            .chain(next.shortcut_bindings.toggle.iter_mut())
-            .zip(
-                prev.shortcut_bindings
-                    .smart
-                    .iter()
-                    .chain(prev.shortcut_bindings.hold.iter())
-                    .chain(prev.shortcut_bindings.toggle.iter()),
-            )
-        {
-            out.cleanup_enabled = before.cleanup_enabled;
+        for (next_bindings, prev_bindings) in [
+            (
+                &mut next.shortcut_bindings.smart,
+                &prev.shortcut_bindings.smart,
+            ),
+            (
+                &mut next.shortcut_bindings.hold,
+                &prev.shortcut_bindings.hold,
+            ),
+            (
+                &mut next.shortcut_bindings.toggle,
+                &prev.shortcut_bindings.toggle,
+            ),
+        ] {
+            for (out, before) in next_bindings.iter_mut().zip(prev_bindings.iter()) {
+                out.cleanup_enabled = before.cleanup_enabled;
+            }
         }
     }
     next.llm_provider = args.llm_provider;

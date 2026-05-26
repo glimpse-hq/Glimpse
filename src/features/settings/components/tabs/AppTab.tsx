@@ -33,7 +33,10 @@ type PendingPruneConfirmation = {
   candidateCount: number | null;
 };
 
-const recordingPrunePolicyFor = (duration: RecordingPrunePolicy) => duration;
+const recordingPrunePolicyFor = (
+  target: PruneTarget,
+  duration: RecordingPrunePolicy,
+) => (target === "audio" ? duration : "never");
 
 const transcriptionPrunePolicyFor = (
   target: PruneTarget,
@@ -353,12 +356,18 @@ const AppTab = ({
       return;
     }
 
-    const nextRecordingPolicy = recordingPrunePolicyFor(nextDuration);
+    const nextRecordingPolicy = recordingPrunePolicyFor(
+      nextTarget,
+      nextDuration,
+    );
     const nextTranscriptionPolicy = transcriptionPrunePolicyFor(
       nextTarget,
       nextDuration,
     );
-    const currentRecordingPolicy = recordingPrunePolicyFor(autoDeleteDuration);
+    const currentRecordingPolicy = recordingPrunePolicyFor(
+      autoDeleteTarget,
+      autoDeleteDuration,
+    );
     const currentTranscriptionPolicy = transcriptionPrunePolicyFor(
       autoDeleteTarget,
       autoDeleteDuration,

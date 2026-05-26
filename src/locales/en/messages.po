@@ -116,6 +116,11 @@ msgstr ""
 #~ msgstr "We couldn't count them right now, but the cleanup will still run as soon as you save this change."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.trial.text"
+#~ msgstr "Trial · {remaining} of {total} days left"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.endpoint.autofilled"
 msgstr "(auto-filled)"
@@ -910,7 +915,7 @@ msgstr "Core"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer"
-msgstr "Core dictation uses open-source models that run on your device, so there are no per-minute fees or subscriptions for the main experience. Optional AI writing uses your own provider and API key if you choose to enable it."
+msgstr "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a one-time Personal or Commercial license in Settings → Account."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1142,7 +1147,7 @@ msgstr "Delete older items now?"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.delete.answer"
-msgstr "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. You can also open your Glimpse data folder from About → Storage to manage files directly."
+msgstr "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. Settings → App can auto-delete Audio only or full Transcripts (including linked audio). You can also open your Glimpse data folder from About → Storage to manage files directly."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: replacement.from
@@ -1601,11 +1606,6 @@ msgstr "How does Glimpse work?"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.subtitle"
 msgstr "How Glimpse works, privacy, and AI writing"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "How is Glimpse free?"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -2792,7 +2792,7 @@ msgstr "Select existing tag"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
 msgid "onboarding.welcome.local.aria"
-msgstr "Select Local mode — privacy-first, on-device transcription"
+msgstr "Select Local mode: privacy-first, on-device transcription"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3255,10 +3255,9 @@ msgstr "Transcripts"
 msgid "settings.general.edit_mode.body"
 msgstr "transform selected text with voice"
 
-#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.trial.text"
-msgstr "Trial · {remaining} of {total} days left"
+msgid "Trial · {trialDaysRemaining} of {TRIAL_TOTAL_DAYS} days left"
+msgstr "Trial · {trialDaysRemaining} of {TRIAL_TOTAL_DAYS} days left"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3389,6 +3388,11 @@ msgstr "Websites"
 #: src/features/onboarding/steps/WelcomeStep.tsx
 msgid "onboarding.welcome.title"
 msgstr "Welcome"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.free.question"
+msgstr "What is free vs Glimpse Personal?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Glimpse</h1>
-  <p>Voice dictation that stays on your device. Free, open-source, and built for people who actually care about privacy.</p>
+  <p>Voice dictation that stays on your device. Open-source, local-first, and built for people who actually care about privacy.</p>
   <img
     src="https://github.com/user-attachments/assets/c34a35a5-e2c9-469f-87c4-4c0d20c8082d"
     width="256"
@@ -10,6 +10,7 @@
   <p>
     <a href="https://github.com/LegendarySpy/Glimpse/releases/latest">Download</a> ·
     <a href="https://tryglimpse.cc/">Website</a> ·
+    <a href="#glimpse-personal">Pricing</a> ·
     <a href="#roadmap-10">Roadmap</a> ·
     <a href="https://tryglimpse.cc/privacy">Privacy</a>
   </p>
@@ -22,7 +23,7 @@
 
 ---
 
-Glimpse is a local-first voice dictation app. No subscription, no cloud required. Core transcription runs entirely on-device, with optional AI cleanup and edit providers if you want them.
+Glimpse is a local-first voice dictation app. **Core dictation is free**, no subscription, no cloud required, and transcription runs on your device. Optional AI writing (cleanup, edit mode, personalization) uses your own LLM provider when you enable it.
 
 Built as an open-source alternative to Superwhisper and WisprFlow, for people who left (or never started) because of pricing or privacy concerns.
 
@@ -40,14 +41,42 @@ Built as an open-source alternative to Superwhisper and WisprFlow, for people wh
 
 ## Features
 
+### Always free
+
 - **Local transcription.** Unplug your wifi. It still works.
-- **Edit mode.** Highlight a sentence, say *"make it less formal,"* watch it rewrite in place.
-- **Personalization.** Set different tones for each app and enhance them with [snippets](https://github.com/LegendarySpy/Glimpse/wiki/snippets).
 - **Custom dictionary.** Teach it *Tauri*, *Groq*, or your coworker's hard-to-spell last name.
 - **Replacements.** Say *"my address"*, get `221B Baker Street`.
-- **Library.** Drop in an `.mp4`, scrub the synced transcript, export to `.srt`, `.txt`, or `.json`.
 - **Auto Dictionary.** Glimpse automatically learns your custom words.
-- And much much more!
+- **History & search.** Browse, search, and manage past dictations.
+
+### Personal features
+
+These features are included in a **14-day trial**, then require a one-time [Glimpse Personal](#glimpse-personal) license (no subscription):
+
+- **Library.** Drop in an `.mp4`, scrub the synced transcript, export to `.srt`, `.txt`, or `.json`.
+- **AI Cleanup:** polish dictated text with your LLM provider.
+- **Edit mode:** highlight text, say *"make it less formal,"* and watch it rewrite in place.
+- **Personalization:** set different tones per app or site, with [snippets](https://github.com/LegendarySpy/Glimpse/wiki/snippets) for dynamic context.
+- **Local API:** OpenAI-compatible speech endpoint on your machine.
+- **CLI:** optional `glimpse` command for terminal workflows.
+
+Configure AI writing under **Settings → Providers**. Speech models live under **Settings → Models**.
+
+## Glimpse Personal
+
+Advanced features use **Glimpse Personal**, a one-time purchase, not a subscription. Core dictation stays free.
+
+| Edition | Price | For |
+| --- | --- | --- |
+| **Personal** | $12.99 | You, on up to 5 personal devices |
+| **Commercial** | $24.99 | Work use, on up to 5 seats |
+
+- **14-day trial:** full Personal features without buying first.
+- **Activate in-app:** buy or paste your license key from **Settings → Account**.
+
+## Support
+
+Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) or GitHub Issues.
 
 ## Roadmap 1.0+
 
@@ -73,13 +102,17 @@ Glimpse collects **anonymous usage telemetry** via [PostHog EU](https://posthog.
 - **Collected:** app launches/exits, uptime, recording count, transcription engine and keybind mode, model downloads, onboarding completion
 - **Never collected by Glimpse:** transcripts, audio, API keys, prompts, or any personally identifiable information
 
-If you enable an external LLM provider for Cleanup, Edit Mode, or Personalization, the relevant text and prompt are sent directly to that provider when those features run. Your API key stays stored locally in Glimpse.
+If you enable an external LLM provider under **Settings → Providers**, text for **Cleanup**, **Edit Mode**, and **Personalization** is sent directly to that provider when those features run. Your API key stays stored locally in Glimpse. Glimpse Personal is required to use those features after the trial.
 
 Telemetry is tied to a random install ID (not your identity) and stored in the EU. You can **opt out** at any time in **Settings → App**. For complete transparency, see [`src-tauri/src/analytics.rs`](src-tauri/src/analytics.rs) and the [Glimpse Wiki](https://github.com/LegendarySpy/Glimpse/wiki/Analytics).
 
 ## License
 
-Glimpse is licensed under [AGPL-3.0](LICENSE). When you distribute Glimpse or provide it as a network service, you must make the corresponding source code, including your modifications, available under the AGPL-3.0 license. An optional paid cloud tier is planned for users who want faster speeds or cloud-only features.
+**Source code:** Glimpse is licensed under [AGPL-3.0](LICENSE). If you distribute Glimpse or offer it as a network service, you must make the corresponding source, including your modifications, available under AGPL-3.0.
+
+**Official app builds:** Core dictation is free. Advanced features (Library, AI writing, Edit Mode, Local API, CLI) require **Glimpse Personal** after the trial. See [Glimpse Personal](#glimpse-personal) above.
+
+A hosted **cloud tier** (faster speeds, cloud-only features) is still planned for the future and is not part of 0.9.0.
 
 ## Acknowledgments
 

@@ -1,14 +1,15 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { motion, type Variants } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   checkoutUrlFor,
   type PurchaseTier,
-} from "../../../../shared/lib/purchaseConfig";
+} from "../../../license/purchaseConfig";
 import {
   useActivateLicense,
   useDeactivateLicense,
   useLicenseState,
+  useRefreshLicense,
 } from "../../../license/queries";
 import AccountView from "../AccountView";
 
@@ -19,9 +20,28 @@ type AccountTabProps = {
 const AccountTab = ({ variants }: AccountTabProps) => {
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
+  const {
+    mutate: refreshLicense,
+    isPending: refreshLicensePending,
+  } = useRefreshLicense();
   const deactivateLicense = useDeactivateLicense();
   const [openingTarget, setOpeningTarget] = useState<PurchaseTier | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
+  const refreshedIdentityForKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const licenseState = licenseQuery.data;
+    if (!licenseState || licenseState.status !== "active") return;
+    if (licenseState.customerName?.trim()) return;
+
+    const identityKey =
+      licenseState.displayKey ?? licenseState.customerEmail ?? "active-license";
+    if (refreshedIdentityForKeyRef.current === identityKey) return;
+    if (refreshLicensePending) return;
+
+    refreshedIdentityForKeyRef.current = identityKey;
+    refreshLicense();
+  }, [licenseQuery.data, refreshLicense, refreshLicensePending]);
 
   const openCheckout = async (tier: PurchaseTier) => {
     setOpenError(null);

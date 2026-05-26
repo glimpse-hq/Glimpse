@@ -81,12 +81,12 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
             id: "free",
             question: t({
                 id: "faq.free.question",
-                message: "How is Glimpse free?",
+                message: "What is free vs Glimpse Personal?",
             }),
             answer: t({
                 id: "faq.free.answer",
                 message:
-                    "Core dictation uses open-source models that run on your device, so there are no per-minute fees or subscriptions for the main experience. Optional AI writing uses your own provider and API key if you choose to enable it.",
+                    "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a one-time Personal or Commercial license in Settings → Account.",
             }),
         },
         {
@@ -98,7 +98,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
             answer: t({
                 id: "faq.delete.answer",
                 message:
-                    "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. You can also open your Glimpse data folder from About → Storage to manage files directly.",
+                    "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. Settings → App can auto-delete Audio only or full Transcripts (including linked audio). You can also open your Glimpse data folder from About → Storage to manage files directly.",
             }),
         },
         {

@@ -1,6 +1,7 @@
 use std::{collections::HashSet, fs, path::PathBuf, sync::OnceLock};
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Days, Local, Months};
 use parking_lot::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -529,6 +530,21 @@ pub fn canonicalize_recording_prune_policy(policy: RecordingPrunePolicy) -> Reco
     }
 }
 
+pub(crate) fn recording_prune_cutoff(
+    policy: RecordingPrunePolicy,
+    now: DateTime<Local>,
+) -> Option<DateTime<Local>> {
+    match policy {
+        RecordingPrunePolicy::Never => None,
+        RecordingPrunePolicy::Immediately => Some(now),
+        RecordingPrunePolicy::Day => now.checked_sub_days(Days::new(1)),
+        RecordingPrunePolicy::Week => now.checked_sub_days(Days::new(7)),
+        RecordingPrunePolicy::Month => now.checked_sub_months(Months::new(1)),
+        RecordingPrunePolicy::ThreeMonths => now.checked_sub_months(Months::new(3)),
+        RecordingPrunePolicy::Year => now.checked_sub_months(Months::new(12)),
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum AutoDeleteTarget {
@@ -542,7 +558,10 @@ fn default_auto_delete_target() -> AutoDeleteTarget {
 }
 
 pub fn auto_delete_recording_policy(settings: &UserSettings) -> RecordingPrunePolicy {
-    settings.auto_delete_duration
+    match settings.auto_delete_target {
+        AutoDeleteTarget::Audio => settings.auto_delete_duration,
+        AutoDeleteTarget::Transcripts => RecordingPrunePolicy::Never,
+    }
 }
 
 pub fn auto_delete_transcription_policy(settings: &UserSettings) -> RecordingPrunePolicy {

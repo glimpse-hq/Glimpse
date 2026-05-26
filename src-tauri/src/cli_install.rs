@@ -179,18 +179,12 @@ fn cli_link_owned_by_glimpse(destination: &Path, source: Option<&Path>) -> bool 
 
 #[cfg(windows)]
 fn cli_link_owned_by_glimpse(destination: &Path, source: Option<&Path>) -> bool {
-    let _ = source;
     let Ok(content) = fs::read_to_string(destination) else {
         return false;
     };
-    parse_windows_shim_target(&content).is_some_and(|target| is_glimpse_binary(&target))
-}
-
-#[cfg(windows)]
-fn is_glimpse_binary(path: &Path) -> bool {
-    path.file_stem()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name.eq_ignore_ascii_case("glimpse"))
+    source.is_some_and(|source| {
+        parse_windows_shim_target(&content).is_some_and(|target| paths_equivalent(&target, source))
+    })
 }
 
 #[cfg(windows)]
@@ -292,11 +286,12 @@ mod tests {
 
     #[cfg(windows)]
     #[test]
-    fn windows_shim_is_owned_from_marker_target() {
+    fn windows_shim_is_owned_when_marker_matches_source() {
         let temp =
             std::env::temp_dir().join(format!("glimpse-cli-shim-test-{}", std::process::id()));
         let _ = fs::remove_file(&temp);
         let shim_target = r"C:\Apps\Glimpse\Glimpse.exe";
+        let source = PathBuf::from(shim_target);
         fs::write(
             &temp,
             format!(
@@ -305,7 +300,11 @@ mod tests {
         )
         .expect("write temp shim");
 
-        assert!(cli_link_owned_by_glimpse(&temp, None));
+        assert!(cli_link_owned_by_glimpse(&temp, Some(&source)));
+        assert!(!cli_link_owned_by_glimpse(
+            &temp,
+            Some(Path::new(r"C:\Other\Glimpse\Glimpse.exe"))
+        ));
 
         let _ = fs::remove_file(temp);
     }
