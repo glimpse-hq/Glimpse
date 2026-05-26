@@ -113,8 +113,9 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force C:\.glimpse-cargo-target | Out-Null
-          "CARGO_TARGET_DIR=C:/.glimpse-cargo-target" >> $env:GITHUB_ENV
+          $cargoTargetDir = Join-Path $env:RUNNER_TEMP "cargo-target"
+          New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
+          "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
 
       - name: install Vulkan SDK
         if: matrix.platform == 'windows-latest'
@@ -146,7 +147,7 @@ jobs:
           key: ${{ matrix.platform }}-${{ matrix.rust-targets }}
           workspaces: src-tauri -> target
           cache-directories: |
-            C:/.glimpse-cargo-target
+            ${{ runner.temp }}/cargo-target
           cache-on-failure: true
 
       - name: install frontend dependencies

@@ -21,7 +21,9 @@ function configureWindowsEnv() {
   if (!env.CARGO_TARGET_DIR) {
     env.CARGO_TARGET_DIR =
       env.GLIMPSE_CARGO_TARGET_DIR ??
-      (env.CI && env.RUNNER_TEMP ? env.RUNNER_TEMP : defaultWindowsCargoTargetDir());
+      (env.CI && env.RUNNER_TEMP
+        ? path.join(env.RUNNER_TEMP, "cargo-target")
+        : defaultWindowsCargoTargetDir());
   }
 
   fs.mkdirSync(env.CARGO_TARGET_DIR, { recursive: true });
@@ -99,12 +101,20 @@ function spawnTauriCli() {
         quoteCmd(tauriCli),
         ...args.map((arg) => quoteCmd(arg)),
       ].join(" ");
-      const cmdCommand = [
+      const batPath = path.join(env.CARGO_TARGET_DIR, "glimpse-tauri.cmd");
+      const batContents = [
+        "@echo off",
+        "setlocal EnableExtensions DisableDelayedExpansion",
         `call ${quoteCmd(vsDevCmd)} -no_logo`,
+        `set "CARGO_TARGET_DIR=${env.CARGO_TARGET_DIR}"`,
+        `set "TEMP=${env.TEMP}"`,
+        `set "TMP=${env.TMP}"`,
         tauriCommand,
-      ].join(" && ");
+        "",
+      ].join("\r\n");
+      fs.writeFileSync(batPath, batContents);
 
-      return spawn(windowsCmdPath(), ["/d", "/s", "/c", cmdCommand], {
+      return spawn(windowsCmdPath(), ["/d", "/c", batPath], {
         env,
         stdio: "inherit",
         shell: false,
