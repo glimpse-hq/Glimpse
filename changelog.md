@@ -8,6 +8,9 @@
 - More UI improvements.
 - Improved / optimized keybind registration flow.
 
+### Fixes
+- Fixed library error cards being hidden under other cards.
+- Website favicons not showing in Personalization.
 ---
 0.9.0
 
