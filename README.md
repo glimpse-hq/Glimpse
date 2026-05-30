@@ -86,7 +86,7 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 - [ ] Remote mode
 - [ ] Cloud mode
 - [ ] Library overhaul
-- [ ] BYOK STT
+- [x] BYOK STT
 - [ ] Import from other apps
 
 ## Contributing

@@ -1017,8 +1017,12 @@ fn resample_audio(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
         return input.to_vec();
     }
 
-    resample_with_rubato(input, in_rate, out_rate)
-        .unwrap_or_else(|| resample_linear(input, in_rate, out_rate))
+    resample_with_rubato(input, in_rate, out_rate).unwrap_or_else(|| {
+        eprintln!(
+            "rubato resampler failed ({in_rate}→{out_rate}); falling back to linear resampler"
+        );
+        resample_linear(input, in_rate, out_rate)
+    })
 }
 
 fn resample_with_rubato(input: &[f32], in_rate: u32, out_rate: u32) -> Option<Vec<f32>> {

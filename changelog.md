@@ -2,6 +2,7 @@
 
 ### Features
 - Added an option to start in the background at login. (#13)
+- Added support for remote Speech models.
 
 ### Improvements
 - The audio pipeline for recording has been improved for higher accuracy across all models.
