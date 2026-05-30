@@ -1,8 +1,18 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { CliInstallStatus, LocalApiStatus, ModelInfo, ModelStatus } from "../../types";
+import type {
+  CliInstallStatus,
+  LocalApiStatus,
+  ModelInfo,
+  ModelStatus,
+  SpeechModel,
+} from "../../types";
 
 export async function listModels(): Promise<ModelInfo[]> {
   return invoke<ModelInfo[]>("list_models");
+}
+
+export async function listSpeechModels(): Promise<SpeechModel[]> {
+  return invoke<SpeechModel[]>("list_speech_models");
 }
 
 export async function checkModelStatus(model: string): Promise<ModelStatus> {

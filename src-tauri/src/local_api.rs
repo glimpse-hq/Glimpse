@@ -8,6 +8,7 @@ use std::{
 };
 
 use glimpse_speech::api::{ApiConfig, ApiEvent, ApiEventSink};
+use glimpse_speech::service::{SpeechConfig, SpeechService};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::oneshot;
@@ -102,6 +103,15 @@ impl LocalApiController {
         }
         let model_cache_dir =
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
+        let service = Arc::new(SpeechService::new(SpeechConfig { model_cache_dir }));
+        if let Some(warm_id) = warm_model.as_deref() {
+            let warm = Arc::clone(&service);
+            let warm_id = warm_id.to_string();
+            tokio::task::spawn_blocking(move || warm.preload_and_warm(&warm_id))
+                .await
+                .map_err(|err| format!("warm model task failed: {err}"))?
+                .map_err(|err| err.to_string())?;
+        }
         let config_id = self.next_config_id.fetch_add(1, Ordering::Relaxed) + 1;
 
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
@@ -155,11 +165,11 @@ impl LocalApiController {
                 ApiConfig {
                     host,
                     port: args.port,
-                    model_cache_dir,
-                    warm_model,
+                    service,
                     api_key,
                     event_sink: Some(event_sink),
                     cors: args.cors,
+                    transcription_provider: None,
                 },
                 async {
                     let _ = shutdown_rx.await;

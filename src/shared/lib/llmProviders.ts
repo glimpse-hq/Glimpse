@@ -137,3 +137,36 @@ export function getProviderPreset(
 ): LlmProviderPreset | undefined {
   return LLM_PROVIDER_PRESETS.find((p) => p.id === id);
 }
+
+export function resolvedLlmEndpoint(
+  provider: LlmProvider,
+  endpoint: string,
+): string {
+  const trimmed = endpoint.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+  return getProviderPreset(provider)?.endpoint ?? "";
+}
+
+export function formatTranscriptionLlmModel(stored: string): string | null {
+  const trimmed = stored.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const splitAt = trimmed.indexOf(":");
+  if (splitAt > 0) {
+    const providerId = trimmed.slice(0, splitAt) as LlmProvider;
+    const model = trimmed.slice(splitAt + 1).trim();
+    const providerLabel = getProviderPreset(providerId)?.label ?? providerId;
+    return model ? `${providerLabel} · ${model}` : providerLabel;
+  }
+
+  const preset = getProviderPreset(trimmed as LlmProvider);
+  if (preset) {
+    return preset.label;
+  }
+
+  return trimmed;
+}

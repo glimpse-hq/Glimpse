@@ -12,10 +12,8 @@ mod library;
 mod license;
 mod llm_cleanup;
 mod local_api;
-mod local_transcription;
 mod mode_context;
 mod model_language_table;
-mod model_manager;
 mod music;
 mod permissions;
 mod personalization;
@@ -25,6 +23,7 @@ mod platform;
 mod recent_transcriptions;
 mod recorder;
 mod settings;
+mod speech;
 mod storage;
 mod streaming_transcription;
 mod toast;
@@ -32,6 +31,10 @@ mod transcribe;
 mod transcription_api;
 mod tray;
 mod update_checker;
+
+pub(crate) use speech::engine as local_transcription;
+pub(crate) use speech::install as model_manager;
+pub(crate) use speech::remote as remote_speech;
 
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -52,8 +55,8 @@ use recorder::{
 use reqwest::Client;
 use serde::Serialize;
 use settings::{
-    default_local_model, LlmProvider, RecordingPrunePolicy, SettingsStore, TranscriptionMode,
-    UserSettings,
+    default_local_model, RecordingPrunePolicy, SettingsStore,
+    TranscriptionMode, UserSettings,
 };
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
@@ -163,7 +166,7 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     };
     use platform::macos::menu::{
         MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODEL_PREFIX,
-        MENU_ID_MODE_LOCAL, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
+        MENU_ID_MODE_LOCAL, MENU_ID_REMOTE_SPEECH_ENABLED, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
     };
     use tauri_plugin_opener::OpenerExt;
 
@@ -181,6 +184,10 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         }
         MENU_ID_MODE_LOCAL => {
             set_transcription_mode(app, settings::TranscriptionMode::Local);
+        }
+        MENU_ID_REMOTE_SPEECH_ENABLED => {
+            let enabled = !app.state::<AppState>().current_settings().remote_speech_enabled;
+            set_remote_speech_enabled(app, enabled);
         }
         MENU_ID_MIC_DEFAULT => {
             set_microphone(app, None);
@@ -269,6 +276,38 @@ fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
             state.emit_settings_changed(app, &saved);
         }
         Err(err) => eprintln!("Failed to update model selection: {err}"),
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn set_remote_speech_enabled(app: &AppHandle<AppRuntime>, enabled: bool) {
+    let state = app.state::<AppState>();
+    let mut current = match state.current_settings_unmasked() {
+        Ok(settings) => settings,
+        Err(err) => {
+            eprintln!("Failed to load settings for remote speech update: {err}");
+            return;
+        }
+    };
+    if current.remote_speech_enabled == enabled {
+        return;
+    }
+    current.remote_speech_enabled = enabled;
+    if enabled && !remote_speech::is_configured(&current) {
+        remote_speech::emit_not_configured_toast(app);
+        return;
+    }
+    match state.persist_settings(current.clone()) {
+        Ok(saved) => {
+            if let Err(err) = set_app_menu(app, &saved) {
+                eprintln!("Failed to refresh app menu: {err}");
+            }
+            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
+                eprintln!("Failed to refresh tray menu: {err}");
+            }
+            state.emit_settings_changed(app, &saved);
+        }
+        Err(err) => eprintln!("Failed to update remote speech setting: {err}"),
     }
 }
 
@@ -499,6 +538,7 @@ pub fn run() {
             model_manager::download_model,
             model_manager::delete_model,
             model_manager::cancel_download,
+            list_speech_models,
             local_api::get_local_api_status,
             local_api::start_local_api,
             local_api::stop_local_api,
@@ -522,6 +562,7 @@ pub fn run() {
             reset_onboarding,
             toast::debug_show_toast,
             fetch_llm_models,
+            fetch_remote_speech_models,
             open_whats_new,
             open_about_page,
             update_checker::get_update_status,
@@ -1298,13 +1339,35 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
 #[tauri::command]
 async fn fetch_llm_models(
     endpoint: String,
-    provider: LlmProvider,
     api_key: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<String>, String> {
-    llm_cleanup::fetch_available_models(&state.http(), &endpoint, &provider, &api_key)
+    llm_cleanup::fetch_available_models(&state.http(), &endpoint, &api_key)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|error| llm_cleanup::llm_issue_message(&error))
+}
+
+#[tauri::command]
+fn list_speech_models(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<'_, AppState>,
+) -> Vec<speech::SpeechModel> {
+    let settings = state.current_settings();
+    speech::list_models(&app, &settings)
+}
+
+#[tauri::command]
+async fn fetch_remote_speech_models(
+    endpoint: String,
+    api_key: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    if endpoint.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    glimpse_speech::remote::fetch_available_models(&state.http(), &endpoint, &api_key)
+        .await
+        .map_err(|error| error.user_message())
 }
 
 #[tauri::command]

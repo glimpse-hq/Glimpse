@@ -18,6 +18,11 @@ const KEY_TOGGLE_ENABLED: &str = "toggle_enabled";
 const KEY_SHORTCUT_BINDINGS: &str = "shortcut_bindings";
 const KEY_TRANSCRIPTION_MODE: &str = "transcription_mode";
 const KEY_LOCAL_MODEL: &str = "local_model";
+const KEY_REMOTE_SPEECH_ENABLED: &str = "remote_speech_enabled";
+const KEY_REMOTE_SPEECH_PROVIDER: &str = "remote_speech_provider";
+const KEY_REMOTE_SPEECH_ENDPOINT: &str = "remote_speech_endpoint";
+const KEY_REMOTE_SPEECH_API_KEY: &str = "remote_speech_api_key";
+const KEY_REMOTE_SPEECH_MODEL: &str = "remote_speech_model";
 const KEY_MICROPHONE_DEVICE: &str = "microphone_device";
 const KEY_LANGUAGE: &str = "language";
 const KEY_APP_LOCALE: &str = "app_locale";
@@ -117,6 +122,16 @@ pub struct UserSettings {
     pub transcription_mode: TranscriptionMode,
     #[serde(default = "default_local_model")]
     pub local_model: String,
+    #[serde(default)]
+    pub remote_speech_enabled: bool,
+    #[serde(default = "default_remote_speech_provider")]
+    pub remote_speech_provider: String,
+    #[serde(default = "default_remote_speech_endpoint")]
+    pub remote_speech_endpoint: String,
+    #[serde(default)]
+    pub remote_speech_api_key: String,
+    #[serde(default = "default_remote_speech_model")]
+    pub remote_speech_model: String,
     pub microphone_device: Option<String>,
     #[serde(default = "default_language")]
     pub language: String,
@@ -130,7 +145,7 @@ pub struct UserSettings {
     #[serde(default)]
     pub cleanup_enabled: bool,
     #[serde(default = "default_llm_provider")]
-    pub llm_provider: LlmProvider,
+    pub llm_provider: String,
     #[serde(default)]
     pub llm_endpoint: String,
     #[serde(default)]
@@ -437,6 +452,11 @@ impl Default for UserSettings {
             shortcut_bindings: default_shortcut_bindings(),
             transcription_mode: default_transcription_mode(),
             local_model: default_local_model(),
+            remote_speech_enabled: false,
+            remote_speech_provider: default_remote_speech_provider(),
+            remote_speech_endpoint: default_remote_speech_endpoint(),
+            remote_speech_api_key: String::new(),
+            remote_speech_model: default_remote_speech_model(),
             microphone_device: None,
             language: default_language(),
             app_locale: default_app_locale(),
@@ -483,6 +503,18 @@ pub fn default_local_api_cors() -> bool {
 }
 
 pub fn default_local_api_model() -> String {
+    "auto".to_string()
+}
+
+pub fn default_remote_speech_provider() -> String {
+    "openai".to_string()
+}
+
+pub fn default_remote_speech_endpoint() -> String {
+    "https://api.openai.com/v1".to_string()
+}
+
+pub fn default_remote_speech_model() -> String {
     "auto".to_string()
 }
 
@@ -601,32 +633,8 @@ pub enum ThemeMode {
     Dark,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
-#[serde(rename_all = "lowercase")]
-pub enum LlmProvider {
-    #[default]
-    None,
-    LmStudio,
-    Ollama,
-    OpenAI,
-    Anthropic,
-    Google,
-    Xai,
-    Groq,
-    Cerebras,
-    Sambanova,
-    Together,
-    OpenRouter,
-    Perplexity,
-    DeepSeek,
-    Fireworks,
-    Mistral,
-    #[serde(other)]
-    Custom,
-}
-
-fn default_llm_provider() -> LlmProvider {
-    LlmProvider::None
+fn default_llm_provider() -> String {
+    "none".to_string()
 }
 
 pub fn default_local_model() -> String {
@@ -709,6 +717,7 @@ pub fn canonicalize_app_locale_or_default(value: &str) -> String {
 pub struct SettingsStore {
     conn: Mutex<Connection>,
     llm_api_key_ciphertext: Mutex<Option<String>>,
+    remote_speech_api_key_ciphertext: Mutex<Option<String>>,
     local_api_key_ciphertext: Mutex<Option<String>>,
 }
 
@@ -726,6 +735,7 @@ impl SettingsStore {
         let store = Self {
             conn: Mutex::new(conn),
             llm_api_key_ciphertext: Mutex::new(None),
+            remote_speech_api_key_ciphertext: Mutex::new(None),
             local_api_key_ciphertext: Mutex::new(None),
         };
 
@@ -749,8 +759,10 @@ impl SettingsStore {
         let mut settings = UserSettings::default();
         let mut should_persist = false;
         let mut llm_api_key_ciphertext: Option<String> = None;
+        let mut remote_speech_api_key_ciphertext: Option<String> = None;
         let mut local_api_key_ciphertext: Option<String> = None;
         let encrypted_llm_api_key: String;
+        let encrypted_remote_speech_api_key: String;
         let encrypted_local_api_key: String;
         let legacy_llm_cleanup_enabled_exists: bool;
         let llm_enabled_exists: bool;
@@ -790,6 +802,28 @@ impl SettingsStore {
             )?;
             settings.local_model =
                 self.read_value(&conn, KEY_LOCAL_MODEL, settings.local_model.clone())?;
+            settings.remote_speech_enabled = self.read_value(
+                &conn,
+                KEY_REMOTE_SPEECH_ENABLED,
+                settings.remote_speech_enabled,
+            )?;
+            settings.remote_speech_provider = self.read_value(
+                &conn,
+                KEY_REMOTE_SPEECH_PROVIDER,
+                settings.remote_speech_provider.clone(),
+            )?;
+            settings.remote_speech_endpoint = self.read_value(
+                &conn,
+                KEY_REMOTE_SPEECH_ENDPOINT,
+                settings.remote_speech_endpoint.clone(),
+            )?;
+            encrypted_remote_speech_api_key =
+                self.read_value(&conn, KEY_REMOTE_SPEECH_API_KEY, String::new())?;
+            settings.remote_speech_model = self.read_value(
+                &conn,
+                KEY_REMOTE_SPEECH_MODEL,
+                settings.remote_speech_model.clone(),
+            )?;
             settings.microphone_device = self.read_value(
                 &conn,
                 KEY_MICROPHONE_DEVICE,
@@ -936,6 +970,40 @@ impl SettingsStore {
             }
         }
         *self.llm_api_key_ciphertext.lock() = llm_api_key_ciphertext;
+
+        if !encrypted_remote_speech_api_key.is_empty() {
+            let key_looks_encrypted =
+                crate::crypto::looks_encrypted(&encrypted_remote_speech_api_key);
+            if let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() {
+                match crate::crypto::decrypt(&encrypted_remote_speech_api_key, &hardware_uuid) {
+                    Ok(decrypted) => settings.remote_speech_api_key = decrypted,
+                    Err(e) => {
+                        if !key_looks_encrypted {
+                            settings.remote_speech_api_key = encrypted_remote_speech_api_key;
+                        } else {
+                            eprintln!(
+                                "Error: Failed to decrypt remote speech API key: {}. Preserving encrypted value.",
+                                e
+                            );
+                            settings.remote_speech_api_key = String::new();
+                            remote_speech_api_key_ciphertext =
+                                Some(encrypted_remote_speech_api_key);
+                        }
+                    }
+                }
+            } else {
+                eprintln!(
+                    "Warning: Could not get hardware UUID, preserving stored remote speech API key"
+                );
+                if key_looks_encrypted {
+                    settings.remote_speech_api_key = String::new();
+                    remote_speech_api_key_ciphertext = Some(encrypted_remote_speech_api_key);
+                } else {
+                    settings.remote_speech_api_key = encrypted_remote_speech_api_key;
+                }
+            }
+        }
+        *self.remote_speech_api_key_ciphertext.lock() = remote_speech_api_key_ciphertext;
 
         if !encrypted_local_api_key.is_empty() {
             let key_looks_encrypted = crate::crypto::looks_encrypted(&encrypted_local_api_key);
@@ -1085,6 +1153,28 @@ impl SettingsStore {
                 settings.llm_api_key.clone()
             }
         };
+        let stored_remote_speech_api_key = {
+            let mut remote_speech_api_key_ciphertext = self.remote_speech_api_key_ciphertext.lock();
+            if settings.remote_speech_api_key.is_empty() {
+                remote_speech_api_key_ciphertext.clone().unwrap_or_default()
+            } else if remote_speech_api_key_ciphertext
+                .as_ref()
+                .is_some_and(|ciphertext| ciphertext == &settings.remote_speech_api_key)
+            {
+                settings.remote_speech_api_key.clone()
+            } else if let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() {
+                *remote_speech_api_key_ciphertext = None;
+                crate::crypto::encrypt(&settings.remote_speech_api_key, &hardware_uuid).map_err(
+                    |e| anyhow::anyhow!("Failed to encrypt remote speech API key: {}", e),
+                )?
+            } else {
+                *remote_speech_api_key_ciphertext = None;
+                eprintln!(
+                    "Warning: Could not get hardware UUID, storing remote speech API key unencrypted"
+                );
+                settings.remote_speech_api_key.clone()
+            }
+        };
         let stored_local_api_key = {
             let mut local_api_key_ciphertext = self.local_api_key_ciphertext.lock();
             if settings.local_api_key.is_empty() {
@@ -1122,6 +1212,31 @@ impl SettingsStore {
         self.write_value(&conn, KEY_SHORTCUT_BINDINGS, &settings.shortcut_bindings)?;
         self.write_value(&conn, KEY_TRANSCRIPTION_MODE, &settings.transcription_mode)?;
         self.write_value(&conn, KEY_LOCAL_MODEL, &settings.local_model)?;
+        self.write_value(
+            &conn,
+            KEY_REMOTE_SPEECH_ENABLED,
+            &settings.remote_speech_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_REMOTE_SPEECH_PROVIDER,
+            &settings.remote_speech_provider,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_REMOTE_SPEECH_ENDPOINT,
+            &settings.remote_speech_endpoint,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_REMOTE_SPEECH_API_KEY,
+            &stored_remote_speech_api_key,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_REMOTE_SPEECH_MODEL,
+            &settings.remote_speech_model,
+        )?;
         self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
         self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
         self.write_value(&conn, KEY_APP_LOCALE, &stored_app_locale)?;
@@ -1283,6 +1398,7 @@ mod tests {
         let store = SettingsStore {
             conn: Mutex::new(Connection::open_in_memory().expect("open in-memory sqlite DB")),
             llm_api_key_ciphertext: Mutex::new(None),
+            remote_speech_api_key_ciphertext: Mutex::new(None),
             local_api_key_ciphertext: Mutex::new(None),
         };
         store.init_schema().expect("init settings schema");

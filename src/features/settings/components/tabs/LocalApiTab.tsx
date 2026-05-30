@@ -342,7 +342,7 @@ const LocalApiTab = ({
                   }}
                 />
               </label>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 relative">
                 <span className="ui-text-label-strong ui-color-primary block">
                   {t({
                     id: "settings.local_api.api_key",
@@ -366,14 +366,15 @@ const LocalApiTab = ({
                         })
                   }
                 />
-                {lanRequiresApiKey && (
-                  <span className="ui-text-micro ui-color-warning block mt-1">
-                    {t({
-                      id: "settings.local_api.api_key.lan_required",
-                      message: "Required when listening on LAN",
-                    })}
-                  </span>
-                )}
+                <span
+                  className={`absolute left-0 top-full mt-1 ui-text-micro ui-color-warning transition-opacity duration-200 ${lanRequiresApiKey ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                  aria-hidden={!lanRequiresApiKey}
+                >
+                  {t({
+                    id: "settings.local_api.api_key.lan_required",
+                    message: "Required when listening on LAN",
+                  })}
+                </span>
               </div>
             </div>
 

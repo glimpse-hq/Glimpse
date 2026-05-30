@@ -1,12 +1,14 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import * as modelsApi from "./models-api";
-import type { ModelStatus } from "../../types";
+import { formatTranscriptionSpeechModel } from "../../shared/lib/speechProviders";
+import type { ModelStatus, SpeechModel } from "../../types";
 
 export const modelKeys = {
   all: ["models"] as const,
   catalog: () => [...modelKeys.all, "catalog"] as const,
   status: (model: string) => [...modelKeys.all, "status", model] as const,
+  speech: () => [...modelKeys.all, "speech"] as const,
 };
 
 export function useModelCatalog(enabled: boolean = true) {
@@ -15,6 +17,29 @@ export function useModelCatalog(enabled: boolean = true) {
     queryFn: modelsApi.listModels,
     enabled,
   });
+}
+
+export function useSpeechModels(enabled: boolean = true) {
+  return useQuery({
+    queryKey: modelKeys.speech(),
+    queryFn: modelsApi.listSpeechModels,
+    enabled,
+  });
+}
+
+export function resolveSpeechModelLabel(
+  models: SpeechModel[] | undefined,
+  modelId: string | null | undefined,
+): string | null {
+  const normalized = modelId?.trim();
+  if (!normalized) return null;
+
+  const fromList = models?.find(
+    (model) => model.id === normalized || model.key === normalized,
+  )?.label;
+  if (fromList) return fromList;
+
+  return formatTranscriptionSpeechModel(normalized) ?? normalized;
 }
 
 export function useModelStatuses(models: readonly string[], enabled: boolean = true) {

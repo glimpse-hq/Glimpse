@@ -198,28 +198,6 @@ impl PillController {
         }
     }
 
-    fn preload_local_model_if_needed(&self, app: &AppHandle<AppRuntime>, settings: &UserSettings) {
-        let app_handle = app.clone();
-        let settings = settings.clone();
-
-        std::thread::spawn(move || {
-            let model_key = settings.local_model.clone();
-            let ready_model = match model_manager::ensure_model_ready(&app_handle, &model_key) {
-                Ok(model) => model,
-                Err(err) => {
-                    eprintln!("[LocalTranscriber] Skipping preload: {err}");
-                    return;
-                }
-            };
-
-            let state = app_handle.state::<AppState>();
-            let transcriber = state.local_transcriber();
-            if let Err(err) = transcriber.preload_and_warm(&ready_model) {
-                eprintln!("[LocalTranscriber] Preload warmup failed: {err}");
-            }
-        });
-    }
-
     fn start_streaming_session_if_supported(&self, app: &AppHandle<AppRuntime>, local_model: &str) {
         if !model_manager::is_streaming_model(local_model) {
             return;
@@ -460,7 +438,7 @@ impl PillController {
         settings.cleanup_enabled = options.cleanup_enabled;
         *self.recording_settings.lock() = Some(settings.clone());
 
-        self.preload_local_model_if_needed(app, &settings);
+        crate::speech::warm(app, &settings);
 
         match self.recorder.start(settings.microphone_device) {
             Ok(started) => {

@@ -33,6 +33,9 @@ import {
     shouldShowImportProgress,
     formatLibraryName,
 } from "./library-utils";
+import {
+  resolveSpeechModelLabel,
+} from "../../settings/models-queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
@@ -40,7 +43,7 @@ import type {
     ExportFormat,
     LibraryItem,
     LibraryItemPatch,
-    ModelInfo,
+    SpeechModel,
     TranscriptSegment,
 } from "../../../types";
 
@@ -59,7 +62,7 @@ const LibraryModal = ({
     availableTags,
 }: {
     item: LibraryItem;
-    models: ModelInfo[];
+    models: SpeechModel[];
     shiftHeld: boolean;
     followTimestamps: boolean;
     onFollowTimestampsChange: (value: boolean | ((prev: boolean) => boolean)) => void;
@@ -111,7 +114,8 @@ const LibraryModal = ({
     const segmentsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
     const streamVirtuosoRef = useRef<VirtuosoHandle | null>(null);
 
-    const modelLabel = models.find((model) => model.key === item.speech_model)?.label ?? item.speech_model;
+    const modelLabel =
+        resolveSpeechModelLabel(models, item.speech_model) ?? item.speech_model;
     const transcriptAvailable = item.status.type === "complete" && (item.transcript ?? "").trim().length > 0;
     const canShowTimestamps = !!item.segments && item.segments.length > 0;
     const isTranscribed = item.status.type === "complete";

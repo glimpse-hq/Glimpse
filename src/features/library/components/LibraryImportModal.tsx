@@ -5,14 +5,11 @@ import { X } from "lucide-react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../../../shared/lib/modelCapabilities";
-import type { LibraryImportOptions, ModelInfo } from "../../../types";
-
-const isTimestampSupported = (model?: ModelInfo | null) =>
-    hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
+import type { LibraryImportOptions, SpeechModel } from "../../../types";
 
 type LibraryImportModalProps = {
     paths: string[];
-    models: ModelInfo[];
+    models: SpeechModel[];
     defaultModelKey?: string;
     onCancel: () => void;
     onConfirm: (paths: string[], options: LibraryImportOptions) => Promise<void> | void;
@@ -27,14 +24,21 @@ const LibraryImportModal = ({
 }: LibraryImportModalProps) => {
     const { t } = useLingui();
     const [storeOriginal, setStoreOriginal] = useState(true);
-    const [selectedModelKey, setSelectedModelKey] = useState<string>(defaultModelKey || "");
+    const [selectedModelKey, setSelectedModelKey] = useState<string>(
+        defaultModelKey || "",
+    );
     const [showTimestamps, setShowTimestamps] = useState(true);
     const [isImporting, setIsImporting] = useState(false);
 
     const modelOptions: DropdownOption<string>[] = models.map((model) => ({
-        value: model.key,
+        value: model.id,
         label: model.label,
-        description: model.description,
+        description: model.remote
+            ? t({
+                id: "library.import.remote_provider",
+                message: "Remote provider",
+            })
+            : model.description,
     }));
 
     useEffect(() => {
@@ -43,8 +47,10 @@ const LibraryImportModal = ({
         }
     }, [modelOptions, selectedModelKey]);
 
-    const selectedModel = models.find((model) => model.key === selectedModelKey) ?? null;
-    const timestampsSupported = isTimestampSupported(selectedModel);
+    const selectedModel = models.find((model) => model.id === selectedModelKey) ?? null;
+    const timestampsSupported =
+        Boolean(selectedModel?.remote) ||
+        hasModelCapability(selectedModel, MODEL_CAPABILITY_TIMESTAMPS);
 
     useEffect(() => {
         if (!timestampsSupported) {
@@ -114,7 +120,7 @@ const LibraryImportModal = ({
                 </div>
 
                 <div className="px-5 py-4 space-y-4">
-                    {models.length === 0 && (
+                    {modelOptions.length === 0 && (
                         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
                             {t({
                                 id: "library.import.no_models",

@@ -16,6 +16,12 @@ import {
   X,
 } from "lucide-react";
 import type { TranscriptionRecord } from "../../../types";
+import { isRemoteTranscriptionSpeechModel } from "../../../shared/lib/speechProviders";
+import { formatTranscriptionLlmModel } from "../../../shared/lib/llmProviders";
+import {
+  resolveSpeechModelLabel,
+  useSpeechModels,
+} from "../../settings/models-queries";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 
@@ -69,6 +75,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   showDate = false,
 }) => {
   const { t } = useLingui();
+  const { data: speechModels } = useSpeechModels();
   const [copied, setCopied] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancellingRetry, setIsCancellingRetry] = useState(false);
@@ -232,13 +239,13 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     });
   const displayText = isError ? null : record.text;
   const normalizedModel = (record.speech_model ?? "").trim();
-  const isCloudModel = normalizedModel.startsWith("cloud-");
-  const speechModelLabel = normalizedModel
-    ? isCloudModel
-      ? normalizedModel.slice(6)
-      : normalizedModel
+  const isRemoteSpeechModel = isRemoteTranscriptionSpeechModel(normalizedModel);
+  const isCloudModel =
+    normalizedModel.startsWith("cloud-") || isRemoteSpeechModel;
+  const speechModelLabel = resolveSpeechModelLabel(speechModels, normalizedModel);
+  const llmModelLabel = record.llm_model
+    ? formatTranscriptionLlmModel(record.llm_model)
     : null;
-  const llmModelLabel = record.llm_model?.trim() || null;
   const modeLabel = record.mode_name?.trim() || null;
   const allowContextMenu = !isRetryingLlm && !isUndoingLlm;
 

@@ -38,6 +38,12 @@ interface DropdownProps<T extends string | number> {
     truncate?: boolean;
     fitButtonToWidestOption?: boolean;
     hideChevron?: boolean;
+    editableInput?: {
+        value: string;
+        onChange: (value: string) => void;
+        placeholder?: string;
+        ariaLabel?: string;
+    };
 }
 
 const classNames = (...classes: Array<string | false | null | undefined>) =>
@@ -63,10 +69,12 @@ export function Dropdown<T extends string | number>({
     truncate = true,
     fitButtonToWidestOption = false,
     hideChevron = false,
+    editableInput,
 }: DropdownProps<T>) {
     const { t } = useLingui();
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [openUpward, setOpenUpward] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
     const resolvedPlaceholder = placeholder ?? t({
@@ -106,6 +114,15 @@ export function Dropdown<T extends string | number>({
             document.removeEventListener("keydown", handleEscape);
         };
     }, [closeDropdown, isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || !containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const MENU_MAX_HEIGHT = 280;
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        setOpenUpward(spaceBelow < MENU_MAX_HEIGHT && spaceAbove > spaceBelow);
+    }, [isOpen]);
 
     const query = searchQuery.trim().toLowerCase();
 
@@ -177,26 +194,64 @@ export function Dropdown<T extends string | number>({
         );
     };
 
+    const toggleOpen = () => {
+        if (disabled) return;
+        if (isOpen) {
+            closeDropdown();
+        } else {
+            onOpen?.();
+            setIsOpen(true);
+        }
+    };
+
     return (
         <div className={`relative ${className}`} ref={containerRef}>
+            {editableInput ? (
+                <div
+                    className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary hover:border-border-secondary focus-within:border-border-hover transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
+                >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                        {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
+                        {label && <span className="text-content-muted shrink-0">{label}</span>}
+                        <input
+                            type="text"
+                            value={editableInput.value}
+                            onChange={(e) => editableInput.onChange(e.target.value)}
+                            placeholder={editableInput.placeholder}
+                            aria-label={editableInput.ariaLabel}
+                            className={classNames(
+                                "min-w-0 flex-1 bg-transparent text-content-primary placeholder-content-disabled focus:outline-none",
+                                valueClassName,
+                            )}
+                        />
+                    </div>
+                    <button
+                        type="button"
+                        onClick={toggleOpen}
+                        disabled={disabled}
+                        aria-haspopup="listbox"
+                        aria-expanded={isOpen}
+                        aria-label={t({ id: "dropdown.toggle_menu", message: "Toggle options" })}
+                        className="shrink-0 ml-2 inline-flex items-center justify-center text-content-muted hover:text-content-primary disabled:opacity-60"
+                    >
+                        <ChevronDown
+                            size={14}
+                            aria-hidden="true"
+                            className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                        />
+                    </button>
+                </div>
+            ) : (
             <button
                 type="button"
                 disabled={disabled}
-                onClick={() => {
-                    if (disabled) return;
-                    if (isOpen) {
-                        closeDropdown();
-                    } else {
-                        onOpen?.();
-                        setIsOpen(true);
-                    }
-                }}
+                onClick={toggleOpen}
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
                 aria-disabled={disabled}
                 className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border-primary ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
             >
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                     {icon && <span className="text-content-muted shrink-0" aria-hidden="true">{icon}</span>}
                     {label && <span className="text-content-muted shrink-0">{label}</span>}
                     {fitButtonToWidestOption ? (
@@ -246,15 +301,16 @@ export function Dropdown<T extends string | number>({
                     )}
                 </div>
             </button>
+            )}
 
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, y: -4 }}
+                        initial={{ opacity: 0, y: openUpward ? 4 : -4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
+                        exit={{ opacity: 0, y: openUpward ? 4 : -4 }}
                         transition={{ duration: 0.15 }}
-                        className={`ui-surface-menu absolute left-0 right-0 top-full mt-1 z-[9999] flex flex-col max-h-[280px] ${menuClassName}`}
+                        className={`ui-surface-menu absolute left-0 right-0 z-[9999] flex flex-col max-h-[280px] ${openUpward ? "bottom-full mb-1" : "top-full mt-1"} ${menuClassName}`}
                     >
                         {searchable && (
                             <div className="p-2 border-b border-border-secondary shrink-0">

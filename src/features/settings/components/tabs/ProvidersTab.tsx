@@ -1,7 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
 import LanguageModelPanel from "../LanguageModelPanel";
-import type { LlmProvider } from "../../../../types";
+import SpeechModelPanel from "../SpeechModelPanel";
+import type { LlmProvider, RemoteSpeechProvider } from "../../../../types";
 
 type ProvidersTabProps = {
   variants: Variants;
@@ -17,6 +18,18 @@ type ProvidersTabProps = {
   setLlmModel: (value: string) => void;
   availableModels: string[];
   fetchAvailableModels: () => void;
+  remoteSpeechEnabled: boolean;
+  setRemoteSpeechEnabled: (value: boolean) => void;
+  remoteSpeechProvider: RemoteSpeechProvider;
+  setRemoteSpeechProvider: (value: RemoteSpeechProvider) => void;
+  remoteSpeechEndpoint: string;
+  setRemoteSpeechEndpoint: (value: string) => void;
+  remoteSpeechApiKey: string;
+  setRemoteSpeechApiKey: (value: string) => void;
+  remoteSpeechModel: string;
+  setRemoteSpeechModel: (value: string) => void;
+  availableSpeechModels: string[];
+  fetchAvailableSpeechModels: () => void;
 };
 
 const ProvidersTab = ({
@@ -33,6 +46,18 @@ const ProvidersTab = ({
   setLlmModel,
   availableModels,
   fetchAvailableModels,
+  remoteSpeechEnabled,
+  setRemoteSpeechEnabled,
+  remoteSpeechProvider,
+  setRemoteSpeechProvider,
+  remoteSpeechEndpoint,
+  setRemoteSpeechEndpoint,
+  remoteSpeechApiKey,
+  setRemoteSpeechApiKey,
+  remoteSpeechModel,
+  setRemoteSpeechModel,
+  availableSpeechModels,
+  fetchAvailableSpeechModels,
 }: ProvidersTabProps) => {
   const { t } = useLingui();
 
@@ -56,25 +81,42 @@ const ProvidersTab = ({
           {t({
             id: "settings.providers.description",
             message:
-              "Connect local-mode AI providers for Cleanup, Edit Mode, and Personalization.",
+              "Connect providers for Cloud transcription, Cleanup, Edit Mode, and Personalization.",
           })}
         </p>
       </header>
 
-      <LanguageModelPanel
-        llmEnabled={llmEnabled}
-        setLlmEnabled={setLlmEnabled}
-        llmProvider={llmProvider}
-        setLlmProvider={setLlmProvider}
-        llmEndpoint={llmEndpoint}
-        setLlmEndpoint={setLlmEndpoint}
-        llmApiKey={llmApiKey}
-        setLlmApiKey={setLlmApiKey}
-        llmModel={llmModel}
-        setLlmModel={setLlmModel}
-        availableModels={availableModels}
-        fetchAvailableModels={fetchAvailableModels}
-      />
+      <div className="grid grid-cols-2 items-start gap-x-4 gap-y-8">
+        <SpeechModelPanel
+          enabled={remoteSpeechEnabled}
+          setEnabled={setRemoteSpeechEnabled}
+          provider={remoteSpeechProvider}
+          setProvider={setRemoteSpeechProvider}
+          endpoint={remoteSpeechEndpoint}
+          setEndpoint={setRemoteSpeechEndpoint}
+          apiKey={remoteSpeechApiKey}
+          setApiKey={setRemoteSpeechApiKey}
+          model={remoteSpeechModel}
+          setModel={setRemoteSpeechModel}
+          availableModels={availableSpeechModels}
+          fetchAvailableModels={fetchAvailableSpeechModels}
+        />
+
+        <LanguageModelPanel
+          llmEnabled={llmEnabled}
+          setLlmEnabled={setLlmEnabled}
+          llmProvider={llmProvider}
+          setLlmProvider={setLlmProvider}
+          llmEndpoint={llmEndpoint}
+          setLlmEndpoint={setLlmEndpoint}
+          llmApiKey={llmApiKey}
+          setLlmApiKey={setLlmApiKey}
+          llmModel={llmModel}
+          setLlmModel={setLlmModel}
+          availableModels={availableModels}
+          fetchAvailableModels={fetchAvailableModels}
+        />
+      </div>
     </motion.div>
   );
 };

@@ -5,10 +5,6 @@ pub(crate) const SUPPORTED_VIDEO_FORMATS: &[&str] = &["mp4", "mov", "webm", "mkv
 pub(crate) const MAX_CHUNK_MINUTES: u32 = 5;
 pub(crate) const CHUNK_OVERLAP_SECONDS: u32 = 5;
 pub(crate) const DIRECT_TRANSCRIBE_MINUTES: u32 = 10;
-pub(crate) const WHISPER_CHUNK_SECONDS: u32 = 28;
-pub(crate) const WHISPER_CHUNK_OVERLAP_SECONDS: u32 = 2;
-pub(crate) const VAD_MIN_SPEECH_PERCENT_FILE: f32 = 2.0;
-pub(crate) const VAD_MIN_SPEECH_PERCENT_CHUNK: f32 = 5.0;
 pub(crate) const TARGET_SAMPLE_RATE: u32 = 16_000;
 
 pub(crate) fn is_cancelled_message(message: &str) -> bool {
@@ -101,6 +97,7 @@ pub struct LibraryItem {
     pub status: LibraryItemStatus,
     pub transcript: Option<String>,
     pub segments: Option<Vec<TranscriptSegment>>,
+    pub words: Option<Vec<TranscriptSegment>>,
     pub duration_seconds: f32,
     pub file_size_bytes: u64,
     pub original_format: String,
@@ -131,6 +128,7 @@ pub struct LibraryItemPatch {
     pub name: Option<String>,
     pub transcript: Option<String>,
     pub segments: Option<Vec<TranscriptSegment>>,
+    pub words: Option<Vec<TranscriptSegment>>,
     pub tags: Option<Vec<String>>,
     pub status: Option<LibraryItemStatus>,
     pub llm_cleanup_enabled: Option<bool>,
@@ -198,6 +196,8 @@ impl LibraryProgressUpdate {
 pub(crate) struct LibraryTranscriptionResult {
     pub transcript: String,
     pub segments: Option<Vec<TranscriptSegment>>,
+    pub words: Option<Vec<TranscriptSegment>>,
+    pub speech_model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

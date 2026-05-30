@@ -8,6 +8,7 @@ use crate::library::{
 pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Result<LibraryItem> {
     let (status, progress, error_message) = item.status.as_fields();
     let segments = serialize_segments(&item.segments)?;
+    let words = serialize_segments(&item.words)?;
     let tags = serialize_tags(&item.tags)?;
 
     conn.execute(
@@ -22,6 +23,7 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             error_message,
             transcript,
             segments,
+            words,
             duration_seconds,
             file_size_bytes,
             original_format,
@@ -31,7 +33,7 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             llm_cleanup_enabled,
             speech_model,
             show_timestamps
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
         params![
             item.id,
             item.name,
@@ -43,6 +45,7 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             error_message,
             item.transcript,
             segments,
+            words,
             item.duration_seconds,
             item.file_size_bytes as i64,
             item.original_format,
@@ -70,7 +73,7 @@ pub(crate) fn get_library_items_page(
 ) -> Result<(Vec<LibraryItem>, bool)> {
     let (where_clause, mut params) = build_library_filter(&filter);
     let sql = format!(
-        "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments,
+        "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
                 tags, llm_cleanup_enabled, speech_model, show_timestamps
          FROM library_items
@@ -101,7 +104,7 @@ pub(crate) fn get_library_items_page(
 
 pub(crate) fn get_recoverable_library_items(conn: &Connection) -> Result<Vec<LibraryItem>> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments,
+        "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
                 tags, llm_cleanup_enabled, speech_model, show_timestamps
          FROM library_items
@@ -134,6 +137,9 @@ pub(crate) fn update_library_item(
     }
     if let Some(segments) = patch.segments {
         item.segments = Some(segments);
+    }
+    if let Some(words) = patch.words {
+        item.words = Some(words);
     }
     if let Some(tags) = patch.tags {
         item.tags = tags;
@@ -189,7 +195,7 @@ pub(crate) fn get_library_tags(conn: &Connection) -> Result<Vec<String>> {
 
 fn get_library_item_by_id(conn: &Connection, id: &str) -> Result<Option<LibraryItem>> {
     conn.query_row(
-        "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments,
+        "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
                 tags, llm_cleanup_enabled, speech_model, show_timestamps
          FROM library_items WHERE id = ?1",
@@ -203,6 +209,7 @@ fn get_library_item_by_id(conn: &Connection, id: &str) -> Result<Option<LibraryI
 fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()> {
     let (status, progress, error_message) = item.status.as_fields();
     let segments = serialize_segments(&item.segments)?;
+    let words = serialize_segments(&item.words)?;
     let tags = serialize_tags(&item.tags)?;
 
     conn.execute(
@@ -216,16 +223,17 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             error_message = ?7,
             transcript = ?8,
             segments = ?9,
-            duration_seconds = ?10,
-            file_size_bytes = ?11,
-            original_format = ?12,
-            created_at = ?13,
-            transcribed_at = ?14,
-            tags = ?15,
-            llm_cleanup_enabled = ?16,
-            speech_model = ?17,
-            show_timestamps = ?18
-         WHERE id = ?19",
+            words = ?10,
+            duration_seconds = ?11,
+            file_size_bytes = ?12,
+            original_format = ?13,
+            created_at = ?14,
+            transcribed_at = ?15,
+            tags = ?16,
+            llm_cleanup_enabled = ?17,
+            speech_model = ?18,
+            show_timestamps = ?19
+         WHERE id = ?20",
         params![
             item.name,
             item.audio_path,
@@ -236,6 +244,7 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             error_message,
             item.transcript,
             segments,
+            words,
             item.duration_seconds,
             item.file_size_bytes as i64,
             item.original_format,
@@ -256,14 +265,11 @@ fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
     let progress: f32 = row.get::<_, f64>("progress").unwrap_or(0.0) as f32;
     let error_message: Option<String> = row.get("error_message")?;
     let segments_json: Option<String> = row.get("segments")?;
+    let words_json: Option<String> = row.get("words").ok();
     let tags_json: String = row.get("tags")?;
 
-    let segments = match segments_json {
-        Some(value) if !value.trim().is_empty() => {
-            serde_json::from_str::<Vec<TranscriptSegment>>(&value).ok()
-        }
-        _ => None,
-    };
+    let segments = parse_segments_column(segments_json);
+    let words = parse_segments_column(words_json);
     let tags: Vec<String> = serde_json::from_str(&tags_json).unwrap_or_default();
 
     Ok(LibraryItem {
@@ -275,6 +281,7 @@ fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
         status: LibraryItemStatus::from_fields(&status_value, progress, error_message),
         transcript: row.get("transcript")?,
         segments,
+        words,
         duration_seconds: row.get::<_, f64>("duration_seconds")? as f32,
         file_size_bytes: row.get::<_, i64>("file_size_bytes")? as u64,
         original_format: row.get("original_format")?,
@@ -292,6 +299,12 @@ fn serialize_segments(segments: &Option<Vec<TranscriptSegment>>) -> Result<Optio
         Some(value) => Ok(Some(serde_json::to_string(value)?)),
         None => Ok(None),
     }
+}
+
+fn parse_segments_column(value: Option<String>) -> Option<Vec<TranscriptSegment>> {
+    value
+        .filter(|raw| !raw.trim().is_empty())
+        .and_then(|raw| serde_json::from_str::<Vec<TranscriptSegment>>(&raw).ok())
 }
 
 fn serialize_tags(tags: &[String]) -> Result<String> {

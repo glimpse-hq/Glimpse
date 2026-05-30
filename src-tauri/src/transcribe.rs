@@ -10,16 +10,12 @@ use crate::{
     mode_context, model_manager,
     model_manager::{model_supports_capability, MODEL_CAPABILITY_DICTIONARY},
     recorder::{speech_percentage_i16_with_mode, CompletedRecording, RecordingSaved},
+    remote_speech, speech,
     settings::{Personality, UserSettings},
     storage, toast, transcription_api, update_checker, AppRuntime, AppState,
     TranscriptionCompletePayload, TranscriptionErrorPayload, EVENT_TRANSCRIPTION_COMPLETE,
     EVENT_TRANSCRIPTION_ERROR,
 };
-
-const WHISPER_CHUNK_SECONDS: f32 = 28.0;
-const WHISPER_CHUNK_OVERLAP_SECONDS: f32 = 2.0;
-const VAD_MIN_SPEECH_PERCENT_FILE: f32 = 2.0;
-const VAD_MIN_SPEECH_PERCENT_CHUNK: f32 = 5.0;
 
 pub(crate) fn run_transcription_prune_for_settings(
     app: &AppHandle<AppRuntime>,
@@ -135,73 +131,33 @@ pub(crate) fn queue_transcription(
 
         let auto_paste = transcription_api::auto_paste_enabled();
 
-        eprintln!(
-            "[transcription] mode={:?} local_only=true",
-            settings.transcription_mode,
-        );
+        eprintln!("[transcription] mode={:?}", settings.transcription_mode,);
         accessibility_context::log_active_context();
 
         let active_mode = mode_context::resolve_active_personality(&settings);
-        // Local transcription path
-        let result = {
-            let model_key = settings.local_model.clone();
-            match model_manager::ensure_model_ready(&app_handle, &model_key) {
-                Ok(ready_model) => {
-                    let dictionary_terms =
-                        dictionary::dictionary_entries_for_model(&ready_model, &settings);
-                    let language = settings.language.clone();
-                    let transcriber = app_handle.state::<AppState>().local_transcriber();
-                    let local_recording = recording_for_task.clone();
-                    let is_whisper =
-                        matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
-                    let cancel_token_clone = cancel_token.clone();
-                    match async_runtime::spawn_blocking(move || {
-                        if is_whisper {
-                            transcribe_local_chunked(
-                                &transcriber,
-                                &ready_model,
-                                &local_recording.samples,
-                                local_recording.sample_rate,
-                                LocalChunkingConfig {
-                                    dictionary: &dictionary_terms,
-                                    language: Some(&language),
-                                    chunk_seconds: WHISPER_CHUNK_SECONDS,
-                                    overlap_seconds: WHISPER_CHUNK_OVERLAP_SECONDS,
-                                    cancel_token: Some(&cancel_token_clone),
-                                    strip_hallucinated_thank_you: true,
-                                },
-                            )
-                        } else {
-                            let speech_percent = speech_percentage_i16_with_mode(
-                                &local_recording.samples,
-                                local_recording.sample_rate,
-                                VadMode::VeryAggressive,
-                            );
-                            if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
-                                Ok(transcription_api::TranscriptionSuccess {
-                                    transcript: String::new(),
-                                    speech_model: None,
-                                })
-                            } else {
-                                transcriber.transcribe(
-                                    &ready_model,
-                                    &local_recording.samples,
-                                    local_recording.sample_rate,
-                                    &dictionary_terms,
-                                    Some(&language),
-                                )
-                            }
-                        }
-                    })
-                    .await
-                    {
-                        Ok(inner) => inner,
-                        Err(err) => Err(anyhow!("Local transcription task failed: {err}")),
-                    }
-                }
-                Err(err) => Err(err),
-            }
-        };
+        let model_id = speech::selected_model(&settings);
+        let use_remote = remote_speech::is_remote_model(&model_id);
+        let result = speech::transcribe(
+            &app_handle,
+            &http,
+            &settings,
+            &model_id,
+            &saved_for_task.path,
+            &settings.local_model,
+            false,
+            || is_cancelled(),
+            |success| success,
+            || {
+                transcribe_completed_recording_locally(
+                    &app_handle,
+                    &settings,
+                    recording_for_task.clone(),
+                    Some(cancel_token.clone()),
+                    use_remote,
+                )
+            },
+        )
+        .await;
 
         match result {
             Ok(result) => {
@@ -239,6 +195,7 @@ pub(crate) fn queue_transcription(
                         saved_for_task.path.display().to_string(),
                         true,
                         temporary,
+                        true,
                     );
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
@@ -289,6 +246,7 @@ pub(crate) fn queue_transcription(
                     llm_cleaned: processed.llm_cleaned,
                     synced: false,
                     mode: active_mode.as_ref(),
+                    speech_model: result.speech_model,
                 });
 
                 emit_transcription_complete_with_cleanup(
@@ -300,7 +258,7 @@ pub(crate) fn queue_transcription(
                         audio_path: saved_for_task.path.display().to_string(),
                         llm_cleaned: processed.llm_cleaned,
                         metadata,
-                        mode: "local",
+                        mode: transcription_mode_label(&settings),
                         temporary,
                     },
                 );
@@ -316,18 +274,108 @@ pub(crate) fn queue_transcription(
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
+                let show_toast = !is_remote_fallback_unavailable(&err);
                 emit_transcription_error_inner(
                     &app_handle,
                     format!("Transcription failed: {err}"),
-                    "local",
+                    transcription_mode_label(&settings),
                     saved_for_task.path.display().to_string(),
                     true,
                     temporary,
+                    show_toast,
                 );
                 app_handle.state::<AppState>().set_pending_path(None);
             }
         }
     });
+}
+
+async fn transcribe_completed_recording_locally(
+    app: &AppHandle<AppRuntime>,
+    settings: &UserSettings,
+    recording: CompletedRecording,
+    cancel_token: Option<CancellationToken>,
+    prefer_any_installed: bool,
+) -> Result<transcription_api::TranscriptionSuccess> {
+    let ready_model = if prefer_any_installed {
+        model_manager::ensure_local_fallback_model(app, &settings.local_model)?
+    } else {
+        model_manager::ensure_model_ready(app, &settings.local_model)?
+    };
+    let dictionary_terms = dictionary::dictionary_entries_for_model(&ready_model, settings);
+    let language = settings.language.clone();
+    let transcriber = app.state::<AppState>().local_transcriber();
+    let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
+
+    match async_runtime::spawn_blocking(move || {
+        if is_whisper {
+            transcribe_local_chunked(
+                &transcriber,
+                &ready_model,
+                &recording.samples,
+                recording.sample_rate,
+                LocalChunkingConfig {
+                    dictionary: &dictionary_terms,
+                    language: Some(&language),
+                    chunk_seconds: speech::WHISPER_CHUNK_SECONDS as f32,
+                    overlap_seconds: speech::WHISPER_CHUNK_OVERLAP_SECONDS as f32,
+                    cancel_token: cancel_token.as_ref(),
+                    strip_hallucinated_thank_you: true,
+                },
+            )
+        } else {
+            let speech_percent = speech_percentage_i16_with_mode(
+                &recording.samples,
+                recording.sample_rate,
+                VadMode::VeryAggressive,
+            );
+            if speech_percent < speech::VAD_MIN_SPEECH_PERCENT_FILE {
+                Ok(transcription_api::TranscriptionSuccess {
+                    transcript: String::new(),
+                    speech_model: None,
+                    segments: None,
+                    words: None,
+                })
+            } else {
+                transcriber.transcribe(
+                    &ready_model,
+                    &recording.samples,
+                    recording.sample_rate,
+                    &dictionary_terms,
+                    Some(&language),
+                )
+            }
+        }
+    })
+    .await
+    {
+        Ok(inner) => inner,
+        Err(err) => Err(anyhow!("Local transcription task failed: {err}")),
+    }
+}
+
+async fn transcribe_saved_recording_locally(
+    app: &AppHandle<AppRuntime>,
+    settings: &UserSettings,
+    saved: &RecordingSaved,
+    cancel_token: Option<CancellationToken>,
+    prefer_any_installed: bool,
+) -> Result<transcription_api::TranscriptionSuccess> {
+    let (samples, sample_rate) = load_audio_for_transcription(&saved.path)?;
+    transcribe_completed_recording_locally(
+        app,
+        settings,
+        CompletedRecording {
+            samples,
+            sample_rate,
+            channels: 1,
+            started_at: saved.started_at,
+            ended_at: saved.ended_at,
+        },
+        cancel_token,
+        prefer_any_installed,
+    )
+    .await
 }
 
 async fn process_transcript_text(
@@ -362,10 +410,11 @@ async fn process_transcript_text(
             match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
                 Ok(edited) => (edited, true),
                 Err(err) => {
+                    let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
-                        eprintln!("LLM edit failed ({context}): {err}");
+                        eprintln!("LLM edit failed ({context}): {message}");
                     } else {
-                        eprintln!("LLM edit failed, keeping original selected text: {err}");
+                        eprintln!("LLM edit failed, keeping original selected text: {message}");
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, true);
@@ -378,10 +427,11 @@ async fn process_transcript_text(
             {
                 Ok(cleaned) => (cleaned, true),
                 Err(err) => {
+                    let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
-                        eprintln!("Cleanup failed ({context}): {err}");
+                        eprintln!("Cleanup failed ({context}): {message}");
                     } else {
-                        eprintln!("Cleanup failed, using raw transcript: {err}");
+                        eprintln!("Cleanup failed, using raw transcript: {message}");
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, false);
@@ -413,6 +463,7 @@ async fn process_transcript_text(
     if auto_paste && !final_transcript.trim().is_empty() {
         let can_read_field = !is_edit_mode && cfg!(any(target_os = "macos", target_os = "windows"));
         let should_watch_auto_dictionary = can_read_field
+            && !remote_speech::is_configured(settings)
             && settings.auto_dictionary_enabled
             && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY);
         let transcript_to_paste = final_transcript.clone();
@@ -504,75 +555,32 @@ pub(crate) fn retry_transcription_async(
         }
 
         eprintln!(
-            "[retry_transcription] mode={:?} local_only=true",
+            "[retry_transcription] mode={:?}",
             settings.transcription_mode,
         );
-        // Local transcription path
-        let result = {
-            match load_audio_for_transcription(&saved_for_task.path) {
-                Ok((samples, sample_rate)) => {
-                    let model_key = settings.local_model.clone();
-                    match model_manager::ensure_model_ready(&app_handle, &model_key) {
-                        Ok(ready_model) => {
-                            let dictionary_terms =
-                                dictionary::dictionary_entries_for_model(&ready_model, &settings);
-                            let language = settings.language.clone();
-                            let transcriber = app_handle.state::<AppState>().local_transcriber();
-                            let is_whisper = matches!(
-                                ready_model.engine,
-                                model_manager::LocalModelEngine::Whisper
-                            );
-                            let cancel_token_clone = cancel_token.clone();
-                            match async_runtime::spawn_blocking(move || {
-                                if is_whisper {
-                                    transcribe_local_chunked(
-                                        &transcriber,
-                                        &ready_model,
-                                        &samples,
-                                        sample_rate,
-                                        LocalChunkingConfig {
-                                            dictionary: &dictionary_terms,
-                                            language: Some(&language),
-                                            chunk_seconds: WHISPER_CHUNK_SECONDS,
-                                            overlap_seconds: WHISPER_CHUNK_OVERLAP_SECONDS,
-                                            cancel_token: Some(&cancel_token_clone),
-                                            strip_hallucinated_thank_you: true,
-                                        },
-                                    )
-                                } else {
-                                    let speech_percent = speech_percentage_i16_with_mode(
-                                        &samples,
-                                        sample_rate,
-                                        VadMode::VeryAggressive,
-                                    );
-                                    if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
-                                        Ok(transcription_api::TranscriptionSuccess {
-                                            transcript: String::new(),
-                                            speech_model: None,
-                                        })
-                                    } else {
-                                        transcriber.transcribe(
-                                            &ready_model,
-                                            &samples,
-                                            sample_rate,
-                                            &dictionary_terms,
-                                            Some(&language),
-                                        )
-                                    }
-                                }
-                            })
-                            .await
-                            {
-                                Ok(inner) => inner,
-                                Err(err) => Err(anyhow!("Local transcription task failed: {err}")),
-                            }
-                        }
-                        Err(err) => Err(err),
-                    }
-                }
-                Err(err) => Err(err),
-            }
-        };
+        let model_id = speech::selected_model(&settings);
+        let use_remote = remote_speech::is_remote_model(&model_id);
+        let result = speech::transcribe(
+            &app_handle,
+            &http,
+            &settings,
+            &model_id,
+            &saved_for_task.path,
+            &settings.local_model,
+            false,
+            || cancel_token.is_cancelled(),
+            |success| success,
+            || {
+                transcribe_saved_recording_locally(
+                    &app_handle,
+                    &settings,
+                    &saved_for_task,
+                    Some(cancel_token.clone()),
+                    use_remote,
+                )
+            },
+        )
+        .await;
 
         match result {
             Ok(result) => {
@@ -603,7 +611,8 @@ pub(crate) fn retry_transcription_async(
                     {
                         Ok(cleaned) => (cleaned, true),
                         Err(err) => {
-                            eprintln!("Cleanup failed during retry, using raw transcript: {err}");
+                            let message = llm_cleanup::llm_issue_message(&err);
+                            eprintln!("Cleanup failed during retry, using raw transcript: {message}");
                             llm_cleanup::note_preflight_failure();
                             maybe_warn_llm_unavailable(&app_handle, false);
                             (raw_transcript.clone(), false)
@@ -629,9 +638,12 @@ pub(crate) fn retry_transcription_async(
                 }
 
                 let metadata = storage::TranscriptionMetadata {
-                    speech_model: resolve_speech_model_label(&settings),
+                    speech_model: result
+                        .speech_model
+                        .filter(|label| !label.trim().is_empty())
+                        .unwrap_or_else(|| resolve_speech_model_label(&settings)),
                     llm_model: if llm_cleaned {
-                        llm_cleanup::resolved_model_name(&settings)
+                        llm_cleanup::resolved_model_label(&settings)
                     } else {
                         None
                     },
@@ -669,7 +681,7 @@ pub(crate) fn retry_transcription_async(
 
                 analytics::track_transcription_completed(
                     &app_handle,
-                    "local",
+                    transcription_mode_label(&settings),
                     Some(&metadata.speech_model),
                     llm_cleaned,
                 );
@@ -690,11 +702,15 @@ pub(crate) fn retry_transcription_async(
                 if cancel_token.is_cancelled() {
                     return;
                 }
-                emit_transcription_error(
+                let show_toast = !is_remote_fallback_unavailable(&err);
+                emit_transcription_error_inner(
                     &app_handle,
                     format!("Transcription failed: {err}"),
-                    "local",
+                    transcription_mode_label(&settings),
                     saved_for_task.path.display().to_string(),
+                    true,
+                    false,
+                    show_toast,
                 );
             }
         }
@@ -814,13 +830,8 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
     app.state::<AppState>().set_pending_path(None);
 }
 
-pub(crate) fn emit_transcription_error(
-    app: &AppHandle<AppRuntime>,
-    message: String,
-    stage: &str,
-    audio_path: String,
-) {
-    emit_transcription_error_inner(app, message, stage, audio_path, true, false);
+fn is_remote_fallback_unavailable(err: &anyhow::Error) -> bool {
+    err.to_string().contains("REMOTE_FALLBACK_UNAVAILABLE")
 }
 
 fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {
@@ -851,6 +862,7 @@ fn emit_transcription_error_inner(
     audio_path: String,
     reset_state: bool,
     temporary: bool,
+    show_toast: bool,
 ) {
     let reason = if message.contains("No speech") || message.contains("empty") {
         "no_speech"
@@ -900,22 +912,24 @@ fn emit_transcription_error_inner(
         return;
     }
 
-    toast::emit_toast(
-        app,
-        toast::Payload {
-            toast_type: "error".to_string(),
-            title: None,
-            message: toast_message,
-            auto_dismiss: None,
-            duration: None,
-            retry_id: None,
-            mode: Some("local".into()),
-            action: None,
-            action_label: None,
-            secondary_action: None,
-            secondary_action_label: None,
-        },
-    );
+    if show_toast {
+        toast::emit_toast(
+            app,
+            toast::Payload {
+                toast_type: "error".to_string(),
+                title: None,
+                message: toast_message,
+                auto_dismiss: None,
+                duration: None,
+                retry_id: None,
+                mode: Some("local".into()),
+                action: None,
+                action_label: None,
+                secondary_action: None,
+                secondary_action_label: None,
+            },
+        );
+    }
 
     crate::schedule_recording_prune(app.clone(), settings.clone());
     crate::schedule_transcription_prune(app.clone(), settings);
@@ -955,6 +969,7 @@ struct TranscriptionMetadataInput<'a> {
     llm_cleaned: bool,
     synced: bool,
     mode: Option<&'a Personality>,
+    speech_model: Option<String>,
 }
 
 fn build_transcription_metadata(
@@ -967,12 +982,15 @@ fn build_transcription_metadata(
         llm_cleaned,
         synced,
         mode,
+        speech_model,
     } = input;
 
     storage::TranscriptionMetadata {
-        speech_model: resolve_speech_model_label(settings),
+        speech_model: speech_model
+            .filter(|label| !label.trim().is_empty())
+            .unwrap_or_else(|| resolve_speech_model_label(settings)),
         llm_model: if llm_cleaned {
-            llm_cleanup::resolved_model_name(settings)
+            llm_cleanup::resolved_model_label(settings)
         } else {
             None
         },
@@ -985,7 +1003,19 @@ fn build_transcription_metadata(
 }
 
 fn resolve_speech_model_label(settings: &UserSettings) -> String {
-    model_manager::model_label(&settings.local_model)
+    if remote_speech::is_configured(settings) {
+        remote_speech::speech_model_storage_label(settings, None)
+    } else {
+        model_manager::model_label(&settings.local_model)
+    }
+}
+
+fn transcription_mode_label(settings: &UserSettings) -> &'static str {
+    if remote_speech::is_configured(settings) {
+        "remote"
+    } else {
+        "local"
+    }
 }
 
 fn compute_audio_duration_seconds(saved: &RecordingSaved) -> f32 {
@@ -1134,10 +1164,12 @@ fn transcribe_local_chunked(
 
     let speech_percent =
         speech_percentage_i16_with_mode(samples, sample_rate, VadMode::VeryAggressive);
-    if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
+    if speech_percent < speech::VAD_MIN_SPEECH_PERCENT_FILE {
         return Ok(transcription_api::TranscriptionSuccess {
             transcript: String::new(),
             speech_model: None,
+            segments: None,
+            words: None,
         });
     }
 
@@ -1162,9 +1194,9 @@ fn transcribe_local_chunked(
         let chunk_speech_percent =
             speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
         let min_chunk_threshold = if end == samples.len() {
-            VAD_MIN_SPEECH_PERCENT_FILE
+            speech::VAD_MIN_SPEECH_PERCENT_FILE
         } else {
-            VAD_MIN_SPEECH_PERCENT_CHUNK
+            speech::VAD_MIN_SPEECH_PERCENT_CHUNK
         };
         if chunk_speech_percent < min_chunk_threshold {
             start += step;
@@ -1198,6 +1230,8 @@ fn transcribe_local_chunked(
     Ok(transcription_api::TranscriptionSuccess {
         transcript,
         speech_model: model_label,
+        segments: None,
+        words: None,
     })
 }
 
@@ -1429,7 +1463,7 @@ pub(crate) fn finalize_streaming_transcription(
         let metadata = storage::TranscriptionMetadata {
             speech_model: resolve_speech_model_label(&settings),
             llm_model: if processed.llm_cleaned {
-                llm_cleanup::resolved_model_name(&settings)
+                llm_cleanup::resolved_model_label(&settings)
             } else {
                 None
             },

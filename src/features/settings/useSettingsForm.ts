@@ -15,7 +15,12 @@ import {
   checkMacInputMonitoringPermission,
 } from "../../shared/lib/macosPermissions";
 import { getPlatformCapabilities } from "../../platform/service";
-import { getProviderPreset } from "../../shared/lib/llmProviders";
+import { getProviderPreset, resolvedLlmEndpoint } from "../../shared/lib/llmProviders";
+import {
+  getSpeechProviderPreset,
+  resolvedSpeechEndpoint,
+  resolvedSpeechModel,
+} from "../../shared/lib/speechProviders";
 import {
   parseTextSizeMode,
   TEXT_SIZE_MODE_STORAGE_KEY,
@@ -53,6 +58,7 @@ import type {
   CliInstallStatus,
   LocalApiLogEntry,
   LocalApiStatus,
+  RemoteSpeechProvider,
 } from "../../types";
 
 type ActiveTab =
@@ -199,6 +205,13 @@ export function useSettingsForm({
   const [transcriptionMode, setTranscriptionModeRaw] =
     useState<TranscriptionMode>(initialTranscriptionMode);
   const [localModel, setLocalModel] = useState("");
+  const [remoteSpeechEnabled, setRemoteSpeechEnabled] = useState(false);
+  const [remoteSpeechProvider, setRemoteSpeechProviderRaw] =
+    useState<RemoteSpeechProvider>("openai");
+  const [remoteSpeechEndpoint, setRemoteSpeechEndpointRaw] =
+    useState("https://api.openai.com/v1");
+  const [remoteSpeechApiKey, setRemoteSpeechApiKey] = useState("");
+  const [remoteSpeechModel, setRemoteSpeechModel] = useState("auto");
   const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
   const [language, setLanguage] = useState("en");
   const [appLocale, setAppLocale] = useState<AppLocaleSetting>("system");
@@ -218,6 +231,7 @@ export function useSettingsForm({
   const [llmApiKey, setLlmApiKeyRaw] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [availableSpeechModels, setAvailableSpeechModels] = useState<string[]>([]);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
@@ -391,6 +405,18 @@ export function useSettingsForm({
     setLlmApiKeyRaw(value);
     setAvailableModels([]);
   }, []);
+  const setRemoteSpeechProvider = useCallback((value: RemoteSpeechProvider) => {
+    setRemoteSpeechProviderRaw(value);
+    setAvailableSpeechModels([]);
+  }, []);
+  const setRemoteSpeechEndpoint = useCallback((value: string) => {
+    setRemoteSpeechEndpointRaw(value);
+    setAvailableSpeechModels([]);
+  }, []);
+  const setRemoteSpeechApiKeyRawAndClearModels = useCallback((value: string) => {
+    setRemoteSpeechApiKey(value);
+    setAvailableSpeechModels([]);
+  }, []);
 
   const hydrateFromSettings = useCallback((s: StoredSettings) => {
     const hydratedBindings = bindingsFromSettings(s);
@@ -406,6 +432,11 @@ export function useSettingsForm({
     setShortcutBindings(hydratedBindings);
     setTranscriptionModeRaw(s.transcription_mode);
     setLocalModel(s.local_model);
+    setRemoteSpeechEnabled(s.remote_speech_enabled ?? false);
+    setRemoteSpeechProviderRaw(s.remote_speech_provider ?? "openai");
+    setRemoteSpeechEndpointRaw(s.remote_speech_endpoint ?? "https://api.openai.com/v1");
+    setRemoteSpeechApiKey(s.remote_speech_api_key ?? "");
+    setRemoteSpeechModel(s.remote_speech_model ?? "auto");
     setMicrophoneDevice(s.microphone_device);
     setLanguage(s.language);
     setAppLocale(s.app_locale ?? "system");
@@ -471,10 +502,9 @@ export function useSettingsForm({
     () => modelCatalog.find((model) => model.key === localModel),
     [modelCatalog, localModel],
   );
-  const autoDictionarySupported = hasModelCapability(
-    activeLocalModel,
-    MODEL_CAPABILITY_DICTIONARY,
-  );
+  const autoDictionarySupported =
+    !remoteSpeechEnabled &&
+    hasModelCapability(activeLocalModel, MODEL_CAPABILITY_DICTIONARY);
   const autoTranscriptionLanguageLabel = i18n._(
     msg({
       id: "transcription.language.auto",
@@ -503,11 +533,21 @@ export function useSettingsForm({
     () => getProviderPreset(llmProvider),
     [llmProvider],
   );
+  const remoteSpeechProviderPreset = useMemo(
+    () => getSpeechProviderPreset(remoteSpeechProvider),
+    [remoteSpeechProvider],
+  );
   const llmConfigReady = Boolean(
     llmProviderPreset &&
-      (llmProvider !== "custom" || llmEndpoint.trim()) &&
+      resolvedLlmEndpoint(llmProvider, llmEndpoint) &&
       (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
       llmModel.trim(),
+  );
+  const remoteSpeechConfigReady = Boolean(
+    remoteSpeechProviderPreset &&
+      resolvedSpeechEndpoint(remoteSpeechProvider, remoteSpeechEndpoint) &&
+      resolvedSpeechModel(remoteSpeechProvider, remoteSpeechModel) &&
+      (!remoteSpeechProviderPreset.apiKeyRequired || remoteSpeechApiKey.trim()),
   );
   const aiFeaturesReady = licenseGateActive && llmEnabled && llmConfigReady;
 
@@ -528,6 +568,12 @@ export function useSettingsForm({
         ? bindingsForSave
         : withoutShortcutCleanup(bindingsForSave);
 
+      const persistedRemoteEndpoint = resolvedSpeechEndpoint(
+        remoteSpeechProvider,
+        remoteSpeechEndpoint,
+      );
+      const persistedLlmEndpoint = resolvedLlmEndpoint(llmProvider, llmEndpoint);
+
       return {
         smartShortcut:
           overrides.smartShortcut ??
@@ -544,6 +590,11 @@ export function useSettingsForm({
         shortcutBindings: savedShortcutBindings,
         transcriptionMode,
         localModel: overrides.localModel ?? localModel,
+        remoteSpeechEnabled,
+        remoteSpeechProvider,
+        remoteSpeechEndpoint: persistedRemoteEndpoint,
+        remoteSpeechApiKey,
+        remoteSpeechModel,
         microphoneDevice,
         language,
         appLocale,
@@ -552,7 +603,7 @@ export function useSettingsForm({
         llmEnabled: licenseGateActive && llmEnabled && llmConfigReady,
         cleanupEnabled: false,
         llmProvider,
-        llmEndpoint,
+        llmEndpoint: persistedLlmEndpoint,
         llmApiKey,
         llmModel,
         editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
@@ -582,6 +633,12 @@ export function useSettingsForm({
       toggleEnabled,
       transcriptionMode,
       localModel,
+      remoteSpeechEnabled,
+      remoteSpeechProvider,
+      remoteSpeechEndpoint,
+      remoteSpeechApiKey,
+      remoteSpeechModel,
+      remoteSpeechConfigReady,
       microphoneDevice,
       language,
       appLocale,
@@ -1185,15 +1242,47 @@ export function useSettingsForm({
   const fetchAvailableModels = useCallback(async () => {
     try {
       const models = await invoke<string[]>("fetch_llm_models", {
-        endpoint: llmEndpoint,
-        provider: llmProvider,
+        endpoint: resolvedLlmEndpoint(llmProvider, llmEndpoint),
         apiKey: llmApiKey,
       });
       setAvailableModels(models);
-    } catch {
+      if (errorSourceTab === "providers") clearSettingsError();
+    } catch (err) {
       setAvailableModels([]);
+      showSettingsError(`Failed to load writing models: ${err}`, "providers");
     }
-  }, [llmEndpoint, llmProvider, llmApiKey]);
+  }, [
+    clearSettingsError,
+    errorSourceTab,
+    llmApiKey,
+    llmEndpoint,
+    llmProvider,
+    showSettingsError,
+  ]);
+
+  const fetchAvailableSpeechModels = useCallback(async () => {
+    try {
+      const models = await invoke<string[]>("fetch_remote_speech_models", {
+        endpoint: resolvedSpeechEndpoint(
+          remoteSpeechProvider,
+          remoteSpeechEndpoint,
+        ),
+        apiKey: remoteSpeechApiKey,
+      });
+      setAvailableSpeechModels(models);
+      if (errorSourceTab === "providers") clearSettingsError();
+    } catch (err) {
+      setAvailableSpeechModels([]);
+      showSettingsError(`Failed to load speech models: ${err}`, "providers");
+    }
+  }, [
+    clearSettingsError,
+    errorSourceTab,
+    remoteSpeechApiKey,
+    remoteSpeechEndpoint,
+    remoteSpeechProvider,
+    showSettingsError,
+  ]);
 
   const handleDownload = useCallback(
     async (modelKey: string) => {
@@ -1471,6 +1560,16 @@ export function useSettingsForm({
     setTranscriptionMode,
     localModel,
     setLocalModel: handleLocalModelChange,
+    remoteSpeechEnabled,
+    setRemoteSpeechEnabled,
+    remoteSpeechProvider,
+    setRemoteSpeechProvider,
+    remoteSpeechEndpoint,
+    setRemoteSpeechEndpoint,
+    remoteSpeechApiKey,
+    setRemoteSpeechApiKey: setRemoteSpeechApiKeyRawAndClearModels,
+    remoteSpeechModel,
+    setRemoteSpeechModel,
     microphoneDevice,
     setMicrophoneDevice,
     language: displayedLanguage,
@@ -1510,6 +1609,8 @@ export function useSettingsForm({
     licenseGateActive,
     availableModels,
     fetchAvailableModels,
+    availableSpeechModels,
+    fetchAvailableSpeechModels,
     editModeEnabled,
     setEditModeEnabled,
     autoDictionaryEnabled,

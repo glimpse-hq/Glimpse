@@ -2,6 +2,8 @@
 pub struct TranscriptionSuccess {
     pub transcript: String,
     pub speech_model: Option<String>,
+    pub segments: Option<Vec<glimpse_speech::TranscriptionSegment>>,
+    pub words: Option<Vec<glimpse_speech::TranscriptionSegment>>,
 }
 
 pub fn auto_paste_enabled() -> bool {

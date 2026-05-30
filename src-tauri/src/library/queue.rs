@@ -9,21 +9,25 @@ use webrtc_vad::VadMode;
 
 use crate::transcribe::count_words;
 use crate::{
-    dictionary, model_manager, recorder::speech_percentage_i16_with_mode, storage::StorageManager,
-    toast, transcribe, transcription_api, AppRuntime, AppState, LibraryJob, LibraryJobKind,
+    dictionary, model_manager, recorder::speech_percentage_i16_with_mode,
+    remote_speech, storage::StorageManager, toast, transcribe, transcription_api, AppRuntime,
+    AppState, LibraryJob, LibraryJobKind,
 };
 
 use super::processing::{
     compute_total_chunks, convert_library_item, convert_segments_to_ms, read_wav_info,
     stream_wav_chunks,
 };
+use crate::speech::{
+    VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE, WHISPER_CHUNK_OVERLAP_SECONDS,
+    WHISPER_CHUNK_SECONDS,
+};
 use super::types::{
     is_cancelled_message, is_ffmpeg_error_message, LibraryCompletePayload, LibraryErrorPayload,
     LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryProgressPayload,
     LibraryProgressUpdate, LibraryTranscriptionResult, TranscriptSegment, CHUNK_OVERLAP_SECONDS,
     DIRECT_TRANSCRIBE_MINUTES, EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, EVENT_LIBRARY_PROGRESS,
-    MAX_CHUNK_MINUTES, VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE,
-    WHISPER_CHUNK_OVERLAP_SECONDS, WHISPER_CHUNK_SECONDS,
+    MAX_CHUNK_MINUTES,
 };
 
 fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
@@ -210,6 +214,8 @@ fn start_library_transcription_internal(
                             status: Some(LibraryItemStatus::Complete),
                             transcript: Some(final_transcript),
                             segments: result.segments.take(),
+                            words: result.words.take(),
+                            speech_model: result.speech_model.take(),
                             transcribed_at: Some(Utc::now().to_rfc3339()),
                             ..Default::default()
                         },
@@ -367,7 +373,56 @@ fn transcribe_library_item(
     }
 
     let settings = state.current_settings();
-    let ready_model = model_manager::ensure_model_ready(app, &item.speech_model)?;
+    let mut remote_fallback = false;
+
+    let wants_remote =
+        remote_speech::is_remote_model(&item.speech_model) && remote_speech::is_configured(&settings);
+
+    if wants_remote {
+        let http = state.http();
+        let attempt = async_runtime::block_on(remote_speech::attempt_remote(
+            app,
+            &http,
+            &settings,
+            &audio_path,
+            &item.speech_model,
+            true,
+            || token.is_cancelled(),
+        ));
+        match attempt {
+            remote_speech::RemoteAttempt::Success(success) => {
+                report_progress(
+                    app,
+                    state.storage(),
+                    &item.id,
+                    LibraryProgressUpdate::with_chunk_counts(1.0, 1, 1),
+                );
+                let segments = success.segments.as_deref().map(convert_segments_to_ms);
+                let words = success.words.as_deref().map(convert_segments_to_ms);
+                return Ok(LibraryTranscriptionResult {
+                    transcript: success.transcript,
+                    segments,
+                    words,
+                    speech_model: success.speech_model,
+                });
+            }
+            remote_speech::RemoteAttempt::Cancelled => {
+                return Err(anyhow!("Transcription cancelled"));
+            }
+            remote_speech::RemoteAttempt::Unavailable => {
+                return Err(anyhow!("REMOTE_FALLBACK_UNAVAILABLE"));
+            }
+            remote_speech::RemoteAttempt::Fallback => {
+                remote_fallback = true;
+            }
+        }
+    }
+
+    let ready_model = if remote_fallback || remote_speech::is_remote_model(&item.speech_model) {
+        model_manager::ensure_local_fallback_model(app, &item.speech_model)?
+    } else {
+        model_manager::ensure_model_ready(app, &item.speech_model)?
+    };
     let dictionary_terms = dictionary::dictionary_entries_for_model(&ready_model, &settings);
     let language = settings.language.clone();
     let transcriber = state.local_transcriber();
@@ -483,6 +538,8 @@ fn transcribe_library_item(
             } else {
                 Some(merged_segments)
             },
+            words: None,
+            speech_model: None,
         });
     }
 
@@ -494,6 +551,8 @@ fn transcribe_library_item(
             return Ok(LibraryTranscriptionResult {
                 transcript: String::new(),
                 segments: None,
+                words: None,
+                speech_model: None,
             });
         }
 
@@ -511,6 +570,8 @@ fn transcribe_library_item(
         return Ok(LibraryTranscriptionResult {
             transcript: result.transcript,
             segments: result.segments.as_deref().map(convert_segments_to_ms),
+            words: None,
+            speech_model: None,
         });
     }
 
@@ -594,6 +655,8 @@ fn transcribe_library_item(
         } else {
             Some(merged_segments)
         },
+        words: None,
+        speech_model: None,
     })
 }
 

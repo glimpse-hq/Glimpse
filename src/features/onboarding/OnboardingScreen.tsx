@@ -434,6 +434,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
+          remoteSpeechEnabled: persistedSettings?.remote_speech_enabled ?? false,
+          remoteSpeechProvider: persistedSettings?.remote_speech_provider ?? "openai",
+          remoteSpeechEndpoint:
+            persistedSettings?.remote_speech_endpoint ?? "https://api.openai.com/v1",
+          remoteSpeechApiKey: persistedSettings?.remote_speech_api_key ?? "",
+          remoteSpeechModel: persistedSettings?.remote_speech_model ?? "auto",
           microphoneDevice: persistedSettings?.microphone_device ?? null,
           language: persistedSettings?.language ?? "en",
           appLocale: persistedSettings?.app_locale ?? "system",

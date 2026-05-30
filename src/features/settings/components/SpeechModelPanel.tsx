@@ -1,48 +1,51 @@
 import { useLingui } from "@lingui/react/macro";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import {
-  CLOUD_PROVIDERS,
-  getProviderPreset,
-  LOCAL_PROVIDERS,
-} from "../../../shared/lib/llmProviders";
-import type { LlmProvider } from "../../../types";
+  CLOUD_SPEECH_PROVIDERS,
+  getSpeechProviderPreset,
+  LOCAL_SPEECH_PROVIDERS,
+  supportsSpeechProviderModelDiscovery,
+} from "../../../shared/lib/speechProviders";
 import { Dropdown } from "../../../shared/ui/Dropdown";
+import type { RemoteSpeechProvider } from "../../../types";
 
-type LanguageModelPanelProps = {
-  llmEnabled: boolean;
-  setLlmEnabled: (value: boolean) => void;
-  llmProvider: LlmProvider;
-  setLlmProvider: (value: LlmProvider) => void;
-  llmEndpoint: string;
-  setLlmEndpoint: (value: string) => void;
-  llmApiKey: string;
-  setLlmApiKey: (value: string) => void;
-  llmModel: string;
-  setLlmModel: (value: string) => void;
+type SpeechModelPanelProps = {
+  enabled: boolean;
+  setEnabled: (value: boolean) => void;
+  provider: RemoteSpeechProvider;
+  setProvider: (value: RemoteSpeechProvider) => void;
+  endpoint: string;
+  setEndpoint: (value: string) => void;
+  apiKey: string;
+  setApiKey: (value: string) => void;
+  model: string;
+  setModel: (value: string) => void;
   availableModels: string[];
   fetchAvailableModels: () => void;
 };
 
-const LanguageModelPanel = ({
-  llmEnabled,
-  setLlmEnabled,
-  llmProvider,
-  setLlmProvider,
-  llmEndpoint,
-  setLlmEndpoint,
-  llmApiKey,
-  setLlmApiKey,
-  llmModel,
-  setLlmModel,
+const SpeechModelPanel = ({
+  enabled,
+  setEnabled,
+  provider,
+  setProvider,
+  endpoint,
+  setEndpoint,
+  apiKey,
+  setApiKey,
+  model,
+  setModel,
   availableModels,
   fetchAvailableModels,
-}: LanguageModelPanelProps) => {
+}: SpeechModelPanelProps) => {
   const { t } = useLingui();
-  const providerPreset = getProviderPreset(llmProvider);
+  const providerPreset = getSpeechProviderPreset(provider);
   const hasSelectedProvider = Boolean(providerPreset);
+  const canDiscoverModels = supportsSpeechProviderModelDiscovery(provider);
   const uniqueModels = Array.from(
     new Set(availableModels.map((model) => model.trim()).filter(Boolean)),
   );
+  const modelValue = model || "auto";
 
   return (
     <div className="flex flex-col gap-3 rounded-lg bg-surface-surface p-2.5">
@@ -51,24 +54,25 @@ const LanguageModelPanel = ({
           <div className="min-w-0">
             <h3 className="ui-text-label-strong ui-color-primary">
               {t({
-                id: "settings.language_model.title",
-                message: "Writing Model Provider",
+                id: "settings.speech_model.title",
+                message: "Remote Speech Provider",
               })}
             </h3>
             <p className="mt-0.5 ui-text-meta ui-color-muted">
               {t({
-                id: "settings.language_model.description",
-                message: "Used by Cleanup, Edit Mode, and Personalization.",
+                id: "settings.speech_model.description",
+                message:
+                  "Transcribe recordings through OpenAI-compatible cloud or self-hosted APIs.",
               })}
             </p>
           </div>
           <div className="flex shrink-0 items-center">
             <ToggleSwitch
-              enabled={llmEnabled}
-              onToggle={() => setLlmEnabled(!llmEnabled)}
+              enabled={enabled}
+              onToggle={() => setEnabled(!enabled)}
               ariaLabel={t({
-                id: "settings.language_model.toggle",
-                message: "Use this provider for AI writing features",
+                id: "settings.speech_model.toggle",
+                message: "Use this provider for speech-to-text",
               })}
               size="md"
             />
@@ -79,83 +83,83 @@ const LanguageModelPanel = ({
       <div className="relative z-20 px-2">
         <label className="ui-text-label-strong ui-color-primary block">
           {t({
-            id: "settings.language_model.provider",
+            id: "settings.speech_model.provider",
             message: "Provider",
           })}
         </label>
         <Dropdown
-          value={llmProvider}
+          value={provider}
           onChange={(val) => {
-            setLlmProvider(val);
-            const preset = getProviderPreset(val);
+            setProvider(val);
+            const preset = getSpeechProviderPreset(val);
             if (preset) {
-              setLlmEndpoint(preset.endpoint);
-              setLlmModel(preset.defaultModel);
+              setEndpoint(preset.endpoint);
+              setModel("auto");
             }
           }}
           editableInput={
-            llmProvider === "custom"
+            provider === "custom"
               ? {
-                  value: llmEndpoint,
-                  onChange: setLlmEndpoint,
+                  value: endpoint,
+                  onChange: setEndpoint,
                   placeholder: t({
-                    id: "settings.language_model.endpoint.placeholder",
-                    message: "https://your-llm-endpoint.com",
+                    id: "settings.speech_model.endpoint.placeholder",
+                    message: "https://your-speech-endpoint.com",
                   }),
                   ariaLabel: t({
-                    id: "settings.language_model.endpoint.aria",
-                    message: "LLM Endpoint URL",
+                    id: "settings.speech_model.endpoint.aria",
+                    message: "Remote speech endpoint URL",
                   }),
                 }
               : undefined
           }
           options={[
             {
-              value: "custom" as LlmProvider,
+              value: "custom" as RemoteSpeechProvider,
               label: t({
-                id: "settings.language_model.provider.custom",
+                id: "settings.speech_model.provider.custom",
                 message: "Custom",
               }),
               description: t({
-                id: "settings.language_model.provider.custom.description",
+                id: "settings.speech_model.provider.custom.description",
                 message: "Enter your own endpoint URL",
               }),
             },
             {
-              value: "_local_header" as LlmProvider,
+              value: "_local_header" as RemoteSpeechProvider,
               label: t({
-                id: "settings.language_model.provider.local",
+                id: "settings.speech_model.provider.local",
                 message: "Local",
               }),
               isHeader: true,
             },
-            ...LOCAL_PROVIDERS.filter((p) => p.id !== "custom").map((p) => ({
-              value: p.id,
-              label: p.label,
-              description: p.endpoint,
+            ...LOCAL_SPEECH_PROVIDERS.map((provider) => ({
+              value: provider.id,
+              label: provider.label,
+              description: provider.endpoint,
             })),
             {
-              value: "_cloud_header" as LlmProvider,
+              value: "_cloud_header" as RemoteSpeechProvider,
               label: t({
-                id: "settings.language_model.provider.cloud",
+                id: "settings.speech_model.provider.cloud",
                 message: "Cloud (API Key)",
               }),
               isHeader: true,
             },
-            ...CLOUD_PROVIDERS.map((p) => ({
-              value: p.id,
-              label: p.label,
-              description: p.endpoint,
+            ...CLOUD_SPEECH_PROVIDERS.map((provider) => ({
+              value: provider.id,
+              label: provider.label,
+              description: provider.endpoint,
             })),
           ]}
           placeholder={t({
-            id: "settings.language_model.provider.select",
+            id: "settings.speech_model.provider.select",
             message: "Select provider...",
           })}
           searchable
           searchPlaceholder={t({
-            id: "settings.language_model.provider.search",
-            message: "Search providers...",
+            id: "settings.speech_model.provider.search",
+            message: "Search speech providers...",
           })}
           className="mt-2"
           buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
@@ -166,13 +170,13 @@ const LanguageModelPanel = ({
       <div className="px-2">
         <span className="ui-text-label-strong ui-color-primary block">
           {t({
-            id: "settings.language_model.api_key",
+            id: "settings.speech_model.api_key",
             message: "API Key",
           })}{" "}
           {!providerPreset?.apiKeyRequired && (
             <span className="ui-color-disabled">
               {t({
-                id: "settings.language_model.api_key.optional_hint",
+                id: "settings.speech_model.api_key.optional_hint",
                 message: "(if required)",
               })}
             </span>
@@ -180,22 +184,22 @@ const LanguageModelPanel = ({
         </span>
         <input
           type="password"
-          value={llmApiKey}
-          onChange={(e) => setLlmApiKey(e.target.value)}
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
           placeholder={
             providerPreset?.apiKeyRequired
               ? t({
-                  id: "settings.language_model.api_key.required",
+                  id: "settings.speech_model.api_key.required",
                   message: "Required",
                 })
               : t({
-                  id: "settings.language_model.api_key.optional",
+                  id: "settings.speech_model.api_key.optional",
                   message: "Optional",
                 })
           }
           aria-label={t({
-            id: "settings.language_model.api_key.aria",
-            message: "LLM API Key",
+            id: "settings.speech_model.api_key.aria",
+            message: "Remote speech API key",
           })}
           className="mt-2 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
         />
@@ -204,31 +208,38 @@ const LanguageModelPanel = ({
       <div className="relative z-10 px-2 pb-1">
         <span className="ui-text-label-strong ui-color-primary block">
           {t({
-            id: "settings.language_model.model",
+            id: "settings.speech_model.model",
             message: "Model",
           })}
         </span>
         <Dropdown
-          value={llmModel}
-          onChange={(val) => setLlmModel(val)}
-          onOpen={hasSelectedProvider ? fetchAvailableModels : undefined}
+          value={modelValue}
+          onChange={(val) => setModel(val)}
+          onOpen={hasSelectedProvider && canDiscoverModels ? fetchAvailableModels : undefined}
           options={[
+            {
+              value: "auto",
+              label: t({
+                id: "settings.speech_model.model.automatic",
+                message: `Automatic (${providerPreset?.defaultModel || "provider default"})`,
+              }),
+            },
             ...uniqueModels.map((model) => ({
               value: model,
               label: model,
             })),
-            ...(llmModel && !uniqueModels.includes(llmModel)
-              ? [{ value: llmModel, label: llmModel }]
+            ...(modelValue !== "auto" && !uniqueModels.includes(modelValue)
+              ? [{ value: modelValue, label: modelValue }]
               : []),
           ]}
           placeholder={t({
-            id: "settings.language_model.model.placeholder",
-            message: `Model (default: ${providerPreset?.defaultModel || "none"})`,
+            id: "settings.speech_model.model.placeholder",
+            message: `Model (default: ${providerPreset?.defaultModel || "auto"})`,
           })}
           searchable
           searchPlaceholder={t({
-            id: "settings.language_model.model.search",
-            message: "Search available models...",
+            id: "settings.speech_model.model.search",
+            message: "Search available speech models...",
           })}
           className="mt-2"
           buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
@@ -239,4 +250,4 @@ const LanguageModelPanel = ({
   );
 };
 
-export default LanguageModelPanel;
+export default SpeechModelPanel;

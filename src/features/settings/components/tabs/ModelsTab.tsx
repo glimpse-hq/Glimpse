@@ -69,6 +69,8 @@ type ModelsTabProps = {
   modelStatus: Record<string, ModelStatus>;
   downloadState: Record<string, DownloadEvent>;
   localModel: string;
+  remoteSpeechEnabled: boolean;
+  remoteSpeechModel: string;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string) => void;
   handleDelete: (modelKey: string) => void;
@@ -82,6 +84,8 @@ const ModelsTab = ({
   modelStatus,
   downloadState,
   localModel,
+  remoteSpeechEnabled,
+  remoteSpeechModel,
   setLocalModel,
   handleDownload,
   handleDelete,
@@ -143,6 +147,17 @@ const ModelsTab = ({
           })}
         </p>
       </header>
+
+      {remoteSpeechEnabled && (
+        <div className="rounded-lg border border-cloud-30 bg-cloud-5 px-3 py-2">
+          <p className="ui-text-body-sm ui-color-primary">
+            {t({
+              id: "settings.models.remote_speech_active",
+              message: `Currently using your Speech Provider${remoteSpeechModel && remoteSpeechModel !== "auto" ? ` (${remoteSpeechModel})` : ""}. Local models remain available as fallback.`,
+            })}
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <h3 className="ui-text-section-label-sm ui-color-muted">

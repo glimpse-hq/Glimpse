@@ -33,6 +33,22 @@ export type LlmProvider =
     | "mistral"
     | "custom";
 
+export type RemoteSpeechProvider =
+    | "custom"
+    | "openai"
+    | "groq"
+    | "mistral"
+    | "fireworks"
+    | "openrouter"
+    | "deepgram"
+    | "elevenlabs"
+    | "huggingface"
+    | "vllm"
+    | "localai"
+    | "whisper-cpp"
+    | "llamaedge"
+    | "litellm";
+
 export type Replacement = {
     from: string;
     to: string;
@@ -70,6 +86,11 @@ export type StoredSettings = {
     shortcut_bindings: ShortcutBindings;
     transcription_mode: TranscriptionMode;
     local_model: string;
+    remote_speech_enabled: boolean;
+    remote_speech_provider: RemoteSpeechProvider;
+    remote_speech_endpoint: string;
+    remote_speech_api_key: string;
+    remote_speech_model: string;
     microphone_device: string | null;
     language: string;
     app_locale: AppLocaleSetting;
