@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Glimpse"
-version = "0.9.2"
+version = "0.9.1"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -2299,11 +2299,13 @@ dependencies = [
 [[package]]
 name = "glimpse-speech"
 version = "1.3.4"
+source = "git+https://github.com/LegendarySpy/Glimpse-Speech.git?tag=1.4.0#3f7d0f1d3443423a3d92c05822de2cd50a263f1b"
 dependencies = [
  "anyhow",
  "axum",
  "clap",
  "hound",
+ "httpdate",
  "parakeet-rs",
  "reqwest",
  "serde",

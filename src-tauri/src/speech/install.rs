@@ -80,7 +80,9 @@ pub fn definition(key: &str) -> Option<&'static speech_models::ModelManifest> {
 }
 
 pub fn model_label(key: &str) -> String {
-    speech_models::model_label(key)
+    speech_models::definition(key)
+        .map(|model| model.label.to_string())
+        .unwrap_or_else(|| key.to_string())
 }
 
 pub fn model_supports_capability(model_key: &str, capability: &str) -> bool {

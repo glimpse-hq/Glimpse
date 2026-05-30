@@ -1365,7 +1365,9 @@ async fn fetch_remote_speech_models(
     if endpoint.trim().is_empty() {
         return Ok(Vec::new());
     }
-    glimpse_speech::remote::fetch_available_models(&state.http(), &endpoint, &api_key)
+    let config = glimpse_speech::provider::remote_config(endpoint, api_key, None);
+    glimpse_speech::remote::RemoteEngine::new(state.http().clone(), config)
+        .list_models()
         .await
         .map_err(|error| error.user_message())
 }

@@ -1,7 +1,8 @@
 use std::path::Path;
 
 use glimpse_speech::provider::remote_config;
-use glimpse_speech::remote::{self, RemoteError, RemoteErrorKind, RecordingRequest};
+use glimpse_speech::remote::{RemoteEngine, RemoteError, RemoteErrorKind, RemoteRequestParams};
+use glimpse_speech::TimestampGranularity;
 use reqwest::Client;
 use tauri::AppHandle;
 
@@ -68,19 +69,20 @@ pub(crate) async fn transcribe_file(
         settings.remote_speech_api_key.clone(),
         Some(model.clone()),
     );
-    let response = remote::transcribe_recording(
-        client,
-        config,
-        RecordingRequest {
-            audio_path: wav_path,
-            model: &model,
-            language: (!language.is_empty()).then_some(language),
-            dictionary: &dictionary,
-            prompt: None,
-            timestamps: wants_timestamps,
-        },
-    )
-    .await?;
+    let engine = RemoteEngine::new(client.clone(), config);
+    let response = engine
+        .transcribe_file(
+            wav_path,
+            RemoteRequestParams {
+                model: &model,
+                language: (!language.is_empty()).then_some(language),
+                dictionary: &dictionary,
+                prompt: None,
+                timestamps: wants_timestamps,
+                timestamp_granularity: wants_timestamps.then_some(TimestampGranularity::Segment),
+            },
+        )
+        .await?;
 
     Ok(TranscriptionSuccess {
         transcript: normalize_transcript(&response.text),
