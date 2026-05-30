@@ -63,7 +63,7 @@ const inlineAutoDeleteDropdownProps = {
   optionLabelClassName: "ui-text-meta font-medium whitespace-nowrap",
   menuClassName: "w-max min-w-full !right-auto",
   truncate: false as const,
-  fitButtonToWidestOption: true as const,
+  fitButtonToWidestOption: false as const,
   hideChevron: true as const,
 };
 
