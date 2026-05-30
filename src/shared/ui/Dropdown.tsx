@@ -37,6 +37,7 @@ interface DropdownProps<T extends string | number> {
     disabled?: boolean;
     truncate?: boolean;
     fitButtonToWidestOption?: boolean;
+    hideChevron?: boolean;
 }
 
 const classNames = (...classes: Array<string | false | null | undefined>) =>
@@ -61,6 +62,7 @@ export function Dropdown<T extends string | number>({
     disabled = false,
     truncate = true,
     fitButtonToWidestOption = false,
+    hideChevron = false,
 }: DropdownProps<T>) {
     const { t } = useLingui();
     const [isOpen, setIsOpen] = useState(false);
@@ -230,13 +232,18 @@ export function Dropdown<T extends string | number>({
                         </span>
                     )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0 ml-2">
+                <div className={classNames(
+                    "flex items-center gap-2 shrink-0",
+                    !hideChevron && "ml-2",
+                )}>
                     {renderBadges(selectedOption?.badges, selectedOption?.fixedBadgeSlots)}
-                    <ChevronDown
-                        size={14}
-                        aria-hidden="true"
-                        className={`text-content-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                    />
+                    {!hideChevron && (
+                        <ChevronDown
+                            size={14}
+                            aria-hidden="true"
+                            className={`text-content-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                        />
+                    )}
                 </div>
             </button>
 

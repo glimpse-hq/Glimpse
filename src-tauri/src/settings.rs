@@ -41,6 +41,7 @@ const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
 const KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
 const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
 const KEY_AUTO_LAUNCH_ENABLED: &str = "auto_launch_enabled";
+const KEY_START_IN_BACKGROUND: &str = "start_in_background";
 const KEY_AUTO_DELETE_TARGET: &str = "auto_delete_target";
 const KEY_AUTO_DELETE_DURATION: &str = "auto_delete_duration";
 const LEGACY_KEY_RECORDING_PRUNE_POLICY: &str = "recording_prune_policy";
@@ -158,6 +159,8 @@ pub struct UserSettings {
     pub auto_update_enabled: bool,
     #[serde(default)]
     pub auto_launch_enabled: bool,
+    #[serde(default)]
+    pub start_in_background: bool,
     #[serde(default = "default_auto_delete_target")]
     pub auto_delete_target: AutoDeleteTarget,
     #[serde(default = "default_auto_delete_duration")]
@@ -456,6 +459,7 @@ impl Default for UserSettings {
             media_control_enabled: false,
             auto_update_enabled: false,
             auto_launch_enabled: false,
+            start_in_background: false,
             auto_delete_target: default_auto_delete_target(),
             auto_delete_duration: default_auto_delete_duration(),
             analytics_enabled: true,
@@ -854,6 +858,8 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =
                 self.read_value(&conn, KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
+            settings.start_in_background =
+                self.read_value(&conn, KEY_START_IN_BACKGROUND, settings.start_in_background)?;
             settings.auto_delete_target =
                 self.read_value(&conn, KEY_AUTO_DELETE_TARGET, settings.auto_delete_target)?;
             let auto_delete_duration =
@@ -1162,6 +1168,11 @@ impl SettingsStore {
             &conn,
             KEY_AUTO_LAUNCH_ENABLED,
             &settings.auto_launch_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_START_IN_BACKGROUND,
+            &settings.start_in_background,
         )?;
         self.write_value(&conn, KEY_AUTO_DELETE_TARGET, &settings.auto_delete_target)?;
         self.write_value(

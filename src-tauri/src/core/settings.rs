@@ -38,6 +38,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub media_control_enabled: bool,
     pub auto_update_enabled: bool,
     pub auto_launch_enabled: bool,
+    pub start_in_background: bool,
     pub auto_delete_target: AutoDeleteTarget,
     pub auto_delete_duration: RecordingPrunePolicy,
     pub analytics_enabled: bool,
@@ -356,6 +357,7 @@ pub(crate) fn update_settings(
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
     next.auto_launch_enabled = args.auto_launch_enabled;
+    next.start_in_background = args.auto_launch_enabled && args.start_in_background;
     next.auto_delete_target = args.auto_delete_target;
     next.auto_delete_duration = args.auto_delete_duration;
     next.analytics_enabled = args.analytics_enabled;
@@ -455,6 +457,7 @@ mod tests {
             media_control_enabled: true,
             auto_update_enabled: true,
             auto_launch_enabled: false,
+            start_in_background: true,
             auto_delete_target: AutoDeleteTarget::Transcripts,
             auto_delete_duration: RecordingPrunePolicy::Never,
             analytics_enabled: true,

@@ -88,6 +88,10 @@ fn launched_via_autostart() -> bool {
     std::env::args_os().any(|arg| arg == "--autostart")
 }
 
+fn should_start_in_background(launched_via_autostart: bool, start_in_background: bool) -> bool {
+    launched_via_autostart && start_in_background
+}
+
 fn register_deep_link_handlers(app: &tauri::App<AppRuntime>) {
     let handle = app.handle().clone();
 
@@ -420,7 +424,8 @@ pub fn run() {
                 eprintln!("Failed to register shortcuts: {err}");
             }
 
-            if !launched_via_autostart() {
+            let state = handle.state::<AppState>();
+            if state.should_open_settings_on_startup() {
                 let h = handle.clone();
                 std::thread::spawn(move || {
                     std::thread::sleep(Duration::from_millis(300));
@@ -607,6 +612,7 @@ pub struct AppState {
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
     streaming_session: parking_lot::Mutex<Option<streaming_transcription::StreamingSession>>,
+    should_start_in_background: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -635,6 +641,8 @@ impl AppState {
             .expect("Failed to initialize transcription storage");
 
         let recorder = Arc::new(RecorderManager::new());
+        let should_start_in_background =
+            should_start_in_background(launched_via_autostart(), settings.start_in_background);
 
         let model_cache_dir = model_manager::model_cache_dir(app_handle)
             .expect("Failed to resolve local model cache directory");
@@ -674,7 +682,12 @@ impl AppState {
                 transcription_count: 0,
             }),
             streaming_session: parking_lot::Mutex::new(None),
+            should_start_in_background,
         }
+    }
+
+    pub fn should_open_settings_on_startup(&self) -> bool {
+        !self.should_start_in_background
     }
 
     pub fn start_streaming_session(

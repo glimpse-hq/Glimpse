@@ -90,6 +90,7 @@ export type StoredSettings = {
     media_control_enabled: boolean;
     auto_update_enabled: boolean;
     auto_launch_enabled: boolean;
+    start_in_background: boolean;
     auto_delete_target: AutoDeleteTarget;
     auto_delete_duration: RecordingPrunePolicy;
     analytics_enabled: boolean;

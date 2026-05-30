@@ -449,6 +449,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           mediaControlEnabled: true,
           autoUpdateEnabled: true,
           autoLaunchEnabled: false,
+          startInBackground: persistedSettings?.start_in_background ?? false,
           autoDeleteTarget: persistedSettings?.auto_delete_target ?? "transcripts",
           autoDeleteDuration: persistedSettings?.auto_delete_duration ?? "never",
           analyticsEnabled: persistedSettings?.analytics_enabled ?? true,

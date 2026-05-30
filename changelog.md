@@ -1,3 +1,9 @@
+0.9.1
+
+### Features
+- Added an option to start in the background at login. (#13)
+
+---
 0.9.0
 
 ### Features

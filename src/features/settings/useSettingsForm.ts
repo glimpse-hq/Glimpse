@@ -222,7 +222,8 @@ export function useSettingsForm({
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
-  const [autoLaunchEnabled, setAutoLaunchEnabled] = useState(false);
+  const [autoLaunchEnabled, setAutoLaunchEnabledState] = useState(false);
+  const [startInBackground, setStartInBackground] = useState(false);
   const [autoDeleteTarget, setAutoDeleteTarget] =
     useState<AutoDeleteTarget>("transcripts");
   const [autoDeleteDuration, setAutoDeleteDuration] =
@@ -418,7 +419,10 @@ export function useSettingsForm({
     setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
     setMediaControlEnabled(s.media_control_enabled ?? false);
     setAutoUpdateEnabled(s.auto_update_enabled ?? false);
-    setAutoLaunchEnabled(s.auto_launch_enabled ?? false);
+    setAutoLaunchEnabledState(s.auto_launch_enabled ?? false);
+    setStartInBackground(
+      (s.auto_launch_enabled ?? false) && (s.start_in_background ?? false),
+    );
     setAutoDeleteTarget(s.auto_delete_target ?? "transcripts");
     setAutoDeleteDuration(s.auto_delete_duration ?? "never");
     setAnalyticsEnabled(s.analytics_enabled ?? true);
@@ -430,6 +434,13 @@ export function useSettingsForm({
     setLocalApiCors(s.local_api_cors ?? false);
     setThemeModeRaw(s.theme_mode ?? "system");
   }, [clearInvalidShortcutDraft]);
+
+  const setAutoLaunchEnabled = useCallback((enabled: boolean) => {
+    setAutoLaunchEnabledState(enabled);
+    if (!enabled) {
+      setStartInBackground(false);
+    }
+  }, []);
 
   const activeTranscriptionEngine = useMemo(
     () => getActiveTranscriptionEngine(modelCatalog, localModel),
@@ -549,6 +560,7 @@ export function useSettingsForm({
         mediaControlEnabled,
         autoUpdateEnabled,
         autoLaunchEnabled,
+        startInBackground,
         autoDeleteTarget,
         autoDeleteDuration,
         analyticsEnabled,
@@ -587,6 +599,7 @@ export function useSettingsForm({
       mediaControlEnabled,
       autoUpdateEnabled,
       autoLaunchEnabled,
+      startInBackground,
       autoDeleteTarget,
       autoDeleteDuration,
       analyticsEnabled,
@@ -1526,6 +1539,8 @@ export function useSettingsForm({
     setAutoUpdateEnabled,
     autoLaunchEnabled,
     setAutoLaunchEnabled,
+    startInBackground,
+    setStartInBackground,
     autoDeleteTarget,
     setAutoDeleteTarget,
     autoDeleteDuration,

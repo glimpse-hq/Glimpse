@@ -121,6 +121,11 @@ msgstr ""
 #~ msgstr "Trial · {remaining} of {total} days left"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_launch.body"
+#~ msgstr "starts Glimpse automatically when you sign in."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.endpoint.autofilled"
 msgstr "(auto-filled)"
@@ -2940,6 +2945,11 @@ msgid "settings.local_api.start"
 msgstr "Start API"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.start_in_background"
+msgstr "Start in background"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.start_on_launch_aria"
 msgstr "Start local API when Glimpse opens"
@@ -2953,11 +2963,6 @@ msgstr "Start on launch"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.download.starting"
 msgstr "starting..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_launch.body"
-msgstr "starts Glimpse automatically when you sign in."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx
@@ -3199,6 +3204,11 @@ msgstr "Toggle Edit Mode"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_launch.toggle_aria"
 msgstr "Toggle launch at login"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.start_in_background.toggle_aria"
+msgstr "Toggle start in background"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
