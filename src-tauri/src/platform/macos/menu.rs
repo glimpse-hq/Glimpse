@@ -16,6 +16,7 @@ pub const MENU_ID_REPORT_ISSUE: &str = "menu_report_issue";
 pub const MENU_ID_MODE_LOCAL: &str = "menu_mode_local";
 pub const MENU_ID_MODE_CLOUD: &str = "menu_mode_cloud";
 pub const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
+pub const MENU_ID_REMOTE_SPEECH_ENABLED: &str = "menu_remote_speech_enabled";
 pub const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 pub const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 
@@ -80,6 +81,18 @@ pub fn build_app_menu(
         }
 
         app_submenu = app_submenu.item(&model_submenu.build()?);
+
+        if settings.remote_speech_enabled {
+            let remote_label = "Use remote speech".to_string();
+            let remote_speech =
+                CheckMenuItemBuilder::with_id(MENU_ID_REMOTE_SPEECH_ENABLED, remote_label)
+                    .checked(settings.remote_speech_enabled)
+                    .build(app)?;
+            let remote_submenu = SubmenuBuilder::new(app, "Remote Models")
+                .item(&remote_speech)
+                .build()?;
+            app_submenu = app_submenu.item(&remote_submenu);
+        }
     }
 
     // Microphone submenu

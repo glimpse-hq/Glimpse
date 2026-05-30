@@ -479,7 +479,7 @@ impl Default for UserSettings {
             media_control_enabled: false,
             auto_update_enabled: false,
             auto_launch_enabled: false,
-            start_in_background: false,
+            start_in_background: true,
             auto_delete_target: default_auto_delete_target(),
             auto_delete_duration: default_auto_delete_duration(),
             analytics_enabled: true,

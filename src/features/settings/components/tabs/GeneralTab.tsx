@@ -16,9 +16,11 @@ import {
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { formatShortcutForDisplay } from "../../../../shared/lib/shortcuts";
+import { isRemoteSpeechConfigured } from "../../../../shared/lib/speechProviders";
 import type {
   DeviceInfo,
   ModelStatus,
+  RemoteSpeechProvider,
   TranscriptionMode,
 } from "../../../../types";
 import type {
@@ -43,6 +45,10 @@ type GeneralTabProps = {
   onTranscriptionModeChange: (mode: TranscriptionMode) => void;
   modelStatus: Record<string, ModelStatus>;
   localModel: string;
+  remoteSpeechEnabled: boolean;
+  remoteSpeechProvider: RemoteSpeechProvider;
+  remoteSpeechEndpoint: string;
+  remoteSpeechModel: string;
   onOpenModelsTab: () => void;
   onOpenProvidersTab: () => void;
   onOpenAccountTab: () => void;
@@ -87,6 +93,10 @@ const GeneralTab = ({
   onTranscriptionModeChange,
   modelStatus,
   localModel,
+  remoteSpeechEnabled,
+  remoteSpeechProvider,
+  remoteSpeechEndpoint,
+  remoteSpeechModel,
   onOpenModelsTab,
   onOpenProvidersTab,
   onOpenAccountTab,
@@ -149,8 +159,15 @@ const GeneralTab = ({
     id: "settings.general.system_default",
     message: "System Default",
   });
+  const remoteSpeechActive = isRemoteSpeechConfigured({
+    enabled: remoteSpeechEnabled,
+    provider: remoteSpeechProvider,
+    endpoint: remoteSpeechEndpoint,
+    model: remoteSpeechModel,
+  });
   const shouldShowMissingModelWarning =
     transcriptionMode === "local" &&
+    !remoteSpeechActive &&
     Boolean(localModel) &&
     localModelStatus !== undefined &&
     !localModelStatus.installed;

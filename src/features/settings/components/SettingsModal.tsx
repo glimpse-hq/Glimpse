@@ -68,20 +68,23 @@ const SettingsModal = ({
 
   useEffect(() => {
     if (!licenseGateLocked) return;
-    if (activeTab === "providers" || activeTab === "local-api") {
+    if (activeTab === "local-api") {
       setActiveTab("general");
     }
   }, [activeTab, licenseGateLocked, setActiveTab]);
 
+  const lastConsumedWhatsNewRef = useRef(0);
   useEffect(() => {
     if (!isOpen || whatsNewRequest === 0) return;
+    if (whatsNewRequest <= lastConsumedWhatsNewRef.current) return;
+    lastConsumedWhatsNewRef.current = whatsNewRequest;
     form.setWhatsNewOpen(true);
   }, [form.setWhatsNewOpen, isOpen, whatsNewRequest]);
 
   const handleOpenTab = (
     tab: "general" | "models" | "providers" | "local-api" | "about" | "app",
   ) => {
-    if (licenseGateLocked && (tab === "providers" || tab === "local-api")) return;
+    if (licenseGateLocked && tab === "local-api") return;
     setActiveTab(tab);
   };
 
@@ -206,7 +209,6 @@ const SettingsModal = ({
                         message: "Providers",
                       })}
                       active={form.activeTab === "providers"}
-                      disabled={licenseGateLocked}
                       onClick={() => form.setActiveTab("providers")}
                     />
                   </div>
@@ -262,6 +264,10 @@ const SettingsModal = ({
                         onTranscriptionModeChange={form.setTranscriptionMode}
                         modelStatus={form.modelStatus}
                         localModel={form.localModel}
+                        remoteSpeechEnabled={form.remoteSpeechEnabled}
+                        remoteSpeechProvider={form.remoteSpeechProvider}
+                        remoteSpeechEndpoint={form.remoteSpeechEndpoint}
+                        remoteSpeechModel={form.remoteSpeechModel}
                         onOpenModelsTab={() => form.setActiveTab("models")}
                         onOpenProvidersTab={() => form.setActiveTab("providers")}
                         onOpenAccountTab={() => form.setActiveTab("account")}
@@ -307,6 +313,8 @@ const SettingsModal = ({
                         modelStatus={form.modelStatus}
                         downloadState={form.downloadState}
                         localModel={form.localModel}
+                        remoteSpeechEnabled={form.remoteSpeechEnabled}
+                        remoteSpeechModel={form.remoteSpeechModel}
                         setLocalModel={form.setLocalModel}
                         handleDownload={form.handleDownload}
                         handleDelete={form.handleDelete}
@@ -315,7 +323,7 @@ const SettingsModal = ({
                       />
                     )}
 
-                    {form.activeTab === "providers" && !licenseGateLocked && (
+                    {form.activeTab === "providers" && (
                       <ProvidersTab
                         key="providers"
                         variants={tabContentVariants}
@@ -331,6 +339,18 @@ const SettingsModal = ({
                         setLlmModel={form.setLlmModel}
                         availableModels={form.availableModels}
                         fetchAvailableModels={form.fetchAvailableModels}
+                        remoteSpeechEnabled={form.remoteSpeechEnabled}
+                        setRemoteSpeechEnabled={form.setRemoteSpeechEnabled}
+                        remoteSpeechProvider={form.remoteSpeechProvider}
+                        setRemoteSpeechProvider={form.setRemoteSpeechProvider}
+                        remoteSpeechEndpoint={form.remoteSpeechEndpoint}
+                        setRemoteSpeechEndpoint={form.setRemoteSpeechEndpoint}
+                        remoteSpeechApiKey={form.remoteSpeechApiKey}
+                        setRemoteSpeechApiKey={form.setRemoteSpeechApiKey}
+                        remoteSpeechModel={form.remoteSpeechModel}
+                        setRemoteSpeechModel={form.setRemoteSpeechModel}
+                        availableSpeechModels={form.availableSpeechModels}
+                        fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
                       />
                     )}
 

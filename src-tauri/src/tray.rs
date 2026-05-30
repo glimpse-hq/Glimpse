@@ -20,13 +20,17 @@ use tauri_plugin_opener::OpenerExt;
 
 // On macOS, share constants with the app menu; on other platforms, define locally
 #[cfg(target_os = "macos")]
-use crate::platform::macos::menu::{MENU_ID_MODEL_PREFIX, MENU_ID_MODE_CLOUD, MENU_ID_MODE_LOCAL};
+use crate::platform::macos::menu::{
+    MENU_ID_MODEL_PREFIX, MENU_ID_MODE_CLOUD, MENU_ID_MODE_LOCAL, MENU_ID_REMOTE_SPEECH_ENABLED,
+};
 #[cfg(not(target_os = "macos"))]
 const MENU_ID_MODE_LOCAL: &str = "menu_mode_local";
 #[cfg(not(target_os = "macos"))]
 const MENU_ID_MODE_CLOUD: &str = "menu_mode_cloud";
 #[cfg(not(target_os = "macos"))]
 const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
+#[cfg(not(target_os = "macos"))]
+const MENU_ID_REMOTE_SPEECH_ENABLED: &str = "menu_remote_speech_enabled";
 
 const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
@@ -94,8 +98,10 @@ pub(crate) fn mark_settings_renderer_ready(app: &AppHandle<AppRuntime>) {
 
 fn queue_settings_navigation(target: SettingsNavigationTarget, open_whats_new: bool) {
     let mut pending = pending_settings_navigation().lock();
-    pending.target = Some(target);
-    pending.open_whats_new = open_whats_new;
+    if pending.target.is_none() {
+        pending.target = Some(target);
+    }
+    pending.open_whats_new = pending.open_whats_new || open_whats_new;
 }
 
 fn open_settings_navigation(
@@ -190,6 +196,18 @@ fn build_tray_menu(
         }
 
         menu = menu.item(&model_submenu.build()?);
+
+        if settings.remote_speech_enabled {
+            let remote_label = "Use remote speech".to_string();
+            let remote_speech =
+                CheckMenuItemBuilder::with_id(MENU_ID_REMOTE_SPEECH_ENABLED, remote_label)
+                    .checked(settings.remote_speech_enabled)
+                    .build(app)?;
+            let remote_submenu = SubmenuBuilder::new(app, "Remote Models")
+                .item(&remote_speech)
+                .build()?;
+            menu = menu.item(&remote_submenu);
+        }
     }
 
     let mut mic_submenu = SubmenuBuilder::new(app, "Microphone");
@@ -336,6 +354,34 @@ fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) {
     }
 }
 
+fn set_remote_speech_enabled_from_menu(app: &AppHandle<AppRuntime>, enabled: bool) {
+    let state = app.state::<AppState>();
+    let mut settings = match state.current_settings_unmasked() {
+        Ok(settings) => settings,
+        Err(err) => {
+            eprintln!("Failed to load settings for remote speech update: {err}");
+            return;
+        }
+    };
+    if settings.remote_speech_enabled == enabled {
+        return;
+    }
+    settings.remote_speech_enabled = enabled;
+    match state.persist_settings(settings.clone()) {
+        Ok(saved) => {
+            if let Err(err) = refresh_tray_menu(app, &saved) {
+                eprintln!("Failed to refresh tray menu: {err}");
+            }
+            #[cfg(target_os = "macos")]
+            if let Err(err) = crate::set_app_menu(app, &saved) {
+                eprintln!("Failed to refresh app menu: {err}");
+            }
+            state.emit_settings_changed(app, &saved);
+        }
+        Err(err) => eprintln!("Failed to update remote speech setting: {err}"),
+    }
+}
+
 fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     let state = app.state::<AppState>();
     let mut settings = state.current_settings();
@@ -365,6 +411,13 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_MODE_LOCAL => set_transcription_mode_from_menu(app, TranscriptionMode::Local),
         MENU_ID_MODE_CLOUD => {
             eprintln!("Cloud mode is coming soon; tray toggle disabled");
+        }
+        MENU_ID_REMOTE_SPEECH_ENABLED => {
+            let enabled = !app
+                .state::<AppState>()
+                .current_settings()
+                .remote_speech_enabled;
+            set_remote_speech_enabled_from_menu(app, enabled);
         }
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
         MENU_ID_FEEDBACK => {
