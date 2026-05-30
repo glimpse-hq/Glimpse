@@ -18,6 +18,7 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: "general" | "account" | "models" | "providers" | "local-api" | "about" | "app";
+  whatsNewRequest?: number;
   transcriptionMode: TranscriptionMode;
 }
 
@@ -52,6 +53,7 @@ const SettingsModal = ({
   isOpen,
   onClose,
   initialTab = "general",
+  whatsNewRequest = 0,
   transcriptionMode: initialTranscriptionMode,
 }: SettingsModalProps) => {
   const { t } = useLingui();
@@ -70,6 +72,11 @@ const SettingsModal = ({
       setActiveTab("general");
     }
   }, [activeTab, licenseGateLocked, setActiveTab]);
+
+  useEffect(() => {
+    if (!isOpen || whatsNewRequest === 0) return;
+    form.setWhatsNewOpen(true);
+  }, [form.setWhatsNewOpen, isOpen, whatsNewRequest]);
 
   const handleOpenTab = (
     tab: "general" | "models" | "providers" | "local-api" | "about" | "app",

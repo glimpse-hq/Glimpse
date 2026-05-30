@@ -776,24 +776,6 @@ export function useSettingsForm({
     };
   }, [flushPendingSettingsSave]);
 
-  useEffect(() => {
-    let cancelled = false;
-    let unlisten: (() => void) | undefined;
-    listen("open_whats_new", () => {
-      setWhatsNewOpen(true);
-    }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlisten = fn;
-      }
-    });
-    return () => {
-      cancelled = true;
-      unlisten?.();
-    };
-  }, []);
-
   const refreshPermissionState = useCallback(async () => {
     const [nativeMic, acc, inputMonitoring] = await Promise.allSettled([
       platformCapabilities.requiresNativeMicrophonePermission

@@ -7,7 +7,9 @@ use crate::{
     audio, model_manager, AppRuntime, AppState, EVENT_SETTINGS_CHANGED, FEEDBACK_URL,
     SETTINGS_WINDOW_LABEL,
 };
-use std::sync::atomic::Ordering;
+use parking_lot::Mutex;
+use serde::Serialize;
+use std::sync::{atomic::Ordering, OnceLock};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
@@ -30,6 +32,99 @@ const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 const MENU_ID_FEEDBACK: &str = "menu_send_feedback";
 const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
+pub(crate) const EVENT_SETTINGS_RENDERER_READY: &str = "settings:renderer_ready";
+
+const EVENT_NAVIGATE_ABOUT: &str = "navigate:about";
+const EVENT_NAVIGATE_MODELS: &str = "navigate:models";
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SettingsNavigationPayload {
+    open_whats_new: bool,
+}
+
+#[derive(Clone, Copy)]
+enum SettingsNavigationTarget {
+    About,
+    Models,
+}
+
+#[derive(Default)]
+struct PendingSettingsNavigation {
+    renderer_ready: bool,
+    target: Option<SettingsNavigationTarget>,
+    open_whats_new: bool,
+}
+
+fn pending_settings_navigation() -> &'static Mutex<PendingSettingsNavigation> {
+    static PENDING: OnceLock<Mutex<PendingSettingsNavigation>> = OnceLock::new();
+    PENDING.get_or_init(|| Mutex::new(PendingSettingsNavigation::default()))
+}
+
+fn flush_pending_settings_navigation(app: &AppHandle<AppRuntime>) {
+    let (target, open_whats_new) = {
+        let mut pending = pending_settings_navigation().lock();
+        if !pending.renderer_ready {
+            return;
+        }
+        (
+            pending.target.take(),
+            std::mem::take(&mut pending.open_whats_new),
+        )
+    };
+
+    match target {
+        Some(SettingsNavigationTarget::About) => {
+            let _ = app.emit(
+                EVENT_NAVIGATE_ABOUT,
+                SettingsNavigationPayload { open_whats_new },
+            );
+        }
+        Some(SettingsNavigationTarget::Models) => {
+            let _ = app.emit(EVENT_NAVIGATE_MODELS, ());
+        }
+        None => {}
+    }
+}
+
+pub(crate) fn mark_settings_renderer_ready(app: &AppHandle<AppRuntime>) {
+    pending_settings_navigation().lock().renderer_ready = true;
+    flush_pending_settings_navigation(app);
+}
+
+fn queue_settings_navigation(target: SettingsNavigationTarget, open_whats_new: bool) {
+    let mut pending = pending_settings_navigation().lock();
+    pending.target = Some(target);
+    pending.open_whats_new = open_whats_new;
+}
+
+fn open_settings_navigation(
+    app: &AppHandle<AppRuntime>,
+    target: SettingsNavigationTarget,
+    open_whats_new: bool,
+) -> tauri::Result<()> {
+    queue_settings_navigation(target, open_whats_new);
+    if let Err(err) = toggle_settings_window(app) {
+        let mut pending = pending_settings_navigation().lock();
+        pending.target = None;
+        pending.open_whats_new = false;
+        return Err(err);
+    }
+    flush_pending_settings_navigation(app);
+    Ok(())
+}
+
+pub(crate) fn open_settings_about(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::About, false)
+}
+
+pub(crate) fn open_settings_models(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::Models, false)
+}
+
+pub(crate) fn open_settings_whats_new(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::About, true)
+}
 
 fn build_tray_menu(
     app: &AppHandle<AppRuntime>,
@@ -278,10 +373,9 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             }
         }
         MENU_ID_CHECK_UPDATES => {
-            if let Err(err) = toggle_settings_window(app) {
+            if let Err(err) = open_settings_about(app) {
                 eprintln!("Failed to open settings for update check: {err}");
             }
-            let _ = app.emit("navigate:about", ());
         }
         _ => {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {

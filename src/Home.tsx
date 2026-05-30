@@ -128,6 +128,7 @@ const Home = () => {
   const [settingsTab, setSettingsTab] = useState<
     "general" | "account" | "models" | "providers" | "local-api" | "about" | "app"
   >("general");
+  const [whatsNewRequest, setWhatsNewRequest] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<
     "home" | "dictionary" | "brain" | "library"
@@ -175,24 +176,35 @@ const Home = () => {
     let unlistenOpenImport: UnlistenFn | null = null;
     let unlistenLicenseReturn: UnlistenFn | null = null;
 
-    listen("navigate:about", () => {
+    const navigateReady = listen<{ openWhatsNew?: boolean }>("navigate:about", (event) => {
       setSettingsTab("about");
       setIsSettingsOpen(true);
-      setTimeout(() => {
-        emit("updater:check");
-      }, 100);
+      if (event.payload?.openWhatsNew) {
+        setWhatsNewRequest((request) => request + 1);
+      }
+      emit("updater:check").catch(() => {});
     }).then((fn) => {
       if (cancelled) fn();
       else unlistenNavigate = fn;
     });
 
-    listen("navigate:models", () => {
+    const modelsReady = listen("navigate:models", () => {
       setSettingsTab("models");
       setIsSettingsOpen(true);
     }).then((fn) => {
       if (cancelled) fn();
       else unlistenModels = fn;
     });
+
+    Promise.all([navigateReady, modelsReady])
+      .then(() => {
+        if (!cancelled) {
+          emit("settings:renderer_ready").catch(() => {});
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to register settings navigation listeners:", err);
+      });
 
     listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
       if (!licenseGateActiveRef.current) return;
@@ -748,6 +760,7 @@ const Home = () => {
           setSettingsTab("general");
         }}
         initialTab={settingsTab}
+        whatsNewRequest={whatsNewRequest}
         transcriptionMode={transcriptionMode}
       />
 

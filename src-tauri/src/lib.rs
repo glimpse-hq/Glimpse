@@ -169,7 +169,7 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 
     match id {
         MENU_ID_CHECK_UPDATES => {
-            let _ = app.emit("navigate:about", ());
+            let _ = tray::open_settings_about(app);
         }
         MENU_ID_WEBSITE => {
             let _ = app
@@ -383,6 +383,13 @@ pub fn run() {
             }
 
             {
+                let h = handle.clone();
+                handle.listen(tray::EVENT_SETTINGS_RENDERER_READY, move |_| {
+                    tray::mark_settings_renderer_ready(&h);
+                });
+            }
+
+            {
                 let handle = app.handle();
                 let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = sync_launch_at_login(handle, settings.auto_launch_enabled) {
@@ -426,11 +433,7 @@ pub fn run() {
 
             let state = handle.state::<AppState>();
             if state.should_open_settings_on_startup() {
-                let h = handle.clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(Duration::from_millis(300));
-                    let _ = tray::toggle_settings_window(&h);
-                });
+                let _ = tray::toggle_settings_window(handle);
             }
 
             update_checker::check_post_auto_update(handle);
@@ -1098,20 +1101,10 @@ fn open_input_monitoring_settings() -> Result<(), String> {
 
 #[tauri::command]
 fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    if let Err(err) = tray::toggle_settings_window(&app) {
+    tray::open_settings_models(&app).map_err(|err| {
         eprintln!("Failed to open settings window: {err}");
-        return Err(err.to_string());
-    }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(err) = app_clone.emit("navigate:models", ()) {
-            eprintln!("Failed to emit navigate:models: {err}");
-        }
-    });
-
-    Ok(())
+        err.to_string()
+    })
 }
 
 #[tauri::command]
@@ -1316,38 +1309,16 @@ async fn fetch_llm_models(
 
 #[tauri::command]
 fn open_whats_new(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::toggle_settings_window(&app) {
+    if let Err(err) = tray::open_settings_whats_new(&app) {
         eprintln!("Failed to open settings window: {err}");
-        return;
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        if let Err(e) = app_clone.emit("navigate:about", ()) {
-            eprintln!("Failed to emit navigate:about: {e}");
-        }
-        std::thread::sleep(std::time::Duration::from_millis(400));
-        if let Err(e) = app_clone.emit("open_whats_new", ()) {
-            eprintln!("Failed to emit open_whats_new: {e}");
-        }
-    });
 }
 
 #[tauri::command]
 fn open_about_page(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::toggle_settings_window(&app) {
+    if let Err(err) = tray::open_settings_about(&app) {
         eprintln!("Failed to open settings window: {err}");
-        return;
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(e) = app_clone.emit("navigate:about", ()) {
-            eprintln!("Failed to emit navigate:about: {e}");
-        }
-    });
 }
 
 #[tauri::command]

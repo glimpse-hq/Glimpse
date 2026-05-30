@@ -138,6 +138,16 @@ impl HotkeyCoordinator {
                             Err(_) => break,
                         };
 
+                        if event.key == Some(Key::CapsLock) {
+                            emit_capture_event(
+                                &app_handle,
+                                ShortcutCapturePayload::Error {
+                                    message: "CapsLock cannot be used as a recording shortcut".to_string(),
+                                },
+                            );
+                            break;
+                        }
+
                         let Some(part) = capture_part(event) else {
                             continue;
                         };

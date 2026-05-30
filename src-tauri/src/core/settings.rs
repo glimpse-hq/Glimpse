@@ -83,51 +83,55 @@ fn canonicalize_shortcut_bindings(args: &UpdateSettingsArgs) -> Result<ShortcutB
     })
 }
 
+fn collect_enabled_shortcuts(
+    enabled_shortcuts: &mut Vec<(&'static str, hotkeys::Hotkey)>,
+    mode_name: &'static str,
+    enabled: bool,
+    bindings: &[ShortcutBinding],
+) -> Result<(), String> {
+    if !enabled {
+        return Ok(());
+    }
+
+    for binding in bindings {
+        let raw = binding.shortcut.trim();
+        if raw.is_empty() {
+            continue;
+        }
+        let normalized = hotkeys::parse_shortcut(raw)
+            .map_err(|err| format!("{mode_name} shortcut is invalid: {err}"))?;
+        hotkeys::validate_recording_shortcut(&normalized)
+            .map_err(|err| format!("{mode_name} shortcut is invalid: {err}"))?;
+        enabled_shortcuts.push((mode_name, normalized));
+    }
+
+    Ok(())
+}
+
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
     if !args.smart_enabled && !args.hold_enabled && !args.toggle_enabled {
         return Err("At least one recording mode must be enabled".into());
     }
 
     let mut enabled_shortcuts: Vec<(&str, hotkeys::Hotkey)> = vec![];
-    if args.smart_enabled {
-        for binding in &args.shortcut_bindings.smart {
-            let raw = binding.shortcut.trim();
-            if raw.is_empty() {
-                continue;
-            }
-            let normalized = hotkeys::parse_shortcut(raw)
-                .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-            hotkeys::validate_recording_shortcut(&normalized)
-                .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-            enabled_shortcuts.push(("Smart", normalized));
-        }
-    }
-    if args.hold_enabled {
-        for binding in &args.shortcut_bindings.hold {
-            let raw = binding.shortcut.trim();
-            if raw.is_empty() {
-                continue;
-            }
-            let normalized = hotkeys::parse_shortcut(raw)
-                .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-            hotkeys::validate_recording_shortcut(&normalized)
-                .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-            enabled_shortcuts.push(("Hold", normalized));
-        }
-    }
-    if args.toggle_enabled {
-        for binding in &args.shortcut_bindings.toggle {
-            let raw = binding.shortcut.trim();
-            if raw.is_empty() {
-                continue;
-            }
-            let normalized = hotkeys::parse_shortcut(raw)
-                .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-            hotkeys::validate_recording_shortcut(&normalized)
-                .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-            enabled_shortcuts.push(("Toggle", normalized));
-        }
-    }
+    collect_enabled_shortcuts(
+        &mut enabled_shortcuts,
+        "Smart",
+        args.smart_enabled,
+        &args.shortcut_bindings.smart,
+    )?;
+    collect_enabled_shortcuts(
+        &mut enabled_shortcuts,
+        "Hold",
+        args.hold_enabled,
+        &args.shortcut_bindings.hold,
+    )?;
+    collect_enabled_shortcuts(
+        &mut enabled_shortcuts,
+        "Toggle",
+        args.toggle_enabled,
+        &args.shortcut_bindings.toggle,
+    )?;
 
     if args.smart_enabled && !enabled_shortcuts.iter().any(|(name, _)| *name == "Smart") {
         return Err("Smart shortcut cannot be empty when enabled".into());
