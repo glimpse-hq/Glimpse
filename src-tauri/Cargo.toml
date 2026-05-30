@@ -50,6 +50,7 @@ regex = "1"
 fs2 = "0.4"
 tauri-plugin-deep-link = "2.4.9"
 png = "0.18.1"
+rubato = "3.0.0"
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 tauri-plugin-process = "2.3.1"

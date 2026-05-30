@@ -6,6 +6,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream};
 use crossbeam_channel::{bounded, unbounded, Sender};
 use parking_lot::Mutex;
+use rubato::{audioadapter_buffers::direct::InterleavedSlice, Fft, FixedSync, Resampler};
 use uuid::Uuid;
 use webrtc_vad::{SampleRate as VadSampleRate, Vad, VadMode};
 
@@ -379,6 +380,7 @@ impl RecorderCore {
 
             apply_compression(&mut processed);
             apply_frame_normalization(&mut processed, active.sample_rate);
+            apply_peak_limiter(&mut processed);
 
             let samples: Vec<i16> = processed
                 .into_iter()
@@ -409,8 +411,8 @@ impl Default for ValidationConfig {
     fn default() -> Self {
         Self {
             min_duration_ms: 300,
-            min_rms_energy: 0.0003,
-            min_speech_percentage: 5.0,
+            min_rms_energy: 0.0002,
+            min_speech_percentage: 3.0,
         }
     }
 }
@@ -493,7 +495,7 @@ fn calculate_speech_percentage_with_mode(samples: &[f32], sample_rate: u32, mode
     let analysis = if vad_rate == sample_rate {
         samples.to_vec()
     } else {
-        resample_linear(samples, sample_rate, vad_rate)
+        resample_audio(samples, sample_rate, vad_rate)
     };
 
     let frame_ms = 30usize;
@@ -533,7 +535,7 @@ fn calculate_speech_percentage_with_mode(samples: &[f32], sample_rate: u32, mode
 }
 
 fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
-    calculate_speech_percentage_with_mode(samples, sample_rate, VadMode::LowBitrate)
+    calculate_speech_percentage_with_mode(samples, sample_rate, VadMode::Quality)
 }
 
 pub fn speech_percentage_i16_with_mode(samples: &[i16], sample_rate: u32, mode: VadMode) -> f32 {
@@ -657,7 +659,7 @@ fn prepare_wav_samples(samples: &[i16], sample_rate: u32, channels: u16) -> Vec<
         .iter()
         .map(|s| *s as f32 / i16::MAX as f32)
         .collect();
-    let resampled = resample_linear(&mono_f32, sample_rate, WAV_SAMPLE_RATE);
+    let resampled = resample_audio(&mono_f32, sample_rate, WAV_SAMPLE_RATE);
     resampled
         .into_iter()
         .map(|sample| (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16)
@@ -789,21 +791,87 @@ fn apply_frame_normalization(samples: &mut [f32], sample_rate: u32) {
     }
 
     let frame_size = (sample_rate as usize / 100).max(256);
-    let target_rms = 0.22f32;
-    let smoothing = 0.1f32;
+    let Some(profile) = GainProfile::from_samples(samples, frame_size) else {
+        return;
+    };
+
+    let attack = 0.14f32;
+    let release = 0.04f32;
     let mut gain = 1.0f32;
 
     for chunk in samples.chunks_mut(frame_size) {
-        let rms = (chunk.iter().map(|s| s * s).sum::<f32>() / chunk.len().max(1) as f32).sqrt();
-        let desired = if rms > 1e-4 {
-            (target_rms / rms).clamp(0.5, 4.0)
-        } else {
-            4.0
-        };
+        let rms = calculate_rms(chunk);
+        let desired = profile.desired_gain(rms);
+        let smoothing = if desired > gain { attack } else { release };
         gain += (desired - gain) * smoothing;
         for sample in chunk.iter_mut() {
             *sample *= gain;
         }
+    }
+}
+
+struct GainProfile {
+    speech_gate_rms: f32,
+    target_rms: f32,
+    max_gain: f32,
+}
+
+impl GainProfile {
+    fn from_samples(samples: &[f32], frame_size: usize) -> Option<Self> {
+        let mut frame_rms: Vec<f32> = samples
+            .chunks(frame_size)
+            .map(|chunk| calculate_rms(chunk))
+            .collect();
+        if frame_rms.is_empty() {
+            return None;
+        }
+
+        frame_rms.sort_by(|a, b| a.total_cmp(b));
+        let noise_floor_rms = percentile_sorted(&frame_rms, 0.2).clamp(0.0008, 0.006);
+        let speech_gate_rms = (noise_floor_rms * 2.5).clamp(0.0015, 0.03);
+        let speech_rms = percentile_sorted(&frame_rms, 0.65).max(speech_gate_rms);
+        let target_rms = if speech_rms < 0.06 { 0.20 } else { 0.18 };
+        let noise_to_speech = noise_floor_rms / speech_rms.max(noise_floor_rms);
+        let max_gain = if noise_to_speech > 0.15 { 3.0 } else { 5.0 };
+
+        Some(Self {
+            speech_gate_rms,
+            target_rms,
+            max_gain,
+        })
+    }
+
+    fn desired_gain(&self, rms: f32) -> f32 {
+        if rms < self.speech_gate_rms {
+            return 1.0;
+        }
+
+        (self.target_rms / rms).clamp(0.6, self.max_gain)
+    }
+}
+
+fn percentile_sorted(values: &[f32], percentile: f32) -> f32 {
+    let index = ((values.len() - 1) as f32 * percentile.clamp(0.0, 1.0)).round() as usize;
+    values[index]
+}
+
+fn apply_peak_limiter(samples: &mut [f32]) {
+    if samples.is_empty() {
+        return;
+    }
+
+    let peak = samples
+        .iter()
+        .map(|sample| sample.abs())
+        .fold(0.0f32, f32::max);
+    let ceiling = 0.95f32;
+    if peak <= ceiling {
+        return;
+    }
+
+    let gain = ceiling / peak;
+    for sample in samples.iter_mut() {
+        *sample *= gain;
     }
 }
 
@@ -820,7 +888,7 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> Vec<f32> {
     let analysis = if vad_rate == sample_rate {
         samples.to_vec()
     } else {
-        resample_linear(samples, sample_rate, vad_rate)
+        resample_audio(samples, sample_rate, vad_rate)
     };
 
     let frame_ms = 30usize;
@@ -835,7 +903,7 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> Vec<f32> {
         .map(|s| (s * i16::MAX as f32).round() as i16)
         .collect();
 
-    let mut vad = match create_vad(vad_rate, VadMode::LowBitrate) {
+    let mut vad = match create_vad(vad_rate, VadMode::Quality) {
         Some(instance) => instance,
         None => return samples.to_vec(),
     };
@@ -941,7 +1009,7 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> Vec<f32> {
     }
 }
 
-fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
+fn resample_audio(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     if input.is_empty() {
         return Vec::new();
     }
@@ -949,6 +1017,34 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
         return input.to_vec();
     }
 
+    resample_with_rubato(input, in_rate, out_rate)
+        .unwrap_or_else(|| resample_linear(input, in_rate, out_rate))
+}
+
+fn resample_with_rubato(input: &[f32], in_rate: u32, out_rate: u32) -> Option<Vec<f32>> {
+    let mut resampler = Fft::<f32>::new(
+        in_rate as usize,
+        out_rate as usize,
+        1024,
+        1,
+        1,
+        FixedSync::Both,
+    )
+    .ok()?;
+
+    let input_adapter = InterleavedSlice::new(input, 1, input.len()).ok()?;
+    let output_capacity = resampler.process_all_needed_output_len(input.len());
+    let mut output = vec![0.0f32; output_capacity];
+    let mut output_adapter = InterleavedSlice::new_mut(&mut output, 1, output_capacity).ok()?;
+    let (_, output_len) = resampler
+        .process_all_into_buffer(&input_adapter, &mut output_adapter, input.len(), None)
+        .ok()?;
+
+    output.truncate(output_len);
+    Some(output)
+}
+
+fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     let ratio = out_rate as f64 / in_rate as f64;
     let out_len = ((input.len() as f64) * ratio).max(1.0).round() as usize;
     if out_len <= 1 {

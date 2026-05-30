@@ -4,6 +4,7 @@
 - Added an option to start in the background at login. (#13)
 
 ### Improvements
+- The audio pipeline for recording has been improved for higher accuracy across all models.
 - More UI improvements.
 
 ---
