@@ -109,11 +109,31 @@ pub(crate) fn should_refresh_icon(source: &Path, cached: &Path) -> bool {
     }
 }
 
+fn is_private_or_local_host(site: &str) -> bool {
+    let host = site.trim().trim_end_matches('.').to_ascii_lowercase();
+    if host.is_empty() || host == "localhost" {
+        return true;
+    }
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return true;
+    }
+    if !host.contains('.') {
+        return true;
+    }
+    matches!(
+        host.rsplit('.').next(),
+        Some("local" | "internal" | "lan" | "home" | "intranet" | "corp" | "localdomain")
+    )
+}
+
 fn fetch_and_cache_website_icon(
     site: &str,
     cache_dir: &Path,
     client: &reqwest::blocking::Client,
 ) -> Option<PathBuf> {
+    if is_private_or_local_host(site) {
+        return None;
+    }
     let url = format!("https://icons.duckduckgo.com/ip3/{site}.ico");
     let response = client.get(&url).send().ok()?;
     if !response.status().is_success() {

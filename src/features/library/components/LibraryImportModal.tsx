@@ -124,7 +124,7 @@ const LibraryImportModal = ({
                         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
                             {t({
                                 id: "library.import.no_models",
-                                message: "No local models are installed. Download a model in Settings -> Models before importing.",
+                                message: "No models available. Configure a remote provider or download a local model in Settings -> Models before importing.",
                             })}
                         </div>
                     )}

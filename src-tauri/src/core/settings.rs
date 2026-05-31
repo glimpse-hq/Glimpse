@@ -103,7 +103,7 @@ fn collect_enabled_shortcuts(
         return Ok(());
     }
 
-    for binding in bindings {
+    for binding in bindings.iter().take(3) {
         let raw = binding.shortcut.trim();
         if raw.is_empty() {
             continue;
@@ -433,6 +433,7 @@ pub(crate) fn update_settings(
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model
         || prev.remote_speech_enabled != next.remote_speech_enabled
+        || prev.remote_speech_provider != next.remote_speech_provider
         || prev.remote_speech_model != next.remote_speech_model
         || prev.microphone_device != next.microphone_device
     {

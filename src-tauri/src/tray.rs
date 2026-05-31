@@ -89,9 +89,7 @@ pub(crate) fn mark_settings_renderer_ready(app: &AppHandle<AppRuntime>) {
 
 fn queue_settings_navigation(target: SettingsNavigationTarget, open_whats_new: bool) {
     let mut pending = pending_settings_navigation().lock();
-    if pending.target.is_none() {
-        pending.target = Some(target);
-    }
+    pending.target = Some(target);
     pending.open_whats_new = pending.open_whats_new || open_whats_new;
 }
 

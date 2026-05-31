@@ -63,7 +63,18 @@ pub struct LocalApiController {
 #[derive(Default)]
 struct LocalApiState {
     running: Option<RunningLocalApi>,
+    starting: bool,
     logs: VecDeque<LocalApiLogEntry>,
+}
+
+struct StartingGuard<'a> {
+    inner: &'a parking_lot::Mutex<LocalApiState>,
+}
+
+impl Drop for StartingGuard<'_> {
+    fn drop(&mut self) {
+        self.inner.lock().starting = false;
+    }
 }
 
 struct RunningLocalApi {
@@ -104,6 +115,14 @@ impl LocalApiController {
         if host == "0.0.0.0" && api_key.is_none() {
             return Err("An API key is required when listening on LAN".to_string());
         }
+        {
+            let mut state = self.inner.lock();
+            if state.running.is_some() || state.starting {
+                return Err("Local API is already running".to_string());
+            }
+            state.starting = true;
+        }
+        let _starting_guard = StartingGuard { inner: &self.inner };
         let model_cache_dir =
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
         let service = Arc::new(SpeechService::new(SpeechConfig { model_cache_dir }));

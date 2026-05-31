@@ -408,10 +408,12 @@ export function useSettingsForm({
   const setRemoteSpeechProvider = useCallback((value: RemoteSpeechProvider) => {
     setRemoteSpeechProviderRaw(value);
     setAvailableSpeechModels([]);
+    setRemoteSpeechModel("auto");
   }, []);
   const setRemoteSpeechEndpoint = useCallback((value: string) => {
     setRemoteSpeechEndpointRaw(value);
     setAvailableSpeechModels([]);
+    setRemoteSpeechModel("auto");
   }, []);
   const setRemoteSpeechApiKeyRawAndClearModels = useCallback((value: string) => {
     setRemoteSpeechApiKey(value);
@@ -468,9 +470,7 @@ export function useSettingsForm({
 
   const setAutoLaunchEnabled = useCallback((enabled: boolean) => {
     setAutoLaunchEnabledState(enabled);
-    if (!enabled) {
-      setStartInBackground(false);
-    }
+    setStartInBackground(enabled);
   }, []);
 
   const activeTranscriptionEngine = useMemo(

@@ -34,7 +34,7 @@ body:
       description: Optional, but helpful if the bug depends on your system or settings.
       placeholder: |
         Glimpse version:
-        macOS version:
+        OS version:
         Recording mode / model:
 
   - type: textarea
