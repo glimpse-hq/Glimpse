@@ -1,7 +1,7 @@
 0.9.1
 
 ### Features
-- If you use Launch at Login, you can now choose to start in the background so Glimpse opens to the menu bar instead of the main window. (#13)
+- If you use Launch at Login, you can now choose to start in the background so Glimpse opens to the menu bar instead of the main window. (#63)
 - You can now use online transcription services in Settings → Providers, not just local models.
 - When the API server is running, the sidebar shows you it's active along with the address and how many requests it's handled.
 

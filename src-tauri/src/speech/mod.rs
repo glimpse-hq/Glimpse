@@ -62,7 +62,7 @@ where
         remote::RemoteAttempt::Success(success) => Ok(map_remote(success)),
         remote::RemoteAttempt::Fallback => local().await,
         remote::RemoteAttempt::Cancelled => Err(anyhow!("Transcription cancelled")),
-        remote::RemoteAttempt::Unavailable => Err(anyhow!("REMOTE_FALLBACK_UNAVAILABLE")),
+        remote::RemoteAttempt::Unavailable(message) => Err(anyhow!(message)),
     }
 }
 

@@ -15,7 +15,10 @@ use crate::{
 };
 
 pub(crate) fn has_valid_config(settings: &UserSettings) -> bool {
-    !settings.remote_speech_endpoint.trim().is_empty() && resolved_model_name(settings).is_some()
+    !settings.remote_speech_endpoint.trim().is_empty()
+        && resolved_model_name(settings).is_some()
+        && (!provider_requires_api_key(&settings.remote_speech_provider)
+            || !settings.remote_speech_api_key.trim().is_empty())
 }
 
 pub(crate) fn is_configured(settings: &UserSettings) -> bool {
@@ -39,6 +42,20 @@ pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
         "localai" | "whisper-cpp" | "llamaedge" => Some("whisper-1"),
         _ => None,
     }
+}
+
+pub(crate) fn provider_requires_api_key(provider: &str) -> bool {
+    matches!(
+        provider.trim().to_ascii_lowercase().as_str(),
+        "openai"
+            | "groq"
+            | "mistral"
+            | "fireworks"
+            | "openrouter"
+            | "deepgram"
+            | "elevenlabs"
+            | "huggingface"
+    )
 }
 
 pub(crate) fn resolve_model(provider: &str, model: &str) -> Option<String> {
@@ -105,7 +122,7 @@ pub(crate) enum RemoteAttempt {
     Success(TranscriptionSuccess),
     Cancelled,
     Fallback,
-    Unavailable,
+    Unavailable(String),
 }
 
 pub(crate) async fn attempt_remote(
@@ -123,8 +140,9 @@ pub(crate) async fn attempt_remote(
         Err(error) => {
             eprintln!("Remote speech failed, falling back to local model: {error}");
             if model_manager::ensure_local_fallback_model(app, local_fallback_model).is_err() {
-                emit_fallback_unavailable_toast(app, &error);
-                RemoteAttempt::Unavailable
+                let message = fallback_unavailable_toast_message(&error);
+                emit_fallback_unavailable_toast_message(app, &message);
+                RemoteAttempt::Unavailable(message)
             } else {
                 emit_fallback_toast(app, &error);
                 RemoteAttempt::Fallback
@@ -169,6 +187,10 @@ pub(crate) fn fallback_unavailable_toast_message(error: &RemoteError) -> String 
     )
 }
 
+pub(crate) fn is_fallback_unavailable_message(message: &str) -> bool {
+    message.contains("No local model is installed for fallback.")
+}
+
 pub(crate) fn emit_fallback_toast(app: &AppHandle<AppRuntime>, error: &RemoteError) {
     toast::emit_toast(
         app,
@@ -209,13 +231,13 @@ pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>) {
     );
 }
 
-pub(crate) fn emit_fallback_unavailable_toast(app: &AppHandle<AppRuntime>, error: &RemoteError) {
+fn emit_fallback_unavailable_toast_message(app: &AppHandle<AppRuntime>, message: &str) {
     toast::emit_toast(
         app,
         toast::Payload {
             toast_type: "error".to_string(),
             title: Some("Speech Provider".to_string()),
-            message: fallback_unavailable_toast_message(error),
+            message: message.to_string(),
             auto_dismiss: Some(true),
             duration: None,
             retry_id: None,

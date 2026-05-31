@@ -833,7 +833,7 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
 }
 
 fn is_remote_fallback_unavailable(err: &anyhow::Error) -> bool {
-    err.to_string().contains("REMOTE_FALLBACK_UNAVAILABLE")
+    remote_speech::is_fallback_unavailable_message(&err.to_string())
 }
 
 fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {

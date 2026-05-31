@@ -385,7 +385,7 @@ fn transcribe_library_item(
             &http,
             &settings,
             &audio_path,
-            &item.speech_model,
+            &settings.local_model,
             true,
             || token.is_cancelled(),
         ));
@@ -409,8 +409,8 @@ fn transcribe_library_item(
             remote_speech::RemoteAttempt::Cancelled => {
                 return Err(anyhow!("Transcription cancelled"));
             }
-            remote_speech::RemoteAttempt::Unavailable => {
-                return Err(anyhow!("REMOTE_FALLBACK_UNAVAILABLE"));
+            remote_speech::RemoteAttempt::Unavailable(message) => {
+                return Err(anyhow!(message));
             }
             remote_speech::RemoteAttempt::Fallback => {
                 remote_fallback = true;
@@ -419,7 +419,7 @@ fn transcribe_library_item(
     }
 
     let ready_model = if remote_fallback || remote_speech::is_remote_model(&item.speech_model) {
-        model_manager::ensure_local_fallback_model(app, &item.speech_model)?
+        model_manager::ensure_local_fallback_model(app, &settings.local_model)?
     } else {
         model_manager::ensure_model_ready(app, &item.speech_model)?
     };

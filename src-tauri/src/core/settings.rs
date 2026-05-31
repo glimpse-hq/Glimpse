@@ -181,6 +181,11 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         if args.remote_speech_endpoint.trim().is_empty() {
             return Err("Remote speech endpoint cannot be empty".into());
         }
+        if crate::remote_speech::provider_requires_api_key(&args.remote_speech_provider)
+            && args.remote_speech_api_key.trim().is_empty()
+        {
+            return Err("Remote speech API key cannot be empty".into());
+        }
         if crate::remote_speech::resolve_model(
             &args.remote_speech_provider,
             &args.remote_speech_model,
@@ -559,9 +564,22 @@ mod tests {
         let mut args = base_args();
         args.remote_speech_enabled = true;
         args.remote_speech_provider = "openai".to_string();
+        args.remote_speech_api_key = "sk-test".to_string();
         args.remote_speech_model = "auto".to_string();
 
         assert!(validate_update_settings_args(&args).is_ok());
+    }
+
+    #[test]
+    fn rejects_key_required_remote_speech_without_api_key() {
+        let mut args = base_args();
+        args.remote_speech_enabled = true;
+        args.remote_speech_provider = "openai".to_string();
+        args.remote_speech_api_key = "   ".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(err, "Remote speech API key cannot be empty");
     }
 
     #[test]
