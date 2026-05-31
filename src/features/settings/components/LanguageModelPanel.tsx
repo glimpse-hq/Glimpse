@@ -76,7 +76,7 @@ const LanguageModelPanel = ({
         </div>
       </div>
 
-      <div className="relative z-20 px-2">
+      <div className="px-2">
         <label className="ui-text-label-strong ui-color-primary block">
           {t({
             id: "settings.language_model.provider",
@@ -201,7 +201,7 @@ const LanguageModelPanel = ({
         />
       </div>
 
-      <div className="relative z-10 px-2 pb-1">
+      <div className="px-2 pb-1">
         <span className="ui-text-label-strong ui-color-primary block">
           {t({
             id: "settings.language_model.model",

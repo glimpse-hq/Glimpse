@@ -858,7 +858,7 @@ const AppTab = ({
                       message: "Auto-delete",
                     })}
                   </span>
-                  <div className="relative z-30 shrink-0">
+                  <div className="shrink-0">
                     <Dropdown
                       value={autoDeleteTarget}
                       onChange={(value) => {
@@ -875,7 +875,7 @@ const AppTab = ({
                       message: "after",
                     })}
                   </span>
-                  <div className="relative z-20 shrink-0">
+                  <div className="shrink-0">
                     <Dropdown
                       value={autoDeleteDuration}
                       onChange={(value) => {

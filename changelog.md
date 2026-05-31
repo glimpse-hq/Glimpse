@@ -3,6 +3,7 @@
 ### Fixes
 - Fixed some modifier-only shortcuts, like Fn or Option, occasionally not responding.
 - Fixed HTML-style lists in transcript history showing as plain text.
+- Fixed the Transcription Language dropdown in Settings opening behind the Edit Mode section.
 
 ---
 0.9.1

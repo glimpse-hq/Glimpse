@@ -34,6 +34,7 @@ interface DropdownProps<T extends string | number> {
     optionClassName?: string;
     optionLabelClassName?: string;
     onOpen?: () => void;
+    onOpenChange?: (open: boolean) => void;
     disabled?: boolean;
     truncate?: boolean;
     fitButtonToWidestOption?: boolean;
@@ -65,6 +66,7 @@ export function Dropdown<T extends string | number>({
     optionClassName = "",
     optionLabelClassName = "ui-text-body-sm-strong",
     onOpen,
+    onOpenChange,
     disabled = false,
     truncate = true,
     fitButtonToWidestOption = false,
@@ -114,6 +116,10 @@ export function Dropdown<T extends string | number>({
             document.removeEventListener("keydown", handleEscape);
         };
     }, [closeDropdown, isOpen]);
+
+    useEffect(() => {
+        onOpenChange?.(isOpen);
+    }, [isOpen, onOpenChange]);
 
     useEffect(() => {
         if (!isOpen || !containerRef.current) return;
@@ -205,7 +211,10 @@ export function Dropdown<T extends string | number>({
     };
 
     return (
-        <div className={`relative ${className}`} ref={containerRef}>
+        <div
+            className={classNames("relative", isOpen && "z-dropdown-open", className)}
+            ref={containerRef}
+        >
             {editableInput ? (
                 <div
                     className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary hover:border-border-secondary focus-within:border-border-hover transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
@@ -310,7 +319,7 @@ export function Dropdown<T extends string | number>({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: openUpward ? 4 : -4 }}
                         transition={{ duration: 0.15 }}
-                        className={`ui-surface-menu absolute left-0 right-0 z-[9999] flex flex-col max-h-[280px] ${openUpward ? "bottom-full mb-1" : "top-full mt-1"} ${menuClassName}`}
+                        className={`ui-surface-menu absolute left-0 right-0 flex flex-col max-h-[280px] ${openUpward ? "bottom-full mb-1" : "top-full mt-1"} ${menuClassName}`}
                     >
                         {searchable && (
                             <div className="p-2 border-b border-border-secondary shrink-0">
