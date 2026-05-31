@@ -3,6 +3,7 @@ import { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import { motion, type Variants } from "framer-motion";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
+import DotMatrix from "../../../../shared/ui/DotMatrix";
 import type {
   LocalApiStatus,
   ModelInfo,
@@ -209,8 +210,15 @@ const LocalApiTab = ({
             })}
           </p>
           <div className="flex items-center gap-2.5">
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 transition-all duration-300 ${running ? "bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.5)]" : "bg-content-disabled"}`}
+            <DotMatrix
+              rows={2}
+              cols={2}
+              activeDots={running ? [0, 1, 2, 3] : []}
+              dotSize={3}
+              gap={2}
+              color="var(--color-text-muted)"
+              className={running ? "opacity-80" : "opacity-40"}
+              aria-hidden="true"
             />
             <h1 className="ui-text-title-lg font-medium ui-color-primary">
               {running

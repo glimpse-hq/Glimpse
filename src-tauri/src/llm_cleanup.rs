@@ -1,6 +1,4 @@
-use glimpse_speech::remote::{
-    self as remote_lib, RemoteError, RemoteErrorKind,
-};
+use glimpse_speech::remote::{self as remote_lib, RemoteError, RemoteErrorKind};
 use parking_lot::Mutex;
 use reqwest::header::RETRY_AFTER;
 use reqwest::Client;
@@ -274,7 +272,9 @@ fn get_base_url(endpoint: &str) -> String {
 fn build_provider_url(endpoint: &str, route: ProviderRoute) -> Result<String, RemoteError> {
     let base = get_base_url(endpoint);
     if base.is_empty() {
-        return Err(remote_lib::config_error("Language model endpoint is not configured"));
+        return Err(remote_lib::config_error(
+            "Language model endpoint is not configured",
+        ));
     }
 
     Ok(format!("{}{}", base, route_suffix(endpoint, route)))
@@ -340,7 +340,11 @@ async fn send_chat_request(
         remote_lib::transport_error(format!("Failed to read language model response: {err}"))
     })?;
     if !status.is_success() {
-        return Err(remote_lib::parse_upstream_error(status, retry_after, &body_text));
+        return Err(remote_lib::parse_upstream_error(
+            status,
+            retry_after,
+            &body_text,
+        ));
     }
 
     let chat: ChatResponse = serde_json::from_str(&body_text).map_err(|err| RemoteError {
@@ -368,9 +372,8 @@ async fn run_text_task(
     user_content: String,
     fallback_text: &str,
 ) -> Result<String, RemoteError> {
-    let model = configured_model(settings).ok_or_else(|| {
-        remote_lib::config_error("Choose a language model in Settings -> Models")
-    })?;
+    let model = configured_model(settings)
+        .ok_or_else(|| remote_lib::config_error("Choose a language model in Settings -> Models"))?;
 
     let body = ChatRequest {
         model,
@@ -648,12 +651,13 @@ pub fn llm_issue_message(error: &RemoteError) -> String {
             if error.message.trim().is_empty() {
                 "Language model rejected the request.".to_string()
             } else {
-                format!("Language model rejected the request: {}.", error.message.trim())
+                format!(
+                    "Language model rejected the request: {}.",
+                    error.message.trim()
+                )
             }
         }
-        RemoteErrorKind::NotFound => {
-            "Language model endpoint or model was not found.".to_string()
-        }
+        RemoteErrorKind::NotFound => "Language model endpoint or model was not found.".to_string(),
         RemoteErrorKind::UpstreamUnavailable | RemoteErrorKind::Other => {
             "Language model unreachable.".to_string()
         }

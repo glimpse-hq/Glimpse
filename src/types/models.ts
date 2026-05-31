@@ -75,6 +75,7 @@ export type LocalApiStatus = {
     api_key_required: boolean;
     config_id: number | null;
     cors: boolean;
+    requests_total: number;
     logs: LocalApiLogEntry[];
 };
 

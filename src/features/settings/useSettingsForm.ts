@@ -963,14 +963,7 @@ export function useSettingsForm({
         if (!current) return current;
         const previousLogs = current.logs ?? [];
         return {
-          running: current.running,
-          host: current.host,
-          port: current.port,
-          model: current.model,
-          loaded_model: current.loaded_model,
-          api_key_required: current.api_key_required,
-          config_id: current.config_id,
-          cors: current.cors,
+          ...current,
           logs: [...previousLogs, event.payload].slice(-200),
         };
       });

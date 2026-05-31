@@ -9,18 +9,14 @@ use webrtc_vad::VadMode;
 
 use crate::transcribe::count_words;
 use crate::{
-    dictionary, model_manager, recorder::speech_percentage_i16_with_mode,
-    remote_speech, storage::StorageManager, toast, transcribe, transcription_api, AppRuntime,
-    AppState, LibraryJob, LibraryJobKind,
+    dictionary, model_manager, recorder::speech_percentage_i16_with_mode, remote_speech,
+    storage::StorageManager, toast, transcribe, transcription_api, AppRuntime, AppState,
+    LibraryJob, LibraryJobKind,
 };
 
 use super::processing::{
     compute_total_chunks, convert_library_item, convert_segments_to_ms, read_wav_info,
     stream_wav_chunks,
-};
-use crate::speech::{
-    VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE, WHISPER_CHUNK_OVERLAP_SECONDS,
-    WHISPER_CHUNK_SECONDS,
 };
 use super::types::{
     is_cancelled_message, is_ffmpeg_error_message, LibraryCompletePayload, LibraryErrorPayload,
@@ -28,6 +24,10 @@ use super::types::{
     LibraryProgressUpdate, LibraryTranscriptionResult, TranscriptSegment, CHUNK_OVERLAP_SECONDS,
     DIRECT_TRANSCRIBE_MINUTES, EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, EVENT_LIBRARY_PROGRESS,
     MAX_CHUNK_MINUTES,
+};
+use crate::speech::{
+    VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE, WHISPER_CHUNK_OVERLAP_SECONDS,
+    WHISPER_CHUNK_SECONDS,
 };
 
 fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
@@ -375,8 +375,8 @@ fn transcribe_library_item(
     let settings = state.current_settings();
     let mut remote_fallback = false;
 
-    let wants_remote =
-        remote_speech::is_remote_model(&item.speech_model) && remote_speech::is_configured(&settings);
+    let wants_remote = remote_speech::is_remote_model(&item.speech_model)
+        && remote_speech::is_configured(&settings);
 
     if wants_remote {
         let http = state.http();

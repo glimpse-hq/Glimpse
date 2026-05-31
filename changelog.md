@@ -1,17 +1,22 @@
 0.9.1
 
 ### Features
-- Added an option to start in the background at login. (#13)
-- Added support for remote Speech models.
+- If you use Launch at Login, you can now choose to start in the background so Glimpse opens to the menu bar instead of the main window. (#13)
+- You can now use online transcription services in Settings → Providers, not just local models.
+- When the API server is running, the sidebar shows you it's active along with the address and how many requests it's handled.
 
 ### Improvements
-- The audio pipeline for recording has been improved for higher accuracy across all models.
+- Recording should transcribe a little more accurately.
+- Shortcuts should feel easier to set and more reliable day to day.
+- You can turn remote speech on or off from the menu bar.
+- Start in background is on by default when Launch at Login is enabled.
 - More UI improvements.
-- Improved / optimized keybind registration flow.
 
 ### Fixes
 - Fixed library error cards being hidden under other cards.
-- Website favicons not showing in Personalization.
+- Fixed website favicons not showing in Personalization.
+- Fixed opening What's New from the menu bar before Settings was ready.
+
 ---
 0.9.0
 

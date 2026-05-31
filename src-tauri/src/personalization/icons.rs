@@ -163,9 +163,7 @@ fn prune_orphan_website_icons(live_sites: &[String], cache_dir: &Path) {
     };
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().and_then(|ext| ext.to_str()) == Some("ico")
-            && !valid.contains(&path)
-        {
+        if path.extension().and_then(|ext| ext.to_str()) == Some("ico") && !valid.contains(&path) {
             let _ = std::fs::remove_file(&path);
         }
     }

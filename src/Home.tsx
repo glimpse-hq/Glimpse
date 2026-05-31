@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings,
@@ -25,12 +25,17 @@ import TranscriptionList from "./features/transcriptions/components/Transcriptio
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
+import LocalApiSidebarStatus from "./features/settings/components/LocalApiSidebarStatus";
+import { getLocalApiStatus } from "./features/settings/models-api";
+import type { LocalApiStatus } from "./types";
 import { useLicenseGate } from "./features/license/queries";
 // TODO: REMOVE after next update — beta gift promo chip.
 import BetaGiftChip from "./features/license/components/BetaGiftChip";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
+
+let cachedLocalApiStatus: LocalApiStatus | null = null;
 
 const STATIC_LOGO_DOT_SIZE = 5;
 const STATIC_LOGO_GAP = 3;
@@ -140,6 +145,9 @@ const Home = () => {
   const supportMenuRef = useRef<HTMLDivElement>(null);
 
   const [dragActive, setDragActive] = useState(false);
+  const [localApiStatus, setLocalApiStatus] = useState<LocalApiStatus | null>(
+    () => cachedLocalApiStatus,
+  );
   const [pendingImportPaths, setPendingImportPaths] = useState<string[] | null>(
     null,
   );
@@ -164,6 +172,39 @@ const Home = () => {
   }, [activeView, licenseGateActive]);
 
   const sidebarWidth = isSidebarCollapsed ? 68 : 200;
+
+  const updateLocalApiStatus = useCallback((status: LocalApiStatus) => {
+    cachedLocalApiStatus = status;
+    setLocalApiStatus(status);
+  }, []);
+
+  const openLocalApiSettings = useCallback(() => {
+    setSettingsTab(licenseGateActive ? "local-api" : "general");
+    setIsSettingsOpen(true);
+  }, [licenseGateActive]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let unlistenStatus: UnlistenFn | null = null;
+
+    getLocalApiStatus()
+      .then((status) => {
+        if (!cancelled) updateLocalApiStatus(status);
+      })
+      .catch(() => {});
+
+    listen<LocalApiStatus>("local-api:status", (event) => {
+      if (!cancelled) updateLocalApiStatus(event.payload);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenStatus = fn;
+    });
+
+    return () => {
+      cancelled = true;
+      unlistenStatus?.();
+    };
+  }, [updateLocalApiStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -439,7 +480,18 @@ const Home = () => {
           <div className="flex-1" />
         </nav>
 
-        <div className="p-2 space-y-1 border-t border-border-primary">
+        <div className="shrink-0">
+          {localApiStatus?.running ? (
+            <div className="px-2 pb-1.5">
+              <LocalApiSidebarStatus
+                collapsed={isSidebarCollapsed}
+                status={localApiStatus}
+                onOpenSettings={openLocalApiSettings}
+              />
+            </div>
+          ) : null}
+
+          <div className="space-y-1 border-t border-border-primary p-2">
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="flex w-full items-center rounded-lg h-9 pl-[17px] text-content-disabled hover:text-content-muted"
@@ -665,6 +717,7 @@ const Home = () => {
             collapsed={isSidebarCollapsed}
             onClick={() => setIsSettingsOpen(true)}
           />
+          </div>
         </div>
       </aside>
 

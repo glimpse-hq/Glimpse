@@ -26,7 +26,10 @@ pub struct SpeechModel {
 }
 
 pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<SpeechModel> {
-    let loaded_id = app.state::<AppState>().local_transcriber().loaded_model_id();
+    let loaded_id = app
+        .state::<AppState>()
+        .local_transcriber()
+        .loaded_model_id();
     let mut models = Vec::new();
 
     if remote::is_configured(settings) {

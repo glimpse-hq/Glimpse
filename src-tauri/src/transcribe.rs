@@ -10,9 +10,9 @@ use crate::{
     mode_context, model_manager,
     model_manager::{model_supports_capability, MODEL_CAPABILITY_DICTIONARY},
     recorder::{speech_percentage_i16_with_mode, CompletedRecording, RecordingSaved},
-    remote_speech, speech,
+    remote_speech,
     settings::{Personality, UserSettings},
-    storage, toast, transcription_api, update_checker, AppRuntime, AppState,
+    speech, storage, toast, transcription_api, update_checker, AppRuntime, AppState,
     TranscriptionCompletePayload, TranscriptionErrorPayload, EVENT_TRANSCRIPTION_COMPLETE,
     EVENT_TRANSCRIPTION_ERROR,
 };
@@ -612,7 +612,9 @@ pub(crate) fn retry_transcription_async(
                         Ok(cleaned) => (cleaned, true),
                         Err(err) => {
                             let message = llm_cleanup::llm_issue_message(&err);
-                            eprintln!("Cleanup failed during retry, using raw transcript: {message}");
+                            eprintln!(
+                                "Cleanup failed during retry, using raw transcript: {message}"
+                            );
                             llm_cleanup::note_preflight_failure();
                             maybe_warn_llm_unavailable(&app_handle, false);
                             (raw_transcript.clone(), false)

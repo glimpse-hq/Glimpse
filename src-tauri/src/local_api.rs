@@ -18,6 +18,7 @@ use crate::AppRuntime;
 const EVENT_LOCAL_API_LOG: &str = "local-api:log";
 const EVENT_LOCAL_API_STATUS: &str = "local-api:status";
 const LOCAL_API_READY_PREFIX: &str = "Local API listening on ";
+const TRANSCRIBE_REQUEST_LOG: &str = "POST /v1/audio/transcriptions";
 const MAX_LOGS: usize = 200;
 
 #[derive(Debug, Clone, Serialize)]
@@ -38,6 +39,7 @@ pub struct LocalApiStatus {
     pub api_key_required: bool,
     pub config_id: Option<u64>,
     pub cors: bool,
+    pub requests_total: u64,
     pub logs: Vec<LocalApiLogEntry>,
 }
 
@@ -72,6 +74,7 @@ struct RunningLocalApi {
     api_key_required: bool,
     config_id: u64,
     cors: bool,
+    requests_total: u64,
     shutdown: Option<oneshot::Sender<()>>,
     stopped: Option<oneshot::Receiver<()>>,
 }
@@ -131,6 +134,7 @@ impl LocalApiController {
                 api_key_required: api_key.is_some(),
                 config_id,
                 cors: args.cors,
+                requests_total: 0,
                 shutdown: Some(shutdown_tx),
                 stopped: Some(stopped_rx),
             });
@@ -153,6 +157,9 @@ impl LocalApiController {
                 if let Some(sender) = ready_from_event.lock().take() {
                     let _ = sender.send(Ok(()));
                 }
+            }
+            if event.message.starts_with(TRANSCRIBE_REQUEST_LOG) {
+                controller.note_request(&sink_app);
             }
             controller.push_log(&sink_app, event.level, event.message);
         });
@@ -244,6 +251,22 @@ impl LocalApiController {
         }
     }
 
+    fn note_request(&self, app: &AppHandle<AppRuntime>) {
+        let counted = {
+            let mut state = self.inner.lock();
+            match state.running.as_mut() {
+                Some(running) => {
+                    running.requests_total += 1;
+                    true
+                }
+                None => false,
+            }
+        };
+        if counted {
+            self.emit_status(app);
+        }
+    }
+
     fn set_loaded_model(&self, app: &AppHandle<AppRuntime>, model_id: &str) {
         if let Some(running) = self.inner.lock().running.as_mut() {
             running.loaded_model = Some(model_id.to_string());
@@ -290,6 +313,7 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             api_key_required: running.api_key_required,
             config_id: Some(running.config_id),
             cors: running.cors,
+            requests_total: running.requests_total,
             logs,
         }
     } else {
@@ -302,6 +326,7 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             api_key_required: false,
             config_id: None,
             cors: crate::settings::default_local_api_cors(),
+            requests_total: 0,
             logs,
         }
     }
