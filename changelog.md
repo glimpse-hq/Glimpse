@@ -1,3 +1,9 @@
+0.9.2
+
+### Fixes
+- Fixed some modifier-only shortcuts, like Fn or Option, occasionally not responding.
+
+---
 0.9.1
 
 ### Features
