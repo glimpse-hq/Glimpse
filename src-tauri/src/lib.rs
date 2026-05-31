@@ -60,7 +60,6 @@ use settings::{
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
 use tauri::Emitter;
-#[cfg(target_os = "macos")]
 use tauri::Listener;
 use tauri::{AppHandle, Manager, Wry};
 use tauri_plugin_deep_link::DeepLinkExt;
