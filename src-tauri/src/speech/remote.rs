@@ -210,15 +210,33 @@ pub(crate) fn emit_fallback_toast(app: &AppHandle<AppRuntime>, error: &RemoteErr
     );
 }
 
-pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>) {
+pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
+    let mut missing: Vec<&str> = Vec::new();
+    if settings.remote_speech_endpoint.trim().is_empty() {
+        missing.push("an endpoint");
+    }
+    if resolved_model_name(settings).is_none() {
+        missing.push("a model");
+    }
+    if provider_requires_api_key(&settings.remote_speech_provider)
+        && settings.remote_speech_api_key.trim().is_empty()
+    {
+        missing.push("an API key");
+    }
+    let needed = match missing.as_slice() {
+        [] => "the required settings".to_string(),
+        [one] => one.to_string(),
+        [first, second] => format!("{first} and {second}"),
+        [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
+    };
+    let message =
+        format!("Add {needed} in Settings before enabling a remote speech provider.");
     toast::emit_toast(
         app,
         toast::Payload {
             toast_type: "warning".to_string(),
             title: Some("Speech Provider".to_string()),
-            message:
-                "Add an endpoint and model in Settings before enabling a remote speech provider."
-                    .to_string(),
+            message,
             auto_dismiss: Some(true),
             duration: None,
             retry_id: None,
