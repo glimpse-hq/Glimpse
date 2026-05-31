@@ -10,8 +10,9 @@ use std::time::Duration;
 use anyhow::{anyhow, Context, Result};
 use chrono::Utc;
 use symphonia::core::{
-    audio::SampleBuffer, codecs::DecoderOptions, errors::Error as SymphoniaError,
-    formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::Hint,
+    codecs::audio::AudioDecoderOptions, errors::Error as SymphoniaError, formats::probe::Hint,
+    formats::FormatOptions, formats::TrackType, io::MediaSourceStream, meta::MetadataOptions,
+    units::Timestamp,
 };
 use tauri::{AppHandle, Emitter, Manager};
 use tokio_util::sync::CancellationToken;
@@ -555,42 +556,52 @@ fn decode_audio_to_wav(
         hint.with_extension(ext);
     }
 
-    let probed = symphonia::default::get_probe()
-        .format(
+    let mut format = symphonia::default::get_probe()
+        .probe(
             &hint,
             mss,
-            &FormatOptions::default(),
-            &MetadataOptions::default(),
+            FormatOptions::default(),
+            MetadataOptions::default(),
         )
         .map_err(|err| anyhow!("Failed to read audio container: {err}"))?;
-    let mut format = probed.format;
     let track = format
-        .default_track()
+        .default_track(TrackType::Audio)
         .or_else(|| {
             format.tracks().iter().find(|track| {
-                track.codec_params.sample_rate.is_some() && track.codec_params.channels.is_some()
+                track
+                    .codec_params
+                    .as_ref()
+                    .and_then(|params| params.audio())
+                    .is_some_and(|audio| {
+                        audio.sample_rate.is_some() && audio.channels.is_some()
+                    })
             })
         })
         .ok_or_else(|| anyhow!("No supported audio tracks found"))?;
-    let sample_rate = track
+    let audio_params = track
         .codec_params
+        .as_ref()
+        .and_then(|params| params.audio())
+        .ok_or_else(|| anyhow!("Track is not an audio track"))?;
+    let sample_rate = audio_params
         .sample_rate
         .ok_or_else(|| anyhow!("Unknown sample rate"))?;
     if sample_rate == 0 {
         return Err(anyhow!("Invalid sample rate"));
     }
-    let channels = track
-        .codec_params
+    let channels = audio_params
         .channels
+        .as_ref()
         .ok_or_else(|| anyhow!("Unknown channel count"))?
         .count();
     if channels == 0 {
         return Err(anyhow!("Unknown channel count"));
     }
-    let time_base = track.codec_params.time_base;
+    let time_base = track.time_base;
+    let total_frames = track.num_frames;
 
     let mut decoder = symphonia::default::get_codecs()
-        .make(&track.codec_params, &DecoderOptions::default())
+        .make_audio_decoder(audio_params, &AudioDecoderOptions::default())
         .map_err(|err| anyhow!("Unsupported audio codec: {err}"))?;
     let track_id = track.id;
 
@@ -613,8 +624,8 @@ fn decode_audio_to_wav(
 
     let mut mono = Vec::new();
     let mut resampled = Vec::new();
+    let mut interleaved: Vec<f32> = Vec::new();
     let mut wrote_any = false;
-    let total_frames = track.codec_params.n_frames;
     let duration_ms_f64 = duration_ms.map(|ms| ms as f64);
     let mut last_reported = 0.0f32;
 
@@ -626,8 +637,8 @@ fn decode_audio_to_wav(
         }
 
         let packet = match format.next_packet() {
-            Ok(packet) => packet,
-            Err(SymphoniaError::IoError(err)) if err.kind() == ErrorKind::UnexpectedEof => break,
+            Ok(Some(packet)) => packet,
+            Ok(None) => break,
             Err(SymphoniaError::ResetRequired) => {
                 decoder.reset();
                 continue;
@@ -635,19 +646,20 @@ fn decode_audio_to_wav(
             Err(err) => return Err(anyhow!("Audio packet read failed: {err}")),
         };
 
-        if packet.track_id() != track_id {
+        if packet.track_id != track_id {
             continue;
         }
 
         if let Some(cb) = progress_cb.as_mut() {
             let progress = if let Some(total) = total_frames {
-                let packet_end = packet.ts.saturating_add(packet.dur);
+                let packet_end = packet.pts.saturating_add(packet.dur).get();
                 Some((packet_end as f64 / total as f64).min(1.0) as f32)
             } else if let (Some(total_ms), Some(time_base)) = (duration_ms_f64, time_base) {
-                let packet_end = packet.ts.saturating_add(packet.dur);
-                let time = time_base.calc_time(packet_end);
-                let packet_ms = (time.seconds as f64 + time.frac) * 1000.0;
-                Some((packet_ms / total_ms).min(1.0) as f32)
+                let packet_end = packet.pts.saturating_add(packet.dur);
+                time_base.calc_time(packet_end).map(|time| {
+                    let packet_ms = time.as_millis() as f64;
+                    (packet_ms / total_ms).min(1.0) as f32
+                })
             } else {
                 None
             };
@@ -670,10 +682,8 @@ fn decode_audio_to_wav(
             Err(err) => return Err(anyhow!("Audio decode failed: {err}")),
         };
 
-        let spec = *decoded.spec();
-        let mut sample_buf = SampleBuffer::<f32>::new(decoded.capacity() as u64, spec);
-        sample_buf.copy_interleaved_ref(decoded);
-        downmix_interleaved_to_mono(sample_buf.samples(), channels, &mut mono);
+        decoded.copy_to_vec_interleaved(&mut interleaved);
+        downmix_interleaved_to_mono(&interleaved, channels, &mut mono);
         if mono.is_empty() {
             continue;
         }
@@ -1076,26 +1086,29 @@ fn probe_media_duration_ms_symphonia(path: &Path) -> Option<u64> {
         hint.with_extension(ext);
     }
 
-    let probed = symphonia::default::get_probe()
-        .format(
+    let format = symphonia::default::get_probe()
+        .probe(
             &hint,
             mss,
-            &FormatOptions::default(),
-            &MetadataOptions::default(),
+            FormatOptions::default(),
+            MetadataOptions::default(),
         )
         .ok()?;
-    let format = probed.format;
-    let track = format.default_track().or_else(|| {
+    let track = format.default_track(TrackType::Audio).or_else(|| {
         format.tracks().iter().find(|track| {
-            track.codec_params.sample_rate.is_some() && track.codec_params.channels.is_some()
+            track
+                .codec_params
+                .as_ref()
+                .and_then(|params| params.audio())
+                .is_some_and(|audio| audio.sample_rate.is_some() && audio.channels.is_some())
         })
     })?;
-    let time_base = track.codec_params.time_base?;
-    let n_frames = track.codec_params.n_frames?;
-    let time = time_base.calc_time(n_frames);
-    let seconds = time.seconds as f64 + time.frac;
-    if seconds.is_finite() && seconds > 0.0 {
-        Some((seconds * 1000.0) as u64)
+    let time_base = track.time_base?;
+    let num_frames = track.num_frames?;
+    let time = time_base.calc_time(Timestamp::new(num_frames as i64))?;
+    let ms = time.as_millis();
+    if ms > 0 {
+        Some(ms as u64)
     } else {
         None
     }
