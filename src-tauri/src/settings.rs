@@ -184,6 +184,8 @@ pub struct UserSettings {
     pub analytics_enabled: bool,
     #[serde(default)]
     pub analytics_install_id: String,
+    #[serde(skip)]
+    pub analytics_first_run: bool,
     pub local_api_key: String,
     #[serde(default = "default_local_api_port")]
     pub local_api_port: u16,
@@ -484,6 +486,7 @@ impl Default for UserSettings {
             auto_delete_duration: default_auto_delete_duration(),
             analytics_enabled: true,
             analytics_install_id: String::new(),
+            analytics_first_run: false,
             local_api_key: String::new(),
             local_api_port: default_local_api_port(),
             local_api_model: default_local_api_model(),
@@ -1037,6 +1040,7 @@ impl SettingsStore {
 
         if settings.analytics_install_id.is_empty() {
             settings.analytics_install_id = uuid::Uuid::new_v4().to_string();
+            settings.analytics_first_run = true;
             should_persist = true;
         }
 

@@ -290,6 +290,15 @@ pub fn run() {
             if let Err(err) = data_migration::migrate_legacy_app_dirs(handle) {
                 eprintln!("Failed to migrate legacy app directories: {err}");
             }
+
+            let crash_marker = handle
+                .path()
+                .app_data_dir()
+                .ok()
+                .map(|dir| dir.join("last_crash.txt"));
+            if let Some(path) = crash_marker.clone() {
+                analytics::install_crash_handler(path);
+            }
             let settings_store = Arc::new(SettingsStore::new(handle)?);
             let mut settings = settings_store.load().unwrap_or_default();
             if model_manager::definition(&settings.local_model).is_none() {
@@ -383,6 +392,12 @@ pub fn run() {
                 let h = handle.clone();
                 tauri::async_runtime::spawn(async move {
                     analytics::init(&h).await;
+                    if let Some(path) = crash_marker {
+                        analytics::report_pending_crash(&h, &path);
+                    }
+                    if h.state::<AppState>().analytics_first_run() {
+                        analytics::track_app_installed(&h);
+                    }
                     analytics::track_app_started(&h);
                 });
             }
@@ -651,6 +666,10 @@ impl AppState {
     pub fn analytics_state(&self) -> (bool, String) {
         let s = self.settings.lock();
         (s.analytics_enabled, s.analytics_install_id.clone())
+    }
+
+    pub fn analytics_first_run(&self) -> bool {
+        self.settings.lock().analytics_first_run
     }
 
     /// Read auto-update setting from the in-memory cache (no DB hit).

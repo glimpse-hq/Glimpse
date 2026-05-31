@@ -686,6 +686,8 @@ pub(crate) fn retry_transcription_async(
                     transcription_mode_label(&settings),
                     Some(&metadata.speech_model),
                     llm_cleaned,
+                    metadata.audio_duration_seconds,
+                    metadata.word_count,
                 );
                 app_handle
                     .state::<AppState>()
@@ -731,7 +733,14 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
         temporary,
     } = input;
 
-    analytics::track_transcription_completed(app, mode, Some(&metadata.speech_model), llm_cleaned);
+    analytics::track_transcription_completed(
+        app,
+        mode,
+        Some(&metadata.speech_model),
+        llm_cleaned,
+        metadata.audio_duration_seconds,
+        metadata.word_count,
+    );
     app.state::<AppState>().record_transcription_completed();
 
     crate::emit_event(
