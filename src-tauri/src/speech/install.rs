@@ -47,12 +47,6 @@ pub struct ModelStatus {
     pub directory: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct EngineGroup {
-    pub name: String,
-    pub models: Vec<ModelInfo>,
-}
-
 #[derive(Serialize, Clone)]
 struct DownloadProgressPayload {
     model: String,
@@ -202,37 +196,6 @@ pub fn list_models() -> Vec<ModelInfo> {
         .iter()
         .map(manifest_to_model_info)
         .collect()
-}
-
-pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
-    let mut groups: std::collections::HashMap<String, Vec<ModelInfo>> =
-        std::collections::HashMap::new();
-
-    for model in models {
-        groups
-            .entry(model.engine_id.clone())
-            .or_default()
-            .push(model.clone());
-    }
-
-    let mut result: Vec<_> = groups
-        .into_values()
-        .map(|models| EngineGroup {
-            name: models
-                .first()
-                .map(|m| m.engine.clone())
-                .unwrap_or_else(|| "Unknown".to_string()),
-            models,
-        })
-        .collect();
-
-    result.sort_by_key(|g| match g.models.first().map(|m| m.engine_id.as_str()) {
-        Some("whisper") => 0,
-        Some("nvidia") => 1,
-        _ => 2,
-    });
-
-    result
 }
 
 #[tauri::command]

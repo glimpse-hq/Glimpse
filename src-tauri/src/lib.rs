@@ -55,8 +55,7 @@ use recorder::{
 use reqwest::Client;
 use serde::Serialize;
 use settings::{
-    default_local_model, RecordingPrunePolicy, SettingsStore,
-    TranscriptionMode, UserSettings,
+    default_local_model, RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings,
 };
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
@@ -164,11 +163,17 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     use crate::recent_transcriptions::{
         copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
     };
+    use crate::speech::menu::handle_speech_menu_event;
     use platform::macos::menu::{
-        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODEL_PREFIX,
-        MENU_ID_MODE_LOCAL, MENU_ID_REMOTE_SPEECH_ENABLED, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
+        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_REPORT_ISSUE,
+        MENU_ID_WEBSITE,
     };
     use tauri_plugin_opener::OpenerExt;
+
+    if let Some(saved) = handle_speech_menu_event(app, id) {
+        refresh_speech_menus(app, &saved);
+        return;
+    }
 
     match id {
         MENU_ID_CHECK_UPDATES => {
@@ -182,21 +187,12 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_REPORT_ISSUE => {
             let _ = app.opener().open_url(FEEDBACK_URL, None::<&str>);
         }
-        MENU_ID_MODE_LOCAL => {
-            set_transcription_mode(app, settings::TranscriptionMode::Local);
-        }
-        MENU_ID_REMOTE_SPEECH_ENABLED => {
-            let enabled = !app.state::<AppState>().current_settings().remote_speech_enabled;
-            set_remote_speech_enabled(app, enabled);
-        }
         MENU_ID_MIC_DEFAULT => {
             set_microphone(app, None);
         }
         _ => {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
                 copy_transcription_to_clipboard(app, transcription_id);
-            } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
-                set_local_model(app, model_key);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
                 set_microphone(app, Some(device_id));
@@ -206,108 +202,12 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 }
 
 #[cfg(target_os = "macos")]
-fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::TranscriptionMode) {
-    let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for transcription mode update: {err}");
-            return;
-        }
-    };
-    if current.transcription_mode == mode {
-        return;
+fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &settings::UserSettings) {
+    if let Err(err) = set_app_menu(app, settings) {
+        eprintln!("Failed to refresh app menu: {err}");
     }
-    current.transcription_mode = mode;
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            state.request_preflight_refresh();
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            state.emit_settings_changed(app, &saved);
-        }
-        Err(err) => eprintln!("Failed to update transcription mode: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
-    if model_manager::definition(model_key).is_none() {
-        eprintln!("Ignoring unknown model selection: {model_key}");
-        return;
-    }
-
-    match model_manager::check_model_status(app.clone(), model_key.to_string()) {
-        Ok(status) if status.installed => {}
-        Ok(_) => {
-            eprintln!("Model not installed: {model_key}");
-            return;
-        }
-        Err(err) => {
-            eprintln!("Failed to check model status for {model_key}: {err}");
-            return;
-        }
-    }
-
-    let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for model selection: {err}");
-            return;
-        }
-    };
-    if current.local_model == model_key {
-        return;
-    }
-    current.local_model = model_key.to_string();
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            state.emit_settings_changed(app, &saved);
-        }
-        Err(err) => eprintln!("Failed to update model selection: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn set_remote_speech_enabled(app: &AppHandle<AppRuntime>, enabled: bool) {
-    let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for remote speech update: {err}");
-            return;
-        }
-    };
-    if current.remote_speech_enabled == enabled {
-        return;
-    }
-    current.remote_speech_enabled = enabled;
-    if enabled && !remote_speech::is_configured(&current) {
-        remote_speech::emit_not_configured_toast(app);
-        return;
-    }
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            state.emit_settings_changed(app, &saved);
-        }
-        Err(err) => eprintln!("Failed to update remote speech setting: {err}"),
+    if let Err(err) = tray::refresh_tray_menu(app, settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
     }
 }
 
@@ -327,12 +227,7 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     current.microphone_device = device_id.map(|id| id.to_string());
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
+            refresh_speech_menus(app, &saved);
             state.emit_settings_changed(app, &saved);
         }
         Err(err) => eprintln!("Failed to update microphone selection: {err}"),

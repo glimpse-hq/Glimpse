@@ -1,7 +1,7 @@
 use crate::audio;
-use crate::model_manager;
 use crate::recent_transcriptions::build_recent_transcriptions_menu;
-use crate::settings::{TranscriptionMode, UserSettings};
+use crate::settings::UserSettings;
+use crate::speech::menu::{build_model_status_items, build_models_submenu};
 use crate::AppRuntime;
 use tauri::menu::{
     CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, MenuItemBuilder, PredefinedMenuItem,
@@ -13,10 +13,6 @@ use tauri::AppHandle;
 pub const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
 pub const MENU_ID_WEBSITE: &str = "menu_website";
 pub const MENU_ID_REPORT_ISSUE: &str = "menu_report_issue";
-pub const MENU_ID_MODE_LOCAL: &str = "menu_mode_local";
-pub const MENU_ID_MODE_CLOUD: &str = "menu_mode_cloud";
-pub const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
-pub const MENU_ID_REMOTE_SPEECH_ENABLED: &str = "menu_remote_speech_enabled";
 pub const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 pub const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 
@@ -31,69 +27,18 @@ pub fn build_app_menu(
         .item(&MenuItemBuilder::with_id(MENU_ID_CHECK_UPDATES, "Check for Updates...").build(app)?)
         .separator();
 
-    // Mode submenu
-    let mode_cloud = CheckMenuItemBuilder::with_id(MENU_ID_MODE_CLOUD, "Cloud (Coming soon)")
-        .enabled(false)
-        .checked(matches!(
-            settings.transcription_mode,
-            TranscriptionMode::Cloud
-        ))
-        .build(app)?;
-    let mode_local = CheckMenuItemBuilder::with_id(MENU_ID_MODE_LOCAL, "Local")
-        .checked(matches!(
-            settings.transcription_mode,
-            TranscriptionMode::Local
-        ))
-        .build(app)?;
-    let mode_submenu = SubmenuBuilder::new(app, "Mode")
-        .item(&mode_cloud)
-        .item(&mode_local)
-        .build()?;
-    app_submenu = app_submenu.item(&mode_submenu);
-
-    // Model submenu with nested engine submenus (only when in local mode)
-    if matches!(settings.transcription_mode, TranscriptionMode::Local) {
-        let mut model_submenu = SubmenuBuilder::new(app, "Models");
-        let models = model_manager::list_models();
-        let groups = model_manager::group_models_by_engine(&models);
-
-        for group in groups {
-            let mut engine_submenu = SubmenuBuilder::new(app, &group.name);
-            for model in &group.models {
-                let installed = model_manager::check_model_status(app.clone(), model.key.clone())
-                    .map(|s| s.installed)
-                    .unwrap_or(false);
-                let label = if installed {
-                    model.label.clone()
-                } else {
-                    format!("{} (Not downloaded)", model.label)
-                };
-                let item = CheckMenuItemBuilder::with_id(
-                    format!("{MENU_ID_MODEL_PREFIX}{}", model.key),
-                    label,
-                )
-                .enabled(installed)
-                .checked(installed && settings.local_model == model.key)
-                .build(app)?;
-                engine_submenu = engine_submenu.item(&item);
-            }
-            model_submenu = model_submenu.item(&engine_submenu.build()?);
-        }
-
-        app_submenu = app_submenu.item(&model_submenu.build()?);
-
-        if settings.remote_speech_enabled {
-            let remote_label = "Use remote speech".to_string();
-            let remote_speech =
-                CheckMenuItemBuilder::with_id(MENU_ID_REMOTE_SPEECH_ENABLED, remote_label)
-                    .checked(settings.remote_speech_enabled)
-                    .build(app)?;
-            let remote_submenu = SubmenuBuilder::new(app, "Remote Models")
-                .item(&remote_speech)
-                .build()?;
-            app_submenu = app_submenu.item(&remote_submenu);
-        }
+    let status_items = build_model_status_items(app, settings)?;
+    for item in &status_items {
+        app_submenu = app_submenu.item(item);
     }
+    if !status_items.is_empty() {
+        app_submenu = app_submenu.separator();
+    }
+
+    // TODO: add back Mode submenu when cloud is added.
+    // let mode_submenu = SubmenuBuilder::new(app, "Mode") ...
+
+    app_submenu = app_submenu.item(&build_models_submenu(app, settings)?);
 
     // Microphone submenu
     let mut mic_submenu = SubmenuBuilder::new(app, "Microphone");

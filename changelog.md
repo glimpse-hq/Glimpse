@@ -8,7 +8,7 @@
 ### Improvements
 - Recording should transcribe a little more accurately.
 - Shortcuts should feel easier to set and more reliable day to day.
-- You can turn remote speech on or off from the menu bar.
+- The model menu is cleaner now: it shows what Glimpse is using, lets you switch remote speech on or off, and only lists local models you've downloaded.
 - Start in background is on by default when Launch at Login is enabled.
 - More UI improvements.
 

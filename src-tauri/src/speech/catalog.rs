@@ -67,6 +67,10 @@ fn from_local(info: install::ModelInfo, installed: bool, loaded: bool) -> Speech
     }
 }
 
+pub(crate) fn configured_remote_model(settings: &UserSettings) -> Option<SpeechModel> {
+    remote::has_valid_config(settings).then(|| remote_entry(settings))
+}
+
 fn remote_entry(settings: &UserSettings) -> SpeechModel {
     let id = remote::speech_model_storage_label(settings, None);
     SpeechModel {

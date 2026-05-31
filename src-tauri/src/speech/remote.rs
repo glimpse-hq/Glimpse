@@ -9,14 +9,17 @@ use tauri::AppHandle;
 use crate::{
     model_manager,
     settings::UserSettings,
-    toast, AppRuntime,
+    toast,
     transcription_api::{normalize_transcript, TranscriptionSuccess},
+    AppRuntime,
 };
 
+pub(crate) fn has_valid_config(settings: &UserSettings) -> bool {
+    !settings.remote_speech_endpoint.trim().is_empty() && resolved_model_name(settings).is_some()
+}
+
 pub(crate) fn is_configured(settings: &UserSettings) -> bool {
-    settings.remote_speech_enabled
-        && !settings.remote_speech_endpoint.trim().is_empty()
-        && resolved_model_name(settings).is_some()
+    settings.remote_speech_enabled && has_valid_config(settings)
 }
 
 pub(crate) fn resolved_endpoint(settings: &UserSettings) -> String {
@@ -47,7 +50,10 @@ pub(crate) fn resolve_model(provider: &str, model: &str) -> Option<String> {
 }
 
 pub(crate) fn resolved_model_name(settings: &UserSettings) -> Option<String> {
-    resolve_model(&settings.remote_speech_provider, &settings.remote_speech_model)
+    resolve_model(
+        &settings.remote_speech_provider,
+        &settings.remote_speech_model,
+    )
 }
 
 pub(crate) async fn transcribe_file(
@@ -188,7 +194,9 @@ pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>) {
         toast::Payload {
             toast_type: "warning".to_string(),
             title: Some("Speech Provider".to_string()),
-            message: "Add an endpoint and model in Settings before enabling a remote speech provider.".to_string(),
+            message:
+                "Add an endpoint and model in Settings before enabling a remote speech provider."
+                    .to_string(),
             auto_dismiss: Some(true),
             duration: None,
             retry_id: None,

@@ -1,6 +1,7 @@
 pub mod catalog;
 pub mod engine;
 pub mod install;
+pub mod menu;
 pub mod remote;
 
 use std::path::Path;
