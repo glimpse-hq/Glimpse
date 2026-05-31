@@ -5,6 +5,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { activateLocale, i18n } from "../i18n";
 import { settingsKeys, useSettings } from "../features/settings/queries";
+import { modelKeys } from "../features/settings/models-queries";
 import { transcriptionKeys } from "../features/transcriptions/queries";
 import { updateKeys } from "../features/updates/queries";
 import type { StoredSettings } from "../types";
@@ -45,6 +46,7 @@ function QuerySyncBridge() {
 
     register<StoredSettings>("settings:changed", (settings) => {
       queryClient.setQueryData(settingsKeys.detail(), settings);
+      queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
     });
 
     if (isSettingsWindow) {

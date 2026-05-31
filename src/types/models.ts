@@ -15,6 +15,27 @@ export type ModelInfo = {
     }[];
 };
 
+export type SpeechModel = {
+    id: string;
+    key: string;
+    label: string;
+    description: string;
+    size_mb: number;
+    file_count: number;
+    engine_id: string;
+    engine: string;
+    variant: string;
+    tags: string[];
+    capabilities: string[];
+    supported_languages: {
+        code: string;
+        name: string;
+    }[];
+    remote: boolean;
+    installed: boolean;
+    loaded: boolean;
+};
+
 export type ModelStatus = {
     key: string;
     installed: boolean;
@@ -54,6 +75,7 @@ export type LocalApiStatus = {
     api_key_required: boolean;
     config_id: number | null;
     cors: boolean;
+    requests_total: number;
     logs: LocalApiLogEntry[];
 };
 

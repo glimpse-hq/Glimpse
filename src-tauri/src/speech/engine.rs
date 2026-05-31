@@ -2,22 +2,14 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::Result;
-use glimpse_speech::{
-    service::{AudioInput, SpeechConfig, SpeechService, TimestampGranularity, TranscribeRequest},
-    TranscriptionSegment,
-};
+use glimpse_speech::service::{AudioInput, SpeechConfig, SpeechService, TranscribeRequest};
+use glimpse_speech::TimestampGranularity;
 use parking_lot::{Condvar, Mutex};
 
 use crate::{
     model_manager::{self, ReadyModel},
     transcription_api::{normalize_transcript, TranscriptionSuccess},
 };
-
-#[derive(Debug)]
-pub struct TranscriptionSuccessWithSegments {
-    pub transcript: String,
-    pub segments: Option<Vec<TranscriptionSegment>>,
-}
 
 const IDLE_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
@@ -109,6 +101,8 @@ impl LocalTranscriber {
         Ok(TranscriptionSuccess {
             transcript: normalize_transcript(&result.text),
             speech_model: Some(model_manager::model_label(&model.key)),
+            segments: None,
+            words: None,
         })
     }
 
@@ -119,13 +113,15 @@ impl LocalTranscriber {
         sample_rate: u32,
         dictionary: &[String],
         language: Option<&str>,
-    ) -> Result<TranscriptionSuccessWithSegments> {
+    ) -> Result<TranscriptionSuccess> {
         let result =
             self.transcribe_internal(model, samples, sample_rate, dictionary, language, true)?;
 
-        Ok(TranscriptionSuccessWithSegments {
+        Ok(TranscriptionSuccess {
             transcript: normalize_transcript(&result.text),
+            speech_model: Some(model_manager::model_label(&model.key)),
             segments: result.segments,
+            words: None,
         })
     }
 
@@ -137,7 +133,7 @@ impl LocalTranscriber {
         dictionary: &[String],
         language: Option<&str>,
         with_segments: bool,
-    ) -> Result<glimpse_speech::service::TranscribeResponse> {
+    ) -> Result<glimpse_speech::Transcription> {
         let response = self.service.transcribe(TranscribeRequest {
             audio: AudioInput::PcmI16 {
                 samples: samples.to_vec(),
@@ -176,5 +172,9 @@ impl LocalTranscriber {
         let mut last_used = self.last_used.lock();
         *last_used = None;
         self.idle_wait.notify_one();
+    }
+
+    pub fn loaded_model_id(&self) -> Option<String> {
+        self.service.loaded_model_id()
     }
 }

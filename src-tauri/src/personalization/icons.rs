@@ -9,6 +9,10 @@ use tauri::{AppHandle, Manager};
 
 use crate::{platform, AppRuntime};
 
+const WEBSITE_ICON_USER_AGENT: &str =
+    concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
+const WEBSITE_ICON_MAX_BYTES: usize = 512 * 1024;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledApp {
     pub name: String,
@@ -105,18 +109,21 @@ pub(crate) fn should_refresh_icon(source: &Path, cached: &Path) -> bool {
     }
 }
 
-fn fetch_website_icon_bytes(url: String, client: &reqwest::blocking::Client) -> Option<Vec<u8>> {
-    let response = client.get(url).send().ok()?;
-    if !response.status().is_success() {
-        return None;
+fn is_private_or_local_host(site: &str) -> bool {
+    let host = site.trim().trim_end_matches('.').to_ascii_lowercase();
+    if host.is_empty() || host == "localhost" {
+        return true;
     }
-
-    let bytes = response.bytes().ok()?;
-    if bytes.is_empty() || bytes.len() > 512 * 1024 {
-        return None;
+    if host.parse::<std::net::IpAddr>().is_ok() {
+        return true;
     }
-
-    Some(bytes.to_vec())
+    if !host.contains('.') {
+        return true;
+    }
+    matches!(
+        host.rsplit('.').next(),
+        Some("local" | "internal" | "lan" | "home" | "intranet" | "corp" | "localdomain")
+    )
 }
 
 fn fetch_and_cache_website_icon(
@@ -124,8 +131,19 @@ fn fetch_and_cache_website_icon(
     cache_dir: &Path,
     client: &reqwest::blocking::Client,
 ) -> Option<PathBuf> {
-    let bytes = fetch_website_icon_bytes(format!("https://{site}/favicon.ico"), client)
-        .or_else(|| fetch_website_icon_bytes(format!("http://{site}/favicon.ico"), client))?;
+    if is_private_or_local_host(site) {
+        return None;
+    }
+    let url = format!("https://icons.duckduckgo.com/ip3/{site}.ico");
+    let response = client.get(&url).send().ok()?;
+    if !response.status().is_success() {
+        return None;
+    }
+
+    let bytes = response.bytes().ok()?;
+    if bytes.is_empty() || bytes.len() > WEBSITE_ICON_MAX_BYTES {
+        return None;
+    }
 
     let icon_path = website_icon_cache_file_path(site, cache_dir);
     std::fs::write(&icon_path, &bytes).ok()?;
@@ -139,6 +157,7 @@ fn warm_website_icon_cache_in_background(pending_sites: Vec<String>, cache_dir: 
 
     std::thread::spawn(move || {
         let client = match reqwest::blocking::Client::builder()
+            .user_agent(WEBSITE_ICON_USER_AGENT)
             .timeout(Duration::from_secs(4))
             .connect_timeout(Duration::from_secs(3))
             .build()
@@ -151,6 +170,23 @@ fn warm_website_icon_cache_in_background(pending_sites: Vec<String>, cache_dir: 
             let _ = fetch_and_cache_website_icon(&site, &cache_dir, &client);
         }
     });
+}
+
+fn prune_orphan_website_icons(live_sites: &[String], cache_dir: &Path) {
+    let valid: HashSet<PathBuf> = live_sites
+        .iter()
+        .map(|site| website_icon_cache_file_path(site, cache_dir))
+        .collect();
+
+    let Ok(entries) = std::fs::read_dir(cache_dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|ext| ext.to_str()) == Some("ico") && !valid.contains(&path) {
+            let _ = std::fs::remove_file(&path);
+        }
+    }
 }
 
 pub fn list_website_icons(
@@ -166,14 +202,12 @@ pub fn list_website_icons(
         if seen.insert(site.clone()) {
             normalized.push(site);
         }
-        if normalized.len() >= 256 {
-            break;
-        }
     }
 
     let Some(cache_dir) = website_icon_cache_dir(&app) else {
         return Ok(normalized
             .into_iter()
+            .take(256)
             .map(|site| WebsiteIcon {
                 site,
                 icon_path: None,
@@ -181,9 +215,11 @@ pub fn list_website_icons(
             .collect());
     };
 
+    prune_orphan_website_icons(&normalized, &cache_dir);
+
     let mut pending_sites = Vec::new();
-    let mut icons = Vec::with_capacity(normalized.len());
-    for site in normalized {
+    let mut icons = Vec::with_capacity(normalized.len().min(256));
+    for site in normalized.into_iter().take(256) {
         let cached = website_icon_cache_file_path(&site, &cache_dir);
         let icon_path = if cached.exists() {
             Some(cached.to_string_lossy().to_string())

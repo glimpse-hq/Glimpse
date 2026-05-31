@@ -582,6 +582,7 @@ impl StorageManager {
                 error_message TEXT,
                 transcript TEXT,
                 segments TEXT,
+                words TEXT,
                 duration_seconds REAL NOT NULL,
                 file_size_bytes INTEGER NOT NULL,
                 original_format TEXT NOT NULL,
@@ -655,6 +656,12 @@ impl StorageManager {
             "library_items",
             "store_original",
             "ALTER TABLE library_items ADD COLUMN store_original INTEGER NOT NULL DEFAULT 0",
+        )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "words",
+            "ALTER TABLE library_items ADD COLUMN words TEXT",
         )?;
         Ok(())
     }

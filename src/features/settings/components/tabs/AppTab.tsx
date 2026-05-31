@@ -2,7 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, CornerDownRight, Loader2 } from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -56,13 +56,15 @@ const recordingPrunePolicySeverity: Record<RecordingPrunePolicy, number> = {
 const inlineAutoDeleteDropdownProps = {
   className: "w-fit",
   buttonClassName:
-    "!h-[22px] !w-auto !rounded-md !border-transparent !bg-transparent !px-1 !py-0 ui-text-label-strong hover:!bg-surface-elevated focus:!border-transparent",
-  valueClassName: "text-left",
+    "!h-[22px] !w-auto !rounded-md !border-transparent !bg-transparent !px-0.5 !py-0 ui-text-label-strong focus:!border-transparent",
+  valueClassName:
+    "text-left underline underline-offset-[3px] decoration-content-muted hover:decoration-content-primary transition-colors",
   optionClassName: "!px-2 !py-1.5",
   optionLabelClassName: "ui-text-meta font-medium whitespace-nowrap",
   menuClassName: "w-max min-w-full !right-auto",
   truncate: false as const,
-  fitButtonToWidestOption: true as const,
+  fitButtonToWidestOption: false as const,
+  hideChevron: true as const,
 };
 
 const PermissionStatus = ({ granted }: { granted: boolean | null }) => {
@@ -121,6 +123,8 @@ type AppTabProps = {
   onAutoUpdateEnabledChange: (enabled: boolean) => void;
   autoLaunchEnabled: boolean;
   onAutoLaunchEnabledChange: (enabled: boolean) => void;
+  startInBackground: boolean;
+  onStartInBackgroundChange: (enabled: boolean) => void;
   autoDeleteTarget: AutoDeleteTarget;
   onAutoDeleteTargetChange: (target: AutoDeleteTarget) => void;
   autoDeleteDuration: RecordingPrunePolicy;
@@ -148,6 +152,8 @@ const AppTab = ({
   onAutoUpdateEnabledChange,
   autoLaunchEnabled,
   onAutoLaunchEnabledChange,
+  startInBackground,
+  onStartInBackgroundChange,
   autoDeleteTarget,
   onAutoDeleteTargetChange,
   autoDeleteDuration,
@@ -810,12 +816,33 @@ const AppTab = ({
                     })}
                   />
                 </div>
-                <span className="ui-text-micro ui-color-disabled block mt-0.5">
-                  {t({
-                    id: "settings.app.auto_launch.body",
-                    message: "starts Glimpse automatically when you sign in.",
-                  })}
-                </span>
+                <div className="flex items-center justify-between gap-2 pl-3 mt-1.5">
+                  <div className="flex items-center gap-1.5 ui-text-meta text-content-secondary">
+                    <CornerDownRight
+                      size={10}
+                      className="text-content-disabled"
+                      aria-hidden="true"
+                    />
+                    <span>
+                      {t({
+                        id: "settings.app.start_in_background",
+                        message: "Start in background",
+                      })}
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    enabled={autoLaunchEnabled && startInBackground}
+                    disabled={!autoLaunchEnabled}
+                    onToggle={() =>
+                      onStartInBackgroundChange(!startInBackground)
+                    }
+                    ariaLabel={t({
+                      id: "settings.app.start_in_background.toggle_aria",
+                      message: "Toggle start in background",
+                    })}
+                    size="xs"
+                  />
+                </div>
               </div>
               <div className="relative px-2 py-1.5 overflow-visible">
                 <div

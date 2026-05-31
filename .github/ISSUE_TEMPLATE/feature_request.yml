@@ -4,45 +4,31 @@ title: "[Feature Request] "
 labels: ["enhancement"]
 body:
   - type: textarea
-    id: problem
+    id: request
     attributes:
-      label: Is your feature request related to a problem?
-      description: A clear and concise description of what the problem is.
-
-  - type: textarea
-    id: solution
-    attributes:
-      label: Describe the solution you'd like
-      description: A clear and concise description of what you want to happen.
+      label: What would you like Glimpse to do?
+      description: Describe the feature or change you want.
     validations:
       required: true
 
   - type: textarea
-    id: alternatives
+    id: why
     attributes:
-      label: Alternatives you've considered
-      description: A clear and concise description of any alternative solutions or features you've considered.
+      label: Why would this be useful?
+      description: What problem does it solve, or what workflow would it improve?
 
   - type: dropdown
     id: local-first
     attributes:
-      label: Does this feature require cloud processing?
+      label: Would this need cloud processing?
       description: Glimpse prioritizes local-first processing.
       options:
-        - "No — can run fully locally"
-        - "Yes — requires cloud"
         - "Unsure"
-    validations:
-      required: true
-
-  - type: textarea
-    id: local-examples
-    attributes:
-      label: Local-first examples (if applicable)
-      description: Are there existing open-source examples of this working locally? If so, link them here.
+        - "No, it can run fully locally"
+        - "Yes, it likely needs cloud processing"
 
   - type: textarea
     id: context
     attributes:
-      label: Additional context
-      description: Add any other context or screenshots about the feature request here.
+      label: Anything else?
+      description: Examples, screenshots, links, or extra context.

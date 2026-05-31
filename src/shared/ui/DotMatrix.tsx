@@ -12,6 +12,7 @@ interface DotMatrixProps extends React.HTMLAttributes<HTMLDivElement> {
     animated?: boolean;
     morphOnActive?: boolean;
     activeScale?: number;
+    snapDots?: boolean;
 }
 
 const DotMatrix: React.FC<DotMatrixProps> = ({
@@ -25,10 +26,14 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
     animated = false,
     morphOnActive = false,
     activeScale = 1,
+    snapDots = false,
     ...rest
 }) => {
     const dots = useMemo(() => {
         const total = rows * cols;
+        const dotTransition = snapDots
+            ? "none"
+            : "border-radius 0.4s ease-out, opacity 0.3s ease-out, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
         return Array.from({ length: total }).map((_, i) => {
             const isActive = activeDots.includes(i);
             const DotComponent = animated ? motion.div : "div";
@@ -47,7 +52,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
                         opacity: isActive ? 1 : 0.15,
                         borderRadius: borderRadius,
                         transform: `scale(${scale})`,
-                        transition: "border-radius 0.4s ease-out, opacity 0.3s ease-out, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        transition: dotTransition,
                     }}
                     {...(animated && isActive && !morphOnActive ? {
                         initial: { scale: 0.8, opacity: 0 },
@@ -57,7 +62,7 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
                 />
             );
         });
-    }, [rows, cols, activeDots, dotSize, color, animated, morphOnActive, activeScale]);
+    }, [rows, cols, activeDots, dotSize, color, animated, morphOnActive, activeScale, snapDots]);
 
     return (
         <div

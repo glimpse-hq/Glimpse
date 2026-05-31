@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-type ToggleSwitchSize = "sm" | "md";
+type ToggleSwitchSize = "xs" | "sm" | "md";
 
 type ToggleSwitchProps = {
   enabled: boolean;
@@ -11,6 +11,12 @@ type ToggleSwitchProps = {
 };
 
 const sizeConfig = {
+  xs: {
+    trackWidth: 24,
+    trackHeight: 14,
+    thumbSize: 10,
+    padding: 2,
+  },
   sm: {
     trackWidth: 28,
     trackHeight: 16,

@@ -5,10 +5,7 @@ import { X } from "lucide-react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../../../shared/lib/modelCapabilities";
-import type { LibraryItem, ModelInfo } from "../../../types";
-
-const isTimestampSupported = (model?: ModelInfo | null) =>
-    hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
+import type { LibraryItem, SpeechModel } from "../../../types";
 
 type LibraryRetranscribeOptions = {
     model_key: string;
@@ -17,7 +14,7 @@ type LibraryRetranscribeOptions = {
 
 type LibraryRetranscribeModalProps = {
     item: LibraryItem;
-    models: ModelInfo[];
+    models: SpeechModel[];
     onCancel: () => void;
     onConfirm: (options: LibraryRetranscribeOptions) => Promise<void>;
 };
@@ -33,24 +30,34 @@ const LibraryRetranscribeModal = ({
     const [showTimestamps, setShowTimestamps] = useState(item.show_timestamps);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const modelOptions: DropdownOption<string>[] = useMemo(() => {
-        return models.map((model) => ({
-            value: model.key,
-            label: model.label,
-            description: model.description,
-        }));
-    }, [models]);
+    const modelOptions: DropdownOption<string>[] = useMemo(
+        () =>
+            models.map((model) => ({
+                value: model.id,
+                label: model.label,
+                description: model.remote
+                    ? t({
+                        id: "library.retranscribe.remote_provider",
+                        message: "Remote provider",
+                    })
+                    : model.description,
+            })),
+        [models, t],
+    );
 
     useEffect(() => {
-        const installed = new Set(models.map((model) => model.key));
-        const fallback = modelOptions[0]?.value ?? "";
-        const nextModel = installed.has(item.speech_model) ? item.speech_model : fallback;
+        const available = new Set(modelOptions.map((option) => option.value));
+        const nextModel = available.has(item.speech_model)
+            ? item.speech_model
+            : (modelOptions[0]?.value ?? "");
         setSelectedModelKey(nextModel);
         setShowTimestamps(item.show_timestamps);
-    }, [item.id, item.speech_model, item.show_timestamps, modelOptions, models]);
+    }, [item.id, item.speech_model, item.show_timestamps, modelOptions]);
 
-    const selectedModel = models.find((model) => model.key === selectedModelKey) ?? null;
-    const timestampsSupported = isTimestampSupported(selectedModel);
+    const selectedModel = models.find((model) => model.id === selectedModelKey) ?? null;
+    const timestampsSupported =
+        Boolean(selectedModel?.remote) ||
+        hasModelCapability(selectedModel, MODEL_CAPABILITY_TIMESTAMPS);
 
     useEffect(() => {
         if (!timestampsSupported) {
@@ -109,7 +116,7 @@ const LibraryRetranscribeModal = ({
                 </div>
 
                 <div className="px-5 py-4 space-y-4">
-                    {models.length === 0 && (
+                    {modelOptions.length === 0 && (
                         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
                             {t({
                                 id: "library.retranscribe.no_models",

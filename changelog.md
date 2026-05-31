@@ -1,3 +1,23 @@
+0.9.1
+
+### Features
+- If you use Launch at Login, you can now choose to start in the background so Glimpse opens to the menu bar instead of the main window. (#63)
+- You can now use online transcription services in Settings → Providers, not just local models.
+- When the API server is running, the sidebar shows you it's active along with the address and how many requests it's handled.
+
+### Improvements
+- Recording should transcribe a little more accurately.
+- Shortcuts should feel easier to set and more reliable day to day.
+- The model menu is cleaner now: it shows what Glimpse is using, lets you switch remote speech on or off, and only lists local models you've downloaded.
+- Start in background is on by default when Launch at Login is enabled.
+- More UI improvements.
+
+### Fixes
+- Fixed library error cards being hidden under other cards.
+- Fixed website favicons not showing in Personalization.
+- Fixed opening What's New from the menu bar before Settings was ready.
+
+---
 0.9.0
 
 ### Features

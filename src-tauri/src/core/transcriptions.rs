@@ -68,7 +68,7 @@ pub(crate) fn retry_llm_cleanup(
     if !llm_cleanup::is_llm_available(&settings) {
         return Err("Choose a language model in Settings -> Models.".to_string());
     }
-    let llm_model = llm_cleanup::resolved_model_name(&settings);
+    let llm_model = llm_cleanup::resolved_model_label(&settings);
 
     let text_to_clean = record.raw_text.unwrap_or(record.text);
 
@@ -109,11 +109,12 @@ pub(crate) fn retry_llm_cleanup(
                 );
             }
             Err(err) => {
+                let message = llm_cleanup::llm_issue_message(&err);
                 warn!(error = ?err, transcription_id = %record_id, "cleanup failed");
                 let _ = app_handle.emit(
                     EVENT_TRANSCRIPTION_ERROR,
                     TranscriptionErrorPayload {
-                        message: format!("Cleanup failed: {err}"),
+                        message: format!("Cleanup failed: {message}"),
                         stage: "llm_cleanup".to_string(),
                     },
                 );

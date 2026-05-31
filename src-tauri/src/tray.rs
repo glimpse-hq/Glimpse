@@ -2,12 +2,14 @@ use crate::recent_transcriptions::{
     build_recent_transcriptions_menu, copy_transcription_to_clipboard,
     MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
 };
-use crate::settings::{TranscriptionMode, UserSettings};
-use crate::{
-    audio, model_manager, AppRuntime, AppState, EVENT_SETTINGS_CHANGED, FEEDBACK_URL,
-    SETTINGS_WINDOW_LABEL,
+use crate::settings::UserSettings;
+use crate::speech::menu::{
+    build_model_status_items, build_models_submenu, handle_speech_menu_event,
 };
-use std::sync::atomic::Ordering;
+use crate::{audio, AppRuntime, AppState, FEEDBACK_URL, SETTINGS_WINDOW_LABEL};
+use parking_lot::Mutex;
+use serde::Serialize;
+use std::sync::{atomic::Ordering, OnceLock};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
@@ -16,20 +18,108 @@ use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Windo
 use tauri::ActivationPolicy;
 use tauri_plugin_opener::OpenerExt;
 
-// On macOS, share constants with the app menu; on other platforms, define locally
+// On macOS, share mic constants with the app menu; on other platforms, define locally
 #[cfg(target_os = "macos")]
-use crate::platform::macos::menu::{MENU_ID_MODEL_PREFIX, MENU_ID_MODE_CLOUD, MENU_ID_MODE_LOCAL};
+use crate::platform::macos::menu::{MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX};
 #[cfg(not(target_os = "macos"))]
-const MENU_ID_MODE_LOCAL: &str = "menu_mode_local";
-#[cfg(not(target_os = "macos"))]
-const MENU_ID_MODE_CLOUD: &str = "menu_mode_cloud";
-#[cfg(not(target_os = "macos"))]
-const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
-
 const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
+#[cfg(not(target_os = "macos"))]
 const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 const MENU_ID_FEEDBACK: &str = "menu_send_feedback";
 const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
+pub(crate) const EVENT_SETTINGS_RENDERER_READY: &str = "settings:renderer_ready";
+
+const EVENT_NAVIGATE_ABOUT: &str = "navigate:about";
+const EVENT_NAVIGATE_MODELS: &str = "navigate:models";
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct SettingsNavigationPayload {
+    open_whats_new: bool,
+}
+
+#[derive(Clone, Copy)]
+enum SettingsNavigationTarget {
+    About,
+    Models,
+}
+
+#[derive(Default)]
+struct PendingSettingsNavigation {
+    renderer_ready: bool,
+    target: Option<SettingsNavigationTarget>,
+    open_whats_new: bool,
+}
+
+fn pending_settings_navigation() -> &'static Mutex<PendingSettingsNavigation> {
+    static PENDING: OnceLock<Mutex<PendingSettingsNavigation>> = OnceLock::new();
+    PENDING.get_or_init(|| Mutex::new(PendingSettingsNavigation::default()))
+}
+
+fn flush_pending_settings_navigation(app: &AppHandle<AppRuntime>) {
+    let (target, open_whats_new) = {
+        let mut pending = pending_settings_navigation().lock();
+        if !pending.renderer_ready {
+            return;
+        }
+        (
+            pending.target.take(),
+            std::mem::take(&mut pending.open_whats_new),
+        )
+    };
+
+    match target {
+        Some(SettingsNavigationTarget::About) => {
+            let _ = app.emit(
+                EVENT_NAVIGATE_ABOUT,
+                SettingsNavigationPayload { open_whats_new },
+            );
+        }
+        Some(SettingsNavigationTarget::Models) => {
+            let _ = app.emit(EVENT_NAVIGATE_MODELS, ());
+        }
+        None => {}
+    }
+}
+
+pub(crate) fn mark_settings_renderer_ready(app: &AppHandle<AppRuntime>) {
+    pending_settings_navigation().lock().renderer_ready = true;
+    flush_pending_settings_navigation(app);
+}
+
+fn queue_settings_navigation(target: SettingsNavigationTarget, open_whats_new: bool) {
+    let mut pending = pending_settings_navigation().lock();
+    pending.target = Some(target);
+    pending.open_whats_new = pending.open_whats_new || open_whats_new;
+}
+
+fn open_settings_navigation(
+    app: &AppHandle<AppRuntime>,
+    target: SettingsNavigationTarget,
+    open_whats_new: bool,
+) -> tauri::Result<()> {
+    queue_settings_navigation(target, open_whats_new);
+    if let Err(err) = toggle_settings_window(app) {
+        let mut pending = pending_settings_navigation().lock();
+        pending.target = None;
+        pending.open_whats_new = false;
+        return Err(err);
+    }
+    flush_pending_settings_navigation(app);
+    Ok(())
+}
+
+pub(crate) fn open_settings_about(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::About, false)
+}
+
+pub(crate) fn open_settings_models(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::Models, false)
+}
+
+pub(crate) fn open_settings_whats_new(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::About, true)
+}
 
 fn build_tray_menu(
     app: &AppHandle<AppRuntime>,
@@ -46,56 +136,18 @@ fn build_tray_menu(
     )?;
     menu = menu.item(&check_updates);
     menu = menu.separator();
-
-    let mode_cloud = CheckMenuItemBuilder::with_id(MENU_ID_MODE_CLOUD, "Cloud (Coming soon)")
-        .enabled(false)
-        .checked(matches!(
-            settings.transcription_mode,
-            TranscriptionMode::Cloud
-        ))
-        .build(app)?;
-    let mode_local = CheckMenuItemBuilder::with_id(MENU_ID_MODE_LOCAL, "Local")
-        .checked(matches!(
-            settings.transcription_mode,
-            TranscriptionMode::Local
-        ))
-        .build(app)?;
-    let mode_submenu = SubmenuBuilder::new(app, "Mode")
-        .item(&mode_cloud)
-        .item(&mode_local)
-        .build()?;
-    menu = menu.item(&mode_submenu);
-
-    if matches!(settings.transcription_mode, TranscriptionMode::Local) {
-        let mut model_submenu = SubmenuBuilder::new(app, "Models");
-        let models = model_manager::list_models();
-        let groups = model_manager::group_models_by_engine(&models);
-
-        for group in groups {
-            let mut engine_submenu = SubmenuBuilder::new(app, &group.name);
-            for model in &group.models {
-                let installed = model_manager::check_model_status(app.clone(), model.key.clone())
-                    .map(|s| s.installed)
-                    .unwrap_or(false);
-                let label = if installed {
-                    model.label.clone()
-                } else {
-                    format!("{} (Not downloaded)", model.label)
-                };
-                let item = CheckMenuItemBuilder::with_id(
-                    format!("{MENU_ID_MODEL_PREFIX}{}", model.key),
-                    label,
-                )
-                .enabled(installed)
-                .checked(installed && settings.local_model == model.key)
-                .build(app)?;
-                engine_submenu = engine_submenu.item(&item);
-            }
-            model_submenu = model_submenu.item(&engine_submenu.build()?);
-        }
-
-        menu = menu.item(&model_submenu.build()?);
+    let status_items = build_model_status_items(app, settings)?;
+    for item in &status_items {
+        menu = menu.item(item);
     }
+    if !status_items.is_empty() {
+        menu = menu.separator();
+    }
+
+    // TODO: add back Mode submenu when cloud is added.
+    // let mode_submenu = SubmenuBuilder::new(app, "Mode") ...
+
+    menu = menu.item(&build_models_submenu(app, settings)?);
 
     let mut mic_submenu = SubmenuBuilder::new(app, "Microphone");
     let default_mic = CheckMenuItemBuilder::with_id(MENU_ID_MIC_DEFAULT, "System Default")
@@ -175,69 +227,13 @@ pub(crate) fn refresh_tray_menu(
     Ok(())
 }
 
-fn set_transcription_mode_from_menu(app: &AppHandle<AppRuntime>, mode: TranscriptionMode) {
-    let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
-    if settings.transcription_mode == mode {
-        return;
+fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
+    if let Err(err) = refresh_tray_menu(app, settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
     }
-    settings.transcription_mode = mode;
-    match state.persist_settings(settings.clone()) {
-        Ok(saved) => {
-            state.request_preflight_refresh();
-            if let Err(err) = refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update transcription mode: {err}"),
-    }
-}
-
-fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) {
-    if model_manager::definition(model_key).is_none() {
-        eprintln!("Ignoring unknown model selection: {model_key}");
-        return;
-    }
-
-    match model_manager::check_model_status(app.clone(), model_key.to_string()) {
-        Ok(status) if status.installed => {}
-        Ok(_) => {
-            eprintln!("Model not installed: {model_key}");
-            return;
-        }
-        Err(err) => {
-            eprintln!("Failed to check model status for {model_key}: {err}");
-            return;
-        }
-    }
-
-    let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
-    if settings.local_model == model_key {
-        return;
-    }
-    settings.local_model = model_key.to_string();
-    match state.persist_settings(settings.clone()) {
-        Ok(saved) => {
-            if let Err(err) = refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
-            }
-        }
-        Err(err) => eprintln!("Failed to update model selection: {err}"),
+    #[cfg(target_os = "macos")]
+    if let Err(err) = crate::set_app_menu(app, settings) {
+        eprintln!("Failed to refresh app menu: {err}");
     }
 }
 
@@ -250,14 +246,8 @@ fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>
     settings.microphone_device = device_id.map(|id| id.to_string());
     match state.persist_settings(settings.clone()) {
         Ok(saved) => {
-            if let Err(err) = refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            #[cfg(target_os = "macos")]
-            if let Err(err) = crate::set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
+            refresh_speech_menus(app, &saved);
+            if let Err(err) = app.emit(crate::EVENT_SETTINGS_CHANGED, &saved) {
                 eprintln!("Failed to emit settings change: {err}");
             }
         }
@@ -266,11 +256,12 @@ fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>
 }
 
 fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
+    if let Some(saved) = handle_speech_menu_event(app, id) {
+        refresh_speech_menus(app, &saved);
+        return;
+    }
+
     match id {
-        MENU_ID_MODE_LOCAL => set_transcription_mode_from_menu(app, TranscriptionMode::Local),
-        MENU_ID_MODE_CLOUD => {
-            eprintln!("Cloud mode is coming soon; tray toggle disabled");
-        }
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
         MENU_ID_FEEDBACK => {
             if let Err(err) = app.opener().open_url(FEEDBACK_URL, None::<&str>) {
@@ -278,16 +269,13 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             }
         }
         MENU_ID_CHECK_UPDATES => {
-            if let Err(err) = toggle_settings_window(app) {
+            if let Err(err) = open_settings_about(app) {
                 eprintln!("Failed to open settings for update check: {err}");
             }
-            let _ = app.emit("navigate:about", ());
         }
         _ => {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
                 copy_transcription_to_clipboard(app, transcription_id);
-            } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
-                set_local_model_from_menu(app, model_key);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
                 set_microphone_from_menu(app, Some(device_id));

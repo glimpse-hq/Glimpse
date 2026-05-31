@@ -22,8 +22,7 @@ import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEv
 import { useSettings } from "../../settings/queries";
 import {
     modelKeys as settingsModelKeys,
-    useModelCatalog,
-    useModelStatuses,
+    useSpeechModels,
 } from "../../settings/models-queries";
 import LibraryImportModal from "./LibraryImportModal";
 import LibraryCard from "./LibraryCard";
@@ -98,15 +97,7 @@ const LibraryView = ({
     } = useLibraryItemsQuery(filter, isActive);
 
     const { data: availableTags = [] } = useLibraryTags(isActive);
-    const { data: modelCatalog = [] } = useModelCatalog(isActive);
-    const modelCatalogKeys = useMemo(
-        () => modelCatalog.map((model) => model.key),
-        [modelCatalog],
-    );
-    const { statusByModel: modelStatus } = useModelStatuses(
-        modelCatalogKeys,
-        isActive,
-    );
+    const { data: speechModels = [] } = useSpeechModels(isActive);
     const { data: defaultModelKey = "" } = useSettings(
         (settings) => settings.local_model,
         isActive,
@@ -153,24 +144,21 @@ const LibraryView = ({
         }
     }, [deleteItemMutation, invalidateTags]);
 
-    const installedModels = useMemo(() => {
-        return modelCatalog.filter((model) => modelStatus[model.key]?.installed);
-    }, [modelCatalog, modelStatus]);
+    const installedModels = useMemo(
+        () => speechModels.filter((model) => model.installed),
+        [speechModels],
+    );
 
-    const refreshModelStatus = useCallback((modelKey: string) => {
+    const refreshSpeechModels = useCallback(() => {
         void queryClient.invalidateQueries({
-            queryKey: settingsModelKeys.status(modelKey),
+            queryKey: settingsModelKeys.speech(),
         });
     }, [queryClient]);
 
     useModelDownloadEvents({
         enabled: isActive,
-        onComplete: ({ model }) => {
-            refreshModelStatus(model);
-        },
-        onError: ({ model }) => {
-            refreshModelStatus(model);
-        },
+        onComplete: refreshSpeechModels,
+        onError: refreshSpeechModels,
     });
 
     useEffect(() => {
@@ -268,7 +256,10 @@ const LibraryView = ({
         setEditingTagId(null);
     };
 
-    const selectedModel = installedModels.find((model) => model.key === defaultModelKey) ?? installedModels[0];
+    const defaultSpeechModelKey =
+        installedModels.find((model) => model.remote)?.id ??
+        installedModels.find((model) => model.key === defaultModelKey)?.id ??
+        installedModels[0]?.id;
     const statusFilterValue = useMemo(() => {
         if (["transcribing", "importing", "pending"].includes(statusFilter)) {
             return "active";
@@ -511,7 +502,7 @@ const LibraryView = ({
                     <LibraryImportModal
                         paths={pendingImportPaths}
                         models={installedModels}
-                        defaultModelKey={selectedModel?.key}
+                        defaultModelKey={defaultSpeechModelKey}
                         onCancel={() => onSetImportPaths(null)}
                         onConfirm={async (paths, options) => {
                             const supported = paths.filter((path) =>

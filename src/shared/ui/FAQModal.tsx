@@ -2,7 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 interface FAQModalProps {
     isOpen: boolean;
@@ -29,6 +29,26 @@ const FaqLink = ({ href, children }: { href: string; children: ReactNode }) => (
 
 const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
     const { t } = useLingui();
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const [showTopFade, setShowTopFade] = useState(false);
+    const [showBottomFade, setShowBottomFade] = useState(false);
+
+    const updateScrollFades = useCallback(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setShowTopFade(el.scrollTop > 1);
+        setShowBottomFade(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        updateScrollFades();
+        const el = scrollRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver(updateScrollFades);
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [isOpen, updateScrollFades]);
 
     const faqItems: Array<{ id: string; question: string; answer: ReactNode }> = [
         {
@@ -165,16 +185,20 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
 
                         <div className="relative flex-1 min-h-0 overflow-hidden">
                             <div
-                                className="pointer-events-none absolute left-0 right-3 top-0 h-6 z-10"
+                                className={`pointer-events-none absolute left-0 right-3 top-0 h-6 z-10 transition-opacity duration-150 ${showTopFade ? "opacity-100" : "opacity-0"}`}
                                 style={{ background: "linear-gradient(to bottom, var(--color-bg-tertiary), transparent)" }}
                                 aria-hidden="true"
                             />
                             <div
-                                className="pointer-events-none absolute left-0 right-3 bottom-0 h-8 z-10"
+                                className={`pointer-events-none absolute left-0 right-3 bottom-0 h-8 z-10 transition-opacity duration-150 ${showBottomFade ? "opacity-100" : "opacity-0"}`}
                                 style={{ background: "linear-gradient(to top, var(--color-bg-tertiary), transparent)" }}
                                 aria-hidden="true"
                             />
-                            <div className="h-full overflow-y-auto settings-scroll px-7 pb-8">
+                            <div
+                                ref={scrollRef}
+                                onScroll={updateScrollFades}
+                                className="h-full overflow-y-auto settings-scroll px-7 pb-8"
+                            >
                                 <div className="space-y-8">
                                     {faqItems.map((item, index) => (
                                         <div key={item.id}>

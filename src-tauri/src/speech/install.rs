@@ -17,14 +17,6 @@ pub const MODEL_CAPABILITY_STREAMING: &str = speech_models::MODEL_CAPABILITY_STR
 pub use speech_models::ModelEngine as LocalModelEngine;
 
 #[derive(Debug, Clone)]
-struct ModelPresentation {
-    key: &'static str,
-    label: &'static str,
-    description: &'static str,
-    tags: &'static [&'static str],
-}
-
-#[derive(Debug, Clone)]
 pub struct ReadyModel {
     pub key: String,
     pub path: PathBuf,
@@ -55,12 +47,6 @@ pub struct ModelStatus {
     pub directory: String,
 }
 
-#[derive(Debug, Clone)]
-pub struct EngineGroup {
-    pub name: String,
-    pub models: Vec<ModelInfo>,
-}
-
 #[derive(Serialize, Clone)]
 struct DownloadProgressPayload {
     model: String,
@@ -81,35 +67,6 @@ struct DownloadErrorPayload {
     error: String,
 }
 
-const MODEL_PRESENTATION: &[ModelPresentation] = &[
-    ModelPresentation {
-        key: "whisper_large_v3_turbo_q8",
-        label: "Whisper Large V3 Turbo",
-        description:
-            "Great quality local Whisper model with multilingual support and dictionary support.",
-        tags: &["Recommended", "Dictionary", "Multilingual"],
-    },
-    ModelPresentation {
-        key: "parakeet_tdt_int8",
-        label: "Parakeet TDT 0.6B (Int8)",
-        description:
-            "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
-        tags: &["Multilingual", "Fast"],
-    },
-    ModelPresentation {
-        key: "nemotron_streaming_en",
-        label: "Nemotron Streaming 0.6B",
-        description: "Real-time streaming transcription. Text appears as you speak.",
-        tags: &["English", "Streaming"],
-    },
-    ModelPresentation {
-        key: "whisper_small_q5",
-        label: "Whisper Small",
-        description: "Small & fast with dictionary support.",
-        tags: &["English", "Dictionary", "Compute Friendly"],
-    },
-];
-
 const MODELS_ROOT: &str = "models";
 
 pub fn definition(key: &str) -> Option<&'static speech_models::ModelManifest> {
@@ -117,8 +74,8 @@ pub fn definition(key: &str) -> Option<&'static speech_models::ModelManifest> {
 }
 
 pub fn model_label(key: &str) -> String {
-    presentation(key)
-        .map(|entry| entry.label.to_string())
+    speech_models::definition(key)
+        .map(|model| model.label.to_string())
         .unwrap_or_else(|| key.to_string())
 }
 
@@ -152,10 +109,6 @@ fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     let dir = model_cache_dir(app)?;
     std::fs::create_dir_all(&dir).context("Failed to prepare models directory")?;
     Ok(dir)
-}
-
-fn presentation(key: &str) -> Option<&'static ModelPresentation> {
-    MODEL_PRESENTATION.iter().find(|entry| entry.key == key)
 }
 
 fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
@@ -221,58 +174,28 @@ fn map_status(status: speech_models::ModelStatus) -> ModelStatus {
     }
 }
 
+fn manifest_to_model_info(manifest: &speech_models::ModelManifest) -> ModelInfo {
+    ModelInfo {
+        key: manifest.id.to_string(),
+        label: manifest.label.to_string(),
+        description: manifest.description.to_string(),
+        size_mb: manifest.size_bytes.unwrap_or(0) as f32 / 1_000_000.0,
+        file_count: manifest.files.len(),
+        engine_id: engine_id(&manifest.engine).to_string(),
+        engine: engine_label(&manifest.engine).to_string(),
+        variant: manifest.variant.to_string(),
+        tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
+        capabilities: map_capabilities(manifest.capabilities),
+        supported_languages: supported_languages(&manifest.engine),
+    }
+}
+
 #[tauri::command]
 pub fn list_models() -> Vec<ModelInfo> {
     speech_models::list_models()
         .iter()
-        .filter_map(|manifest| {
-            let presentation = presentation(manifest.id)?;
-            Some(ModelInfo {
-                key: manifest.id.to_string(),
-                label: presentation.label.to_string(),
-                description: presentation.description.to_string(),
-                size_mb: manifest.size_bytes.unwrap_or(0) as f32 / 1_000_000.0,
-                file_count: manifest.files.len(),
-                engine_id: engine_id(&manifest.engine).to_string(),
-                engine: engine_label(&manifest.engine).to_string(),
-                variant: manifest.variant.to_string(),
-                tags: presentation.tags.iter().map(|s| s.to_string()).collect(),
-                capabilities: map_capabilities(manifest.capabilities),
-                supported_languages: supported_languages(&manifest.engine),
-            })
-        })
+        .map(manifest_to_model_info)
         .collect()
-}
-
-pub fn group_models_by_engine(models: &[ModelInfo]) -> Vec<EngineGroup> {
-    let mut groups: std::collections::HashMap<String, Vec<ModelInfo>> =
-        std::collections::HashMap::new();
-
-    for model in models {
-        groups
-            .entry(model.engine_id.clone())
-            .or_default()
-            .push(model.clone());
-    }
-
-    let mut result: Vec<_> = groups
-        .into_values()
-        .map(|models| EngineGroup {
-            name: models
-                .first()
-                .map(|m| m.engine.clone())
-                .unwrap_or_else(|| "Unknown".to_string()),
-            models,
-        })
-        .collect();
-
-    result.sort_by_key(|g| match g.models.first().map(|m| m.engine_id.as_str()) {
-        Some("whisper") => 0,
-        Some("nvidia") => 1,
-        _ => 2,
-    });
-
-    result
 }
 
 #[tauri::command]
@@ -384,4 +307,30 @@ pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result
         path: resolved.path,
         engine: resolved.engine,
     })
+}
+
+pub fn ensure_local_fallback_model<R: Runtime>(
+    app: &AppHandle<R>,
+    preferred: &str,
+) -> Result<ReadyModel> {
+    if let Ok(model) = ensure_model_ready(app, preferred) {
+        return Ok(model);
+    }
+
+    for manifest in speech_models::list_models() {
+        if manifest.id == preferred {
+            continue;
+        }
+        if let Ok(model) = ensure_model_ready(app, manifest.id) {
+            eprintln!(
+                "[LocalTranscriber] Using installed local model `{}` for remote fallback (preferred `{preferred}` is unavailable)",
+                manifest.id
+            );
+            return Ok(model);
+        }
+    }
+
+    Err(anyhow::anyhow!(
+        "No local transcription model is installed for fallback"
+    ))
 }

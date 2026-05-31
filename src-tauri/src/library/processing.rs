@@ -32,10 +32,13 @@ pub(crate) fn create_item_from_path(
     source_path: &Path,
     options: &LibraryImportOptions,
 ) -> Result<LibraryItem> {
-    let status = model_manager::check_model_status(app.clone(), options.model_key.clone())
-        .map_err(|err| anyhow!(err))?;
-    if !status.installed {
-        return Err(anyhow!("Selected model is not installed"));
+    let remote_selection = crate::remote_speech::is_remote_model(&options.model_key);
+    if !remote_selection {
+        let status = model_manager::check_model_status(app.clone(), options.model_key.clone())
+            .map_err(|err| anyhow!(err))?;
+        if !status.installed {
+            return Err(anyhow!("Selected model is not installed"));
+        }
     }
     if !source_path.exists() {
         return Err(anyhow!("File not found"));
@@ -61,7 +64,11 @@ pub(crate) fn create_item_from_path(
     let audio_path = item_dir.join(format!("{id}.wav"));
     let metadata = fs::metadata(source_path)?;
 
-    let show_timestamps = options.show_timestamps && model_supports_timestamps(&options.model_key);
+    let show_timestamps = if remote_selection {
+        options.show_timestamps
+    } else {
+        options.show_timestamps && model_supports_timestamps(&options.model_key)
+    };
 
     let item = LibraryItem {
         id,
@@ -72,6 +79,7 @@ pub(crate) fn create_item_from_path(
         status: LibraryItemStatus::Pending,
         transcript: None,
         segments: None,
+        words: None,
         duration_seconds: 0.0,
         file_size_bytes: metadata.len(),
         original_format: ext,

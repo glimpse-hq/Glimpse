@@ -158,7 +158,7 @@ const LibraryCard = ({
             }}
             role="button"
             tabIndex={0}
-            className={`ui-card-liftable group relative flex min-w-0 flex-col h-[220px] outline-none ${
+            className={`ui-card-liftable group relative z-0 flex min-w-0 flex-col h-[220px] outline-none hover:z-10 ${
                 shiftHeld
                     ? "!border-[var(--color-error)]/30 hover:!border-[var(--color-error)]/60 !bg-[var(--color-error)]/5"
                     : ""

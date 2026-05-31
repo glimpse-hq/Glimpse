@@ -3,7 +3,7 @@ use tauri::AppHandle;
 
 use super::hotkeys;
 use crate::settings::{
-    canonicalize_app_locale, canonicalize_app_locale_or_default, AutoDeleteTarget, LlmProvider,
+    canonicalize_app_locale, canonicalize_app_locale_or_default, AutoDeleteTarget,
     RecordingPrunePolicy, ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode,
     UserSettings,
 };
@@ -22,6 +22,16 @@ pub(crate) struct UpdateSettingsArgs {
     pub shortcut_bindings: ShortcutBindings,
     pub transcription_mode: TranscriptionMode,
     pub local_model: String,
+    #[serde(default)]
+    pub remote_speech_enabled: bool,
+    #[serde(default = "crate::settings::default_remote_speech_provider")]
+    pub remote_speech_provider: String,
+    #[serde(default = "crate::settings::default_remote_speech_endpoint")]
+    pub remote_speech_endpoint: String,
+    #[serde(default)]
+    pub remote_speech_api_key: String,
+    #[serde(default = "crate::settings::default_remote_speech_model")]
+    pub remote_speech_model: String,
     pub microphone_device: Option<String>,
     pub language: String,
     pub app_locale: String,
@@ -29,7 +39,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_enabled: bool,
 
     pub cleanup_enabled: bool,
-    pub llm_provider: LlmProvider,
+    pub llm_provider: String,
     pub llm_endpoint: String,
     pub llm_api_key: String,
     pub llm_model: String,
@@ -38,6 +48,7 @@ pub(crate) struct UpdateSettingsArgs {
     pub media_control_enabled: bool,
     pub auto_update_enabled: bool,
     pub auto_launch_enabled: bool,
+    pub start_in_background: bool,
     pub auto_delete_target: AutoDeleteTarget,
     pub auto_delete_duration: RecordingPrunePolicy,
     pub analytics_enabled: bool,
@@ -82,51 +93,55 @@ fn canonicalize_shortcut_bindings(args: &UpdateSettingsArgs) -> Result<ShortcutB
     })
 }
 
+fn collect_enabled_shortcuts(
+    enabled_shortcuts: &mut Vec<(&'static str, hotkeys::Hotkey)>,
+    mode_name: &'static str,
+    enabled: bool,
+    bindings: &[ShortcutBinding],
+) -> Result<(), String> {
+    if !enabled {
+        return Ok(());
+    }
+
+    for binding in bindings.iter().take(3) {
+        let raw = binding.shortcut.trim();
+        if raw.is_empty() {
+            continue;
+        }
+        let normalized = hotkeys::parse_shortcut(raw)
+            .map_err(|err| format!("{mode_name} shortcut is invalid: {err}"))?;
+        hotkeys::validate_recording_shortcut(&normalized)
+            .map_err(|err| format!("{mode_name} shortcut is invalid: {err}"))?;
+        enabled_shortcuts.push((mode_name, normalized));
+    }
+
+    Ok(())
+}
+
 fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String> {
     if !args.smart_enabled && !args.hold_enabled && !args.toggle_enabled {
         return Err("At least one recording mode must be enabled".into());
     }
 
     let mut enabled_shortcuts: Vec<(&str, hotkeys::Hotkey)> = vec![];
-    if args.smart_enabled {
-        for binding in &args.shortcut_bindings.smart {
-            let raw = binding.shortcut.trim();
-            if raw.is_empty() {
-                continue;
-            }
-            let normalized = hotkeys::parse_shortcut(raw)
-                .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-            hotkeys::validate_recording_shortcut(&normalized)
-                .map_err(|err| format!("Smart shortcut is invalid: {err}"))?;
-            enabled_shortcuts.push(("Smart", normalized));
-        }
-    }
-    if args.hold_enabled {
-        for binding in &args.shortcut_bindings.hold {
-            let raw = binding.shortcut.trim();
-            if raw.is_empty() {
-                continue;
-            }
-            let normalized = hotkeys::parse_shortcut(raw)
-                .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-            hotkeys::validate_recording_shortcut(&normalized)
-                .map_err(|err| format!("Hold shortcut is invalid: {err}"))?;
-            enabled_shortcuts.push(("Hold", normalized));
-        }
-    }
-    if args.toggle_enabled {
-        for binding in &args.shortcut_bindings.toggle {
-            let raw = binding.shortcut.trim();
-            if raw.is_empty() {
-                continue;
-            }
-            let normalized = hotkeys::parse_shortcut(raw)
-                .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-            hotkeys::validate_recording_shortcut(&normalized)
-                .map_err(|err| format!("Toggle shortcut is invalid: {err}"))?;
-            enabled_shortcuts.push(("Toggle", normalized));
-        }
-    }
+    collect_enabled_shortcuts(
+        &mut enabled_shortcuts,
+        "Smart",
+        args.smart_enabled,
+        &args.shortcut_bindings.smart,
+    )?;
+    collect_enabled_shortcuts(
+        &mut enabled_shortcuts,
+        "Hold",
+        args.hold_enabled,
+        &args.shortcut_bindings.hold,
+    )?;
+    collect_enabled_shortcuts(
+        &mut enabled_shortcuts,
+        "Toggle",
+        args.toggle_enabled,
+        &args.shortcut_bindings.toggle,
+    )?;
 
     if args.smart_enabled && !enabled_shortcuts.iter().any(|(name, _)| *name == "Smart") {
         return Err("Smart shortcut cannot be empty when enabled".into());
@@ -162,11 +177,30 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("Unknown model selection".into());
     }
 
+    if args.remote_speech_enabled {
+        if args.remote_speech_endpoint.trim().is_empty() {
+            return Err("Remote speech endpoint cannot be empty".into());
+        }
+        if crate::remote_speech::provider_requires_api_key(&args.remote_speech_provider)
+            && args.remote_speech_api_key.trim().is_empty()
+        {
+            return Err("Remote speech API key cannot be empty".into());
+        }
+        if crate::remote_speech::resolve_model(
+            &args.remote_speech_provider,
+            &args.remote_speech_model,
+        )
+        .is_none()
+        {
+            return Err("Choose a remote speech model before enabling remote transcription".into());
+        }
+    }
+
     if canonicalize_app_locale(&args.app_locale).is_none() {
         return Err("Unknown app language selection".into());
     }
 
-    if args.llm_enabled && matches!(args.llm_provider, LlmProvider::None) {
+    if args.llm_enabled && args.llm_provider == "none" {
         return Err("LLM cannot be enabled when provider is None".into());
     }
 
@@ -182,11 +216,8 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
     }
 
     if args.llm_enabled {
-        if matches!(args.llm_provider, LlmProvider::Custom) && args.llm_endpoint.trim().is_empty() {
-            return Err("Custom LLM endpoint cannot be empty".into());
-        }
-        if matches!(args.llm_provider, LlmProvider::OpenAI) && args.llm_api_key.trim().is_empty() {
-            return Err("OpenAI API key is required".into());
+        if args.llm_endpoint.trim().is_empty() {
+            return Err("Language model endpoint cannot be empty".into());
         }
         if args.llm_model.trim().is_empty() {
             return Err("Choose a language model before enabling AI features".into());
@@ -311,6 +342,11 @@ pub(crate) fn update_settings(
     next.toggle_enabled = args.toggle_enabled;
     next.transcription_mode = args.transcription_mode;
     next.local_model = args.local_model;
+    next.remote_speech_enabled = args.remote_speech_enabled;
+    next.remote_speech_provider = args.remote_speech_provider;
+    next.remote_speech_endpoint = args.remote_speech_endpoint.trim().to_string();
+    next.remote_speech_api_key = args.remote_speech_api_key;
+    next.remote_speech_model = args.remote_speech_model.trim().to_string();
     next.microphone_device = args.microphone_device;
     next.language = args.language;
     next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
@@ -356,6 +392,7 @@ pub(crate) fn update_settings(
     next.media_control_enabled = args.media_control_enabled;
     next.auto_update_enabled = args.auto_update_enabled;
     next.auto_launch_enabled = args.auto_launch_enabled;
+    next.start_in_background = args.auto_launch_enabled && args.start_in_background;
     next.auto_delete_target = args.auto_delete_target;
     next.auto_delete_duration = args.auto_delete_duration;
     next.analytics_enabled = args.analytics_enabled;
@@ -395,6 +432,9 @@ pub(crate) fn update_settings(
 
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model
+        || prev.remote_speech_enabled != next.remote_speech_enabled
+        || prev.remote_speech_provider != next.remote_speech_provider
+        || prev.remote_speech_model != next.remote_speech_model
         || prev.microphone_device != next.microphone_device
     {
         if let Err(err) = tray::refresh_tray_menu(app, &next) {
@@ -439,6 +479,11 @@ mod tests {
             shortcut_bindings: default_shortcut_bindings(),
             transcription_mode: TranscriptionMode::Local,
             local_model: default_local_model(),
+            remote_speech_enabled: false,
+            remote_speech_provider: "openai".to_string(),
+            remote_speech_endpoint: crate::settings::default_remote_speech_endpoint(),
+            remote_speech_api_key: String::new(),
+            remote_speech_model: crate::settings::default_remote_speech_model(),
             microphone_device: None,
             language: "en".to_string(),
             app_locale: "system".to_string(),
@@ -446,7 +491,7 @@ mod tests {
             llm_enabled: false,
 
             cleanup_enabled: false,
-            llm_provider: LlmProvider::None,
+            llm_provider: "none".to_string(),
             llm_endpoint: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
@@ -455,6 +500,7 @@ mod tests {
             media_control_enabled: true,
             auto_update_enabled: true,
             auto_launch_enabled: false,
+            start_in_background: true,
             auto_delete_target: AutoDeleteTarget::Transcripts,
             auto_delete_duration: RecordingPrunePolicy::Never,
             analytics_enabled: true,
@@ -515,6 +561,55 @@ mod tests {
     }
 
     #[test]
+    fn accepts_remote_speech_with_auto_model_for_known_provider() {
+        let mut args = base_args();
+        args.remote_speech_enabled = true;
+        args.remote_speech_provider = "openai".to_string();
+        args.remote_speech_api_key = "sk-test".to_string();
+        args.remote_speech_model = "auto".to_string();
+
+        assert!(validate_update_settings_args(&args).is_ok());
+    }
+
+    #[test]
+    fn rejects_key_required_remote_speech_without_api_key() {
+        let mut args = base_args();
+        args.remote_speech_enabled = true;
+        args.remote_speech_provider = "openai".to_string();
+        args.remote_speech_api_key = "   ".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(err, "Remote speech API key cannot be empty");
+    }
+
+    #[test]
+    fn rejects_remote_speech_without_endpoint() {
+        let mut args = base_args();
+        args.remote_speech_enabled = true;
+        args.remote_speech_endpoint = "   ".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(err, "Remote speech endpoint cannot be empty");
+    }
+
+    #[test]
+    fn rejects_remote_speech_when_model_cannot_resolve() {
+        let mut args = base_args();
+        args.remote_speech_enabled = true;
+        args.remote_speech_provider = "totally-unknown-provider".to_string();
+        args.remote_speech_model = "auto".to_string();
+
+        let err = validate_update_settings_args(&args).unwrap_err();
+
+        assert_eq!(
+            err,
+            "Choose a remote speech model before enabling remote transcription"
+        );
+    }
+
+    #[test]
     fn rejects_shortcut_collisions_after_normalization() {
         let mut args = base_args();
         args.hold_enabled = true;
@@ -550,7 +645,8 @@ mod tests {
     fn rejects_enabling_llm_without_explicit_model_selection() {
         let mut args = base_args();
         args.llm_enabled = true;
-        args.llm_provider = LlmProvider::Ollama;
+        args.llm_provider = "ollama".to_string();
+        args.llm_endpoint = "http://localhost:11434/v1".to_string();
 
         let err = validate_update_settings_args(&args).unwrap_err();
 

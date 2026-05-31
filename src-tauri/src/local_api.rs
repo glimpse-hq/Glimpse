@@ -8,6 +8,7 @@ use std::{
 };
 
 use glimpse_speech::api::{ApiConfig, ApiEvent, ApiEventSink};
+use glimpse_speech::service::{SpeechConfig, SpeechService};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::oneshot;
@@ -17,6 +18,7 @@ use crate::AppRuntime;
 const EVENT_LOCAL_API_LOG: &str = "local-api:log";
 const EVENT_LOCAL_API_STATUS: &str = "local-api:status";
 const LOCAL_API_READY_PREFIX: &str = "Local API listening on ";
+const TRANSCRIBE_REQUEST_LOG: &str = "POST /v1/audio/transcriptions";
 const MAX_LOGS: usize = 200;
 
 #[derive(Debug, Clone, Serialize)]
@@ -37,6 +39,7 @@ pub struct LocalApiStatus {
     pub api_key_required: bool,
     pub config_id: Option<u64>,
     pub cors: bool,
+    pub requests_total: u64,
     pub logs: Vec<LocalApiLogEntry>,
 }
 
@@ -60,7 +63,18 @@ pub struct LocalApiController {
 #[derive(Default)]
 struct LocalApiState {
     running: Option<RunningLocalApi>,
+    starting: bool,
     logs: VecDeque<LocalApiLogEntry>,
+}
+
+struct StartingGuard<'a> {
+    inner: &'a parking_lot::Mutex<LocalApiState>,
+}
+
+impl Drop for StartingGuard<'_> {
+    fn drop(&mut self) {
+        self.inner.lock().starting = false;
+    }
 }
 
 struct RunningLocalApi {
@@ -71,6 +85,7 @@ struct RunningLocalApi {
     api_key_required: bool,
     config_id: u64,
     cors: bool,
+    requests_total: u64,
     shutdown: Option<oneshot::Sender<()>>,
     stopped: Option<oneshot::Receiver<()>>,
 }
@@ -100,8 +115,25 @@ impl LocalApiController {
         if host == "0.0.0.0" && api_key.is_none() {
             return Err("An API key is required when listening on LAN".to_string());
         }
+        {
+            let mut state = self.inner.lock();
+            if state.running.is_some() || state.starting {
+                return Err("Local API is already running".to_string());
+            }
+            state.starting = true;
+        }
+        let _starting_guard = StartingGuard { inner: &self.inner };
         let model_cache_dir =
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
+        let service = Arc::new(SpeechService::new(SpeechConfig { model_cache_dir }));
+        if let Some(warm_id) = warm_model.as_deref() {
+            let warm = Arc::clone(&service);
+            let warm_id = warm_id.to_string();
+            tokio::task::spawn_blocking(move || warm.preload_and_warm(&warm_id))
+                .await
+                .map_err(|err| format!("warm model task failed: {err}"))?
+                .map_err(|err| err.to_string())?;
+        }
         let config_id = self.next_config_id.fetch_add(1, Ordering::Relaxed) + 1;
 
         let (shutdown_tx, shutdown_rx) = oneshot::channel();
@@ -121,6 +153,7 @@ impl LocalApiController {
                 api_key_required: api_key.is_some(),
                 config_id,
                 cors: args.cors,
+                requests_total: 0,
                 shutdown: Some(shutdown_tx),
                 stopped: Some(stopped_rx),
             });
@@ -144,6 +177,9 @@ impl LocalApiController {
                     let _ = sender.send(Ok(()));
                 }
             }
+            if event.message.starts_with(TRANSCRIBE_REQUEST_LOG) {
+                controller.note_request(&sink_app);
+            }
             controller.push_log(&sink_app, event.level, event.message);
         });
 
@@ -155,11 +191,11 @@ impl LocalApiController {
                 ApiConfig {
                     host,
                     port: args.port,
-                    model_cache_dir,
-                    warm_model,
+                    service,
                     api_key,
                     event_sink: Some(event_sink),
                     cors: args.cors,
+                    transcription_provider: None,
                 },
                 async {
                     let _ = shutdown_rx.await;
@@ -234,6 +270,22 @@ impl LocalApiController {
         }
     }
 
+    fn note_request(&self, app: &AppHandle<AppRuntime>) {
+        let counted = {
+            let mut state = self.inner.lock();
+            match state.running.as_mut() {
+                Some(running) => {
+                    running.requests_total += 1;
+                    true
+                }
+                None => false,
+            }
+        };
+        if counted {
+            self.emit_status(app);
+        }
+    }
+
     fn set_loaded_model(&self, app: &AppHandle<AppRuntime>, model_id: &str) {
         if let Some(running) = self.inner.lock().running.as_mut() {
             running.loaded_model = Some(model_id.to_string());
@@ -280,6 +332,7 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             api_key_required: running.api_key_required,
             config_id: Some(running.config_id),
             cors: running.cors,
+            requests_total: running.requests_total,
             logs,
         }
     } else {
@@ -292,6 +345,7 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             api_key_required: false,
             config_id: None,
             cors: crate::settings::default_local_api_cors(),
+            requests_total: 0,
             logs,
         }
     }

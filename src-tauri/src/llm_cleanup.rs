@@ -1,13 +1,17 @@
-use anyhow::{anyhow, Context, Result};
+use glimpse_speech::remote::{self as remote_lib, RemoteError, RemoteErrorKind};
 use parking_lot::Mutex;
+use reqwest::header::RETRY_AFTER;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
-use crate::settings::{LlmProvider, Personality, TranscriptionMode, UserSettings};
+use crate::settings::{Personality, TranscriptionMode, UserSettings};
 use crate::{accessibility_context, mode_context};
+
+const CHAT_TIMEOUT: Duration = Duration::from_secs(60);
+const MODELS_TIMEOUT: Duration = Duration::from_secs(5);
 
 const CLEANUP_PROMPT: &str = r#"
 You clean up speech-to-text transcripts.
@@ -230,34 +234,26 @@ enum ProviderRoute {
     Models,
 }
 
-fn provider_default_base_url(provider: &LlmProvider) -> Option<&'static str> {
-    match provider {
-        LlmProvider::LmStudio => Some("http://localhost:1234"),
-        LlmProvider::Ollama => Some("http://localhost:11434"),
-        LlmProvider::OpenAI => Some("https://api.openai.com"),
-        LlmProvider::Google => Some("https://generativelanguage.googleapis.com/v1beta/openai"),
-        LlmProvider::None => None,
-        _ => None,
-    }
+fn uses_google_openai_compat_routes(endpoint: &str) -> bool {
+    endpoint.contains("generativelanguage.googleapis.com")
 }
 
-fn provider_route_suffix(provider: &LlmProvider, route: ProviderRoute) -> &'static str {
-    match (provider, route) {
-        (LlmProvider::Google, ProviderRoute::ChatCompletions) => "/chat/completions",
-        (LlmProvider::Google, ProviderRoute::Models) => "/models",
-        (_, ProviderRoute::ChatCompletions) => "/v1/chat/completions",
-        (_, ProviderRoute::Models) => "/v1/models",
-    }
-}
-
-fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
-    let base = if endpoint.trim().is_empty() {
-        provider_default_base_url(provider).unwrap_or("")
+fn route_suffix(endpoint: &str, route: ProviderRoute) -> &'static str {
+    if uses_google_openai_compat_routes(endpoint) {
+        match route {
+            ProviderRoute::ChatCompletions => "/chat/completions",
+            ProviderRoute::Models => "/models",
+        }
     } else {
-        endpoint.trim()
-    };
+        match route {
+            ProviderRoute::ChatCompletions => "/v1/chat/completions",
+            ProviderRoute::Models => "/v1/models",
+        }
+    }
+}
 
-    let mut trimmed = base.trim_end_matches('/').to_string();
+fn get_base_url(endpoint: &str) -> String {
+    let mut trimmed = endpoint.trim().trim_end_matches('/').to_string();
     for suffix in [
         "/v1/chat/completions",
         "/chat/completions",
@@ -273,33 +269,19 @@ fn get_base_url(endpoint: &str, provider: &LlmProvider) -> String {
     trimmed.trim_end_matches('/').to_string()
 }
 
-fn build_provider_url(
-    endpoint: &str,
-    provider: &LlmProvider,
-    route: ProviderRoute,
-) -> Result<String> {
-    if matches!(provider, LlmProvider::None) {
-        return Err(anyhow!("Language model is disabled"));
-    }
-
-    let base = get_base_url(endpoint, provider);
+fn build_provider_url(endpoint: &str, route: ProviderRoute) -> Result<String, RemoteError> {
+    let base = get_base_url(endpoint);
     if base.is_empty() {
-        return Err(anyhow!("Endpoint not configured"));
+        return Err(remote_lib::config_error(
+            "Language model endpoint is not configured",
+        ));
     }
 
-    Ok(format!(
-        "{}{}",
-        base,
-        provider_route_suffix(provider, route)
-    ))
+    Ok(format!("{}{}", base, route_suffix(endpoint, route)))
 }
 
-fn get_endpoint(settings: &UserSettings) -> Result<String> {
-    build_provider_url(
-        &settings.llm_endpoint,
-        &settings.llm_provider,
-        ProviderRoute::ChatCompletions,
-    )
+fn get_endpoint(settings: &UserSettings) -> Result<String, RemoteError> {
+    build_provider_url(&settings.llm_endpoint, ProviderRoute::ChatCompletions)
 }
 
 fn configured_model(settings: &UserSettings) -> Option<String> {
@@ -341,21 +323,39 @@ async fn send_chat_request(
     client: &Client,
     settings: &UserSettings,
     body: &ChatRequest,
-) -> Result<String> {
+) -> Result<String, RemoteError> {
     let endpoint = get_endpoint(settings)?;
-    let mut req = client.post(&endpoint).json(body);
-    if !settings.llm_api_key.is_empty() {
-        req = req.header("Authorization", format!("Bearer {}", settings.llm_api_key));
+    let api_key = settings.llm_api_key.trim();
+    let mut req = client.post(&endpoint).json(body).timeout(CHAT_TIMEOUT);
+    if !api_key.is_empty() {
+        req = req.header("Authorization", format!("Bearer {api_key}"));
     }
 
-    let resp = req.send().await.context("Failed to reach LLM API")?;
-    if !resp.status().is_success() {
-        let status = resp.status();
-        let err = resp.text().await.unwrap_or_default();
-        return Err(anyhow!("LLM error {status}: {err}"));
+    let resp = req.send().await.map_err(|err| {
+        remote_lib::transport_error(format!("Failed to reach language model: {err}"))
+    })?;
+    let status = resp.status();
+    let retry_after = remote_lib::parse_retry_after(resp.headers().get(RETRY_AFTER));
+    let body_text = resp.text().await.map_err(|err| {
+        remote_lib::transport_error(format!("Failed to read language model response: {err}"))
+    })?;
+    if !status.is_success() {
+        return Err(remote_lib::parse_upstream_error(
+            status,
+            retry_after,
+            &body_text,
+        ));
     }
 
-    let chat: ChatResponse = resp.json().await.context("Failed to parse response")?;
+    let chat: ChatResponse = serde_json::from_str(&body_text).map_err(|err| RemoteError {
+        kind: RemoteErrorKind::Other,
+        status: status.as_u16(),
+        message: format!("Failed to parse language model response: {err}"),
+        error_type: None,
+        code: None,
+        param: None,
+        retry_after: None,
+    })?;
     Ok(chat
         .choices
         .into_iter()
@@ -371,9 +371,9 @@ async fn run_text_task(
     system_prompt: String,
     user_content: String,
     fallback_text: &str,
-) -> Result<String> {
+) -> Result<String, RemoteError> {
     let model = configured_model(settings)
-        .ok_or_else(|| anyhow!("Choose a language model in Settings -> Models"))?;
+        .ok_or_else(|| remote_lib::config_error("Choose a language model in Settings -> Models"))?;
 
     let body = ChatRequest {
         model,
@@ -495,9 +495,11 @@ pub async fn cleanup_transcription(
     text: &str,
     settings: &UserSettings,
     mode: Option<&Personality>,
-) -> Result<String> {
+) -> Result<String, RemoteError> {
     if !is_llm_available(settings) {
-        return Err(anyhow!("Cleanup requires a configured language model"));
+        return Err(remote_lib::config_error(
+            "Cleanup requires a configured language model",
+        ));
     }
 
     eprintln!("[LLM] Processing transcription: {} chars", text.len());
@@ -525,7 +527,8 @@ pub async fn cleanup_transcription(
 
 pub fn is_llm_available(settings: &UserSettings) -> bool {
     settings.llm_enabled
-        && !matches!(settings.llm_provider, LlmProvider::None)
+        && settings.llm_provider != "none"
+        && !settings.llm_endpoint.trim().is_empty()
         && configured_model(settings).is_some()
 }
 
@@ -533,11 +536,11 @@ pub fn should_refine_transcript(settings: &UserSettings, mode: Option<&Personali
     is_llm_available(settings) && (settings.cleanup_enabled || personality_has_style_guidance(mode))
 }
 
-pub fn resolved_model_name(settings: &UserSettings) -> Option<String> {
+pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
     if !is_llm_available(settings) {
         None
     } else {
-        configured_model(settings)
+        configured_model(settings).map(|model| format!("{}:{model}", settings.llm_provider.trim()))
     }
 }
 
@@ -546,10 +549,10 @@ pub async fn edit_transcription(
     selected_text: &str,
     voice_command: &str,
     settings: &UserSettings,
-) -> Result<String> {
+) -> Result<String, RemoteError> {
     if !is_llm_available(settings) {
-        return Err(anyhow!(
-            "Edit mode requires a selected language model in Settings -> Models"
+        return Err(remote_lib::config_error(
+            "Edit mode requires a selected language model in Settings -> Models",
         ));
     }
 
@@ -592,35 +595,73 @@ struct ModelEntry {
 pub async fn fetch_available_models(
     client: &Client,
     endpoint: &str,
-    provider: &LlmProvider,
     api_key: &str,
-) -> Result<Vec<String>> {
-    let url = match build_provider_url(endpoint, provider, ProviderRoute::Models) {
-        Ok(url) => url,
-        Err(err) if err.to_string() == "Endpoint not configured" => return Ok(vec![]),
-        Err(err) => return Err(err),
-    };
-    let mut req = client.get(&url);
+) -> Result<Vec<String>, RemoteError> {
+    if endpoint.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let url = build_provider_url(endpoint, ProviderRoute::Models)?;
+    let api_key = api_key.trim();
+    let mut req = client.get(&url).timeout(MODELS_TIMEOUT);
 
     if !api_key.is_empty() {
-        req = req.header("Authorization", format!("Bearer {}", api_key));
+        req = req.header("Authorization", format!("Bearer {api_key}"));
     }
 
-    let resp = req
-        .timeout(std::time::Duration::from_secs(5))
-        .send()
-        .await
-        .context("Failed to reach models endpoint")?;
-
-    if !resp.status().is_success() {
-        return Err(anyhow!("Models endpoint returned error: {}", resp.status()));
+    let resp = req.send().await.map_err(|err| {
+        remote_lib::transport_error(format!("Failed to reach models endpoint: {err}"))
+    })?;
+    let status = resp.status();
+    let retry_after = remote_lib::parse_retry_after(resp.headers().get(RETRY_AFTER));
+    if !status.is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(remote_lib::parse_upstream_error(status, retry_after, &body));
     }
 
-    let data: ModelsResponse = resp
-        .json()
-        .await
-        .context("Failed to parse models response")?;
+    let data: ModelsResponse = resp.json().await.map_err(|err| RemoteError {
+        kind: RemoteErrorKind::Other,
+        status: status.as_u16(),
+        message: format!("Failed to parse models response: {err}"),
+        error_type: None,
+        code: None,
+        param: None,
+        retry_after: None,
+    })?;
     Ok(data.data.into_iter().map(|m| m.id).collect())
+}
+
+pub fn llm_issue_message(error: &RemoteError) -> String {
+    match error.kind {
+        RemoteErrorKind::RateLimited => {
+            if let Some(retry_after) = error.retry_after {
+                let seconds = retry_after.as_secs().max(1);
+                format!(
+                    "Language model rate limit reached (retry in about {seconds} second{}).",
+                    if seconds == 1 { "" } else { "s" }
+                )
+            } else {
+                "Language model rate limit reached.".to_string()
+            }
+        }
+        RemoteErrorKind::QuotaExceeded => "Language model quota exceeded.".to_string(),
+        RemoteErrorKind::Unauthorized => {
+            "Language model API key is invalid or expired.".to_string()
+        }
+        RemoteErrorKind::InvalidRequest => {
+            if error.message.trim().is_empty() {
+                "Language model rejected the request.".to_string()
+            } else {
+                format!(
+                    "Language model rejected the request: {}.",
+                    error.message.trim()
+                )
+            }
+        }
+        RemoteErrorKind::NotFound => "Language model endpoint or model was not found.".to_string(),
+        RemoteErrorKind::UpstreamUnavailable | RemoteErrorKind::Other => {
+            "Language model unreachable.".to_string()
+        }
+    }
 }
 
 pub const PREFLIGHT_TTL: Duration = Duration::from_secs(300);
@@ -698,10 +739,9 @@ pub async fn run_preflight(client: Client, settings: UserSettings) {
     }
 
     let endpoint = settings.llm_endpoint.clone();
-    let provider = settings.llm_provider.clone();
     let api_key = settings.llm_api_key.clone();
 
-    let available = match fetch_available_models(&client, &endpoint, &provider, &api_key).await {
+    let available = match fetch_available_models(&client, &endpoint, &api_key).await {
         Ok(models) => preflight_availability_from_models(&models),
         Err(_err) => None,
     };
@@ -730,7 +770,7 @@ mod tests {
         UserSettings {
             llm_enabled: true,
             cleanup_enabled: false,
-            llm_provider: LlmProvider::OpenAI,
+            llm_provider: "openai".to_string(),
             ..Default::default()
         }
     }

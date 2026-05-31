@@ -12,10 +12,8 @@ mod library;
 mod license;
 mod llm_cleanup;
 mod local_api;
-mod local_transcription;
 mod mode_context;
 mod model_language_table;
-mod model_manager;
 mod music;
 mod permissions;
 mod personalization;
@@ -25,6 +23,7 @@ mod platform;
 mod recent_transcriptions;
 mod recorder;
 mod settings;
+mod speech;
 mod storage;
 mod streaming_transcription;
 mod toast;
@@ -32,6 +31,10 @@ mod transcribe;
 mod transcription_api;
 mod tray;
 mod update_checker;
+
+pub(crate) use speech::engine as local_transcription;
+pub(crate) use speech::install as model_manager;
+pub(crate) use speech::remote as remote_speech;
 
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -52,8 +55,7 @@ use recorder::{
 use reqwest::Client;
 use serde::Serialize;
 use settings::{
-    default_local_model, LlmProvider, RecordingPrunePolicy, SettingsStore, TranscriptionMode,
-    UserSettings,
+    default_local_model, RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings,
 };
 use tauri::async_runtime;
 use tauri::tray::TrayIcon;
@@ -86,6 +88,10 @@ pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimps
 
 fn launched_via_autostart() -> bool {
     std::env::args_os().any(|arg| arg == "--autostart")
+}
+
+fn should_start_in_background(launched_via_autostart: bool, start_in_background: bool) -> bool {
+    launched_via_autostart && start_in_background
 }
 
 fn register_deep_link_handlers(app: &tauri::App<AppRuntime>) {
@@ -157,15 +163,21 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     use crate::recent_transcriptions::{
         copy_transcription_to_clipboard, MENU_ID_RECENT_TRANSCRIPTION_PREFIX,
     };
+    use crate::speech::menu::handle_speech_menu_event;
     use platform::macos::menu::{
-        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_MODEL_PREFIX,
-        MENU_ID_MODE_LOCAL, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE,
+        MENU_ID_CHECK_UPDATES, MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX, MENU_ID_REPORT_ISSUE,
+        MENU_ID_WEBSITE,
     };
     use tauri_plugin_opener::OpenerExt;
 
+    if let Some(saved) = handle_speech_menu_event(app, id) {
+        refresh_speech_menus(app, &saved);
+        return;
+    }
+
     match id {
         MENU_ID_CHECK_UPDATES => {
-            let _ = app.emit("navigate:about", ());
+            let _ = tray::open_settings_about(app);
         }
         MENU_ID_WEBSITE => {
             let _ = app
@@ -175,17 +187,12 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_REPORT_ISSUE => {
             let _ = app.opener().open_url(FEEDBACK_URL, None::<&str>);
         }
-        MENU_ID_MODE_LOCAL => {
-            set_transcription_mode(app, settings::TranscriptionMode::Local);
-        }
         MENU_ID_MIC_DEFAULT => {
             set_microphone(app, None);
         }
         _ => {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
                 copy_transcription_to_clipboard(app, transcription_id);
-            } else if let Some(model_key) = id.strip_prefix(MENU_ID_MODEL_PREFIX) {
-                set_local_model(app, model_key);
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
                 set_microphone(app, Some(device_id));
@@ -195,76 +202,12 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 }
 
 #[cfg(target_os = "macos")]
-fn set_transcription_mode(app: &AppHandle<AppRuntime>, mode: settings::TranscriptionMode) {
-    let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for transcription mode update: {err}");
-            return;
-        }
-    };
-    if current.transcription_mode == mode {
-        return;
+fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &settings::UserSettings) {
+    if let Err(err) = set_app_menu(app, settings) {
+        eprintln!("Failed to refresh app menu: {err}");
     }
-    current.transcription_mode = mode;
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            state.request_preflight_refresh();
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            state.emit_settings_changed(app, &saved);
-        }
-        Err(err) => eprintln!("Failed to update transcription mode: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn set_local_model(app: &AppHandle<AppRuntime>, model_key: &str) {
-    if model_manager::definition(model_key).is_none() {
-        eprintln!("Ignoring unknown model selection: {model_key}");
-        return;
-    }
-
-    match model_manager::check_model_status(app.clone(), model_key.to_string()) {
-        Ok(status) if status.installed => {}
-        Ok(_) => {
-            eprintln!("Model not installed: {model_key}");
-            return;
-        }
-        Err(err) => {
-            eprintln!("Failed to check model status for {model_key}: {err}");
-            return;
-        }
-    }
-
-    let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for model selection: {err}");
-            return;
-        }
-    };
-    if current.local_model == model_key {
-        return;
-    }
-    current.local_model = model_key.to_string();
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
-            state.emit_settings_changed(app, &saved);
-        }
-        Err(err) => eprintln!("Failed to update model selection: {err}"),
+    if let Err(err) = tray::refresh_tray_menu(app, settings) {
+        eprintln!("Failed to refresh tray menu: {err}");
     }
 }
 
@@ -284,12 +227,7 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     current.microphone_device = device_id.map(|id| id.to_string());
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
-            if let Err(err) = set_app_menu(app, &saved) {
-                eprintln!("Failed to refresh app menu: {err}");
-            }
-            if let Err(err) = tray::refresh_tray_menu(app, &saved) {
-                eprintln!("Failed to refresh tray menu: {err}");
-            }
+            refresh_speech_menus(app, &saved);
             state.emit_settings_changed(app, &saved);
         }
         Err(err) => eprintln!("Failed to update microphone selection: {err}"),
@@ -379,6 +317,13 @@ pub fn run() {
             }
 
             {
+                let h = handle.clone();
+                handle.listen(tray::EVENT_SETTINGS_RENDERER_READY, move |_| {
+                    tray::mark_settings_renderer_ready(&h);
+                });
+            }
+
+            {
                 let handle = app.handle();
                 let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = sync_launch_at_login(handle, settings.auto_launch_enabled) {
@@ -420,12 +365,9 @@ pub fn run() {
                 eprintln!("Failed to register shortcuts: {err}");
             }
 
-            if !launched_via_autostart() {
-                let h = handle.clone();
-                std::thread::spawn(move || {
-                    std::thread::sleep(Duration::from_millis(300));
-                    let _ = tray::toggle_settings_window(&h);
-                });
+            let state = handle.state::<AppState>();
+            if state.should_open_settings_on_startup() {
+                let _ = tray::toggle_settings_window(handle);
             }
 
             update_checker::check_post_auto_update(handle);
@@ -491,6 +433,7 @@ pub fn run() {
             model_manager::download_model,
             model_manager::delete_model,
             model_manager::cancel_download,
+            list_speech_models,
             local_api::get_local_api_status,
             local_api::start_local_api,
             local_api::stop_local_api,
@@ -514,6 +457,7 @@ pub fn run() {
             reset_onboarding,
             toast::debug_show_toast,
             fetch_llm_models,
+            fetch_remote_speech_models,
             open_whats_new,
             open_about_page,
             update_checker::get_update_status,
@@ -607,6 +551,7 @@ pub struct AppState {
     session_started_at: Instant,
     session_counters: parking_lot::Mutex<SessionCounters>,
     streaming_session: parking_lot::Mutex<Option<streaming_transcription::StreamingSession>>,
+    should_start_in_background: bool,
 }
 
 #[derive(Clone, Copy)]
@@ -635,6 +580,8 @@ impl AppState {
             .expect("Failed to initialize transcription storage");
 
         let recorder = Arc::new(RecorderManager::new());
+        let should_start_in_background =
+            should_start_in_background(launched_via_autostart(), settings.start_in_background);
 
         let model_cache_dir = model_manager::model_cache_dir(app_handle)
             .expect("Failed to resolve local model cache directory");
@@ -674,7 +621,12 @@ impl AppState {
                 transcription_count: 0,
             }),
             streaming_session: parking_lot::Mutex::new(None),
+            should_start_in_background,
         }
+    }
+
+    pub fn should_open_settings_on_startup(&self) -> bool {
+        !self.should_start_in_background
     }
 
     pub fn start_streaming_session(
@@ -1085,20 +1037,10 @@ fn open_input_monitoring_settings() -> Result<(), String> {
 
 #[tauri::command]
 fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    if let Err(err) = tray::toggle_settings_window(&app) {
+    tray::open_settings_models(&app).map_err(|err| {
         eprintln!("Failed to open settings window: {err}");
-        return Err(err.to_string());
-    }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(err) = app_clone.emit("navigate:models", ()) {
-            eprintln!("Failed to emit navigate:models: {err}");
-        }
-    });
-
-    Ok(())
+        err.to_string()
+    })
 }
 
 #[tauri::command]
@@ -1292,49 +1234,51 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
 #[tauri::command]
 async fn fetch_llm_models(
     endpoint: String,
-    provider: LlmProvider,
     api_key: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<String>, String> {
-    llm_cleanup::fetch_available_models(&state.http(), &endpoint, &provider, &api_key)
+    llm_cleanup::fetch_available_models(&state.http(), &endpoint, &api_key)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|error| llm_cleanup::llm_issue_message(&error))
+}
+
+#[tauri::command]
+fn list_speech_models(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<'_, AppState>,
+) -> Vec<speech::SpeechModel> {
+    let settings = state.current_settings();
+    speech::list_models(&app, &settings)
+}
+
+#[tauri::command]
+async fn fetch_remote_speech_models(
+    endpoint: String,
+    api_key: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<String>, String> {
+    if endpoint.trim().is_empty() {
+        return Ok(Vec::new());
+    }
+    let config = glimpse_speech::provider::remote_config(endpoint, api_key, None);
+    glimpse_speech::remote::RemoteEngine::new(state.http().clone(), config)
+        .list_models()
+        .await
+        .map_err(|error| error.user_message())
 }
 
 #[tauri::command]
 fn open_whats_new(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::toggle_settings_window(&app) {
+    if let Err(err) = tray::open_settings_whats_new(&app) {
         eprintln!("Failed to open settings window: {err}");
-        return;
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        if let Err(e) = app_clone.emit("navigate:about", ()) {
-            eprintln!("Failed to emit navigate:about: {e}");
-        }
-        std::thread::sleep(std::time::Duration::from_millis(400));
-        if let Err(e) = app_clone.emit("open_whats_new", ()) {
-            eprintln!("Failed to emit open_whats_new: {e}");
-        }
-    });
 }
 
 #[tauri::command]
 fn open_about_page(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::toggle_settings_window(&app) {
+    if let Err(err) = tray::open_settings_about(&app) {
         eprintln!("Failed to open settings window: {err}");
-        return;
     }
-
-    let app_clone = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(150));
-        if let Err(e) = app_clone.emit("navigate:about", ()) {
-            eprintln!("Failed to emit navigate:about: {e}");
-        }
-    });
 }
 
 #[tauri::command]
