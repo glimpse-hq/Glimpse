@@ -1,8 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown, { Components } from "react-markdown";
-import remarkBreaks from "remark-breaks";
 import {
   Copy,
   Trash2,
@@ -24,30 +22,7 @@ import {
 } from "../../settings/models-queries";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
-
-const markdownComponents: Components = {
-  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-  strong: ({ children }) => (
-    <strong className="font-semibold text-content-primary">{children}</strong>
-  ),
-  em: ({ children }) => <em className="italic">{children}</em>,
-  code: ({ children }) => (
-    <code className="px-1 py-0.5 rounded-sm bg-surface-elevated ui-text-body-sm font-mono ui-color-primary">
-      {children}
-    </code>
-  ),
-  ul: ({ children }) => (
-    <ul className="list-disc list-inside mb-2 last:mb-0 space-y-0.5">
-      {children}
-    </ul>
-  ),
-  ol: ({ children }) => (
-    <ol className="list-decimal list-inside mb-2 last:mb-0 space-y-0.5">
-      {children}
-    </ol>
-  ),
-  li: ({ children }) => <li className="ui-text-body">{children}</li>,
-};
+import TranscriptText from "../../../shared/ui/TranscriptText";
 
 interface TranscriptionItemProps {
   record: TranscriptionRecord;
@@ -373,12 +348,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                 onMouseUp={() => setSelectionText(captureSelectionText())}
                 onKeyUp={() => setSelectionText(captureSelectionText())}
               >
-                <ReactMarkdown
-                  components={markdownComponents}
-                  remarkPlugins={[remarkBreaks]}
-                >
-                  {displayText || ""}
-                </ReactMarkdown>
+                <TranscriptText text={displayText || ""} />
               </div>
               {(isOverflowing || isExpanded) && (
                 <button

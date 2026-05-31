@@ -2,6 +2,7 @@
 
 ### Fixes
 - Fixed some modifier-only shortcuts, like Fn or Option, occasionally not responding.
+- Fixed HTML-style lists in transcript history showing as plain text.
 
 ---
 0.9.1
