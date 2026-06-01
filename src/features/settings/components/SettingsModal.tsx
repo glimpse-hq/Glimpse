@@ -399,10 +399,8 @@ const SettingsModal = ({
                         onThemeModeChange={form.setThemeMode}
                         appLocale={form.appLocale}
                         onAppLocaleChange={form.setAppLocale}
-                        mediaControlEnabled={form.mediaControlEnabled}
-                        onMediaControlEnabledChange={
-                          form.setMediaControlEnabled
-                        }
+                        mediaAction={form.mediaAction}
+                        onMediaActionChange={form.setMediaAction}
                         autoUpdateEnabled={form.autoUpdateEnabled}
                         onAutoUpdateEnabledChange={form.setAutoUpdateEnabled}
                         autoLaunchEnabled={form.autoLaunchEnabled}

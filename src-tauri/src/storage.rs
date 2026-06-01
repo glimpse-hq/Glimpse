@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -82,6 +83,12 @@ pub struct TranscriptionMetadata {
     pub synced: bool,
     pub mode_id: Option<String>,
     pub mode_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ImportedTranscription {
+    pub text: String,
+    pub timestamp_ms: i64,
 }
 
 impl Default for TranscriptionMetadata {
@@ -184,6 +191,60 @@ impl StorageManager {
         let conn = self.connection.lock();
         Self::insert_record(&conn, &record)?;
         Ok(record)
+    }
+
+    pub fn import_transcriptions(&self, items: &[ImportedTranscription]) -> Result<usize> {
+        let mut conn = self.connection.lock();
+        let tx = conn.transaction()?;
+
+        let mut seen: HashSet<(i64, String)> = HashSet::new();
+        {
+            let mut stmt = tx.prepare("SELECT timestamp, text FROM transcriptions")?;
+            let rows = stmt.query_map([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })?;
+            for row in rows {
+                let (ts, text) = row?;
+                seen.insert((ts, text.trim().to_string()));
+            }
+        }
+
+        let mut added = 0usize;
+        for item in items {
+            let text = item.text.trim();
+            if text.is_empty() {
+                continue;
+            }
+            let timestamp = Local
+                .timestamp_millis_opt(item.timestamp_ms)
+                .single()
+                .unwrap_or_else(Local::now);
+            if !seen.insert((timestamp.timestamp_millis(), text.to_string())) {
+                continue;
+            }
+            let record = TranscriptionRecord {
+                id: Uuid::new_v4().to_string(),
+                timestamp,
+                text: text.to_string(),
+                raw_text: None,
+                audio_path: String::new(),
+                audio_available: false,
+                status: TranscriptionStatus::Success,
+                error_message: None,
+                llm_cleaned: false,
+                speech_model: String::new(),
+                llm_model: None,
+                word_count: count_words(text),
+                audio_duration_seconds: 0.0,
+                synced: false,
+                mode_id: None,
+                mode_name: None,
+            };
+            Self::insert_record(&tx, &record)?;
+            added += 1;
+        }
+        tx.commit()?;
+        Ok(added)
     }
 
     pub fn update_with_llm_cleanup(

@@ -5,7 +5,7 @@ use crate::{
     core::hotkeys::{self, HotkeyState},
     emit_event, model_manager, music, platform,
     recorder::RecorderManager,
-    settings::UserSettings,
+    settings::{MediaAction, UserSettings},
     toast, AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL,
 };
 use chrono::{DateTime, Local};
@@ -142,7 +142,7 @@ pub struct PillController {
     recording_settings: Mutex<Option<UserSettings>>,
     smart_press_time: Mutex<Option<DateTime<Local>>>,
     hold_key_down: Mutex<bool>,
-    paused_media_session: Mutex<Option<music::PauseSession>>,
+    paused_media_session: Mutex<Option<music::MediaSession>>,
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<AudioSpectrumEmitter>>,
     is_expanded: Mutex<bool>,
@@ -301,20 +301,22 @@ impl PillController {
     }
 
     fn pause_media_if_playing(&self, app: &AppHandle<AppRuntime>) {
-        if !app
-            .state::<AppState>()
-            .current_settings()
-            .media_control_enabled
-        {
-            return;
-        }
-        let session = music::pause_if_playing();
+        let settings = app.state::<AppState>().current_settings();
+        let mode = match settings.media_action {
+            MediaAction::Off => return,
+            MediaAction::Pause => music::MediaMode::Pause,
+            MediaAction::Duck10 => music::MediaMode::Duck(10),
+            MediaAction::Duck25 => music::MediaMode::Duck(25),
+            MediaAction::Duck50 => music::MediaMode::Duck(50),
+            MediaAction::Duck75 => music::MediaMode::Duck(75),
+        };
+        let session = Some(music::engage(mode));
         *self.paused_media_session.lock() = session;
     }
 
     fn resume_paused_media(&self) {
         let session = self.paused_media_session.lock().take();
-        music::resume_if_paused_by_us(session);
+        music::disengage(session);
     }
 
     fn reset_recording_state(&self) {

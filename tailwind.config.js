@@ -6,6 +6,10 @@ export default {
   ],
   theme: {
     extend: {
+      zIndex: {
+        "dropdown-open": "20",
+        tooltip: "30",
+      },
       colors: {
         cloud: {
           DEFAULT: 'var(--color-cloud)',

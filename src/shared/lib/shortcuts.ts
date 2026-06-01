@@ -66,10 +66,70 @@ function humanizeKeyToken(token: string): string {
   return token.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
 }
 
+function normalizeShortcutToken(token: string): string {
+  switch (token.trim().toLowerCase()) {
+    case "commandorcontrol":
+    case "commandorctrl":
+    case "cmdorctrl":
+    case "cmdorcontrol":
+      return isMacPlatform ? "Cmd" : "Ctrl";
+    case "command":
+    case "cmd":
+    case "meta":
+    case "super":
+    case "win":
+    case "windows":
+      return "Cmd";
+    case "control":
+    case "ctrl":
+      return "Ctrl";
+    case "alt":
+    case "option":
+    case "opt":
+    case "altgr":
+      return "Opt";
+    case "shift":
+      return "Shift";
+    case "leftcommand":
+      return "CmdLeft";
+    case "rightcommand":
+      return "CmdRight";
+    case "leftcontrol":
+      return "CtrlLeft";
+    case "rightcontrol":
+      return "CtrlRight";
+    case "leftalt":
+    case "leftoption":
+      return "OptLeft";
+    case "rightalt":
+    case "rightoption":
+      return "OptRight";
+    case "leftshift":
+      return "ShiftLeft";
+    case "rightshift":
+      return "ShiftRight";
+    case "delete":
+      return isMacPlatform ? "Delete" : "ForwardDelete";
+    case "arrowleft":
+      return "Left";
+    case "arrowright":
+      return "Right";
+    case "arrowup":
+      return "Up";
+    case "arrowdown":
+      return "Down";
+    case "spacebar":
+    case "space":
+      return "Space";
+    default:
+      return token.trim();
+  }
+}
+
 function shortcutTokens(shortcut: string): string[] {
   return shortcut
     .split("+")
-    .map((token) => token.trim())
+    .map(normalizeShortcutToken)
     .filter(Boolean);
 }
 

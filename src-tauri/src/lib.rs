@@ -8,6 +8,7 @@ mod core;
 mod crypto;
 mod data_migration;
 mod dictionary;
+mod import;
 mod library;
 mod license;
 mod llm_cleanup;
@@ -426,6 +427,9 @@ pub fn run() {
             personalization::set_personalities,
             personalization::list_installed_apps,
             personalization::list_website_icons,
+            import::commands::detect_importable_apps,
+            import::commands::preview_import,
+            import::commands::apply_import,
             get_app_info,
             open_data_dir,
             get_transcriptions,

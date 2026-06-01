@@ -43,7 +43,8 @@ const KEY_AUTO_DICTIONARY_IGNORED: &str = "auto_dictionary_ignored";
 const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
-const KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
+const KEY_MEDIA_ACTION: &str = "media_action";
+const LEGACY_KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
 const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
 const KEY_AUTO_LAUNCH_ENABLED: &str = "auto_launch_enabled";
 const KEY_START_IN_BACKGROUND: &str = "start_in_background";
@@ -169,7 +170,7 @@ pub struct UserSettings {
     #[serde(default)]
     pub edit_mode_enabled: bool,
     #[serde(default)]
-    pub media_control_enabled: bool,
+    pub media_action: MediaAction,
     #[serde(default)]
     pub auto_update_enabled: bool,
     #[serde(default)]
@@ -478,7 +479,7 @@ impl Default for UserSettings {
             replacements: Vec::new(),
             personalities: default_personalities(),
             edit_mode_enabled: false,
-            media_control_enabled: false,
+            media_action: MediaAction::Off,
             auto_update_enabled: false,
             auto_launch_enabled: false,
             start_in_background: true,
@@ -625,6 +626,18 @@ fn migrate_auto_delete_from_legacy(
         settings.auto_delete_target = AutoDeleteTarget::Audio;
         settings.auto_delete_duration = canonicalize_recording_prune_policy(legacy_recording);
     }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum MediaAction {
+    #[default]
+    Off,
+    Pause,
+    Duck10,
+    Duck25,
+    Duck50,
+    Duck75,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -886,11 +899,20 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_PERSONALITIES, settings.personalities.clone())?;
             settings.edit_mode_enabled =
                 self.read_value(&conn, KEY_EDIT_MODE_ENABLED, settings.edit_mode_enabled)?;
-            settings.media_control_enabled = self.read_value(
-                &conn,
-                KEY_MEDIA_CONTROL_ENABLED,
-                settings.media_control_enabled,
-            )?;
+            if let Some(media_action) =
+                self.read_optional_value::<MediaAction>(&conn, KEY_MEDIA_ACTION)?
+            {
+                settings.media_action = media_action;
+            } else if let Some(legacy_enabled) =
+                self.read_optional_value::<bool>(&conn, LEGACY_KEY_MEDIA_CONTROL_ENABLED)?
+            {
+                settings.media_action = if legacy_enabled {
+                    MediaAction::Pause
+                } else {
+                    MediaAction::Off
+                };
+                should_persist = true;
+            }
             settings.auto_update_enabled =
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =
@@ -1273,11 +1295,7 @@ impl SettingsStore {
         self.write_value(&conn, KEY_REPLACEMENTS, &settings.replacements)?;
         self.write_value(&conn, KEY_PERSONALITIES, &settings.personalities)?;
         self.write_value(&conn, KEY_EDIT_MODE_ENABLED, &settings.edit_mode_enabled)?;
-        self.write_value(
-            &conn,
-            KEY_MEDIA_CONTROL_ENABLED,
-            &settings.media_control_enabled,
-        )?;
+        self.write_value(&conn, KEY_MEDIA_ACTION, &settings.media_action)?;
         self.write_value(
             &conn,
             KEY_AUTO_UPDATE_ENABLED,

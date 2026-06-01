@@ -141,14 +141,59 @@ msgstr ""
 #~ msgstr "Writing"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key.optional_hint"
-msgstr "(if required)"
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_pause_media.body"
+#~ msgstr "pauses music while recording, resumes when done."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_pause_media.toggle_aria"
+#~ msgstr "Toggle auto-pause media while recording"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+#~ msgid "import.subtitle.single"
+#~ msgstr "We noticed you use {sourceName}. Pick what to carry over."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.optional_hint"
+msgstr "(if required)"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.replacementsCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.replacements.detail"
+msgstr "{0, plural, one {# rule} other {# rules}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.personalitiesCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.personalities.detail"
+msgstr "{0} saved"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.transcriptCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.history.detail"
+msgstr "{0} transcripts"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.dictionaryCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.dictionary.detail"
+msgstr "{0, plural, one {# word} other {# words}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: apps.length
+#: src/features/import/components/ImportStep.tsx
+msgid "import.subtitle"
+msgstr "{0, plural, one {We found another dictation app. Choose what to import.} other {We found other dictation apps. Choose what to import.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: entries.length
@@ -402,13 +447,13 @@ msgid "settings.local_api.api_key"
 msgstr "API key"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.api_key"
 msgstr "API Key"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.api_key"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key"
 msgstr "API Key"
 
 #. js-lingui-explicit-id
@@ -763,13 +808,13 @@ msgid "onboarding.welcome.cloud.title"
 msgstr "Cloud"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.cloud"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.provider.cloud"
 msgstr "Cloud (API Key)"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.cloud"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.cloud"
 msgstr "Cloud (API Key)"
 
 #. js-lingui-explicit-id
@@ -1065,13 +1110,13 @@ msgid "settings.models.remote_speech_active"
 msgstr "Currently using your Speech Provider{0}. Local models remain available as fallback."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.custom"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.provider.custom"
 msgstr "Custom"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.custom"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.custom"
 msgstr "Custom"
 
 #. js-lingui-explicit-id
@@ -1230,6 +1275,11 @@ msgstr "Developer"
 #. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.dictionary"
+msgstr "Dictionary"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.dictionary"
 msgstr "Dictionary"
 
 #. js-lingui-explicit-id
@@ -1685,6 +1735,11 @@ msgid "library.view.import_button"
 msgstr "Import"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cta"
+msgstr "Import"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.import_failed"
 msgstr "Import failed"
@@ -1705,6 +1760,11 @@ msgid "library.error_details.import_failed"
 msgstr "Import failed."
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.apply.failed"
+msgstr "Import failed. Try again or skip."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.title"
 msgstr "Import to Library"
@@ -1712,6 +1772,11 @@ msgstr "Import to Library"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.importing"
+msgstr "Importing..."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.importing"
 msgstr "Importing..."
 
 #. js-lingui-explicit-id
@@ -1777,8 +1842,18 @@ msgid "settings.local_api.model.kept_warm"
 msgstr "kept warm in memory for fast responses"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.shortcut"
+msgstr "Keyboard shortcut"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
+msgstr "Language"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.language"
 msgstr "Language"
 
 #. js-lingui-explicit-id
@@ -1792,9 +1867,19 @@ msgid "settings.app.text_size.large"
 msgstr "Large"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch"
+msgstr "Launch at login"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_launch"
 msgstr "Launch at Login"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.body_off"
+msgstr "leaves system audio playing while recording."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1872,11 +1957,6 @@ msgid "library.view.loading_more"
 msgstr "Loading..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.local"
-msgstr "Local"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.mode.local"
 msgstr "Local"
@@ -1889,6 +1969,11 @@ msgstr "Local"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.section.local"
+msgstr "Local"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.local"
 msgstr "Local"
 
 #. js-lingui-explicit-id
@@ -1920,6 +2005,11 @@ msgstr "Logs"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.longest"
 msgstr "Longest"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.body_duck"
+msgstr "lowers system audio volume while recording, restores when done."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -1977,13 +2067,13 @@ msgid "settings.general.microphone_test.unsupported"
 msgstr "Microphone testing isn't available in this window."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.model"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.model"
 msgstr "Model"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.model"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model"
 msgstr "Model"
 
 #. js-lingui-explicit-id
@@ -1997,15 +2087,15 @@ msgid "library.retranscribe.model"
 msgstr "Model"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: providerPreset?.defaultModel || "auto"
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.model.placeholder"
-msgstr "Model (default: {0})"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: providerPreset?.defaultModel || "none"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model.placeholder"
+msgstr "Model (default: {0})"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: providerPreset?.defaultModel || "auto"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model.placeholder"
 msgstr "Model (default: {0})"
 
 #. js-lingui-explicit-id
@@ -2103,6 +2193,11 @@ msgstr "New tag..."
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.recent"
 msgstr "Newest first"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.raise"
+msgstr "Next media action"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2285,6 +2380,11 @@ msgid "personalization.notes"
 msgstr "Notes:"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.empty"
+msgstr "Nothing to bring over from this app."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.engine.nvidia.description"
 msgstr "NVIDIA local speech models, including Parakeet for transcription and Nemotron for live streaming."
@@ -2295,9 +2395,24 @@ msgid "settings.app.permission.off"
 msgstr "off"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.off"
+msgstr "Off"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch.off"
+msgstr "Off"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.oldest"
 msgstr "Oldest first"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch.on"
+msgstr "On"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
@@ -2320,18 +2435,23 @@ msgid "settings.app.open_settings"
 msgstr "Open Settings"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.command_line.open_wiki_aria"
+msgstr "Open the command line documentation"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.engine.whisper.description"
 msgstr "OpenAI's speech recognition with custom vocabulary support."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key.optional"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.api_key.optional"
 msgstr "Optional"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.api_key.optional"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.optional"
 msgstr "Optional"
 
 #. js-lingui-explicit-id
@@ -2345,14 +2465,19 @@ msgid "settings.account.section.activate"
 msgstr "Already bought?"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.pause"
+msgstr "Pause"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.pause_audio"
 msgstr "Pause audio"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.body"
-msgstr "pauses music while recording, resumes when done."
+msgid "settings.app.auto_pause_media.body_pause"
+msgstr "pauses system audio while recording, resumes when done."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2363,6 +2488,11 @@ msgstr "Permission changes may require a restart."
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_personal"
 msgstr "Personal"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.personalities"
+msgstr "Personalities"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2437,6 +2567,11 @@ msgstr "Press your new shortcut, or hit Esc to cancel."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.lower"
+msgstr "Previous media action"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Privacy & Permissions"
 
@@ -2466,13 +2601,13 @@ msgid "pill.status.processing"
 msgstr "Processing..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.provider"
 msgstr "Provider"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider"
 msgstr "Provider"
 
 #. js-lingui-explicit-id
@@ -2607,13 +2742,13 @@ msgid "home.local_api.requests"
 msgstr "Requests served"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key.required"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.api_key.required"
 msgstr "Required"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.api_key.required"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.required"
 msgstr "Required"
 
 #. js-lingui-explicit-id
@@ -2923,6 +3058,11 @@ msgid "library.retranscribe.select_model"
 msgstr "Select a model"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.app_picker.aria"
+msgstr "Select app to import from"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.select_existing_tag"
 msgstr "Select existing tag"
@@ -2943,13 +3083,13 @@ msgid "settings.general.select_microphone"
 msgstr "Select microphone..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.select"
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.provider.select"
 msgstr "Select provider..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.select"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.select"
 msgstr "Select provider..."
 
 #. js-lingui-explicit-id
@@ -3056,6 +3196,11 @@ msgstr "Skip"
 #: src/features/onboarding/steps/MicrophoneStep.tsx
 msgid "onboarding.microphone.skip"
 msgstr "Skip"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.skip"
+msgstr "Skip for now"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3229,6 +3374,11 @@ msgid "settings.general.microphone_test.test"
 msgstr "Test"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.replacements"
+msgstr "Text replacements"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.label"
 msgstr "Text Size"
@@ -3330,11 +3480,6 @@ msgstr "Toggle Auto Dictionary"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.toggle_aria"
-msgstr "Toggle auto-pause media while recording"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update.toggle_aria"
 msgstr "Toggle auto-update"
 
@@ -3384,6 +3529,11 @@ msgid "settings.app.prune.noun.transcripts.one"
 msgstr "transcript"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.history"
+msgstr "Transcript history"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.transcript_placeholder"
 msgstr "Transcript will appear here."
@@ -3402,6 +3552,11 @@ msgstr "Transcription failed"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.transcription_language"
 msgstr "Transcription Language"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.model"
+msgstr "Transcription model"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3533,6 +3688,11 @@ msgid "updates.whats_new.view_all"
 msgstr "View all releases on GitHub"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.title"
+msgstr "Want to bring your settings over?"
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning_aria"
 msgstr "Warning: model compatibility issue"
@@ -3541,6 +3701,16 @@ msgstr "Warning: model compatibility issue"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.unknown_count"
 msgstr "We couldn't count them right now, but auto-delete will still run as soon as you save this change."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.error"
+msgstr "We couldn't read this app's data. You can skip and set things up manually."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.model.unrecognized"
+msgstr "We don't recognize this app's model — you'll pick one on the next step."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx

@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMachine } from "@xstate/react";
 import {
   useMutation,
@@ -18,12 +18,15 @@ import {
   type PurchaseTier,
 } from "../license/purchaseConfig";
 import { useSettings } from "../settings/queries";
+import { getSettings } from "../settings/api";
 import {
   modelKeys,
   useModelCatalog,
   useModelStatuses,
 } from "../settings/models-queries";
 import { onboardingMachine, getSteps, type LocalDownloadStatus } from "./machine";
+import { useImportableApps } from "../import/queries";
+import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
 import { ModelSelectionStep } from "./steps/ModelSelectionStep";
 import { MicrophoneStep } from "./steps/MicrophoneStep";
@@ -118,9 +121,20 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const ctx = state.context;
   const queryClient = useQueryClient();
 
+  const importableAppsQuery = useImportableApps();
+
+  useEffect(() => {
+    if (importableAppsQuery.data) {
+      send({ type: "SET_IMPORTABLE", apps: importableAppsQuery.data });
+    }
+  }, [importableAppsQuery.data, send]);
+
+  const hasImportStep =
+    ctx.selectedMode === "local" && ctx.importableApps.length > 0;
+
   const steps = useMemo(
-    () => getSteps(ctx.platform),
-    [ctx.platform],
+    () => getSteps(ctx.platform, hasImportStep),
+    [ctx.platform, hasImportStep],
   );
   const currentStep = state.value as string;
   const currentStepIndex = steps.indexOf(currentStep as typeof steps[number]);
@@ -129,12 +143,17 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
 
-  const onboardingModelCatalog = useMemo(
-    () => pickOnboardingModels(modelCatalogQuery.data ?? []),
-    [modelCatalogQuery.data],
-  );
+  const onboardingModelCatalog = useMemo(() => {
+    const catalog = modelCatalogQuery.data ?? [];
+    const picked = pickOnboardingModels(catalog);
+    const importedKey = ctx.localModelChoice;
+    if (importedKey && !picked.some((model) => model.key === importedKey)) {
+      const imported = catalog.find((model) => model.key === importedKey);
+      if (imported) return [...picked, imported];
+    }
+    return picked;
+  }, [modelCatalogQuery.data, ctx.localModelChoice]);
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
-  const persistedThemeMode = settingsQuery.data?.theme_mode ?? "system";
   const persistedSettings = settingsQuery.data;
   const selectedModel = ctx.localModelChoice ||
     pickDefaultOnboardingModel(onboardingModelCatalog, persistedLocalModel);
@@ -417,6 +436,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }
 
     try {
+      const latestSettings = await getSettings();
       const holdShortcut = "Control+Shift+Space";
       const toggleShortcut = "Control+Alt+Space";
       await invoke("update_settings", {
@@ -434,16 +454,16 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
-          remoteSpeechEnabled: persistedSettings?.remote_speech_enabled ?? false,
-          remoteSpeechProvider: persistedSettings?.remote_speech_provider ?? "openai",
+          remoteSpeechEnabled: latestSettings.remote_speech_enabled ?? false,
+          remoteSpeechProvider: latestSettings.remote_speech_provider ?? "openai",
           remoteSpeechEndpoint:
-            persistedSettings?.remote_speech_endpoint ?? "https://api.openai.com/v1",
-          remoteSpeechApiKey: persistedSettings?.remote_speech_api_key ?? "",
-          remoteSpeechModel: persistedSettings?.remote_speech_model ?? "auto",
-          microphoneDevice: persistedSettings?.microphone_device ?? null,
-          language: persistedSettings?.language ?? "en",
-          appLocale: persistedSettings?.app_locale ?? "system",
-          themeMode: persistedThemeMode,
+            latestSettings.remote_speech_endpoint ?? "https://api.openai.com/v1",
+          remoteSpeechApiKey: latestSettings.remote_speech_api_key ?? "",
+          remoteSpeechModel: latestSettings.remote_speech_model ?? "auto",
+          microphoneDevice: latestSettings.microphone_device ?? null,
+          language: latestSettings.language ?? "en",
+          appLocale: latestSettings.app_locale ?? "system",
+          themeMode: latestSettings.theme_mode ?? "system",
           llmEnabled: false,
           cleanupEnabled: false,
           llmProvider: "none",
@@ -452,19 +472,19 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           llmModel: "",
           editModeEnabled: false,
           autoDictionaryEnabled: false,
-          mediaControlEnabled: true,
+          mediaAction: "pause",
           autoUpdateEnabled: true,
-          autoLaunchEnabled: false,
-          startInBackground: persistedSettings?.start_in_background ?? false,
-          autoDeleteTarget: persistedSettings?.auto_delete_target ?? "transcripts",
-          autoDeleteDuration: persistedSettings?.auto_delete_duration ?? "never",
-          analyticsEnabled: persistedSettings?.analytics_enabled ?? true,
-          localApiKey: persistedSettings?.local_api_key ?? "",
-          localApiPort: persistedSettings?.local_api_port ?? 11435,
-          localApiModel: persistedSettings?.local_api_model ?? "auto",
-          localApiHost: persistedSettings?.local_api_host ?? "127.0.0.1",
-          localApiStartOnLaunch: persistedSettings?.local_api_start_on_launch ?? false,
-          localApiCors: persistedSettings?.local_api_cors ?? false,
+          autoLaunchEnabled: latestSettings.auto_launch_enabled ?? false,
+          startInBackground: latestSettings.start_in_background ?? false,
+          autoDeleteTarget: latestSettings.auto_delete_target ?? "transcripts",
+          autoDeleteDuration: latestSettings.auto_delete_duration ?? "never",
+          analyticsEnabled: latestSettings.analytics_enabled ?? true,
+          localApiKey: latestSettings.local_api_key ?? "",
+          localApiPort: latestSettings.local_api_port ?? 11435,
+          localApiModel: latestSettings.local_api_model ?? "auto",
+          localApiHost: latestSettings.local_api_host ?? "127.0.0.1",
+          localApiStartOnLaunch: latestSettings.local_api_start_on_launch ?? false,
+          localApiCors: latestSettings.local_api_cors ?? false,
         },
       });
       await invoke("complete_onboarding");
@@ -488,7 +508,6 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     ctx.smartShortcut,
     onComplete,
     persistedSettings,
-    persistedThemeMode,
     selectedModel,
     send,
     settingsQuery.isError,
@@ -526,6 +545,34 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             hasStepTransitioned={ctx.hasStepTransitioned}
             selectedMode={ctx.selectedMode}
             onSelectMode={(mode) => send({ type: "SELECT_MODE", mode })}
+            onNext={goNext}
+            continueDisabled={
+              ctx.selectedMode === "local" && importableAppsQuery.isLoading
+            }
+          />
+        );
+      case "import":
+        return (
+          <ImportStep
+            key="import"
+            stepMotionProps={stepMotionProps}
+            apps={ctx.importableApps}
+            onApplied={(result) => {
+              if (result.modelKey) {
+                send({ type: "SELECT_MODEL", key: result.modelKey });
+                if (modelStatus[result.modelKey]?.installed) {
+                  send({ type: "SKIP_LOCAL_MODEL" });
+                } else {
+                  void handleDownload(result.modelKey);
+                  goNext();
+                }
+              } else {
+                goNext();
+              }
+              if (result.shortcut) {
+                send({ type: "SET_SHORTCUT", shortcut: result.shortcut });
+              }
+            }}
             onNext={goNext}
           />
         );

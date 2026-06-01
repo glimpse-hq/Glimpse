@@ -90,8 +90,8 @@ const ActionCardButton = ({
             aria-hidden="true"
             className={joinClasses(
               isCardLayout
-                ? "flex size-5 shrink-0 items-center justify-center ui-color-primary"
-                : "flex shrink-0 items-center justify-center text-[var(--color-text-muted)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]",
+                ? "grid size-7 shrink-0 place-items-center leading-none ui-color-primary [&_svg]:block [&_svg]:shrink-0"
+                : "flex shrink-0 items-center justify-center leading-none text-[var(--color-text-muted)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)] [&_svg]:block [&_svg]:shrink-0",
               iconClassName,
             )}
           >
@@ -99,11 +99,16 @@ const ActionCardButton = ({
           </span>
         ) : null}
 
-        <div className="min-w-0">
+        <div
+          className={joinClasses(
+            "min-w-0",
+            isCardLayout ? "flex flex-col justify-center" : null,
+          )}
+        >
           <span
             className={joinClasses(
               isCardLayout
-                ? "ui-text-label-strong ui-color-primary block"
+                ? "ui-text-label-strong ui-color-primary block leading-tight"
                 : "ui-text-button ui-color-secondary block",
               titleClassName,
             )}
@@ -113,7 +118,9 @@ const ActionCardButton = ({
           {description ? (
             <span
               className={joinClasses(
-                "ui-text-micro ui-color-disabled block",
+                isCardLayout
+                  ? "ui-text-micro ui-color-disabled block leading-tight"
+                  : "ui-text-micro ui-color-disabled block",
                 descriptionClassName,
               )}
             >

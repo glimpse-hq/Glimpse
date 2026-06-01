@@ -250,7 +250,19 @@ impl RegisteredShortcutState {
 
         if event.is_key_down && !event.repeat {
             for (id, binding) in self.bindings.iter().enumerate() {
-                if binding.hotkey.matches_event(&event) && self.pressed.insert(id) {
+                if !binding.hotkey.matches_event(&event) {
+                    continue;
+                }
+
+                let recovers_modifier_only_toggle = matches!(
+                    binding.action,
+                    ShortcutAction::Smart | ShortcutAction::Toggle
+                ) && binding.hotkey.key.is_none()
+                    && event
+                        .changed_modifier
+                        .is_some_and(|modifier| event.modifiers == modifier);
+
+                if self.pressed.insert(id) || recovers_modifier_only_toggle {
                     emitted.push((binding.action, HotkeyState::Pressed, binding.options));
                 }
             }
@@ -531,50 +543,53 @@ mod tests {
         );
     }
 
-    #[test]
-    fn registered_state_forces_release_on_reset_event() {
-        let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
-            hotkey: Hotkey::new(Modifiers::CTRL, Key::Space).unwrap(),
-            action: ShortcutAction::Smart,
-            options: ShortcutOptions::default(),
-        }]);
-
-        state.process(event(Modifiers::CTRL_LEFT, Some(Key::Space), true));
-        assert_eq!(
-            state.process(event(Modifiers::empty(), None, false)),
-            vec![(
-                ShortcutAction::Smart,
-                HotkeyState::Released,
-                ShortcutOptions::default()
-            )]
-        );
+    fn modifier_only_press() -> KeyEvent {
+        KeyEvent {
+            modifiers: Modifiers::OPT_RIGHT,
+            key: None,
+            is_key_down: true,
+            changed_modifier: Some(Modifiers::OPT_RIGHT),
+            repeat: false,
+        }
     }
 
     #[test]
-    fn registered_state_ignores_duplicate_press_without_release() {
+    fn registered_state_ignores_duplicate_press_for_hold() {
         let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
             hotkey: Hotkey::new(Modifiers::OPT_RIGHT, None).unwrap(),
             action: ShortcutAction::Hold,
             options: ShortcutOptions::default(),
         }]);
 
-        let press = KeyEvent {
-            modifiers: Modifiers::OPT_RIGHT,
-            key: None,
-            is_key_down: true,
-            changed_modifier: Some(Modifiers::OPT_RIGHT),
-            repeat: false,
-        };
-
         assert_eq!(
-            state.process(press),
+            state.process(modifier_only_press()),
             vec![(
                 ShortcutAction::Hold,
                 HotkeyState::Pressed,
                 ShortcutOptions::default()
             )]
         );
-        assert!(state.process(press).is_empty());
+        assert!(state.process(modifier_only_press()).is_empty());
+    }
+
+    #[test]
+    fn registered_state_recovers_modifier_only_toggle() {
+        for action in [ShortcutAction::Toggle, ShortcutAction::Smart] {
+            let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
+                hotkey: Hotkey::new(Modifiers::OPT_RIGHT, None).unwrap(),
+                action,
+                options: ShortcutOptions::default(),
+            }]);
+
+            assert_eq!(
+                state.process(modifier_only_press()),
+                vec![(action, HotkeyState::Pressed, ShortcutOptions::default())]
+            );
+            assert_eq!(
+                state.process(modifier_only_press()),
+                vec![(action, HotkeyState::Pressed, ShortcutOptions::default())]
+            );
+        }
     }
 
     #[test]

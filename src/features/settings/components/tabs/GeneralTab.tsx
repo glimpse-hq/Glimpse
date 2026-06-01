@@ -135,6 +135,9 @@ const GeneralTab = ({
     useState<HelpTooltipId | null>(null);
   const [expandedShortcut, setExpandedShortcut] =
     useState<ShortcutMode | null>(null);
+  const [micDropdownOpen, setMicDropdownOpen] = useState(false);
+  const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
+  const deviceRowElevated = micDropdownOpen || languageDropdownOpen;
   const {
     activeDeviceLabel,
     error: microphoneTestError,
@@ -356,7 +359,9 @@ const GeneralTab = ({
       </AnimatePresence>
     </div>
 
-    <div className="grid grid-cols-2 gap-3">
+    <div
+      className={`grid grid-cols-2 gap-3${deviceRowElevated ? " relative z-dropdown-open" : ""}`}
+    >
       <div className="space-y-1.5">
         <div className="flex h-5 items-center justify-between gap-2">
           <label className="ui-text-label-strong ui-color-muted leading-none">
@@ -401,7 +406,7 @@ const GeneralTab = ({
             )}
           </button>
         </div>
-        <div className="relative z-20 h-[38px]">
+        <div className="h-[38px]">
           {microphoneTestStatus === "listening" ||
           microphoneTestStatus === "error" ? (
             <MicrophoneTestSlot
@@ -420,6 +425,7 @@ const GeneralTab = ({
               onChange={(val) =>
                 onMicrophoneDeviceChange(val === "" ? null : val)
               }
+              onOpenChange={setMicDropdownOpen}
               options={[
                 {
                   value: "",
@@ -462,7 +468,7 @@ const GeneralTab = ({
               >
                 <Info size={10} aria-hidden="true" />
               </button>
-              <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-10">
+              <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-tooltip">
                 <div className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight">
                   <p>
                     {t({
@@ -485,10 +491,11 @@ const GeneralTab = ({
             </div>
           </div>
         </div>
-        <div className="relative z-10">
+        <div>
           <Dropdown
             value={language}
             onChange={(val) => onLanguageChange(val)}
+            onOpenChange={setLanguageDropdownOpen}
             options={languages.map((lang) => {
               if (!showLanguageSupportBadges) {
                 return {
@@ -565,7 +572,7 @@ const GeneralTab = ({
             <div
               id="shortcuts-help-tooltip"
               role="tooltip"
-              className={`absolute left-0 bottom-full mb-1 z-20 ${
+              className={`absolute left-0 bottom-full mb-1 z-tooltip ${
                 openHelpTooltip === "shortcuts" ? "block" : "hidden"
               }`}
             >
@@ -712,7 +719,7 @@ const GeneralTab = ({
 
         <div className="space-y-3">
           <div
-            className={`relative z-30 rounded-lg bg-surface-surface transition-opacity ${
+            className={`rounded-lg bg-surface-surface transition-opacity ${
               aiFeaturesDisabled ? "opacity-55" : "opacity-100"
             }`}
           >
@@ -818,7 +825,7 @@ const GeneralTab = ({
                   <div
                     id="edit-mode-help-tooltip"
                     role="tooltip"
-                    className={`absolute right-0 bottom-full mb-1 z-[80] ${
+                    className={`absolute right-0 bottom-full mb-1 z-tooltip ${
                       !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
                         ? "block"
                         : "hidden"

@@ -10,6 +10,7 @@ interface WelcomeStepProps {
   selectedMode: TranscriptionMode;
   onSelectMode: (mode: TranscriptionMode) => void;
   onNext: () => void;
+  continueDisabled?: boolean;
 }
 
 export function WelcomeStep({
@@ -18,6 +19,7 @@ export function WelcomeStep({
   selectedMode,
   onSelectMode,
   onNext,
+  continueDisabled = false,
 }: WelcomeStepProps) {
   const { t } = useLingui();
 
@@ -157,7 +159,8 @@ export function WelcomeStep({
 
       <button
         onClick={onNext}
-        className="flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight"
+        disabled={continueDisabled}
+        className="flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight disabled:opacity-40 disabled:hover:bg-content-primary"
       >
         {t({
           id: "onboarding.welcome.cta",

@@ -190,10 +190,10 @@ const HoldActionCardButton = ({
         {icon ? (
           <span
             aria-hidden="true"
-            className="relative flex size-5 shrink-0 items-center justify-center ui-color-primary"
+            className="relative grid size-7 shrink-0 place-items-center leading-none ui-color-primary [&_svg]:block [&_svg]:shrink-0"
           >
             <svg
-              className="pointer-events-none absolute -inset-1 size-7 opacity-0 transition-opacity duration-200 group-data-[holding=true]:opacity-100"
+              className="pointer-events-none absolute left-1/2 top-1/2 size-7 -translate-x-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-200 group-data-[holding=true]:opacity-100"
               viewBox="0 0 28 28"
               fill="none"
               aria-hidden="true"
@@ -222,12 +222,12 @@ const HoldActionCardButton = ({
             {icon}
           </span>
         ) : null}
-        <span className="min-w-0">
-          <span className="ui-text-label-strong ui-color-primary block">
+        <span className="flex min-w-0 flex-col justify-center">
+          <span className="ui-text-label-strong ui-color-primary block leading-tight">
             {title}
           </span>
           {description ? (
-            <span className="ui-text-micro ui-color-disabled block">
+            <span className="ui-text-micro ui-color-disabled block leading-tight">
               {description}
             </span>
           ) : null}
