@@ -1,9 +1,22 @@
 0.9.2
 
+### Features
+- During onboarding, Glimpse can detect Aqua Voice, superwhisper, Wispr Flow, or Handy and import what you want, dictionary words, text replacements, personalization modes, shortcuts, language, launch-at-login, speech models, and past transcripts.
+
+### Changes
+- Auto-pause media now works system-wide on macOS and Windows, not just with a handful of apps. In Settings → App you can pause playback completely, duck it to 10%, 25%, 50%, or 75%, or turn it off.
+- Glimpse CLI can now be pointed at any whisper models, it is no longer locked to Glimpse specific ones.
+
+
+### Improvements
+- The import step in onboarding is cleaner and easier to scan.
+- Shortcuts imported from other apps should map more reliably to Glimpse's format.
+
 ### Fixes
 - Fixed some modifier-only shortcuts, like Fn or Option, occasionally not responding.
 - Fixed HTML-style lists in transcript history showing as plain text.
 - Fixed the Transcription Language dropdown in Settings opening behind the Edit Mode section.
+- Cleaned up some UI elements.
 
 ---
 0.9.1
