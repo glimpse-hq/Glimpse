@@ -472,7 +472,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           llmModel: "",
           editModeEnabled: false,
           autoDictionaryEnabled: false,
-          mediaControlEnabled: true,
+          mediaAction: "pause",
           autoUpdateEnabled: true,
           autoLaunchEnabled: latestSettings.auto_launch_enabled ?? false,
           startInBackground: latestSettings.start_in_background ?? false,

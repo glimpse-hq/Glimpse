@@ -54,6 +54,7 @@ import type {
   LlmProvider,
   RecordingPrunePolicy,
   AutoDeleteTarget,
+  MediaAction,
   AppLocaleSetting,
   CliInstallStatus,
   LocalApiLogEntry,
@@ -234,7 +235,7 @@ export function useSettingsForm({
   const [availableSpeechModels, setAvailableSpeechModels] = useState<string[]>([]);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
-  const [mediaControlEnabled, setMediaControlEnabled] = useState(false);
+  const [mediaAction, setMediaAction] = useState<MediaAction>("off");
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
   const [autoLaunchEnabled, setAutoLaunchEnabledState] = useState(false);
   const [startInBackground, setStartInBackground] = useState(false);
@@ -450,7 +451,7 @@ export function useSettingsForm({
     setLlmModel(s.llm_model ?? "");
     setEditModeEnabled(s.edit_mode_enabled ?? false);
     setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
-    setMediaControlEnabled(s.media_control_enabled ?? false);
+    setMediaAction(s.media_action ?? "off");
     setAutoUpdateEnabled(s.auto_update_enabled ?? false);
     setAutoLaunchEnabledState(s.auto_launch_enabled ?? false);
     setStartInBackground(
@@ -608,7 +609,7 @@ export function useSettingsForm({
         llmModel,
         editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
         autoDictionaryEnabled: autoDictionarySupported ? autoDictionaryEnabled : false,
-        mediaControlEnabled,
+        mediaAction,
         autoUpdateEnabled,
         autoLaunchEnabled,
         startInBackground,
@@ -653,7 +654,7 @@ export function useSettingsForm({
       editModeEnabled,
       autoDictionarySupported,
       autoDictionaryEnabled,
-      mediaControlEnabled,
+      mediaAction,
       autoUpdateEnabled,
       autoLaunchEnabled,
       startInBackground,
@@ -1609,8 +1610,8 @@ export function useSettingsForm({
     autoDictionaryEnabled,
     autoDictionarySupported,
     setAutoDictionaryEnabled,
-    mediaControlEnabled,
-    setMediaControlEnabled,
+    mediaAction,
+    setMediaAction,
     autoUpdateEnabled,
     setAutoUpdateEnabled,
     autoLaunchEnabled,

@@ -2,7 +2,14 @@ import { useLingui } from "@lingui/react/macro";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
-import { AlertTriangle, Check, CornerDownRight, Loader2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  CornerDownRight,
+  Loader2,
+} from "lucide-react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
@@ -16,6 +23,7 @@ import type { PlatformCapabilities } from "../../../../shared/lib/platform";
 import type {
   AppLocaleSetting,
   AutoDeleteTarget,
+  MediaAction,
   RecordingPrunePolicy,
   TextSizeMode,
   ThemeMode,
@@ -117,8 +125,8 @@ type AppTabProps = {
   onThemeModeChange: (mode: ThemeMode) => void;
   appLocale: AppLocaleSetting;
   onAppLocaleChange: (locale: AppLocaleSetting) => void;
-  mediaControlEnabled: boolean;
-  onMediaControlEnabledChange: (enabled: boolean) => void;
+  mediaAction: MediaAction;
+  onMediaActionChange: (action: MediaAction) => void;
   autoUpdateEnabled: boolean;
   onAutoUpdateEnabledChange: (enabled: boolean) => void;
   autoLaunchEnabled: boolean;
@@ -146,8 +154,8 @@ const AppTab = ({
   onThemeModeChange,
   appLocale,
   onAppLocaleChange,
-  mediaControlEnabled,
-  onMediaControlEnabledChange,
+  mediaAction,
+  onMediaActionChange,
   autoUpdateEnabled,
   onAutoUpdateEnabledChange,
   autoLaunchEnabled,
@@ -166,6 +174,77 @@ const AppTab = ({
   const [isPreviewingPrune, setIsPreviewingPrune] = useState(false);
   const [pendingPruneConfirmation, setPendingPruneConfirmation] =
     useState<PendingPruneConfirmation | null>(null);
+
+  const duckStops: Array<{ label: string; value: MediaAction }> = [
+    {
+      label: t({ id: "settings.app.auto_pause_media.pause", message: "Pause" }),
+      value: "pause",
+    },
+    { label: "10%", value: "duck10" },
+    { label: "25%", value: "duck25" },
+    { label: "50%", value: "duck50" },
+    { label: "75%", value: "duck75" },
+    {
+      label: t({ id: "settings.app.auto_pause_media.off", message: "Off" }),
+      value: "off",
+    },
+  ];
+  const duckIndex = Math.max(
+    0,
+    duckStops.findIndex((stop) => stop.value === mediaAction),
+  );
+  const handleDuckChange = (index: number) => {
+    onMediaActionChange(duckStops[index].value);
+  };
+  const handleDuckScrubStart = (
+    event:
+      | React.MouseEvent<HTMLSpanElement>
+      | React.TouchEvent<HTMLSpanElement>,
+  ) => {
+    event.preventDefault();
+    const startX =
+      "touches" in event ? event.touches[0].clientX : event.clientX;
+    const initialIndex = duckIndex;
+    let lastIndex = initialIndex;
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const currentX =
+        "touches" in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const steps = Math.round((currentX - startX) / 15);
+      const nextIndex = Math.min(
+        duckStops.length - 1,
+        Math.max(0, initialIndex + steps),
+      );
+      if (nextIndex !== lastIndex) {
+        lastIndex = nextIndex;
+        handleDuckChange(nextIndex);
+      }
+    };
+    const handleEnd = () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+    };
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove, { passive: false });
+    window.addEventListener("touchend", handleEnd);
+  };
+  const duckDescription =
+    mediaAction === "off"
+      ? t({
+          id: "settings.app.auto_pause_media.body_off",
+          message: "leaves your music playing while recording.",
+        })
+      : mediaAction === "pause"
+        ? t({
+            id: "settings.app.auto_pause_media.body_pause",
+            message: "pauses music while recording, resumes when done.",
+          })
+        : t({
+            id: "settings.app.auto_pause_media.body_duck",
+            message: "lowers music volume while recording, restores when done.",
+          });
 
   const textSizeOptions: Array<{ value: TextSizeMode; label: string }> = [
     {
@@ -748,23 +827,63 @@ const AppTab = ({
                         message: "Auto-pause Media",
                       })}
                     </span>
-                    <ToggleSwitch
-                      enabled={mediaControlEnabled}
-                      onToggle={() =>
-                        onMediaControlEnabledChange(!mediaControlEnabled)
-                      }
-                      ariaLabel={t({
-                        id: "settings.app.auto_pause_media.toggle_aria",
-                        message: "Toggle auto-pause media while recording",
-                      })}
-                    />
+                    <div className="flex items-center gap-0.5 ui-text-micro leading-none">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDuckChange(Math.max(0, duckIndex - 1))
+                        }
+                        disabled={duckIndex === 0}
+                        aria-label={t({
+                          id: "settings.app.auto_pause_media.lower",
+                          message: "Quieter",
+                        })}
+                        className={`transition-colors p-0.5 ${
+                          duckIndex === 0
+                            ? "text-content-disabled"
+                            : "text-content-muted hover:text-content-primary"
+                        }`}
+                      >
+                        <ChevronLeft size={10} />
+                      </button>
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        <motion.span
+                          key={duckIndex}
+                          initial={{ opacity: 0, y: -2, scale: 0.92 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 2, scale: 0.92 }}
+                          transition={{ duration: 0.16, ease: "easeOut" }}
+                          onMouseDown={handleDuckScrubStart}
+                          onTouchStart={handleDuckScrubStart}
+                          className="w-[40px] min-w-[40px] text-center font-medium text-content-secondary tabular-nums cursor-ew-resize select-none"
+                        >
+                          {duckStops[duckIndex].label}
+                        </motion.span>
+                      </AnimatePresence>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleDuckChange(
+                            Math.min(duckStops.length - 1, duckIndex + 1),
+                          )
+                        }
+                        disabled={duckIndex === duckStops.length - 1}
+                        aria-label={t({
+                          id: "settings.app.auto_pause_media.raise",
+                          message: "Louder",
+                        })}
+                        className={`transition-colors p-0.5 ${
+                          duckIndex === duckStops.length - 1
+                            ? "text-content-disabled"
+                            : "text-content-muted hover:text-content-primary"
+                        }`}
+                      >
+                        <ChevronRight size={10} />
+                      </button>
+                    </div>
                   </div>
                   <span className="ui-text-micro ui-color-disabled block mt-0.5">
-                    {t({
-                      id: "settings.app.auto_pause_media.body",
-                      message:
-                        "pauses music while recording, resumes when done.",
-                    })}
+                    {duckDescription}
                   </span>
                 </div>
               )}

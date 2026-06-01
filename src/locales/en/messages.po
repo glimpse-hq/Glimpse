@@ -141,6 +141,16 @@ msgstr ""
 #~ msgstr "Writing"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_pause_media.body"
+#~ msgstr "pauses music while recording, resumes when done."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_pause_media.toggle_aria"
+#~ msgstr "Toggle auto-pause media while recording"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -155,6 +165,18 @@ msgstr "(if required)"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements.detail"
 msgstr "{0, plural, one {# rule} other {# rules}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.personalitiesCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.personalities.detail"
+msgstr "{0} saved"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.transcriptCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.history.detail"
+msgstr "{0} transcripts"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.dictionaryCount
@@ -192,18 +214,6 @@ msgstr "{0} of {1} matches"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.count.multiple"
 msgstr "{0} replacements"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: previewForApp.personalitiesCount
-#: src/features/import/components/ImportStep.tsx
-msgid "import.cat.personalities.detail"
-msgstr "{0} saved"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: previewForApp.transcriptCount
-#: src/features/import/components/ImportStep.tsx
-msgid "import.cat.history.detail"
-msgstr "{0} transcripts"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -1861,6 +1871,11 @@ msgid "settings.app.auto_launch"
 msgstr "Launch at Login"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.body_off"
+msgstr "leaves your music playing while recording."
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.library"
 msgstr "Library"
@@ -1984,6 +1999,16 @@ msgstr "Logs"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.longest"
 msgstr "Longest"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.raise"
+msgstr "Louder"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.body_duck"
+msgstr "lowers music volume while recording, restores when done."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -2364,6 +2389,11 @@ msgid "settings.app.permission.off"
 msgstr "off"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.off"
+msgstr "Off"
+
+#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.auto_launch.off"
 msgstr "Off"
@@ -2424,13 +2454,18 @@ msgid "settings.account.section.activate"
 msgstr "Already bought?"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.pause"
+msgstr "Pause"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.pause_audio"
 msgstr "Pause audio"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.body"
+msgid "settings.app.auto_pause_media.body_pause"
 msgstr "pauses music while recording, resumes when done."
 
 #. js-lingui-explicit-id
@@ -2588,6 +2623,11 @@ msgstr "Purchase {label} for {price}"
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.import_status.queued"
 msgstr "Queued for transcription..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.lower"
+msgstr "Quieter"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -3426,11 +3466,6 @@ msgstr "Toggle application list"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.auto_dictionary.toggle_aria"
 msgstr "Toggle Auto Dictionary"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.toggle_aria"
-msgstr "Toggle auto-pause media while recording"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx

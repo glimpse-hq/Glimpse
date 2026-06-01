@@ -3,7 +3,7 @@ use tauri::AppHandle;
 
 use super::hotkeys;
 use crate::settings::{
-    canonicalize_app_locale, canonicalize_app_locale_or_default, AutoDeleteTarget,
+    canonicalize_app_locale, canonicalize_app_locale_or_default, AutoDeleteTarget, MediaAction,
     RecordingPrunePolicy, ShortcutBinding, ShortcutBindings, ThemeMode, TranscriptionMode,
     UserSettings,
 };
@@ -45,7 +45,8 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_model: String,
     pub edit_mode_enabled: bool,
     pub auto_dictionary_enabled: bool,
-    pub media_control_enabled: bool,
+    #[serde(default)]
+    pub media_action: MediaAction,
     pub auto_update_enabled: bool,
     pub auto_launch_enabled: bool,
     pub start_in_background: bool,
@@ -389,7 +390,7 @@ pub(crate) fn update_settings(
     next.llm_api_key = args.llm_api_key;
     next.llm_model = args.llm_model.trim().to_string();
     next.auto_dictionary_enabled = args.auto_dictionary_enabled;
-    next.media_control_enabled = args.media_control_enabled;
+    next.media_action = args.media_action;
     next.auto_update_enabled = args.auto_update_enabled;
     next.auto_launch_enabled = args.auto_launch_enabled;
     next.start_in_background = args.auto_launch_enabled && args.start_in_background;
@@ -497,7 +498,7 @@ mod tests {
             llm_model: String::new(),
             edit_mode_enabled: false,
             auto_dictionary_enabled: false,
-            media_control_enabled: true,
+            media_action: MediaAction::Pause,
             auto_update_enabled: true,
             auto_launch_enabled: false,
             start_in_background: true,

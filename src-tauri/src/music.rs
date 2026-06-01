@@ -1,15 +1,26 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct PauseSession(u64);
 
-pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-    imp::pause_if_playing()
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MediaMode {
+    Pause,
+    Duck(u8),
 }
 
-pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
-    imp::resume_if_paused_by_us(session);
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum MediaSession {
+    Pause(PauseSession),
+    Duck(PauseSession),
 }
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
+pub(crate) fn engage(mode: MediaMode) -> MediaSession {
+    imp::engage(mode)
+}
+
+pub(crate) fn disengage(session: Option<MediaSession>) {
+    imp::disengage(session);
+}
+
 mod coord {
     use super::PauseSession;
     use parking_lot::Mutex;
@@ -132,7 +143,6 @@ mod coord {
 #[cfg(target_os = "macos")]
 mod imp {
     use super::coord::{CancelFn, Coordinator};
-    use super::PauseSession;
     use serde::Deserialize;
     use std::process::Command;
 
@@ -206,15 +216,19 @@ function targetMatches(expectedBundleId, expectedName, currentBundleId, currentN
 
 function run(argv) {
     const action = argv.length > 0 ? String(argv[0]) : "";
-    if (action !== "pause" && action !== "resume") return "";
+    if (action !== "pause" && action !== "playing" && action !== "resume") return "";
 
     try {
         if (!loadMediaRemote()) return "";
 
-        if (action === "pause") {
+        if (action === "pause" || action === "playing") {
             const identity = nowPlayingIdentity();
             if (!identity || (!identity.bundleId && !identity.displayName) || identity.rate <= 0) {
                 return "";
+            }
+
+            if (action === "playing") {
+                return "playing";
             }
 
             if (!$.MRMediaRemoteSendCommand(1, $.NSDictionary.alloc.init)) {
@@ -244,7 +258,7 @@ function run(argv) {
 
 "#;
 
-    #[derive(Default, Clone, Deserialize)]
+    #[derive(Deserialize)]
     struct PausePayload {
         #[serde(default, rename = "bundleId")]
         bundle_id: String,
@@ -252,7 +266,6 @@ function run(argv) {
         display_name: String,
     }
 
-    #[derive(Default, Clone)]
     pub(super) struct PausedTarget {
         bundle_id: String,
         display_name: String,
@@ -274,25 +287,107 @@ function run(argv) {
         }
     }
 
-    static COORD: Coordinator<PausedTarget> = Coordinator::new(pause_now_playing, resume_target);
+    const VOLUME_SCRIPT: &str = r#"
+function clampVol(v) {
+    if (!isFinite(v)) return 0;
+    if (v < 0) return 0;
+    if (v > 100) return 100;
+    return v;
+}
 
-    pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-        Some(COORD.pause_if_playing())
+function readVolume(app) {
+    try {
+        const v = Number(app.getVolumeSettings().outputVolume);
+        return isFinite(v) ? v : -1;
+    } catch (error) {
+        return -1;
+    }
+}
+
+function setVolume(app, v) {
+    try {
+        app.setVolume(null, { outputVolume: Math.round(clampVol(v)) });
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function run(argv) {
+    const app = Application.currentApplication();
+    app.includeStandardAdditions = true;
+    const action = argv.length > 0 ? String(argv[0]) : "";
+
+    if (action === "duck") {
+        const percent = argv.length > 1 ? Number(argv[1]) : 0;
+        if (!isFinite(percent) || percent <= 0) return "";
+        const cur = readVolume(app);
+        if (cur < 0) return "";
+        const target = clampVol(Math.round(percent));
+        if (target >= cur) {
+            return JSON.stringify({ original: Math.round(cur) });
+        }
+        if (!setVolume(app, target)) return "";
+        return JSON.stringify({ original: Math.round(cur) });
     }
 
-    pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
-        if let Some(session) = session {
-            COORD.resume_if_paused_by_us(session);
+    if (action === "restore") {
+        const original = argv.length > 1 ? Number(argv[1]) : -1;
+        if (!isFinite(original) || original < 0) return "skip";
+        return setVolume(app, original) ? "restored" : "";
+    }
+
+    return "";
+}
+"#;
+
+    pub(super) struct SavedVolume {
+        original: u8,
+    }
+
+    impl SavedVolume {
+        fn from_json(stdout: &str) -> Option<Self> {
+            #[derive(Deserialize)]
+            struct Payload {
+                original: f64,
+            }
+            let payload: Payload = serde_json::from_str(stdout).ok()?;
+            Some(Self {
+                original: payload.original.round().clamp(0.0, 100.0) as u8,
+            })
+        }
+    }
+
+    static COORD: Coordinator<PausedTarget> = Coordinator::new(pause_now_playing, resume_target);
+    static DUCK_COORD: Coordinator<SavedVolume> = Coordinator::new(duck_now, restore_volume);
+    static DUCK_PERCENT: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
+    pub(crate) fn engage(mode: super::MediaMode) -> super::MediaSession {
+        match mode {
+            super::MediaMode::Pause => super::MediaSession::Pause(COORD.pause_if_playing()),
+            super::MediaMode::Duck(percent) => {
+                DUCK_PERCENT.store(percent, std::sync::atomic::Ordering::Relaxed);
+                super::MediaSession::Duck(DUCK_COORD.pause_if_playing())
+            }
+        }
+    }
+
+    pub(crate) fn disengage(session: Option<super::MediaSession>) {
+        match session {
+            Some(super::MediaSession::Pause(session)) => COORD.resume_if_paused_by_us(session),
+            Some(super::MediaSession::Duck(session)) => DUCK_COORD.resume_if_paused_by_us(session),
+            None => {}
         }
     }
 
     fn pause_now_playing() -> Option<PausedTarget> {
-        let stdout = run_script(&["pause"], &|| false)?;
+        let stdout = run_osascript(MEDIA_REMOTE_SCRIPT, &["pause"], &|| false)?;
         PausedTarget::from_json(&stdout)
     }
 
     fn resume_target(target: &PausedTarget, should_cancel: CancelFn<'_>) -> bool {
-        run_script(
+        run_osascript(
+            MEDIA_REMOTE_SCRIPT,
             &["resume", &target.bundle_id, &target.display_name],
             should_cancel,
         )
@@ -300,13 +395,30 @@ function run(argv) {
         .is_some_and(|result| result == "played")
     }
 
-    fn run_script(args: &[&str], should_cancel: CancelFn<'_>) -> Option<String> {
+    fn duck_now() -> Option<SavedVolume> {
+        let percent = DUCK_PERCENT.load(std::sync::atomic::Ordering::Relaxed);
+        run_osascript(MEDIA_REMOTE_SCRIPT, &["playing"], &|| false)?;
+        let stdout = run_osascript(VOLUME_SCRIPT, &["duck", &percent.to_string()], &|| false)?;
+        SavedVolume::from_json(&stdout)
+    }
+
+    fn restore_volume(saved: &SavedVolume, should_cancel: CancelFn<'_>) -> bool {
+        run_osascript(
+            VOLUME_SCRIPT,
+            &["restore", &saved.original.to_string()],
+            should_cancel,
+        )
+        .as_deref()
+        .is_some_and(|result| result == "restored")
+    }
+
+    fn run_osascript(script: &str, args: &[&str], should_cancel: CancelFn<'_>) -> Option<String> {
         use std::io::Read;
         use std::time::{Duration, Instant};
 
         let mut command = Command::new("osascript");
         command
-            .args(["-l", "JavaScript", "-e", MEDIA_REMOTE_SCRIPT])
+            .args(["-l", "JavaScript", "-e", script])
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::null());
         for arg in args {
@@ -357,25 +469,88 @@ function run(argv) {
 #[cfg(target_os = "windows")]
 mod imp {
     use super::coord::{CancelFn, Coordinator};
-    use super::PauseSession;
+    use std::sync::atomic::{AtomicU8, Ordering};
+    use windows::core::GUID;
     use windows::Media::Control::{
         GlobalSystemMediaTransportControlsSession,
         GlobalSystemMediaTransportControlsSessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     };
+    use windows::Win32::Media::Audio::Endpoints::IAudioEndpointVolume;
+    use windows::Win32::Media::Audio::{
+        eMultimedia, eRender, IMMDeviceEnumerator, MMDeviceEnumerator,
+    };
     use windows::Win32::System::Com::{
-        CoDecrementMTAUsage, CoIncrementMTAUsage, CO_MTA_USAGE_COOKIE,
+        CoCreateInstance, CoDecrementMTAUsage, CoIncrementMTAUsage, CLSCTX_ALL, CO_MTA_USAGE_COOKIE,
     };
 
     static COORD: Coordinator<String> = Coordinator::new(pause_now_playing, resume_target);
+    static DUCK_COORD: Coordinator<SavedVolume> = Coordinator::new(duck_now, restore_volume);
+    static DUCK_PERCENT: AtomicU8 = AtomicU8::new(0);
 
-    pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-        Some(COORD.pause_if_playing())
+    pub(crate) fn engage(mode: super::MediaMode) -> super::MediaSession {
+        match mode {
+            super::MediaMode::Pause => super::MediaSession::Pause(COORD.pause_if_playing()),
+            super::MediaMode::Duck(percent) => {
+                DUCK_PERCENT.store(percent, Ordering::Relaxed);
+                super::MediaSession::Duck(DUCK_COORD.pause_if_playing())
+            }
+        }
     }
 
-    pub(crate) fn resume_if_paused_by_us(session: Option<PauseSession>) {
-        if let Some(session) = session {
-            COORD.resume_if_paused_by_us(session);
+    pub(crate) fn disengage(session: Option<super::MediaSession>) {
+        match session {
+            Some(super::MediaSession::Pause(session)) => COORD.resume_if_paused_by_us(session),
+            Some(super::MediaSession::Duck(session)) => DUCK_COORD.resume_if_paused_by_us(session),
+            None => {}
+        }
+    }
+
+    pub(super) struct SavedVolume {
+        original: f32,
+    }
+
+    fn endpoint_volume() -> Option<IAudioEndpointVolume> {
+        unsafe {
+            let enumerator: IMMDeviceEnumerator =
+                CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).ok()?;
+            let device = enumerator
+                .GetDefaultAudioEndpoint(eRender, eMultimedia)
+                .ok()?;
+            device.Activate(CLSCTX_ALL, None).ok()
+        }
+    }
+
+    fn duck_now() -> Option<SavedVolume> {
+        let percent = DUCK_PERCENT.load(Ordering::Relaxed) as f32 / 100.0;
+        if percent <= 0.0 {
+            return None;
+        }
+        if !current_session_is_playing() {
+            return None;
+        }
+        let _mta_usage = MtaUsage::new()?;
+        let vol = endpoint_volume()?;
+        let cur = unsafe { vol.GetMasterVolumeLevelScalar().ok()? };
+        let target = percent.clamp(0.0, 1.0);
+        if target < cur {
+            unsafe {
+                let _ = vol.SetMasterVolumeLevelScalar(target, std::ptr::null::<GUID>());
+            }
+        }
+        Some(SavedVolume { original: cur })
+    }
+
+    fn restore_volume(saved: &SavedVolume, _should_cancel: CancelFn<'_>) -> bool {
+        let Some(_mta_usage) = MtaUsage::new() else {
+            return false;
+        };
+        let Some(vol) = endpoint_volume() else {
+            return false;
+        };
+        unsafe {
+            vol.SetMasterVolumeLevelScalar(saved.original.clamp(0.0, 1.0), std::ptr::null::<GUID>())
+                .is_ok()
         }
     }
 
@@ -421,6 +596,14 @@ mod imp {
         })
     }
 
+    fn current_session_is_playing() -> bool {
+        with_current_session(|session| {
+            let playback = session.GetPlaybackInfo().ok()?.PlaybackStatus().ok()?;
+            Some(playback == GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing)
+        })
+        .unwrap_or(false)
+    }
+
     fn resume_target(expected_app_id: &String, _should_cancel: CancelFn<'_>) -> bool {
         with_current_session(|session| {
             let app_id = match session.SourceAppUserModelId() {
@@ -440,15 +623,4 @@ mod imp {
         })
         .unwrap_or(false)
     }
-}
-
-#[cfg(all(not(target_os = "macos"), not(target_os = "windows")))]
-mod imp {
-    use super::PauseSession;
-
-    pub(crate) fn pause_if_playing() -> Option<PauseSession> {
-        None
-    }
-
-    pub(crate) fn resume_if_paused_by_us(_session: Option<PauseSession>) {}
 }
