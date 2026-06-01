@@ -1,7 +1,17 @@
 import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
-import { HelpCircle, Info, Loader2, RotateCcw, Terminal } from "lucide-react";
+import {
+  ArrowUpRight,
+  HelpCircle,
+  Info,
+  Loader2,
+  RotateCcw,
+  Terminal,
+} from "lucide-react";
+
+const CLI_WIKI_URL = "https://github.com/LegendarySpy/Glimpse/wiki/CLI";
 import ActionCardButton from "../../../../shared/ui/ActionCardButton";
 import HoldActionCardButton from "../../../../shared/ui/HoldActionCardButton";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
@@ -301,12 +311,30 @@ const AboutTab = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2.5">
                   <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                    <span className="truncate ui-text-label-strong ui-color-primary">
-                      {t({
-                        id: "settings.about.command_line",
-                        message: "Command line",
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void openUrl(CLI_WIKI_URL);
+                      }}
+                      aria-label={t({
+                        id: "settings.about.command_line.open_wiki_aria",
+                        message: "Open the command line documentation",
                       })}
-                    </span>
+                      className="inline-flex min-w-0 items-center gap-1 ui-text-label-strong ui-color-primary transition-colors hover:text-content-secondary focus:outline-none"
+                    >
+                      <span className="truncate">
+                        {t({
+                          id: "settings.about.command_line",
+                          message: "Command line",
+                        })}
+                      </span>
+                      <ArrowUpRight
+                        size={12}
+                        strokeWidth={2}
+                        aria-hidden="true"
+                        className="shrink-0 ui-color-muted"
+                      />
+                    </button>
                     <div className="relative group shrink-0">
                       <button
                         type="button"

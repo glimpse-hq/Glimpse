@@ -151,6 +151,11 @@ msgstr ""
 #~ msgstr "Toggle auto-pause media while recording"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+#~ msgid "import.subtitle.single"
+#~ msgstr "We noticed you use {sourceName}. Pick what to carry over."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -183,6 +188,12 @@ msgstr "{0} transcripts"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.dictionary.detail"
 msgstr "{0, plural, one {# word} other {# words}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: apps.length
+#: src/features/import/components/ImportStep.tsx
+msgid "import.subtitle"
+msgstr "{0, plural, one {We found another dictation app. Choose what to import.} other {We found other dictation apps. Choose what to import.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: entries.length
@@ -590,11 +601,6 @@ msgstr "Behavior"
 #: src/features/onboarding/steps/WelcomeStep.tsx
 msgid "onboarding.welcome.local.feature.byok"
 msgstr "Bring your own API key for AI features"
-
-#. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-msgid "import.title"
-msgstr "Want to bring your settings over?"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2429,6 +2435,11 @@ msgid "settings.app.open_settings"
 msgstr "Open Settings"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.command_line.open_wiki_aria"
+msgstr "Open the command line documentation"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.engine.whisper.description"
 msgstr "OpenAI's speech recognition with custom vocabulary support."
@@ -2497,11 +2508,6 @@ msgstr "Personalization"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_idle"
 msgstr "Pick a license"
-
-#. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-msgid "import.subtitle"
-msgstr "{0, plural, one {We found another dictation app. Choose what to import.} other {We found other dictation apps. Choose what to import.}}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -3050,6 +3056,11 @@ msgstr "Select a model"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.select_model"
 msgstr "Select a model"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.app_picker.aria"
+msgstr "Select app to import from"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -3677,6 +3688,11 @@ msgid "updates.whats_new.view_all"
 msgstr "View all releases on GitHub"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.title"
+msgstr "Want to bring your settings over?"
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning_aria"
 msgstr "Warning: model compatibility issue"
@@ -3695,11 +3711,6 @@ msgstr "We couldn't read this app's data. You can skip and set things up manuall
 #: src/features/import/components/ImportStep.tsx
 msgid "import.model.unrecognized"
 msgstr "We don't recognize this app's model — you'll pick one on the next step."
-
-#. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-msgid "import.subtitle.single"
-msgstr "We noticed you use {sourceName}. Pick what to carry over."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx

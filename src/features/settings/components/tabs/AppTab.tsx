@@ -177,16 +177,16 @@ const AppTab = ({
 
   const duckStops: Array<{ label: string; value: MediaAction }> = [
     {
-      label: t({ id: "settings.app.auto_pause_media.pause", message: "Pause" }),
-      value: "pause",
+      label: t({ id: "settings.app.auto_pause_media.off", message: "Off" }),
+      value: "off",
     },
     { label: "10%", value: "duck10" },
     { label: "25%", value: "duck25" },
     { label: "50%", value: "duck50" },
     { label: "75%", value: "duck75" },
     {
-      label: t({ id: "settings.app.auto_pause_media.off", message: "Off" }),
-      value: "off",
+      label: t({ id: "settings.app.auto_pause_media.pause", message: "Pause" }),
+      value: "pause",
     },
   ];
   const duckIndex = Math.max(
@@ -855,7 +855,11 @@ const AppTab = ({
                           transition={{ duration: 0.16, ease: "easeOut" }}
                           onMouseDown={handleDuckScrubStart}
                           onTouchStart={handleDuckScrubStart}
-                          className="w-[40px] min-w-[40px] text-center font-medium text-content-secondary tabular-nums cursor-ew-resize select-none"
+                          className={`w-[40px] min-w-[40px] text-center font-medium tabular-nums cursor-ew-resize select-none ${
+                            mediaAction === "off"
+                              ? "ui-color-disabled"
+                              : "ui-color-cloud"
+                          }`}
                         >
                           {duckStops[duckIndex].label}
                         </motion.span>
