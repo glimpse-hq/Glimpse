@@ -324,9 +324,7 @@ function run(argv) {
         const cur = readVolume(app);
         if (cur < 0) return "";
         const target = clampVol(Math.round(percent));
-        if (target >= cur) {
-            return JSON.stringify({ original: Math.round(cur) });
-        }
+        if (target >= cur) return "";
         if (!setVolume(app, target)) return "";
         return JSON.stringify({ original: Math.round(cur) });
     }
@@ -533,10 +531,11 @@ mod imp {
         let vol = endpoint_volume()?;
         let cur = unsafe { vol.GetMasterVolumeLevelScalar().ok()? };
         let target = percent.clamp(0.0, 1.0);
-        if target < cur {
-            unsafe {
-                let _ = vol.SetMasterVolumeLevelScalar(target, std::ptr::null::<GUID>());
-            }
+        if target >= cur {
+            return None;
+        }
+        unsafe {
+            let _ = vol.SetMasterVolumeLevelScalar(target, std::ptr::null::<GUID>());
         }
         Some(SavedVolume { original: cur })
     }

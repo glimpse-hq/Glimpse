@@ -57,7 +57,8 @@ pub fn translate_accelerator(raw: &str) -> Option<String> {
                     .or_else(|| other.strip_prefix("digit"))
                     .or_else(|| other.strip_prefix("numpad"))
                     .unwrap_or(other);
-                if cleaned == "fn" {
+                if cleaned == "fn" || cleaned == "function" {
+                    parts.push("Fn".to_string());
                     continue;
                 }
                 parts.push(capitalize(cleaned));

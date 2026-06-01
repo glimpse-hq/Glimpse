@@ -320,7 +320,7 @@ const AboutTab = ({
                         id: "settings.about.command_line.open_wiki_aria",
                         message: "Open the command line documentation",
                       })}
-                      className="inline-flex min-w-0 items-center gap-1 ui-text-label-strong ui-color-primary transition-colors hover:text-content-secondary focus:outline-none"
+                      className="inline-flex min-w-0 items-center gap-1 ui-text-label-strong ui-color-primary transition-colors hover:text-content-secondary outline-none focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-border-hover"
                     >
                       <span className="truncate">
                         {t({

@@ -32,7 +32,7 @@ const components: Components = {
     </code>
   ),
   pre: ({ children }) => (
-    <pre className="mb-2 overflow-x-auto rounded-md bg-surface-elevated p-2 ui-text-body-sm">
+    <pre className="mb-2 overflow-x-auto rounded-md bg-surface-elevated p-2 ui-text-body-sm [&>code]:bg-transparent [&>code]:p-0 [&>code]:rounded-none">
       {children}
     </pre>
   ),

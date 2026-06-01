@@ -44,6 +44,7 @@ const KEY_REPLACEMENTS: &str = "replacements";
 const KEY_PERSONALITIES: &str = "personalities";
 const KEY_EDIT_MODE_ENABLED: &str = "edit_mode_enabled";
 const KEY_MEDIA_ACTION: &str = "media_action";
+const LEGACY_KEY_MEDIA_CONTROL_ENABLED: &str = "media_control_enabled";
 const KEY_AUTO_UPDATE_ENABLED: &str = "auto_update_enabled";
 const KEY_AUTO_LAUNCH_ENABLED: &str = "auto_launch_enabled";
 const KEY_START_IN_BACKGROUND: &str = "start_in_background";
@@ -898,8 +899,20 @@ impl SettingsStore {
                 self.read_value(&conn, KEY_PERSONALITIES, settings.personalities.clone())?;
             settings.edit_mode_enabled =
                 self.read_value(&conn, KEY_EDIT_MODE_ENABLED, settings.edit_mode_enabled)?;
-            settings.media_action =
-                self.read_value(&conn, KEY_MEDIA_ACTION, settings.media_action)?;
+            if let Some(media_action) =
+                self.read_optional_value::<MediaAction>(&conn, KEY_MEDIA_ACTION)?
+            {
+                settings.media_action = media_action;
+            } else if let Some(legacy_enabled) =
+                self.read_optional_value::<bool>(&conn, LEGACY_KEY_MEDIA_CONTROL_ENABLED)?
+            {
+                settings.media_action = if legacy_enabled {
+                    MediaAction::Pause
+                } else {
+                    MediaAction::Off
+                };
+                should_persist = true;
+            }
             settings.auto_update_enabled =
                 self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =

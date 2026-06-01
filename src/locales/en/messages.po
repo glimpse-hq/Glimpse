@@ -1879,7 +1879,7 @@ msgstr "Launch at Login"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.body_off"
-msgstr "leaves your music playing while recording."
+msgstr "leaves system audio playing while recording."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2009,12 +2009,12 @@ msgstr "Longest"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.raise"
-msgstr "Louder"
+msgstr "Next media action"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.body_duck"
-msgstr "lowers music volume while recording, restores when done."
+msgstr "lowers system audio volume while recording, restores when done."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -2477,7 +2477,7 @@ msgstr "Pause audio"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.body_pause"
-msgstr "pauses music while recording, resumes when done."
+msgstr "pauses system audio while recording, resumes when done."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2633,7 +2633,7 @@ msgstr "Queued for transcription..."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.lower"
-msgstr "Quieter"
+msgstr "Previous media action"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

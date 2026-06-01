@@ -234,16 +234,17 @@ const AppTab = ({
     mediaAction === "off"
       ? t({
           id: "settings.app.auto_pause_media.body_off",
-          message: "leaves your music playing while recording.",
+          message: "leaves system audio playing while recording.",
         })
       : mediaAction === "pause"
         ? t({
             id: "settings.app.auto_pause_media.body_pause",
-            message: "pauses music while recording, resumes when done.",
+            message: "pauses system audio while recording, resumes when done.",
           })
         : t({
             id: "settings.app.auto_pause_media.body_duck",
-            message: "lowers music volume while recording, restores when done.",
+            message:
+              "lowers system audio volume while recording, restores when done.",
           });
 
   const textSizeOptions: Array<{ value: TextSizeMode; label: string }> = [
@@ -836,7 +837,7 @@ const AppTab = ({
                         disabled={duckIndex === 0}
                         aria-label={t({
                           id: "settings.app.auto_pause_media.lower",
-                          message: "Quieter",
+                          message: "Previous media action",
                         })}
                         className={`transition-colors p-0.5 ${
                           duckIndex === 0
@@ -874,7 +875,7 @@ const AppTab = ({
                         disabled={duckIndex === duckStops.length - 1}
                         aria-label={t({
                           id: "settings.app.auto_pause_media.raise",
-                          message: "Louder",
+                          message: "Next media action",
                         })}
                         className={`transition-colors p-0.5 ${
                           duckIndex === duckStops.length - 1

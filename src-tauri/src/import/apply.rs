@@ -163,13 +163,6 @@ pub fn apply_import(
         }
     }
 
-    if selections.history && !bundle.transcripts.is_empty() {
-        result.transcripts_added = state
-            .storage()
-            .import_transcriptions(&bundle.transcripts)
-            .map_err(|err| err.to_string())?;
-    }
-
     let next_auto_launch_enabled = settings.auto_launch_enabled;
     if previous_auto_launch_enabled != next_auto_launch_enabled {
         crate::sync_launch_at_login(app, next_auto_launch_enabled)?;
@@ -185,6 +178,14 @@ pub fn apply_import(
         }
     };
     state.emit_settings_changed(app, &next);
+
+    // Write transcripts last so a settings/launch failure can't leave them committed.
+    if selections.history && !bundle.transcripts.is_empty() {
+        result.transcripts_added = state
+            .storage()
+            .import_transcriptions(&bundle.transcripts)
+            .map_err(|err| err.to_string())?;
+    }
 
     Ok(result)
 }

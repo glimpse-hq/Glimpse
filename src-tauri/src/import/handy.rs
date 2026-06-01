@@ -92,7 +92,7 @@ pub fn parse(home: &Path) -> Result<ImportBundle, String> {
                                 continue;
                             };
                             let timestamp_ms = if timestamp < 100_000_000_000 {
-                                timestamp.saturating_mul(1000)
+                                timestamp * 1000
                             } else {
                                 timestamp
                             };
