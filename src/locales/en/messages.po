@@ -2008,11 +2008,6 @@ msgstr "Longest"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.raise"
-msgstr "Next media action"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.body_duck"
 msgstr "lowers system audio volume while recording, restores when done."
 
@@ -2198,6 +2193,11 @@ msgstr "New tag..."
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.recent"
 msgstr "Newest first"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.raise"
+msgstr "Next media action"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2567,6 +2567,11 @@ msgstr "Press your new shortcut, or hit Esc to cancel."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.lower"
+msgstr "Previous media action"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Privacy & Permissions"
 
@@ -2629,11 +2634,6 @@ msgstr "Purchase {label} for {price}"
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.import_status.queued"
 msgstr "Queued for transcription..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.lower"
-msgstr "Previous media action"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
