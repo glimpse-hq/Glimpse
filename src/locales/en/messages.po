@@ -594,7 +594,7 @@ msgstr "Bring your own API key for AI features"
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.title"
-msgstr "Bring your setup over"
+msgstr "Want to bring your settings over?"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2501,7 +2501,7 @@ msgstr "Pick a license"
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
-msgstr "Pick what to carry over from your other app."
+msgstr "{0, plural, one {We found another dictation app. Choose what to import.} other {We found other dictation apps. Choose what to import.}}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx

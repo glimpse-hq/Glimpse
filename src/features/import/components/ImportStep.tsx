@@ -3,6 +3,8 @@ import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Loader2 } from "lucide-react";
+import DotMatrix from "../../../shared/ui/DotMatrix";
+import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import type { StepMotionProps } from "../../onboarding/steps/shared";
 import { settingsKeys } from "../../settings/queries";
 import { transcriptionKeys } from "../../transcriptions/queries";
@@ -42,7 +44,8 @@ const ALL_ON: ImportSelections = {
   history: true,
 };
 
-const MAX_CATEGORIES = 8;
+const LIST_SLOT_COUNT = 7;
+const ROW_CLASS_NAME = "flex items-center gap-3 py-2.5";
 
 export function ImportStep({
   stepMotionProps,
@@ -176,11 +179,15 @@ export function ImportStep({
   const selectedCount = categories.filter((c) => selections[c.key]).length;
   const showAppPicker = apps.length > 1;
   const sourceName = apps.find((a) => a.id === selectedAppId)?.name;
+  const appOptions = useMemo(
+    () => apps.map((app) => ({ value: app.id, label: app.name })),
+    [apps],
+  );
 
   const skeletonRows = (
     <div className="divide-y divide-border-primary/40">
-      {Array.from({ length: MAX_CATEGORIES }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3.5 py-3.5">
+      {Array.from({ length: LIST_SLOT_COUNT }).map((_, i) => (
+        <div key={i} className={ROW_CLASS_NAME}>
           <div className="h-5 w-5 shrink-0 rounded-full bg-surface-overlay animate-pulse" />
           <div className="h-3 flex-1 max-w-[9rem] rounded bg-surface-overlay animate-pulse" />
         </div>
@@ -197,14 +204,14 @@ export function ImportStep({
             key={cat.key}
             type="button"
             onClick={() => toggle(cat.key)}
-            className="group flex w-full items-center gap-3.5 py-3.5"
+            className={`group w-full ${ROW_CLASS_NAME}`}
             aria-pressed={checked}
           >
             <span
               className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors ${
                 checked
-                  ? "bg-accent text-white"
-                  : "border border-border-secondary group-hover:border-accent-50"
+                  ? "bg-content-primary text-surface-secondary"
+                  : "border border-border-secondary group-hover:border-border-hover"
               }`}
             >
               <Check
@@ -233,7 +240,7 @@ export function ImportStep({
   );
 
   const previewContent = previewQuery.isError ? (
-    <p className="py-6 text-center ui-text-label text-content-muted text-balance">
+    <p className="py-4 text-center ui-text-label text-content-muted text-balance">
       {t({
         id: "import.error",
         message:
@@ -241,7 +248,7 @@ export function ImportStep({
       })}
     </p>
   ) : !hasItems ? (
-    <p className="py-6 text-center ui-text-label text-content-muted">
+    <p className="py-4 text-center ui-text-label text-content-muted">
       {t({ id: "import.empty", message: "Nothing to bring over from this app." })}
     </p>
   ) : (
@@ -253,51 +260,68 @@ export function ImportStep({
       key="import"
       {...stepMotionProps}
       initial="enter"
-      className="flex w-full max-w-md flex-col items-center text-center"
+      className="relative flex w-full max-w-lg flex-col items-center text-center"
     >
-      <h2 className="ui-text-title-lg font-semibold text-content-primary mb-2">
-        {t({ id: "import.title", message: "Bring your setup over" })}
-      </h2>
-
-      <p className="ui-text-body-lg text-content-muted mb-8 text-balance">
-        {!showAppPicker && sourceName
-          ? t({
-              id: "import.subtitle.single",
-              message: `We noticed you use ${sourceName}. Pick what to carry over.`,
-            })
-          : t({
-              id: "import.subtitle",
-              message: "Pick what to carry over from your other app.",
+      <div className="flex w-full flex-col items-center pt-4">
+        <div className="relative mb-4 flex flex-col items-center gap-2">
+          <h2 className="ui-text-title-lg font-semibold text-content-primary">
+            {t({
+              id: "import.title",
+              message: "Want to bring your settings over?",
             })}
-      </p>
-
-      {showAppPicker && (
-        <div className="mb-7 flex w-full flex-wrap justify-center gap-2">
-          {apps.map((app) => {
-            const selected = selectedAppId === app.id;
-            return (
-              <button
-                key={app.id}
-                type="button"
-                onClick={() => setSelectedAppId(app.id)}
-                aria-pressed={selected}
-                className={`rounded-full px-4 py-1.5 ui-text-label font-medium transition-colors ${
-                  selected
-                    ? "bg-accent-10 text-accent"
-                    : "text-content-muted hover:text-content-secondary"
-                }`}
-              >
-                {app.name}
-              </button>
-            );
-          })}
+          </h2>
+          <p className="max-w-sm ui-text-body-lg text-content-muted text-balance">
+            {t({
+              id: "import.subtitle",
+              message: plural(apps.length, {
+                one: "We found another dictation app. Choose what to import.",
+                other: "We found other dictation apps. Choose what to import.",
+              }),
+            })}
+          </p>
         </div>
-      )}
+
+        {showAppPicker && selectedAppId && (
+          <div className="relative mb-4 flex w-full justify-center">
+            <SegmentedControl
+              value={selectedAppId}
+              options={appOptions}
+              onChange={setSelectedAppId}
+              ariaLabel={t({
+                id: "import.app_picker.aria",
+                message: "Select app to import from",
+              })}
+              activeIndicatorLayoutId="import-app-picker"
+              className="inline-flex items-center gap-0.5 rounded-xl border border-border-primary bg-surface-secondary p-1"
+              buttonClassName="relative rounded-lg px-4 py-1.5 ui-text-label font-medium normal-case transition-colors duration-200 z-10"
+              activeButtonClassName="text-content-primary"
+              inactiveButtonClassName="text-content-muted hover:text-content-secondary"
+              activeIndicatorClassName="absolute inset-0 rounded-lg border border-border-primary bg-surface-elevated shadow-sm z-[-1]"
+            />
+          </div>
+        )}
+
+        {!showAppPicker && sourceName && (
+          <div className="relative mb-4 inline-flex items-center gap-2 rounded-xl border border-border-primary bg-surface-secondary px-3 py-1.5">
+            <DotMatrix
+              rows={1}
+              cols={3}
+              activeDots={[0, 2]}
+              dotSize={2}
+              gap={2}
+              color="var(--color-text-muted)"
+            />
+            <span className="ui-text-label font-medium text-content-secondary">
+              {sourceName}
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="relative w-full text-left">
         <div aria-hidden className="divide-y divide-border-primary/40 invisible pointer-events-none">
-          {Array.from({ length: MAX_CATEGORIES }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3.5 py-3.5">
+          {Array.from({ length: LIST_SLOT_COUNT }).map((_, i) => (
+            <div key={i} className={ROW_CLASS_NAME}>
               <span className="h-5 w-5 shrink-0" />
               <span className="ui-text-label">&nbsp;</span>
             </div>
@@ -332,7 +356,7 @@ export function ImportStep({
       {previewForApp &&
         previewForApp.modelSource &&
         !previewForApp.modelRecognized && (
-        <p className="ui-text-meta text-content-muted text-center mt-5 text-balance">
+        <p className="relative ui-text-meta text-content-muted text-center mt-3 text-balance">
           {t({
             id: "import.model.unrecognized",
             message:
@@ -342,16 +366,16 @@ export function ImportStep({
       )}
 
       {applyMutation.isError && (
-        <p className="ui-text-meta ui-color-error-strong text-center mt-5">
+        <p className="relative ui-text-meta ui-color-error-strong text-center mt-3">
           {t({ id: "import.apply.failed", message: "Import failed. Try again or skip." })}
         </p>
       )}
 
-      <div className="mt-9 flex flex-col items-center gap-4">
+      <div className="relative mt-2 flex flex-col items-center gap-2">
         <button
           onClick={() => applyMutation.mutate()}
           disabled={applyMutation.isPending || !hasItems || selectedCount === 0}
-          className="flex min-w-[180px] items-center justify-center gap-2 rounded-xl bg-content-primary px-6 py-3 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors tracking-tight disabled:opacity-40 disabled:hover:bg-content-primary"
+          className="flex min-w-[150px] items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors tracking-tight disabled:opacity-40 disabled:hover:bg-content-primary"
         >
           {applyMutation.isPending ? (
             <>

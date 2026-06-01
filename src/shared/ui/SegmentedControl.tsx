@@ -42,7 +42,7 @@ const SegmentedControl = <T extends string>({
 }: SegmentedControlProps<T>) => {
   return (
     <div
-      className={className ?? DEFAULT_GROUP_CLASS_NAME}
+      className={[className ?? DEFAULT_GROUP_CLASS_NAME, "overflow-hidden"].join(" ")}
       role="radiogroup"
       aria-label={ariaLabel}
     >
@@ -68,7 +68,7 @@ const SegmentedControl = <T extends string>({
                 className={
                   activeIndicatorClassName ?? DEFAULT_ACTIVE_INDICATOR_CLASS_NAME
                 }
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                transition={{ type: "spring", stiffness: 480, damping: 42, bounce: 0 }}
               />
             )}
             <span className="relative z-10">{option.label}</span>
