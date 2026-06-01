@@ -39,6 +39,18 @@ pub fn translate_accelerator(raw: &str) -> Option<String> {
             "control" | "ctrl" => "Control",
             "alt" | "option" | "altgr" => "Alt",
             "shift" => "Shift",
+            // `Cmd*` is Glimpse's internal meta-key token. The frontend displays it
+            // as Command on macOS and Meta on Windows.
+            "cmdleft" | "commandleft" | "metaleft" => "CmdLeft",
+            "cmdright" | "commandright" | "metaright" => "CmdRight",
+            "superleft" | "winleft" | "windowsleft" => "CmdLeft",
+            "superright" | "winright" | "windowsright" => "CmdRight",
+            "controlleft" | "ctrlleft" => "CtrlLeft",
+            "controlright" | "ctrlright" => "CtrlRight",
+            "altleft" | "optionleft" => "OptLeft",
+            "altright" | "optionright" => "OptRight",
+            "shiftleft" => "ShiftLeft",
+            "shiftright" => "ShiftRight",
             other => {
                 let cleaned = other
                     .strip_prefix("key")
@@ -203,8 +215,7 @@ pub fn open_sqlite_readonly(path: &Path) -> Result<(rusqlite::Connection, TempDb
     if !path.exists() {
         return Err(format!("database not found: {}", path.display()));
     }
-    let tmp =
-        std::env::temp_dir().join(format!("glimpse-import-{}.sqlite", uuid::Uuid::new_v4()));
+    let tmp = std::env::temp_dir().join(format!("glimpse-import-{}.sqlite", uuid::Uuid::new_v4()));
     std::fs::copy(path, &tmp).map_err(|err| format!("failed to copy database: {err}"))?;
 
     let guard = TempDbGuard(tmp.clone());

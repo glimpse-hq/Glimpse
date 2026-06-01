@@ -13,8 +13,27 @@ use super::shared::{
 pub const ID: &str = "superwhisper";
 pub const DISPLAY_NAME: &str = "superwhisper";
 
+#[cfg(target_os = "windows")]
+fn root_dir(home: &Path) -> PathBuf {
+    std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| home.join("AppData").join("Local"))
+        .join("com.superwhisper.app")
+}
+
+#[cfg(not(target_os = "windows"))]
 fn root_dir(home: &Path) -> PathBuf {
     home.join("Documents").join("superwhisper")
+}
+
+#[cfg(target_os = "windows")]
+fn settings_path(root: &Path) -> PathBuf {
+    root.join("settings.json")
+}
+
+#[cfg(not(target_os = "windows"))]
+fn settings_path(root: &Path) -> PathBuf {
+    root.join("settings").join("settings.json")
 }
 
 fn current_db_path(home: &Path) -> PathBuf {
@@ -25,8 +44,9 @@ fn current_db_path(home: &Path) -> PathBuf {
 
 pub fn detect(home: &Path) -> bool {
     let root = root_dir(home);
-    root.join("settings").join("settings.json").exists()
+    settings_path(&root).exists()
         || root.join("modes").is_dir()
+        || root.join("recordings").is_dir()
         || current_db_path(home).exists()
 }
 
@@ -34,7 +54,7 @@ pub fn parse(home: &Path) -> Result<ImportBundle, String> {
     let root = root_dir(home);
     let mut bundle = ImportBundle::default();
 
-    if let Some(settings) = read_json(&root.join("settings").join("settings.json")) {
+    if let Some(settings) = read_json(&settings_path(&root)) {
         if let Some(vocab) = settings.get("vocabulary").and_then(|v| v.as_array()) {
             bundle.dictionary = vocab
                 .iter()
@@ -104,6 +124,7 @@ pub fn parse(home: &Path) -> Result<ImportBundle, String> {
             }
         }
     }
+
     bundle.transcripts.extend(current_db_transcripts(home));
     dedup_transcripts(&mut bundle.transcripts);
     bundle.transcript_count = bundle.transcripts.len() as u32;

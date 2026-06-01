@@ -1,8 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use uuid::Uuid;
-
-use crate::settings::Personality;
 use crate::storage::ImportedTranscription;
 
 use super::shared::{
@@ -74,13 +71,6 @@ pub fn parse(home: &Path) -> Result<ImportBundle, String> {
                 family: map_model_family(model),
             });
         }
-
-        if let Some(prompts) = settings
-            .get("post_process_prompts")
-            .and_then(|v| v.as_array())
-        {
-            bundle.personalities = prompts.iter().filter_map(prompt_to_personality).collect();
-        }
     }
 
     let db = db_path(home);
@@ -118,27 +108,4 @@ pub fn parse(home: &Path) -> Result<ImportBundle, String> {
     bundle.transcript_count = bundle.transcripts.len() as u32;
 
     Ok(bundle)
-}
-
-fn prompt_to_personality(prompt: &serde_json::Value) -> Option<Personality> {
-    let instructions = prompt
-        .get("prompt")
-        .and_then(|v| v.as_str())
-        .map(str::trim)
-        .filter(|s| !s.is_empty())?;
-    let name = prompt
-        .get("name")
-        .and_then(|v| v.as_str())
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .unwrap_or("Handy prompt");
-
-    Some(Personality {
-        id: Uuid::new_v4().to_string(),
-        name: name.to_string(),
-        enabled: true,
-        apps: Vec::new(),
-        websites: Vec::new(),
-        instructions: vec![instructions.to_string()],
-    })
 }
