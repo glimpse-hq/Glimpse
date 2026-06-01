@@ -1877,11 +1877,6 @@ msgid "settings.app.auto_launch"
 msgstr "Launch at Login"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media.body_off"
-msgstr "leaves system audio playing while recording."
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.library"
 msgstr "Library"
@@ -2009,7 +2004,7 @@ msgstr "Longest"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.body_duck"
-msgstr "lowers system audio volume while recording, restores when done."
+msgstr "Lowers system volume while recording."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -2477,7 +2472,7 @@ msgstr "Pause audio"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.body_pause"
-msgstr "pauses system audio while recording, resumes when done."
+msgstr "Pauses system audio while recording."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3332,6 +3327,11 @@ msgstr "System"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.system"
 msgstr "System"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_pause_media.body_off"
+msgstr "System audio plays while recording."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

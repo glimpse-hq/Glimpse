@@ -234,17 +234,16 @@ const AppTab = ({
     mediaAction === "off"
       ? t({
           id: "settings.app.auto_pause_media.body_off",
-          message: "leaves system audio playing while recording.",
+          message: "System audio plays while recording.",
         })
       : mediaAction === "pause"
         ? t({
             id: "settings.app.auto_pause_media.body_pause",
-            message: "pauses system audio while recording, resumes when done.",
+            message: "Pauses system audio while recording.",
           })
         : t({
             id: "settings.app.auto_pause_media.body_duck",
-            message:
-              "lowers system audio volume while recording, restores when done.",
+            message: "Lowers system volume while recording.",
           });
 
   const textSizeOptions: Array<{ value: TextSizeMode; label: string }> = [
