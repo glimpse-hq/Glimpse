@@ -8,6 +8,7 @@ type OnboardingPlatformId = AppPlatformId;
 
 export type OnboardingStep =
   | "welcome"
+  | "import"
   | "localModel"
   | "license"
   | "microphone"

@@ -1,5 +1,5 @@
 import { setup, assign } from "xstate";
-import type { TranscriptionMode } from "../../types";
+import type { DetectedApp, TranscriptionMode } from "../../types";
 import {
   getOnboardingPlatform,
   type OnboardingPlatform,
@@ -16,6 +16,7 @@ export type LocalDownloadStatus = {
 export type OnboardingContext = {
   platform: OnboardingPlatform;
   selectedMode: TranscriptionMode;
+  importableApps: DetectedApp[];
   localModelChoice: string;
   showLocalConfirm: boolean;
   smartShortcut: string;
@@ -26,13 +27,16 @@ export type OnboardingContext = {
   showFAQModal: boolean;
   transitionDirection: 1 | -1;
   hasStepTransitioned: boolean;
+  skippedLocalModel: boolean;
 };
 
 export type OnboardingEvent =
   | { type: "NEXT" }
   | { type: "BACK" }
   | { type: "SELECT_MODE"; mode: TranscriptionMode }
+  | { type: "SET_IMPORTABLE"; apps: DetectedApp[] }
   | { type: "SELECT_MODEL"; key: string }
+  | { type: "SKIP_LOCAL_MODEL" }
   | { type: "SET_SHORTCUT"; shortcut: string }
   | { type: "CAPTURE_START" }
   | { type: "CAPTURE_END"; shortcut?: string }
@@ -45,8 +49,15 @@ export type OnboardingEvent =
 
 function getSteps(
   platform: OnboardingPlatform = getOnboardingPlatform(),
+  hasImport: boolean = false,
 ): OnboardingStep[] {
-  const steps: OnboardingStep[] = ["welcome", "localModel"];
+  const steps: OnboardingStep[] = ["welcome"];
+
+  if (hasImport) {
+    steps.push("import");
+  }
+
+  steps.push("localModel");
 
   if (platform.requiresMicrophonePermission) {
     steps.push("microphone");
@@ -60,11 +71,17 @@ function getSteps(
   return steps;
 }
 
+const hasImportStep = ({ context }: { context: OnboardingContext }) =>
+  context.selectedMode === "local" && context.importableApps.length > 0;
+
 const requiresMicrophoneStep = ({ context }: { context: OnboardingContext }) =>
   context.platform.requiresMicrophonePermission;
 
 const requiresAccessibilityStep = ({ context }: { context: OnboardingContext }) =>
   context.platform.requiresAccessibilityPermission;
+
+const skippedLocalModelStep = ({ context }: { context: OnboardingContext }) =>
+  context.skippedLocalModel;
 
 export const onboardingMachine = setup({
   types: {
@@ -77,6 +94,7 @@ export const onboardingMachine = setup({
   context: {
     platform: getOnboardingPlatform(),
     selectedMode: "local",
+    importableApps: [],
     localModelChoice: "",
     showLocalConfirm: false,
     smartShortcut: "Control+Space",
@@ -87,10 +105,14 @@ export const onboardingMachine = setup({
     showFAQModal: false,
     transitionDirection: 1,
     hasStepTransitioned: false,
+    skippedLocalModel: false,
   },
   on: {
     SELECT_MODE: {
       actions: assign({ selectedMode: ({ event }) => event.mode }),
+    },
+    SET_IMPORTABLE: {
+      actions: assign({ importableApps: ({ event }) => event.apps }),
     },
     SELECT_MODEL: {
       actions: assign({ localModelChoice: ({ event }) => event.key }),
@@ -133,9 +155,44 @@ export const onboardingMachine = setup({
   states: {
     welcome: {
       on: {
+        NEXT: [
+          {
+            target: "import",
+            guard: hasImportStep,
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "localModel",
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: false }),
+          },
+        ],
+      },
+    },
+    import: {
+      on: {
         NEXT: {
           target: "localModel",
-          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: false }),
+        },
+        SKIP_LOCAL_MODEL: [
+          {
+            target: "microphone",
+            guard: requiresMicrophoneStep,
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: true }),
+          },
+          {
+            target: "accessibility",
+            guard: requiresAccessibilityStep,
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: true }),
+          },
+          {
+            target: "ready",
+            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: true }),
+          },
+        ],
+        BACK: {
+          target: "welcome",
+          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
         },
       },
     },
@@ -157,10 +214,17 @@ export const onboardingMachine = setup({
             actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
           },
         ],
-        BACK: {
-          target: "welcome",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        BACK: [
+          {
+            target: "import",
+            guard: hasImportStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "welcome",
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+        ],
       },
     },
     microphone: {
@@ -176,10 +240,17 @@ export const onboardingMachine = setup({
             actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
           },
         ],
-        BACK: {
-          target: "localModel",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        BACK: [
+          {
+            target: "import",
+            guard: skippedLocalModelStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "localModel",
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+        ],
       },
     },
     accessibility: {
@@ -192,6 +263,11 @@ export const onboardingMachine = setup({
           {
             target: "microphone",
             guard: requiresMicrophoneStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "import",
+            guard: skippedLocalModelStep,
             actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
           },
           {
@@ -216,6 +292,11 @@ export const onboardingMachine = setup({
           {
             target: "microphone",
             guard: requiresMicrophoneStep,
+            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          },
+          {
+            target: "import",
+            guard: skippedLocalModelStep,
             actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
           },
           {

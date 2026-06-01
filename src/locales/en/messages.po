@@ -127,13 +127,40 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.endpoint.autofilled"
-msgstr "(auto-filled)"
+#~ msgid "settings.language_model.endpoint.autofilled"
+#~ msgstr "(auto-filled)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.endpoint"
+#~ msgstr "Endpoint"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.providers.writing_section"
+#~ msgstr "Writing"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.optional_hint"
+msgstr "(if required)"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.replacementsCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.replacements.detail"
+msgstr "{0, plural, one {# rule} other {# rules}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.dictionaryCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.dictionary.detail"
+msgstr "{0, plural, one {# word} other {# words}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: entries.length
@@ -165,6 +192,18 @@ msgstr "{0} of {1} matches"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.count.multiple"
 msgstr "{0} replacements"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.personalitiesCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.personalities.detail"
+msgstr "{0} saved"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: previewForApp.transcriptCount
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.history.detail"
+msgstr "{0} transcripts"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -392,6 +431,11 @@ msgid "settings.language_model.api_key"
 msgstr "API Key"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key"
+msgstr "API Key"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.api_server"
 msgstr "API Server"
@@ -492,6 +536,12 @@ msgid "settings.app.auto_update"
 msgstr "Auto-update"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: providerPreset?.defaultModel || "provider default"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model.automatic"
+msgstr "Automatic ({0})"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.start_on_launch_help"
 msgstr "automatically start when Glimpse opens"
@@ -530,6 +580,11 @@ msgstr "Behavior"
 #: src/features/onboarding/steps/WelcomeStep.tsx
 msgid "onboarding.welcome.local.feature.byok"
 msgstr "Bring your own API key for AI features"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.title"
+msgstr "Bring your setup over"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -742,6 +797,11 @@ msgid "settings.language_model.provider.cloud"
 msgstr "Cloud (API Key)"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.cloud"
+msgstr "Cloud (API Key)"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.cloud.aria"
 msgstr "Cloud processing (Coming soon)"
@@ -893,6 +953,11 @@ msgid "library.modal.copy"
 msgstr "Copy"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LocalApiSidebarStatus.tsx
+msgid "home.local_api.copy_url"
+msgstr "Copy base URL"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.copy_aria"
 msgstr "Copy logs"
@@ -1023,8 +1088,19 @@ msgid "settings.local_api.model.currently_loaded"
 msgstr "currently loaded: {loadedModelLabel}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: remoteSpeechModel && remoteSpeechModel !== "auto" ? ` (${remoteSpeechModel})` : ""
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.remote_speech_active"
+msgstr "Currently using your Speech Provider{0}. Local models remain available as fallback."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.custom"
+msgstr "Custom"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.custom"
 msgstr "Custom"
 
 #. js-lingui-explicit-id
@@ -1186,6 +1262,11 @@ msgid "home.sidebar.dictionary"
 msgstr "Dictionary"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.dictionary"
+msgstr "Dictionary"
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.section.dictionary_title"
 msgstr "Dictionary"
@@ -1333,14 +1414,19 @@ msgid "onboarding.accessibility.subtitle"
 msgstr "Enables auto-paste into any application."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.endpoint"
-msgstr "Endpoint"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.invalid"
 msgstr "Enter a valid domain like gmail.com"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.provider.custom.description"
+msgstr "Enter your own endpoint URL"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.custom.description"
+msgstr "Enter your own endpoint URL"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -1618,6 +1704,11 @@ msgid "settings.language_model.endpoint.placeholder"
 msgstr "https://your-llm-endpoint.com"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.endpoint.placeholder"
+msgstr "https://your-speech-endpoint.com"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.confirm"
 msgstr "Import"
@@ -1625,6 +1716,11 @@ msgstr "Import"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.import_button"
+msgstr "Import"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cta"
 msgstr "Import"
 
 #. js-lingui-explicit-id
@@ -1648,6 +1744,11 @@ msgid "library.error_details.import_failed"
 msgstr "Import failed."
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.apply.failed"
+msgstr "Import failed. Try again or skip."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.title"
 msgstr "Import to Library"
@@ -1655,6 +1756,11 @@ msgstr "Import to Library"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.importing"
+msgstr "Importing..."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.importing"
 msgstr "Importing..."
 
 #. js-lingui-explicit-id
@@ -1720,8 +1826,18 @@ msgid "settings.local_api.model.kept_warm"
 msgstr "kept warm in memory for fast responses"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.shortcut"
+msgstr "Keyboard shortcut"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
+msgstr "Language"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.language"
 msgstr "Language"
 
 #. js-lingui-explicit-id
@@ -1733,6 +1849,11 @@ msgstr "Language list is filtered to the models you have installed."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.large"
 msgstr "Large"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch"
+msgstr "Launch at login"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1830,6 +1951,11 @@ msgid "settings.modal.section.local"
 msgstr "Local"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.local"
+msgstr "Local"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.mode.local"
 msgstr "Local"
@@ -1843,6 +1969,11 @@ msgstr "Local"
 #: src/features/onboarding/steps/WelcomeStep.tsx
 msgid "onboarding.welcome.local.title"
 msgstr "Local"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LocalApiSidebarStatus.tsx
+msgid "home.local_api.running"
+msgstr "Local API"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1915,6 +2046,11 @@ msgid "settings.language_model.model"
 msgstr "Model"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model"
+msgstr "Model"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.model"
 msgstr "Model"
@@ -1928,6 +2064,12 @@ msgstr "Model"
 #. placeholder {0}: providerPreset?.defaultModel || "none"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.model.placeholder"
+msgstr "Model (default: {0})"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: providerPreset?.defaultModel || "auto"
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model.placeholder"
 msgstr "Model (default: {0})"
 
 #. js-lingui-explicit-id
@@ -2057,11 +2199,6 @@ msgid "dictionary.no_entries"
 msgstr "No entries yet"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.no_models"
-msgstr "No local models are installed. Download a model in Settings -> Models before importing."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.no_models"
 msgstr "No local models are installed. Download a model in Settings -> Models before retranscribing."
@@ -2095,6 +2232,11 @@ msgstr "no model held in memory between requests"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.no_model"
 msgstr "No model installed."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.no_models"
+msgstr "No local models are installed. Download a model in Settings -> Models before importing."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -2207,6 +2349,11 @@ msgid "personalization.notes"
 msgstr "Notes:"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.empty"
+msgstr "Nothing to bring over from this app."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.engine.nvidia.description"
 msgstr "NVIDIA local speech models, including Parakeet for transcription and Nemotron for live streaming."
@@ -2217,9 +2364,19 @@ msgid "settings.app.permission.off"
 msgstr "off"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch.off"
+msgstr "Off"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.sort.oldest"
 msgstr "Oldest first"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch.on"
+msgstr "On"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
@@ -2230,6 +2387,11 @@ msgstr "On-device transcription models"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer"
 msgstr "Only if you enable AI writing and set up a provider under Settings → Providers. Cleanup, Edit Mode, and Personalization then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LocalApiSidebarStatus.tsx
+msgid "home.local_api.open_settings"
+msgstr "Open API server settings"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2244,6 +2406,11 @@ msgstr "OpenAI's speech recognition with custom vocabulary support."
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional"
+msgstr "Optional"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.optional"
 msgstr "Optional"
 
 #. js-lingui-explicit-id
@@ -2277,6 +2444,11 @@ msgid "member_card.tier_personal"
 msgstr "Personal"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.personalities"
+msgstr "Personalities"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.personalization"
 msgstr "Personalization"
@@ -2290,6 +2462,11 @@ msgstr "Personalization"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_idle"
 msgstr "Pick a license"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.subtitle"
+msgstr "Pick what to carry over from your other app."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -2383,6 +2560,11 @@ msgid "settings.language_model.provider"
 msgstr "Provider"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider"
+msgstr "Provider"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.providers"
 msgstr "Providers"
@@ -2427,6 +2609,31 @@ msgstr "Record new shortcut for Smart, currently {shortcut}"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.storage.recordings"
 msgstr "Recordings"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.remote_provider"
+msgstr "Remote provider"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.remote_provider"
+msgstr "Remote provider"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.aria"
+msgstr "Remote speech API key"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.endpoint.aria"
+msgstr "Remote speech endpoint URL"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.title"
+msgstr "Remote Speech Provider"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2484,8 +2691,18 @@ msgid "dictionary.section.replacements_title"
 msgstr "Replacements"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LocalApiSidebarStatus.tsx
+msgid "home.local_api.requests"
+msgstr "Requests served"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.required"
+msgstr "Required"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.api_key.required"
 msgstr "Required"
 
 #. js-lingui-explicit-id
@@ -2699,6 +2916,11 @@ msgid "settings.language_model.model.search"
 msgstr "Search available models..."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model.search"
+msgstr "Search available speech models..."
+
+#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_only"
 msgstr "Search dictionary..."
@@ -2742,6 +2964,11 @@ msgstr "Search or add a word..."
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.search"
 msgstr "Search providers..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.search"
+msgstr "Search speech providers..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -2807,6 +3034,11 @@ msgstr "Select microphone..."
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.select"
+msgstr "Select provider..."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.provider.select"
 msgstr "Select provider..."
 
 #. js-lingui-explicit-id
@@ -2913,6 +3145,11 @@ msgstr "Skip"
 #: src/features/onboarding/steps/MicrophoneStep.tsx
 msgid "onboarding.microphone.skip"
 msgstr "Skip"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.skip"
+msgstr "Skip for now"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3086,6 +3323,11 @@ msgid "settings.general.microphone_test.test"
 msgstr "Test"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.replacements"
+msgstr "Text replacements"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.label"
 msgstr "Text Size"
@@ -3206,6 +3448,11 @@ msgid "settings.app.auto_launch.toggle_aria"
 msgstr "Toggle launch at login"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/Dropdown.tsx
+msgid "dropdown.toggle_menu"
+msgstr "Toggle options"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.start_in_background.toggle_aria"
 msgstr "Toggle start in background"
@@ -3221,6 +3468,11 @@ msgid "settings.about.storage.total"
 msgstr "Total"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.description"
+msgstr "Transcribe recordings through OpenAI-compatible cloud or self-hosted APIs."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.transcribing"
 msgstr "Transcribing..."
@@ -3229,6 +3481,11 @@ msgstr "Transcribing..."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.noun.transcripts.one"
 msgstr "transcript"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.history"
+msgstr "Transcript history"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -3249,6 +3506,11 @@ msgstr "Transcription failed"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.transcription_language"
 msgstr "Transcription Language"
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.model"
+msgstr "Transcription model"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3350,6 +3612,11 @@ msgid "settings.language_model.toggle"
 msgstr "Use this provider for AI writing features"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.toggle"
+msgstr "Use this provider for speech-to-text"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.description"
 msgstr "Used by Cleanup, Edit Mode, and Personalization."
@@ -3383,6 +3650,21 @@ msgstr "Warning: model compatibility issue"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.unknown_count"
 msgstr "We couldn't count them right now, but auto-delete will still run as soon as you save this change."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.error"
+msgstr "We couldn't read this app's data. You can skip and set things up manually."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.model.unrecognized"
+msgstr "We don't recognize this app's model — you'll pick one on the next step."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.subtitle.single"
+msgstr "We noticed you use {sourceName}. Pick what to carry over."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -3436,11 +3718,6 @@ msgstr "Words spoken"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.providers.writing_section"
-msgstr "Writing"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.title"
 msgstr "Writing Model Provider"
 
@@ -3463,6 +3740,11 @@ msgstr "You're ready!"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.up_to_date"
 msgstr "You're up to date"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LocalApiSidebarStatus.tsx
+msgid "home.local_api.status_hint"
+msgstr "Your API server is running in the background."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
