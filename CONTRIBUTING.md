@@ -1,78 +1,112 @@
 # Contributing to Glimpse
 
-Thanks for your interest in contributing to Glimpse! There are several ways to help out, whether you write code or not.
+Thanks for wanting to help. Glimpse is a small project with a big surface area (local speech, native windows, two platforms), and every contribution matters, whether you write code, translate, report bugs, or just spread the word.
+
+## Ways to help
+
+| | What you can do |
+| --- | --- |
+| **Translations** | Help localize Glimpse into your language |
+| **Bug reports** | Tell us when something breaks |
+| **Feature ideas** | Suggest improvements on GitHub |
+| **Code** | Fix bugs, polish UI, improve the Rust backend |
+| **Word of mouth** | Star the repo, share Glimpse, write about it |
+
+---
 
 ## Translations
 
-Translation contributors are currently added by invite only.
+Translation contributors are added by invite. We use [Lokalise](https://lokalise.com/) for localization. If you're accepted, you'll get an invite by email.
 
-1. Apply here: [Translation contributor form](https://tally.so/r/EkLeyL)
-2. If accepted, you'll receive a [Lokalise](https://lokalise.com/) invite by email.
+**To apply, email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) with:**
 
-Applications are reviewed manually, and contributors may not be approved for every requested language.
+- The language(s) you want to translate
+- Whether you're a native speaker
+- Any prior translation or localization experience (optional)
+
+Applications are reviewed manually. We may not approve every requested language, depending on demand and maintainer capacity.
+
+Active translation contributors receive a **Personal** license (full Glimpse Personal access on up to 5 devices) as a thank-you.
 
 > <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="18" alt="Lokalise" align="center" /></a>&ensp;Translations supported by [Lokalise](https://lokalise.com/)
 
-## Bug Reports
+---
 
-Found a bug? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) with:
+## Bug reports
 
-- Steps to reproduce
-- What you expected vs. what happened
-- Your macOS version and Glimpse version
+Found a bug? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) and include:
 
-## Feature Requests
+- **Steps to reproduce:** what you did, in order
+- **Expected vs. actual:** what you thought would happen vs. what did
+- **Environment:** macOS or Windows version, and your Glimpse version (Settings → About)
 
-Have an idea? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) describing what you'd like and why it would be useful. Check existing issues first to avoid duplicates.
+Screenshots or screen recordings help a lot for UI bugs.
 
-## Code Contributions
+For sensitive issues (security, privacy), email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) instead of opening a public issue.
+
+---
+
+## Feature requests
+
+Have an idea? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) describing what you'd like and why it would be useful. Search [existing issues](https://github.com/LegendarySpy/Glimpse/issues) first to avoid duplicates.
+
+Glimpse is local-first by design. Features that send audio or transcripts to Glimpse's servers by default are unlikely to fit the project's direction.
+
+---
+
+## Code contributions
 
 1. Fork the repo and create a branch from `main`.
-2. Follow the [Building Locally](#building-locally) steps to get set up.
-3. Make your changes and test them.
-4. Open a pull request **targeting `main`** with a clear description of what you changed and why.
+2. Set up a local build ([Building locally](#building-locally)).
+3. Make your changes and test them on the platform(s) you touched.
+4. Open a pull request **targeting `main`** with a clear description of what changed and why.
 
-All PRs should target `main` regardless of the current release version.
+All PRs target `main`, regardless of the current release version.
 
-## Spread the Word
+**What we're looking for in PRs:**
 
-Star the repo, share Glimpse with others, or write about it. More visibility helps the project grow!
+- Changes that extend existing code rather than adding parallel systems
+- Platform parity when touching macOS- or Windows-specific behavior
+- `bun run build` and `cargo check --manifest-path src-tauri/Cargo.toml` passing
 
+---
 
-## Building Locally
+## Spread the word
+
+Star the repo, tell a friend, mention Glimpse in a blog post or on social media. Visibility helps the project grow!
+
+---
+
+## Building locally
 
 ### macOS
 
 **Prerequisites:** macOS 14+, [Rust](https://rustup.rs/) 1.74+, [Bun](https://bun.sh/) 1.3+, Xcode Command Line Tools
+
 ```bash
 xcode-select --install
 git clone https://github.com/LegendarySpy/Glimpse.git
 cd Glimpse
 bun install
-```
-```bash
-bun tauri dev       # Development with hot reload
-bun tauri build     # Production build
+bun tauri dev    # Development with hot reload
+bun tauri build  # Production build
 ```
 
 ### Windows
 
 **Prerequisites:** Windows 10/11, [Bun](https://bun.sh/) 1.3+, [Rust](https://rustup.rs/) with the MSVC toolchain, Visual Studio Build Tools with **Desktop development with C++** / MSVC, and the Microsoft Edge WebView2 Runtime.
+
 ```powershell
 rustup default stable-x86_64-pc-windows-msvc
 rustup target add x86_64-pc-windows-msvc
 git clone https://github.com/LegendarySpy/Glimpse.git
 cd Glimpse
 bun install
-```
-```powershell
-bun tauri dev       # Development with hot reload
-bun tauri build     # Production build
+bun tauri dev    # Development with hot reload
+bun tauri build  # Production build
 ```
 
-On Windows, `bun tauri ...` stores Cargo build artifacts in
-`C:\.glimpse-cargo-target` to avoid long native build paths. Override with
-`CARGO_TARGET_DIR` or `GLIMPSE_CARGO_TARGET_DIR` if needed in env.
+On Windows, `bun tauri ...` stores Cargo build artifacts in `C:\.glimpse-cargo-target` to avoid long native build paths. Override with `CARGO_TARGET_DIR` or `GLIMPSE_CARGO_TARGET_DIR` if needed.
 
 If you run Cargo directly on Windows, set a short target directory first:
 
@@ -82,4 +116,4 @@ cargo check --manifest-path src-tauri/Cargo.toml
 ```
 
 > [!TIP]
-> After a production build, you may need to re-enable accessibility permissions in System Settings for text insertion to work.
+> After a production build on macOS, you may need to re-enable accessibility permissions in System Settings for text insertion to work.
