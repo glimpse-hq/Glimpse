@@ -1,6 +1,6 @@
 export type TranscriptionSort = "recent" | "oldest" | "longest" | "shortest";
 
-export type TimePreset = "any" | "today" | "7d" | "30d" | "custom";
+export type TimePreset = "any" | "today" | "7d" | "custom";
 
 export type ParsedTranscriptionSearch = {
   text: string;
@@ -123,8 +123,7 @@ function timePresetToken(preset: TimePreset): string | null {
   if (preset === "any" || preset === "custom") return null;
   const today = startOfDay(new Date());
   if (preset === "today") return `on:${formatDateToken(today)}`;
-  const days = preset === "7d" ? 6 : 29;
-  const from = addLocalDays(today, -days);
+  const from = addLocalDays(today, -6);
   return `after:${formatDateToken(from)}`;
 }
 
@@ -144,7 +143,6 @@ export function currentTimePreset(
   }
   if (after && !before) {
     if (after.getTime() === addLocalDays(today, -6).getTime()) return "7d";
-    if (after.getTime() === addLocalDays(today, -29).getTime()) return "30d";
   }
   return "custom";
 }

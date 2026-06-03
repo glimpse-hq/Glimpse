@@ -2,6 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import React, {
   useState,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
 } from "react";
@@ -61,10 +62,18 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   useClickOutside(
     searchRef,
     () => {
-      if (!searchQuery.trim() && !filterOpen) setSearchOpen(false);
+      if (!searchQuery.trim()) setSearchOpen(false);
     },
     searchOpen,
   );
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    const id = requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [searchOpen]);
 
   const parsed = useMemo(
     () => parseTranscriptionSearch(searchQuery),
@@ -312,6 +321,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   );
 
   const hasQuery = searchQuery.trim().length > 0;
+  const resultSearchText = parsed.text.trim();
   const showInitialLoading =
     isLoading && transcriptions.length === 0 && !debouncedText && !isFetched;
   const hasAnyResults = sortedTranscriptions.length > 0;
@@ -339,16 +349,9 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
             <motion.div
               key="search-input"
               initial={{ opacity: 0, width: 32 }}
-              animate={{
-                opacity: 1,
-                width: 272,
-                transition: { duration: 0.18, ease: "easeOut" },
-              }}
-              exit={{
-                opacity: 0,
-                width: 32,
-                transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-              }}
+              animate={{ opacity: 1, width: 272 }}
+              exit={{ opacity: 0, width: 32 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex items-center gap-2 h-8 px-0.5 border-b border-border-secondary bg-transparent transition-colors focus-within:border-content-primary"
             >
               <Search
@@ -366,116 +369,131 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                   if (e.key === "Escape") {
                     setSearchQuery("");
                     setSearchOpen(false);
+                    setFilterOpen(false);
                   }
                 }}
-            placeholder={t({
-              id: "transcriptions.list.search.placeholder_short",
-              message: "Search",
-            })}
-            aria-label={t({
-              id: "transcriptions.list.search.aria",
-              message: "Search transcriptions",
-            })}
-            className="bg-transparent ui-text-body-sm ui-color-secondary placeholder-content-disabled outline-hidden flex-1 min-w-0"
-          />
-          {hasQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                searchInputRef.current?.focus();
-              }}
-              aria-label={t({
-                id: "transcriptions.list.search.clear",
-                message: "Clear search",
-              })}
-              className="p-0.5 rounded text-content-disabled hover:text-content-muted transition-colors shrink-0"
-            >
-              <X size={12} aria-hidden="true" />
-            </button>
-          )}
-          <div className="relative shrink-0" ref={filterRef}>
-            <button
-              type="button"
-              onClick={() => setFilterOpen((open) => !open)}
-              aria-haspopup="menu"
-              aria-expanded={filterOpen}
-              aria-label={t({
-                id: "transcriptions.list.filter.aria",
-                message: "Sort and filter transcriptions",
-              })}
-              className="ui-button-ghost h-7 w-7"
-            >
-              <ArrowDownUp size={13} aria-hidden="true" />
-            </button>
-            <AnimatePresence>
-              {filterOpen && (
-                <motion.div
-                  role="menu"
-                  initial={{ opacity: 0, scale: 0.98, y: -2 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.98, y: -2 }}
-                  transition={{ duration: 0.12 }}
-                  className="ui-surface-menu absolute right-0 top-full mt-1.5 z-30 min-w-[170px] py-1"
+                placeholder={t({
+                  id: "transcriptions.list.search.placeholder_short",
+                  message: "Search",
+                })}
+                aria-label={t({
+                  id: "transcriptions.list.search.aria",
+                  message: "Search transcriptions",
+                })}
+                className="bg-transparent ui-text-body-sm ui-color-secondary placeholder-content-disabled outline-hidden flex-1 min-w-0"
+              />
+              {hasQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  aria-label={t({
+                    id: "transcriptions.list.search.clear",
+                    message: "Clear search",
+                  })}
+                  className="p-0.5 rounded text-content-disabled hover:text-content-muted transition-colors shrink-0"
                 >
-                  <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
-                    {t({ id: "transcriptions.filter.sort", message: "Sort" })}
-                  </div>
-                  {sortOptions.map((opt) => {
-                    const selected = opt.value === parsed.sort;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={selected}
-                        onClick={() =>
-                          setSearchQuery((q) => withSortToken(q, opt.value))
-                        }
-                        className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
-                          selected
-                            ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
-                            : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                        }`}
-                      >
-                        <span>{opt.label}</span>
-                        <span className="w-3 flex items-center justify-center shrink-0">
-                          {selected && <Check size={12} aria-hidden="true" />}
-                        </span>
-                      </button>
-                    );
-                  })}
-                  <div className="my-1 mx-3 border-t border-border-secondary" />
-                  <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
-                    {t({ id: "transcriptions.filter.when", message: "When" })}
-                  </div>
-                  {timeOptions.map((opt) => {
-                    const selected = opt.value === activeTimePreset;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={selected}
-                        onClick={() =>
-                          setSearchQuery((q) => withTimePreset(q, opt.value))
-                        }
-                        className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
-                          selected
-                            ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
-                            : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                        }`}
-                      >
-                        <span>{opt.label}</span>
-                        <span className="w-3 flex items-center justify-center shrink-0">
-                          {selected && <Check size={12} aria-hidden="true" />}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </motion.div>
+                  <X size={12} aria-hidden="true" />
+                </button>
               )}
-            </AnimatePresence>
-          </div>
+              <div className="relative shrink-0" ref={filterRef}>
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((open) => !open)}
+                  aria-haspopup="menu"
+                  aria-expanded={filterOpen}
+                  aria-label={t({
+                    id: "transcriptions.list.filter.aria",
+                    message: "Sort and filter transcriptions",
+                  })}
+                  className="ui-button-ghost h-7 w-7"
+                >
+                  <ArrowDownUp size={13} aria-hidden="true" />
+                </button>
+                <AnimatePresence>
+                  {filterOpen && (
+                    <motion.div
+                      role="menu"
+                      initial={{ opacity: 0, scale: 0.98, y: -2 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98, y: -2 }}
+                      transition={{ duration: 0.12 }}
+                      className="ui-surface-menu absolute right-0 top-full mt-1.5 z-30 min-w-[170px] py-1"
+                    >
+                      <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
+                        {t({
+                          id: "transcriptions.filter.sort",
+                          message: "Sort",
+                        })}
+                      </div>
+                      {sortOptions.map((opt) => {
+                        const selected = opt.value === parsed.sort;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            onClick={() =>
+                              setSearchQuery((q) =>
+                                withSortToken(q, opt.value),
+                              )
+                            }
+                            className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
+                              selected
+                                ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
+                                : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            <span className="w-3 flex items-center justify-center shrink-0">
+                              {selected && (
+                                <Check size={12} aria-hidden="true" />
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      <div className="my-1 mx-3 border-t border-border-secondary" />
+                      <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
+                        {t({
+                          id: "transcriptions.filter.when",
+                          message: "When",
+                        })}
+                      </div>
+                      {timeOptions.map((opt) => {
+                        const selected = opt.value === activeTimePreset;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            onClick={() =>
+                              setSearchQuery((q) =>
+                                withTimePreset(q, opt.value),
+                              )
+                            }
+                            className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
+                              selected
+                                ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
+                                : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            <span className="w-3 flex items-center justify-center shrink-0">
+                              {selected && (
+                                <Check size={12} aria-hidden="true" />
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           ) : (
             <motion.button
@@ -541,10 +559,15 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
               aria-hidden="true"
             />
             <p className="ui-text-body-sm ui-color-muted">
-              {t({
-                id: "transcriptions.list.no_results",
-                message: `No results for "${parsed.text || searchQuery.trim()}"`,
-              })}
+              {resultSearchText
+                ? t({
+                    id: "transcriptions.list.no_results",
+                    message: `No results for "${resultSearchText}"`,
+                  })
+                : t({
+                    id: "transcriptions.list.no_results_filters",
+                    message: "No results for selected filters",
+                  })}
             </p>
           </div>
         ) : (

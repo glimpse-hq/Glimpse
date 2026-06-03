@@ -2295,9 +2295,14 @@ msgid "dictionary.replacements.none"
 msgstr "No replacements yet"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
+#: src/features/transcriptions/components/TranscriptionList.tsx:569
 msgid "transcriptions.list.no_results"
-msgstr "No results for \"{searchQuery}\""
+msgstr "No results for \"{resultSearchText}\""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx:575
+msgid "transcriptions.list.no_results_filters"
+msgstr "No results for selected filters"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx

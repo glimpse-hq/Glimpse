@@ -2147,9 +2147,14 @@ msgid "dictionary.replacements.none"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx:223
+#: src/features/transcriptions/components/TranscriptionList.tsx:569
 msgid "transcriptions.list.no_results"
 msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx:575
+msgid "transcriptions.list.no_results_filters"
+msgstr "Aucun resultat pour les filtres selectionnes"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx:497
