@@ -126,8 +126,7 @@ impl HotkeyCoordinator {
         };
 
         let session = WorkerSession::spawn("shortcut-capture", move |stop_rx| {
-            let mut captured_hotkey: Option<Hotkey> = None;
-            let mut capture_anchor: Option<CapturePart> = None;
+            let mut capture = CaptureState::default();
 
             loop {
                 select! {
@@ -138,58 +137,32 @@ impl HotkeyCoordinator {
                             Err(_) => break,
                         };
 
-                        if event.key == Some(Key::CapsLock) {
-                            emit_capture_event(
-                                &app_handle,
-                                ShortcutCapturePayload::Error {
-                                    message: "CapsLock cannot be used as a recording shortcut".to_string(),
-                                },
-                            );
-                            break;
-                        }
-
-                        let Some(part) = capture_part(event) else {
-                            continue;
-                        };
-
-                        if event.is_key_down {
-                            capture_anchor.get_or_insert(part);
-
-                            if let Ok(hotkey) = event.as_hotkey() {
-                                let captured = merge_capture_hotkey(captured_hotkey, hotkey);
-                                captured_hotkey = Some(captured);
-                                emit_capture_event(
-                                    &app_handle,
-                                    ShortcutCapturePayload::Preview {
-                                        shortcut: captured.to_string(),
-                                    },
-                                );
-                            }
-                            continue;
-                        }
-
-                        let Some(hotkey) = captured_hotkey else {
-                            continue;
-                        };
-
-                        if capture_anchor == Some(part) {
-                            emit_capture_event(
-                                &app_handle,
-                                ShortcutCapturePayload::Captured {
-                                    shortcut: hotkey.to_string(),
-                                },
-                            );
-                            break;
-                        }
-
-                        captured_hotkey = remove_capture_part(hotkey, part);
-                        if let Some(hotkey) = captured_hotkey {
-                            emit_capture_event(
+                        match capture.process(event) {
+                            CaptureOutcome::Idle => {}
+                            CaptureOutcome::Preview(hotkey) => emit_capture_event(
                                 &app_handle,
                                 ShortcutCapturePayload::Preview {
                                     shortcut: hotkey.to_string(),
                                 },
-                            );
+                            ),
+                            CaptureOutcome::Captured(hotkey) => {
+                                emit_capture_event(
+                                    &app_handle,
+                                    ShortcutCapturePayload::Captured {
+                                        shortcut: hotkey.to_string(),
+                                    },
+                                );
+                                break;
+                            }
+                            CaptureOutcome::Invalid(message) => {
+                                emit_capture_event(
+                                    &app_handle,
+                                    ShortcutCapturePayload::Error {
+                                        message: message.to_string(),
+                                    },
+                                );
+                                break;
+                            }
                         }
                     }
                 }
@@ -285,42 +258,60 @@ impl RegisteredShortcutState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum CapturePart {
-    Modifier(Modifiers),
-    Key(Key),
+enum CaptureOutcome {
+    Idle,
+    Preview(Hotkey),
+    Captured(Hotkey),
+    Invalid(&'static str),
 }
 
-fn capture_part(event: KeyEvent) -> Option<CapturePart> {
-    if event.key == Some(Key::CapsLock) {
-        return None;
-    }
-
-    event
-        .changed_modifier
-        .map(CapturePart::Modifier)
-        .or_else(|| event.key.map(CapturePart::Key))
+/// Records the fullest shortcut pressed during a gesture and commits it once
+/// every part is released, so the result never depends on release order.
+#[derive(Default)]
+struct CaptureState {
+    best: Option<Hotkey>,
+    current_key: Option<Key>,
 }
 
-fn merge_capture_hotkey(previous: Option<Hotkey>, current: Hotkey) -> Hotkey {
-    if let Some(previous) = previous {
-        Hotkey {
-            modifiers: previous.modifiers | current.modifiers,
-            key: current.key.or(previous.key),
+impl CaptureState {
+    fn process(&mut self, event: KeyEvent) -> CaptureOutcome {
+        if event.key == Some(Key::CapsLock) {
+            return CaptureOutcome::Invalid("CapsLock cannot be used as a recording shortcut");
         }
-    } else {
-        current
+
+        if let Some(key) = event.key {
+            if event.is_key_down {
+                self.current_key = Some(key);
+            } else if self.current_key == Some(key) {
+                self.current_key = None;
+            }
+        }
+
+        if event.modifiers.is_empty() && self.current_key.is_none() {
+            return match self.best.take() {
+                Some(hotkey) => CaptureOutcome::Captured(hotkey),
+                None => CaptureOutcome::Idle,
+            };
+        }
+
+        if let Ok(candidate) = Hotkey::new(event.modifiers, self.current_key) {
+            let should_update = match self.best {
+                Some(current) => hotkey_rank(candidate) > hotkey_rank(current),
+                None => true,
+            };
+
+            if should_update {
+                self.best = Some(candidate);
+                return CaptureOutcome::Preview(candidate);
+            }
+        }
+
+        CaptureOutcome::Idle
     }
 }
 
-fn remove_capture_part(mut hotkey: Hotkey, part: CapturePart) -> Option<Hotkey> {
-    match part {
-        CapturePart::Modifier(modifier) => hotkey.modifiers &= !modifier,
-        CapturePart::Key(key) if hotkey.key == Some(key) => hotkey.key = None,
-        CapturePart::Key(_) => {}
-    }
-
-    Hotkey::new(hotkey.modifiers, hotkey.key).ok()
+fn hotkey_rank(hotkey: Hotkey) -> u32 {
+    hotkey.modifiers.count() + u32::from(hotkey.key.is_some())
 }
 
 fn emit_capture_event(app: &AppHandle<AppRuntime>, payload: ShortcutCapturePayload) {
@@ -592,11 +583,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn capture_ignores_capslock() {
-        assert_eq!(
-            capture_part(event(Modifiers::empty(), Some(Key::CapsLock), true)),
-            None
-        );
-    }
 }
