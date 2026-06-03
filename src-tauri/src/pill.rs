@@ -442,7 +442,10 @@ impl PillController {
 
         crate::speech::warm(app, &settings);
 
-        match self.recorder.start(settings.microphone_device) {
+        let pending_dir = crate::recordings_root(app)
+            .ok()
+            .map(|root| root.join(crate::recorder::PENDING_DIR_NAME));
+        match self.recorder.start(settings.microphone_device, pending_dir) {
             Ok(started) => {
                 self.transition_to(app, PillStatus::Listening);
                 self.start_audio_spectrum_emitter(app);
@@ -589,6 +592,7 @@ impl PillController {
                             .unwrap_or_default();
 
                         if duration_ms < MIN_RECORDING_DURATION_MS {
+                            discard_pending_recording(&recording);
                             collapse_expanded_pill(&app_handle);
                             app_handle
                                 .state::<AppState>()
@@ -598,6 +602,7 @@ impl PillController {
                         }
 
                         if streaming_transcript.trim().is_empty() {
+                            discard_pending_recording(&recording);
                             collapse_expanded_pill(&app_handle);
                             app_handle
                                 .state::<AppState>()
@@ -668,6 +673,7 @@ impl PillController {
                         let duration_ms =
                             (recording.ended_at - recording.started_at).num_milliseconds();
                         if duration_ms < MIN_RECORDING_DURATION_MS {
+                            discard_pending_recording(&recording);
                             app_handle
                                 .state::<AppState>()
                                 .pill()
@@ -704,9 +710,12 @@ impl PillController {
         let _ = app.state::<AppState>().stop_streaming_session(app);
         collapse_expanded_pill(app);
         let app_handle = app.clone();
-        if let Err(err) = self.recorder.stop_after_capture(move || {
-            app_handle.state::<AppState>().pill().resume_paused_media();
-        }) {
+        if let Err(err) = self
+            .recorder
+            .stop_after_capture_and_discard_pending(move || {
+                app_handle.state::<AppState>().pill().resume_paused_media();
+            })
+        {
             self.resume_paused_media();
             eprintln!("Failed to stop recorder: {err}");
         }
@@ -724,9 +733,12 @@ impl PillController {
         collapse_expanded_pill(app);
         state.request_cancellation();
         let app_handle = app.clone();
-        if let Err(err) = self.recorder.stop_after_capture(move || {
-            app_handle.state::<AppState>().pill().resume_paused_media();
-        }) {
+        if let Err(err) = self
+            .recorder
+            .stop_after_capture_and_discard_pending(move || {
+                app_handle.state::<AppState>().pill().resume_paused_media();
+            })
+        {
             self.resume_paused_media();
             eprintln!("Failed to stop recorder: {err}");
         }
@@ -762,6 +774,12 @@ pub(crate) fn emit_pill_mode_with_tone(
 
 pub(crate) fn collapse_expanded_pill(app: &AppHandle<AppRuntime>) {
     emit_pill_mode(app, false, "");
+}
+
+fn discard_pending_recording(recording: &crate::recorder::CompletedRecording) {
+    if let Some(path) = recording.pending_path.as_deref() {
+        let _ = std::fs::remove_file(path);
+    }
 }
 
 fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {

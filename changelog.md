@@ -1,5 +1,8 @@
 0.9.3
 
+### Features
+- Glimpse can now recover recordings if the app closes while you're still dictating, then save them to History when you reopen it.
+
 ### Improvements
 - Transcript history search is cleaner now, with quick sorting and time filters for finding older dictations faster.
 

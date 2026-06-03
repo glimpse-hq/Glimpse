@@ -101,6 +101,7 @@ struct CompletionInput {
     final_transcript: String,
     auto_paste: bool,
     audio_path: String,
+    pending_path: Option<PathBuf>,
     llm_cleaned: bool,
     metadata: storage::TranscriptionMetadata,
     mode: &'static str,
@@ -166,6 +167,7 @@ pub(crate) fn queue_transcription(
                         .state::<AppState>()
                         .pill()
                         .finish_processing(&app_handle);
+                    discard_pending_recording(saved_for_task.pending_path.as_deref());
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -173,7 +175,11 @@ pub(crate) fn queue_transcription(
                 let raw_transcript = result.transcript.clone();
 
                 if count_words(&raw_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
+                    handle_empty_transcription(
+                        &app_handle,
+                        &saved_for_task.path,
+                        saved_for_task.pending_path.as_deref(),
+                    );
                     return;
                 }
 
@@ -182,6 +188,7 @@ pub(crate) fn queue_transcription(
                         .state::<AppState>()
                         .pill()
                         .finish_processing(&app_handle);
+                    discard_pending_recording(saved_for_task.pending_path.as_deref());
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -193,6 +200,7 @@ pub(crate) fn queue_transcription(
                             .to_string(),
                         "edit_mode",
                         saved_for_task.path.display().to_string(),
+                        saved_for_task.pending_path.as_deref(),
                         true,
                         temporary,
                         true,
@@ -217,7 +225,11 @@ pub(crate) fn queue_transcription(
                 {
                     ProcessTranscriptOutcome::Ready(processed) => processed,
                     ProcessTranscriptOutcome::Empty => {
-                        handle_empty_transcription(&app_handle, &saved_for_task.path);
+                        handle_empty_transcription(
+                            &app_handle,
+                            &saved_for_task.path,
+                            saved_for_task.pending_path.as_deref(),
+                        );
                         return;
                     }
                     ProcessTranscriptOutcome::Cancelled => {
@@ -225,6 +237,7 @@ pub(crate) fn queue_transcription(
                             .state::<AppState>()
                             .pill()
                             .finish_processing(&app_handle);
+                        discard_pending_recording(saved_for_task.pending_path.as_deref());
                         app_handle.state::<AppState>().set_pending_path(None);
                         return;
                     }
@@ -235,6 +248,7 @@ pub(crate) fn queue_transcription(
                         .state::<AppState>()
                         .pill()
                         .finish_processing(&app_handle);
+                    discard_pending_recording(saved_for_task.pending_path.as_deref());
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -256,6 +270,7 @@ pub(crate) fn queue_transcription(
                         final_transcript: processed.final_transcript,
                         auto_paste: processed.pasted,
                         audio_path: saved_for_task.path.display().to_string(),
+                        pending_path: saved_for_task.pending_path.clone(),
                         llm_cleaned: processed.llm_cleaned,
                         metadata,
                         mode: transcription_mode_label(&settings),
@@ -271,6 +286,7 @@ pub(crate) fn queue_transcription(
             }
             Err(err) => {
                 if is_cancelled() {
+                    discard_pending_recording(saved_for_task.pending_path.as_deref());
                     app_handle.state::<AppState>().set_pending_path(None);
                     return;
                 }
@@ -280,6 +296,7 @@ pub(crate) fn queue_transcription(
                     format!("Transcription failed: {err}"),
                     transcription_mode_label(&settings),
                     saved_for_task.path.display().to_string(),
+                    saved_for_task.pending_path.as_deref(),
                     true,
                     temporary,
                     show_toast,
@@ -354,6 +371,202 @@ async fn transcribe_completed_recording_locally(
     }
 }
 
+pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
+    let base_dir = match crate::recordings_root(app) {
+        Ok(path) => path,
+        Err(_) => return,
+    };
+    let app = app.clone();
+
+    async_runtime::spawn(async move {
+        let scan_dir = base_dir.clone();
+        let recovered = match async_runtime::spawn_blocking(move || {
+            crate::recorder::recover_pending_recordings(scan_dir)
+        })
+        .await
+        {
+            Ok(list) => list,
+            Err(err) => {
+                eprintln!("Recovery scan failed: {err}");
+                return;
+            }
+        };
+
+        if recovered.is_empty() {
+            return;
+        }
+
+        toast::emit_toast(
+            &app,
+            toast::Payload {
+                toast_type: "info".to_string(),
+                title: None,
+                message: "Recovering your last recording...".to_string(),
+                auto_dismiss: Some(true),
+                duration: Some(30000),
+                retry_id: None,
+                mode: None,
+                action: None,
+                action_label: None,
+                secondary_action: None,
+                secondary_action_label: None,
+            },
+        );
+
+        let settings = app.state::<AppState>().current_settings();
+        let mut saved_count = 0usize;
+        for (saved, recording) in recovered {
+            match transcribe_recovered_recording(&app, &saved, recording, &settings).await {
+                Ok(RecoveredTranscriptionOutcome::Saved) => {
+                    saved_count += 1;
+                }
+                Ok(RecoveredTranscriptionOutcome::Empty) => {}
+                Err(err) => eprintln!("Failed to transcribe recovered recording: {err}"),
+            }
+        }
+
+        if saved_count == 0 {
+            return;
+        }
+
+        toast::emit_toast(
+            &app,
+            toast::Payload {
+                toast_type: "success".to_string(),
+                title: Some(if saved_count == 1 {
+                    "Recording recovered".to_string()
+                } else {
+                    "Recordings recovered".to_string()
+                }),
+                message: if saved_count == 1 {
+                    "Saved to History.".to_string()
+                } else {
+                    format!("{saved_count} recordings saved to History.")
+                },
+                auto_dismiss: Some(false),
+                duration: None,
+                retry_id: None,
+                mode: None,
+                action: Some("view_recovered_transcriptions".to_string()),
+                action_label: Some("View History".to_string()),
+                secondary_action: None,
+                secondary_action_label: None,
+            },
+        );
+    });
+}
+
+enum RecoveredTranscriptionOutcome {
+    Saved,
+    Empty,
+}
+
+async fn transcribe_recovered_recording(
+    app: &AppHandle<AppRuntime>,
+    saved: &RecordingSaved,
+    recording: CompletedRecording,
+    settings: &UserSettings,
+) -> Result<RecoveredTranscriptionOutcome> {
+    let http = app.state::<AppState>().http();
+    let active_mode = mode_context::resolve_active_personality(settings);
+    let model_id = speech::selected_model(settings);
+    let use_remote = remote_speech::is_remote_model(&model_id);
+    let recording_for_local = recording.clone();
+
+    let result = match speech::transcribe(
+        app,
+        &http,
+        settings,
+        &model_id,
+        &saved.path,
+        &settings.local_model,
+        false,
+        || false,
+        |success| success,
+        || {
+            transcribe_completed_recording_locally(
+                app,
+                settings,
+                recording_for_local.clone(),
+                None,
+                use_remote,
+            )
+        },
+    )
+    .await
+    {
+        Ok(result) => result,
+        Err(err) => {
+            emit_transcription_error_inner(
+                app,
+                format!("Transcription failed: {err}"),
+                transcription_mode_label(settings),
+                saved.path.display().to_string(),
+                saved.pending_path.as_deref(),
+                false,
+                false,
+                true,
+            );
+            return Err(err);
+        }
+    };
+
+    let raw_transcript = result.transcript.clone();
+    if count_words(&raw_transcript) == 0 {
+        handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref());
+        return Ok(RecoveredTranscriptionOutcome::Empty);
+    }
+
+    let processed = match process_transcript_text(
+        app,
+        &http,
+        ProcessTranscriptInput {
+            raw_transcript: raw_transcript.clone(),
+            pending_selected_text: None,
+            settings,
+            active_mode: active_mode.as_ref(),
+            auto_paste: false,
+            log_context: Some("recovery"),
+        },
+    )
+    .await
+    {
+        ProcessTranscriptOutcome::Ready(processed) => processed,
+        ProcessTranscriptOutcome::Empty => {
+            handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref());
+            return Ok(RecoveredTranscriptionOutcome::Empty);
+        }
+        ProcessTranscriptOutcome::Cancelled => return Err(anyhow!("Transcription cancelled")),
+    };
+
+    let metadata = build_transcription_metadata(TranscriptionMetadataInput {
+        saved,
+        settings,
+        final_text: &processed.final_transcript,
+        llm_cleaned: processed.llm_cleaned,
+        synced: false,
+        mode: active_mode.as_ref(),
+        speech_model: result.speech_model,
+    });
+
+    emit_transcription_complete_with_cleanup(
+        app,
+        CompletionInput {
+            raw_transcript,
+            final_transcript: processed.final_transcript,
+            auto_paste: false,
+            audio_path: saved.path.display().to_string(),
+            pending_path: saved.pending_path.clone(),
+            llm_cleaned: processed.llm_cleaned,
+            metadata,
+            mode: transcription_mode_label(settings),
+            temporary: false,
+        },
+    );
+
+    Ok(RecoveredTranscriptionOutcome::Saved)
+}
+
 async fn transcribe_saved_recording_locally(
     app: &AppHandle<AppRuntime>,
     settings: &UserSettings,
@@ -371,6 +584,7 @@ async fn transcribe_saved_recording_locally(
             channels: 1,
             started_at: saved.started_at,
             ended_at: saved.ended_at,
+            pending_path: None,
         },
         cancel_token,
         prefer_any_installed,
@@ -590,7 +804,7 @@ pub(crate) fn retry_transcription_async(
                 let raw_transcript = result.transcript.clone();
 
                 if count_words(&raw_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
+                    handle_empty_transcription(&app_handle, &saved_for_task.path, None);
                     return;
                 }
 
@@ -631,7 +845,7 @@ pub(crate) fn retry_transcription_async(
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
 
                 if count_words(&final_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path);
+                    handle_empty_transcription(&app_handle, &saved_for_task.path, None);
                     return;
                 }
 
@@ -712,6 +926,7 @@ pub(crate) fn retry_transcription_async(
                     format!("Transcription failed: {err}"),
                     transcription_mode_label(&settings),
                     saved_for_task.path.display().to_string(),
+                    None,
                     true,
                     false,
                     show_toast,
@@ -727,6 +942,7 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
         final_transcript,
         auto_paste,
         audio_path,
+        pending_path,
         llm_cleaned,
         metadata,
         mode,
@@ -756,12 +972,12 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
 
     if temporary {
         let _ = std::fs::remove_file(&audio_path);
+        discard_pending_recording(pending_path.as_deref());
         return;
     }
 
-    if llm_cleaned {
-        let _ = app
-            .state::<AppState>()
+    let save_result = if llm_cleaned {
+        app.state::<AppState>()
             .storage()
             .save_transcription_with_cleanup(
                 raw_transcript,
@@ -769,16 +985,21 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
                 audio_path,
                 metadata,
                 None,
-            );
+            )
     } else {
-        let _ = app.state::<AppState>().storage().save_transcription(
+        app.state::<AppState>().storage().save_transcription(
             final_transcript,
             audio_path,
             storage::TranscriptionStatus::Success,
             None,
             metadata,
             None,
-        );
+        )
+    };
+
+    match save_result {
+        Ok(_) => discard_pending_recording(pending_path.as_deref()),
+        Err(err) => eprintln!("Failed to persist transcription: {err}"),
     }
 
     let settings = app.state::<AppState>().current_settings();
@@ -797,7 +1018,17 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
     update_checker::maybe_show_update_toast(app, &update_state);
 }
 
-fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
+fn discard_pending_recording(path: Option<&Path>) {
+    if let Some(path) = path {
+        let _ = std::fs::remove_file(path);
+    }
+}
+
+fn handle_empty_transcription(
+    app: &AppHandle<AppRuntime>,
+    audio_path: &Path,
+    pending_path: Option<&Path>,
+) {
     crate::emit_event(
         app,
         EVENT_TRANSCRIPTION_COMPLETE,
@@ -832,6 +1063,7 @@ fn handle_empty_transcription(app: &AppHandle<AppRuntime>, audio_path: &Path) {
             );
         }
     }
+    discard_pending_recording(pending_path);
 
     let prune_settings = app.state::<AppState>().current_settings();
     crate::schedule_recording_prune(app.clone(), prune_settings.clone());
@@ -871,6 +1103,7 @@ fn emit_transcription_error_inner(
     message: String,
     stage: &str,
     audio_path: String,
+    pending_path: Option<&Path>,
     reset_state: bool,
     temporary: bool,
     show_toast: bool,
@@ -904,6 +1137,7 @@ fn emit_transcription_error_inner(
 
     if temporary {
         let _ = std::fs::remove_file(&audio_path);
+        discard_pending_recording(pending_path);
     } else {
         let record_result = state.storage().save_transcription(
             String::new(),
@@ -914,8 +1148,9 @@ fn emit_transcription_error_inner(
             None,
         );
 
-        if let Err(err) = record_result {
-            eprintln!("Failed to persist failed transcription: {err}");
+        match record_result {
+            Ok(_) => discard_pending_recording(pending_path),
+            Err(err) => eprintln!("Failed to persist failed transcription: {err}"),
         }
     }
 
@@ -1457,7 +1692,7 @@ pub(crate) fn finalize_streaming_transcription(
         {
             ProcessTranscriptOutcome::Ready(processed) => processed,
             ProcessTranscriptOutcome::Empty => {
-                handle_empty_transcription(&app_handle, &audio_path);
+                handle_empty_transcription(&app_handle, &audio_path, None);
                 return;
             }
             ProcessTranscriptOutcome::Cancelled => {
@@ -1493,6 +1728,7 @@ pub(crate) fn finalize_streaming_transcription(
                 final_transcript: processed.final_transcript,
                 auto_paste: processed.pasted,
                 audio_path: audio_path.display().to_string(),
+                pending_path: None,
                 llm_cleaned: processed.llm_cleaned,
                 metadata,
                 mode: "local_streaming",

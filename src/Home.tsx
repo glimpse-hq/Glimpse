@@ -209,6 +209,7 @@ const Home = () => {
   useEffect(() => {
     let cancelled = false;
     let unlistenNavigate: UnlistenFn | null = null;
+    let unlistenHistory: UnlistenFn | null = null;
     let unlistenModels: UnlistenFn | null = null;
     let unlistenDragEnter: UnlistenFn | null = null;
     let unlistenDragOver: UnlistenFn | null = null;
@@ -229,6 +230,16 @@ const Home = () => {
       else unlistenNavigate = fn;
     });
 
+    const historyReady = listen("navigate:history", () => {
+      setIsSettingsOpen(false);
+      setActiveView("home");
+      setDragActive(false);
+      setPendingImportPaths(null);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenHistory = fn;
+    });
+
     const modelsReady = listen("navigate:models", () => {
       setSettingsTab("models");
       setIsSettingsOpen(true);
@@ -237,7 +248,7 @@ const Home = () => {
       else unlistenModels = fn;
     });
 
-    Promise.all([navigateReady, modelsReady])
+    Promise.all([navigateReady, historyReady, modelsReady])
       .then(() => {
         if (!cancelled) {
           emit("settings:renderer_ready").catch(() => {});
@@ -308,6 +319,7 @@ const Home = () => {
     return () => {
       cancelled = true;
       unlistenNavigate?.();
+      unlistenHistory?.();
       unlistenModels?.();
       unlistenDragEnter?.();
       unlistenDragOver?.();

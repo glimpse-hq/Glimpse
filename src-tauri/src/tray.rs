@@ -30,6 +30,7 @@ const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
 pub(crate) const EVENT_SETTINGS_RENDERER_READY: &str = "settings:renderer_ready";
 
 const EVENT_NAVIGATE_ABOUT: &str = "navigate:about";
+const EVENT_NAVIGATE_HISTORY: &str = "navigate:history";
 const EVENT_NAVIGATE_MODELS: &str = "navigate:models";
 
 #[derive(Clone, Serialize)]
@@ -41,6 +42,7 @@ struct SettingsNavigationPayload {
 #[derive(Clone, Copy)]
 enum SettingsNavigationTarget {
     About,
+    History,
     Models,
 }
 
@@ -74,6 +76,9 @@ fn flush_pending_settings_navigation(app: &AppHandle<AppRuntime>) {
                 EVENT_NAVIGATE_ABOUT,
                 SettingsNavigationPayload { open_whats_new },
             );
+        }
+        Some(SettingsNavigationTarget::History) => {
+            let _ = app.emit(EVENT_NAVIGATE_HISTORY, ());
         }
         Some(SettingsNavigationTarget::Models) => {
             let _ = app.emit(EVENT_NAVIGATE_MODELS, ());
@@ -111,6 +116,10 @@ fn open_settings_navigation(
 
 pub(crate) fn open_settings_about(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
     open_settings_navigation(app, SettingsNavigationTarget::About, false)
+}
+
+pub(crate) fn open_settings_history(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
+    open_settings_navigation(app, SettingsNavigationTarget::History, false)
 }
 
 pub(crate) fn open_settings_models(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
