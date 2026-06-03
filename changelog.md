@@ -1,3 +1,9 @@
+0.9.3
+
+### Improvements
+- Transcript history search is cleaner now, with quick sorting and time filters for finding older dictations faster.
+
+---
 0.9.2
 
 ### Features
