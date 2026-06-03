@@ -227,6 +227,10 @@ const MemberCardInner = ({
       <MemberCardPaperOverlays seedKey={visualSeed} cardHeight={cardHeight} />
       <MemberCardFrame>
         <CardHeaderRow
+          price={previewInfo?.price ?? null}
+          priceColor={
+            previewTier ? TIER_COLORS[previewTier].fg : undefined
+          }
           stamp={
             showStamp && displayKey ? (
               <SlamTierStamp
@@ -396,9 +400,10 @@ const MemberCardInner = ({
               {showTierPicker && showDraftChrome ? (
                 <div className="absolute inset-0 flex items-stretch gap-0">
                   <TierOption
-                    tier="personal"
                     label={personal.label}
                     price={personal.price}
+                    inlinePrice={personal.pickerPrice}
+                    accent={TIER_COLORS.personal}
                     active={previewTier === "personal"}
                     opening={openingTarget === "personal"}
                     disabled={tierDisabledForPicker}
@@ -413,9 +418,10 @@ const MemberCardInner = ({
                     }}
                   />
                   <TierOption
-                    tier="commercial"
                     label={commercial.label}
                     price={commercial.price}
+                    inlinePrice={commercial.pickerPrice}
+                    accent={TIER_COLORS.commercial}
                     active={previewTier === "commercial"}
                     opening={openingTarget === "commercial"}
                     disabled={tierDisabledForPicker}
@@ -580,18 +586,20 @@ const TypedDetail = ({
 };
 
 const TierOption = ({
-  tier,
   label,
   price,
+  inlinePrice,
+  accent,
   active,
   opening,
   disabled,
   onHover,
   onClick,
 }: {
-  tier: PurchaseTier;
   label: string;
   price: string;
+  inlinePrice?: string;
+  accent: { fg: string; bg: string };
   active?: boolean;
   opening?: boolean;
   disabled?: boolean;
@@ -600,8 +608,8 @@ const TierOption = ({
 }) => {
   const { t } = useLingui();
   const palette = useMemberCardPalette();
-  const accent = TIER_COLORS[tier];
   const highlighted = active || opening;
+  const pickerLabel = inlinePrice ? `${label} · ${inlinePrice}` : label;
 
   return (
     <button
@@ -640,7 +648,7 @@ const TierOption = ({
               : undefined,
           }}
         >
-          {label} · {price}
+          {pickerLabel}
         </span>
       </span>
       {opening ? (

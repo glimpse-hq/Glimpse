@@ -156,6 +156,16 @@ msgstr ""
 #~ msgstr "We noticed you use {sourceName}. Pick what to carry over."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+#~ msgid "transcriptions.list.search.close"
+#~ msgstr "Close search"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+#~ msgid "transcriptions.list.sort.aria"
+#~ msgstr "Sort transcriptions"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -440,6 +450,11 @@ msgstr "Allow cross-origin browser requests"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.body"
 msgstr "anonymous, no transcripts or audio shared."
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.time.any"
+msgstr "Any time"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -733,6 +748,11 @@ msgid "settings.local_api.logs.clear"
 msgstr "Clear"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.list.search.clear"
+msgstr "Clear search"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.search.clear"
 msgstr "Clear search"
@@ -776,11 +796,6 @@ msgstr "Close modal"
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.close"
 msgstr "Close notification"
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
-msgid "transcriptions.list.search.close"
-msgstr "Close search"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -2295,12 +2310,12 @@ msgid "dictionary.replacements.none"
 msgstr "No replacements yet"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx:569
+#: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results"
 msgstr "No results for \"{resultSearchText}\""
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx:575
+#: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results_filters"
 msgstr "No results for selected filters"
 
@@ -2458,6 +2473,11 @@ msgstr "Optional"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.api_key.placeholder_optional"
 msgstr "Optional - blank to disable"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.time.7d"
+msgstr "Past 7 days"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3224,8 +3244,13 @@ msgstr "Smart is on by default, others available in settings."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
-msgid "transcriptions.list.sort.aria"
-msgstr "Sort transcriptions"
+msgid "transcriptions.filter.sort"
+msgstr "Sort"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.list.filter.aria"
+msgstr "Sort and filter transcriptions"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3461,6 +3486,11 @@ msgstr "to use local."
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.group.today"
+msgstr "Today"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.time.today"
 msgstr "Today"
 
 #. js-lingui-explicit-id
@@ -3751,6 +3781,11 @@ msgstr "What's New"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.whats_new"
 msgstr "What's new?"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.filter.when"
+msgstr "When"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

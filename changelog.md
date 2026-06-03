@@ -6,6 +6,10 @@
 ### Improvements
 - Setting shortcuts now works more like other apps: press the full combo, release all keys to save it, and the result no longer depends on which key you let go of first.
 - Transcript history search is cleaner now, with quick sorting and time filters for finding older dictations faster.
+- The license card in Settings → Account and onboarding now surfaces plan pricing more clearly, including per-seat Commercial licensing and volume discounts.
+
+### Changes
+- Updated Glimpse Personal pricing: Personal is $24.99, and Commercial licensing starts at $19.99 per seat with volume discounts as your team grows.
 
 ---
 0.9.2
