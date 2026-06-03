@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings,
@@ -21,7 +21,11 @@ import SettingsModal from "./features/settings/components/SettingsModal";
 import FAQModal from "./shared/ui/FAQModal";
 import WindowControls from "./shared/ui/WindowControls";
 import { useClickOutside } from "./shared/hooks/useClickOutside";
+import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeader";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
+import { useTranscriptionList } from "./features/transcriptions/queries";
+import { computeTodayDictationStats } from "./features/transcriptions/todayStats";
+import { useTimeOfDayPeriodTick } from "./features/transcriptions/homeGreeting";
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
@@ -209,6 +213,7 @@ const Home = () => {
   useEffect(() => {
     let cancelled = false;
     let unlistenNavigate: UnlistenFn | null = null;
+    let unlistenHistory: UnlistenFn | null = null;
     let unlistenModels: UnlistenFn | null = null;
     let unlistenDragEnter: UnlistenFn | null = null;
     let unlistenDragOver: UnlistenFn | null = null;
@@ -229,6 +234,16 @@ const Home = () => {
       else unlistenNavigate = fn;
     });
 
+    const historyReady = listen("navigate:history", () => {
+      setIsSettingsOpen(false);
+      setActiveView("home");
+      setDragActive(false);
+      setPendingImportPaths(null);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenHistory = fn;
+    });
+
     const modelsReady = listen("navigate:models", () => {
       setSettingsTab("models");
       setIsSettingsOpen(true);
@@ -237,7 +252,7 @@ const Home = () => {
       else unlistenModels = fn;
     });
 
-    Promise.all([navigateReady, modelsReady])
+    Promise.all([navigateReady, historyReady, modelsReady])
       .then(() => {
         if (!cancelled) {
           emit("settings:renderer_ready").catch(() => {});
@@ -308,6 +323,7 @@ const Home = () => {
     return () => {
       cancelled = true;
       unlistenNavigate?.();
+      unlistenHistory?.();
       unlistenModels?.();
       unlistenDragEnter?.();
       unlistenDragOver?.();
@@ -383,25 +399,14 @@ const Home = () => {
         message: "Local",
       });
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      return t({
-        id: "home.greeting.morning",
-        message: "Good morning",
-      });
-    }
-    if (hour < 17) {
-      return t({
-        id: "home.greeting.afternoon",
-        message: "Good afternoon",
-      });
-    }
-    return t({
-      id: "home.greeting.evening",
-      message: "Good evening",
-    });
-  };
+  const homeViewActive = activeView === "home";
+  const { data: transcriptions = [], isFetched: transcriptionsFetched } =
+    useTranscriptionList("", homeViewActive);
+  const dayTick = useTimeOfDayPeriodTick(homeViewActive);
+  const todayStats = useMemo(
+    () => computeTodayDictationStats(transcriptions),
+    [transcriptions, dayTick],
+  );
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">
@@ -726,17 +731,21 @@ const Home = () => {
         {/* TODO: REMOVE after next update — hardcoded beta discount chip. */}
         {activeView === "home" ? <BetaGiftChip /> : null}
 
-        <div className="flex-1 flex flex-col px-8 pb-6 min-h-0">
+        <div
+          className={`flex-1 flex flex-col px-8 min-h-0 ${activeView === "home" ? "pb-3" : "pb-6"}`}
+        >
           <div
-            className={`w-full max-w-[680px] mx-auto pt-12 flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
+            className={`w-full max-w-[680px] mx-auto pt-5 flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
           >
-            <h1 className="ui-text-display font-normal ui-color-primary tracking-tight mb-8 shrink-0">
-              {getGreeting()}
-            </h1>
+            <HomeTodayHeader
+              transcriptionsFetched={transcriptionsFetched}
+              stats={todayStats}
+              active={homeViewActive}
+            />
 
             <TranscriptionList
               showLlmButtons={showCleanupButtons}
-              isActive={activeView === "home"}
+              isActive={homeViewActive}
             />
           </div>
 

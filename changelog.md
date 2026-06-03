@@ -1,3 +1,22 @@
+0.9.3
+
+### Features
+- Glimpse can now recover recordings if the app closes while you're still dictating, then save them to History when you reopen it.
+
+### Improvements
+- Home now has a date header with rotating greetings and today's dictation stats.
+- Setting shortcuts now works more like other apps: press the full combo, release all keys to save it, and the result no longer depends on which key you let go of first.
+- Transcript history search is cleaner now, with quick sorting and time filters for finding older dictations faster.
+- The license card in Settings → Account and onboarding now surfaces plan pricing more clearly, including per-seat Commercial licensing and volume discounts.
+- Personalization mode handles long app and website lists better and looks a bit cleaner.
+
+### Changes
+- Updated Glimpse Personal pricing: Personal is $24.99, and Commercial licensing starts at $19.99 per seat with volume discounts as your team grows.
+
+### Fixes
+- Fixed cancelling a dictation while it's processing sometimes still pasting the text.
+
+---
 0.9.2
 
 ### Features

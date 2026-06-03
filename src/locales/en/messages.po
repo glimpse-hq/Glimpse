@@ -48,22 +48,29 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 #~ msgid "settings.app.auto_delete_recordings.confirm.threshold.unknown_count"
-#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete local recordings that are already older than {threshold}."
+#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete local "
+#~ "recordings that are already older than {threshold}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 #~ msgid "settings.app.auto_delete_recordings.confirm.immediately.unknown_count"
-#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete your existing local recordings."
+#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete your "
+#~ "existing local recordings."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 #~ msgid "settings.app.auto_delete_recordings.confirm.immediately.known_count"
-#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# existing local recording} other {# existing local recordings}}."
+#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete "
+#~ "{candidateCount, plural, one {# existing local recording} other {# "
+#~ "existing local recordings}}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 #~ msgid "settings.app.auto_delete_recordings.confirm.threshold.known_count"
-#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# local recording that is already older than {threshold}} other {# local recordings that are already older than {threshold}}}."
+#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete "
+#~ "{candidateCount, plural, one {# local recording that is already older "
+#~ "than {threshold}} other {# local recordings that are already older than "
+#~ "{threshold}}}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -113,7 +120,8 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 #~ msgid "settings.app.auto_delete_recordings.confirm.unknown_count"
-#~ msgstr "We couldn't count them right now, but the cleanup will still run as soon as you save this change."
+#~ msgstr "We couldn't count them right now, but the cleanup will still run as "
+#~ "soon as you save this change."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -156,6 +164,39 @@ msgstr ""
 #~ msgstr "We noticed you use {sourceName}. Pick what to carry over."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+#~ msgid "transcriptions.list.search.close"
+#~ msgstr "Close search"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+#~ msgid "transcriptions.list.sort.aria"
+#~ msgstr "Sort transcriptions"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.greeting.afternoon"
+#~ msgstr "Good afternoon"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.greeting.evening"
+#~ msgstr "Good evening"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.greeting.morning"
+#~ msgstr "Good morning"
+
+#. placeholder {0}: todayStats.count
+#. placeholder {1}: todayStats.words
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.today.stats"
+#~ msgstr "{0, plural, one {# dictation} other {# dictations}} · {1, plural, one "
+#~ "{# word} other {# words}} today"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -164,6 +205,18 @@ msgstr "(if required)"
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.api_key.optional_hint"
 msgstr "(if required)"
+
+#. placeholder {0}: stats.llmCleanedCount
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{0, plural, one {# dictation polished with AI today} other {# dictations "
+"polished with AI today}}"
+msgstr "{0, plural, one {# dictation polished with AI today} other {# "
+"dictations polished with AI today}}"
+
+#. placeholder {0}: stats.count
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{0, plural, one {# dictation} other {# dictations}}"
+msgstr "{0, plural, one {# dictation} other {# dictations}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.replacementsCount
@@ -183,17 +236,30 @@ msgstr "{0} saved"
 msgid "import.cat.history.detail"
 msgstr "{0} transcripts"
 
+#. placeholder {0}: stats.words
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{0, plural, one {# word} other {# words}}"
+msgstr "{0, plural, one {# word} other {# words}}"
+
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.dictionaryCount
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.dictionary.detail"
 msgstr "{0, plural, one {# word} other {# words}}"
 
+#. placeholder {0}: stats.longestWords
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{0, plural, one {Longest dictation today: # word} other {Longest "
+"dictation today: # words}}"
+msgstr "{0, plural, one {Longest dictation today: # word} other {Longest "
+"dictation today: # words}}"
+
 #. js-lingui-explicit-id
 #. placeholder {0}: apps.length
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
-msgstr "{0, plural, one {We found another dictation app. Choose what to import.} other {We found other dictation apps. Choose what to import.}}"
+msgstr "{0, plural, one {We found another dictation app. Choose what to "
+"import.} other {We found other dictation apps. Choose what to import.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: entries.length
@@ -226,6 +292,12 @@ msgstr "{0} of {1} matches"
 msgid "dictionary.replacements.count.multiple"
 msgstr "{0} replacements"
 
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{avg, plural, one {About # word per dictation today} other {About # "
+"words per dictation today}}"
+msgstr "{avg, plural, one {About # word per dictation today} other {About # "
+"words per dictation today}}"
+
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.coverage_with_devices"
@@ -240,6 +312,18 @@ msgstr "{engineLabel} transcription engine."
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed_count"
 msgstr "{installedCount} installed"
+
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{minutes, plural, one {# minute spoken today} other {# minutes spoken "
+"today}}"
+msgstr "{minutes, plural, one {# minute spoken today} other {# minutes spoken "
+"today}}"
+
+#: src/features/transcriptions/homeHeaderStats.ts
+msgid "{seconds, plural, one {# second spoken today} other {# seconds spoken "
+"today}}"
+msgstr "{seconds, plural, one {# second spoken today} other {# seconds spoken "
+"today}}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -369,7 +453,8 @@ msgstr "Add"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.none_description"
-msgstr "Add word pairs to automatically swap in transcriptions. Matches are case-insensitive."
+msgstr "Add word pairs to automatically swap in transcriptions. Matches are "
+"case-insensitive."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -394,7 +479,8 @@ msgstr "Add custom words Glimpse should recognize."
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.combined.description"
-msgstr "Add custom words the system should recognize, and set automatic word replacements."
+msgstr "Add custom words the system should recognize, and set automatic word "
+"replacements."
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -440,6 +526,11 @@ msgstr "Allow cross-origin browser requests"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.body"
 msgstr "anonymous, no transcripts or audio shared."
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.time.any"
+msgstr "Any time"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -605,7 +696,8 @@ msgstr "Bring your own API key for AI features"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license.subtitle"
-msgstr "Buy once, or activate the code from your receipt. You can skip this and keep using the trial."
+msgstr "Buy once, or activate the code from your receipt. You can skip this and "
+"keep using the trial."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -665,22 +757,26 @@ msgstr "Cancelled"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
-msgstr "Changing auto-delete to {policyLabel} may immediately delete {noun} already older than {threshold}."
+msgstr "Changing auto-delete to {policyLabel} may immediately delete {noun} "
+"already older than {threshold}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.immediately.unknown_count"
-msgstr "Changing auto-delete to {policyLabel} may immediately delete your existing {noun}."
+msgstr "Changing auto-delete to {policyLabel} may immediately delete your "
+"existing {noun}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.known_count"
-msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount} {noun} already older than {threshold}."
+msgstr "Changing auto-delete to {policyLabel} will immediately delete "
+"{candidateCount} {noun} already older than {threshold}."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.immediately.known_count"
-msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount} existing {noun}."
+msgstr "Changing auto-delete to {policyLabel} will immediately delete "
+"{candidateCount} existing {noun}."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -733,6 +829,11 @@ msgid "settings.local_api.logs.clear"
 msgstr "Clear"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.list.search.clear"
+msgstr "Clear search"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.search.clear"
 msgstr "Clear search"
@@ -776,11 +877,6 @@ msgstr "Close modal"
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.close"
 msgstr "Close notification"
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
-msgid "transcriptions.list.search.close"
-msgstr "Close search"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -865,7 +961,8 @@ msgstr "Configuration"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.description"
-msgstr "Connect local-mode AI providers for Cleanup, Edit Mode, and Personalization."
+msgstr "Connect local-mode AI providers for Cleanup, Edit Mode, and "
+"Personalization."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1001,7 +1098,12 @@ msgstr "Core"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer"
-msgstr "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a one-time Personal or Commercial license in Settings → Account."
+msgstr "Core dictation is free: local transcription, dictionary, replacements, "
+"and history. There are no per-minute fees or subscriptions for that. "
+"Library, AI Cleanup, Edit Mode, personalization with an LLM, the local "
+"API server, and the CLI are part of Glimpse Personal. You get a 14-day "
+"trial first; after that, activate a one-time Personal or Commercial "
+"license in Settings → Account."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1056,7 +1158,8 @@ msgstr "Couldn't delete the library files. Check permissions and try again."
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.delete_error.outside_folder"
-msgstr "Couldn't delete this item because its files are outside the library folder."
+msgstr "Couldn't delete this item because its files are outside the library "
+"folder."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -1107,7 +1210,8 @@ msgstr "currently loaded: {loadedModelLabel}"
 #. placeholder {0}: remoteSpeechModel && remoteSpeechModel !== "auto" ? ` (${remoteSpeechModel})` : ""
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.remote_speech_active"
-msgstr "Currently using your Speech Provider{0}. Local models remain available as fallback."
+msgstr "Currently using your Speech Provider{0}. Local models remain available "
+"as fallback."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -1244,7 +1348,11 @@ msgstr "Delete older items now?"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.delete.answer"
-msgstr "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. Settings → App can auto-delete Audio only or full Transcripts (including linked audio). You can also open your Glimpse data folder from About → Storage to manage files directly."
+msgstr "Delete recordings from History, remove imported files from Library, or "
+"uninstall models from Settings → Models. Settings → App can auto-delete "
+"Audio only or full Transcripts (including linked audio). You can also "
+"open your Glimpse data folder from About → Storage to manage files "
+"directly."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: replacement.from
@@ -1301,7 +1409,8 @@ msgstr "Dictionary is full"
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning"
-msgstr "Dictionary works only for models with dictionary support. Current model {0} will ignore these entries until you switch to a compatible model."
+msgstr "Dictionary works only for models with dictionary support. Current model "
+"{0} will ignore these entries until you switch to a compatible model."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1612,7 +1721,8 @@ msgstr "GitHub Issue"
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.github_unavailable"
-msgstr "GitHub may be temporarily unavailable. Check your connection and try again."
+msgstr "GitHub may be temporarily unavailable. Check your connection and try "
+"again."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -1632,7 +1742,8 @@ msgstr "Glimpse"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx
 msgid "onboarding.models.unavailable_body"
-msgstr "Glimpse couldn't load the local model list. Setup can continue with the default local engine, and you can manage downloads later in Settings."
+msgstr "Glimpse couldn't load the local model list. Setup can continue with the "
+"default local engine, and you can manage downloads later in Settings."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -1642,7 +1753,8 @@ msgstr "Glimpse member card"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.ready.analytics_notice"
-msgstr "Glimpse sends anonymous usage analytics to help improve the app. You can disable this anytime in Settings -> App."
+msgstr "Glimpse sends anonymous usage analytics to help improve the app. You "
+"can disable this anytime in Settings -> App."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1653,21 +1765,6 @@ msgstr "GLIMPSE_..."
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.placeholder"
 msgstr "GLIMPSE_…"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.greeting.afternoon"
-msgstr "Good afternoon"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.greeting.evening"
-msgstr "Good evening"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.greeting.morning"
-msgstr "Good morning"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/MicrophoneStep.tsx
@@ -1813,13 +1910,17 @@ msgstr "Installed at {cliInstallPath}"
 #. placeholder {0}: cliInstallStatus.command
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.path_missing_info"
-msgstr "Installs {0} to {cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile."
+msgstr "Installs {0} to {cliInstallPath}. That folder is not currently on your "
+"shell PATH, so you may need to call it by full path or update your "
+"shell profile."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: cliInstallStatus?.command ?? "glimpse"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_info"
-msgstr "Installs the {0} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI."
+msgstr "Installs the {0} command for Terminal, scripts, and automation tools. "
+"Use it when you want to call Glimpse programmatically without opening "
+"the app UI."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2014,7 +2115,8 @@ msgstr "Major Release"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.help_temporary"
-msgstr "Makes a shortcut temporary. It will not save audio, transcript, or history."
+msgstr "Makes a shortcut temporary. It will not save audio, transcript, or "
+"history."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2049,7 +2151,9 @@ msgstr "Microphone Access"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.permissions.answer"
-msgstr "Microphone access to record your voice, and Accessibility access to insert text and read selected text for Edit Mode. Glimpse only uses these while you are actively dictating."
+msgstr "Microphone access to record your voice, and Accessibility access to "
+"insert text and read selected text for Edit Mode. Glimpse only uses "
+"these while you are actively dictating."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2227,7 +2331,8 @@ msgstr "No entries yet"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.no_models"
-msgstr "No local models are installed. Download a model in Settings -> Models before retranscribing."
+msgstr "No local models are installed. Download a model in Settings -> Models "
+"before retranscribing."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx
@@ -2262,7 +2367,8 @@ msgstr "No model installed."
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_models"
-msgstr "No local models are installed. Download a model in Settings -> Models before importing."
+msgstr "No local models are installed. Download a model in Settings -> Models "
+"before importing."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -2297,7 +2403,12 @@ msgstr "No replacements yet"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results"
-msgstr "No results for \"{searchQuery}\""
+msgstr "No results for \"{resultSearchText}\""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.list.no_results_filters"
+msgstr "No results for selected filters"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -2382,7 +2493,8 @@ msgstr "Nothing to bring over from this app."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.engine.nvidia.description"
-msgstr "NVIDIA local speech models, including Parakeet for transcription and Nemotron for live streaming."
+msgstr "NVIDIA local speech models, including Parakeet for transcription and "
+"Nemotron for live streaming."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2417,7 +2529,10 @@ msgstr "On-device transcription models"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer"
-msgstr "Only if you enable AI writing and set up a provider under Settings → Providers. Cleanup, Edit Mode, and Personalization then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse."
+msgstr "Only if you enable AI writing and set up a provider under Settings → "
+"Providers. Cleanup, Edit Mode, and Personalization then send the "
+"relevant text directly to that provider. Your API key stays stored "
+"locally in Glimpse."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
@@ -2453,6 +2568,11 @@ msgstr "Optional"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.api_key.placeholder_optional"
 msgstr "Optional - blank to disable"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.time.7d"
+msgstr "Past 7 days"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -2553,7 +2673,9 @@ msgstr "Press new shortcut..."
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.how_it_works.answer"
-msgstr "Press your dictation shortcut, speak, and release. Glimpse transcribes on your device and inserts the text where your cursor is. Core dictation works offline. No account required."
+msgstr "Press your dictation shortcut, speak, and release. Glimpse transcribes "
+"on your device and inserts the text where your cursor is. Core "
+"dictation works offline. No account required."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -3090,7 +3212,8 @@ msgstr "Select provider..."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.help"
-msgstr "Select text in any app, and speak a command like \"make this formal\" or \"fix my grammar\"."
+msgstr "Select text in any app, and speak a command like \"make this formal\" "
+"or \"fix my grammar\"."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/Dropdown.tsx
@@ -3219,8 +3342,13 @@ msgstr "Smart is on by default, others available in settings."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
-msgid "transcriptions.list.sort.aria"
-msgstr "Sort transcriptions"
+msgid "transcriptions.filter.sort"
+msgstr "Sort"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.list.filter.aria"
+msgstr "Sort and filter transcriptions"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3396,7 +3524,9 @@ msgstr "That microphone is already in use."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_info"
-msgstr "The glimpse command is installed at {cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI."
+msgstr "The glimpse command is installed at {cliInstallPath}. Use it from "
+"Terminal, scripts, or automation tools to call Glimpse without opening "
+"the app UI."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3406,7 +3536,8 @@ msgstr "Theme"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx
 msgid "onboarding.models.empty_body"
-msgstr "This build did not return any local models. You can continue setup and manage models later in Settings."
+msgstr "This build did not return any local models. You can continue setup and "
+"manage models later in Settings."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3421,7 +3552,8 @@ msgstr "This file has an unsupported sample rate."
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.export.no_timestamps"
-msgstr "This item doesn't have timestamps. Retranscribe with timestamps to export subtitles."
+msgstr "This item doesn't have timestamps. Retranscribe with timestamps to "
+"export subtitles."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3456,6 +3588,11 @@ msgstr "to use local."
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.group.today"
+msgstr "Today"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.time.today"
 msgstr "Today"
 
 #. js-lingui-explicit-id
@@ -3516,7 +3653,8 @@ msgstr "Total"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.description"
-msgstr "Transcribe recordings through OpenAI-compatible cloud or self-hosted APIs."
+msgstr "Transcribe recordings through OpenAI-compatible cloud or self-hosted "
+"APIs."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
@@ -3700,12 +3838,14 @@ msgstr "Warning: model compatibility issue"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.unknown_count"
-msgstr "We couldn't count them right now, but auto-delete will still run as soon as you save this change."
+msgstr "We couldn't count them right now, but auto-delete will still run as "
+"soon as you save this change."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.error"
-msgstr "We couldn't read this app's data. You can skip and set things up manually."
+msgstr "We couldn't read this app's data. You can skip and set things up "
+"manually."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3748,6 +3888,11 @@ msgid "updates.whats_new"
 msgstr "What's new?"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.filter.when"
+msgstr "When"
+
+#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.question"
 msgstr "When does text leave my device?"
@@ -3775,7 +3920,8 @@ msgstr "Yesterday"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelSelectionStep.tsx
 msgid "onboarding.models.confirm_without_model.body"
-msgstr "You haven't downloaded a local model yet. Transcription will not run offline until you add one in Settings."
+msgstr "You haven't downloaded a local model yet. Transcription will not run "
+"offline until you add one in Settings."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -3795,7 +3941,11 @@ msgstr "Your API server is running in the background."
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
-msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
+msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect "
+"recordings, transcripts, API keys, or prompts. Optional anonymous usage "
+"analytics (things like session length and feature usage, never your "
+"content) help us improve the app. You can turn this off anytime in "
+"Settings → App."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

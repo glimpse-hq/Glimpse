@@ -116,6 +116,10 @@ impl Modifiers {
         self.0 == 0
     }
 
+    pub(crate) fn count(self) -> u32 {
+        self.0.count_ones()
+    }
+
     pub(crate) fn contains(self, other: Self) -> bool {
         (self.0 & other.0) == other.0
     }
@@ -694,10 +698,6 @@ pub(crate) struct KeyEvent {
 }
 
 impl KeyEvent {
-    pub(crate) fn as_hotkey(self) -> Result<Hotkey> {
-        Hotkey::new(self.modifiers, self.key)
-    }
-
     pub(crate) fn releases_everything(self) -> bool {
         !self.is_key_down
             && self.key.is_none()

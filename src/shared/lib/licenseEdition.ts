@@ -22,22 +22,22 @@ const EDITION_INFO: Record<LicenseEdition, EditionInfo> = {
   personal: {
     id: "personal",
     label: "Personal",
-    blurb: "For you. Up to 5 personal devices.",
+    blurb: "For you. Up to 5 devices.",
   },
   commercial: {
     id: "commercial",
     label: "Commercial",
-    blurb: "For work. Use it at your job, on up to 5 seats.",
+    blurb: "For work. One person per seat.",
   },
   founder: {
     id: "founder",
     label: "Founder",
-    blurb: "Launch founder. Up to 5 personal devices.",
+    blurb: "Launch founder. Up to 5 devices.",
   },
   contributor: {
     id: "contributor",
     label: "Contributor",
-    blurb: "Thank you for contributing. Up to 5 personal devices.",
+    blurb: "Thank you for contributing. Up to 5 devices.",
   },
 };
 

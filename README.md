@@ -68,8 +68,17 @@ Advanced features use **Glimpse Personal**, a one-time purchase, not a subscript
 
 | Edition | Price | For |
 | --- | --- | --- |
-| **Personal** | $12.99 | You, on up to 5 personal devices |
-| **Commercial** | $24.99 | Work use, on up to 5 seats |
+| **Personal** | $24.99 | You, on up to 5 personal devices |
+| **Commercial** | from $19.99/seat | Work use, one person per seat |
+
+Commercial volume pricing:
+
+| Seats | Price per seat |
+| --- | --- |
+| 1-5 | $19.99 |
+| 6-15 | $17.99 |
+| 16-30 | $14.99 |
+| 31+ | $11.99 |
 
 - **14-day trial:** full Personal features without buying first.
 - **Activate in-app:** buy or paste your license key from **Settings → Account**.
@@ -83,8 +92,6 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 - [ ] Meeting mode
 - [x] CLI
 - [x] API
-- [ ] Remote mode
-- [ ] Cloud mode
 - [ ] Library overhaul
 - [x] BYOK STT
 - [x] Import from other apps

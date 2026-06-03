@@ -2,9 +2,9 @@ import { useLingui } from "@lingui/react/macro";
 import React, {
   useState,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
-  useEffect,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X, ArrowDownUp, Check } from "lucide-react";
@@ -22,13 +22,20 @@ import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import type { TranscriptionRecord } from "../../../types";
+import {
+  parseTranscriptionSearch,
+  matchesDateRange,
+  withSortToken,
+  withTimePreset,
+  currentTimePreset,
+  type TranscriptionSort,
+  type TimePreset,
+} from "../searchQuery";
 
 interface TranscriptionListProps {
   showLlmButtons?: boolean;
   isActive?: boolean;
 }
-
-type SortKey = "recent" | "oldest" | "longest" | "shortest";
 
 type ListEntry =
   | { type: "header"; id: string; label: string }
@@ -44,14 +51,21 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const { t } = useLingui();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("recent");
-  const [sortOpen, setSortOpen] = useState(false);
-  const sortRef = useRef<HTMLDivElement>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const shiftHeld = useShiftHeld(isActive);
 
-  useClickOutside(sortRef, () => setSortOpen(false), sortOpen);
+  useClickOutside(filterRef, () => setFilterOpen(false), filterOpen);
+  useClickOutside(
+    searchRef,
+    () => {
+      if (!searchQuery.trim()) setSearchOpen(false);
+    },
+    searchOpen,
+  );
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -61,11 +75,20 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     return () => cancelAnimationFrame(id);
   }, [searchOpen]);
 
+  const parsed = useMemo(
+    () => parseTranscriptionSearch(searchQuery),
+    [searchQuery],
+  );
+  const debouncedText = useMemo(
+    () => parseTranscriptionSearch(debouncedSearchQuery).text,
+    [debouncedSearchQuery],
+  );
+
   const {
     data: transcriptions = [],
     isLoading,
     isFetched,
-  } = useTranscriptionList(debouncedSearchQuery, isActive);
+  } = useTranscriptionList(debouncedText, isActive);
   const totalCount = transcriptions.length;
   const deleteMutation = useDeleteTranscription();
   const {
@@ -78,9 +101,15 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const retryingIdSet = useMemo(() => new Set(retryingIds), [retryingIds]);
 
   const sortedTranscriptions = useMemo(() => {
-    if (sortKey === "recent") return transcriptions;
-    const copy = [...transcriptions];
-    switch (sortKey) {
+    const filtered =
+      parsed.after || parsed.before
+        ? transcriptions.filter((r) =>
+            matchesDateRange(r.timestamp, parsed.after, parsed.before),
+          )
+        : transcriptions;
+    if (parsed.sort === "recent") return filtered;
+    const copy = [...filtered];
+    switch (parsed.sort) {
       case "oldest":
         copy.sort(
           (a, b) =>
@@ -95,9 +124,9 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
         break;
     }
     return copy;
-  }, [transcriptions, sortKey]);
+  }, [transcriptions, parsed.sort, parsed.after, parsed.before]);
 
-  const isTimeSorted = sortKey === "recent" || sortKey === "oldest";
+  const isTimeSorted = parsed.sort === "recent" || parsed.sort === "oldest";
 
   const formatGroupLabel = useCallback(
     (date: Date) => {
@@ -191,7 +220,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     [undoLlmMutation],
   );
 
-  const sortOptions: { value: SortKey; label: string }[] = [
+  const sortOptions: { value: TranscriptionSort; label: string }[] = [
     {
       value: "recent",
       label: t({
@@ -221,6 +250,23 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
       }),
     },
   ];
+
+  const timeOptions: { value: TimePreset; label: string }[] = [
+    {
+      value: "any",
+      label: t({ id: "transcriptions.time.any", message: "Any time" }),
+    },
+    {
+      value: "today",
+      label: t({ id: "transcriptions.time.today", message: "Today" }),
+    },
+    {
+      value: "7d",
+      label: t({ id: "transcriptions.time.7d", message: "Past 7 days" }),
+    },
+  ];
+
+  const activeTimePreset = currentTimePreset(parsed.after, parsed.before);
 
   const renderEntry = useCallback(
     (_index: number, entry: ListEntry) => {
@@ -274,26 +320,20 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     [],
   );
 
-  const closeSearch = () => {
-    setSearchOpen(false);
-    setSearchQuery("");
-  };
-
+  const hasQuery = searchQuery.trim().length > 0;
+  const resultSearchText = parsed.text.trim();
   const showInitialLoading =
-    isLoading &&
-    transcriptions.length === 0 &&
-    !debouncedSearchQuery &&
-    !isFetched;
+    isLoading && transcriptions.length === 0 && !debouncedText && !isFetched;
   const hasAnyResults = sortedTranscriptions.length > 0;
   const showEmptyState =
-    isFetched && totalCount === 0 && !debouncedSearchQuery && !isLoading;
+    isFetched && totalCount === 0 && !debouncedText && !isLoading && !hasQuery;
   const showNoResults =
     !showInitialLoading &&
     !showEmptyState &&
     !isLoading &&
     isFetched &&
     !hasAnyResults &&
-    Boolean(debouncedSearchQuery);
+    hasQuery;
   const listEntries = showInitialLoading ? [] : entries;
 
   return (
@@ -301,18 +341,18 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="w-full flex-1 min-h-0 flex flex-col"
+      className="w-full flex-1 min-h-0 h-0 flex flex-col"
     >
-      <div className="flex items-center justify-end gap-1 mb-3 h-8 shrink-0">
+      <div className="mb-2 h-8 shrink-0 flex justify-end" ref={searchRef}>
         <AnimatePresence initial={false} mode="wait">
           {searchOpen ? (
             <motion.div
               key="search-input"
               initial={{ opacity: 0, width: 32 }}
-              animate={{ opacity: 1, width: 240 }}
+              animate={{ opacity: 1, width: 272 }}
               exit={{ opacity: 0, width: 32 }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              className="flex items-center gap-1.5 h-8 px-2.5 rounded-md border border-border-primary bg-surface-secondary/60 overflow-hidden"
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="flex items-center gap-2 h-8 px-0.5 border-b border-border-secondary bg-transparent transition-colors focus-within:border-content-primary"
             >
               <Search
                 size={12}
@@ -326,7 +366,11 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === "Escape") closeSearch();
+                  if (e.key === "Escape") {
+                    setSearchQuery("");
+                    setSearchOpen(false);
+                    setFilterOpen(false);
+                  }
                 }}
                 placeholder={t({
                   id: "transcriptions.list.search.placeholder_short",
@@ -338,16 +382,118 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                 })}
                 className="bg-transparent ui-text-body-sm ui-color-secondary placeholder-content-disabled outline-hidden flex-1 min-w-0"
               />
-              <button
-                onClick={closeSearch}
-                aria-label={t({
-                  id: "transcriptions.list.search.close",
-                  message: "Close search",
-                })}
-                className="p-0.5 rounded text-content-disabled hover:text-content-muted transition-colors shrink-0"
-              >
-                <X size={12} aria-hidden="true" />
-              </button>
+              {hasQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  aria-label={t({
+                    id: "transcriptions.list.search.clear",
+                    message: "Clear search",
+                  })}
+                  className="p-0.5 rounded text-content-disabled hover:text-content-muted transition-colors shrink-0"
+                >
+                  <X size={12} aria-hidden="true" />
+                </button>
+              )}
+              <div className="relative shrink-0" ref={filterRef}>
+                <button
+                  type="button"
+                  onClick={() => setFilterOpen((open) => !open)}
+                  aria-haspopup="menu"
+                  aria-expanded={filterOpen}
+                  aria-label={t({
+                    id: "transcriptions.list.filter.aria",
+                    message: "Sort and filter transcriptions",
+                  })}
+                  className="ui-button-ghost h-7 w-7"
+                >
+                  <ArrowDownUp size={13} aria-hidden="true" />
+                </button>
+                <AnimatePresence>
+                  {filterOpen && (
+                    <motion.div
+                      role="menu"
+                      initial={{ opacity: 0, scale: 0.98, y: -2 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98, y: -2 }}
+                      transition={{ duration: 0.12 }}
+                      className="ui-surface-menu absolute right-0 top-full mt-1.5 z-30 min-w-[170px] py-1"
+                    >
+                      <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
+                        {t({
+                          id: "transcriptions.filter.sort",
+                          message: "Sort",
+                        })}
+                      </div>
+                      {sortOptions.map((opt) => {
+                        const selected = opt.value === parsed.sort;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            onClick={() =>
+                              setSearchQuery((q) =>
+                                withSortToken(q, opt.value),
+                              )
+                            }
+                            className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
+                              selected
+                                ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
+                                : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            <span className="w-3 flex items-center justify-center shrink-0">
+                              {selected && (
+                                <Check size={12} aria-hidden="true" />
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      <div className="my-1 mx-3 border-t border-border-secondary" />
+                      <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
+                        {t({
+                          id: "transcriptions.filter.when",
+                          message: "When",
+                        })}
+                      </div>
+                      {timeOptions.map((opt) => {
+                        const selected = opt.value === activeTimePreset;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={selected}
+                            onClick={() =>
+                              setSearchQuery((q) =>
+                                withTimePreset(q, opt.value),
+                              )
+                            }
+                            className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
+                              selected
+                                ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
+                                : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            <span className="w-3 flex items-center justify-center shrink-0">
+                              {selected && (
+                                <Check size={12} aria-hidden="true" />
+                              )}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           ) : (
             <motion.button
@@ -367,60 +513,6 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
             </motion.button>
           )}
         </AnimatePresence>
-
-        <div className="relative" ref={sortRef}>
-          <button
-            type="button"
-            onClick={() => setSortOpen((open) => !open)}
-            aria-haspopup="menu"
-            aria-expanded={sortOpen}
-            aria-label={t({
-              id: "transcriptions.list.sort.aria",
-              message: "Sort transcriptions",
-            })}
-            className="ui-button-ghost h-8 w-8"
-          >
-            <ArrowDownUp size={13} aria-hidden="true" />
-          </button>
-          <AnimatePresence>
-            {sortOpen && (
-              <motion.div
-                role="menu"
-                initial={{ opacity: 0, scale: 0.98, y: -2 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98, y: -2 }}
-                transition={{ duration: 0.12 }}
-                className="ui-surface-menu absolute right-0 top-full mt-1 z-30 min-w-[160px]"
-              >
-                {sortOptions.map((opt) => {
-                  const selected = opt.value === sortKey;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={selected}
-                      onClick={() => {
-                        setSortKey(opt.value);
-                        setSortOpen(false);
-                      }}
-                      className={`flex w-full items-center justify-between gap-3 px-3 py-1.5 ui-text-body-sm transition-colors ${
-                        selected
-                          ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
-                          : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      <span className="w-3 flex items-center justify-center shrink-0">
-                        {selected && <Check size={12} aria-hidden="true" />}
-                      </span>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
       </div>
 
       <div className="relative flex-1 min-h-0 overflow-hidden">
@@ -467,10 +559,15 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
               aria-hidden="true"
             />
             <p className="ui-text-body-sm ui-color-muted">
-              {t({
-                id: "transcriptions.list.no_results",
-                message: `No results for "${debouncedSearchQuery}"`,
-              })}
+              {resultSearchText
+                ? t({
+                    id: "transcriptions.list.no_results",
+                    message: `No results for "${resultSearchText}"`,
+                  })
+                : t({
+                    id: "transcriptions.list.no_results_filters",
+                    message: "No results for selected filters",
+                  })}
             </p>
           </div>
         ) : (

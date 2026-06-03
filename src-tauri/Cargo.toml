@@ -1,6 +1,6 @@
 [package]
 name = "Glimpse"
-version = "0.9.2"
+version = "0.9.3"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["LegendarySpy"]
 edition = "2021"
@@ -36,7 +36,7 @@ crossbeam-channel = "0.5"
 webrtc-vad = "0.4"
 rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
-posthog-rs = "0.7.3"
+posthog-rs = "0.8"
 arboard = "3"
 glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.4.1", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.2", features = ["v4"] }

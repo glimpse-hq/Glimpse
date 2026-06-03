@@ -403,6 +403,8 @@ pub fn run() {
                 });
             }
 
+            transcribe::recover_interrupted_recordings(handle);
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -471,6 +473,7 @@ pub fn run() {
             open_ffmpeg_install,
             complete_onboarding,
             cancel_recording,
+            view_recovered_transcriptions,
             pill::set_pill_expanded,
             reset_onboarding,
             toast::debug_show_toast,
@@ -1515,6 +1518,9 @@ fn emit_complete(
         if let Err(err) = std::fs::remove_file(&saved.path) {
             eprintln!("Failed to remove rejected recording file: {err}");
         }
+        if let Some(path) = recording.pending_path.as_deref() {
+            let _ = std::fs::remove_file(path);
+        }
 
         app.state::<AppState>().pill().finish_processing(app);
         return;
@@ -1546,6 +1552,11 @@ pub(crate) fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<Path
         .context("App data directory not found")?;
     data_dir.push("recordings");
     Ok(data_dir)
+}
+
+#[tauri::command]
+fn view_recovered_transcriptions(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    tray::open_settings_history(&app).map_err(|err| err.to_string())
 }
 
 pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {
@@ -1656,6 +1667,10 @@ fn prune_recording_tree(
         let metadata = entry.metadata()?;
 
         if metadata.is_dir() {
+            if is_pending_recordings_dir(&child_path) {
+                is_empty = false;
+                continue;
+            }
             let (child_deleted, child_empty) = prune_recording_tree(&child_path, policy, cutoff)?;
             deleted_count += child_deleted;
             if child_empty {
@@ -1699,6 +1714,10 @@ fn count_prunable_recording_tree(
         let metadata = entry.metadata()?;
 
         if metadata.is_dir() {
+            if is_pending_recordings_dir(&child_path) {
+                is_empty = false;
+                continue;
+            }
             let (child_count, child_empty) =
                 count_prunable_recording_tree(&child_path, policy, cutoff)?;
             candidate_count += child_count;
@@ -1716,6 +1735,12 @@ fn count_prunable_recording_tree(
     }
 
     Ok((candidate_count, is_empty))
+}
+
+fn is_pending_recordings_dir(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name == recorder::PENDING_DIR_NAME)
 }
 
 fn should_prune_recording_file(

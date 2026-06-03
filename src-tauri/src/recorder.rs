@@ -1,7 +1,18 @@
-use std::{f32::consts::PI, fs, io::Cursor, path::PathBuf, sync::Arc};
+use std::{
+    f32::consts::PI,
+    fs,
+    io::Cursor,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    thread::JoinHandle,
+    time::Duration,
+};
 
 use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, TimeZone};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{SampleFormat, Stream};
 use crossbeam_channel::{bounded, unbounded, Sender};
@@ -81,6 +92,96 @@ struct ActiveRecording {
     sample_rate: u32,
     channels: u16,
     started_at: DateTime<Local>,
+    pending: Option<PendingWriter>,
+}
+
+struct PendingWriter {
+    stop_flag: Arc<AtomicBool>,
+    handle: Option<JoinHandle<()>>,
+    path: PathBuf,
+}
+
+impl PendingWriter {
+    fn spawn(
+        dir: PathBuf,
+        buffer: Arc<Mutex<Vec<i16>>>,
+        sample_rate: u32,
+        channels: u16,
+        started_at: DateTime<Local>,
+    ) -> Result<Self> {
+        fs::create_dir_all(&dir)
+            .with_context(|| format!("Failed to create pending dir at {}", dir.display()))?;
+        let millis = started_at.timestamp_millis();
+        let suffix = Uuid::new_v4().simple().to_string();
+        let path = dir.join(format!("{millis}-{suffix}.partial.wav"));
+        let spec = hound::WavSpec {
+            channels,
+            sample_rate,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create(&path, spec)
+            .map_err(|err| anyhow!("Failed to create partial WAV: {err}"))?;
+
+        let stop_flag = Arc::new(AtomicBool::new(false));
+        let stop_for_thread = Arc::clone(&stop_flag);
+        let max_chunk_samples = (sample_rate as usize)
+            .saturating_mul(channels as usize)
+            .max(1);
+        let handle = std::thread::Builder::new()
+            .name("glimpse-pending-writer".into())
+            .spawn(move || {
+                let mut cursor = 0usize;
+                loop {
+                    let stopping = stop_for_thread.load(Ordering::Relaxed);
+                    let (chunk, has_more) = {
+                        let buf = buffer.lock();
+                        if cursor < buf.len() {
+                            let end = cursor.saturating_add(max_chunk_samples).min(buf.len());
+                            let slice = buf[cursor..end].to_vec();
+                            cursor = end;
+                            (slice, cursor < buf.len())
+                        } else {
+                            (Vec::new(), false)
+                        }
+                    };
+                    for sample in &chunk {
+                        let _ = writer.write_sample(*sample);
+                    }
+                    if !chunk.is_empty() {
+                        let _ = writer.flush();
+                    }
+                    if stopping && !has_more {
+                        break;
+                    }
+                    if has_more {
+                        continue;
+                    }
+                    std::thread::sleep(Duration::from_millis(250));
+                }
+                let _ = writer.finalize();
+            })
+            .map_err(|err| anyhow!("Failed to spawn pending writer thread: {err}"))?;
+
+        Ok(Self {
+            stop_flag,
+            handle: Some(handle),
+            path,
+        })
+    }
+
+    fn finish(mut self) -> PathBuf {
+        self.stop_flag.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+        }
+        self.path
+    }
+
+    fn finish_and_discard(self) {
+        let path = self.finish();
+        let _ = fs::remove_file(path);
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -90,6 +191,7 @@ pub struct CompletedRecording {
     pub channels: u16,
     pub started_at: DateTime<Local>,
     pub ended_at: DateTime<Local>,
+    pub pending_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -99,6 +201,7 @@ pub struct RecordingSaved {
     pub ended_at: DateTime<Local>,
     /// Override duration in seconds (used for retries when we know the original duration)
     pub duration_override_seconds: Option<f32>,
+    pub pending_path: Option<PathBuf>,
 }
 
 impl Default for RecorderManager {
@@ -115,14 +218,19 @@ impl Default for RecorderManager {
                 let mut core = RecorderCore::new(spectrum_for_thread, live_buffer_for_thread);
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
-                        RecorderCommand::Start { device_id, respond } => {
-                            let _ = respond.send(core.start(device_id));
+                        RecorderCommand::Start {
+                            device_id,
+                            pending_dir,
+                            respond,
+                        } => {
+                            let _ = respond.send(core.start(device_id, pending_dir));
                         }
                         RecorderCommand::Stop {
                             respond,
                             after_capture,
+                            discard_pending,
                         } => {
-                            let _ = respond.send(core.stop(after_capture));
+                            let _ = respond.send(core.stop(after_capture, discard_pending));
                         }
                     }
                 }
@@ -180,11 +288,16 @@ impl RecorderManager {
         Some((mono, sample_rate, new_offset))
     }
 
-    pub fn start(&self, device_id: Option<String>) -> Result<DateTime<Local>> {
+    pub fn start(
+        &self,
+        device_id: Option<String>,
+        pending_dir: Option<PathBuf>,
+    ) -> Result<DateTime<Local>> {
         let (respond_tx, respond_rx) = bounded(1);
         self.tx
             .send(RecorderCommand::Start {
                 device_id,
+                pending_dir,
                 respond: respond_tx,
             })
             .map_err(|err| anyhow!("Recorder channel closed: {err}"))?;
@@ -194,18 +307,34 @@ impl RecorderManager {
     }
 
     pub fn stop(&self) -> Result<Option<CompletedRecording>> {
-        self.stop_after_capture(|| {})
+        self.stop_after_capture_and_discard_pending(|| {})
     }
 
     pub fn stop_after_capture(
         &self,
         after_capture: impl FnOnce() + Send + 'static,
     ) -> Result<Option<CompletedRecording>> {
+        self.stop_after_capture_inner(after_capture, false)
+    }
+
+    pub fn stop_after_capture_and_discard_pending(
+        &self,
+        after_capture: impl FnOnce() + Send + 'static,
+    ) -> Result<Option<CompletedRecording>> {
+        self.stop_after_capture_inner(after_capture, true)
+    }
+
+    fn stop_after_capture_inner(
+        &self,
+        after_capture: impl FnOnce() + Send + 'static,
+        discard_pending: bool,
+    ) -> Result<Option<CompletedRecording>> {
         let (respond_tx, respond_rx) = bounded(1);
         self.tx
             .send(RecorderCommand::Stop {
                 respond: respond_tx,
                 after_capture: Box::new(after_capture),
+                discard_pending,
             })
             .map_err(|err| anyhow!("Recorder channel closed: {err}"))?;
         respond_rx
@@ -217,11 +346,13 @@ impl RecorderManager {
 enum RecorderCommand {
     Start {
         device_id: Option<String>,
+        pending_dir: Option<PathBuf>,
         respond: Sender<Result<DateTime<Local>>>,
     },
     Stop {
         respond: Sender<Result<Option<CompletedRecording>>>,
         after_capture: AfterCaptureHook,
+        discard_pending: bool,
     },
 }
 
@@ -243,7 +374,11 @@ impl RecorderCore {
         }
     }
 
-    fn start(&mut self, device_id: Option<String>) -> Result<DateTime<Local>> {
+    fn start(
+        &mut self,
+        device_id: Option<String>,
+        pending_dir: Option<PathBuf>,
+    ) -> Result<DateTime<Local>> {
         if self.active.is_some() {
             return Err(anyhow!("Recording is already in progress"));
         }
@@ -341,64 +476,92 @@ impl RecorderCore {
         });
 
         let started_at = Local::now();
+        let pending = pending_dir.and_then(|dir| {
+            match PendingWriter::spawn(dir, Arc::clone(&buffer), sample_rate, channels, started_at)
+            {
+                Ok(writer) => Some(writer),
+                Err(err) => {
+                    eprintln!("Crash-safe recording writer unavailable: {err}");
+                    None
+                }
+            }
+        });
+
         self.active = Some(ActiveRecording {
             stream,
             buffer,
             sample_rate,
             channels,
             started_at,
+            pending,
         });
 
         Ok(started_at)
     }
 
-    fn stop(&mut self, after_capture: AfterCaptureHook) -> Result<Option<CompletedRecording>> {
+    fn stop(
+        &mut self,
+        after_capture: AfterCaptureHook,
+        discard_pending: bool,
+    ) -> Result<Option<CompletedRecording>> {
         *self.live_buffer.lock() = None;
         self.spectrum.lock().reset();
-        if let Some(active) = self.active.take() {
+        if let Some(mut active) = self.active.take() {
             drop(active.stream);
+            let pending_path = if let Some(pending) = active.pending.take() {
+                if discard_pending {
+                    pending.finish_and_discard();
+                    None
+                } else {
+                    Some(pending.finish())
+                }
+            } else {
+                None
+            };
             let ended_at = Local::now();
             after_capture();
             let raw_samples = Arc::try_unwrap(active.buffer)
                 .map(|mutex| mutex.into_inner())
                 .unwrap_or_else(|arc| arc.lock().clone());
 
-            let mut mono = samples_to_mono_f32(&raw_samples, active.channels as usize);
-            if mono.is_empty() {
-                return Ok(Some(CompletedRecording {
-                    samples: raw_samples,
-                    sample_rate: active.sample_rate,
-                    channels: active.channels,
-                    started_at: active.started_at,
-                    ended_at,
-                }));
-            }
-
-            apply_filters(&mut mono, active.sample_rate);
-            let trimmed = trim_silence(&mono, active.sample_rate);
-            let mut processed = if trimmed.is_empty() { mono } else { trimmed };
-
-            apply_compression(&mut processed);
-            apply_frame_normalization(&mut processed, active.sample_rate);
-            apply_peak_limiter(&mut processed);
-
-            let samples: Vec<i16> = processed
-                .into_iter()
-                .map(|sample| (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16)
-                .collect();
+            let (samples, channels) =
+                process_raw_samples(&raw_samples, active.sample_rate, active.channels);
 
             Ok(Some(CompletedRecording {
                 samples,
                 sample_rate: active.sample_rate,
-                channels: 1,
+                channels,
                 started_at: active.started_at,
                 ended_at,
+                pending_path,
             }))
         } else {
             after_capture();
             Ok(None)
         }
     }
+}
+
+fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> (Vec<i16>, u16) {
+    let mut mono = samples_to_mono_f32(raw_samples, channels as usize);
+    if mono.is_empty() {
+        return (raw_samples.to_vec(), channels);
+    }
+
+    apply_filters(&mut mono, sample_rate);
+    let trimmed = trim_silence(&mono, sample_rate);
+    let mut processed = if trimmed.is_empty() { mono } else { trimmed };
+
+    apply_compression(&mut processed);
+    apply_frame_normalization(&mut processed, sample_rate);
+    apply_peak_limiter(&mut processed);
+
+    let samples = processed
+        .into_iter()
+        .map(|sample| (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16)
+        .collect();
+
+    (samples, 1)
 }
 
 pub struct ValidationConfig {
@@ -637,7 +800,100 @@ pub fn persist_recording(
         started_at: recording.started_at,
         ended_at: recording.ended_at,
         duration_override_seconds,
+        pending_path: recording.pending_path,
     })
+}
+
+pub const PENDING_DIR_NAME: &str = ".pending";
+
+pub fn recover_pending_recordings(base_dir: PathBuf) -> Vec<(RecordingSaved, CompletedRecording)> {
+    let pending_dir = base_dir.join(PENDING_DIR_NAME);
+    let entries = match fs::read_dir(&pending_dir) {
+        Ok(entries) => entries,
+        Err(_) => return Vec::new(),
+    };
+    let scan_started_at = Local::now();
+
+    let mut recovered = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let is_partial = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .map(|name| name.ends_with(".partial.wav"))
+            .unwrap_or(false);
+        if !is_partial {
+            continue;
+        }
+        if started_at_from_partial_name(&path)
+            .is_some_and(|started_at| started_at >= scan_started_at)
+        {
+            continue;
+        }
+
+        match recover_one_partial(&base_dir, &path) {
+            Ok(Some(result)) => recovered.push(result),
+            Ok(None) => {
+                let _ = fs::remove_file(&path);
+            }
+            Err(err) => {
+                eprintln!("Failed to recover {}: {err}", path.display());
+                let _ = fs::rename(&path, path.with_extension("wav.failed"));
+            }
+        }
+    }
+
+    recovered.sort_by(|a, b| b.0.started_at.cmp(&a.0.started_at));
+    recovered
+}
+
+fn recover_one_partial(
+    base_dir: &PathBuf,
+    path: &PathBuf,
+) -> Result<Option<(RecordingSaved, CompletedRecording)>> {
+    let reader =
+        hound::WavReader::open(path).map_err(|err| anyhow!("Unable to read partial WAV: {err}"))?;
+    let spec = reader.spec();
+    let raw_samples: Vec<i16> = reader
+        .into_samples::<i16>()
+        .filter_map(|sample| sample.ok())
+        .collect();
+    if raw_samples.is_empty() {
+        return Ok(None);
+    }
+
+    let started_at = started_at_from_partial_name(path).unwrap_or_else(Local::now);
+    let frames = raw_samples.len() / spec.channels.max(1) as usize;
+    let duration = chrono::Duration::milliseconds(
+        (frames as f64 / spec.sample_rate.max(1) as f64 * 1000.0) as i64,
+    );
+    let ended_at = started_at + duration;
+
+    let (samples, channels) = process_raw_samples(&raw_samples, spec.sample_rate, spec.channels);
+    if samples.is_empty() {
+        return Ok(None);
+    }
+
+    let recording = CompletedRecording {
+        samples,
+        sample_rate: spec.sample_rate,
+        channels,
+        started_at,
+        ended_at,
+        pending_path: Some(path.clone()),
+    };
+
+    let saved = persist_recording(base_dir.clone(), recording.clone())?;
+    Ok(Some((saved, recording)))
+}
+
+fn started_at_from_partial_name(path: &PathBuf) -> Option<DateTime<Local>> {
+    let name = path.file_name()?.to_str()?;
+    let millis: i64 = name.split('-').next()?.parse().ok()?;
+    match Local.timestamp_millis_opt(millis) {
+        chrono::LocalResult::Single(dt) => Some(dt),
+        _ => None,
+    }
 }
 
 fn prepare_wav_samples(samples: &[i16], sample_rate: u32, channels: u16) -> Vec<i16> {

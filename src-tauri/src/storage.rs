@@ -136,10 +136,11 @@ impl StorageManager {
         error_message: Option<String>,
         metadata: TranscriptionMetadata,
         id_override: Option<String>,
+        timestamp_override: Option<DateTime<Local>>,
     ) -> Result<TranscriptionRecord> {
         let record = TranscriptionRecord {
             id: id_override.unwrap_or_else(|| Uuid::new_v4().to_string()),
-            timestamp: Local::now(),
+            timestamp: timestamp_override.unwrap_or_else(Local::now),
             text,
             raw_text: None,
             audio_available: !audio_path.is_empty(),
@@ -168,10 +169,11 @@ impl StorageManager {
         audio_path: String,
         metadata: TranscriptionMetadata,
         id_override: Option<String>,
+        timestamp_override: Option<DateTime<Local>>,
     ) -> Result<TranscriptionRecord> {
         let record = TranscriptionRecord {
             id: id_override.unwrap_or_else(|| Uuid::new_v4().to_string()),
-            timestamp: Local::now(),
+            timestamp: timestamp_override.unwrap_or_else(Local::now),
             text: cleaned_text,
             raw_text: Some(raw_text),
             audio_available: !audio_path.is_empty(),

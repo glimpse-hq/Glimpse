@@ -751,22 +751,44 @@ export const CardStampSlot = ({ children }: { children: ReactNode }) => (
 
 export const CardHeaderRow = ({
   stamp,
+  price,
+  priceColor,
 }: {
   stamp: ReactNode;
-}) => (
-  <div
-    className="relative flex shrink-0 items-start justify-end overflow-visible"
-    style={{ height: `${CARD_HEADER_HEIGHT}px` }}
-  >
+  price?: string | null;
+  priceColor?: string;
+}) => {
+  const palette = useMemberCardPalette();
+
+  return (
     <div
-      className="pointer-events-none absolute left-0"
-      style={{ top: "-11px" }}
+      className="relative flex shrink-0 items-start justify-end overflow-visible"
+      style={{ height: `${CARD_HEADER_HEIGHT}px` }}
     >
-      <CardWordmark />
+      <div
+        className="pointer-events-none absolute left-0 min-w-0 max-w-[58%]"
+        style={{ top: "-11px" }}
+      >
+        <CardWordmark />
+        {price && priceColor ? (
+          <p
+            className="mt-1.5 truncate font-mono tabular-nums tracking-[0.02em]"
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+              lineHeight: 1.2,
+              color: priceColor,
+              textShadow: palette.wordmarkShadow,
+            }}
+          >
+            {price}
+          </p>
+        ) : null}
+      </div>
+      <CardStampSlot>{stamp}</CardStampSlot>
     </div>
-    <CardStampSlot>{stamp}</CardStampSlot>
-  </div>
-);
+  );
+};
 
 export const CardHeadlineBlock = ({
   title,
