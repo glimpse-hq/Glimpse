@@ -116,7 +116,6 @@ pub(crate) fn queue_transcription(
     temporary: bool,
 ) {
     let state = app.state::<AppState>();
-    state.clear_cancellation();
     state.set_pending_path(Some(saved.path.clone()));
 
     let pending_selected_text = state.take_pending_selected_text();
@@ -1649,7 +1648,6 @@ pub(crate) fn finalize_streaming_transcription(
     temporary: bool,
 ) {
     let state = app.state::<AppState>();
-    state.clear_cancellation();
     let pending_selected_text = state.take_pending_selected_text();
     let http = state.http();
     let app_handle = app.clone();

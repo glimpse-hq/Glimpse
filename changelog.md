@@ -13,6 +13,9 @@
 ### Changes
 - Updated Glimpse Personal pricing: Personal is $24.99, and Commercial licensing starts at $19.99 per seat with volume discounts as your team grows.
 
+### Fixes
+- Fixed cancelling a dictation while it's processing sometimes still pasting the text.
+
 ---
 0.9.2
 

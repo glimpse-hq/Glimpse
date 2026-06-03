@@ -436,6 +436,7 @@ impl PillController {
         }
 
         let state = app.state::<AppState>();
+        state.clear_cancellation();
         let mut settings = state.current_settings();
         settings.cleanup_enabled = options.cleanup_enabled;
         *self.recording_settings.lock() = Some(settings.clone());
@@ -573,7 +574,6 @@ impl PillController {
         let has_streaming = state.has_streaming_session();
 
         if has_streaming {
-            state.clear_cancellation();
             self.transition_to(app, PillStatus::Processing);
             let recorder = Arc::clone(&self.recorder);
             let app_handle = app.clone();
