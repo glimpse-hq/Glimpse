@@ -838,7 +838,7 @@ pub fn recover_pending_recordings(base_dir: PathBuf) -> Vec<(RecordingSaved, Com
             }
             Err(err) => {
                 eprintln!("Failed to recover {}: {err}", path.display());
-                let _ = fs::remove_file(&path);
+                let _ = fs::rename(&path, path.with_extension("wav.failed"));
             }
         }
     }

@@ -2149,12 +2149,12 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx:569
 msgid "transcriptions.list.no_results"
-msgstr ""
+msgstr "Aucun résultat pour « {resultSearchText} »"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx:575
 msgid "transcriptions.list.no_results_filters"
-msgstr "Aucun resultat pour les filtres selectionnes"
+msgstr "Aucun résultat pour les filtres sélectionnés"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx:497

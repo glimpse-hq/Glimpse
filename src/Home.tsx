@@ -25,6 +25,7 @@ import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeade
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
 import { useTranscriptionList } from "./features/transcriptions/queries";
 import { computeTodayDictationStats } from "./features/transcriptions/todayStats";
+import { useTimeOfDayPeriodTick } from "./features/transcriptions/homeGreeting";
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
@@ -401,9 +402,10 @@ const Home = () => {
   const homeViewActive = activeView === "home";
   const { data: transcriptions = [], isFetched: transcriptionsFetched } =
     useTranscriptionList("", homeViewActive);
+  const dayTick = useTimeOfDayPeriodTick(homeViewActive);
   const todayStats = useMemo(
     () => computeTodayDictationStats(transcriptions),
-    [transcriptions],
+    [transcriptions, dayTick],
   );
 
   return (

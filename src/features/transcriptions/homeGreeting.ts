@@ -95,7 +95,10 @@ function periodEndMs(now: Date, period: TimeOfDayPeriod): number {
 
 function msUntilNextTimeOfDayPeriod(now: Date = new Date()): number {
   const period = timeOfDayPeriod(now);
-  return Math.max(1_000, periodEndMs(now, period) - now.getTime() + 50);
+  const nextMidnight = new Date(now);
+  nextMidnight.setHours(24, 0, 0, 0);
+  const target = Math.min(periodEndMs(now, period), nextMidnight.getTime());
+  return Math.max(1_000, target - now.getTime() + 50);
 }
 
 /** Re-render when the local morning / afternoon / evening band changes. */
@@ -144,7 +147,9 @@ export function pickStableForCurrentPeriod<T>(
   return items[stableIndex(items.length, now, extraSalt)];
 }
 
-export function getHomeGreetingVariant(now: Date = new Date()): HomeGreetingVariant {
+export function getHomeGreetingVariant(
+  now: Date = new Date(),
+): HomeGreetingVariant {
   const occasions = getHomeOccasions(now).map(
     (id): HomeGreetingVariant => ({ kind: "occasion", id }),
   );

@@ -106,6 +106,7 @@ struct CompletionInput {
     metadata: storage::TranscriptionMetadata,
     mode: &'static str,
     temporary: bool,
+    timestamp_override: Option<chrono::DateTime<chrono::Local>>,
 }
 
 pub(crate) fn queue_transcription(
@@ -274,6 +275,7 @@ pub(crate) fn queue_transcription(
                         metadata,
                         mode: transcription_mode_label(&settings),
                         temporary,
+                        timestamp_override: None,
                     },
                 );
 
@@ -548,7 +550,7 @@ async fn transcribe_recovered_recording(
         speech_model: result.speech_model,
     });
 
-    emit_transcription_complete_with_cleanup(
+    let persisted = emit_transcription_complete_with_cleanup(
         app,
         CompletionInput {
             raw_transcript,
@@ -560,8 +562,13 @@ async fn transcribe_recovered_recording(
             metadata,
             mode: transcription_mode_label(settings),
             temporary: false,
+            timestamp_override: Some(saved.started_at),
         },
     );
+
+    if !persisted {
+        return Err(anyhow!("Failed to persist recovered transcription"));
+    }
 
     Ok(RecoveredTranscriptionOutcome::Saved)
 }
@@ -935,7 +942,10 @@ pub(crate) fn retry_transcription_async(
     });
 }
 
-fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: CompletionInput) {
+fn emit_transcription_complete_with_cleanup(
+    app: &AppHandle<AppRuntime>,
+    input: CompletionInput,
+) -> bool {
     let CompletionInput {
         raw_transcript,
         final_transcript,
@@ -946,6 +956,7 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
         metadata,
         mode,
         temporary,
+        timestamp_override,
     } = input;
 
     analytics::track_transcription_completed(
@@ -972,7 +983,7 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
     if temporary {
         let _ = std::fs::remove_file(&audio_path);
         discard_pending_recording(pending_path.as_deref());
-        return;
+        return true;
     }
 
     let save_result = if llm_cleaned {
@@ -984,6 +995,7 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
                 audio_path,
                 metadata,
                 None,
+                timestamp_override,
             )
     } else {
         app.state::<AppState>().storage().save_transcription(
@@ -993,13 +1005,20 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
             None,
             metadata,
             None,
+            timestamp_override,
         )
     };
 
-    match save_result {
-        Ok(_) => discard_pending_recording(pending_path.as_deref()),
-        Err(err) => eprintln!("Failed to persist transcription: {err}"),
-    }
+    let persisted = match save_result {
+        Ok(_) => {
+            discard_pending_recording(pending_path.as_deref());
+            true
+        }
+        Err(err) => {
+            eprintln!("Failed to persist transcription: {err}");
+            false
+        }
+    };
 
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
@@ -1015,6 +1034,8 @@ fn emit_transcription_complete_with_cleanup(app: &AppHandle<AppRuntime>, input: 
 
     let update_state = app.state::<AppState>().update_state().clone();
     update_checker::maybe_show_update_toast(app, &update_state);
+
+    persisted
 }
 
 fn discard_pending_recording(path: Option<&Path>) {
@@ -1144,6 +1165,7 @@ fn emit_transcription_error_inner(
             storage::TranscriptionStatus::Error,
             Some(toast_message.clone()),
             metadata,
+            None,
             None,
         );
 
@@ -1731,6 +1753,7 @@ pub(crate) fn finalize_streaming_transcription(
                 metadata,
                 mode: "local_streaming",
                 temporary,
+                timestamp_override: None,
             },
         );
         app_handle.state::<AppState>().set_pending_path(None);

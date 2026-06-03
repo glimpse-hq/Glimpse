@@ -96,6 +96,7 @@ export function matchesDateRange(
 ): boolean {
   if (!after && !before) return true;
   const time = new Date(timestamp).getTime();
+  if (Number.isNaN(time)) return false;
   if (after && time < after.getTime()) return false;
   if (before && time >= before.getTime()) return false;
   return true;

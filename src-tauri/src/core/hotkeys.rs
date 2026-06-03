@@ -310,8 +310,8 @@ impl CaptureState {
     }
 }
 
-fn hotkey_rank(hotkey: Hotkey) -> u32 {
-    hotkey.modifiers.count() + u32::from(hotkey.key.is_some())
+fn hotkey_rank(hotkey: Hotkey) -> (u32, u32) {
+    (hotkey.modifiers.count(), u32::from(hotkey.key.is_some()))
 }
 
 fn emit_capture_event(app: &AppHandle<AppRuntime>, payload: ShortcutCapturePayload) {
