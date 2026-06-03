@@ -513,8 +513,8 @@ const PersonalityModal = ({
             </div>
           </div>
 
-          <div className="flex flex-col gap-5 p-5 flex-1 min-h-0 overflow-y-auto instructions-scroll">
-            <section className="space-y-2">
+          <div className="flex flex-col gap-5 p-5 flex-1 min-h-0 overflow-hidden">
+            <section className="shrink-0 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <h3 className="ui-text-section-label-sm ui-color-muted">
@@ -618,7 +618,7 @@ const PersonalityModal = ({
             </section>
 
             <div className="grid grid-cols-2 gap-4">
-              <section className="space-y-2 flex flex-col min-w-0">
+              <section className="flex min-w-0 flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="ui-text-section-label-sm ui-color-muted">
                     {t({
@@ -630,7 +630,7 @@ const PersonalityModal = ({
                     {personality.apps.length}
                   </span>
                 </div>
-                <div className="rounded-lg bg-surface-surface p-2 space-y-1">
+                <div className="rounded-lg bg-surface-surface p-2">
                   <div
                     ref={appComboboxRef}
                     className="relative flex items-center gap-1 px-1"
@@ -686,7 +686,7 @@ const PersonalityModal = ({
                           exit={{ opacity: 0, y: -4 }}
                           transition={{ duration: 0.12 }}
                           role="listbox"
-                          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[220px] overflow-y-auto rounded-md border border-border-secondary bg-surface-overlay py-1 shadow-lg instructions-scroll"
+                          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[220px] overflow-y-auto rounded-md border border-border-secondary bg-surface-overlay px-1 py-1 shadow-lg instructions-scroll"
                         >
                           {filteredAppOptions.map((app, index) => (
                             <li key={`app-option-${app.name}`}>
@@ -697,10 +697,10 @@ const PersonalityModal = ({
                                 onMouseEnter={() => setAppHighlightIndex(index)}
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => addApp(app.name)}
-                                className={`flex w-full items-center gap-2 px-2 py-1.5 text-left ui-text-meta font-medium ui-color-primary ${
+                                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left ui-text-meta font-medium ui-color-primary ${
                                   index === appHighlightIndex
                                     ? "bg-surface-elevated"
-                                    : ""
+                                    : "hover:bg-surface-elevated/60"
                                 }`}
                               >
                                 <AppIconBadge
@@ -716,6 +716,7 @@ const PersonalityModal = ({
                       )}
                     </AnimatePresence>
                   </div>
+                  <div className="mt-1 max-h-[240px] overflow-y-auto instructions-scroll">
                   {personality.apps.length === 0 ? (
                     <p className="px-2 py-2 ui-text-meta ui-color-disabled">
                       {t({
@@ -724,7 +725,7 @@ const PersonalityModal = ({
                       })}
                     </p>
                   ) : (
-                    <ul className="space-y-0.5 pt-1">
+                    <ul className="space-y-0.5">
                       {personality.apps.map((app, index) => {
                         const installedApp = installedAppByName.get(
                           app.toLowerCase(),
@@ -774,10 +775,11 @@ const PersonalityModal = ({
                       })}
                     </ul>
                   )}
+                  </div>
                 </div>
               </section>
 
-              <section className="space-y-2 flex flex-col min-w-0">
+              <section className="flex min-w-0 flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="ui-text-section-label-sm ui-color-muted">
                     {t({
@@ -789,7 +791,7 @@ const PersonalityModal = ({
                     {personality.websites.length}
                   </span>
                 </div>
-                <div className="rounded-lg bg-surface-surface p-2 space-y-1">
+                <div className="rounded-lg bg-surface-surface p-2">
                   <div className="flex items-center gap-1 px-1">
                     <input
                       value={websiteInput}
@@ -827,10 +829,11 @@ const PersonalityModal = ({
                     </button>
                   </div>
                   {websiteError && (
-                    <p className="px-2 ui-text-meta ui-color-error">
+                    <p className="shrink-0 px-2 ui-text-meta ui-color-error">
                       {websiteError}
                     </p>
                   )}
+                  <div className="mt-1 max-h-[240px] overflow-y-auto instructions-scroll">
                   {personality.websites.length === 0 ? (
                     <p className="px-2 py-2 ui-text-meta ui-color-disabled">
                       {t({
@@ -839,7 +842,7 @@ const PersonalityModal = ({
                       })}
                     </p>
                   ) : (
-                    <ul className="space-y-0.5 pt-1">
+                    <ul className="space-y-0.5">
                       {personality.websites.map((site, index) => (
                         <li
                           key={`site-${index}-${site || "empty"}`}
@@ -875,6 +878,7 @@ const PersonalityModal = ({
                       ))}
                     </ul>
                   )}
+                  </div>
                 </div>
               </section>
             </div>

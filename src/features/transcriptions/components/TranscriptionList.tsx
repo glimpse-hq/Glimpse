@@ -341,9 +341,9 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="w-full flex-1 min-h-0 flex flex-col"
+      className="w-full flex-1 min-h-0 h-0 flex flex-col"
     >
-      <div className="mb-3 h-8 shrink-0 flex justify-end" ref={searchRef}>
+      <div className="mb-2 h-8 shrink-0 flex justify-end" ref={searchRef}>
         <AnimatePresence initial={false} mode="wait">
           {searchOpen ? (
             <motion.div
