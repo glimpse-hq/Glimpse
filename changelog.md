@@ -1,3 +1,9 @@
+0.9.4
+
+### Fixes
+- Fixed cancelling a dictation and immediately starting a new one occasionally pasting the cancelled text and glitching the recording pill.
+
+---
 0.9.3
 
 ### Features

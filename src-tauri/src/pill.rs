@@ -572,6 +572,9 @@ impl PillController {
 
         let state = app.state::<AppState>();
         let has_streaming = state.has_streaming_session();
+        // Create the cancellation token up front, before the worker spawns, so a
+        // rapid cancel can't slip in before the token exists and leak a paste.
+        let cancel_token = state.create_transcription_token();
 
         if has_streaming {
             self.transition_to(app, PillStatus::Processing);
@@ -635,6 +638,7 @@ impl PillController {
                             saved.path,
                             settings_for_transcription,
                             recording_options.temporary,
+                            cancel_token,
                         );
                     }
                     Ok(None) => {
@@ -686,6 +690,7 @@ impl PillController {
                             recording,
                             settings_for_transcription,
                             recording_options.temporary,
+                            cancel_token,
                         );
                     }
                     Ok(None) => {

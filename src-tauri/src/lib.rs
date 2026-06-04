@@ -1459,6 +1459,7 @@ pub(crate) fn persist_recording_async(
     recording: CompletedRecording,
     settings: settings::UserSettings,
     temporary: bool,
+    cancel_token: CancellationToken,
 ) {
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
@@ -1483,6 +1484,7 @@ pub(crate) fn persist_recording_async(
                 recording_for_transcription,
                 settings,
                 temporary,
+                cancel_token,
             ),
             Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
             Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
@@ -1496,6 +1498,7 @@ fn emit_complete(
     recording: CompletedRecording,
     settings: settings::UserSettings,
     temporary: bool,
+    cancel_token: CancellationToken,
 ) {
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
@@ -1526,7 +1529,7 @@ fn emit_complete(
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording, settings, temporary);
+    transcribe::queue_transcription(app, saved, recording, settings, temporary, cancel_token);
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {
