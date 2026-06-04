@@ -56,7 +56,8 @@ pub fn show(app: &AppHandle<AppRuntime>, _toast_window: &WebviewWindow<AppRuntim
     Ok(())
 }
 
-pub fn hide(app: &AppHandle<AppRuntime>, _toast_window: &WebviewWindow<AppRuntime>) -> Result<()> {
+pub fn hide(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) -> Result<()> {
+    let _ = toast_window.set_position(tauri::PhysicalPosition::new(-9999, -9999)); //if toast window doesnt wanna move, send it into the sun.
     let app_clone = app.clone();
     let _ = app.run_on_main_thread(move || {
         if let Ok(panel) = app_clone.get_webview_panel(toast::WINDOW_LABEL) {
