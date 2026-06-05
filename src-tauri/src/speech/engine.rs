@@ -22,7 +22,10 @@ pub struct LocalTranscriber {
 impl LocalTranscriber {
     pub fn new(model_cache_dir: std::path::PathBuf) -> Self {
         Self {
-            service: SpeechService::new(SpeechConfig { model_cache_dir }),
+            service: SpeechService::new(SpeechConfig {
+                model_cache_dir,
+                resolver: crate::model_manager::local_resolver(),
+            }),
             last_used: Mutex::new(None),
             idle_wait: Condvar::new(),
         }

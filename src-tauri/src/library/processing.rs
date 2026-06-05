@@ -572,9 +572,7 @@ fn decode_audio_to_wav(
                     .codec_params
                     .as_ref()
                     .and_then(|params| params.audio())
-                    .is_some_and(|audio| {
-                        audio.sample_rate.is_some() && audio.channels.is_some()
-                    })
+                    .is_some_and(|audio| audio.sample_rate.is_some() && audio.channels.is_some())
             })
         })
         .ok_or_else(|| anyhow!("No supported audio tracks found"))?;

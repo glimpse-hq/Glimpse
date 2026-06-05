@@ -229,8 +229,7 @@ pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>, settings: &
         [first, second] => format!("{first} and {second}"),
         [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
     };
-    let message =
-        format!("Add {needed} in Settings before enabling a remote speech provider.");
+    let message = format!("Add {needed} in Settings before enabling a remote speech provider.");
     toast::emit_toast(
         app,
         toast::Payload {
