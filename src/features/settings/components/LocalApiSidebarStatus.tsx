@@ -1,6 +1,11 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpDown, Check, Copy, Settings2 } from "lucide-react";
+import {
+  ArrowsDownUp as ArrowUpDown,
+  Check,
+  Copy,
+  GearSix as Settings2,
+} from "@phosphor-icons/react";
 import ActivityDots from "../../../shared/ui/ActivityDots";
 import type { LocalApiStatus } from "../../../types";
 

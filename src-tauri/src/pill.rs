@@ -198,12 +198,19 @@ impl PillController {
         }
     }
 
-    fn start_streaming_session_if_supported(&self, app: &AppHandle<AppRuntime>, local_model: &str) {
-        if !model_manager::is_streaming_model(local_model) {
+    fn start_streaming_session_if_supported(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        settings: &UserSettings,
+    ) {
+        let selected_model = crate::speech::selected_model(settings);
+        if crate::remote_speech::is_remote_model(&selected_model)
+            || !model_manager::is_streaming_model(&selected_model)
+        {
             return;
         }
 
-        if let Ok(ready) = model_manager::ensure_model_ready(app, local_model) {
+        if let Ok(ready) = model_manager::ensure_model_ready(app, &selected_model) {
             app.state::<AppState>().start_streaming_session(app, &ready);
         }
     }
@@ -446,12 +453,15 @@ impl PillController {
         let pending_dir = crate::recordings_root(app)
             .ok()
             .map(|root| root.join(crate::recorder::PENDING_DIR_NAME));
-        match self.recorder.start(settings.microphone_device, pending_dir) {
+        match self
+            .recorder
+            .start(settings.microphone_device.clone(), pending_dir)
+        {
             Ok(started) => {
                 self.transition_to(app, PillStatus::Listening);
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
-                self.start_streaming_session_if_supported(app, &settings.local_model);
+                self.start_streaming_session_if_supported(app, &settings);
 
                 emit_event(
                     app,

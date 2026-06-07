@@ -20,6 +20,8 @@ export interface DropdownOption<T extends string | number> {
     }>;
     fixedBadgeSlots?: boolean;
     isHeader?: boolean;
+    prominentHeader?: boolean;
+    locked?: boolean;
 }
 
 interface DropdownProps<T extends string | number> {
@@ -328,36 +330,44 @@ export function Dropdown<T extends string | number>({
                         className={`ui-surface-menu absolute left-0 right-0 flex flex-col max-h-[280px] ${openUpward ? "bottom-full mb-1" : "top-full mt-1"} ${menuClassName}`}
                     >
                         {searchable && (
-                            <div className="p-2 border-b border-border-secondary shrink-0">
-                                <div className="relative">
-                                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-content-disabled" aria-hidden="true" />
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={resolvedSearchPlaceholder}
-                                        aria-label={t({
-                                            id: "dropdown.search_aria",
-                                            message: "Search options",
-                                        })}
-                                        autoFocus
-                                        className="w-full rounded-md bg-surface-secondary/50 border border-border-primary py-1.5 pl-7 pr-2.5 ui-text-body-sm text-content-primary placeholder-content-disabled hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors"
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                </div>
+                            <div className="flex items-center gap-2 px-3 border-b border-border-secondary shrink-0">
+                                <Search size={13} className="shrink-0 text-content-disabled" aria-hidden="true" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder={resolvedSearchPlaceholder}
+                                    aria-label={t({
+                                        id: "dropdown.search_aria",
+                                        message: "Search options",
+                                    })}
+                                    autoFocus
+                                    className="w-full bg-transparent border-0 py-2.5 ui-text-body-sm text-content-primary placeholder-content-disabled focus:outline-none"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
                             </div>
                         )}
 
-                        <div className="overflow-y-auto min-h-[40px]" role="listbox">
+                        <div className="overflow-y-scroll min-h-[40px] py-1.5 pl-1.5 pr-0 flex flex-col gap-1" role="listbox">
                             {filteredOptions.length > 0 ? (
                                 filteredOptions.map((option, idx) =>
                                     option.isHeader ? (
                                         <div
                                             key={`header-${idx}-${option.value}`}
                                             role="presentation"
-                                            className="px-3 py-1.5 ui-text-uppercase-meta font-semibold ui-color-disabled border-t border-border-secondary first:border-t-0 mt-1 first:mt-0"
+                                            className={classNames(
+                                                "mt-1 first:mt-0",
+                                                option.prominentHeader
+                                                    ? "px-2.5 pt-2 pb-1.5 ui-text-label-strong ui-color-secondary"
+                                                    : "px-2.5 py-1.5 ui-text-uppercase-meta font-semibold ui-color-disabled",
+                                            )}
                                         >
                                             {option.label}
+                                            {option.description && (
+                                                <p className="ui-text-meta ui-color-disabled font-normal normal-case mt-0.5">
+                                                    {option.description}
+                                                </p>
+                                            )}
                                         </div>
                                     ) : (
                                         <button
@@ -365,15 +375,18 @@ export function Dropdown<T extends string | number>({
                                             type="button"
                                             role="option"
                                             aria-selected={value === option.value}
+                                            disabled={option.locked}
                                             onClick={() => {
                                                 onChange(option.value);
                                                 closeDropdown();
                                             }}
                                             className={classNames(
-                                                "w-full text-left px-3 py-2 transition-colors flex items-center justify-between group",
-                                                value === option.value
-                                                    ? "bg-[var(--color-interactive-10)] text-[var(--color-interactive)]"
-                                                    : "text-content-secondary hover:bg-surface-elevated hover:text-content-primary",
+                                                "w-full text-left rounded-md px-2.5 py-2 transition-colors duration-100 flex items-center justify-between group",
+                                                option.locked
+                                                    ? "text-content-disabled cursor-default"
+                                                    : value === option.value
+                                                        ? "bg-[var(--color-interactive-10)] text-[var(--color-interactive)]"
+                                                        : "text-content-secondary hover:bg-surface-elevated hover:text-content-primary",
                                                 optionClassName,
                                             )}
                                         >
@@ -399,7 +412,7 @@ export function Dropdown<T extends string | number>({
                                             <div className="shrink-0 ml-2 flex items-center gap-2">
                                                 {renderBadges(option.badges, option.fixedBadgeSlots)}
                                                 <span className="h-3 w-3 flex items-center justify-center">
-                                                    {value === option.value && <Check size={12} aria-hidden="true" />}
+                                                    {!option.locked && value === option.value && <Check size={12} aria-hidden="true" />}
                                                 </span>
                                             </div>
                                         </button>

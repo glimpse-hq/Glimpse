@@ -24,10 +24,7 @@ import type {
   RemoteSpeechProvider,
   TranscriptionMode,
 } from "../../../../types";
-import type {
-  LanguageBadgeColumn,
-  TranscriptionLanguageOption,
-} from "../../../../shared/lib/transcriptionLanguages";
+import type { TranscriptionLanguageOption } from "../../../../shared/lib/transcriptionLanguages";
 import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
 
 type ShortcutMode = "smart" | "hold" | "toggle";
@@ -59,8 +56,6 @@ type GeneralTabProps = {
   language: string;
   onLanguageChange: (language: string) => void;
   languages: TranscriptionLanguageOption[];
-  languageBadgeColumns: LanguageBadgeColumn[];
-  showLanguageSupportBadges: boolean;
   smartEnabled: boolean;
   setSmartEnabled: (value: boolean) => void;
   holdEnabled: boolean;
@@ -107,8 +102,6 @@ const GeneralTab = ({
   language,
   onLanguageChange,
   languages,
-  languageBadgeColumns,
-  showLanguageSupportBadges,
   smartEnabled,
   setSmartEnabled,
   holdEnabled,
@@ -464,7 +457,7 @@ const GeneralTab = ({
                 aria-label={t({
                   id: "settings.general.language_info_aria",
                   message:
-                    "More information about transcription language support badges",
+                    "More information about transcription language support",
                 })}
               >
                 <Info size={10} aria-hidden="true" />
@@ -473,20 +466,11 @@ const GeneralTab = ({
                 <div className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight">
                   <p>
                     {t({
-                      id: "settings.general.language_info.installed",
+                      id: "settings.general.language_info.active_model",
                       message:
-                        "Language list is filtered to the models you have installed.",
+                        "Unsupported languages aren't available on your active model. Switch to a supported model to use them.",
                     })}
                   </p>
-                  {showLanguageSupportBadges && (
-                    <p className="mt-1">
-                      {t({
-                        id: "settings.general.language_info.badges",
-                        message:
-                          "Badges show which installed engine supports each language.",
-                      })}
-                    </p>
-                  )}
                 </div>
               </div>
             </div>
@@ -497,30 +481,14 @@ const GeneralTab = ({
             value={language}
             onChange={(val) => onLanguageChange(val)}
             onOpenChange={setLanguageDropdownOpen}
-            options={languages.map((lang) => {
-              if (!showLanguageSupportBadges) {
-                return {
-                  value: lang.code,
-                  label: lang.name,
-                };
-              }
-
-              return {
-                value: lang.code,
-                label: lang.name,
-                badges: languageBadgeColumns.map((column) => {
-                  const source = lang.badges.find(
-                    (badge) => badge.engine === column.engine,
-                  );
-                  return {
-                    label: column.label,
-                    highlighted: source?.highlighted ?? false,
-                    visible: Boolean(source),
-                  };
-                }),
-                fixedBadgeSlots: true,
-              };
-            })}
+            options={languages.map((lang) => ({
+              value: lang.code,
+              label: lang.name,
+              locked: lang.locked,
+              isHeader: lang.isHeader,
+              prominentHeader: lang.prominentHeader,
+              description: lang.description,
+            }))}
             searchable
             searchPlaceholder={t({
               id: "settings.general.search_language",

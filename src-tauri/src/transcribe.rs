@@ -688,10 +688,12 @@ async fn process_transcript_text(
     let mut pasted = false;
     if auto_paste && !final_transcript.trim().is_empty() {
         let can_read_field = !is_edit_mode && cfg!(any(target_os = "macos", target_os = "windows"));
+        let selected_model = speech::selected_model(settings);
+        let selected_model_supports_dictionary = remote_speech::is_remote_model(&selected_model)
+            || model_supports_capability(&selected_model, MODEL_CAPABILITY_DICTIONARY);
         let should_watch_auto_dictionary = can_read_field
-            && !remote_speech::is_configured(settings)
             && settings.auto_dictionary_enabled
-            && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY);
+            && selected_model_supports_dictionary;
         let transcript_to_paste = final_transcript.clone();
         let paste_result = async_runtime::spawn_blocking(move || {
             let pre_paste_snapshot = can_read_field

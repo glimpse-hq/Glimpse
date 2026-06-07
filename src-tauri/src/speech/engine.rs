@@ -176,8 +176,4 @@ impl LocalTranscriber {
         *last_used = None;
         self.idle_wait.notify_one();
     }
-
-    pub fn loaded_model_id(&self) -> Option<String> {
-        self.service.loaded_model_id()
-    }
 }

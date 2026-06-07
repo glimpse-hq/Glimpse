@@ -8,7 +8,7 @@ import {
   type QueryClient,
 } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
-import { ChevronLeft } from "lucide-react";
+import { CaretLeft as ChevronLeft } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
@@ -24,20 +24,23 @@ import {
   useModelCatalog,
   useModelStatuses,
 } from "../settings/models-queries";
-import { onboardingMachine, getSteps, type LocalDownloadStatus } from "./machine";
+import {
+  onboardingMachine,
+  getSteps,
+  type OnboardingLanguagePreference,
+  type OnboardingModelPriority,
+} from "./machine";
 import { useImportableApps } from "../import/queries";
 import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
-import { ModelSelectionStep } from "./steps/ModelSelectionStep";
-import { MicrophoneStep } from "./steps/MicrophoneStep";
-import { AccessibilityStep } from "./steps/AccessibilityStep";
-import { ReadyStep } from "./steps/ReadyStep";
+import { PermissionsStep } from "./steps/PermissionsStep";
+import { SetupStep } from "./steps/SetupStep";
 import { LicenseStep } from "./steps/LicenseStep";
 import { GlimpseLogo, StepIndicator } from "./steps/shared";
 import { useActivateLicense, useLicenseState } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import WindowControls from "../../shared/ui/WindowControls";
-import type { ModelInfo, ModelStatus } from "../../types";
+import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
 
 const hasRecommendedTag = (model: Pick<ModelInfo, "tags">) =>
   model.tags.some((tag) => tag.toLowerCase() === "recommended");
@@ -83,6 +86,34 @@ const pickDefaultOnboardingModel = (
   return models[0]?.key ?? persistedModel;
 };
 
+const ONBOARDING_MODEL: Record<
+  OnboardingLanguagePreference,
+  Record<OnboardingModelPriority, string>
+> = {
+  english: {
+    compact: "distil_whisper_small_en",
+    balanced: "distil_whisper_medium_en",
+    quality: "distil_whisper_large_v35",
+  },
+  multilingual: {
+    compact: "whisper_small_q5",
+    balanced: "whisper_medium_q5",
+    quality: "whisper_large_v3_turbo_q8",
+  },
+};
+
+const pickRecommendedOnboardingModel = (
+  models: ModelInfo[],
+  language: OnboardingLanguagePreference | null,
+  priority: OnboardingModelPriority | null,
+) => {
+  if (!language || !priority) {
+    return models.find(hasRecommendedTag) ?? models[0] ?? null;
+  }
+  const key = ONBOARDING_MODEL[language][priority];
+  return models.find((model) => model.key === key) ?? null;
+};
+
 const checkMicrophonePermission = () =>
   invoke<boolean>("check_microphone_permission");
 
@@ -111,7 +142,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const { t } = useLingui();
   const [state, send] = useMachine(onboardingMachine);
   const [downloadStatus, setDownloadStatus] = useState<
-    Record<string, LocalDownloadStatus>
+    Record<string, DownloadEvent>
   >({});
   const [openingLicenseTarget, setOpeningLicenseTarget] =
     useState<PurchaseTier | null>(null);
@@ -153,8 +184,31 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   }, [modelCatalogQuery.data, ctx.localModelChoice]);
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedSettings = settingsQuery.data;
+  const recommendedOnboardingModel = useMemo(
+    () =>
+      pickRecommendedOnboardingModel(
+        modelCatalogQuery.data ?? [],
+        ctx.languagePreference,
+        ctx.modelPriority,
+      ),
+    [modelCatalogQuery.data, ctx.languagePreference, ctx.modelPriority],
+  );
   const selectedModel = ctx.localModelChoice ||
+    recommendedOnboardingModel?.key ||
     pickDefaultOnboardingModel(onboardingModelCatalog, persistedLocalModel);
+  const selectedModelInfo = useMemo(
+    () =>
+      onboardingModelCatalog.find((model) => model.key === selectedModel) ??
+      modelCatalogQuery.data?.find((model) => model.key === selectedModel) ??
+      recommendedOnboardingModel ??
+      null,
+    [
+      onboardingModelCatalog,
+      modelCatalogQuery.data,
+      recommendedOnboardingModel,
+      selectedModel,
+    ],
+  );
   const statusModelKeys = useMemo(
     () =>
       Array.from(
@@ -174,7 +228,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     queryKey: onboardingPermissionKeys.microphone(),
     queryFn: checkMicrophonePermission,
     enabled: ctx.platform.requiresMicrophonePermission,
-    refetchInterval: currentStep === "microphone" ? 1_500 : false,
+    refetchInterval: currentStep === "permissions" ? 1_500 : false,
     retry: false,
   });
 
@@ -182,7 +236,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     queryKey: onboardingPermissionKeys.accessibility(),
     queryFn: checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
-    refetchInterval: currentStep === "accessibility" ? 800 : false,
+    refetchInterval: currentStep === "permissions" ? 800 : false,
     retry: false,
   });
 
@@ -227,14 +281,19 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   });
 
   const updateDownloadStatus = useCallback(
-    (modelKey: string, status: LocalDownloadStatus) => {
+    (modelKey: string, status: DownloadEvent) => {
       setDownloadStatus((prev) => {
         const current = prev[modelKey];
+        const detail = (event: DownloadEvent | undefined) =>
+          event && "file" in event
+            ? event.file
+            : event && "message" in event
+              ? event.message
+              : undefined;
         if (
           current?.status === status.status &&
           current?.percent === status.percent &&
-          current?.file === status.file &&
-          current?.message === status.message
+          detail(current) === detail(status)
         ) {
           return prev;
         }
@@ -251,6 +310,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         status: "downloading",
         percent: Math.min(100, Math.max(0, Math.round(payload.percent))),
         file: payload.file,
+        verifying: payload.verifying,
       });
     },
     onComplete: ({ model }) => {
@@ -258,12 +318,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       void refreshModelStatus(queryClient, model);
     },
     onError: ({ model, error }) => {
-      if (error.toLowerCase().includes("cancelled")) return;
       updateDownloadStatus(model, {
         status: "error",
         percent: 0,
         message: error,
       });
+    },
+    onCancelled: ({ model }) => {
+      void refreshModelStatus(queryClient, model);
     },
   });
 
@@ -280,9 +342,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       try {
         await invoke("download_model", { model: modelKey });
         void refreshModelStatus(queryClient, modelKey);
-      } catch (err) {
-        const errorMsg = String(err);
-        if (errorMsg.toLowerCase().includes("cancelled")) return;
+      } catch {
         updateDownloadStatus(modelKey, {
           status: "error",
           percent: 0,
@@ -327,7 +387,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           updateDownloadStatus(modelKey, { status: "idle", percent: 0 });
         }, 1500);
       } catch {
-        // ignore
+        return;
       }
     },
     [updateDownloadStatus],
@@ -360,28 +420,20 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   }, []);
 
   const displayStateByModel = useMemo(() => {
-    const buildState = (key: string): LocalDownloadStatus => {
+    const buildState = (key: string): DownloadEvent => {
       const installed = modelStatus[key]?.installed;
       const base = downloadStatus[key];
       if (base && base.status !== "complete") return base;
-      if (installed) {
-        return {
-          status: "complete",
-          percent: 100,
-          file: base?.file,
-          message: base?.message,
-        };
-      }
+      if (installed) return { status: "complete", percent: 100 };
       return base ?? { status: "idle", percent: 0 };
     };
-    return onboardingModelCatalog.reduce<Record<string, LocalDownloadStatus>>(
-      (acc, model) => {
-        acc[model.key] = buildState(model.key);
-        return acc;
-      },
-      {},
-    );
-  }, [downloadStatus, modelStatus, onboardingModelCatalog]);
+    return (modelCatalogQuery.data ?? []).reduce<
+      Record<string, DownloadEvent>
+    >((acc, model) => {
+      acc[model.key] = buildState(model.key);
+      return acc;
+    }, {});
+  }, [downloadStatus, modelStatus, modelCatalogQuery.data]);
 
   const selectedModelReady = useMemo(() => {
     if (!selectedModel) return false;
@@ -452,22 +504,21 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
-          remoteSpeechEnabled: latestSettings.remote_speech_enabled ?? false,
-          remoteSpeechProvider: latestSettings.remote_speech_provider ?? "openai",
-          remoteSpeechEndpoint:
-            latestSettings.remote_speech_endpoint ?? "https://api.openai.com/v1",
+          remoteSpeechEnabled: false,
+          remoteSpeechProvider: latestSettings.remote_speech_provider ?? "custom",
+          remoteSpeechEndpoint: latestSettings.remote_speech_endpoint ?? "",
           remoteSpeechApiKey: latestSettings.remote_speech_api_key ?? "",
-          remoteSpeechModel: latestSettings.remote_speech_model ?? "auto",
+          remoteSpeechModel: latestSettings.remote_speech_model ?? "",
           microphoneDevice: latestSettings.microphone_device ?? null,
           language: latestSettings.language ?? "en",
           appLocale: latestSettings.app_locale ?? "system",
           themeMode: latestSettings.theme_mode ?? "system",
           llmEnabled: false,
           cleanupEnabled: false,
-          llmProvider: "none",
-          llmEndpoint: "",
-          llmApiKey: "",
-          llmModel: "",
+          llmProvider: latestSettings.llm_provider ?? "none",
+          llmEndpoint: latestSettings.llm_endpoint ?? "",
+          llmApiKey: latestSettings.llm_api_key ?? "",
+          llmModel: latestSettings.llm_model ?? "",
           editModeEnabled: false,
           autoDictionaryEnabled: false,
           mediaAction: "pause",
@@ -558,39 +609,65 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             onApplied={(result) => {
               if (result.modelKey) {
                 send({ type: "SELECT_MODEL", key: result.modelKey });
-                if (modelStatus[result.modelKey]?.installed) {
-                  send({ type: "SKIP_LOCAL_MODEL" });
-                } else {
+                if (!modelStatus[result.modelKey]?.installed) {
                   void handleDownload(result.modelKey);
-                  goNext();
                 }
-              } else {
-                goNext();
               }
               if (result.shortcut) {
                 send({ type: "SET_SHORTCUT", shortcut: result.shortcut });
               }
+              goNext();
             }}
             onNext={goNext}
           />
         );
-      case "localModel":
+      case "setup":
         return (
-          <ModelSelectionStep
-            key="local-model"
+          <SetupStep
+            key="setup"
             stepMotionProps={stepMotionProps}
-            modelCatalog={onboardingModelCatalog}
+            languagePreference={ctx.languagePreference}
+            modelPriority={ctx.modelPriority}
+            smartShortcut={ctx.smartShortcut}
+            captureActive={ctx.captureActive}
+            capturePreview={ctx.capturePreview}
+            recommendedModel={selectedModelInfo}
+            catalog={modelCatalogQuery.data ?? []}
+            modelStatus={modelStatus}
+            displayStateByModel={displayStateByModel}
+            activeModelKey={selectedModel}
+            onUse={(key) => send({ type: "SELECT_MODEL", key })}
             isLoading={isModelCatalogLoading}
             unavailable={modelCatalogUnavailable}
-            selectedModel={selectedModel}
-            onSelectModel={(key) => send({ type: "SELECT_MODEL", key })}
-            displayStateByModel={displayStateByModel}
+            displayState={displayStateByModel[selectedModel] ?? { status: "idle", percent: 0 }}
             selectedModelReady={selectedModelReady}
             showLocalConfirm={ctx.showLocalConfirm}
+            onSelectLanguage={(language) => send({ type: "SELECT_LANGUAGE", language })}
+            onSelectPriority={(priority) => send({ type: "SELECT_PRIORITY", priority })}
+            onStartCapture={() => send({ type: "CAPTURE_START" })}
+            onEndCapture={(shortcut) => send({ type: "CAPTURE_END", shortcut })}
+            onSetPreview={(preview) => send({ type: "SET_CAPTURE_PREVIEW", preview })}
+            onSetShortcut={(shortcut) => send({ type: "SET_SHORTCUT", shortcut })}
             onShowConfirm={(show) => send({ type: "SHOW_LOCAL_CONFIRM", show })}
             onDownload={handleDownload}
             onDelete={handleDelete}
             onCancelDownload={handleCancelDownload}
+            onNext={goNext}
+          />
+        );
+      case "permissions":
+        return (
+          <PermissionsStep
+            key="permissions"
+            stepMotionProps={stepMotionProps}
+            requiresMicrophone={ctx.platform.requiresMicrophonePermission}
+            requiresAccessibility={ctx.platform.requiresAccessibilityPermission}
+            micPermission={micPermission}
+            accessibilityPermission={accessibilityPermission}
+            isCheckingMic={isCheckingMic}
+            isCheckingAccessibility={isCheckingAccessibility}
+            onRequestMic={handleRequestMic}
+            onRequestAccessibility={handleRequestAccessibility}
             onNext={goNext}
           />
         );
@@ -616,43 +693,6 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             onOpenCheckout={openLicenseCheckout}
             onActivateLicense={(key) => activateLicense.mutate(key)}
             onComplete={handleComplete}
-          />
-        );
-      case "microphone":
-        return (
-          <MicrophoneStep
-            key="microphone"
-            stepMotionProps={stepMotionProps}
-            micPermission={micPermission}
-            isChecking={isCheckingMic}
-            onRequestAccess={handleRequestMic}
-            onNext={goNext}
-          />
-        );
-      case "accessibility":
-        return (
-          <AccessibilityStep
-            key="accessibility"
-            stepMotionProps={stepMotionProps}
-            accessibilityPermission={accessibilityPermission}
-            isChecking={isCheckingAccessibility}
-            onRequestAccess={handleRequestAccessibility}
-            onNext={goNext}
-          />
-        );
-      case "ready":
-        return (
-          <ReadyStep
-            key="ready"
-            stepMotionProps={stepMotionProps}
-            smartShortcut={ctx.smartShortcut}
-            captureActive={ctx.captureActive}
-            capturePreview={ctx.capturePreview}
-            onStartCapture={() => send({ type: "CAPTURE_START" })}
-            onEndCapture={(shortcut) => send({ type: "CAPTURE_END", shortcut })}
-            onSetPreview={(preview) => send({ type: "SET_CAPTURE_PREVIEW", preview })}
-            onSetShortcut={(shortcut) => send({ type: "SET_SHORTCUT", shortcut })}
-            onNext={goNext}
           />
         );
       default:

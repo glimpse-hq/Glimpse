@@ -289,10 +289,6 @@ const SettingsModal = ({
                         language={form.language}
                         onLanguageChange={form.setLanguage}
                         languages={form.languages}
-                        languageBadgeColumns={form.languageBadgeColumns}
-                        showLanguageSupportBadges={
-                          form.showLanguageSupportBadges
-                        }
                         smartEnabled={form.smartEnabled}
                         setSmartEnabled={form.setSmartEnabled}
                         holdEnabled={form.holdEnabled}
@@ -326,12 +322,11 @@ const SettingsModal = ({
                         downloadState={form.downloadState}
                         localModel={form.localModel}
                         remoteSpeechEnabled={form.remoteSpeechEnabled}
-                        remoteSpeechModel={form.remoteSpeechModel}
+                        remoteSpeechProvider={form.remoteSpeechProvider}
                         setLocalModel={form.setLocalModel}
                         handleDownload={form.handleDownload}
                         handleDelete={form.handleDelete}
                         handleCancelDownload={form.handleCancelDownload}
-                        formatBytes={form.formatBytes}
                       />
                     )}
 

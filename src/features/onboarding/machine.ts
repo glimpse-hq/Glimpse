@@ -6,18 +6,16 @@ import {
   type OnboardingStep,
 } from "./platform";
 
-export type LocalDownloadStatus = {
-  status: "idle" | "downloading" | "complete" | "error" | "cancelled";
-  percent: number;
-  file?: string;
-  message?: string;
-};
+export type OnboardingLanguagePreference = "english" | "multilingual";
+export type OnboardingModelPriority = "quality" | "balanced" | "compact";
 
 export type OnboardingContext = {
   platform: OnboardingPlatform;
   selectedMode: TranscriptionMode;
   importableApps: DetectedApp[];
   localModelChoice: string;
+  languagePreference: OnboardingLanguagePreference | null;
+  modelPriority: OnboardingModelPriority | null;
   showLocalConfirm: boolean;
   smartShortcut: string;
   captureActive: boolean;
@@ -27,7 +25,6 @@ export type OnboardingContext = {
   showFAQModal: boolean;
   transitionDirection: 1 | -1;
   hasStepTransitioned: boolean;
-  skippedLocalModel: boolean;
 };
 
 export type OnboardingEvent =
@@ -36,7 +33,8 @@ export type OnboardingEvent =
   | { type: "SELECT_MODE"; mode: TranscriptionMode }
   | { type: "SET_IMPORTABLE"; apps: DetectedApp[] }
   | { type: "SELECT_MODEL"; key: string }
-  | { type: "SKIP_LOCAL_MODEL" }
+  | { type: "SELECT_LANGUAGE"; language: OnboardingLanguagePreference }
+  | { type: "SELECT_PRIORITY"; priority: OnboardingModelPriority }
   | { type: "SET_SHORTCUT"; shortcut: string }
   | { type: "CAPTURE_START" }
   | { type: "CAPTURE_END"; shortcut?: string }
@@ -57,31 +55,25 @@ function getSteps(
     steps.push("import");
   }
 
-  steps.push("localModel");
+  steps.push("setup");
 
-  if (platform.requiresMicrophonePermission) {
-    steps.push("microphone");
+  if (
+    platform.requiresMicrophonePermission ||
+    platform.requiresAccessibilityPermission
+  ) {
+    steps.push("permissions");
   }
 
-  if (platform.requiresAccessibilityPermission) {
-    steps.push("accessibility");
-  }
-
-  steps.push("ready", "license");
+  steps.push("license");
   return steps;
 }
 
 const hasImportStep = ({ context }: { context: OnboardingContext }) =>
   context.selectedMode === "local" && context.importableApps.length > 0;
 
-const requiresMicrophoneStep = ({ context }: { context: OnboardingContext }) =>
-  context.platform.requiresMicrophonePermission;
-
-const requiresAccessibilityStep = ({ context }: { context: OnboardingContext }) =>
+const requiresPermissionsStep = ({ context }: { context: OnboardingContext }) =>
+  context.platform.requiresMicrophonePermission ||
   context.platform.requiresAccessibilityPermission;
-
-const skippedLocalModelStep = ({ context }: { context: OnboardingContext }) =>
-  context.skippedLocalModel;
 
 export const onboardingMachine = setup({
   types: {
@@ -96,6 +88,8 @@ export const onboardingMachine = setup({
     selectedMode: "local",
     importableApps: [],
     localModelChoice: "",
+    languagePreference: null,
+    modelPriority: null,
     showLocalConfirm: false,
     smartShortcut: "Control+Space",
     captureActive: false,
@@ -105,7 +99,6 @@ export const onboardingMachine = setup({
     showFAQModal: false,
     transitionDirection: 1,
     hasStepTransitioned: false,
-    skippedLocalModel: false,
   },
   on: {
     SELECT_MODE: {
@@ -116,6 +109,18 @@ export const onboardingMachine = setup({
     },
     SELECT_MODEL: {
       actions: assign({ localModelChoice: ({ event }) => event.key }),
+    },
+    SELECT_LANGUAGE: {
+      actions: assign({
+        languagePreference: ({ event }) => event.language,
+        localModelChoice: "",
+      }),
+    },
+    SELECT_PRIORITY: {
+      actions: assign({
+        modelPriority: ({ event }) => event.priority,
+        localModelChoice: "",
+      }),
     },
     SET_SHORTCUT: {
       actions: assign({ smartShortcut: ({ event }) => event.shortcut }),
@@ -159,11 +164,21 @@ export const onboardingMachine = setup({
           {
             target: "import",
             guard: hasImportStep,
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+            actions: assign({
+              transitionDirection: 1,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
           },
           {
-            target: "localModel",
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: false }),
+            target: "setup",
+            actions: assign({
+              transitionDirection: 1,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
           },
         ],
       },
@@ -171,147 +186,116 @@ export const onboardingMachine = setup({
     import: {
       on: {
         NEXT: {
-          target: "localModel",
-          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: false }),
+          target: "setup",
+          actions: assign({
+            transitionDirection: 1,
+            hasStepTransitioned: true,
+            showLocalConfirm: false,
+            completionError: null,
+          }),
         },
-        SKIP_LOCAL_MODEL: [
-          {
-            target: "microphone",
-            guard: requiresMicrophoneStep,
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: true }),
-          },
-          {
-            target: "accessibility",
-            guard: requiresAccessibilityStep,
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: true }),
-          },
-          {
-            target: "ready",
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null, skippedLocalModel: true }),
-          },
-        ],
         BACK: {
           target: "welcome",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          actions: assign({
+            transitionDirection: -1 as const,
+            hasStepTransitioned: true,
+            showLocalConfirm: false,
+            completionError: null,
+          }),
         },
       },
     },
-    localModel: {
+    setup: {
       on: {
         NEXT: [
           {
-            target: "microphone",
-            guard: requiresMicrophoneStep,
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+            target: "permissions",
+            guard: requiresPermissionsStep,
+            actions: assign({
+              transitionDirection: 1,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
           },
           {
-            target: "accessibility",
-            guard: requiresAccessibilityStep,
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "ready",
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+            target: "license",
+            actions: assign({
+              transitionDirection: 1,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
           },
         ],
         BACK: [
           {
             target: "import",
             guard: hasImportStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+            actions: assign({
+              transitionDirection: -1 as const,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
           },
           {
             target: "welcome",
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+            actions: assign({
+              transitionDirection: -1 as const,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
           },
         ],
       },
     },
-    microphone: {
-      on: {
-        NEXT: [
-          {
-            target: "accessibility",
-            guard: requiresAccessibilityStep,
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "ready",
-            actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-        ],
-        BACK: [
-          {
-            target: "import",
-            guard: skippedLocalModelStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "localModel",
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-        ],
-      },
-    },
-    accessibility: {
-      on: {
-        NEXT: {
-          target: "ready",
-          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
-        BACK: [
-          {
-            target: "microphone",
-            guard: requiresMicrophoneStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "import",
-            guard: skippedLocalModelStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "localModel",
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-        ],
-      },
-    },
-    ready: {
+    permissions: {
       on: {
         NEXT: {
           target: "license",
-          actions: assign({ transitionDirection: 1, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
+          actions: assign({
+            transitionDirection: 1,
+            hasStepTransitioned: true,
+            showLocalConfirm: false,
+            completionError: null,
+          }),
         },
-        BACK: [
-          {
-            target: "accessibility",
-            guard: requiresAccessibilityStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "microphone",
-            guard: requiresMicrophoneStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "import",
-            guard: skippedLocalModelStep,
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-          {
-            target: "localModel",
-            actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-          },
-        ],
+        BACK: {
+          target: "setup",
+          actions: assign({
+            transitionDirection: -1 as const,
+            hasStepTransitioned: true,
+            showLocalConfirm: false,
+            completionError: null,
+          }),
+        },
       },
     },
     license: {
       on: {
-        BACK: {
-          target: "ready",
-          actions: assign({ transitionDirection: -1 as const, hasStepTransitioned: true, showLocalConfirm: false, completionError: null }),
-        },
+        BACK: [
+          {
+            target: "permissions",
+            guard: requiresPermissionsStep,
+            actions: assign({
+              transitionDirection: -1 as const,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
+          },
+          {
+            target: "setup",
+            actions: assign({
+              transitionDirection: -1 as const,
+              hasStepTransitioned: true,
+              showLocalConfirm: false,
+              completionError: null,
+            }),
+          },
+        ],
       },
     },
   },

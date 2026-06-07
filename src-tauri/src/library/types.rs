@@ -7,9 +7,25 @@ pub(crate) const CHUNK_OVERLAP_SECONDS: u32 = 5;
 pub(crate) const DIRECT_TRANSCRIBE_MINUTES: u32 = 10;
 pub(crate) const TARGET_SAMPLE_RATE: u32 = 16_000;
 
-pub(crate) fn is_cancelled_message(message: &str) -> bool {
-    let lower = message.to_lowercase();
-    lower.contains("cancelled") || lower.contains("canceled")
+/// Typed marker error so cancellation survives `anyhow` propagation without
+/// re-parsing the message text.
+#[derive(Debug)]
+pub(crate) struct Cancelled;
+
+impl std::fmt::Display for Cancelled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Transcription cancelled")
+    }
+}
+
+impl std::error::Error for Cancelled {}
+
+pub(crate) fn cancelled_error() -> anyhow::Error {
+    anyhow::Error::new(Cancelled)
+}
+
+pub(crate) fn is_cancelled_error(err: &anyhow::Error) -> bool {
+    err.downcast_ref::<Cancelled>().is_some()
 }
 
 pub(crate) fn is_ffmpeg_error_message(message: &str) -> bool {
@@ -72,14 +88,9 @@ impl LibraryItemStatus {
             "complete" => Self::Complete,
             "cancelling" => Self::Cancelling,
             "cancelled" => Self::Cancelled,
-            "error" => {
-                let message = error_message.unwrap_or_else(|| "Transcription failed".to_string());
-                if is_cancelled_message(&message) {
-                    Self::Cancelled
-                } else {
-                    Self::Error { message }
-                }
-            }
+            "error" => Self::Error {
+                message: error_message.unwrap_or_else(|| "Transcription failed".to_string()),
+            },
             _ => Self::Error {
                 message: "Unknown status".to_string(),
             },
@@ -209,6 +220,7 @@ pub(crate) struct LibraryCompletePayload {
 pub(crate) struct LibraryErrorPayload {
     pub id: String,
     pub message: String,
+    pub cancelled: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

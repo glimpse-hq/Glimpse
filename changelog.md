@@ -1,7 +1,17 @@
 0.9.4
 
+### Features
+- Onboarding is now a quick guided setup: tell Glimpse which language you dictate in and whether to prioritize quality, balance, or size, and it picks and downloads the right local model for you.
+- New model browser for choosing local models: search by name, filter by category, and see each model's size and supported languages at a glance. Quantization options (Q5, Q8, Full) are grouped under each model so switching between them is simpler.
+
+### Improvements
+- Model downloads are now verified after they finish, so an interrupted or corrupted download won't leave you with a broken model.
+- The transcription language list now clearly separates the languages your current model supports from the ones that need a different model.
+- Auto Dictionary now works with online transcription providers, not just local models.
+
 ### Fixes
 - Fixed cancelling a dictation and immediately starting a new one occasionally pasting the cancelled text and glitching the recording pill.
+- Fixed the Nemotron Streaming model downloading mismatched files, which left it broken and showing the wrong size.
 
 ---
 0.9.3

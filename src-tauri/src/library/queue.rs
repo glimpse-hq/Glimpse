@@ -19,7 +19,8 @@ use super::processing::{
     stream_wav_chunks,
 };
 use super::types::{
-    is_cancelled_message, is_ffmpeg_error_message, LibraryCompletePayload, LibraryErrorPayload,
+    cancelled_error, is_cancelled_error, is_ffmpeg_error_message, LibraryCompletePayload,
+    LibraryErrorPayload,
     LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryProgressPayload,
     LibraryProgressUpdate, LibraryTranscriptionResult, TranscriptSegment, CHUNK_OVERLAP_SECONDS,
     DIRECT_TRANSCRIBE_MINUTES, EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, EVENT_LIBRARY_PROGRESS,
@@ -65,7 +66,7 @@ fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
                                 &app_handle,
                                 &state_handle,
                                 &job_id,
-                                anyhow!("Transcription cancelled"),
+                                cancelled_error(),
                             );
                             return;
                         }
@@ -90,7 +91,7 @@ fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
                         &app_handle,
                         &state_handle,
                         &job_id,
-                        anyhow!("Transcription cancelled"),
+                        cancelled_error(),
                     );
                     return;
                 }
@@ -115,6 +116,7 @@ fn start_library_transcription_internal(
                 LibraryErrorPayload {
                     id: id.clone(),
                     message: "Library item not found".to_string(),
+                    cancelled: false,
                 },
             );
             release_library_slot(app, state, &id);
@@ -127,6 +129,7 @@ fn start_library_transcription_internal(
                 LibraryErrorPayload {
                     id: id.clone(),
                     message: format!("Failed to load library item: {err}"),
+                    cancelled: false,
                 },
             );
             release_library_slot(app, state, &id);
@@ -205,6 +208,7 @@ fn start_library_transcription_internal(
                         LibraryErrorPayload {
                             id: id.clone(),
                             message: "No speech detected".to_string(),
+                            cancelled: false,
                         },
                     );
                 } else {
@@ -228,8 +232,9 @@ fn start_library_transcription_internal(
                 }
             }
             Ok(Err(err)) => {
+                let cancelled = is_cancelled_error(&err);
                 let message = err.to_string();
-                let status = if is_cancelled_message(&message) {
+                let status = if cancelled {
                     LibraryItemStatus::Cancelled
                 } else {
                     LibraryItemStatus::Error {
@@ -247,23 +252,19 @@ fn start_library_transcription_internal(
                     EVENT_LIBRARY_ERROR,
                     LibraryErrorPayload {
                         id: id.clone(),
+                        cancelled,
                         message,
                     },
                 );
             }
             Err(err) => {
                 let message = format!("Library transcription task failed: {err}");
-                let status = if is_cancelled_message(&message) {
-                    LibraryItemStatus::Cancelled
-                } else {
-                    LibraryItemStatus::Error {
-                        message: message.clone(),
-                    }
-                };
                 let _ = storage.update_library_item(
                     &id,
                     LibraryItemPatch {
-                        status: Some(status),
+                        status: Some(LibraryItemStatus::Error {
+                            message: message.clone(),
+                        }),
                         ..Default::default()
                     },
                 );
@@ -271,6 +272,7 @@ fn start_library_transcription_internal(
                     EVENT_LIBRARY_ERROR,
                     LibraryErrorPayload {
                         id: id.clone(),
+                        cancelled: false,
                         message,
                     },
                 );
@@ -287,8 +289,9 @@ fn handle_library_job_error(
     id: &str,
     err: anyhow::Error,
 ) {
+    let cancelled = is_cancelled_error(&err);
     let message = err.to_string();
-    let status = if is_cancelled_message(&message) {
+    let status = if cancelled {
         LibraryItemStatus::Cancelled
     } else {
         LibraryItemStatus::Error {
@@ -316,6 +319,7 @@ fn handle_library_job_error(
         EVENT_LIBRARY_ERROR,
         LibraryErrorPayload {
             id: id.to_string(),
+            cancelled,
             message,
         },
     );
@@ -357,7 +361,7 @@ fn transcribe_library_item(
     token: &CancellationToken,
 ) -> Result<LibraryTranscriptionResult> {
     if token.is_cancelled() {
-        return Err(anyhow!("Transcription cancelled"));
+        return Err(cancelled_error());
     }
 
     let audio_path = PathBuf::from(&item.audio_path);
@@ -407,7 +411,7 @@ fn transcribe_library_item(
                 });
             }
             remote_speech::RemoteAttempt::Cancelled => {
-                return Err(anyhow!("Transcription cancelled"));
+                return Err(cancelled_error());
             }
             remote_speech::RemoteAttempt::Unavailable(message) => {
                 return Err(anyhow!(message));
@@ -444,7 +448,7 @@ fn transcribe_library_item(
 
         stream_wav_chunks(&audio_path, chunk_size, overlap, |start_idx, chunk| {
             if token.is_cancelled() {
-                return Err(anyhow!("Transcription cancelled"));
+                return Err(cancelled_error());
             }
 
             chunk_index = chunk_index.saturating_add(1);
@@ -468,7 +472,7 @@ fn transcribe_library_item(
                 Some(&language),
             )?;
             if token.is_cancelled() {
-                return Err(anyhow!("Transcription cancelled"));
+                return Err(cancelled_error());
             }
 
             let chunk_text = result.transcript;
@@ -564,7 +568,7 @@ fn transcribe_library_item(
             Some(&language),
         )?;
         if token.is_cancelled() {
-            return Err(anyhow!("Transcription cancelled"));
+            return Err(cancelled_error());
         }
 
         return Ok(LibraryTranscriptionResult {
@@ -586,7 +590,7 @@ fn transcribe_library_item(
 
     stream_wav_chunks(&audio_path, chunk_size, overlap, |start_idx, chunk| {
         if token.is_cancelled() {
-            return Err(anyhow!("Transcription cancelled"));
+            return Err(cancelled_error());
         }
 
         chunk_index = chunk_index.saturating_add(1);
@@ -610,7 +614,7 @@ fn transcribe_library_item(
             Some(&language),
         )?;
         if token.is_cancelled() {
-            return Err(anyhow!("Transcription cancelled"));
+            return Err(cancelled_error());
         }
 
         let chunk_text = result.transcript;

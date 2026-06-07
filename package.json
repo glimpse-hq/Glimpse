@@ -25,7 +25,6 @@
     "@xstate/react": "^6.1.0",
     "framer-motion": "^12.40.0",
     "howler": "^2.2.4",
-    "lucide-react": "^1.17.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-markdown": "^10.1.0",
