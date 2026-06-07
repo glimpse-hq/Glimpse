@@ -3,16 +3,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy,
-  Trash2,
-  RotateCw,
+  Trash as Trash2,
+  ArrowClockwise as RotateCw,
   Check,
-  ChevronDown,
-  ChevronUp,
-  MoreVertical,
-  AlertTriangle,
-  Undo2,
+  CaretDown as ChevronDown,
+  CaretUp as ChevronUp,
+  DotsThreeVertical as MoreVertical,
+  Warning as AlertTriangle,
+  ArrowUUpLeft as Undo2,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import type { TranscriptionRecord } from "../../../types";
 import { isRemoteTranscriptionSpeechModel } from "../../../shared/lib/speechProviders";
 import { formatTranscriptionLlmModel } from "../../../shared/lib/llmProviders";

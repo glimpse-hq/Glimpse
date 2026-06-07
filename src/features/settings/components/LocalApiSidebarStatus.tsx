@@ -1,42 +1,10 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpDown, Check, Copy, Settings2 } from "lucide-react";
-import DotMatrix from "../../../shared/ui/DotMatrix";
+import ActivityDots from "../../../shared/ui/ActivityDots";
 import type { LocalApiStatus } from "../../../types";
 
 const SIDEBAR_TRANSITION = "transition-[width,opacity,max-height] duration-200 ease-out";
-
-const ACTIVITY_PATTERNS = [
-  [0, 3],
-  [1, 2],
-  [0, 1, 2, 3],
-  [0, 1],
-  [2, 3],
-];
-
-const ActivityDotMatrix = () => {
-  const [patternIndex, setPatternIndex] = useState(0);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setPatternIndex((current) => (current + 1) % ACTIVITY_PATTERNS.length);
-    }, 640);
-    return () => window.clearInterval(id);
-  }, []);
-
-  return (
-    <DotMatrix
-      rows={2}
-      cols={2}
-      activeDots={ACTIVITY_PATTERNS[patternIndex]}
-      dotSize={3}
-      gap={2}
-      color="var(--color-text-muted)"
-      snapDots
-      aria-hidden="true"
-    />
-  );
-};
 
 const LocalApiSidebarStatus = ({
   collapsed,
@@ -110,7 +78,7 @@ const LocalApiSidebarStatus = ({
         }`}
       >
         <div className="flex w-[18px] shrink-0 items-center justify-center">
-          <ActivityDotMatrix />
+          <ActivityDots />
         </div>
         <div
           style={{

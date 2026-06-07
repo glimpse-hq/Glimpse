@@ -6,6 +6,7 @@ import * as transcriptionsApi from "./api";
 export const transcriptionKeys = {
   all: ["transcriptions"] as const,
   list: (search: string) => [...transcriptionKeys.all, "list", search] as const,
+  todayStats: () => [...transcriptionKeys.all, "todayStats"] as const,
 };
 
 export function useTranscriptionList(
@@ -14,10 +15,17 @@ export function useTranscriptionList(
 ) {
   return useQuery({
     queryKey: transcriptionKeys.list(searchQuery),
-    queryFn: () =>
-      transcriptionsApi.getTranscriptions(searchQuery || null),
+    queryFn: () => transcriptionsApi.getTranscriptions(searchQuery || null),
     enabled,
     gcTime: 60_000,
+  });
+}
+
+export function useTodayDictationStats(enabled: boolean = true) {
+  return useQuery({
+    queryKey: transcriptionKeys.todayStats(),
+    queryFn: transcriptionsApi.getTodayDictationStats,
+    enabled,
   });
 }
 

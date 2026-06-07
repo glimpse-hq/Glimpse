@@ -2,14 +2,14 @@ import { useLingui } from "@lingui/react/macro";
 import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-    AlertCircle,
-    ChevronDown,
-    MoreHorizontal,
-    Pencil,
-    RotateCw,
-    Trash2,
-    X,
-} from "lucide-react";
+  WarningCircle as AlertCircle,
+  CaretDown as ChevronDown,
+  DotsThree as MoreHorizontal,
+  PencilSimple as Pencil,
+  ArrowClockwise as RotateCw,
+  Trash as Trash2,
+  X,
+} from "@phosphor-icons/react";
 import {
     clampProgress,
     formatDuration,

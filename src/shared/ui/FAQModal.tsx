@@ -1,7 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import {
+  X,
+} from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 interface FAQModalProps {

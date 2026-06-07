@@ -2,10 +2,10 @@ import { plural } from "@lingui/core/macro";
 import {
   averageWordsPerDictation,
   formatRecordingClock,
-  type TodayDictationStats,
   type TodayStatSlide,
   wordsPerMinute,
 } from "./todayStats";
+import type { TodayDictationStats } from "../../types";
 
 export function labelForTodayStatSlide(
   slide: TodayStatSlide,

@@ -1,4 +1,8 @@
-import { Minus, Square, X } from "lucide-react";
+import {
+  Minus,
+  Square,
+  X,
+} from "@phosphor-icons/react";
 import { useWindowControls } from "../hooks/useWindowControls";
 import { getPlatformCapabilities } from "../../platform/service";
 

@@ -435,6 +435,7 @@ pub fn run() {
             get_app_info,
             open_data_dir,
             get_transcriptions,
+            get_today_dictation_stats,
             delete_transcription,
             retry_transcription,
             retry_llm_cleanup,
@@ -1368,6 +1369,26 @@ fn get_transcriptions(
         .storage()
         .get_all_filtered(search_query.as_deref())
         .map_err(|err| format!("Failed to get transcriptions: {err}"))
+}
+
+#[tauri::command]
+fn get_today_dictation_stats(
+    state: tauri::State<AppState>,
+) -> Result<storage::TodayDictationStats, String> {
+    let today = Local::now().date_naive();
+    let start = today
+        .and_hms_opt(0, 0, 0)
+        .and_then(|time| time.and_local_timezone(Local).single())
+        .ok_or_else(|| "Failed to resolve local start of day".to_string())?;
+    let end = (today + chrono::Days::new(1))
+        .and_hms_opt(0, 0, 0)
+        .and_then(|time| time.and_local_timezone(Local).single())
+        .ok_or_else(|| "Failed to resolve local end of day".to_string())?;
+
+    state
+        .storage()
+        .get_today_dictation_stats(start.timestamp_millis(), end.timestamp_millis())
+        .map_err(|err| format!("Failed to get today stats: {err}"))
 }
 
 #[tauri::command]

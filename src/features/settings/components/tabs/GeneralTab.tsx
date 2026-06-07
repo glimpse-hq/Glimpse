@@ -4,15 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
-  BrushCleaning,
+  Broom as BrushCleaning,
+  CaretRight as ChevronRight,
   Check,
-  ChevronRight,
   Ghost,
   Info,
-  Mic,
+  Microphone as Mic,
   Square,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
+import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import { formatShortcutForDisplay } from "../../../../shared/lib/shortcuts";
@@ -210,12 +211,12 @@ const GeneralTab = ({
     className="space-y-6"
   >
     <div className="space-y-2">
-      <h2 className="ui-text-section-label-sm ui-color-muted">
+      <SectionLabel>
         {t({
           id: "settings.general.processing",
           message: "Processing",
         })}
-      </h2>
+      </SectionLabel>
       <div
         className="grid grid-cols-2 gap-3"
         role="radiogroup"
@@ -364,7 +365,7 @@ const GeneralTab = ({
     >
       <div className="space-y-1.5">
         <div className="flex h-5 items-center justify-between gap-2">
-          <label className="ui-text-label-strong ui-color-muted leading-none">
+          <label className="ui-text-label-strong ui-color-primary leading-none">
             {t({
               id: "settings.general.microphone",
               message: "Microphone",
@@ -533,18 +534,13 @@ const GeneralTab = ({
 
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-2">
-        <div className="flex h-5 items-center gap-1">
-          <h2 className="ui-text-section-label-sm ui-color-muted">
-            {t({
-              id: "settings.general.shortcuts",
-              message: "Shortcuts",
-            })}
-          </h2>
-          <div
-            className="relative"
-            onMouseEnter={() => showHelpTooltip("shortcuts")}
-            onMouseLeave={() => hideHelpTooltip("shortcuts")}
-          >
+        <SectionLabel
+          trailing={
+            <div
+              className="relative"
+              onMouseEnter={() => showHelpTooltip("shortcuts")}
+              onMouseLeave={() => hideHelpTooltip("shortcuts")}
+            >
             <button
               type="button"
               className="flex h-4 w-4 items-center justify-center text-content-disabled transition-colors hover:text-content-muted"
@@ -599,8 +595,14 @@ const GeneralTab = ({
                 </p>
               </div>
             </div>
-          </div>
-        </div>
+            </div>
+          }
+        >
+          {t({
+            id: "settings.general.shortcuts",
+            message: "Shortcuts",
+          })}
+        </SectionLabel>
 
         <div className="relative space-y-3 rounded-lg bg-surface-surface p-2.5">
           <ShortcutRow
@@ -708,14 +710,12 @@ const GeneralTab = ({
       </div>
 
       <div className="space-y-2">
-        <div className="flex h-5 items-center">
-          <h2 className="ui-text-section-label-sm ui-color-muted">
-            {t({
-              id: "settings.general.features",
-              message: "Features",
-            })}
-          </h2>
-        </div>
+        <SectionLabel>
+          {t({
+            id: "settings.general.features",
+            message: "Features",
+          })}
+        </SectionLabel>
 
         <div className="space-y-3">
           <div

@@ -3,14 +3,15 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
-  AlertTriangle,
+  Warning as AlertTriangle,
   Check,
-  ChevronLeft,
-  ChevronRight,
-  CornerDownRight,
-  Loader2,
-} from "lucide-react";
+  CaretLeft as ChevronLeft,
+  CaretRight as ChevronRight,
+  ArrowElbowDownRight as CornerDownRight,
+  CircleNotch as Loader2,
+} from "@phosphor-icons/react";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
+import SectionLabel from "../../../../shared/ui/SectionLabel";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   checkMacInputMonitoringPermission,
@@ -577,12 +578,12 @@ const AppTab = ({
         className="space-y-6"
       >
         <div className="space-y-2">
-          <h2 className="ui-text-section-label-sm ui-color-muted">
+          <SectionLabel>
             {t({
               id: "settings.app.appearance",
               message: "Appearance",
             })}
-          </h2>
+          </SectionLabel>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="space-y-1.5">
@@ -634,12 +635,12 @@ const AppTab = ({
 
         <div className="grid grid-cols-2 gap-3 items-stretch">
           <div className="space-y-2 flex flex-col">
-            <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
+            <SectionLabel className="shrink-0">
               {t({
                 id: "settings.app.privacy_permissions",
                 message: "Privacy & Permissions",
               })}
-            </h2>
+            </SectionLabel>
 
             {hasPermissionRows && (
               <div className="space-y-3 rounded-lg bg-surface-surface p-2.5">
@@ -810,12 +811,12 @@ const AppTab = ({
           </div>
 
           <div className="space-y-2 flex flex-col">
-            <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
+            <SectionLabel className="shrink-0">
               {t({
                 id: "settings.app.automation",
                 message: "Automation",
               })}
-            </h2>
+            </SectionLabel>
 
             <div className="flex-1 space-y-6 rounded-lg bg-surface-surface p-2.5">
               {platformCapabilities.supportsAutoPauseMedia && (

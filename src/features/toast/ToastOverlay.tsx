@@ -3,7 +3,10 @@ import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Check, Copy } from "lucide-react";
+import {
+  Check,
+  Copy,
+} from "@phosphor-icons/react";
 import DotMatrix from "../../shared/ui/DotMatrix";
 import type { ToastType, ToastPayload } from "../../types";
 

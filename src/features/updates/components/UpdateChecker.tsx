@@ -5,7 +5,13 @@ import { getVersion } from "@tauri-apps/api/app"
 import { relaunch } from "@tauri-apps/plugin-process"
 import { listen, type UnlistenFn } from "@tauri-apps/api/event"
 import { useQueryClient } from "@tanstack/react-query"
-import { Download, RefreshCw, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import {
+  DownloadSimple as Download,
+  ArrowsClockwise as RefreshCw,
+  CheckCircle,
+  WarningCircle as AlertCircle,
+  CircleNotch as Loader2,
+} from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion"
 import WhatsNewModal from "./WhatsNewModal"
 import DotMatrix from "../../../shared/ui/DotMatrix"

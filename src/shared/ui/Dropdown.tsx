@@ -1,7 +1,11 @@
 import { useLingui } from "@lingui/react/macro";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Search, Check } from "lucide-react";
+import {
+  CaretDown as ChevronDown,
+  MagnifyingGlass as Search,
+  Check,
+} from "@phosphor-icons/react";
 import { useClickOutside } from "../hooks/useClickOutside";
 
 export interface DropdownOption<T extends string | number> {
@@ -78,6 +82,7 @@ export function Dropdown<T extends string | number>({
     const [searchQuery, setSearchQuery] = useState("");
     const [openUpward, setOpenUpward] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
 
     const resolvedPlaceholder = placeholder ?? t({
         id: "dropdown.placeholder",
@@ -124,10 +129,10 @@ export function Dropdown<T extends string | number>({
     useEffect(() => {
         if (!isOpen || !containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
-        const MENU_MAX_HEIGHT = 280;
+        const menuHeight = menuRef.current?.offsetHeight ?? 0;
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        setOpenUpward(spaceBelow < MENU_MAX_HEIGHT && spaceAbove > spaceBelow);
+        setOpenUpward(spaceBelow < menuHeight && spaceAbove > spaceBelow);
     }, [isOpen]);
 
     const query = searchQuery.trim().toLowerCase();
@@ -166,7 +171,7 @@ export function Dropdown<T extends string | number>({
 
         if (fixedBadgeSlots) {
             return (
-                <span className="flex items-center gap-1 ui-text-uppercase-micro font-medium tracking-[0.08em]">
+                <span className="flex items-center gap-1 ui-text-uppercase-micro font-medium">
                     {badges.map((badge, index) => (
                         <span
                             key={`${badge.label}-${index}`}
@@ -315,6 +320,7 @@ export function Dropdown<T extends string | number>({
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
+                        ref={menuRef}
                         initial={{ opacity: 0, y: openUpward ? 4 : -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: openUpward ? 4 : -4 }}

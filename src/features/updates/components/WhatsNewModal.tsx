@@ -1,7 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ExternalLink, Loader2, AlertCircle } from "lucide-react";
+import {
+  X,
+  ArrowSquareOut as ExternalLink,
+  CircleNotch as Loader2,
+  WarningCircle as AlertCircle,
+} from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 

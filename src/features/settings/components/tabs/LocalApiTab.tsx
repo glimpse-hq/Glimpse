@@ -4,6 +4,8 @@ import { motion, type Variants } from "framer-motion";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
 import DotMatrix from "../../../../shared/ui/DotMatrix";
+import ActivityDots from "../../../../shared/ui/ActivityDots";
+import SectionLabel from "../../../../shared/ui/SectionLabel";
 import type {
   LocalApiStatus,
   ModelInfo,
@@ -201,25 +203,25 @@ const LocalApiTab = ({
       exit="exit"
       className="flex h-full flex-col gap-6"
     >
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <p className="ui-text-section-label-sm ui-color-muted mb-1">
-            {t({
-              id: "settings.local_api.title",
-              message: "API Server",
-            })}
-          </p>
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            <DotMatrix
-              rows={2}
-              cols={2}
-              activeDots={running ? [0, 1, 2, 3] : []}
-              dotSize={3}
-              gap={2}
-              color="var(--color-text-muted)"
-              className={running ? "opacity-80" : "opacity-40"}
-              aria-hidden="true"
-            />
+            {running ? (
+              <span className="opacity-80">
+                <ActivityDots dotSize={3} gap={2} color="var(--color-text-muted)" />
+              </span>
+            ) : (
+              <DotMatrix
+                rows={2}
+                cols={2}
+                activeDots={[]}
+                dotSize={3}
+                gap={2}
+                color="var(--color-text-muted)"
+                className="opacity-40"
+                aria-hidden="true"
+              />
+            )}
             <h1 className="ui-text-title-lg font-medium ui-color-primary">
               {running
                 ? t({
@@ -232,11 +234,11 @@ const LocalApiTab = ({
                   })}
             </h1>
           </div>
-          <button
-            className="mt-1 ui-text-body-sm ui-color-muted hover:ui-color-primary transition-colors inline-flex items-center gap-1.5 group"
-            onClick={copyBaseUrl}
-            type="button"
-          >
+        <button
+          className="mt-1 ui-text-body-sm ui-color-muted hover:ui-color-primary transition-colors inline-flex items-center gap-1.5 group"
+          onClick={copyBaseUrl}
+          type="button"
+        >
             <span>
               {copied
                 ? t({
@@ -293,41 +295,39 @@ const LocalApiTab = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {running ? (
-            <button
-              className="w-[92px] px-5 py-1.5 rounded-lg bg-red-500 hover:bg-red-400 text-white ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(248,113,113,0.35),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:translate-y-[1px] active:shadow-none"
-              onClick={onStop}
-              disabled={busy}
-            >
-              {t({
-                id: "settings.local_api.stop",
-                message: "Stop API",
-              })}
-            </button>
-          ) : (
-            <button
-              className="w-[92px] px-5 py-1.5 rounded-lg bg-content-primary hover:bg-content-secondary text-surface-secondary ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,0.1)] active:translate-y-[1px] active:shadow-none"
-              onClick={onStart}
-              disabled={busy || lanRequiresApiKey}
-            >
-              {t({
-                id: "settings.local_api.start",
-                message: "Start API",
-              })}
-            </button>
-          )}
-        </div>
+        {running ? (
+          <button
+            className="ml-6 w-[92px] shrink-0 px-5 py-1.5 rounded-lg bg-red-500 hover:bg-red-400 text-white ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(248,113,113,0.35),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:translate-y-[1px] active:shadow-none"
+            onClick={onStop}
+            disabled={busy}
+          >
+            {t({
+              id: "settings.local_api.stop",
+              message: "Stop API",
+            })}
+          </button>
+        ) : (
+          <button
+            className="ml-6 w-[92px] shrink-0 px-5 py-1.5 rounded-lg bg-content-primary hover:bg-content-secondary text-surface-secondary ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,0.1)] active:translate-y-[1px] active:shadow-none"
+            onClick={onStart}
+            disabled={busy || lanRequiresApiKey}
+          >
+            {t({
+              id: "settings.local_api.start",
+              message: "Start API",
+            })}
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3 items-stretch">
         <div className="space-y-2 flex flex-col">
-          <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
+          <SectionLabel className="shrink-0">
             {t({
               id: "settings.local_api.configuration",
               message: "Configuration",
             })}
-          </h2>
+          </SectionLabel>
 
           <div className="flex-1 rounded-lg bg-surface-surface p-2.5 space-y-6">
             <div className="px-2 py-1.5 flex gap-5">
@@ -423,12 +423,12 @@ const LocalApiTab = ({
         </div>
 
         <div className="space-y-2 flex flex-col">
-          <h2 className="ui-text-section-label-sm ui-color-muted shrink-0">
+          <SectionLabel className="shrink-0">
             {t({
               id: "settings.local_api.behavior",
               message: "Behavior",
             })}
-          </h2>
+          </SectionLabel>
 
           <div className="flex-1 rounded-lg bg-surface-surface p-2.5 space-y-6">
             <div className="px-2 py-1.5">
@@ -512,15 +512,15 @@ const LocalApiTab = ({
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center justify-between border-b border-border-primary pb-2">
-          <h2 className="ui-text-section-label-sm ui-color-disabled">
+        <div className="flex items-center gap-3">
+          <SectionLabel className="flex-1">
             {t({
               id: "settings.local_api.logs",
               message: "Logs",
             })}
-          </h2>
+          </SectionLabel>
           <div
-            className={`flex items-center gap-3 transition-opacity ${logs.length > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            className={`flex shrink-0 items-center gap-3 transition-opacity ${logs.length > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
           >
             <button
               className="ui-text-meta ui-color-muted hover:ui-color-primary transition-colors inline-flex items-center gap-1"
@@ -546,7 +546,7 @@ const LocalApiTab = ({
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
               </svg>
-              <span>
+              <span className="inline-block text-left min-w-[2.75rem]">
                 {logsCopied
                   ? t({
                       id: "settings.local_api.logs.copied",

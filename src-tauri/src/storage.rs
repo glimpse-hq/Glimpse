@@ -46,6 +46,17 @@ pub struct TranscriptionRecord {
     pub mode_name: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TodayDictationStats {
+    pub count: u32,
+    pub words: u32,
+    pub audio_seconds: f32,
+    pub longest_words: u32,
+    pub longest_audio_seconds: f32,
+    pub llm_cleaned_count: u32,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TranscriptionStatus {
@@ -336,6 +347,37 @@ impl StorageManager {
             .collect::<rusqlite::Result<Vec<_>>>()?;
 
         Ok(records)
+    }
+
+    pub fn get_today_dictation_stats(
+        &self,
+        start_ms: i64,
+        end_ms: i64,
+    ) -> Result<TodayDictationStats> {
+        let conn = self.connection.lock();
+        conn.query_row(
+            "SELECT
+                COUNT(*) AS count,
+                COALESCE(SUM(word_count), 0) AS words,
+                COALESCE(SUM(audio_duration_seconds), 0) AS audio_seconds,
+                COALESCE(MAX(word_count), 0) AS longest_words,
+                COALESCE(MAX(audio_duration_seconds), 0) AS longest_audio_seconds,
+                COALESCE(SUM(llm_cleaned), 0) AS llm_cleaned_count
+             FROM transcriptions
+             WHERE status = ?1 AND timestamp >= ?2 AND timestamp < ?3",
+            params![TranscriptionStatus::Success.as_str(), start_ms, end_ms],
+            |row| {
+                Ok(TodayDictationStats {
+                    count: row.get::<_, i64>("count")? as u32,
+                    words: row.get::<_, i64>("words")? as u32,
+                    audio_seconds: row.get::<_, f64>("audio_seconds")? as f32,
+                    longest_words: row.get::<_, i64>("longest_words")? as u32,
+                    longest_audio_seconds: row.get::<_, f64>("longest_audio_seconds")? as f32,
+                    llm_cleaned_count: row.get::<_, i64>("llm_cleaned_count")? as u32,
+                })
+            },
+        )
+        .map_err(Into::into)
     }
 
     pub fn get_recent_transcriptions(&self, limit: usize) -> Result<Vec<TranscriptionRecord>> {

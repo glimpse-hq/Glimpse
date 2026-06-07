@@ -9,8 +9,13 @@ import {
   type CSSProperties,
   type SetStateAction,
 } from "react";
-import { AlertTriangle, ArrowRight, Trash2 } from "lucide-react";
+import {
+  Warning as AlertTriangle,
+  ArrowRight,
+  Trash as Trash2,
+} from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import ScreenHeader from "../../../shared/ui/ScreenHeader";
 import {
   hasModelCapability,
   MODEL_CAPABILITY_DICTIONARY,
@@ -349,65 +354,60 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
 
   return (
     <div className="w-full min-w-0 max-w-7xl mx-auto px-0 text-left">
-      <div className="mb-6 mt-2 flex min-w-0 items-start gap-3 md:-mt-6">
-        <DotMatrix
-          rows={2}
-          cols={3}
-          activeDots={[0, 1, 2, 3]}
-          dotSize={3}
-          gap={3}
-          color="var(--color-section-marker)"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <p className="ui-text-screen-title ui-color-primary tracking-tight text-balance">
-              {t({
-                id: "dictionary.combined.title",
-                message: "Dictionary & Replacements",
-              })}
-            </p>
-            {showWarning && (
-              <span
-                className="group relative inline-flex shrink-0 items-center justify-center self-center translate-y-[3px]"
+      <ScreenHeader
+        className="mb-6 mt-2 md:-mt-6"
+        icon={
+          <DotMatrix
+            rows={2}
+            cols={3}
+            activeDots={[0, 1, 2, 3]}
+            dotSize={3}
+            gap={3}
+            color="var(--color-section-marker)"
+          />
+        }
+        title={t({
+          id: "dictionary.combined.title",
+          message: "Dictionary & Replacements",
+        })}
+        description={t({
+          id: "dictionary.combined.description",
+          message:
+            "Add custom words the system should recognize, and set automatic word replacements.",
+        })}
+        titleAdornment={
+          showWarning && (
+            <span className="group relative inline-flex shrink-0 items-center justify-center self-center translate-y-[3px]">
+              <button
+                type="button"
+                aria-describedby={warningTooltipId}
+                aria-label={t({
+                  id: "dictionary.warning_aria",
+                  message: "Warning: model compatibility issue",
+                })}
+                className="inline-flex items-center justify-center ui-color-warning opacity-90 hover:opacity-100 cursor-default outline-hidden"
               >
-                <button
-                  type="button"
-                  aria-describedby={warningTooltipId}
-                  aria-label={t({
-                    id: "dictionary.warning_aria",
-                    message: "Warning: model compatibility issue",
-                  })}
-                  className="inline-flex items-center justify-center ui-color-warning opacity-90 hover:opacity-100 cursor-default outline-hidden"
-                >
-                  <AlertTriangle size={18} aria-hidden="true" />
-                </button>
+                <AlertTriangle size={18} aria-hidden="true" />
+              </button>
+              <span
+                id={warningTooltipId}
+                role="tooltip"
+                className="pointer-events-none absolute left-1/2 top-full z-50 hidden w-80 -translate-x-1/2 pt-2 text-left font-sans tracking-normal group-hover:block group-focus-within:block"
+              >
                 <span
-                  id={warningTooltipId}
-                  role="tooltip"
-                  className="pointer-events-none absolute left-1/2 top-full z-50 hidden w-80 -translate-x-1/2 pt-2 text-left font-sans tracking-normal group-hover:block group-focus-within:block"
+                  className="block rounded-lg border bg-surface-overlay p-3 ui-color-warning shadow-xl leading-relaxed ui-text-body-sm shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+                  style={{ borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)" }}
                 >
-                  <span
-                    className="block rounded-lg border bg-surface-overlay p-3 ui-color-warning shadow-xl leading-relaxed ui-text-body-sm shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-                    style={{ borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)" }}
-                  >
-                    {t({
-                      id: "dictionary.warning",
-                      message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
-                    })}
-                  </span>
+                  {t({
+                    id: "dictionary.warning",
+                    message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
+                  })}
                 </span>
               </span>
-            )}
-          </div>
-          <p className="mt-1 ui-text-body-sm ui-color-secondary text-pretty">
-            {t({
-              id: "dictionary.combined.description",
-              message:
-                "Add custom words the system should recognize, and set automatic word replacements.",
-            })}
-          </p>
-        </div>
-      </div>
+            </span>
+          )
+        }
+      />
 
       <div className="grid w-full min-w-0 grid-cols-1 gap-0 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         {/* Dictionary Column */}

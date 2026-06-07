@@ -4,15 +4,16 @@ import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
 import {
   ArrowUpRight,
-  HelpCircle,
+  Question as HelpCircle,
   Info,
-  Loader2,
-  RotateCcw,
-  Terminal,
-} from "lucide-react";
+  CircleNotch as Loader2,
+  ArrowCounterClockwise as RotateCcw,
+  TerminalWindow as Terminal,
+} from "@phosphor-icons/react";
 
 const CLI_WIKI_URL = "https://github.com/LegendarySpy/Glimpse/wiki/CLI";
 import ActionCardButton from "../../../../shared/ui/ActionCardButton";
+import SectionLabel from "../../../../shared/ui/SectionLabel";
 import HoldActionCardButton from "../../../../shared/ui/HoldActionCardButton";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
 import type {
@@ -200,23 +201,23 @@ const AboutTab = ({
 
       <section className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <h2 className="ui-text-section-label-sm ui-color-muted">
+          <SectionLabel>
             {t({
               id: "settings.about.updates",
               message: "Updates",
             })}
-          </h2>
+          </SectionLabel>
           <UpdateChecker onOpenWhatsNew={onOpenWhatsNew} />
         </div>
       </section>
 
       <section className="space-y-2">
-        <h2 className="ui-text-section-label-sm ui-color-muted">
+        <SectionLabel>
           {t({
             id: "settings.about.storage",
             message: "Storage",
           })}
-        </h2>
+        </SectionLabel>
 
         <div className="rounded-lg bg-surface-surface p-2.5">
           <div className="grid grid-cols-5 gap-3 px-2 py-2">
@@ -251,12 +252,12 @@ const AboutTab = ({
       </section>
 
       <section className="space-y-2">
-        <h2 className="ui-text-section-label-sm ui-color-muted">
+        <SectionLabel>
           {t({
             id: "settings.about.setup",
             message: "Setup & help",
           })}
-        </h2>
+        </SectionLabel>
 
         <div className="grid grid-cols-2 gap-4">
           <HoldActionCardButton
@@ -295,12 +296,12 @@ const AboutTab = ({
       </section>
 
       <section className="space-y-2">
-        <h2 className="ui-text-section-label-sm ui-color-muted">
+        <SectionLabel>
           {t({
             id: "settings.about.advanced",
             message: "Advanced",
           })}
-        </h2>
+        </SectionLabel>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-lg bg-surface-surface p-2.5">

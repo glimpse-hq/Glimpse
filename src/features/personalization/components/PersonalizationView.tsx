@@ -2,10 +2,13 @@ import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
+import {
+  Plus,
+} from "@phosphor-icons/react";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import ScreenHeader from "../../../shared/ui/ScreenHeader";
 import type { Personality } from "../../../types";
 import * as personalizationApi from "../api";
 import {
@@ -306,53 +309,48 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
   return (
     <div className="w-full text-left max-w-7xl mx-auto px-0">
-      <div className="flex items-start gap-3 mb-6 mt-2 md:-mt-6">
-        <DotMatrix
-          rows={2}
-          cols={3}
-          activeDots={[0, 1, 4, 5]}
-          dotSize={3}
-          gap={3}
-          color="var(--color-section-marker-alt)"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="min-w-0">
-            <p className="ui-text-screen-title ui-color-primary tracking-tight">
-              {t({
-                id: "personalization.title",
-                message: "Personalization",
-              })}
-            </p>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <p className="min-w-0 ui-text-body-sm ui-color-secondary">
-                {t({
-                  id: "personalization.description",
-                  message: "Tailor language model behavior to apps, sites, and custom instructions.",
-                })}
-              </p>
-              <button
-                type="button"
-                onClick={handleAddMode}
-                aria-label={t({
-                  id: "personalization.new_mode",
-                  message: "New mode",
-                })}
-                className="group inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 ui-text-button ui-color-secondary transition-colors hover:border-border-hover hover:bg-surface-elevated hover:text-content-primary"
-              >
-                <Plus
-                  size={13}
-                  aria-hidden="true"
-                  className="text-content-muted transition-colors group-hover:text-content-primary"
-                />
-                {t({
-                  id: "personalization.new_mode",
-                  message: "New mode",
-                })}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ScreenHeader
+        className="mb-6 mt-2 md:-mt-6"
+        icon={
+          <DotMatrix
+            rows={2}
+            cols={3}
+            activeDots={[0, 1, 4, 5]}
+            dotSize={3}
+            gap={3}
+            color="var(--color-section-marker-alt)"
+          />
+        }
+        title={t({
+          id: "personalization.title",
+          message: "Personalization",
+        })}
+        description={t({
+          id: "personalization.description",
+          message: "Tailor language model behavior to apps, sites, and custom instructions.",
+        })}
+        trailing={
+          <button
+            type="button"
+            onClick={handleAddMode}
+            aria-label={t({
+              id: "personalization.new_mode",
+              message: "New mode",
+            })}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--color-accent-20)] bg-[var(--color-accent-10)] px-3 py-1.5 ui-text-button text-[var(--color-accent)] transition-colors hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-20)]"
+          >
+            <Plus
+              size={13}
+              aria-hidden="true"
+              className="text-[var(--color-accent)]"
+            />
+            {t({
+              id: "personalization.new_mode",
+              message: "New mode",
+            })}
+          </button>
+        }
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-12">

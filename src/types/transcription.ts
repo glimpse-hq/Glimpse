@@ -16,3 +16,12 @@ export type TranscriptionRecord = {
     mode_id?: string | null;
     mode_name?: string | null;
 };
+
+export type TodayDictationStats = {
+  count: number;
+  words: number;
+  audioSeconds: number;
+  longestWords: number;
+  longestAudioSeconds: number;
+  llmCleanedCount: number;
+};
