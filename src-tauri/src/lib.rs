@@ -1138,15 +1138,21 @@ fn reveal_license_key(state: tauri::State<AppState>) -> Result<String, String> {
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
     total_words: u64,
+    total_duration_ms: u64,
+    total_dictations: u64,
 }
 
 #[tauri::command]
 fn get_dictation_stats(state: tauri::State<AppState>) -> Result<DictationStats, String> {
-    let total_words = state
+    let stats = state
         .storage()
-        .total_word_count()
+        .lifetime_stats()
         .map_err(|err| err.to_string())?;
-    Ok(DictationStats { total_words })
+    Ok(DictationStats {
+        total_words: stats.words,
+        total_duration_ms: stats.duration_ms,
+        total_dictations: stats.dictations,
+    })
 }
 
 #[derive(Serialize)]

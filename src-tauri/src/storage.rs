@@ -57,6 +57,13 @@ pub struct TodayDictationStats {
     pub llm_cleaned_count: u32,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct LifetimeStats {
+    pub words: u64,
+    pub duration_ms: u64,
+    pub dictations: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TranscriptionStatus {
@@ -170,6 +177,9 @@ impl StorageManager {
 
         let conn = self.connection.lock();
         Self::insert_record(&conn, &record)?;
+        if matches!(record.status, TranscriptionStatus::Success) {
+            Self::record_dictation(&conn, record.word_count, record.audio_duration_seconds)?;
+        }
         Ok(record)
     }
 
@@ -203,6 +213,7 @@ impl StorageManager {
 
         let conn = self.connection.lock();
         Self::insert_record(&conn, &record)?;
+        Self::record_dictation(&conn, record.word_count, record.audio_duration_seconds)?;
         Ok(record)
     }
 
@@ -405,14 +416,35 @@ impl StorageManager {
         Ok(records)
     }
 
-    pub fn total_word_count(&self) -> Result<u64> {
+    pub fn lifetime_stats(&self) -> Result<LifetimeStats> {
         let conn = self.connection.lock();
-        let value: Option<i64> = conn.query_row(
-            "SELECT COALESCE(SUM(word_count), 0) FROM transcriptions WHERE status = 'success'",
-            [],
-            |row| row.get(0),
+        let stats = conn
+            .query_row(
+                "SELECT words, duration_ms, dictations FROM lifetime_stats WHERE id = 1",
+                [],
+                |row| {
+                    Ok(LifetimeStats {
+                        words: row.get::<_, i64>(0)?.max(0) as u64,
+                        duration_ms: row.get::<_, i64>(1)?.max(0) as u64,
+                        dictations: row.get::<_, i64>(2)?.max(0) as u64,
+                    })
+                },
+            )
+            .optional()?;
+        Ok(stats.unwrap_or_default())
+    }
+
+    fn record_dictation(conn: &Connection, word_count: u32, audio_duration_seconds: f32) -> Result<()> {
+        let duration_ms = (audio_duration_seconds.max(0.0) * 1000.0).round() as i64;
+        conn.execute(
+            "UPDATE lifetime_stats
+                SET words = words + ?1,
+                    duration_ms = duration_ms + ?2,
+                    dictations = dictations + 1
+                WHERE id = 1",
+            params![word_count as i64, duration_ms],
         )?;
-        Ok(value.unwrap_or(0).max(0) as u64)
+        Ok(())
     }
 
     pub fn delete(&self, id: &str) -> Result<Option<String>> {
@@ -699,7 +731,14 @@ impl StorageManager {
                 show_timestamps INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS idx_library_items_created_at ON library_items(created_at DESC);
-            CREATE INDEX IF NOT EXISTS idx_library_items_status ON library_items(status);",
+            CREATE INDEX IF NOT EXISTS idx_library_items_status ON library_items(status);
+
+            CREATE TABLE IF NOT EXISTS lifetime_stats (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                words INTEGER NOT NULL DEFAULT 0,
+                duration_ms INTEGER NOT NULL DEFAULT 0,
+                dictations INTEGER NOT NULL DEFAULT 0
+            );",
         )?;
 
         Self::ensure_column(
@@ -768,6 +807,25 @@ impl StorageManager {
             "words",
             "ALTER TABLE library_items ADD COLUMN words TEXT",
         )?;
+
+        let stats_seeded: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM lifetime_stats WHERE id = 1)",
+            [],
+            |row| row.get(0),
+        )?;
+        if !stats_seeded {
+            conn.execute(
+                "INSERT INTO lifetime_stats (id, words, duration_ms, dictations)
+                 SELECT 1,
+                        COALESCE(SUM(word_count), 0),
+                        COALESCE(SUM(CAST(ROUND(audio_duration_seconds * 1000) AS INTEGER)), 0),
+                        COUNT(*)
+                 FROM transcriptions
+                 WHERE status = 'success'",
+                [],
+            )?;
+        }
+
         Ok(())
     }
 

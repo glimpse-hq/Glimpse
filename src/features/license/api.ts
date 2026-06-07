@@ -26,6 +26,8 @@ export async function revealLicenseKey(): Promise<string> {
 
 export type DictationStats = {
   totalWords: number;
+  totalDurationMs: number;
+  totalDictations: number;
 };
 
 export async function getDictationStats(): Promise<DictationStats> {

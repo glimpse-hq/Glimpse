@@ -5,6 +5,7 @@
 - New model browser for choosing local models: search by name, filter by category, and see each model's size and supported languages at a glance. Quantization options (Q5, Q8, Full) are grouped under each model so switching between them is simpler.
 
 ### Improvements
+- Words spoken on your account card is now a running lifetime total, it counts everything you've dictated and is no longer based on the current amount of transcripts.
 - Model downloads are now verified after they finish, so an interrupted or corrupted download won't leave you with a broken model.
 - The transcription language list now clearly separates the languages your current model supports from the ones that need a different model.
 - Auto Dictionary now works with online transcription providers, not just local models.
