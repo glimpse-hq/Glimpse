@@ -186,7 +186,7 @@ export function LicenseStep({
         <CustomerPortalLink source="onboarding" />
       </div>
 
-      <p className="mt-6 whitespace-nowrap ui-text-micro text-content-disabled">
+      <p className="mt-6 ui-text-micro text-content-disabled">
         {t({
           id: "onboarding.license.analytics_notice",
           message:

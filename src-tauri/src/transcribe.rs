@@ -695,7 +695,17 @@ async fn process_transcript_text(
             && settings.auto_dictionary_enabled
             && selected_model_supports_dictionary;
         let transcript_to_paste = final_transcript.clone();
+        let token_for_paste = cancel_token.cloned();
+        let app_for_paste = app.clone();
         let paste_result = async_runtime::spawn_blocking(move || {
+            let cancelled = token_for_paste
+                .as_ref()
+                .map(|token| token.is_cancelled())
+                .unwrap_or(false)
+                || app_for_paste.state::<AppState>().is_cancelled();
+            if cancelled {
+                return None;
+            }
             let pre_paste_snapshot = can_read_field
                 .then(assistive::focused_text_snapshot)
                 .flatten();
@@ -706,11 +716,12 @@ async fn process_transcript_text(
                 })
                 .unwrap_or(transcript_to_paste);
             let result = assistive::paste_text(&text);
-            (result, pre_paste_snapshot, text)
+            Some((result, pre_paste_snapshot, text))
         })
         .await;
         match paste_result {
-            Ok((Ok(()), pre_paste_snapshot, pasted_text)) => {
+            Ok(None) => return ProcessTranscriptOutcome::Cancelled,
+            Ok(Some((Ok(()), pre_paste_snapshot, pasted_text))) => {
                 pasted = true;
                 if let (true, Some(pre_paste_snapshot)) =
                     (should_watch_auto_dictionary, pre_paste_snapshot)
@@ -724,7 +735,9 @@ async fn process_transcript_text(
                     );
                 }
             }
-            Ok((Err(err), _, _)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
+            Ok(Some((Err(err), _, _))) => {
+                emit_auto_paste_error(app, format!("Auto paste failed: {err}"))
+            }
             Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
         }
     }

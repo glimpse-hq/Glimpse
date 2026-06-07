@@ -296,13 +296,15 @@ impl StorageManager {
         metadata: TranscriptionMetadata,
     ) -> Result<Option<TranscriptionRecord>> {
         let conn = self.connection.lock();
-        let existing = Self::get_record(&conn, id)?;
-        if existing.is_none() {
+        let Some(existing) = Self::get_record(&conn, id)? else {
             return Ok(None);
-        }
+        };
+        let was_success = matches!(existing.status, TranscriptionStatus::Success);
+        let new_word_count = metadata.word_count;
+        let new_duration = metadata.audio_duration_seconds;
 
         conn.execute(
-            "UPDATE transcriptions SET 
+            "UPDATE transcriptions SET
                 text = ?1,
                 raw_text = ?2,
                 status = ?3,
@@ -332,6 +334,10 @@ impl StorageManager {
                 id,
             ],
         )?;
+
+        if !was_success && matches!(status, TranscriptionStatus::Success) {
+            Self::record_dictation(&conn, new_word_count, new_duration)?;
+        }
 
         Self::get_record(&conn, id)
     }

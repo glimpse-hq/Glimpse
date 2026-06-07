@@ -128,6 +128,7 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 
 **Bundled speech models** (downloaded in-app from Hugging Face):
 
-- Whisper GGML (MIT): `ggml-large-v3-turbo-q8_0.bin`, `ggml-small-q5_1.bin` via [`ggerganov/whisper.cpp`](https://huggingface.co/ggerganov/whisper.cpp)
+- Whisper GGML (MIT): Tiny, Base, Small, Medium, Large V3, and Large V3 Turbo, in multiple quantizations (full, Q8_0, Q5), via [`ggerganov/whisper.cpp`](https://huggingface.co/ggerganov/whisper.cpp)
+- Distil-Whisper GGML (MIT, English-only): Small, Medium, and Large V3.5 (Q8_0), via [Pomni's allquants conversions](https://huggingface.co/Pomni) of [`distil-whisper`](https://huggingface.co/distil-whisper)
 - Parakeet TDT 0.6B v3 ONNX (CC-BY-4.0, all builds except Intel macOS): Int8 variant via [`istupakov/parakeet-tdt-0.6b-v3-onnx`](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx)
-- Nemotron Streaming 0.6B Int8 (PolyForm Shield 1.0.0, all builds except Intel macOS): via [`lokkju/nemotron-speech-streaming-en-0.6b-int8`](https://huggingface.co/lokkju/nemotron-speech-streaming-en-0.6b-int8), with `encoder.onnx.data` from [`altunenes/parakeet-rs`](https://huggingface.co/altunenes/parakeet-rs)
+- Nemotron Streaming 0.6B ONNX (NVIDIA Open Model License, all builds except Intel macOS): English and multilingual 3.5 variants, via [`altunenes/parakeet-rs`](https://huggingface.co/altunenes/parakeet-rs)

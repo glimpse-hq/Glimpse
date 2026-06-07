@@ -290,10 +290,13 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             : event && "message" in event
               ? event.message
               : undefined;
+        const verifyingOf = (event: DownloadEvent | undefined) =>
+          event && "verifying" in event ? event.verifying : undefined;
         if (
           current?.status === status.status &&
           current?.percent === status.percent &&
-          detail(current) === detail(status)
+          detail(current) === detail(status) &&
+          verifyingOf(current) === verifyingOf(status)
         ) {
           return prev;
         }
@@ -325,6 +328,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       });
     },
     onCancelled: ({ model }) => {
+      updateDownloadStatus(model, { status: "cancelled", percent: 0 });
       void refreshModelStatus(queryClient, model);
     },
   });
@@ -510,7 +514,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           remoteSpeechApiKey: latestSettings.remote_speech_api_key ?? "",
           remoteSpeechModel: latestSettings.remote_speech_model ?? "",
           microphoneDevice: latestSettings.microphone_device ?? null,
-          language: latestSettings.language ?? "en",
+          language:
+            ctx.languagePreference === "english"
+              ? "en"
+              : ctx.languagePreference === "multilingual"
+                ? ""
+                : (latestSettings.language ?? "en"),
           appLocale: latestSettings.app_locale ?? "system",
           themeMode: latestSettings.theme_mode ?? "system",
           llmEnabled: false,

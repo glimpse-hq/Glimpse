@@ -313,7 +313,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_1",
-        files: whisper_files!("ggml-tiny-q5_1.bin", 32_152_673, None),
+        files: whisper_files!(
+            "ggml-tiny-q5_1.bin",
+            32_152_673,
+            Some("818710568da3ca15689e31a743197b520007872ff9576237bda97bd1b469c3d7")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -325,7 +329,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
-        files: whisper_files!("ggml-tiny-q8_0.bin", 43_537_433, None),
+        files: whisper_files!(
+            "ggml-tiny-q8_0.bin",
+            43_537_433,
+            Some("c2085835d3f50733e2ff6e4b41ae8a2b8d8110461e18821b09a15c40c42d1cca")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -337,7 +345,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
-        files: whisper_files!("ggml-tiny.bin", 77_691_713, None),
+        files: whisper_files!(
+            "ggml-tiny.bin",
+            77_691_713,
+            Some("be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -349,7 +361,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_1",
-        files: whisper_files!("ggml-base-q5_1.bin", 59_707_625, None),
+        files: whisper_files!(
+            "ggml-base-q5_1.bin",
+            59_707_625,
+            Some("422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -361,7 +377,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
-        files: whisper_files!("ggml-base-q8_0.bin", 81_768_585, None),
+        files: whisper_files!(
+            "ggml-base-q8_0.bin",
+            81_768_585,
+            Some("c577b9a86e7e048a0b7eada054f4dd79a56bbfa911fbdacf900ac5b567cbb7d9")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -373,7 +393,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
-        files: whisper_files!("ggml-base.bin", 147_951_465, None),
+        files: whisper_files!(
+            "ggml-base.bin",
+            147_951_465,
+            Some("60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -385,7 +409,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
-        files: whisper_files!("ggml-small-q8_0.bin", 264_464_607, None),
+        files: whisper_files!(
+            "ggml-small-q8_0.bin",
+            264_464_607,
+            Some("49c8fb02b65e6049d5fa6c04f81f53b867b5ec9540406812c643f177317f779f")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -397,7 +425,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
-        files: whisper_files!("ggml-small.bin", 487_601_967, None),
+        files: whisper_files!(
+            "ggml-small.bin",
+            487_601_967,
+            Some("1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -409,7 +441,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_0",
-        files: whisper_files!("ggml-medium-q5_0.bin", 539_212_467, None),
+        files: whisper_files!(
+            "ggml-medium-q5_0.bin",
+            539_212_467,
+            Some("19fea4b380c3a618ec4723c3eef2eb785ffba0d0538cf43f8f235e7b3b34220f")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -421,7 +457,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
-        files: whisper_files!("ggml-medium-q8_0.bin", 823_369_779, None),
+        files: whisper_files!(
+            "ggml-medium-q8_0.bin",
+            823_369_779,
+            Some("42a1ffcbe4167d224232443396968db4d02d4e8e87e213d3ee2e03095dea6502")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -433,7 +473,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
-        files: whisper_files!("ggml-medium.bin", 1_533_763_059, None),
+        files: whisper_files!(
+            "ggml-medium.bin",
+            1_533_763_059,
+            Some("6c14d5adee5f86394037b4e4e8b59f1673b6cee10e3cf0b11bbdbee79c156208")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -445,7 +489,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_0",
-        files: whisper_files!("ggml-large-v3-q5_0.bin", 1_081_140_203, None),
+        files: whisper_files!(
+            "ggml-large-v3-q5_0.bin",
+            1_081_140_203,
+            Some("d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -457,7 +505,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
-        files: whisper_files!("ggml-large-v3.bin", 3_095_033_483, None),
+        files: whisper_files!(
+            "ggml-large-v3.bin",
+            3_095_033_483,
+            Some("64d182b440b98d5203c4f9bd541544d84c605196c4f7b845dfa11fb23594d1e2")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -469,7 +521,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_0",
-        files: whisper_files!("ggml-large-v3-turbo-q5_0.bin", 574_041_195, None),
+        files: whisper_files!(
+            "ggml-large-v3-turbo-q5_0.bin",
+            574_041_195,
+            Some("394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
     LocalModelManifest {
@@ -481,7 +537,11 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
-        files: whisper_files!("ggml-large-v3-turbo.bin", 1_624_555_275, None),
+        files: whisper_files!(
+            "ggml-large-v3-turbo.bin",
+            1_624_555_275,
+            Some("1fc70f774d38eb169993ac391eea357ef47c88757ef72ee5943879b7e8e2bc69")
+        ),
         capabilities: WHISPER_CAPABILITIES,
     },
 ];

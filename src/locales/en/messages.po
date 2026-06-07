@@ -817,6 +817,11 @@ msgid "settings.general.account_tab"
 msgstr "Account"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.balanced.helper"
+msgstr "Accuracy & size"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.submit"
 msgstr "Activate"
@@ -1101,9 +1106,19 @@ msgid "pill.background_visualizer"
 msgstr "Background audio visualizer"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.balanced"
+msgstr "Balanced"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.behavior"
 msgstr "Behavior"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.quality"
+msgstr "Best quality"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
@@ -1236,9 +1251,19 @@ msgid "transcription.language.unsupported_description"
 msgstr "Choose a compatible model to enable these."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.language.placeholder"
+msgstr "choose a language"
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.title"
 msgstr "Choose a model"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.placeholder"
+msgstr "choose a priority"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
@@ -1946,6 +1971,11 @@ msgid "onboarding.accessibility.subtitle"
 msgstr "Enables auto-paste into any application."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.language.english"
+msgstr "English"
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.english"
 msgstr "English"
@@ -2415,6 +2445,11 @@ msgid "model_picker.category.legacy"
 msgstr "Legacy"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.compact.helper"
+msgstr "Less storage"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.library"
 msgstr "Library"
@@ -2675,6 +2710,11 @@ msgid "transcriptions.item.more_options"
 msgstr "More options"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.quality.helper"
+msgstr "Most accurate"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.subtitle"
 msgstr "MP3, WAV, M4A, MP4, MOV, and more"
@@ -2688,6 +2728,11 @@ msgstr "Multilingual"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.multilingual"
 msgstr "Multilingual"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.language.multilingual"
+msgstr "Multiple languages"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3744,6 +3789,11 @@ msgstr "Skip for now"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.text_size.small"
 msgstr "Small"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.compact"
+msgstr "Smallest"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

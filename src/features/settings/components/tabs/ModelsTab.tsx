@@ -114,7 +114,7 @@ const InstalledModelRow = ({
           className={`flex h-6 w-6 items-center justify-center rounded-md transition-all hover:bg-error/10 hover:text-error ${
             shiftHeld
               ? "text-error opacity-100"
-              : "text-content-disabled opacity-0 group-hover:opacity-100"
+              : "text-content-disabled opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:text-error"
           }`}
           title={t({ id: "settings.models.installed.delete", message: "Delete" })}
           aria-label={t({
@@ -210,7 +210,7 @@ const ModelsTab = ({
                 <p className="ui-text-label ui-color-warning-subtle">
                   {t({
                     id: "settings.models.cloud_active",
-                    message: `Glimpse is using ${{ provider: providerName }} to transcribe. Your active local model will be used as a fallback.`,
+                    message: `Glimpse is using ${providerName} to transcribe. Your active local model will be used as a fallback.`,
                   })}
                 </p>
               </div>

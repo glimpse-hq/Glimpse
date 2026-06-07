@@ -585,11 +585,14 @@ export function useSettingsForm({
         remoteSpeechEndpoint,
       );
       const persistedLlmEndpoint = resolvedLlmEndpoint(llmProvider, llmEndpoint);
+      const modelToValidate = overrides.localModel
+        ? modelCatalog.find((model) => model.key === overrides.localModel)
+        : activeLocalModel;
       const persistedLanguage =
         overrides.language ??
         (!remoteSpeechActive &&
-        activeLocalModel &&
-        !languageSupportedByModel(activeLocalModel, language)
+        modelToValidate &&
+        !languageSupportedByModel(modelToValidate, language)
           ? ""
           : language);
 
@@ -1060,6 +1063,10 @@ export function useSettingsForm({
       }));
     },
     onCancelled: ({ model }) => {
+      setDownloadState((prev) => ({
+        ...prev,
+        [model]: { status: "cancelled", percent: 0 },
+      }));
       invalidateModelStatus(model);
     },
   });
@@ -1245,14 +1252,21 @@ export function useSettingsForm({
     (modelKey: string) => {
       clearPendingSettingsSave();
       const nextModel = modelCatalog.find((model) => model.key === modelKey);
-      const nextLanguage = languageSupportedByModel(nextModel, language)
-        ? language
-        : "";
+      const nextLanguage =
+        remoteSpeechActive || languageSupportedByModel(nextModel, language)
+          ? language
+          : "";
       setLocalModel(modelKey);
       setLanguage(nextLanguage);
       void saveSettingsNow({ localModel: modelKey, language: nextLanguage });
     },
-    [clearPendingSettingsSave, language, modelCatalog, saveSettingsNow],
+    [
+      clearPendingSettingsSave,
+      language,
+      modelCatalog,
+      remoteSpeechActive,
+      saveSettingsNow,
+    ],
   );
 
   const fetchAvailableModels = useCallback(async () => {
@@ -1342,10 +1356,17 @@ export function useSettingsForm({
         );
         const settingsUpdates: SaveSettingsOverrides = {};
 
-        if (localModel === modelKey) {
-          if (otherInstalledModel) {
-            settingsUpdates.localModel = otherInstalledModel.key;
-            setLocalModel(otherInstalledModel.key);
+        if (localModel === modelKey && otherInstalledModel) {
+          settingsUpdates.localModel = otherInstalledModel.key;
+          setLocalModel(otherInstalledModel.key);
+          const nextLanguage =
+            remoteSpeechActive ||
+            languageSupportedByModel(otherInstalledModel, language)
+              ? language
+              : "";
+          if (nextLanguage !== language) {
+            settingsUpdates.language = nextLanguage;
+            setLanguage(nextLanguage);
           }
         }
 
@@ -1376,10 +1397,12 @@ export function useSettingsForm({
     [
       clearPendingSettingsSave,
       invalidateModelStatus,
+      language,
       localApiModel,
       localModel,
       modelCatalog,
       modelStatus,
+      remoteSpeechActive,
       saveSettingsNow,
     ],
   );

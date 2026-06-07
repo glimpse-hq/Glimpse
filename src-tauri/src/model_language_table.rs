@@ -36,7 +36,7 @@ const LANGUAGE_NAMES: &[(&str, &str)] = &[
     ("da", "Danish"),
     ("hu", "Hungarian"),
     ("ta", "Tamil"),
-    ("nb", "Norwegian Bokmal"),
+    ("nb", "Norwegian Bokmål"),
     ("no", "Norwegian"),
     ("th", "Thai"),
     ("ur", "Urdu"),

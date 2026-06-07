@@ -342,6 +342,9 @@ export default function ModelPickerModal({
           onClick={onClose}
         >
           <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="model-picker-title"
             initial={{ scale: 0.97, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.97, opacity: 0 }}
@@ -350,7 +353,10 @@ export default function ModelPickerModal({
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pt-4">
-              <h2 className="ui-text-body-lg font-semibold text-content-primary">
+              <h2
+                id="model-picker-title"
+                className="ui-text-body-lg font-semibold text-content-primary"
+              >
                 {title ??
                   t({ id: "model_picker.title", message: "Choose a model" })}
               </h2>

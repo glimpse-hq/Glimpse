@@ -46,45 +46,6 @@ interface SetupStepProps {
   onNext: () => void;
 }
 
-const languageOptions: Array<{
-  value: OnboardingLanguagePreference;
-  label: string;
-}> = [
-  { value: "english", label: "English" },
-  { value: "multilingual", label: "Multiple languages" },
-];
-
-const priorityOptions: Array<{
-  value: OnboardingModelPriority;
-  label: string;
-  helper: string;
-}> = [
-  {
-    value: "quality",
-    label: "Best quality",
-    helper: "Most accurate",
-  },
-  {
-    value: "balanced",
-    label: "Balanced",
-    helper: "Accuracy & size",
-  },
-  {
-    value: "compact",
-    label: "Smallest",
-    helper: "Less storage",
-  },
-];
-
-const preferenceLabel = (
-  options: typeof languageOptions,
-  value: OnboardingLanguagePreference | null,
-) => options.find((option) => option.value === value)?.label ?? "choose a language";
-
-const priorityLabel = (value: OnboardingModelPriority | null) =>
-  priorityOptions.find((option) => option.value === value)?.label ??
-  "choose a priority";
-
 export function SetupStep({
   stepMotionProps,
   languagePreference,
@@ -120,6 +81,44 @@ export function SetupStep({
     languagePreference ? (modelPriority ? "review" : "priority") : "language",
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const languageOptions: Array<{
+    value: OnboardingLanguagePreference;
+    label: string;
+  }> = [
+    {
+      value: "english",
+      label: t({ id: "onboarding.setup.language.english", message: "English" }),
+    },
+    {
+      value: "multilingual",
+      label: t({
+        id: "onboarding.setup.language.multilingual",
+        message: "Multiple languages",
+      }),
+    },
+  ];
+  const priorityOptions: Array<{
+    value: OnboardingModelPriority;
+    label: string;
+    helper: string;
+  }> = [
+    {
+      value: "quality",
+      label: t({ id: "onboarding.setup.priority.quality", message: "Best quality" }),
+      helper: t({ id: "onboarding.setup.priority.quality.helper", message: "Most accurate" }),
+    },
+    {
+      value: "balanced",
+      label: t({ id: "onboarding.setup.priority.balanced", message: "Balanced" }),
+      helper: t({ id: "onboarding.setup.priority.balanced.helper", message: "Accuracy & size" }),
+    },
+    {
+      value: "compact",
+      label: t({ id: "onboarding.setup.priority.compact", message: "Smallest" }),
+      helper: t({ id: "onboarding.setup.priority.compact.helper", message: "Less storage" }),
+    },
+  ];
 
   const finalizeCapture = useCallback(async () => {
     await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
@@ -240,11 +239,23 @@ export function SetupStep({
               <div className="flex w-full flex-col items-center gap-4">
                 <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 ui-text-meta text-content-muted">
                   <EditLink onClick={() => setStep("language")}>
-                    {preferenceLabel(languageOptions, languagePreference)}
+                    {languageOptions.find(
+                      (option) => option.value === languagePreference,
+                    )?.label ??
+                      t({
+                        id: "onboarding.setup.language.placeholder",
+                        message: "choose a language",
+                      })}
                   </EditLink>
                   <span aria-hidden="true">·</span>
                   <EditLink onClick={() => setStep("priority")}>
-                    {priorityLabel(modelPriority)}
+                    {priorityOptions.find(
+                      (option) => option.value === modelPriority,
+                    )?.label ??
+                      t({
+                        id: "onboarding.setup.priority.placeholder",
+                        message: "choose a priority",
+                      })}
                   </EditLink>
                 </div>
 
