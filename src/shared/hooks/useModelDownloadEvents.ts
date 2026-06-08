@@ -7,6 +7,7 @@ type UseModelDownloadEventsOptions = {
   onProgress?: (payload: DownloadProgressPayload) => void;
   onComplete?: (payload: { model: string }) => void;
   onError?: (payload: { model: string; error: string }) => void;
+  onCancelled?: (payload: { model: string }) => void;
 };
 
 export function useModelDownloadEvents({
@@ -14,6 +15,7 @@ export function useModelDownloadEvents({
   onProgress,
   onComplete,
   onError,
+  onCancelled,
 }: UseModelDownloadEventsOptions) {
   const handleProgress = useEffectEvent((payload: DownloadProgressPayload) => {
     onProgress?.(payload);
@@ -23,6 +25,9 @@ export function useModelDownloadEvents({
   });
   const handleError = useEffectEvent((payload: { model: string; error: string }) => {
     onError?.(payload);
+  });
+  const handleCancelled = useEffectEvent((payload: { model: string }) => {
+    onCancelled?.(payload);
   });
 
   useEffect(() => {
@@ -56,6 +61,9 @@ export function useModelDownloadEvents({
     }
     if (onError) {
       register<{ model: string; error: string }>("download:error", handleError);
+    }
+    if (onCancelled) {
+      register<{ model: string }>("download:cancelled", handleCancelled);
     }
 
     return () => {

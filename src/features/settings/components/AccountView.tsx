@@ -1,5 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
-import { Loader2, LogOut, ArrowRight } from "lucide-react";
+import {
+  CircleNotch as Loader2,
+  SignOut as LogOut,
+  ArrowRight,
+} from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";

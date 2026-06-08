@@ -94,6 +94,7 @@ struct ProcessTranscriptInput<'a> {
     active_mode: Option<&'a Personality>,
     auto_paste: bool,
     log_context: Option<&'a str>,
+    cancel_token: Option<&'a CancellationToken>,
 }
 
 struct CompletionInput {
@@ -115,12 +116,12 @@ pub(crate) fn queue_transcription(
     recording: CompletedRecording,
     settings: UserSettings,
     temporary: bool,
+    cancel_token: CancellationToken,
 ) {
     let state = app.state::<AppState>();
     state.set_pending_path(Some(saved.path.clone()));
 
     let pending_selected_text = state.take_pending_selected_text();
-    let cancel_token = state.create_transcription_token();
 
     let http = state.http();
     let app_handle = app.clone();
@@ -128,7 +129,8 @@ pub(crate) fn queue_transcription(
     let recording_for_task = recording.clone();
 
     async_runtime::spawn(async move {
-        let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
+        let cancel_for_check = cancel_token.clone();
+        let is_cancelled = move || cancel_for_check.is_cancelled();
 
         let auto_paste = transcription_api::auto_paste_enabled();
 
@@ -219,6 +221,7 @@ pub(crate) fn queue_transcription(
                         active_mode: active_mode.as_ref(),
                         auto_paste,
                         log_context: None,
+                        cancel_token: Some(&cancel_token),
                     },
                 )
                 .await
@@ -528,6 +531,7 @@ async fn transcribe_recovered_recording(
             active_mode: active_mode.as_ref(),
             auto_paste: false,
             log_context: Some("recovery"),
+            cancel_token: None,
         },
     )
     .await
@@ -610,6 +614,7 @@ async fn process_transcript_text(
         active_mode,
         auto_paste,
         log_context,
+        cancel_token,
     } = input;
 
     let is_edit_mode = pending_selected_text.is_some();
@@ -675,19 +680,32 @@ async fn process_transcript_text(
         return ProcessTranscriptOutcome::Empty;
     }
 
-    if app.state::<AppState>().is_cancelled() {
+    let token_cancelled = cancel_token.map(|t| t.is_cancelled()).unwrap_or(false);
+    if token_cancelled || app.state::<AppState>().is_cancelled() {
         return ProcessTranscriptOutcome::Cancelled;
     }
 
     let mut pasted = false;
     if auto_paste && !final_transcript.trim().is_empty() {
         let can_read_field = !is_edit_mode && cfg!(any(target_os = "macos", target_os = "windows"));
+        let selected_model = speech::selected_model(settings);
+        let selected_model_supports_dictionary = remote_speech::is_remote_model(&selected_model)
+            || model_supports_capability(&selected_model, MODEL_CAPABILITY_DICTIONARY);
         let should_watch_auto_dictionary = can_read_field
-            && !remote_speech::is_configured(settings)
             && settings.auto_dictionary_enabled
-            && model_supports_capability(&settings.local_model, MODEL_CAPABILITY_DICTIONARY);
+            && selected_model_supports_dictionary;
         let transcript_to_paste = final_transcript.clone();
+        let token_for_paste = cancel_token.cloned();
+        let app_for_paste = app.clone();
         let paste_result = async_runtime::spawn_blocking(move || {
+            let cancelled = token_for_paste
+                .as_ref()
+                .map(|token| token.is_cancelled())
+                .unwrap_or(false)
+                || app_for_paste.state::<AppState>().is_cancelled();
+            if cancelled {
+                return None;
+            }
             let pre_paste_snapshot = can_read_field
                 .then(assistive::focused_text_snapshot)
                 .flatten();
@@ -698,11 +716,12 @@ async fn process_transcript_text(
                 })
                 .unwrap_or(transcript_to_paste);
             let result = assistive::paste_text(&text);
-            (result, pre_paste_snapshot, text)
+            Some((result, pre_paste_snapshot, text))
         })
         .await;
         match paste_result {
-            Ok((Ok(()), pre_paste_snapshot, pasted_text)) => {
+            Ok(None) => return ProcessTranscriptOutcome::Cancelled,
+            Ok(Some((Ok(()), pre_paste_snapshot, pasted_text))) => {
                 pasted = true;
                 if let (true, Some(pre_paste_snapshot)) =
                     (should_watch_auto_dictionary, pre_paste_snapshot)
@@ -716,7 +735,9 @@ async fn process_transcript_text(
                     );
                 }
             }
-            Ok((Err(err), _, _)) => emit_auto_paste_error(app, format!("Auto paste failed: {err}")),
+            Ok(Some((Err(err), _, _))) => {
+                emit_auto_paste_error(app, format!("Auto paste failed: {err}"))
+            }
             Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
         }
     }
@@ -1668,6 +1689,7 @@ pub(crate) fn finalize_streaming_transcription(
     audio_path: PathBuf,
     settings: UserSettings,
     temporary: bool,
+    cancel_token: CancellationToken,
 ) {
     let state = app.state::<AppState>();
     let pending_selected_text = state.take_pending_selected_text();
@@ -1675,7 +1697,8 @@ pub(crate) fn finalize_streaming_transcription(
     let app_handle = app.clone();
 
     tauri::async_runtime::spawn(async move {
-        let is_cancelled = || app_handle.state::<AppState>().is_cancelled();
+        let cancel_for_check = cancel_token.clone();
+        let is_cancelled = move || cancel_for_check.is_cancelled();
         let auto_paste = transcription_api::auto_paste_enabled();
         let active_mode = mode_context::resolve_active_personality(&settings);
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
@@ -1706,6 +1729,7 @@ pub(crate) fn finalize_streaming_transcription(
                 active_mode: active_mode.as_ref(),
                 auto_paste,
                 log_context: Some("streaming"),
+                cancel_token: Some(&cancel_token),
             },
         )
         .await

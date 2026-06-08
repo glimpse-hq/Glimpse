@@ -46,6 +46,24 @@ pub struct TranscriptionRecord {
     pub mode_name: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TodayDictationStats {
+    pub count: u32,
+    pub words: u32,
+    pub audio_seconds: f32,
+    pub longest_words: u32,
+    pub longest_audio_seconds: f32,
+    pub llm_cleaned_count: u32,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct LifetimeStats {
+    pub words: u64,
+    pub duration_ms: u64,
+    pub dictations: u64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum TranscriptionStatus {
@@ -159,6 +177,9 @@ impl StorageManager {
 
         let conn = self.connection.lock();
         Self::insert_record(&conn, &record)?;
+        if matches!(record.status, TranscriptionStatus::Success) {
+            Self::record_dictation(&conn, record.word_count, record.audio_duration_seconds)?;
+        }
         Ok(record)
     }
 
@@ -192,6 +213,7 @@ impl StorageManager {
 
         let conn = self.connection.lock();
         Self::insert_record(&conn, &record)?;
+        Self::record_dictation(&conn, record.word_count, record.audio_duration_seconds)?;
         Ok(record)
     }
 
@@ -274,13 +296,15 @@ impl StorageManager {
         metadata: TranscriptionMetadata,
     ) -> Result<Option<TranscriptionRecord>> {
         let conn = self.connection.lock();
-        let existing = Self::get_record(&conn, id)?;
-        if existing.is_none() {
+        let Some(existing) = Self::get_record(&conn, id)? else {
             return Ok(None);
-        }
+        };
+        let was_success = matches!(existing.status, TranscriptionStatus::Success);
+        let new_word_count = metadata.word_count;
+        let new_duration = metadata.audio_duration_seconds;
 
         conn.execute(
-            "UPDATE transcriptions SET 
+            "UPDATE transcriptions SET
                 text = ?1,
                 raw_text = ?2,
                 status = ?3,
@@ -311,6 +335,10 @@ impl StorageManager {
             ],
         )?;
 
+        if !was_success && matches!(status, TranscriptionStatus::Success) {
+            Self::record_dictation(&conn, new_word_count, new_duration)?;
+        }
+
         Self::get_record(&conn, id)
     }
 
@@ -338,6 +366,37 @@ impl StorageManager {
         Ok(records)
     }
 
+    pub fn get_today_dictation_stats(
+        &self,
+        start_ms: i64,
+        end_ms: i64,
+    ) -> Result<TodayDictationStats> {
+        let conn = self.connection.lock();
+        conn.query_row(
+            "SELECT
+                COUNT(*) AS count,
+                COALESCE(SUM(word_count), 0) AS words,
+                COALESCE(SUM(audio_duration_seconds), 0) AS audio_seconds,
+                COALESCE(MAX(word_count), 0) AS longest_words,
+                COALESCE(MAX(audio_duration_seconds), 0) AS longest_audio_seconds,
+                COALESCE(SUM(llm_cleaned), 0) AS llm_cleaned_count
+             FROM transcriptions
+             WHERE status = ?1 AND timestamp >= ?2 AND timestamp < ?3",
+            params![TranscriptionStatus::Success.as_str(), start_ms, end_ms],
+            |row| {
+                Ok(TodayDictationStats {
+                    count: row.get::<_, i64>("count")? as u32,
+                    words: row.get::<_, i64>("words")? as u32,
+                    audio_seconds: row.get::<_, f64>("audio_seconds")? as f32,
+                    longest_words: row.get::<_, i64>("longest_words")? as u32,
+                    longest_audio_seconds: row.get::<_, f64>("longest_audio_seconds")? as f32,
+                    llm_cleaned_count: row.get::<_, i64>("llm_cleaned_count")? as u32,
+                })
+            },
+        )
+        .map_err(Into::into)
+    }
+
     pub fn get_recent_transcriptions(&self, limit: usize) -> Result<Vec<TranscriptionRecord>> {
         if limit == 0 {
             return Ok(Vec::new());
@@ -363,14 +422,35 @@ impl StorageManager {
         Ok(records)
     }
 
-    pub fn total_word_count(&self) -> Result<u64> {
+    pub fn lifetime_stats(&self) -> Result<LifetimeStats> {
         let conn = self.connection.lock();
-        let value: Option<i64> = conn.query_row(
-            "SELECT COALESCE(SUM(word_count), 0) FROM transcriptions WHERE status = 'success'",
-            [],
-            |row| row.get(0),
+        let stats = conn
+            .query_row(
+                "SELECT words, duration_ms, dictations FROM lifetime_stats WHERE id = 1",
+                [],
+                |row| {
+                    Ok(LifetimeStats {
+                        words: row.get::<_, i64>(0)?.max(0) as u64,
+                        duration_ms: row.get::<_, i64>(1)?.max(0) as u64,
+                        dictations: row.get::<_, i64>(2)?.max(0) as u64,
+                    })
+                },
+            )
+            .optional()?;
+        Ok(stats.unwrap_or_default())
+    }
+
+    fn record_dictation(conn: &Connection, word_count: u32, audio_duration_seconds: f32) -> Result<()> {
+        let duration_ms = (audio_duration_seconds.max(0.0) * 1000.0).round() as i64;
+        conn.execute(
+            "UPDATE lifetime_stats
+                SET words = words + ?1,
+                    duration_ms = duration_ms + ?2,
+                    dictations = dictations + 1
+                WHERE id = 1",
+            params![word_count as i64, duration_ms],
         )?;
-        Ok(value.unwrap_or(0).max(0) as u64)
+        Ok(())
     }
 
     pub fn delete(&self, id: &str) -> Result<Option<String>> {
@@ -657,7 +737,14 @@ impl StorageManager {
                 show_timestamps INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS idx_library_items_created_at ON library_items(created_at DESC);
-            CREATE INDEX IF NOT EXISTS idx_library_items_status ON library_items(status);",
+            CREATE INDEX IF NOT EXISTS idx_library_items_status ON library_items(status);
+
+            CREATE TABLE IF NOT EXISTS lifetime_stats (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                words INTEGER NOT NULL DEFAULT 0,
+                duration_ms INTEGER NOT NULL DEFAULT 0,
+                dictations INTEGER NOT NULL DEFAULT 0
+            );",
         )?;
 
         Self::ensure_column(
@@ -726,6 +813,25 @@ impl StorageManager {
             "words",
             "ALTER TABLE library_items ADD COLUMN words TEXT",
         )?;
+
+        let stats_seeded: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM lifetime_stats WHERE id = 1)",
+            [],
+            |row| row.get(0),
+        )?;
+        if !stats_seeded {
+            conn.execute(
+                "INSERT INTO lifetime_stats (id, words, duration_ms, dictations)
+                 SELECT 1,
+                        COALESCE(SUM(word_count), 0),
+                        COALESCE(SUM(CAST(ROUND(audio_duration_seconds * 1000) AS INTEGER)), 0),
+                        COUNT(*)
+                 FROM transcriptions
+                 WHERE status = 'success'",
+                [],
+            )?;
+        }
+
         Ok(())
     }
 

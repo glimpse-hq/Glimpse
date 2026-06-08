@@ -183,6 +183,7 @@ pub fn cancel_library_transcription(
             LibraryErrorPayload {
                 id,
                 message: "Transcription cancelled".to_string(),
+                cancelled: true,
             },
         );
         return Ok(());
@@ -221,6 +222,7 @@ pub fn retry_library_transcription(
                 LibraryErrorPayload {
                     id,
                     message: message.clone(),
+                    cancelled: false,
                 },
             );
             return Err(message);
@@ -320,6 +322,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                     LibraryErrorPayload {
                         id: item.id.clone(),
                         message: "Transcription cancelled".to_string(),
+                        cancelled: true,
                     },
                 );
             }

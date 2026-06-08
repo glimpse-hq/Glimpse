@@ -36,6 +36,7 @@ const LANGUAGE_NAMES: &[(&str, &str)] = &[
     ("da", "Danish"),
     ("hu", "Hungarian"),
     ("ta", "Tamil"),
+    ("nb", "Norwegian Bokmål"),
     ("no", "Norwegian"),
     ("th", "Thai"),
     ("ur", "Urdu"),
@@ -116,6 +117,13 @@ const NVIDIA_PARAKEET_V3_LANGUAGE_CODES: &[&str] = &[
 ];
 
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+const NVIDIA_NEMOTRON_35_LANGUAGE_CODES: &[&str] = &[
+    "ar", "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", "he", "hi", "hr", "hu", "it",
+    "ja", "ko", "lt", "lv", "mt", "nb", "nl", "nn", "pl", "pt", "ro", "ru", "sk", "sl", "sv", "th",
+    "tr", "uk", "vi", "zh",
+];
+
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 fn language_name(code: &str) -> Option<&'static str> {
     LANGUAGE_NAMES
         .iter()
@@ -143,6 +151,13 @@ pub fn whisper_supported_languages() -> Vec<SupportedLanguageInfo> {
         .collect()
 }
 
+pub fn english_supported_languages() -> Vec<SupportedLanguageInfo> {
+    vec![SupportedLanguageInfo {
+        code: "en".to_string(),
+        name: "English".to_string(),
+    }]
+}
+
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 pub fn parakeet_v3_supported_languages() -> Vec<SupportedLanguageInfo> {
     supported_languages_for_codes(NVIDIA_PARAKEET_V3_LANGUAGE_CODES)
@@ -150,8 +165,10 @@ pub fn parakeet_v3_supported_languages() -> Vec<SupportedLanguageInfo> {
 
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 pub fn nemotron_supported_languages() -> Vec<SupportedLanguageInfo> {
-    vec![SupportedLanguageInfo {
-        code: "en".to_string(),
-        name: "English".to_string(),
-    }]
+    english_supported_languages()
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+pub fn nemotron_35_supported_languages() -> Vec<SupportedLanguageInfo> {
+    supported_languages_for_codes(NVIDIA_NEMOTRON_35_LANGUAGE_CODES)
 }

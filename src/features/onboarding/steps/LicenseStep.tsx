@@ -1,6 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { SpinnerGap as Loader2 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
@@ -185,6 +185,14 @@ export function LicenseStep({
       <div className="mt-3 flex w-full max-w-[400px] items-center justify-center">
         <CustomerPortalLink source="onboarding" />
       </div>
+
+      <p className="mt-6 ui-text-micro text-content-disabled">
+        {t({
+          id: "onboarding.license.analytics_notice",
+          message:
+            "Anonymous usage analytics help improve Glimpse. Turn this off anytime in Settings → App.",
+        })}
+      </p>
     </motion.div>
   );
 }

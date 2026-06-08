@@ -1,7 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import {
+  X,
+} from "@phosphor-icons/react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { hasModelCapability, MODEL_CAPABILITY_TIMESTAMPS } from "../../../shared/lib/modelCapabilities";
@@ -99,7 +101,7 @@ const LibraryRetranscribeModal = ({
             >
                 <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
                     <div>
-                        <p className="ui-text-meta uppercase tracking-[0.2em] text-content-disabled">
+                        <p className="ui-text-meta text-content-disabled">
                             {t({
                                 id: "library.retranscribe.title",
                                 message: "Retranscribe",

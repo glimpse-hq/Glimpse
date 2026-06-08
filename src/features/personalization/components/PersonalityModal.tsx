@@ -3,7 +3,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { Check, ChevronDown, ExternalLink, Info, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  Check,
+  CaretDown as ChevronDown,
+  ArrowSquareOut as ExternalLink,
+  Info,
+  PencilSimple as Pencil,
+  Plus,
+  Trash as Trash2,
+  X,
+} from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import type { Personality } from "../../../types";

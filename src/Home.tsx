@@ -1,21 +1,22 @@
 import { useLingui } from "@lingui/react/macro";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Settings,
-  ChevronLeft,
-  Home as HomeIcon,
-  Book,
-  Brain,
+  GearSix as Settings,
+  CaretLeft as ChevronLeft,
+  House as HomeIcon,
+  BookBookmark as Book,
+  CardsThree as Brain,
   Info,
-  HelpCircle,
+  Question as HelpCircle,
   Bug,
   Check,
   Copy,
   X,
-  ArrowUpCircle,
-  Library,
-} from "lucide-react";
+  ArrowCircleUp as ArrowUpCircle,
+  Books as Library,
+  type Icon as PhosphorIcon,
+} from "@phosphor-icons/react";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import SettingsModal from "./features/settings/components/SettingsModal";
 import FAQModal from "./shared/ui/FAQModal";
@@ -23,8 +24,8 @@ import WindowControls from "./shared/ui/WindowControls";
 import { useClickOutside } from "./shared/hooks/useClickOutside";
 import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeader";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
-import { useTranscriptionList } from "./features/transcriptions/queries";
-import { computeTodayDictationStats } from "./features/transcriptions/todayStats";
+import { useTodayDictationStats } from "./features/transcriptions/queries";
+import { EMPTY_TODAY_DICTATION_STATS } from "./features/transcriptions/todayStats";
 import { useTimeOfDayPeriodTick } from "./features/transcriptions/homeGreeting";
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
@@ -33,8 +34,6 @@ import LocalApiSidebarStatus from "./features/settings/components/LocalApiSideba
 import { getLocalApiStatus } from "./features/settings/models-api";
 import type { LocalApiStatus } from "./types";
 import { useLicenseGate } from "./features/license/queries";
-// TODO: REMOVE after next update — beta gift promo chip.
-import BetaGiftChip from "./features/license/components/BetaGiftChip";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
@@ -66,7 +65,13 @@ const SUPPORT_GITHUB_URL =
   "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
 const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
-const StaticGlimpseLogo = ({ isCloudMode }: { isCloudMode: boolean }) => {
+const StaticGlimpseLogo = ({
+  cloudActive,
+  localActive,
+}: {
+  cloudActive: boolean;
+  localActive: boolean;
+}) => {
   return (
     <svg
       aria-hidden="true"
@@ -78,7 +83,7 @@ const StaticGlimpseLogo = ({ isCloudMode }: { isCloudMode: boolean }) => {
     >
       {STATIC_LOGO_COORDS.map((coord, i) => {
         const isCloudDot = i === 0 || i === 3;
-        const isActive = isCloudMode ? isCloudDot : !isCloudDot;
+        const isActive = isCloudDot ? cloudActive : localActive;
         return (
           <circle
             key={`dot-${i}`}
@@ -95,14 +100,14 @@ const StaticGlimpseLogo = ({ isCloudMode }: { isCloudMode: boolean }) => {
 };
 
 const SidebarItem = ({
-  icon,
+  icon: Icon,
   label,
   active = false,
   collapsed,
   disabled = false,
   onClick,
 }: {
-  icon: React.ReactNode;
+  icon: PhosphorIcon;
   label: string;
   active?: boolean;
   collapsed: boolean;
@@ -117,8 +122,8 @@ const SidebarItem = ({
       collapsed ? "gap-0" : "gap-3"
     }`}
   >
-    <div className="flex items-center justify-center w-[18px] shrink-0">
-      {icon}
+    <div className="flex items-center justify-center w-[20px] shrink-0">
+      <Icon size={20} weight={active ? "fill" : "regular"} />
     </div>
     <span
       style={{ width: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }}
@@ -162,6 +167,7 @@ const Home = () => {
   const { data: appInfoData } = useAppInfo();
 
   const transcriptionMode: TranscriptionMode = settings?.transcription_mode ?? "local";
+  const remoteSpeechEnabled = settings?.remote_speech_enabled ?? false;
   const llmEnabled = settings?.llm_enabled ?? false;
   const appVersion = appInfoData?.version ?? "-";
   const updateAvailable = updateStatus?.available ?? false;
@@ -400,13 +406,20 @@ const Home = () => {
       });
 
   const homeViewActive = activeView === "home";
-  const { data: transcriptions = [], isFetched: transcriptionsFetched } =
-    useTranscriptionList("", homeViewActive);
+  const {
+    data: todayStats = EMPTY_TODAY_DICTATION_STATS,
+    isFetched: todayStatsFetched,
+    refetch: refetchTodayStats,
+  } = useTodayDictationStats(homeViewActive);
   const dayTick = useTimeOfDayPeriodTick(homeViewActive);
-  const todayStats = useMemo(
-    () => computeTodayDictationStats(transcriptions),
-    [transcriptions, dayTick],
-  );
+  const todayStatsTickRef = useRef(dayTick);
+
+  useEffect(() => {
+    if (homeViewActive && todayStatsTickRef.current !== dayTick) {
+      todayStatsTickRef.current = dayTick;
+      refetchTodayStats().catch(() => {});
+    }
+  }, [dayTick, homeViewActive, refetchTodayStats]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">
@@ -423,7 +436,10 @@ const Home = () => {
             className={`flex items-center h-6 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"}`}
           >
             <div className="flex items-center justify-center w-[18px] shrink-0">
-              <StaticGlimpseLogo isCloudMode={isCloudMode} />
+              <StaticGlimpseLogo
+                cloudActive={isCloudMode || remoteSpeechEnabled || llmEnabled}
+                localActive={transcriptionMode === "local" && !remoteSpeechEnabled}
+              />
             </div>
             <span
               style={{
@@ -440,7 +456,7 @@ const Home = () => {
         <nav className="flex-1 flex flex-col px-2">
           <div className="space-y-1">
             <SidebarItem
-              icon={<HomeIcon size={18} />}
+              icon={HomeIcon}
               label={t({
                 id: "home.sidebar.home",
                 message: "Home",
@@ -450,7 +466,7 @@ const Home = () => {
               onClick={() => setActiveView("home")}
             />
             <SidebarItem
-              icon={<Book size={18} />}
+              icon={Book}
               label={t({
                 id: "home.sidebar.dictionary",
                 message: "Dictionary",
@@ -460,7 +476,7 @@ const Home = () => {
               onClick={() => setActiveView("dictionary")}
             />
             <SidebarItem
-              icon={<Brain size={18} />}
+              icon={Brain}
               label={t({
                 id: "home.sidebar.personalization",
                 message: "Personalization",
@@ -471,7 +487,7 @@ const Home = () => {
               onClick={() => setActiveView("brain")}
             />
             <SidebarItem
-              icon={<Library size={18} />}
+              icon={Library}
               label={t({
                 id: "home.sidebar.library",
                 message: "Library",
@@ -525,7 +541,7 @@ const Home = () => {
           <div className="relative" ref={supportMenuRef}>
             <button
               onClick={() => setShowSupportPopup(!showSupportPopup)}
-              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:bg-[var(--surface-interactive)] hover:text-content-secondary ${
+              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:text-content-secondary transition-colors ${
                 isSidebarCollapsed ? "gap-0" : "gap-3"
               }`}
               aria-expanded={showSupportPopup}
@@ -535,8 +551,8 @@ const Home = () => {
                 message: "Support menu",
               })}
             >
-              <div className="flex items-center justify-center w-[18px] shrink-0 group-hover:text-content-secondary">
-                <Info size={18} />
+              <div className="flex items-center justify-center w-[20px] shrink-0 group-hover:text-content-secondary">
+                <Info size={20} weight="regular" />
               </div>
               <span
                 style={{
@@ -692,11 +708,11 @@ const Home = () => {
                 setSettingsTab("about");
                 setIsSettingsOpen(true);
               }}
-              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} hover:bg-[var(--surface-interactive)] transition-colors`}
+              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} transition-colors`}
               style={{ color: "var(--color-accent)" }}
             >
-              <div className="flex items-center justify-center w-[18px] shrink-0">
-                <ArrowUpCircle size={18} />
+              <div className="flex items-center justify-center w-[20px] shrink-0">
+                <ArrowUpCircle size={20} weight="regular" />
               </div>
               <span
                 style={{
@@ -714,7 +730,7 @@ const Home = () => {
           )}
 
           <SidebarItem
-            icon={<Settings size={18} />}
+            icon={Settings}
             label={t({
               id: "home.sidebar.settings",
               message: "Settings",
@@ -728,8 +744,6 @@ const Home = () => {
 
       <main className="flex flex-1 flex-col min-w-0 bg-surface-tertiary overflow-hidden relative will-change-contents">
         <div data-tauri-drag-region className="h-8 w-full shrink-0" />
-        {/* TODO: REMOVE after next update — hardcoded beta discount chip. */}
-        {activeView === "home" ? <BetaGiftChip /> : null}
 
         <div
           className={`flex-1 flex flex-col px-8 min-h-0 ${activeView === "home" ? "pb-3" : "pb-6"}`}
@@ -738,7 +752,7 @@ const Home = () => {
             className={`w-full max-w-[680px] mx-auto pt-5 flex-1 flex flex-col min-h-0 ${activeView === "home" ? "" : "hidden"}`}
           >
             <HomeTodayHeader
-              transcriptionsFetched={transcriptionsFetched}
+              transcriptionsFetched={todayStatsFetched}
               stats={todayStats}
               active={homeViewActive}
             />
@@ -792,7 +806,7 @@ const Home = () => {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex flex-col items-center justify-center rounded-2xl border border-border-secondary bg-surface-overlay px-8 py-6 shadow-2xl"
             >
-              <div className="ui-text-section-label ui-color-muted tracking-[0.2em]">
+              <div className="ui-text-section-label ui-color-muted">
                 {t({
                   id: "home.drag_import.eyebrow",
                   message: "Library Import",

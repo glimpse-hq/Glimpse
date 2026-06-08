@@ -125,7 +125,10 @@ impl LocalApiController {
         let _starting_guard = StartingGuard { inner: &self.inner };
         let model_cache_dir =
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
-        let service = Arc::new(SpeechService::new(SpeechConfig { model_cache_dir }));
+        let service = Arc::new(SpeechService::new(SpeechConfig {
+            model_cache_dir,
+            resolver: crate::model_manager::local_resolver(),
+        }));
         if let Some(warm_id) = warm_model.as_deref() {
             let warm = Arc::clone(&service);
             let warm_id = warm_id.to_string();
@@ -196,6 +199,7 @@ impl LocalApiController {
                     event_sink: Some(event_sink),
                     cors: args.cors,
                     transcription_provider: None,
+                    local_models: crate::model_manager::api_model_infos(),
                 },
                 async {
                     let _ = shutdown_rx.await;

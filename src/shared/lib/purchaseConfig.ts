@@ -1,5 +1,5 @@
 export type PurchaseTier = "personal" | "commercial";
-export type PurchaseSource = "onboarding" | "settings_account" | "beta_gift"; // TODO: REMOVE after next update: beta gift promo checkout source.
+export type PurchaseSource = "onboarding" | "settings_account";
 
 export type TierInfo = {
   id: PurchaseTier;

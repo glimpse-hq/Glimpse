@@ -138,17 +138,14 @@ export function useLibraryItems(
       else unlisteners.push(fn);
     });
 
-    listen<{ id: string; message: string }>(
+    listen<{ id: string; message: string; cancelled: boolean }>(
       "library:transcription_error",
       (event) => {
         if (cancelled) return;
-        const { id, message } = event.payload;
-        const isCancelledMsg =
-          message.toLowerCase().includes("cancelled") ||
-          message.toLowerCase().includes("canceled");
+        const { id, message, cancelled: wasCancelled } = event.payload;
         patchItemInCache(queryClient, filter, id, (item) => ({
           ...item,
-          status: isCancelledMsg
+          status: wasCancelled
             ? { type: "cancelled" as const }
             : { type: "error" as const, message },
         }));

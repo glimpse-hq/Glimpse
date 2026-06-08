@@ -3,10 +3,10 @@ export type ModelInfo = {
     label: string;
     description: string;
     size_mb: number;
-    file_count: number;
     engine_id: string;
-    engine: string;
+    family: string;
     variant: string;
+    category: string;
     tags: string[];
     capabilities: string[];
     supported_languages: {
@@ -21,9 +21,7 @@ export type SpeechModel = {
     label: string;
     description: string;
     size_mb: number;
-    file_count: number;
     engine_id: string;
-    engine: string;
     variant: string;
     tags: string[];
     capabilities: string[];
@@ -33,7 +31,6 @@ export type SpeechModel = {
     }[];
     remote: boolean;
     installed: boolean;
-    loaded: boolean;
 };
 
 export type ModelStatus = {
@@ -50,14 +47,15 @@ export type DownloadProgressPayload = {
     downloaded: number;
     total: number;
     percent: number;
+    verifying: boolean;
 };
 
 export type DownloadEvent =
-    | { status: "idle"; percent: number; downloaded: number; total: number; file?: string }
-    | { status: "downloading"; percent: number; downloaded: number; total: number; file: string }
-    | { status: "complete"; percent: number; downloaded: number; total: number }
-    | { status: "cancelled"; percent: number; downloaded: number; total: number }
-    | { status: "error"; percent: number; downloaded: number; total: number; message: string };
+    | { status: "idle"; percent: number; file?: string }
+    | { status: "downloading"; percent: number; file: string; verifying?: boolean }
+    | { status: "complete"; percent: number }
+    | { status: "cancelled"; percent: number }
+    | { status: "error"; percent: number; message: string };
 
 export type LocalApiLogEntry = {
     id: number;

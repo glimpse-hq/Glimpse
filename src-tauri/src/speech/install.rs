@@ -1,41 +1,21 @@
 use std::path::PathBuf;
 
 use crate::AppRuntime;
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use glimpse_speech::models as speech_models;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-use crate::model_language_table::{nemotron_supported_languages, parakeet_v3_supported_languages};
-use crate::model_language_table::{whisper_supported_languages, SupportedLanguageInfo};
-
-pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
-pub const MODEL_CAPABILITY_TIMESTAMPS: &str = speech_models::MODEL_CAPABILITY_TIMESTAMPS;
-pub const MODEL_CAPABILITY_STREAMING: &str = speech_models::MODEL_CAPABILITY_STREAMING;
-
-pub use speech_models::ModelEngine as LocalModelEngine;
+pub use super::catalog::{
+    api_model_infos, definition, is_streaming_model, model_label, model_supports_capability,
+    LocalModelEngine, ModelInfo, MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS,
+};
 
 #[derive(Debug, Clone)]
 pub struct ReadyModel {
     pub key: String,
     pub path: PathBuf,
     pub engine: LocalModelEngine,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct ModelInfo {
-    pub key: String,
-    pub label: String,
-    pub description: String,
-    pub size_mb: f32,
-    pub file_count: usize,
-    pub engine_id: String,
-    pub engine: String,
-    pub variant: String,
-    pub tags: Vec<String>,
-    pub capabilities: Vec<String>,
-    pub supported_languages: Vec<SupportedLanguageInfo>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -54,6 +34,7 @@ struct DownloadProgressPayload {
     downloaded: u64,
     total: u64,
     percent: f64,
+    verifying: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -67,28 +48,19 @@ struct DownloadErrorPayload {
     error: String,
 }
 
+#[derive(Serialize, Clone)]
+struct DownloadCancelledPayload {
+    model: String,
+}
+
 const MODELS_ROOT: &str = "models";
 
-pub fn definition(key: &str) -> Option<&'static speech_models::ModelManifest> {
-    speech_models::definition(key)
+pub fn local_resolver() -> glimpse_speech::service::ModelResolver {
+    std::sync::Arc::new(super::catalog::install_spec)
 }
 
-pub fn model_label(key: &str) -> String {
-    speech_models::definition(key)
-        .map(|model| model.label.to_string())
-        .unwrap_or_else(|| key.to_string())
-}
-
-pub fn model_supports_capability(model_key: &str, capability: &str) -> bool {
-    let backend_capability = match capability {
-        MODEL_CAPABILITY_DICTIONARY => speech_models::MODEL_CAPABILITY_DICTIONARY_PROMPT,
-        other => other,
-    };
-    speech_models::model_supports_capability(model_key, backend_capability)
-}
-
-pub fn is_streaming_model(model_key: &str) -> bool {
-    model_supports_capability(model_key, MODEL_CAPABILITY_STREAMING)
+fn spec_for(model: &str) -> Result<speech_models::InstallSpec> {
+    super::catalog::install_spec(model).ok_or_else(|| anyhow!("Unknown model: {model}"))
 }
 
 pub fn model_cache_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
@@ -111,59 +83,6 @@ fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     Ok(dir)
 }
 
-fn supported_languages(engine: &LocalModelEngine) -> Vec<SupportedLanguageInfo> {
-    match engine {
-        LocalModelEngine::Whisper => whisper_supported_languages(),
-        LocalModelEngine::Nemotron => {
-            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-            {
-                nemotron_supported_languages()
-            }
-
-            #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-            {
-                Vec::new()
-            }
-        }
-        LocalModelEngine::Parakeet => {
-            #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-            {
-                parakeet_v3_supported_languages()
-            }
-
-            #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-            {
-                Vec::new()
-            }
-        }
-    }
-}
-
-fn engine_label(engine: &LocalModelEngine) -> &'static str {
-    match engine {
-        LocalModelEngine::Nemotron | LocalModelEngine::Parakeet => "NVIDIA",
-        LocalModelEngine::Whisper => "Whisper",
-    }
-}
-
-fn engine_id(engine: &LocalModelEngine) -> &'static str {
-    match engine {
-        LocalModelEngine::Nemotron | LocalModelEngine::Parakeet => "nvidia",
-        LocalModelEngine::Whisper => "whisper",
-    }
-}
-
-fn map_capabilities(capabilities: &[&str]) -> Vec<String> {
-    capabilities
-        .iter()
-        .map(|capability| match *capability {
-            speech_models::MODEL_CAPABILITY_DICTIONARY_PROMPT => MODEL_CAPABILITY_DICTIONARY,
-            other => other,
-        })
-        .map(str::to_string)
-        .collect()
-}
-
 fn map_status(status: speech_models::ModelStatus) -> ModelStatus {
     ModelStatus {
         key: status.id,
@@ -174,28 +93,9 @@ fn map_status(status: speech_models::ModelStatus) -> ModelStatus {
     }
 }
 
-fn manifest_to_model_info(manifest: &speech_models::ModelManifest) -> ModelInfo {
-    ModelInfo {
-        key: manifest.id.to_string(),
-        label: manifest.label.to_string(),
-        description: manifest.description.to_string(),
-        size_mb: manifest.size_bytes.unwrap_or(0) as f32 / 1_000_000.0,
-        file_count: manifest.files.len(),
-        engine_id: engine_id(&manifest.engine).to_string(),
-        engine: engine_label(&manifest.engine).to_string(),
-        variant: manifest.variant.to_string(),
-        tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
-        capabilities: map_capabilities(manifest.capabilities),
-        supported_languages: supported_languages(&manifest.engine),
-    }
-}
-
 #[tauri::command]
 pub fn list_models() -> Vec<ModelInfo> {
-    speech_models::list_models()
-        .iter()
-        .map(manifest_to_model_info)
-        .collect()
+    super::catalog::list_local_models()
 }
 
 #[tauri::command]
@@ -203,10 +103,10 @@ pub fn check_model_status<R: Runtime>(
     app: AppHandle<R>,
     model: String,
 ) -> Result<ModelStatus, String> {
-    model_manager(&app)
-        .and_then(|manager| manager.model_status(&model))
-        .map(map_status)
-        .map_err(|err| err.to_string())
+    let manager = model_manager(&app).map_err(|err| err.to_string())?;
+    let spec = spec_for(&model).map_err(|err| err.to_string())?;
+    let status = manager.status(&spec).map_err(|err| err.to_string())?;
+    Ok(map_status(status))
 }
 
 #[tauri::command]
@@ -216,6 +116,7 @@ pub async fn download_model(
     model: String,
 ) -> Result<ModelStatus, String> {
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
+    let spec = spec_for(&model).map_err(|err| err.to_string())?;
     ensure_models_root(&app).map_err(|err| err.to_string())?;
     let cancel_token = state.create_download_token(&model);
     let progress_app = app.clone();
@@ -228,15 +129,16 @@ pub async fn download_model(
                 downloaded: event.downloaded,
                 total: event.total,
                 percent: event.percent,
+                verifying: event.verifying,
             },
         );
     };
 
     let result = manager
-        .install_model(
-            &model,
+        .install(
+            &spec,
             speech_models::InstallOptions {
-                cancel_token: Some(cancel_token),
+                cancel_token: Some(cancel_token.clone()),
                 progress: Some(&progress),
             },
         )
@@ -247,6 +149,16 @@ pub async fn download_model(
     let status = match result {
         Ok(status) => status,
         Err(err) => {
+            if cancel_token.is_cancelled() {
+                let _ = app.emit(
+                    "download:cancelled",
+                    DownloadCancelledPayload {
+                        model: model.clone(),
+                    },
+                );
+                let status = manager.status(&spec).map_err(|err| err.to_string())?;
+                return Ok(map_status(status));
+            }
             let _ = app.emit(
                 "download:error",
                 DownloadErrorPayload {
@@ -278,7 +190,7 @@ pub async fn download_model(
 #[tauri::command]
 pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelStatus, String> {
     let status = model_manager(&app)
-        .and_then(|manager| manager.delete_model(&model))
+        .and_then(|manager| manager.delete(&model))
         .map(map_status)
         .map_err(|err| err.to_string())?;
 
@@ -301,7 +213,9 @@ pub fn cancel_download(
 }
 
 pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result<ReadyModel> {
-    let resolved = model_manager(app)?.resolve_model(model)?;
+    let manager = model_manager(app)?;
+    let spec = spec_for(model)?;
+    let resolved = manager.resolve(&spec)?;
     Ok(ReadyModel {
         key: resolved.id,
         path: resolved.path,
@@ -317,7 +231,7 @@ pub fn ensure_local_fallback_model<R: Runtime>(
         return Ok(model);
     }
 
-    for manifest in speech_models::list_models() {
+    for manifest in super::catalog::local_manifests() {
         if manifest.id == preferred {
             continue;
         }

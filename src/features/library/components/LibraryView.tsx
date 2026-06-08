@@ -9,13 +9,14 @@ import { AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
-    FolderOpen,
-    Loader2,
-    Plus,
-    Search,
-} from "lucide-react";
+  FolderOpen,
+  CircleNotch as Loader2,
+  Plus,
+  MagnifyingGlass as Search,
+} from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import ScreenHeader from "../../../shared/ui/ScreenHeader";
 import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEvents";
@@ -278,28 +279,24 @@ const LibraryView = ({
     return (
         <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
             <div className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-4 pb-4 px-0 text-left">
-                <header className="flex flex-col gap-4 mb-4 mt-2 md:-mt-6">
-                    <div className="flex min-w-0 items-start gap-3">
-                        <DotMatrix
-                            rows={2}
-                            cols={3}
-                            activeDots={[0, 1, 2, 4]}
-                            dotSize={3}
-                            gap={3}
-                            color="var(--color-section-marker-alt)"
-                        />
-                        <div className="min-w-0 flex-1">
-                            <h2 className="ui-text-screen-title ui-color-primary tracking-tight">
-                                {t({ id: "library.view.title", message: "Library" })}
-                            </h2>
-                            <p className="mt-1 ui-text-body-sm ui-color-secondary">
-                                {t({
-                                    id: "library.view.description",
-                                    message: "Manage and search your transcribed audio and documents.",
-                                })}
-                            </p>
-                        </div>
-                    </div>
+                <div className="flex flex-col gap-4 mb-4 mt-2 md:-mt-6">
+                    <ScreenHeader
+                        icon={
+                            <DotMatrix
+                                rows={2}
+                                cols={3}
+                                activeDots={[0, 1, 2, 4]}
+                                dotSize={3}
+                                gap={3}
+                                color="var(--color-section-marker-alt)"
+                            />
+                        }
+                        title={t({ id: "library.view.title", message: "Library" })}
+                        description={t({
+                            id: "library.view.description",
+                            message: "Manage and search your transcribed audio and documents.",
+                        })}
+                    />
 
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-[auto_minmax(14rem,1fr)_auto] md:items-center">
                         <button
@@ -339,7 +336,7 @@ const LibraryView = ({
                         />
 
                     </div>
-                </header>
+                </div>
 
                 {error && (
                     <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2">

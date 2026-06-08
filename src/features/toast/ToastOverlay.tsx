@@ -3,28 +3,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Check, Copy } from "lucide-react";
+import {
+  Check,
+  Copy,
+} from "@phosphor-icons/react";
 import DotMatrix from "../../shared/ui/DotMatrix";
-import { openUrl } from "@tauri-apps/plugin-opener";
-// TODO: REMOVE after next update: beta gift startup toast.
-import { showBetaGiftToastOnAppStart } from "../license/components/betaGiftPromo";
-// TODO: REMOVE after next update: beta gift founder checkout.
-import { founderCheckoutUrlFor } from "../license/purchaseConfig";
 import type { ToastType, ToastPayload } from "../../types";
-
-// TODO: REMOVE after next update: beta gift toast checkout action handler.
-const handleFrontendToastAction = async (action: string) => {
-  if (action === "open_beta_gift_checkout") {
-    const checkoutUrl = founderCheckoutUrlFor("beta_gift");
-    if (!checkoutUrl) {
-      throw new Error("Founder checkout link is not configured for this build.");
-    }
-    await openUrl(checkoutUrl);
-    return true;
-  }
-
-  return false;
-};
 
 interface ToastState extends ToastPayload {
   isLeaving: boolean;
@@ -194,12 +178,6 @@ const ToastOverlay: React.FC = () => {
 
   const handleToastAction = async (action: string) => {
     try {
-      // TODO: REMOVE after next update: beta gift toast action dispatch.
-      if (await handleFrontendToastAction(action)) {
-        dismissWithCleanup();
-        return;
-      }
-
       const args =
         toast?.retryId &&
         (action === "accept_auto_dictionary_suggestion" ||
@@ -276,11 +254,6 @@ const ToastOverlay: React.FC = () => {
         } catch { /* ignore */ }
         await getCurrentWindow().hide();
       }
-    });
-
-    void Promise.all([unsub1, unsub2, unsub3]).then(() => {
-      // TODO: REMOVE after next update: beta gift toast on app start for unlicensed users.
-      void showBetaGiftToastOnAppStart();
     });
 
     return () => {

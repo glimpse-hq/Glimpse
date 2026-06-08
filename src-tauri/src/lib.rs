@@ -435,6 +435,7 @@ pub fn run() {
             get_app_info,
             open_data_dir,
             get_transcriptions,
+            get_today_dictation_stats,
             delete_transcription,
             retry_transcription,
             retry_llm_cleanup,
@@ -1137,15 +1138,21 @@ fn reveal_license_key(state: tauri::State<AppState>) -> Result<String, String> {
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
     total_words: u64,
+    total_duration_ms: u64,
+    total_dictations: u64,
 }
 
 #[tauri::command]
 fn get_dictation_stats(state: tauri::State<AppState>) -> Result<DictationStats, String> {
-    let total_words = state
+    let stats = state
         .storage()
-        .total_word_count()
+        .lifetime_stats()
         .map_err(|err| err.to_string())?;
-    Ok(DictationStats { total_words })
+    Ok(DictationStats {
+        total_words: stats.words,
+        total_duration_ms: stats.duration_ms,
+        total_dictations: stats.dictations,
+    })
 }
 
 #[derive(Serialize)]
@@ -1371,6 +1378,26 @@ fn get_transcriptions(
 }
 
 #[tauri::command]
+fn get_today_dictation_stats(
+    state: tauri::State<AppState>,
+) -> Result<storage::TodayDictationStats, String> {
+    let today = Local::now().date_naive();
+    let start = today
+        .and_hms_opt(0, 0, 0)
+        .and_then(|time| time.and_local_timezone(Local).single())
+        .ok_or_else(|| "Failed to resolve local start of day".to_string())?;
+    let end = (today + chrono::Days::new(1))
+        .and_hms_opt(0, 0, 0)
+        .and_then(|time| time.and_local_timezone(Local).single())
+        .ok_or_else(|| "Failed to resolve local end of day".to_string())?;
+
+    state
+        .storage()
+        .get_today_dictation_stats(start.timestamp_millis(), end.timestamp_millis())
+        .map_err(|err| format!("Failed to get today stats: {err}"))
+}
+
+#[tauri::command]
 fn delete_transcription(
     id: String,
     app: AppHandle<AppRuntime>,
@@ -1459,6 +1486,7 @@ pub(crate) fn persist_recording_async(
     recording: CompletedRecording,
     settings: settings::UserSettings,
     temporary: bool,
+    cancel_token: CancellationToken,
 ) {
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
@@ -1483,6 +1511,7 @@ pub(crate) fn persist_recording_async(
                 recording_for_transcription,
                 settings,
                 temporary,
+                cancel_token,
             ),
             Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
             Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
@@ -1496,6 +1525,7 @@ fn emit_complete(
     recording: CompletedRecording,
     settings: settings::UserSettings,
     temporary: bool,
+    cancel_token: CancellationToken,
 ) {
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
@@ -1526,7 +1556,7 @@ fn emit_complete(
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording, settings, temporary);
+    transcribe::queue_transcription(app, saved, recording, settings, temporary, cancel_token);
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {

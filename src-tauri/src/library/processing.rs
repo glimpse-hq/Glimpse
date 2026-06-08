@@ -21,7 +21,8 @@ use uuid::Uuid;
 use crate::{model_manager, storage::StorageManager, AppRuntime, AppState};
 
 use super::types::{
-    is_cancelled_message, ExportFormat, LibraryImportOptions, LibraryImportProgressPayload,
+    cancelled_error, is_cancelled_error, ExportFormat, LibraryImportOptions,
+    LibraryImportProgressPayload,
     LibraryItem, LibraryItemPatch, LibraryItemStatus, TranscriptSegment,
     EVENT_LIBRARY_IMPORT_PROGRESS, SUPPORTED_AUDIO_FORMATS, SUPPORTED_VIDEO_FORMATS,
     TARGET_SAMPLE_RATE,
@@ -105,7 +106,7 @@ pub(crate) fn convert_library_item(
     token: &CancellationToken,
 ) -> Result<()> {
     if token.is_cancelled() {
-        return Err(anyhow!("Transcription cancelled"));
+        return Err(cancelled_error());
     }
     let storage = state.storage();
     let item = storage
@@ -136,7 +137,7 @@ pub(crate) fn convert_library_item(
     let result = (|| -> Result<f32> {
         report_import_progress(app, storage.clone(), id, 0.0);
         if token.is_cancelled() {
-            return Err(anyhow!("Transcription cancelled"));
+            return Err(cancelled_error());
         }
 
         if store_original {
@@ -184,7 +185,7 @@ pub(crate) fn convert_library_item(
             Some(&mut progress_cb),
         )?;
         if token.is_cancelled() {
-            return Err(anyhow!("Transcription cancelled"));
+            return Err(cancelled_error());
         }
         let duration_seconds = wav_duration_seconds(&audio_path)?;
         Ok(duration_seconds)
@@ -488,7 +489,7 @@ fn convert_audio_to_wav(
             Ok(()) => return Ok(()),
             Err(err) => {
                 let _ = fs::remove_file(output);
-                if is_cancelled_message(&err.to_string()) {
+                if is_cancelled_error(&err) {
                     return Err(err);
                 }
             }
@@ -505,7 +506,7 @@ fn convert_audio_to_wav(
         Ok(()) => Ok(()),
         Err(err) => {
             let _ = fs::remove_file(output);
-            if is_cancelled_message(&err.to_string()) {
+            if is_cancelled_error(&err) {
                 return Err(err);
             }
             Err(anyhow!(
@@ -572,9 +573,7 @@ fn decode_audio_to_wav(
                     .codec_params
                     .as_ref()
                     .and_then(|params| params.audio())
-                    .is_some_and(|audio| {
-                        audio.sample_rate.is_some() && audio.channels.is_some()
-                    })
+                    .is_some_and(|audio| audio.sample_rate.is_some() && audio.channels.is_some())
             })
         })
         .ok_or_else(|| anyhow!("No supported audio tracks found"))?;
@@ -632,7 +631,7 @@ fn decode_audio_to_wav(
     loop {
         if let Some(token) = token {
             if token.is_cancelled() {
-                return Err(anyhow!("Transcription cancelled"));
+                return Err(cancelled_error());
             }
         }
 
@@ -859,7 +858,7 @@ fn convert_with_ffmpeg(
 ) -> Result<()> {
     if let Some(token) = token {
         if token.is_cancelled() {
-            return Err(anyhow!("Transcription cancelled"));
+            return Err(cancelled_error());
         }
     }
 
@@ -906,7 +905,7 @@ fn convert_with_ffmpeg(
                     let _ = child.kill();
                     let _ = child.wait();
                     let _ = fs::remove_file(output);
-                    return Err(anyhow!("Transcription cancelled"));
+                    return Err(cancelled_error());
                 }
             }
 
@@ -935,7 +934,7 @@ fn convert_with_ffmpeg(
         if let Some(token) = token {
             if token.is_cancelled() {
                 let _ = fs::remove_file(output);
-                return Err(anyhow!("Transcription cancelled"));
+                return Err(cancelled_error());
             }
         }
         if !status.success() {
@@ -974,7 +973,7 @@ fn convert_with_ffmpeg(
                 let _ = child.kill();
                 let _ = child.wait();
                 let _ = fs::remove_file(output);
-                return Err(anyhow!("Transcription cancelled"));
+                return Err(cancelled_error());
             }
         }
 

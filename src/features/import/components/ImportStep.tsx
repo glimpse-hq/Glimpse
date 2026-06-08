@@ -2,7 +2,10 @@ import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
+import {
+  Check,
+  CircleNotch as Loader2,
+} from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import type { StepMotionProps } from "../../onboarding/steps/shared";

@@ -1,6 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Loader2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  CircleNotch as Loader2,
+} from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import {
   editionFromLicenseState,

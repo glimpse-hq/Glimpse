@@ -32,11 +32,9 @@ import {
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { useLicenseGate } from "../license/queries";
 import {
-  buildTranscriptionLanguageView,
-  getActiveTranscriptionEngine,
-  getCatalogTranscriptionEngines,
-  getInstalledTranscriptionEngines,
-  type TranscriptionEngineId,
+  buildActiveTranscriptionLanguageOptions,
+  collectAllTranscriptionLanguages,
+  languageSupportedByModel,
 } from "../../shared/lib/transcriptionLanguages";
 import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { i18n } from "../../i18n";
@@ -83,6 +81,7 @@ type InvalidShortcutDraft = { target: ShortcutTarget; message: string } | null;
 type SaveSettingsOverrides = ShortcutOverrides & {
   localModel?: string;
   localApiModel?: string;
+  language?: string;
   shortcutBindings?: ShortcutBindings;
   shortcutDraftTarget?: ShortcutTarget;
 };
@@ -474,62 +473,28 @@ export function useSettingsForm({
     setStartInBackground(enabled);
   }, []);
 
-  const activeTranscriptionEngine = useMemo(
-    () => getActiveTranscriptionEngine(modelCatalog, localModel),
-    [modelCatalog, localModel],
-  );
-  const installedTranscriptionEngines = useMemo(
-    () => getInstalledTranscriptionEngines(modelCatalog, modelStatus),
-    [modelCatalog, modelStatus],
-  );
-  const catalogTranscriptionEngines = useMemo(
-    () => getCatalogTranscriptionEngines(modelCatalog),
-    [modelCatalog],
-  );
-  const visibleTranscriptionEngines: TranscriptionEngineId[] = useMemo(() => {
-    if (installedTranscriptionEngines.length > 0)
-      return installedTranscriptionEngines;
-    if (activeTranscriptionEngine) return [activeTranscriptionEngine];
-    if (catalogTranscriptionEngines.length > 0)
-      return [catalogTranscriptionEngines[0]];
-    return [];
-  }, [
-    installedTranscriptionEngines,
-    activeTranscriptionEngine,
-    catalogTranscriptionEngines,
-  ]);
-  const showLanguageSupportBadges = installedTranscriptionEngines.length > 1;
   const activeLocalModel = useMemo(
     () => modelCatalog.find((model) => model.key === localModel),
     [modelCatalog, localModel],
   );
-  const autoDictionarySupported =
-    !remoteSpeechEnabled &&
-    hasModelCapability(activeLocalModel, MODEL_CAPABILITY_DICTIONARY);
   const autoTranscriptionLanguageLabel = i18n._(
     msg({
       id: "transcription.language.auto",
       message: "Auto",
     }),
   );
-  const languageView = useMemo(
-    () =>
-      buildTranscriptionLanguageView(
-        modelCatalog,
-        activeTranscriptionEngine,
-        visibleTranscriptionEngines,
-        autoTranscriptionLanguageLabel,
-      ),
-    [
-      modelCatalog,
-      activeTranscriptionEngine,
-      visibleTranscriptionEngines,
-      autoTranscriptionLanguageLabel,
-    ],
+  const unsupportedTranscriptionLanguageLabel = i18n._(
+    msg({
+      id: "transcription.language.unsupported",
+      message: "Unsupported",
+    }),
   );
-  const displayedLanguage = language;
-  const displayedLanguageOptions = languageView.options;
-
+  const unsupportedTranscriptionLanguageDescription = i18n._(
+    msg({
+      id: "transcription.language.unsupported_description",
+      message: "Choose a compatible model to enable these.",
+    }),
+  );
   const llmProviderPreset = useMemo(
     () => getProviderPreset(llmProvider),
     [llmProvider],
@@ -550,7 +515,53 @@ export function useSettingsForm({
       resolvedSpeechModel(remoteSpeechProvider, remoteSpeechModel) &&
       (!remoteSpeechProviderPreset.apiKeyRequired || remoteSpeechApiKey.trim()),
   );
+  const remoteSpeechActive = remoteSpeechEnabled && remoteSpeechConfigReady;
+  const allTranscriptionLanguages = useMemo(
+    () => collectAllTranscriptionLanguages(modelCatalog),
+    [modelCatalog],
+  );
+  const displayedLanguageOptions = useMemo(
+    () =>
+      buildActiveTranscriptionLanguageOptions(
+        activeLocalModel,
+        allTranscriptionLanguages,
+        remoteSpeechActive,
+        autoTranscriptionLanguageLabel,
+        unsupportedTranscriptionLanguageLabel,
+        unsupportedTranscriptionLanguageDescription,
+      ),
+    [
+      activeLocalModel,
+      allTranscriptionLanguages,
+      remoteSpeechActive,
+      autoTranscriptionLanguageLabel,
+      unsupportedTranscriptionLanguageLabel,
+      unsupportedTranscriptionLanguageDescription,
+    ],
+  );
+  const displayedLanguage = displayedLanguageOptions.some(
+    (option) => option.code === language,
+  )
+    ? language
+    : "";
+  const localModelSupportsDictionary = hasModelCapability(
+    activeLocalModel,
+    MODEL_CAPABILITY_DICTIONARY,
+  );
+  const autoDictionarySupported =
+    remoteSpeechActive || localModelSupportsDictionary;
   const aiFeaturesReady = licenseGateActive && llmEnabled && llmConfigReady;
+
+  useEffect(() => {
+    if (!isOpen || loading || !language) return;
+    if (
+      !remoteSpeechActive &&
+      activeLocalModel &&
+      !languageSupportedByModel(activeLocalModel, language)
+    ) {
+      setLanguage("");
+    }
+  }, [activeLocalModel, isOpen, language, loading, remoteSpeechActive]);
 
   const buildSettingsArgs = useCallback(
     (overrides: SaveSettingsOverrides = {}) => {
@@ -574,6 +585,16 @@ export function useSettingsForm({
         remoteSpeechEndpoint,
       );
       const persistedLlmEndpoint = resolvedLlmEndpoint(llmProvider, llmEndpoint);
+      const modelToValidate = overrides.localModel
+        ? modelCatalog.find((model) => model.key === overrides.localModel)
+        : activeLocalModel;
+      const persistedLanguage =
+        overrides.language ??
+        (!remoteSpeechActive &&
+        modelToValidate &&
+        !languageSupportedByModel(modelToValidate, language)
+          ? ""
+          : language);
 
       return {
         smartShortcut:
@@ -597,7 +618,7 @@ export function useSettingsForm({
         remoteSpeechApiKey,
         remoteSpeechModel,
         microphoneDevice,
-        language,
+        language: persistedLanguage,
         appLocale,
         themeMode,
 
@@ -634,7 +655,9 @@ export function useSettingsForm({
       toggleEnabled,
       transcriptionMode,
       localModel,
+      activeLocalModel,
       remoteSpeechEnabled,
+      remoteSpeechActive,
       remoteSpeechProvider,
       remoteSpeechEndpoint,
       remoteSpeechApiKey,
@@ -1014,9 +1037,8 @@ export function useSettingsForm({
         [payload.model]: {
           status: "downloading",
           percent: Math.min(100, payload.percent),
-          downloaded: payload.downloaded,
-          total: payload.total,
           file: payload.file,
+          verifying: payload.verifying,
         },
       }));
     },
@@ -1026,24 +1048,26 @@ export function useSettingsForm({
         [model]: {
           status: "complete",
           percent: 100,
-          downloaded: prev[model]?.downloaded ?? 0,
-          total: prev[model]?.total ?? 0,
         },
       }));
       invalidateModelStatus(model);
     },
     onError: ({ model, error }) => {
-      if (error.toLowerCase().includes("cancelled")) return;
       setDownloadState((prev) => ({
         ...prev,
         [model]: {
           status: "error",
           message: error,
           percent: prev[model]?.percent ?? 0,
-          downloaded: prev[model]?.downloaded ?? 0,
-          total: prev[model]?.total ?? 0,
         },
       }));
+    },
+    onCancelled: ({ model }) => {
+      setDownloadState((prev) => ({
+        ...prev,
+        [model]: { status: "cancelled", percent: 0 },
+      }));
+      invalidateModelStatus(model);
     },
   });
 
@@ -1227,10 +1251,22 @@ export function useSettingsForm({
   const handleLocalModelChange = useCallback(
     (modelKey: string) => {
       clearPendingSettingsSave();
+      const nextModel = modelCatalog.find((model) => model.key === modelKey);
+      const nextLanguage =
+        remoteSpeechActive || languageSupportedByModel(nextModel, language)
+          ? language
+          : "";
       setLocalModel(modelKey);
-      void saveSettingsNow({ localModel: modelKey });
+      setLanguage(nextLanguage);
+      void saveSettingsNow({ localModel: modelKey, language: nextLanguage });
     },
-    [clearPendingSettingsSave, saveSettingsNow],
+    [
+      clearPendingSettingsSave,
+      language,
+      modelCatalog,
+      remoteSpeechActive,
+      saveSettingsNow,
+    ],
   );
 
   const fetchAvailableModels = useCallback(async () => {
@@ -1285,8 +1321,6 @@ export function useSettingsForm({
         [modelKey]: {
           status: "downloading",
           percent: 0,
-          downloaded: 0,
-          total: 0,
           file: "starting",
         },
       }));
@@ -1294,8 +1328,6 @@ export function useSettingsForm({
         await invoke("download_model", { model: modelKey });
         invalidateModelStatus(modelKey);
       } catch (err) {
-        const errorMsg = String(err);
-        if (errorMsg.toLowerCase().includes("cancelled")) return;
         console.error(err);
         setDownloadState((prev) => ({
           ...prev,
@@ -1303,8 +1335,6 @@ export function useSettingsForm({
             status: "error",
             message: String(err),
             percent: prev[modelKey]?.percent ?? 0,
-            downloaded: prev[modelKey]?.downloaded ?? 0,
-            total: prev[modelKey]?.total ?? 0,
           },
         }));
       }
@@ -1318,7 +1348,7 @@ export function useSettingsForm({
         await invoke("delete_model", { model: modelKey });
         setDownloadState((prev) => ({
           ...prev,
-          [modelKey]: { status: "idle", percent: 0, downloaded: 0, total: 0 },
+          [modelKey]: { status: "idle", percent: 0 },
         }));
 
         const otherInstalledModel = modelCatalog.find(
@@ -1326,10 +1356,17 @@ export function useSettingsForm({
         );
         const settingsUpdates: SaveSettingsOverrides = {};
 
-        if (localModel === modelKey) {
-          if (otherInstalledModel) {
-            settingsUpdates.localModel = otherInstalledModel.key;
-            setLocalModel(otherInstalledModel.key);
+        if (localModel === modelKey && otherInstalledModel) {
+          settingsUpdates.localModel = otherInstalledModel.key;
+          setLocalModel(otherInstalledModel.key);
+          const nextLanguage =
+            remoteSpeechActive ||
+            languageSupportedByModel(otherInstalledModel, language)
+              ? language
+              : "";
+          if (nextLanguage !== language) {
+            settingsUpdates.language = nextLanguage;
+            setLanguage(nextLanguage);
           }
         }
 
@@ -1353,8 +1390,6 @@ export function useSettingsForm({
             status: "error",
             message: String(err),
             percent: prev[modelKey]?.percent ?? 0,
-            downloaded: prev[modelKey]?.downloaded ?? 0,
-            total: prev[modelKey]?.total ?? 0,
           },
         }));
       }
@@ -1362,10 +1397,12 @@ export function useSettingsForm({
     [
       clearPendingSettingsSave,
       invalidateModelStatus,
+      language,
       localApiModel,
       localModel,
       modelCatalog,
       modelStatus,
+      remoteSpeechActive,
       saveSettingsNow,
     ],
   );
@@ -1378,8 +1415,6 @@ export function useSettingsForm({
         [modelKey]: {
           status: "cancelled",
           percent: 0,
-          downloaded: 0,
-          total: 0,
         },
       }));
       const resetTimeout = setTimeout(() => {
@@ -1391,8 +1426,6 @@ export function useSettingsForm({
               [modelKey]: {
                 status: "idle",
                 percent: 0,
-                downloaded: 0,
-                total: 0,
               },
             };
           }
@@ -1571,9 +1604,6 @@ export function useSettingsForm({
     appLocale,
     setAppLocale,
     languages: displayedLanguageOptions,
-    languageBadgeColumns: languageView.badgeColumns,
-    showLanguageSupportBadges,
-
 
     inputDevices,
     modelCatalog,

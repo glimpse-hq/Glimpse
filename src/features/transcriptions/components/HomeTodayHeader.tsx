@@ -8,10 +8,8 @@ import {
   labelForHomeGreeting,
   useTimeOfDayPeriodTick,
 } from "../homeGreeting";
-import {
-  getActiveTodayStatSlide,
-  type TodayDictationStats,
-} from "../todayStats";
+import { getActiveTodayStatSlide } from "../todayStats";
+import type { TodayDictationStats } from "../../../types";
 
 const fadeTransition = { duration: 0.22, ease: "easeOut" as const };
 

@@ -1,7 +1,19 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AppWindow, Check, Copy, Cpu, Info, Key, Keyboard, Server, User, X } from "lucide-react";
+import {
+  AppWindow,
+  Check,
+  Copy,
+  Cpu,
+  Info,
+  Key,
+  SquaresFour,
+  HardDrives as Server,
+  User,
+  X,
+  type Icon as PhosphorIcon,
+} from "@phosphor-icons/react";
 import FAQModal from "../../../shared/ui/FAQModal";
 import WhatsNewModal from "../../updates/components/WhatsNewModal";
 import AboutTab from "./tabs/AboutTab";
@@ -139,7 +151,7 @@ const SettingsModal = ({
               <nav className="flex-1 px-2 space-y-4">
                 <div className="space-y-1">
                   <ModalNavItem
-                    icon={<User size={14} aria-hidden="true" />}
+                    icon={User}
                     label={t({
                       id: "settings.modal.tab.account",
                       message: "Account",
@@ -157,7 +169,7 @@ const SettingsModal = ({
                     })}
                   </p>
                   <ModalNavItem
-                    icon={<Keyboard size={14} aria-hidden="true" />}
+                    icon={SquaresFour}
                     label={t({
                       id: "settings.modal.tab.general",
                       message: "General",
@@ -166,7 +178,7 @@ const SettingsModal = ({
                     onClick={() => form.setActiveTab("general")}
                   />
                   <ModalNavItem
-                    icon={<AppWindow size={14} aria-hidden="true" />}
+                    icon={AppWindow}
                     label={t({
                       id: "settings.modal.tab.app",
                       message: "App",
@@ -175,7 +187,7 @@ const SettingsModal = ({
                     onClick={() => form.setActiveTab("app")}
                   />
                   <ModalNavItem
-                    icon={<Info size={14} aria-hidden="true" />}
+                    icon={Info}
                     label={t({
                       id: "settings.modal.tab.about",
                       message: "About",
@@ -194,7 +206,7 @@ const SettingsModal = ({
                       })}
                     </p>
                     <ModalNavItem
-                      icon={<Cpu size={14} aria-hidden="true" />}
+                      icon={Cpu}
                       label={t({
                         id: "settings.modal.tab.models",
                         message: "Models",
@@ -203,7 +215,7 @@ const SettingsModal = ({
                       onClick={() => form.setActiveTab("models")}
                     />
                     <ModalNavItem
-                      icon={<Key size={14} aria-hidden="true" />}
+                      icon={Key}
                       label={t({
                         id: "settings.modal.tab.providers",
                         message: "Providers",
@@ -222,7 +234,7 @@ const SettingsModal = ({
                     })}
                   </p>
                   <ModalNavItem
-                    icon={<Server size={14} aria-hidden="true" />}
+                    icon={Server}
                     label={t({
                       id: "settings.modal.tab.api_server",
                       message: "API Server",
@@ -277,10 +289,6 @@ const SettingsModal = ({
                         language={form.language}
                         onLanguageChange={form.setLanguage}
                         languages={form.languages}
-                        languageBadgeColumns={form.languageBadgeColumns}
-                        showLanguageSupportBadges={
-                          form.showLanguageSupportBadges
-                        }
                         smartEnabled={form.smartEnabled}
                         setSmartEnabled={form.setSmartEnabled}
                         holdEnabled={form.holdEnabled}
@@ -314,12 +322,11 @@ const SettingsModal = ({
                         downloadState={form.downloadState}
                         localModel={form.localModel}
                         remoteSpeechEnabled={form.remoteSpeechEnabled}
-                        remoteSpeechModel={form.remoteSpeechModel}
+                        remoteSpeechProvider={form.remoteSpeechProvider}
                         setLocalModel={form.setLocalModel}
                         handleDownload={form.handleDownload}
                         handleDelete={form.handleDelete}
                         handleCancelDownload={form.handleCancelDownload}
-                        formatBytes={form.formatBytes}
                       />
                     )}
 
@@ -538,13 +545,13 @@ const SettingsErrorBanner = ({
 };
 
 const ModalNavItem = ({
-  icon,
+  icon: Icon,
   label,
   active,
   disabled = false,
   onClick,
 }: {
-  icon: ReactNode;
+  icon: PhosphorIcon;
   label: string;
   active: boolean;
   disabled?: boolean;
@@ -567,11 +574,15 @@ const ModalNavItem = ({
         disabled
           ? "text-content-disabled/50"
           : active
-            ? "text-cloud/80"
+            ? "text-content-primary"
             : "text-content-disabled"
       }
     >
-      {icon}
+      <Icon
+        size={14}
+        weight={active ? "fill" : "regular"}
+        aria-hidden="true"
+      />
     </div>
     {label}
   </motion.button>

@@ -1,10 +1,14 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { TranscriptionRecord } from "../../types";
+import type { TodayDictationStats, TranscriptionRecord } from "../../types";
 
 export async function getTranscriptions(
   searchQuery: string | null,
 ): Promise<TranscriptionRecord[]> {
   return invoke<TranscriptionRecord[]>("get_transcriptions", { searchQuery });
+}
+
+export async function getTodayDictationStats(): Promise<TodayDictationStats> {
+  return invoke<TodayDictationStats>("get_today_dictation_stats");
 }
 
 export async function deleteTranscription(id: string): Promise<void> {

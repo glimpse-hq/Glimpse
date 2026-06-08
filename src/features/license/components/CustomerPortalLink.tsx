@@ -1,6 +1,8 @@
 import { useLingui } from "@lingui/react/macro";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { ExternalLink } from "lucide-react";
+import {
+  ArrowSquareOut as ExternalLink,
+} from "@phosphor-icons/react";
 import {
   customerPortalUrlFor,
   type PurchaseSource,

@@ -13,12 +13,6 @@ export function commercialCheckoutUrl(): string | null {
   return url || null;
 }
 
-// TODO: REMOVE after next update: beta gift founder checkout env (VITE_GLIMPSE_FOUNDER_CHECKOUT_URL).
-export function founderCheckoutUrl(): string | null {
-  const url = import.meta.env.VITE_GLIMPSE_FOUNDER_CHECKOUT_URL?.trim();
-  return url || null;
-}
-
 export function customerPortalUrl(): string | null {
   const url = import.meta.env.VITE_GLIMPSE_CUSTOMER_PORTAL?.trim();
   return url || null;
@@ -31,11 +25,6 @@ export function checkoutUrlFor(
   const rawUrl =
     tier === "commercial" ? commercialCheckoutUrl() : personalCheckoutUrl();
   return withCheckoutTracking(rawUrl, `${tier}_license`, source);
-}
-
-// TODO: REMOVE after next update: beta gift founder checkout link builder.
-export function founderCheckoutUrlFor(source: PurchaseSource): string | null {
-  return withCheckoutTracking(founderCheckoutUrl(), "founder_license", source);
 }
 
 export function customerPortalUrlFor(source: PurchaseSource): string | null {

@@ -1,6 +1,6 @@
 # Contributing to Glimpse
 
-Thanks for wanting to help. Glimpse is a small project with a big surface area (local speech, native windows, two platforms), and every contribution matters, whether you write code, translate, report bugs, or just spread the word.
+Thanks for helping out. Glimpse is a small project with a big surface area: local speech, native integrations, two platforms. Code, translations, bug reports, or just spreading the word all help it grow.
 
 ## Ways to help
 
@@ -16,17 +16,15 @@ Thanks for wanting to help. Glimpse is a small project with a big surface area (
 
 ## Translations
 
-Translation contributors are added by invite. We use [Lokalise](https://lokalise.com/) for localization. If you're accepted, you'll get an invite by email.
-
-**To apply, email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) with:**
+Translations run on [Lokalise](https://lokalise.com/), by invite. Email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) with:
 
 - The language(s) you want to translate
 - Whether you're a native speaker
-- Any prior translation or localization experience (optional)
+- Any prior translation experience (optional)
 
-Applications are reviewed manually. We may not approve every requested language, depending on demand and maintainer capacity.
+Applications are reviewed by hand, and not every language gets approved, depending on demand and capacity. If you're in, you'll get a Lokalise invite by email.
 
-Active translation contributors receive a **Personal** license (full Glimpse Personal access on up to 5 devices) as a thank-you.
+Active translators get a **Personal** license (full access on up to 5 devices) as thanks.
 
 > <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="18" alt="Lokalise" align="center" /></a>&ensp;Translations supported by [Lokalise](https://lokalise.com/)
 
@@ -37,20 +35,20 @@ Active translation contributors receive a **Personal** license (full Glimpse Per
 Found a bug? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) and include:
 
 - **Steps to reproduce:** what you did, in order
-- **Expected vs. actual:** what you thought would happen vs. what did
-- **Environment:** macOS or Windows version, and your Glimpse version (Settings → About)
+- **Expected vs. actual:** what you thought would happen, and what did
+- **Environment:** your OS version, and your Glimpse version (Settings → About)
 
-Screenshots or screen recordings help a lot for UI bugs.
+For UI bugs, a screenshot or screen recording goes a long way.
 
-For sensitive issues (security, privacy), email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) instead of opening a public issue.
+For security or privacy issues, email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) instead of opening a public issue.
 
 ---
 
 ## Feature requests
 
-Have an idea? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) describing what you'd like and why it would be useful. Search [existing issues](https://github.com/LegendarySpy/Glimpse/issues) first to avoid duplicates.
+Have an idea? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) with what you'd like and why it's useful. Check [existing issues](https://github.com/LegendarySpy/Glimpse/issues) first to avoid duplicates.
 
-Glimpse is local-first by design. Features that send audio or transcripts to Glimpse's servers by default are unlikely to fit the project's direction.
+Glimpse is local-first by design. Features that send audio or transcripts to a server by default probably won't fit the project's direction.
 
 ---
 
@@ -73,7 +71,7 @@ All PRs target `main`, regardless of the current release version.
 
 ## Spread the word
 
-Star the repo, tell a friend, mention Glimpse in a blog post or on social media. Visibility helps the project grow!
+Star the repo, tell a friend, mention Glimpse in a post or on social. Visibility is what keeps a small project going.
 
 ---
 

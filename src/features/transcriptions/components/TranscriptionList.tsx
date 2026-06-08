@@ -7,7 +7,12 @@ import React, {
   useRef,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, X, ArrowDownUp, Check } from "lucide-react";
+import {
+  MagnifyingGlass as Search,
+  X,
+  ArrowsDownUp as ArrowDownUp,
+  Check,
+} from "@phosphor-icons/react";
 import { Virtuoso } from "react-virtuoso";
 import {
   useTranscriptionList,
