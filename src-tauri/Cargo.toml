@@ -38,7 +38,7 @@ rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
 posthog-rs = "0.8"
 arboard = "3"
-glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.4.5", features = ["whisper", "nvidia", "api", "cli", "remote"] }
+glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.4.6", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.2", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"

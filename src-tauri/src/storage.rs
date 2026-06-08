@@ -440,7 +440,11 @@ impl StorageManager {
         Ok(stats.unwrap_or_default())
     }
 
-    fn record_dictation(conn: &Connection, word_count: u32, audio_duration_seconds: f32) -> Result<()> {
+    fn record_dictation(
+        conn: &Connection,
+        word_count: u32,
+        audio_duration_seconds: f32,
+    ) -> Result<()> {
         let duration_ms = (audio_duration_seconds.max(0.0) * 1000.0).round() as i64;
         conn.execute(
             "UPDATE lifetime_stats

@@ -720,12 +720,15 @@ impl PillController {
 
                         crate::transcribe::finalize_streaming_transcription(
                             &app_handle,
-                            streaming_transcript,
-                            (duration_ms.max(0) as f32) / 1000.0,
-                            saved.path,
-                            settings_for_transcription,
-                            recording_options.temporary,
-                            cancel_token,
+                            crate::transcribe::StreamingTranscriptionInput {
+                                raw_transcript: streaming_transcript,
+                                duration_seconds: (duration_ms.max(0) as f32) / 1000.0,
+                                audio_path: saved.path,
+                                pending_path: saved.pending_path,
+                                settings: settings_for_transcription,
+                                temporary: recording_options.temporary,
+                                cancel_token,
+                            },
                         );
                     }
                     Ok(None) => {
