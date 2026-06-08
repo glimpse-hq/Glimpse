@@ -2,6 +2,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AudioSpectrumPayload,
+  PillHoverPayload,
   PillModePayload,
   PillStatePayload,
   PillStatus,
@@ -17,6 +18,7 @@ export function usePillState() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedText, setExpandedText] = useState("");
   const [pillTone, setPillTone] = useState<PillTone>("default");
+  const [isHovered, setIsHovered] = useState(false);
 
   const statusRef = useRef<PillStatus>("idle");
   const spectrumBinsRef = useRef<Uint8Array>(EMPTY_SPECTRUM);
@@ -125,6 +127,10 @@ export function usePillState() {
       setPillTone(tone ?? "default");
     });
 
+    register<PillHoverPayload>("pill:hover", ({ hovering }) => {
+      setIsHovered(hovering);
+    });
+
     return () => {
       cancelled = true;
       clearErrorFlashTimer();
@@ -140,6 +146,7 @@ export function usePillState() {
     isExpanded,
     expandedText,
     pillTone,
+    isHovered,
     dismiss,
   };
 }

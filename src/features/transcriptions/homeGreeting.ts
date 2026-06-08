@@ -4,10 +4,9 @@ export type TimeOfDayPeriod = "morning" | "afternoon" | "evening";
 
 export type HomeGreetingVariant =
   | { kind: "time" }
-  | { kind: "happy_weekday" }
   | { kind: "occasion"; id: HomeOccasionId };
 
-export type HomeOccasionId = "friday" | "saturday" | "sunday" | "leap_day";
+export type HomeOccasionId = "leap_day";
 
 // Morning 6–12, afternoon 12–17, evening 17–6 (local)
 export function timeOfDayPeriod(now: Date = new Date()): TimeOfDayPeriod {
@@ -25,24 +24,6 @@ type OccasionRule = {
 };
 
 const OCCASION_RULES: OccasionRule[] = [
-  {
-    id: "friday",
-    messageId: "home.greeting.occasion.friday",
-    message: "You made it to Friday",
-    when: (date) => date.getDay() === 5,
-  },
-  {
-    id: "saturday",
-    messageId: "home.greeting.occasion.saturday",
-    message: "Enjoy your Saturday",
-    when: (date) => date.getDay() === 6,
-  },
-  {
-    id: "sunday",
-    messageId: "home.greeting.occasion.sunday",
-    message: "Take it easy this Sunday",
-    when: (date) => date.getDay() === 0,
-  },
   {
     id: "leap_day",
     messageId: "home.greeting.occasion.leap_day",
@@ -155,7 +136,6 @@ export function getHomeGreetingVariant(
   );
   const pool: HomeGreetingVariant[] = [
     { kind: "time" },
-    { kind: "happy_weekday" },
     ...occasions,
   ];
   return pool[stableIndex(pool.length, now, 0)] ?? pool[0];
@@ -165,22 +145,15 @@ export function homeGreetingKey(
   variant: HomeGreetingVariant,
   now: Date = new Date(),
 ): string {
-  if (variant.kind === "time") return `time-${timeOfDayPeriod(now)}`;
   if (variant.kind === "occasion") return `occasion-${variant.id}`;
-  return "happy-weekday";
+  return `time-${timeOfDayPeriod(now)}`;
 }
 
 export function labelForHomeGreeting(
   variant: HomeGreetingVariant,
-  weekdayName: string,
   t: (descriptor: { id: string; message: string }) => string,
 ): string {
   switch (variant.kind) {
-    case "happy_weekday":
-      return t({
-        id: "home.greeting.happy_weekday",
-        message: `Happy ${weekdayName}`,
-      });
     case "occasion": {
       const rule = OCCASION_RULES.find((entry) => entry.id === variant.id);
       if (!rule) return "";

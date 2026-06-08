@@ -14,3 +14,7 @@ export type PillModePayload = {
     text?: string;
     tone?: PillTone;
 };
+
+export type PillHoverPayload = {
+    hovering: boolean;
+};

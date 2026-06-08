@@ -20,8 +20,7 @@ use super::processing::{
 };
 use super::types::{
     cancelled_error, is_cancelled_error, is_ffmpeg_error_message, LibraryCompletePayload,
-    LibraryErrorPayload,
-    LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryProgressPayload,
+    LibraryErrorPayload, LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryProgressPayload,
     LibraryProgressUpdate, LibraryTranscriptionResult, TranscriptSegment, CHUNK_OVERLAP_SECONDS,
     DIRECT_TRANSCRIBE_MINUTES, EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, EVENT_LIBRARY_PROGRESS,
     MAX_CHUNK_MINUTES,

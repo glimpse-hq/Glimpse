@@ -7,7 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import ActivityDots from "../../../shared/ui/ActivityDots";
-import { deriveModelStats, formatModelSize } from "../../../shared/lib/modelStats";
+import { deriveModelStats, formatModelSize, formatQuantLabel } from "../../../shared/lib/modelStats";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../../types";
 
 const CARD_WIDTH = 300;
@@ -63,6 +63,8 @@ const ModelStatCard = ({
 
   const facts = [stats.languagesLabel];
   facts.push(formatModelSize(model.size_mb));
+  const quant = formatQuantLabel(model.variant);
+  if (quant) facts.push(quant);
 
   const installed = status?.installed;
   const isDownloading = progress?.status === "downloading";

@@ -110,6 +110,16 @@ struct CompletionInput {
     timestamp_override: Option<chrono::DateTime<chrono::Local>>,
 }
 
+pub(crate) struct StreamingTranscriptionInput {
+    pub(crate) raw_transcript: String,
+    pub(crate) duration_seconds: f32,
+    pub(crate) audio_path: PathBuf,
+    pub(crate) pending_path: Option<PathBuf>,
+    pub(crate) settings: UserSettings,
+    pub(crate) temporary: bool,
+    pub(crate) cancel_token: CancellationToken,
+}
+
 pub(crate) fn queue_transcription(
     app: &AppHandle<AppRuntime>,
     saved: RecordingSaved,
@@ -1684,13 +1694,18 @@ fn last_chars(value: &str, count: usize) -> String {
 
 pub(crate) fn finalize_streaming_transcription(
     app: &AppHandle<AppRuntime>,
-    raw_transcript: String,
-    duration_seconds: f32,
-    audio_path: PathBuf,
-    settings: UserSettings,
-    temporary: bool,
-    cancel_token: CancellationToken,
+    input: StreamingTranscriptionInput,
 ) {
+    let StreamingTranscriptionInput {
+        raw_transcript,
+        duration_seconds,
+        audio_path,
+        pending_path,
+        settings,
+        temporary,
+        cancel_token,
+    } = input;
+
     let state = app.state::<AppState>();
     let pending_selected_text = state.take_pending_selected_text();
     let http = state.http();
@@ -1704,17 +1719,18 @@ pub(crate) fn finalize_streaming_transcription(
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
 
         if count_words(&raw_transcript) == 0 {
-            let _ = std::fs::remove_file(&audio_path);
+            crate::pill::collapse_expanded_pill(&app_handle);
+            handle_empty_transcription(&app_handle, &audio_path, pending_path.as_deref());
+            return;
+        }
+
+        if is_cancelled() {
             crate::pill::collapse_expanded_pill(&app_handle);
             app_handle
                 .state::<AppState>()
                 .pill()
                 .finish_processing(&app_handle);
-            app_handle.state::<AppState>().set_pending_path(None);
-            return;
-        }
-
-        if is_cancelled() {
+            discard_pending_recording(pending_path.as_deref());
             app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
@@ -1736,16 +1752,28 @@ pub(crate) fn finalize_streaming_transcription(
         {
             ProcessTranscriptOutcome::Ready(processed) => processed,
             ProcessTranscriptOutcome::Empty => {
-                handle_empty_transcription(&app_handle, &audio_path, None);
+                handle_empty_transcription(&app_handle, &audio_path, pending_path.as_deref());
                 return;
             }
             ProcessTranscriptOutcome::Cancelled => {
+                crate::pill::collapse_expanded_pill(&app_handle);
+                app_handle
+                    .state::<AppState>()
+                    .pill()
+                    .finish_processing(&app_handle);
+                discard_pending_recording(pending_path.as_deref());
                 app_handle.state::<AppState>().set_pending_path(None);
                 return;
             }
         };
 
         if is_cancelled() {
+            crate::pill::collapse_expanded_pill(&app_handle);
+            app_handle
+                .state::<AppState>()
+                .pill()
+                .finish_processing(&app_handle);
+            discard_pending_recording(pending_path.as_deref());
             app_handle.state::<AppState>().set_pending_path(None);
             return;
         }
@@ -1772,7 +1800,7 @@ pub(crate) fn finalize_streaming_transcription(
                 final_transcript: processed.final_transcript,
                 auto_paste: processed.pasted,
                 audio_path: audio_path.display().to_string(),
-                pending_path: None,
+                pending_path,
                 llm_cleaned: processed.llm_cleaned,
                 metadata,
                 mode: "local_streaming",

@@ -1,3 +1,19 @@
+0.9.5
+
+### Improvements
+- The recording pill now moves out of the way when your cursor is near it.
+- Models page revision: each model shows its quantization and installed versions are highlighted.
+- What's New now renders full Markdown.
+
+### Changes
+- Home greetings no longer change based on the day of the week.
+- Recordings now stop on their own after 30 minutes.
+
+### Fixes
+- The Models screen now updates right away when you install or delete a model, instead of only after reopening Settings.
+- Cancelling a model download partway through no longer leaves an empty model folder behind.
+
+---
 0.9.4
 
 ### Features
