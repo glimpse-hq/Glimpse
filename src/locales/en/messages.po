@@ -4286,7 +4286,7 @@ msgstr "v{version} available"
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
 msgid "models.card.verifying"
-msgstr "Verifying download"
+msgstr "Verifying install"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

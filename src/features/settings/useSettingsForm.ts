@@ -57,6 +57,7 @@ import type {
   CliInstallStatus,
   LocalApiLogEntry,
   LocalApiStatus,
+  ModelStatus,
   RemoteSpeechProvider,
 } from "../../types";
 
@@ -1325,8 +1326,11 @@ export function useSettingsForm({
         },
       }));
       try {
-        await invoke("download_model", { model: modelKey });
-        invalidateModelStatus(modelKey);
+        const status = await invoke<ModelStatus>("download_model", {
+          model: modelKey,
+        });
+        queryClient.setQueryData(modelKeys.status(modelKey), status);
+        void queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
       } catch (err) {
         console.error(err);
         setDownloadState((prev) => ({
@@ -1339,13 +1343,16 @@ export function useSettingsForm({
         }));
       }
     },
-    [invalidateModelStatus],
+    [queryClient],
   );
 
   const handleDelete = useCallback(
     async (modelKey: string) => {
       try {
-        await invoke("delete_model", { model: modelKey });
+        const status = await invoke<ModelStatus>("delete_model", {
+          model: modelKey,
+        });
+        queryClient.setQueryData(modelKeys.status(modelKey), status);
         setDownloadState((prev) => ({
           ...prev,
           [modelKey]: { status: "idle", percent: 0 },
@@ -1381,7 +1388,7 @@ export function useSettingsForm({
           void saveSettingsNow(settingsUpdates);
         }
 
-        invalidateModelStatus(modelKey);
+        void queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
       } catch (err) {
         console.error(err);
         setDownloadState((prev) => ({
@@ -1396,7 +1403,7 @@ export function useSettingsForm({
     },
     [
       clearPendingSettingsSave,
-      invalidateModelStatus,
+      queryClient,
       language,
       localApiModel,
       localModel,

@@ -11,7 +11,7 @@ import {
 import ModelStatCard from "../ModelStatCard";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
-import { deriveModelStats, formatModelSize } from "../../../../shared/lib/modelStats";
+import { deriveModelStats, formatModelSize, formatQuantLabel } from "../../../../shared/lib/modelStats";
 import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import type {
@@ -76,6 +76,8 @@ const InstalledModelRow = ({
         }),
   ];
   facts.push(formatModelSize(model.size_mb));
+  const quant = formatQuantLabel(model.variant);
+  if (quant) facts.push(quant);
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
@@ -197,8 +199,7 @@ const ModelsTab = ({
         </>
       ) : (
         <div className="flex flex-col gap-5">
-          {/* reserved slot so toggling the provider never shifts the layout */}
-          <div className="min-h-[1.875rem]">
+          <div className="min-h-[1.25rem]">
             {remoteSpeechEnabled && (
               <div className="flex items-center gap-2 rounded-lg border border-cloud-20 bg-cloud-5 px-3 py-1.5">
                 <Cloud
@@ -218,7 +219,7 @@ const ModelsTab = ({
           </div>
 
           {installedModel && (
-            <div className="flex justify-center pt-1">
+            <div className="flex justify-center">
               <ModelStatCard
                 model={installedModel}
                 status={modelStatus[installedModel.key]}

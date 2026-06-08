@@ -1,11 +1,16 @@
 0.9.5
 
 ### Improvements
-- The recording pill now stays out of your way: move your pointer over it and it fades back and shrinks, then springs to full size when you move away, so it never covers what you're working on.
-- What's New release notes have been updated to support better rendering.
+- The recording pill now moves out of the way when your cursor is near it.
+- Models page revision: each model shows its quantization and installed versions are highlighted.
+- What's New now renders full Markdown.
 
 ### Changes
 - Home greetings no longer change based on the day of the week.
+
+### Fixes
+- The Models screen now updates right away when you install or delete a model, instead of only after reopening Settings.
+- Cancelling a model download partway through no longer leaves an empty model folder behind.
 
 ---
 0.9.4

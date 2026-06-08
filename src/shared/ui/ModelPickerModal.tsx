@@ -11,7 +11,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
-import { deriveModelStats, formatModelSize } from "../lib/modelStats";
+import { deriveModelStats, formatModelSize, variantLabel } from "../lib/modelStats";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
 import DotMatrix from "./DotMatrix";
@@ -33,8 +33,6 @@ const variantRank = (variant: string): number => {
   const index = VARIANT_ORDER.indexOf(variant);
   return index === -1 ? VARIANT_ORDER.length : index;
 };
-
-const variantLabel = (variant: string): string => variant.split("_")[0];
 
 const groupModels = (catalog: ModelInfo[]): ModelGroup[] => {
   const byId = new Map<string, ModelInfo[]>();
@@ -159,6 +157,7 @@ export function ModelPickerPanel({
         selected={selected}
         active={selected.key === activeKey}
         installed={isInstalled(selected.key)}
+        isVariantInstalled={isInstalled}
         shiftHeld={shiftHeld}
         progress={progressFor(selected.key)}
         onSelectVariant={(key) =>
@@ -270,7 +269,7 @@ export function ModelPickerPanel({
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <div className="h-full overflow-y-auto px-2 py-3">
+        <div className="h-full overflow-y-auto py-3 pl-2 pr-3">
           {filteredGroups.length === 0 ? (
             <p className="py-10 text-center ui-text-body-sm text-content-muted">
               {t({
@@ -387,6 +386,7 @@ function ModelRow({
   selected,
   active,
   installed,
+  isVariantInstalled,
   shiftHeld,
   progress,
   onSelectVariant,
@@ -399,6 +399,7 @@ function ModelRow({
   selected: ModelInfo;
   active: boolean;
   installed: boolean;
+  isVariantInstalled: (key: string) => boolean;
   shiftHeld: boolean;
   progress?: DownloadEvent;
   onSelectVariant: (key: string) => void;
@@ -409,6 +410,8 @@ function ModelRow({
 }) {
   const { t } = useLingui();
   const isDownloading = progress?.status === "downloading";
+  const isVerifying =
+    progress?.status === "downloading" && progress.verifying === true;
   const showError = progress?.status === "error";
   const isCancelled = progress?.status === "cancelled";
   const isBusy = isDownloading || showError || isCancelled;
@@ -434,28 +437,35 @@ function ModelRow({
         </span>
       </button>
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-center justify-end gap-3">
         {showQuants && (
           <div className="inline-flex items-center overflow-hidden rounded-md border border-border-secondary">
             {group.variants.map((variant, index) => {
               const isSel = variant.key === selected.key;
+              const variantInstalled = isVariantInstalled(variant.key);
               return (
                 <button
                   key={variant.key}
                   type="button"
                   onClick={() => onSelectVariant(variant.key)}
                   aria-pressed={isSel}
-                  className={`px-2 py-0.5 font-mono ui-text-micro tabular-nums transition-colors ${
+                  className={`px-2.5 py-1 font-mono ui-text-micro tabular-nums transition-colors ${
                     index > 0 ? "border-l border-border-secondary" : ""
-                  } ${
-                    isSel
-                      ? "bg-local-15 text-local"
-                      : "text-content-muted hover:bg-surface-elevated/60 hover:text-content-primary"
+                  } ${isSel ? "bg-local-15" : "hover:bg-surface-elevated/60"} ${
+                    variantInstalled
+                      ? "text-local"
+                      : isSel
+                        ? "text-content-secondary"
+                        : "text-content-muted hover:text-content-primary"
                   }`}
-                  title={t({
-                    id: "model_picker.variant",
-                    message: "Model variant",
-                  })}
+                  title={
+                    variantInstalled
+                      ? t({
+                          id: "model_picker.variant_installed",
+                          message: "Model variant (installed)",
+                        })
+                      : t({ id: "model_picker.variant", message: "Model variant" })
+                  }
                 >
                   {variantLabel(variant.variant)}
                 </button>
@@ -469,7 +479,11 @@ function ModelRow({
             <div className="flex min-w-[140px] flex-col items-end justify-center">
               <ModelProgressDots percent={percent} status={progress!.status} />
               <div className="mt-1 flex h-3 w-full items-center justify-end">
-                {isDownloading && (
+                {isVerifying ? (
+                  <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
+                    {t({ id: "models.card.verifying", message: "Verifying install" })}
+                  </p>
+                ) : isDownloading ? (
                   <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
                     {percent}% ·{" "}
                     {
@@ -477,7 +491,7 @@ function ModelRow({
                         .file
                     }
                   </p>
-                )}
+                ) : null}
                 {showError && (
                   <p className="flex w-full items-center justify-end gap-1 ui-text-micro text-error">
                     <AlertCircle size={9} className="shrink-0" />
@@ -510,49 +524,49 @@ function ModelRow({
             </div>
           </>
         ) : (
-          <>
-            <div className="flex w-[68px] shrink-0 items-center justify-center">
-              {!installed ? (
-                <button
-                  type="button"
-                  onClick={onDownload}
-                  className="inline-flex items-center gap-1 ui-text-meta font-medium text-content-secondary transition-colors hover:text-content-primary"
-                  title={t({ id: "model_picker.download", message: "Download" })}
-                  aria-label={t({ id: "model_picker.download", message: "Download" })}
-                >
-                  <Download size={13} aria-hidden="true" />
-                </button>
-              ) : active ? (
-                <span className="ui-text-meta font-medium text-local">
-                  {t({ id: "model_picker.active", message: "Active" })}
-                </span>
-              ) : (
-                <button
-                  type="button"
-                  onClick={onUse}
-                  className="ui-text-meta font-medium text-content-secondary transition-colors hover:text-content-primary"
-                >
-                  {t({ id: "model_picker.use", message: "Use" })}
-                </button>
-              )}
+          <div className="flex items-center gap-2">
+            <div className="flex min-w-[3.5rem] items-center justify-end">
+              {installed &&
+                (active ? (
+                  <span className="ui-text-meta font-medium text-local">
+                    {t({ id: "model_picker.active", message: "Active" })}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={onUse}
+                    className="ui-text-meta font-medium text-content-secondary transition-colors hover:text-content-primary"
+                  >
+                    {t({ id: "model_picker.use", message: "Use" })}
+                  </button>
+                ))}
             </div>
-            <div className="flex w-7 shrink-0 items-center justify-end">
-              {installed && (
-                <button
-                  type="button"
-                  onClick={onDelete}
-                  className={`flex h-6 w-6 items-center justify-center rounded-md transition-all hover:bg-error/10 hover:text-error ${
-                    shiftHeld
-                      ? "text-error opacity-100"
-                      : "text-content-disabled opacity-0 group-hover:opacity-100"
-                  }`}
-                  title={t({ id: "model_picker.delete", message: "Delete" })}
-                >
-                  <Trash2 size={12} aria-hidden="true" />
-                </button>
-              )}
-            </div>
-          </>
+            {installed ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                className={`flex h-6 w-6 items-center justify-center rounded-md transition-all hover:bg-error/10 hover:text-error ${
+                  shiftHeld
+                    ? "text-error opacity-100"
+                    : "text-content-disabled opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:text-error"
+                }`}
+                title={t({ id: "model_picker.delete", message: "Delete" })}
+                aria-label={t({ id: "model_picker.delete", message: "Delete" })}
+              >
+                <Trash2 size={12} aria-hidden="true" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onDownload}
+                className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+                title={t({ id: "model_picker.download", message: "Download" })}
+                aria-label={t({ id: "model_picker.download", message: "Download" })}
+              >
+                <Download size={13} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>
