@@ -1719,18 +1719,17 @@ pub(crate) fn finalize_streaming_transcription(
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
 
         if count_words(&raw_transcript) == 0 {
-            let _ = std::fs::remove_file(&audio_path);
-            discard_pending_recording(pending_path.as_deref());
+            crate::pill::collapse_expanded_pill(&app_handle);
+            handle_empty_transcription(&app_handle, &audio_path, pending_path.as_deref());
+            return;
+        }
+
+        if is_cancelled() {
             crate::pill::collapse_expanded_pill(&app_handle);
             app_handle
                 .state::<AppState>()
                 .pill()
                 .finish_processing(&app_handle);
-            app_handle.state::<AppState>().set_pending_path(None);
-            return;
-        }
-
-        if is_cancelled() {
             discard_pending_recording(pending_path.as_deref());
             app_handle.state::<AppState>().set_pending_path(None);
             return;
@@ -1757,6 +1756,11 @@ pub(crate) fn finalize_streaming_transcription(
                 return;
             }
             ProcessTranscriptOutcome::Cancelled => {
+                crate::pill::collapse_expanded_pill(&app_handle);
+                app_handle
+                    .state::<AppState>()
+                    .pill()
+                    .finish_processing(&app_handle);
                 discard_pending_recording(pending_path.as_deref());
                 app_handle.state::<AppState>().set_pending_path(None);
                 return;
@@ -1764,6 +1768,11 @@ pub(crate) fn finalize_streaming_transcription(
         };
 
         if is_cancelled() {
+            crate::pill::collapse_expanded_pill(&app_handle);
+            app_handle
+                .state::<AppState>()
+                .pill()
+                .finish_processing(&app_handle);
             discard_pending_recording(pending_path.as_deref());
             app_handle.state::<AppState>().set_pending_path(None);
             return;

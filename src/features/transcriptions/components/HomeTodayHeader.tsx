@@ -37,7 +37,6 @@ export default function HomeTodayHeader({
 
   const now = new Date();
   const dateLabel = formatHomeDate(now);
-  const weekdayName = now.toLocaleDateString(undefined, { weekday: "long" });
 
   const greetingVariant = useMemo(
     () => getHomeGreetingVariant(now),
@@ -49,7 +48,7 @@ export default function HomeTodayHeader({
   );
 
   const greetingText = greetingVariant
-    ? labelForHomeGreeting(greetingVariant, weekdayName, t)
+    ? labelForHomeGreeting(greetingVariant, t)
     : "";
   const greetingKey = greetingVariant
     ? homeGreetingKey(greetingVariant, now)

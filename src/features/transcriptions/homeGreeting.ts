@@ -4,7 +4,6 @@ export type TimeOfDayPeriod = "morning" | "afternoon" | "evening";
 
 export type HomeGreetingVariant =
   | { kind: "time" }
-  | { kind: "happy_weekday" }
   | { kind: "occasion"; id: HomeOccasionId };
 
 export type HomeOccasionId = "leap_day";
@@ -137,7 +136,6 @@ export function getHomeGreetingVariant(
   );
   const pool: HomeGreetingVariant[] = [
     { kind: "time" },
-    { kind: "happy_weekday" },
     ...occasions,
   ];
   return pool[stableIndex(pool.length, now, 0)] ?? pool[0];
@@ -147,22 +145,15 @@ export function homeGreetingKey(
   variant: HomeGreetingVariant,
   now: Date = new Date(),
 ): string {
-  if (variant.kind === "time") return `time-${timeOfDayPeriod(now)}`;
   if (variant.kind === "occasion") return `occasion-${variant.id}`;
-  return "happy-weekday";
+  return `time-${timeOfDayPeriod(now)}`;
 }
 
 export function labelForHomeGreeting(
   variant: HomeGreetingVariant,
-  weekdayName: string,
   t: (descriptor: { id: string; message: string }) => string,
 ): string {
   switch (variant.kind) {
-    case "happy_weekday":
-      return t({
-        id: "home.greeting.happy_weekday",
-        message: `Happy ${weekdayName}`,
-      });
     case "occasion": {
       const rule = OCCASION_RULES.find((entry) => entry.id === variant.id);
       if (!rule) return "";

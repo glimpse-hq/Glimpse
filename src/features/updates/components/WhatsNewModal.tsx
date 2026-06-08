@@ -1,5 +1,11 @@
 import { useLingui } from "@lingui/react/macro";
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  createContext,
+  useContext,
+  type ReactNode,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -39,6 +45,15 @@ const isFeatureRelease = (version: string): boolean => {
   return patch === 0;
 };
 
+const isSafeHttpUrl = (value: string): boolean => {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+};
+
 const markdownPlugins: { remark: PluggableList; rehype: PluggableList } = {
   remark: [
     remarkGfm,
@@ -47,6 +62,25 @@ const markdownPlugins: { remark: PluggableList; rehype: PluggableList } = {
   ],
   rehype: [rehypeRaw, rehypeSanitize],
 };
+
+const OrderedListContext = createContext(false);
+
+function MarkdownListItem({ children }: { children?: ReactNode }) {
+  const ordered = useContext(OrderedListContext);
+  if (ordered) {
+    return (
+      <li className="pl-1 ui-text-body leading-relaxed ui-color-secondary">
+        {children}
+      </li>
+    );
+  }
+  return (
+    <li className="flex items-start gap-3 ui-text-body leading-relaxed ui-color-secondary">
+      <span className="ui-color-warning-strong mt-1 ui-text-meta">●</span>
+      <span className="min-w-0 flex-1">{children}</span>
+    </li>
+  );
+}
 
 const markdownComponents: Components = {
   h1: ({ children }) => (
@@ -78,7 +112,7 @@ const markdownComponents: Components = {
       href={href}
       onClick={(e) => {
         e.preventDefault();
-        if (href) {
+        if (href && isSafeHttpUrl(href)) {
           openUrl(href).catch((err) => {
             console.error("Failed to open link:", err);
           });
@@ -90,19 +124,18 @@ const markdownComponents: Components = {
     </a>
   ),
   ul: ({ children }) => (
-    <ul className="space-y-2.5 mb-4 ml-1 last:mb-0">{children}</ul>
+    <OrderedListContext.Provider value={false}>
+      <ul className="space-y-2.5 mb-4 ml-1 last:mb-0">{children}</ul>
+    </OrderedListContext.Provider>
   ),
   ol: ({ children }) => (
-    <ol className="space-y-2.5 mb-4 ml-1 list-decimal list-inside last:mb-0">
-      {children}
-    </ol>
+    <OrderedListContext.Provider value={true}>
+      <ol className="space-y-2.5 mb-4 ml-1 list-decimal list-inside last:mb-0">
+        {children}
+      </ol>
+    </OrderedListContext.Provider>
   ),
-  li: ({ children }) => (
-    <li className="flex items-start gap-3 ui-text-body leading-relaxed ui-color-secondary">
-      <span className="ui-color-warning-strong mt-1 ui-text-meta">●</span>
-      <span className="min-w-0 flex-1">{children}</span>
-    </li>
-  ),
+  li: MarkdownListItem,
   code: ({ children }) => (
     <code className="px-1 py-0.5 rounded-sm bg-surface-elevated ui-text-body-sm font-mono ui-color-primary">
       {children}
