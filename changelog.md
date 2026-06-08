@@ -7,6 +7,7 @@
 
 ### Changes
 - Home greetings no longer change based on the day of the week.
+- Recordings now stop on their own after 30 minutes.
 
 ### Fixes
 - The Models screen now updates right away when you install or delete a model, instead of only after reopening Settings.

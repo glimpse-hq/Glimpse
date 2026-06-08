@@ -13,7 +13,7 @@ use parking_lot::Mutex;
 use rustfft::{num_complex::Complex, FftPlanner};
 use serde::Serialize;
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicU64, Ordering},
     Arc,
 };
 use std::time::Duration;
@@ -22,6 +22,7 @@ use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
+const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
 pub const EVENT_PILL_HOVER: &str = "pill:hover";
@@ -205,6 +206,7 @@ pub struct PillController {
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<AudioSpectrumEmitter>>,
     hover_emitter: Mutex<Option<PillHoverEmitter>>,
+    recording_generation: AtomicU64,
     is_expanded: Mutex<bool>,
 }
 
@@ -222,6 +224,7 @@ impl PillController {
             recorder,
             audio_spectrum_emitter: Mutex::new(None),
             hover_emitter: Mutex::new(None),
+            recording_generation: AtomicU64::new(0),
             is_expanded: Mutex::new(false),
         }
     }
@@ -535,10 +538,12 @@ impl PillController {
             .start(settings.microphone_device.clone(), pending_dir)
         {
             Ok(started) => {
+                let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
                 self.transition_to(app, PillStatus::Listening);
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
                 self.start_streaming_session_if_supported(app, &settings);
+                self.spawn_recording_cap(app, generation);
 
                 emit_event(
                     app,
@@ -556,6 +561,21 @@ impl PillController {
                 false
             }
         }
+    }
+
+    fn spawn_recording_cap(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+        let app = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(MAX_RECORDING_DURATION);
+            let state = app.state::<AppState>();
+            let pill = state.pill();
+            if pill.recording_generation.load(Ordering::SeqCst) == generation
+                && pill.status() == PillStatus::Listening
+                && pill.is_recording()
+            {
+                pill.stop_and_process(&app);
+            }
+        });
     }
 
     fn reset_stale_listening_state(&self, app: &AppHandle<AppRuntime>) {
