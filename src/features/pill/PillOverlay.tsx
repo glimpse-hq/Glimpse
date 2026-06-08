@@ -179,6 +179,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     isExpanded,
     expandedText,
     pillTone,
+    isHovered,
     dismiss,
   } = usePillState();
   const expandedTextSegments = useMemo(
@@ -206,6 +207,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const audioFrameCountRef = useRef<number>(0);
   const hasShownPillRef = useRef(false);
   const lastIdleAtRef = useRef(0);
+  const hoverPrevRef = useRef(false);
 
   /** Render to both canvases (primary + background). */
   const renderBoth = useCallback(
@@ -559,6 +561,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     hasShownPillRef.current = true;
   }, [pillStatus]);
 
+  useEffect(() => {
+    hoverPrevRef.current = isHovered;
+  }, [isHovered]);
+
   /* ───────────────────────── Window / Keyboard ───────────────────────── */
 
   const hideWindow = useCallback(async () => {
@@ -666,6 +672,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     }
   };
 
+  const HOVER_OPACITY_FLOOR = 0.55;
+  const HOVER_SCALE = 0.86;
+  const returningFromHover = hoverPrevRef.current && !isHovered;
+
   const shellWidth = isExpanded ? EXPANDED_WIDTH : PILL_WIDTH;
   const shellHeight = isExpanded ? EXPANDED_HEIGHT : PILL_HEIGHT;
   const shellRadius = isExpanded ? EXPANDED_BORDER_RADIUS : PILL_HEIGHT / 2;
@@ -736,9 +746,9 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
               className={`relative overflow-hidden border flex flex-col ${pillTone === "cleanup" ? "pill-shell-cleanup" : ""} ${isErrorFlashing ? "animate-shake" : ""}`}
               initial={pillInitial}
               animate={{
-                opacity: 1,
-                scaleX: 1,
-                scaleY: 1,
+                opacity: isHovered ? HOVER_OPACITY_FLOOR : 1,
+                scaleX: isHovered ? HOVER_SCALE : 1,
+                scaleY: isHovered ? HOVER_SCALE : 1,
                 y: 0,
                 filter: "blur(0px)",
               }}
@@ -757,7 +767,23 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                   opacity: { duration: 0.12, ease: "easeIn" },
                 }
               }}
-              transition={pillTransition}
+              transition={{
+                ...pillTransition,
+                opacity: {
+                  duration: isHovered ? 0.14 : 0.24,
+                  ease: isHovered ? "easeOut" : "easeIn",
+                },
+                scaleX: isHovered
+                  ? { duration: 0.16, ease: "easeOut" }
+                  : returningFromHover
+                    ? { type: "spring", stiffness: 460, damping: 12, mass: 0.55 }
+                    : { type: "spring", stiffness: 760, damping: 32, mass: 0.36 },
+                scaleY: isHovered
+                  ? { duration: 0.16, ease: "easeOut" }
+                  : returningFromHover
+                    ? { type: "spring", stiffness: 460, damping: 12, mass: 0.55 }
+                    : { type: "spring", stiffness: 760, damping: 32, mass: 0.36 },
+              }}
               style={{
                 width: shellWidth,
                 height: shellHeight,
@@ -806,7 +832,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
                   <div className="flex-1 w-full overflow-hidden flex flex-col justify-end relative z-10">
                     <motion.div
-                      layout="position"
+                      layout={isHovered ? false : "position"}
                       className="w-full flex flex-col justify-end"
                     >
                       <p
@@ -828,7 +854,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                             return (
                               <motion.span
                                 key={key}
-                                layout="position"
+                                layout={isHovered ? false : "position"}
                                 transition={{ layout: { type: "spring", bounce: 0, duration: 0.24 } }}
                                 style={{ display: "inline-block", whiteSpace: "pre" }}
                               >
@@ -839,16 +865,23 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                           return (
                             <motion.span
                               key={key}
-                              layout="position"
-                              initial={{ opacity: 0, filter: "blur(2px)", y: 4 }}
-                              animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
-                              transition={{
-                                opacity: { duration: 0.2, ease: "easeOut" },
-                                filter: { duration: 0.18, ease: "easeOut" },
-                                y: { duration: 0.2, ease: "easeOut" },
-                                layout: { type: "spring", bounce: 0, duration: 0.24 }
-                              }}
-                              style={{ display: "inline-block", willChange: "transform, opacity, filter" }}
+                              layout={isHovered ? false : "position"}
+                              initial={isHovered ? { opacity: 0, y: 4 } : { opacity: 0, filter: "blur(2px)", y: 4 }}
+                              animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 1, filter: "blur(0px)", y: 0 }}
+                              transition={
+                                isHovered
+                                  ? {
+                                      opacity: { duration: 0.2, ease: "easeOut" },
+                                      y: { duration: 0.2, ease: "easeOut" },
+                                    }
+                                  : {
+                                      opacity: { duration: 0.2, ease: "easeOut" },
+                                      filter: { duration: 0.18, ease: "easeOut" },
+                                      y: { duration: 0.2, ease: "easeOut" },
+                                      layout: { type: "spring", bounce: 0, duration: 0.24 },
+                                    }
+                              }
+                              style={{ display: "inline-block", willChange: isHovered ? "transform, opacity" : "transform, opacity, filter" }}
                             >
                               {text}
                             </motion.span>

@@ -1971,11 +1971,6 @@ msgid "onboarding.accessibility.subtitle"
 msgstr "Enables auto-paste into any application."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.language.english"
-msgstr "English"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.english"
 msgstr "English"
@@ -1983,6 +1978,11 @@ msgstr "English"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.english"
+msgstr "English"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.language.english"
 msgstr "English"
 
 #. js-lingui-explicit-id

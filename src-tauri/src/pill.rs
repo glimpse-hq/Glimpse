@@ -24,6 +24,7 @@ const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
+pub const EVENT_PILL_HOVER: &str = "pill:hover";
 pub(crate) const PILL_TONE_DEFAULT: &str = "default";
 pub(crate) const PILL_TONE_CLEANUP: &str = "cleanup";
 
@@ -134,6 +135,64 @@ impl AudioSpectrumEmitter {
     }
 }
 
+#[derive(Serialize, Clone)]
+pub struct PillHoverPayload {
+    pub hovering: bool,
+}
+
+struct PillHoverEmitter {
+    stop: Arc<AtomicBool>,
+    handle: Option<std::thread::JoinHandle<()>>,
+}
+
+impl PillHoverEmitter {
+    fn start(app: AppHandle<AppRuntime>) -> Self {
+        let stop = Arc::new(AtomicBool::new(false));
+        let stop_signal = Arc::clone(&stop);
+        let handle = std::thread::spawn(move || {
+            let interval = Duration::from_millis(50);
+            let mut last_emitted: Option<bool> = None;
+            while !stop_signal.load(Ordering::Relaxed) {
+                if let Some(hovering) = cursor_over_pill_window(&app) {
+                    if last_emitted != Some(hovering) {
+                        last_emitted = Some(hovering);
+                        emit_event(&app, EVENT_PILL_HOVER, PillHoverPayload { hovering });
+                    }
+                }
+                std::thread::sleep(interval);
+            }
+            emit_event(&app, EVENT_PILL_HOVER, PillHoverPayload { hovering: false });
+        });
+        Self {
+            stop,
+            handle: Some(handle),
+        }
+    }
+
+    fn stop(mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            std::thread::spawn(move || {
+                let _ = handle.join();
+            });
+        }
+    }
+}
+
+fn cursor_over_pill_window(app: &AppHandle<AppRuntime>) -> Option<bool> {
+    let window = app.get_webview_window(MAIN_WINDOW_LABEL)?;
+    let cursor = window.cursor_position().ok()?;
+    let pos = window.outer_position().ok()?;
+    let size = window.outer_size().ok()?;
+
+    let left = pos.x as f64;
+    let top = pos.y as f64;
+    let right = left + size.width as f64;
+    let bottom = top + size.height as f64;
+
+    Some(cursor.x >= left && cursor.x < right && cursor.y >= top && cursor.y < bottom)
+}
+
 pub struct PillController {
     status: Mutex<PillStatus>,
     recording_mode: Mutex<Option<RecordingMode>>,
@@ -145,6 +204,7 @@ pub struct PillController {
     paused_media_session: Mutex<Option<music::MediaSession>>,
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<AudioSpectrumEmitter>>,
+    hover_emitter: Mutex<Option<PillHoverEmitter>>,
     is_expanded: Mutex<bool>,
 }
 
@@ -161,6 +221,7 @@ impl PillController {
             paused_media_session: Mutex::new(None),
             recorder,
             audio_spectrum_emitter: Mutex::new(None),
+            hover_emitter: Mutex::new(None),
             is_expanded: Mutex::new(false),
         }
     }
@@ -194,6 +255,20 @@ impl PillController {
 
     fn stop_audio_spectrum_emitter(&self) {
         if let Some(emitter) = self.audio_spectrum_emitter.lock().take() {
+            emitter.stop();
+        }
+    }
+
+    fn start_hover_emitter(&self, app: &AppHandle<AppRuntime>) {
+        let mut emitter = self.hover_emitter.lock();
+        if emitter.is_some() {
+            return;
+        }
+        *emitter = Some(PillHoverEmitter::start(app.clone()));
+    }
+
+    fn stop_hover_emitter(&self) {
+        if let Some(emitter) = self.hover_emitter.lock().take() {
             emitter.stop();
         }
     }
@@ -277,6 +352,7 @@ impl PillController {
             std::thread::spawn(move || {
                 std::thread::sleep(Duration::from_millis(OVERLAY_HIDE_AFTER_IDLE_MS));
                 if app_handle.state::<AppState>().pill().status() == PillStatus::Idle {
+                    app_handle.state::<AppState>().pill().stop_hover_emitter();
                     hide_overlay(&app_handle);
                 }
             });
@@ -285,6 +361,7 @@ impl PillController {
 
         if previous == PillStatus::Idle {
             show_overlay(app);
+            self.start_hover_emitter(app);
         }
     }
 

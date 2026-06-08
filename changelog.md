@@ -1,5 +1,12 @@
 0.9.5
 
+### Improvements
+- The recording pill now stays out of your way: move your pointer over it and it fades back and shrinks, then springs to full size when you move away, so it never covers what you're working on.
+- What's New release notes have been updated to support better rendering.
+
+### Changes
+- Home greetings no longer change based on the day of the week.
+
 ---
 0.9.4
 
