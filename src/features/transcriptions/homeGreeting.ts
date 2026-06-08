@@ -7,7 +7,7 @@ export type HomeGreetingVariant =
   | { kind: "happy_weekday" }
   | { kind: "occasion"; id: HomeOccasionId };
 
-export type HomeOccasionId = "friday" | "saturday" | "sunday" | "leap_day";
+export type HomeOccasionId = "leap_day";
 
 // Morning 6–12, afternoon 12–17, evening 17–6 (local)
 export function timeOfDayPeriod(now: Date = new Date()): TimeOfDayPeriod {
@@ -25,24 +25,6 @@ type OccasionRule = {
 };
 
 const OCCASION_RULES: OccasionRule[] = [
-  {
-    id: "friday",
-    messageId: "home.greeting.occasion.friday",
-    message: "You made it to Friday",
-    when: (date) => date.getDay() === 5,
-  },
-  {
-    id: "saturday",
-    messageId: "home.greeting.occasion.saturday",
-    message: "Enjoy your Saturday",
-    when: (date) => date.getDay() === 6,
-  },
-  {
-    id: "sunday",
-    messageId: "home.greeting.occasion.sunday",
-    message: "Take it easy this Sunday",
-    when: (date) => date.getDay() === 0,
-  },
   {
     id: "leap_day",
     messageId: "home.greeting.occasion.leap_day",
