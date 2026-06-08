@@ -1,7 +1,7 @@
 // Windows wrapper for `tauri dev` / `tauri build`:
 // - short CARGO_TARGET_DIR + TEMP to avoid MAX_PATH in whisper Vulkan builds
-// - VsDevCmd when needed so MSVC/link.exe are on PATH outside a VS developer shell
 import { spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -40,9 +40,45 @@ function findVsDevCmd() {
     return explicit;
   }
 
+  const vswhere = path.join(
+    env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)",
+    "Microsoft Visual Studio",
+    "Installer",
+    "vswhere.exe",
+  );
+
+  if (fs.existsSync(vswhere)) {
+    try {
+      const installationPath = execFileSync(
+        vswhere,
+        [
+          "-latest",
+          "-products",
+          "*",
+          "-requires",
+          "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+          "-property",
+          "installationPath",
+        ],
+        { env, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+      ).trim();
+      const candidate = path.join(
+        installationPath,
+        "Common7",
+        "Tools",
+        "VsDevCmd.bat",
+      );
+      if (candidate && fs.existsSync(candidate)) {
+        return candidate;
+      }
+    } catch {
+      // Fall back to known install layouts below.
+    }
+  }
+
   const programFiles = env.ProgramFiles ?? "C:\\Program Files";
   const programFilesX86 = env["ProgramFiles(x86)"] ?? "C:\\Program Files (x86)";
-  const years = ["2022", "2019"];
+  const years = ["18", "2022", "2019"];
   const editions = ["Community", "Professional", "Enterprise", "BuildTools"];
 
   for (const root of [programFiles, programFilesX86]) {
