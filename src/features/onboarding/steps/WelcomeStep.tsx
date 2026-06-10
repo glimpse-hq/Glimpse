@@ -53,7 +53,11 @@ export function WelcomeStep({
             <DotMatrix
               rows={10}
               cols={22}
-              activeDots={[1, 4, 7, 10, 13, 23, 26, 29, 32, 35, 45, 48, 51, 54, 57, 67, 70, 73, 76, 79, 89, 92, 95, 98, 101, 111, 114, 117, 120, 123, 133, 136, 139, 142, 145, 155, 158, 161, 164, 167]}
+              activeDots={[
+                1, 4, 7, 10, 13, 23, 26, 29, 32, 35, 45, 48, 51, 54, 57, 67, 70,
+                73, 76, 79, 89, 92, 95, 98, 101, 111, 114, 117, 120, 123, 133,
+                136, 139, 142, 145, 155, 158, 161, 164, 167,
+              ]}
               dotSize={2}
               gap={4}
               color="var(--color-cloud)"
@@ -61,7 +65,14 @@ export function WelcomeStep({
           </div>
 
           <div className="relative flex flex-col items-center justify-center py-12 px-5">
-            <DotMatrix rows={2} cols={2} activeDots={[0, 3]} dotSize={5} gap={3} color="var(--color-cloud-30)" />
+            <DotMatrix
+              rows={2}
+              cols={2}
+              activeDots={[0, 3]}
+              dotSize={5}
+              gap={3}
+              color="var(--color-cloud-30)"
+            />
             <span className="mt-4 ui-text-body-lg font-semibold text-content-disabled">
               {t({
                 id: "onboarding.welcome.cloud.title",
@@ -88,14 +99,20 @@ export function WelcomeStep({
           aria-pressed={selectedMode === "local"}
           aria-label={t({
             id: "onboarding.welcome.local.aria",
-            message: "Select Local mode: privacy-first, on-device transcription",
+            message:
+              "Select Local mode: privacy-first, on-device transcription",
           })}
         >
           <div className="absolute inset-0 pointer-events-none opacity-[0.07] transition-opacity duration-300 group-hover:opacity-[0.12]">
             <DotMatrix
               rows={10}
               cols={22}
-              activeDots={[0, 5, 10, 15, 20, 22, 27, 32, 37, 42, 44, 49, 54, 59, 64, 66, 71, 76, 81, 86, 88, 93, 98, 103, 108, 110, 115, 120, 125, 130, 132, 137, 142, 147, 152, 154, 159, 164, 169, 174, 176, 181, 186, 191, 196, 198, 203, 208, 213, 218]}
+              activeDots={[
+                0, 5, 10, 15, 20, 22, 27, 32, 37, 42, 44, 49, 54, 59, 64, 66,
+                71, 76, 81, 86, 88, 93, 98, 103, 108, 110, 115, 120, 125, 130,
+                132, 137, 142, 147, 152, 154, 159, 164, 169, 174, 176, 181, 186,
+                191, 196, 198, 203, 208, 213, 218,
+              ]}
               dotSize={2}
               gap={4}
               color="var(--color-local)"
@@ -109,7 +126,8 @@ export function WelcomeStep({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
               style={{
-                background: "radial-gradient(ellipse at 30% 20%, var(--color-local-10) 0%, transparent 70%)",
+                background:
+                  "radial-gradient(ellipse at 30% 20%, var(--color-local-10) 0%, transparent 70%)",
               }}
             />
           )}
@@ -117,7 +135,14 @@ export function WelcomeStep({
           <div className="relative flex flex-col gap-5 p-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <DotMatrix rows={2} cols={2} activeDots={[1, 2]} dotSize={5} gap={3} color="var(--color-local)" />
+                <DotMatrix
+                  rows={2}
+                  cols={2}
+                  activeDots={[1, 2]}
+                  dotSize={5}
+                  gap={3}
+                  color="var(--color-local)"
+                />
                 <span className="ui-text-body-lg font-semibold text-local">
                   {t({
                     id: "onboarding.welcome.local.title",
@@ -129,21 +154,51 @@ export function WelcomeStep({
 
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <DotMatrix rows={1} cols={3} activeDots={[0, 1, 2]} dotSize={3} gap={2} color="var(--color-local-80)" />
+                <DotMatrix
+                  rows={1}
+                  cols={3}
+                  activeDots={[0, 1, 2]}
+                  dotSize={3}
+                  gap={2}
+                  color="var(--color-local-80)"
+                />
                 <span className="ui-text-label text-content-secondary font-medium">
-                  {t({ id: "onboarding.welcome.local.feature.models", message: "On-device transcription models" })}
+                  {t({
+                    id: "onboarding.welcome.local.feature.models",
+                    message: "On-device transcription models",
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <DotMatrix rows={1} cols={3} activeDots={[0, 2]} dotSize={3} gap={2} color="var(--color-local-80)" />
+                <DotMatrix
+                  rows={1}
+                  cols={3}
+                  activeDots={[0, 2]}
+                  dotSize={3}
+                  gap={2}
+                  color="var(--color-local-80)"
+                />
                 <span className="ui-text-label text-content-secondary font-medium">
-                  {t({ id: "onboarding.welcome.local.feature.byok", message: "Bring your own API key for AI features" })}
+                  {t({
+                    id: "onboarding.welcome.local.feature.byok",
+                    message: "Bring your own API key for AI features",
+                  })}
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <DotMatrix rows={1} cols={3} activeDots={[1]} dotSize={3} gap={2} color="var(--color-local-80)" />
+                <DotMatrix
+                  rows={1}
+                  cols={3}
+                  activeDots={[1]}
+                  dotSize={3}
+                  gap={2}
+                  color="var(--color-local-80)"
+                />
                 <span className="ui-text-label text-content-secondary font-medium">
-                  {t({ id: "onboarding.welcome.local.feature.free", message: "Free, no account required" })}
+                  {t({
+                    id: "onboarding.welcome.local.feature.free",
+                    message: "Free, no account required",
+                  })}
                 </span>
               </div>
             </div>

@@ -54,10 +54,7 @@ const AppIconBadge = ({
 
   if (iconUrl) {
     return (
-      <span
-        className={`${baseClass} overflow-visible`}
-        aria-hidden="true"
-      >
+      <span className={`${baseClass} overflow-visible`} aria-hidden="true">
         <img
           src={iconUrl}
           alt=""
@@ -468,10 +465,13 @@ const PersonalityModal = ({
                   ) : (
                     <div
                       onClick={() => {
-                        if (personality.name === t({
-                          id: "personalization.new_mode.default_name",
-                          message: "New Mode",
-                        })) {
+                        if (
+                          personality.name ===
+                          t({
+                            id: "personalization.new_mode.default_name",
+                            message: "New Mode",
+                          })
+                        ) {
                           setNameDraft("");
                         }
                         setIsEditingName(true);
@@ -726,64 +726,64 @@ const PersonalityModal = ({
                     </AnimatePresence>
                   </div>
                   <div className="mt-1 max-h-[240px] overflow-y-auto instructions-scroll">
-                  {personality.apps.length === 0 ? (
-                    <p className="px-2 py-2 ui-text-meta ui-color-disabled">
-                      {t({
-                        id: "personalization.modal.applications.none",
-                        message: "No applications selected",
-                      })}
-                    </p>
-                  ) : (
-                    <ul className="space-y-0.5">
-                      {personality.apps.map((app, index) => {
-                        const installedApp = installedAppByName.get(
-                          app.toLowerCase(),
-                        );
-                        const isMissing = !installedNameSet.has(
-                          app.toLowerCase(),
-                        );
-                        return (
-                          <li
-                            key={`app-${index}-${app || "empty"}`}
-                            className="group/row flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <AppIconBadge
-                                appName={app}
-                                iconPath={installedApp?.icon_path}
-                                size="list"
-                              />
-                              <span className="ui-text-body-sm ui-color-primary truncate">
-                                {app}
-                              </span>
-                              {isMissing && (
-                                <span className="ui-text-meta ui-color-disabled shrink-0">
-                                  {t({
-                                    id: "personalization.modal.applications.not_installed",
-                                    message: "Not installed",
-                                  })}
-                                </span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => removeApp(app)}
-                              className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
-                              title={t({
-                                id: "personalization.modal.remove",
-                                message: "Remove",
-                              })}
-                              aria-label={t({
-                                id: "personalization.modal.remove_app",
-                                message: `Remove ${app}`,
-                              })}
+                    {personality.apps.length === 0 ? (
+                      <p className="px-2 py-2 ui-text-meta ui-color-disabled">
+                        {t({
+                          id: "personalization.modal.applications.none",
+                          message: "No applications selected",
+                        })}
+                      </p>
+                    ) : (
+                      <ul className="space-y-0.5">
+                        {personality.apps.map((app, index) => {
+                          const installedApp = installedAppByName.get(
+                            app.toLowerCase(),
+                          );
+                          const isMissing = !installedNameSet.has(
+                            app.toLowerCase(),
+                          );
+                          return (
+                            <li
+                              key={`app-${index}-${app || "empty"}`}
+                              className="group/row flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors"
                             >
-                              <X size={12} />
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
+                              <div className="flex items-center gap-2 min-w-0">
+                                <AppIconBadge
+                                  appName={app}
+                                  iconPath={installedApp?.icon_path}
+                                  size="list"
+                                />
+                                <span className="ui-text-body-sm ui-color-primary truncate">
+                                  {app}
+                                </span>
+                                {isMissing && (
+                                  <span className="ui-text-meta ui-color-disabled shrink-0">
+                                    {t({
+                                      id: "personalization.modal.applications.not_installed",
+                                      message: "Not installed",
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                              <button
+                                onClick={() => removeApp(app)}
+                                className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
+                                title={t({
+                                  id: "personalization.modal.remove",
+                                  message: "Remove",
+                                })}
+                                aria-label={t({
+                                  id: "personalization.modal.remove_app",
+                                  message: `Remove ${app}`,
+                                })}
+                              >
+                                <X size={12} />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 </div>
               </section>
@@ -843,50 +843,50 @@ const PersonalityModal = ({
                     </p>
                   )}
                   <div className="mt-1 max-h-[240px] overflow-y-auto instructions-scroll">
-                  {personality.websites.length === 0 ? (
-                    <p className="px-2 py-2 ui-text-meta ui-color-disabled">
-                      {t({
-                        id: "personalization.modal.websites.none",
-                        message: "No websites added",
-                      })}
-                    </p>
-                  ) : (
-                    <ul className="space-y-0.5">
-                      {personality.websites.map((site, index) => (
-                        <li
-                          key={`site-${index}-${site || "empty"}`}
-                          className="group/row flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <WebsiteFavicon
-                              site={site}
-                              iconPath={
-                                websiteIconBySite[normalizeWebsite(site)]
-                              }
-                              size="list"
-                            />
-                            <span className="ui-text-label font-mono ui-color-primary truncate">
-                              {site}
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => removeWebsite(site)}
-                            className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
-                            title={t({
-                              id: "personalization.modal.remove",
-                              message: "Remove",
-                            })}
-                            aria-label={t({
-                              id: "personalization.modal.remove_site",
-                              message: `Remove ${site}`,
-                            })}
+                    {personality.websites.length === 0 ? (
+                      <p className="px-2 py-2 ui-text-meta ui-color-disabled">
+                        {t({
+                          id: "personalization.modal.websites.none",
+                          message: "No websites added",
+                        })}
+                      </p>
+                    ) : (
+                      <ul className="space-y-0.5">
+                        {personality.websites.map((site, index) => (
+                          <li
+                            key={`site-${index}-${site || "empty"}`}
+                            className="group/row flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors"
                           >
-                            <X size={12} />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <WebsiteFavicon
+                                site={site}
+                                iconPath={
+                                  websiteIconBySite[normalizeWebsite(site)]
+                                }
+                                size="list"
+                              />
+                              <span className="ui-text-label font-mono ui-color-primary truncate">
+                                {site}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => removeWebsite(site)}
+                              className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
+                              title={t({
+                                id: "personalization.modal.remove",
+                                message: "Remove",
+                              })}
+                              aria-label={t({
+                                id: "personalization.modal.remove_site",
+                                message: `Remove ${site}`,
+                              })}
+                            >
+                              <X size={12} />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               </section>

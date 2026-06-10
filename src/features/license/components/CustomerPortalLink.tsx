@@ -1,8 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import {
-  ArrowSquareOut as ExternalLink,
-} from "@phosphor-icons/react";
+import { ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
 import {
   customerPortalUrlFor,
   type PurchaseSource,
@@ -33,7 +31,11 @@ const CustomerPortalLink = ({
   };
 
   return (
-    <button type="button" onClick={() => void openPortal()} className={className}>
+    <button
+      type="button"
+      onClick={() => void openPortal()}
+      className={className}
+    >
       {t({
         id: "license.customer_portal",
         message: "Customer portal",

@@ -20,10 +20,8 @@ type AccountTabProps = {
 const AccountTab = ({ variants }: AccountTabProps) => {
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
-  const {
-    mutate: refreshLicense,
-    isPending: refreshLicensePending,
-  } = useRefreshLicense();
+  const { mutate: refreshLicense, isPending: refreshLicensePending } =
+    useRefreshLicense();
   const deactivateLicense = useDeactivateLicense();
   const [openingTarget, setOpeningTarget] = useState<PurchaseTier | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);

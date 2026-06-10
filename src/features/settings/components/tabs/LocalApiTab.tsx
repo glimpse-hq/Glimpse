@@ -6,11 +6,7 @@ import { Dropdown } from "../../../../shared/ui/Dropdown";
 import DotMatrix from "../../../../shared/ui/DotMatrix";
 import ActivityDots from "../../../../shared/ui/ActivityDots";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
-import type {
-  LocalApiStatus,
-  ModelInfo,
-  ModelStatus,
-} from "../../../../types";
+import type { LocalApiStatus, ModelInfo, ModelStatus } from "../../../../types";
 
 type LocalApiTabProps = {
   variants: Variants;
@@ -208,7 +204,11 @@ const LocalApiTab = ({
           <div className="flex items-center gap-2.5">
             {running ? (
               <span className="opacity-80">
-                <ActivityDots dotSize={3} gap={2} color="var(--color-text-muted)" />
+                <ActivityDots
+                  dotSize={3}
+                  gap={2}
+                  color="var(--color-text-muted)"
+                />
               </span>
             ) : (
               <DotMatrix
@@ -234,11 +234,11 @@ const LocalApiTab = ({
                   })}
             </h1>
           </div>
-        <button
-          className="mt-1 ui-text-body-sm ui-color-muted hover:ui-color-primary transition-colors inline-flex items-center gap-1.5 group"
-          onClick={copyBaseUrl}
-          type="button"
-        >
+          <button
+            className="mt-1 ui-text-body-sm ui-color-muted hover:ui-color-primary transition-colors inline-flex items-center gap-1.5 group"
+            onClick={copyBaseUrl}
+            type="button"
+          >
             <span>
               {copied
                 ? t({
@@ -441,9 +441,7 @@ const LocalApiTab = ({
                 </span>
                 <ToggleSwitch
                   enabled={lanEnabled}
-                  onToggle={() =>
-                    setHost(lanEnabled ? "127.0.0.1" : "0.0.0.0")
-                  }
+                  onToggle={() => setHost(lanEnabled ? "127.0.0.1" : "0.0.0.0")}
                   ariaLabel={t({
                     id: "settings.local_api.listen_on_lan_aria",
                     message: "Listen on LAN",
@@ -586,7 +584,9 @@ const LocalApiTab = ({
                   key={entry.id}
                   className="ui-text-meta ui-color-api-log font-mono leading-relaxed py-0.5"
                 >
-                  <span className="ui-color-api-log-level">[{entry.level}]</span>{" "}
+                  <span className="ui-color-api-log-level">
+                    [{entry.level}]
+                  </span>{" "}
                   {entry.message}
                 </div>
               ))}

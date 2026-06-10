@@ -1,0 +1,7 @@
+.claude/
+dist/
+node_modules/
+src/locales/**/*.js
+src-tauri/gen/
+src-tauri/target/
+target/

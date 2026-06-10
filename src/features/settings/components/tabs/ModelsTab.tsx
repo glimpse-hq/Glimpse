@@ -11,7 +11,11 @@ import {
 import ModelStatCard from "../ModelStatCard";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
-import { deriveModelStats, formatModelSize, formatQuantLabel } from "../../../../shared/lib/modelStats";
+import {
+  deriveModelStats,
+  formatModelSize,
+  formatQuantLabel,
+} from "../../../../shared/lib/modelStats";
 import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import type {
@@ -118,7 +122,10 @@ const InstalledModelRow = ({
               ? "text-error opacity-100"
               : "text-content-disabled opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:text-error"
           }`}
-          title={t({ id: "settings.models.installed.delete", message: "Delete" })}
+          title={t({
+            id: "settings.models.installed.delete",
+            message: "Delete",
+          })}
           aria-label={t({
             id: "settings.models.installed.delete_model",
             message: "Delete model",

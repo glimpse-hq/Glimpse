@@ -2,9 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  Plus,
-} from "@phosphor-icons/react";
+import { Plus } from "@phosphor-icons/react";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import DotMatrix from "../../../shared/ui/DotMatrix";
@@ -142,34 +140,43 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
     };
   }, [isActive, installedApps, installedAppsQuery.isLoading, queryClient]);
 
-  const persistPersonalities = useCallback((next: Personality[]) => {
-    const persistVersion = persistVersionRef.current + 1;
-    persistVersionRef.current = persistVersion;
-    lastPendingPersonalitiesRef.current = next;
-    setPersonalitiesCache(queryClient, next);
+  const persistPersonalities = useCallback(
+    (next: Personality[]) => {
+      const persistVersion = persistVersionRef.current + 1;
+      persistVersionRef.current = persistVersion;
+      lastPendingPersonalitiesRef.current = next;
+      setPersonalitiesCache(queryClient, next);
 
-    if (saveTimeoutRef.current !== null) {
-      window.clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = window.setTimeout(async () => {
-      saveTimeoutRef.current = null;
-      setError(null);
-      try {
-        const cleaned = await personalizationApi.setPersonalities(next);
-        if (!mountedRef.current || persistVersion !== persistVersionRef.current) {
-          return;
-        }
-        setPersonalitiesCache(queryClient, cleaned ?? next);
-      } catch (err) {
-        if (!mountedRef.current || persistVersion !== persistVersionRef.current) {
-          return;
-        }
-        console.error(err);
-        setError(err instanceof Error ? err.message : String(err));
+      if (saveTimeoutRef.current !== null) {
+        window.clearTimeout(saveTimeoutRef.current);
       }
-    }, 500);
-  }, [queryClient]);
+
+      saveTimeoutRef.current = window.setTimeout(async () => {
+        saveTimeoutRef.current = null;
+        setError(null);
+        try {
+          const cleaned = await personalizationApi.setPersonalities(next);
+          if (
+            !mountedRef.current ||
+            persistVersion !== persistVersionRef.current
+          ) {
+            return;
+          }
+          setPersonalitiesCache(queryClient, cleaned ?? next);
+        } catch (err) {
+          if (
+            !mountedRef.current ||
+            persistVersion !== persistVersionRef.current
+          ) {
+            return;
+          }
+          console.error(err);
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      }, 500);
+    },
+    [queryClient],
+  );
 
   useEffect(() => {
     return () => {
@@ -327,7 +334,8 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         })}
         description={t({
           id: "personalization.description",
-          message: "Tailor language model behavior to apps, sites, and custom instructions.",
+          message:
+            "Tailor language model behavior to apps, sites, and custom instructions.",
         })}
         trailing={
           <button
@@ -376,7 +384,8 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           <p className="ui-text-body-sm ui-color-muted">
             {t({
               id: "personalization.empty.description",
-              message: "Create a mode to start customizing your apps and websites.",
+              message:
+                "Create a mode to start customizing your apps and websites.",
             })}
           </p>
         </div>

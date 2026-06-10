@@ -2,10 +2,7 @@ import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Check,
-  CircleNotch as Loader2,
-} from "@phosphor-icons/react";
+import { Check, CircleNotch as Loader2 } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import type { StepMotionProps } from "../../onboarding/steps/shared";
@@ -95,7 +92,10 @@ export function ImportStep({
     if (previewForApp.replacementsCount > 0) {
       rows.push({
         key: "replacements",
-        label: t({ id: "import.cat.replacements", message: "Text replacements" }),
+        label: t({
+          id: "import.cat.replacements",
+          message: "Text replacements",
+        }),
         detail: t({
           id: "import.cat.replacements.detail",
           message: plural(previewForApp.replacementsCount, {
@@ -252,7 +252,10 @@ export function ImportStep({
     </p>
   ) : !hasItems ? (
     <p className="py-4 text-center ui-text-label text-content-muted">
-      {t({ id: "import.empty", message: "Nothing to bring over from this app." })}
+      {t({
+        id: "import.empty",
+        message: "Nothing to bring over from this app.",
+      })}
     </p>
   ) : (
     categoryRows
@@ -322,7 +325,10 @@ export function ImportStep({
       </div>
 
       <div className="relative w-full text-left">
-        <div aria-hidden className="divide-y divide-border-primary/40 invisible pointer-events-none">
+        <div
+          aria-hidden
+          className="divide-y divide-border-primary/40 invisible pointer-events-none"
+        >
           {Array.from({ length: LIST_SLOT_COUNT }).map((_, i) => (
             <div key={i} className={ROW_CLASS_NAME}>
               <span className="h-5 w-5 shrink-0" />
@@ -334,9 +340,7 @@ export function ImportStep({
         <div className="absolute inset-0">
           <div
             className={`absolute inset-x-0 top-0 transition-opacity duration-200 ease-out ${
-              isLoadingPreview
-                ? "opacity-100"
-                : "pointer-events-none opacity-0"
+              isLoadingPreview ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             aria-hidden={!isLoadingPreview}
           >
@@ -345,9 +349,7 @@ export function ImportStep({
 
           <div
             className={`absolute inset-x-0 top-0 transition-opacity duration-200 ease-out ${
-              isLoadingPreview
-                ? "pointer-events-none opacity-0"
-                : "opacity-100"
+              isLoadingPreview ? "pointer-events-none opacity-0" : "opacity-100"
             }`}
             aria-hidden={isLoadingPreview}
           >
@@ -359,18 +361,21 @@ export function ImportStep({
       {previewForApp &&
         previewForApp.modelSource &&
         !previewForApp.modelRecognized && (
-        <p className="relative ui-text-meta text-content-muted text-center mt-3 text-balance">
-          {t({
-            id: "import.model.unrecognized",
-            message:
-              "We don't recognize this app's model — you'll pick one on the next step.",
-          })}
-        </p>
-      )}
+          <p className="relative ui-text-meta text-content-muted text-center mt-3 text-balance">
+            {t({
+              id: "import.model.unrecognized",
+              message:
+                "We don't recognize this app's model — you'll pick one on the next step.",
+            })}
+          </p>
+        )}
 
       {applyMutation.isError && (
         <p className="relative ui-text-meta ui-color-error-strong text-center mt-3">
-          {t({ id: "import.apply.failed", message: "Import failed. Try again or skip." })}
+          {t({
+            id: "import.apply.failed",
+            message: "Import failed. Try again or skip.",
+          })}
         </p>
       )}
 

@@ -66,19 +66,32 @@ const FALLBACK_PILL_COLOR_PALETTE: PillColorPalette = {
 
 const readCssVar = (name: string, fallback: string): string => {
   if (typeof window === "undefined") return fallback;
-  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
   return value || fallback;
 };
 
 const resolvePillColorPalette = (): PillColorPalette => ({
   base: readCssVar("--ui-pill-dot-base-rgb", FALLBACK_PILL_COLOR_PALETTE.base),
-  highlight: readCssVar("--ui-pill-dot-highlight-rgb", FALLBACK_PILL_COLOR_PALETTE.highlight),
-  error: readCssVar("--ui-pill-dot-error-rgb", FALLBACK_PILL_COLOR_PALETTE.error),
+  highlight: readCssVar(
+    "--ui-pill-dot-highlight-rgb",
+    FALLBACK_PILL_COLOR_PALETTE.highlight,
+  ),
+  error: readCssVar(
+    "--ui-pill-dot-error-rgb",
+    FALLBACK_PILL_COLOR_PALETTE.error,
+  ),
 });
 
 /* ───────────────────────── Drawing Helpers ───────────────────────── */
 
-function getMaskOpacity(x: number, y: number, width: number, height: number): number {
+function getMaskOpacity(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): number {
   const radius = height / 2;
   const leftCenter = radius;
   const rightCenter = width - radius;
@@ -97,7 +110,13 @@ function getMaskOpacity(x: number, y: number, width: number, height: number): nu
   return Math.max(0, Math.min(1, distToEdge / 15));
 }
 
-function isIconPixel(col: number, row: number, icon: number[][], centerCol: number, centerRow: number): boolean {
+function isIconPixel(
+  col: number,
+  row: number,
+  icon: number[][],
+  centerCol: number,
+  centerRow: number,
+): boolean {
   const iconH = icon.length;
   const iconW = icon[0].length;
   const startCol = centerCol - Math.floor(iconW / 2);
@@ -116,7 +135,13 @@ function renderToCanvas(
   canvas: HTMLCanvasElement | null,
   grid: GridInfo,
   palette: PillColorPalette,
-  render: (ctx: CanvasRenderingContext2D, w: number, h: number, grid: GridInfo, palette: PillColorPalette) => void,
+  render: (
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    grid: GridInfo,
+    palette: PillColorPalette,
+  ) => void,
 ): void {
   const ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
@@ -190,13 +215,25 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   // Primary canvas (small pill dots)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<GridInfo>({ spacing: DOT_SPACING, cols: 0, rows: 0, offsetX: 0, offsetY: 0 });
+  const gridRef = useRef<GridInfo>({
+    spacing: DOT_SPACING,
+    cols: 0,
+    rows: 0,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const heightsRef = useRef<number[]>([]);
 
   // Background canvas (expanded pill dots)
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
   const bgContainerRef = useRef<HTMLDivElement>(null);
-  const bgGridRef = useRef<GridInfo>({ spacing: DOT_SPACING, cols: 0, rows: 0, offsetX: 0, offsetY: 0 });
+  const bgGridRef = useRef<GridInfo>({
+    spacing: DOT_SPACING,
+    cols: 0,
+    rows: 0,
+    offsetX: 0,
+    offsetY: 0,
+  });
   const bgHeightsRef = useRef<number[]>([]);
 
   // Animation & audio state
@@ -211,7 +248,15 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
   /** Render to both canvases (primary + background). */
   const renderBoth = useCallback(
-    (render: (ctx: CanvasRenderingContext2D, w: number, h: number, grid: GridInfo, palette: PillColorPalette) => void) => {
+    (
+      render: (
+        ctx: CanvasRenderingContext2D,
+        w: number,
+        h: number,
+        grid: GridInfo,
+        palette: PillColorPalette,
+      ) => void,
+    ) => {
       const palette = colorPaletteRef.current;
       renderToCanvas(canvasRef.current, gridRef.current, palette, render);
       renderToCanvas(bgCanvasRef.current, bgGridRef.current, palette, render);
@@ -225,247 +270,329 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
   /* ── Draw: Processing (breathing wave) ── */
 
-  const drawProcessingFrame = useCallback((time: number) => {
-    renderBoth((ctx, width, height, { cols, rows, spacing, offsetX, offsetY }, palette) => {
-      const speed = 0.0015;
-      const waveLength = cols * 0.4;
-      const breathe = 0.5 + 0.5 * Math.sin(time * 0.001);
+  const drawProcessingFrame = useCallback(
+    (time: number) => {
+      renderBoth(
+        (
+          ctx,
+          width,
+          height,
+          { cols, rows, spacing, offsetX, offsetY },
+          palette,
+        ) => {
+          const speed = 0.0015;
+          const waveLength = cols * 0.4;
+          const breathe = 0.5 + 0.5 * Math.sin(time * 0.001);
 
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          const cx = offsetX + c * spacing + spacing / 2;
-          const cy = offsetY + r * spacing + spacing / 2;
-          const maskAlpha = getMaskOpacity(cx, cy, width, height);
-          if (maskAlpha <= 0.05) continue;
+          for (let c = 0; c < cols; c++) {
+            for (let r = 0; r < rows; r++) {
+              const cx = offsetX + c * spacing + spacing / 2;
+              const cy = offsetY + r * spacing + spacing / 2;
+              const maskAlpha = getMaskOpacity(cx, cy, width, height);
+              if (maskAlpha <= 0.05) continue;
 
-          const distFromCenterY = Math.abs(cy - height / 2);
-          const wavePhase = (c / waveLength) - (time * speed);
-          const wave = Math.sin(wavePhase * Math.PI * 2) * 0.5 + 0.5;
+              const distFromCenterY = Math.abs(cy - height / 2);
+              const wavePhase = c / waveLength - time * speed;
+              const wave = Math.sin(wavePhase * Math.PI * 2) * 0.5 + 0.5;
 
-          const maxRadius = height * 0.4 * (0.6 + 0.4 * breathe);
-          const activeRadius = wave * maxRadius;
-          const isActive = distFromCenterY < activeRadius;
+              const maxRadius = height * 0.4 * (0.6 + 0.4 * breathe);
+              const activeRadius = wave * maxRadius;
+              const isActive = distFromCenterY < activeRadius;
 
-          ctx.beginPath();
-          if (isActive) {
-            const edgeFactor = 1 - (distFromCenterY / (activeRadius + 0.5));
-            const brightness = Math.pow(edgeFactor, 1.5) * (0.7 + 0.3 * wave);
-            ctx.fillStyle = `rgba(${palette.highlight}, ${brightness * maskAlpha})`;
-            if (brightness > 0.7) {
-              ctx.shadowBlur = 3;
-              ctx.shadowColor = `rgba(${palette.highlight}, 0.3)`;
+              ctx.beginPath();
+              if (isActive) {
+                const edgeFactor = 1 - distFromCenterY / (activeRadius + 0.5);
+                const brightness =
+                  Math.pow(edgeFactor, 1.5) * (0.7 + 0.3 * wave);
+                ctx.fillStyle = `rgba(${palette.highlight}, ${brightness * maskAlpha})`;
+                if (brightness > 0.7) {
+                  ctx.shadowBlur = 3;
+                  ctx.shadowColor = `rgba(${palette.highlight}, 0.3)`;
+                }
+                ctx.arc(cx, cy, DOT_RADIUS.loader, 0, Math.PI * 2);
+              } else {
+                ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha * 0.4})`;
+                ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+              }
+              ctx.fill();
+
+              if (isActive) {
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = "transparent";
+              }
             }
-            ctx.arc(cx, cy, DOT_RADIUS.loader, 0, Math.PI * 2);
-          } else {
-            ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha * 0.4})`;
-            ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
           }
-          ctx.fill();
-
-          if (isActive) {
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-          }
-        }
-      }
-    });
-  }, [renderBoth]);
+        },
+      );
+    },
+    [renderBoth],
+  );
 
   /* ── Draw: Error (flashing warning icon) ── */
 
-  const drawErrorFrame = useCallback((time: number) => {
-    renderBoth((ctx, width, height, { cols, rows, spacing, offsetX, offsetY }, palette) => {
-      const centerCol = Math.floor(cols / 2);
-      const centerRow = Math.floor(rows / 2);
-      const flash = Math.sin(time * 0.02 * Math.PI * 2);
-      const intensity = 0.5 + 0.5 * Math.max(0, flash);
+  const drawErrorFrame = useCallback(
+    (time: number) => {
+      renderBoth(
+        (
+          ctx,
+          width,
+          height,
+          { cols, rows, spacing, offsetX, offsetY },
+          palette,
+        ) => {
+          const centerCol = Math.floor(cols / 2);
+          const centerRow = Math.floor(rows / 2);
+          const flash = Math.sin(time * 0.02 * Math.PI * 2);
+          const intensity = 0.5 + 0.5 * Math.max(0, flash);
 
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          const cx = offsetX + c * spacing + spacing / 2;
-          const cy = offsetY + r * spacing + spacing / 2;
-          const maskAlpha = getMaskOpacity(cx, cy, width, height);
-          if (maskAlpha <= 0.05) continue;
+          for (let c = 0; c < cols; c++) {
+            for (let r = 0; r < rows; r++) {
+              const cx = offsetX + c * spacing + spacing / 2;
+              const cy = offsetY + r * spacing + spacing / 2;
+              const maskAlpha = getMaskOpacity(cx, cy, width, height);
+              if (maskAlpha <= 0.05) continue;
 
-          const isIcon = isIconPixel(c, r, ICONS.warning, centerCol, centerRow);
+              const isIcon = isIconPixel(
+                c,
+                r,
+                ICONS.warning,
+                centerCol,
+                centerRow,
+              );
 
-          ctx.beginPath();
-          if (isIcon) {
-            ctx.fillStyle = `rgba(${palette.error}, ${maskAlpha})`;
-            ctx.shadowBlur = 6;
-            ctx.shadowColor = `rgba(${palette.error}, 0.6)`;
-            ctx.arc(cx, cy, DOT_RADIUS.icon, 0, Math.PI * 2);
-          } else {
-            ctx.fillStyle = `rgba(${palette.error}, ${intensity * maskAlpha * 0.6})`;
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-            ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+              ctx.beginPath();
+              if (isIcon) {
+                ctx.fillStyle = `rgba(${palette.error}, ${maskAlpha})`;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = `rgba(${palette.error}, 0.6)`;
+                ctx.arc(cx, cy, DOT_RADIUS.icon, 0, Math.PI * 2);
+              } else {
+                ctx.fillStyle = `rgba(${palette.error}, ${intensity * maskAlpha * 0.6})`;
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = "transparent";
+                ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+              }
+              ctx.fill();
+            }
           }
-          ctx.fill();
-        }
-      }
-    });
-  }, [renderBoth]);
+        },
+      );
+    },
+    [renderBoth],
+  );
 
   /* ── Draw: Audio spectrum (listening waveform) ── */
 
-  const drawAudioFrame = useCallback((audioData: Uint8Array) => {
-    // Compute audio normalization once (shared across both canvases)
-    let normalizationFactor = 1;
-    if (audioData.length > 0) {
-      let framePeak = 0;
-      for (let i = 0; i < audioData.length; i += 4) {
-        if (audioData[i] > framePeak) framePeak = audioData[i];
-      }
-
-      const SIGNAL_FLOOR = 15;
-      const TARGET_PEAK = 200;
-      const MIN_REFERENCE = 40;
-
-      audioFrameCountRef.current++;
-
-      if (framePeak > SIGNAL_FLOOR) {
-        const frameCount = audioFrameCountRef.current;
-        const adaptUp = frameCount < 30 ? 0.3 : 0.1;
-        const adaptDown = frameCount < 30 ? 0.05 : 0.005;
-
-        if (framePeak > audioReferenceLevelRef.current) {
-          audioReferenceLevelRef.current += (framePeak - audioReferenceLevelRef.current) * adaptUp;
-        } else {
-          audioReferenceLevelRef.current += (framePeak - audioReferenceLevelRef.current) * adaptDown;
+  const drawAudioFrame = useCallback(
+    (audioData: Uint8Array) => {
+      // Compute audio normalization once (shared across both canvases)
+      let normalizationFactor = 1;
+      if (audioData.length > 0) {
+        let framePeak = 0;
+        for (let i = 0; i < audioData.length; i += 4) {
+          if (audioData[i] > framePeak) framePeak = audioData[i];
         }
-      }
 
-      const effectiveRef = Math.max(audioReferenceLevelRef.current, MIN_REFERENCE);
-      normalizationFactor = TARGET_PEAK / effectiveRef;
-    }
+        const SIGNAL_FLOOR = 15;
+        const TARGET_PEAK = 200;
+        const MIN_REFERENCE = 40;
 
-    // Render to each canvas with its own height array
-    const targets = [
-      { canvas: canvasRef.current, grid: gridRef.current, heights: heightsRef },
-      { canvas: bgCanvasRef.current, grid: bgGridRef.current, heights: bgHeightsRef },
-    ] as const;
+        audioFrameCountRef.current++;
 
-    const palette = colorPaletteRef.current;
+        if (framePeak > SIGNAL_FLOOR) {
+          const frameCount = audioFrameCountRef.current;
+          const adaptUp = frameCount < 30 ? 0.3 : 0.1;
+          const adaptDown = frameCount < 30 ? 0.05 : 0.005;
 
-    for (const { canvas, grid, heights } of targets) {
-      renderToCanvas(canvas, grid, palette, (ctx, width, height, { cols, rows, spacing, offsetX, offsetY }) => {
-        const centerCol = Math.floor(cols / 2);
-
-        if (audioData.length > 0) {
-          for (let i = 0; i <= centerCol; i++) {
-            const distFromCenter = i / centerCol;
-            const freqIndex = Math.floor(audioData.length * 0.4 * (distFromCenter * distFromCenter));
-            let sample = audioData[freqIndex] || 0;
-            if (audioData[freqIndex + 1]) sample = (sample + audioData[freqIndex + 1]) / 2;
-
-            let val = (sample * normalizationFactor / 255) * sensitivity;
-            if (distFromCenter < 0.2) val *= 1.25;
-            val = Math.min(val, 1.0);
-
-            const leftIdx = centerCol - i;
-            if (leftIdx >= 0 && leftIdx < cols) {
-              if (val > heights.current[leftIdx]) {
-                heights.current[leftIdx] += (val - heights.current[leftIdx]) * 0.5;
-              } else {
-                heights.current[leftIdx] += (val - heights.current[leftIdx]) * (1 - decay);
-              }
-            }
-
-            const rightIdx = centerCol + i;
-            if (rightIdx < cols && rightIdx !== leftIdx) {
-              heights.current[rightIdx] = heights.current[leftIdx];
-            }
+          if (framePeak > audioReferenceLevelRef.current) {
+            audioReferenceLevelRef.current +=
+              (framePeak - audioReferenceLevelRef.current) * adaptUp;
+          } else {
+            audioReferenceLevelRef.current +=
+              (framePeak - audioReferenceLevelRef.current) * adaptDown;
           }
         }
 
-        for (let c = 0; c < cols; c++) {
-          const amp = heights.current[c] || 0;
-          const activeRadiusPixels = amp * (height * 0.45);
+        const effectiveRef = Math.max(
+          audioReferenceLevelRef.current,
+          MIN_REFERENCE,
+        );
+        normalizationFactor = TARGET_PEAK / effectiveRef;
+      }
 
+      // Render to each canvas with its own height array
+      const targets = [
+        {
+          canvas: canvasRef.current,
+          grid: gridRef.current,
+          heights: heightsRef,
+        },
+        {
+          canvas: bgCanvasRef.current,
+          grid: bgGridRef.current,
+          heights: bgHeightsRef,
+        },
+      ] as const;
+
+      const palette = colorPaletteRef.current;
+
+      for (const { canvas, grid, heights } of targets) {
+        renderToCanvas(
+          canvas,
+          grid,
+          palette,
+          (ctx, width, height, { cols, rows, spacing, offsetX, offsetY }) => {
+            const centerCol = Math.floor(cols / 2);
+
+            if (audioData.length > 0) {
+              for (let i = 0; i <= centerCol; i++) {
+                const distFromCenter = i / centerCol;
+                const freqIndex = Math.floor(
+                  audioData.length * 0.4 * (distFromCenter * distFromCenter),
+                );
+                let sample = audioData[freqIndex] || 0;
+                if (audioData[freqIndex + 1])
+                  sample = (sample + audioData[freqIndex + 1]) / 2;
+
+                let val = ((sample * normalizationFactor) / 255) * sensitivity;
+                if (distFromCenter < 0.2) val *= 1.25;
+                val = Math.min(val, 1.0);
+
+                const leftIdx = centerCol - i;
+                if (leftIdx >= 0 && leftIdx < cols) {
+                  if (val > heights.current[leftIdx]) {
+                    heights.current[leftIdx] +=
+                      (val - heights.current[leftIdx]) * 0.5;
+                  } else {
+                    heights.current[leftIdx] +=
+                      (val - heights.current[leftIdx]) * (1 - decay);
+                  }
+                }
+
+                const rightIdx = centerCol + i;
+                if (rightIdx < cols && rightIdx !== leftIdx) {
+                  heights.current[rightIdx] = heights.current[leftIdx];
+                }
+              }
+            }
+
+            for (let c = 0; c < cols; c++) {
+              const amp = heights.current[c] || 0;
+              const activeRadiusPixels = amp * (height * 0.45);
+
+              for (let r = 0; r < rows; r++) {
+                const cx = offsetX + c * spacing + spacing / 2;
+                const cy = offsetY + r * spacing + spacing / 2;
+                const maskAlpha = getMaskOpacity(cx, cy, width, height);
+                if (maskAlpha <= 0.05) continue;
+
+                const distFromCenterY = Math.abs(cy - height / 2);
+                const isWaveActive =
+                  activeRadiusPixels > 0.5 &&
+                  distFromCenterY < activeRadiusPixels;
+
+                ctx.beginPath();
+                if (isWaveActive) {
+                  const waveEdgeDist =
+                    1 - distFromCenterY / (activeRadiusPixels + 0.1);
+                  const brightness = 0.5 + waveEdgeDist * 0.5;
+                  ctx.fillStyle = `rgba(${palette.highlight}, ${brightness * maskAlpha})`;
+                  ctx.shadowBlur = brightness > 0.8 ? 4 : 0;
+                  ctx.shadowColor =
+                    brightness > 0.8
+                      ? `rgba(${palette.highlight}, 0.4)`
+                      : "transparent";
+                  ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
+                } else {
+                  ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
+                  ctx.shadowBlur = 0;
+                  ctx.shadowColor = "transparent";
+                  ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+                }
+                ctx.fill();
+              }
+            }
+          },
+        );
+      }
+    },
+    [decay, sensitivity],
+  );
+
+  /* ── Draw: Idle (static base dots) ── */
+
+  const drawBaseDots = useCallback(() => {
+    renderBoth(
+      (
+        ctx,
+        width,
+        height,
+        { cols, rows, spacing, offsetX, offsetY },
+        palette,
+      ) => {
+        for (let c = 0; c < cols; c++) {
           for (let r = 0; r < rows; r++) {
             const cx = offsetX + c * spacing + spacing / 2;
             const cy = offsetY + r * spacing + spacing / 2;
             const maskAlpha = getMaskOpacity(cx, cy, width, height);
             if (maskAlpha <= 0.05) continue;
 
-            const distFromCenterY = Math.abs(cy - height / 2);
-            const isWaveActive = activeRadiusPixels > 0.5 && distFromCenterY < activeRadiusPixels;
-
             ctx.beginPath();
-            if (isWaveActive) {
-              const waveEdgeDist = 1 - (distFromCenterY / (activeRadiusPixels + 0.1));
-              const brightness = 0.5 + (waveEdgeDist * 0.5);
-              ctx.fillStyle = `rgba(${palette.highlight}, ${brightness * maskAlpha})`;
-              ctx.shadowBlur = brightness > 0.8 ? 4 : 0;
-              ctx.shadowColor = brightness > 0.8 ? `rgba(${palette.highlight}, 0.4)` : "transparent";
-              ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
-            } else {
-              ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
-              ctx.shadowBlur = 0;
-              ctx.shadowColor = "transparent";
-              ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
-            }
+            ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
+            ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
             ctx.fill();
           }
         }
-      });
-    }
-  }, [decay, sensitivity]);
-
-  /* ── Draw: Idle (static base dots) ── */
-
-  const drawBaseDots = useCallback(() => {
-    renderBoth((ctx, width, height, { cols, rows, spacing, offsetX, offsetY }, palette) => {
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          const cx = offsetX + c * spacing + spacing / 2;
-          const cy = offsetY + r * spacing + spacing / 2;
-          const maskAlpha = getMaskOpacity(cx, cy, width, height);
-          if (maskAlpha <= 0.05) continue;
-
-          ctx.beginPath();
-          ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
-          ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    });
+      },
+    );
   }, [renderBoth]);
 
   /* ── Draw: Static icon (error settled state) ── */
 
-  const drawStaticIcon = useCallback((icon: number[][], color: string, glowColor?: string) => {
-    renderBoth((ctx, width, height, { cols, rows, spacing, offsetX, offsetY }, palette) => {
-      const centerCol = Math.floor(cols / 2);
-      const centerRow = Math.floor(rows / 2);
+  const drawStaticIcon = useCallback(
+    (icon: number[][], color: string, glowColor?: string) => {
+      renderBoth(
+        (
+          ctx,
+          width,
+          height,
+          { cols, rows, spacing, offsetX, offsetY },
+          palette,
+        ) => {
+          const centerCol = Math.floor(cols / 2);
+          const centerRow = Math.floor(rows / 2);
 
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          const cx = offsetX + c * spacing + spacing / 2;
-          const cy = offsetY + r * spacing + spacing / 2;
-          const maskAlpha = getMaskOpacity(cx, cy, width, height);
-          if (maskAlpha <= 0.05) continue;
+          for (let c = 0; c < cols; c++) {
+            for (let r = 0; r < rows; r++) {
+              const cx = offsetX + c * spacing + spacing / 2;
+              const cy = offsetY + r * spacing + spacing / 2;
+              const maskAlpha = getMaskOpacity(cx, cy, width, height);
+              if (maskAlpha <= 0.05) continue;
 
-          const isIcon = isIconPixel(c, r, icon, centerCol, centerRow);
+              const isIcon = isIconPixel(c, r, icon, centerCol, centerRow);
 
-          ctx.beginPath();
-          if (isIcon) {
-            ctx.fillStyle = `rgba(${color}, ${maskAlpha})`;
-            ctx.shadowBlur = glowColor ? 8 : 0;
-            ctx.shadowColor = glowColor ? `rgba(${glowColor}, 0.5)` : "transparent";
-            ctx.arc(cx, cy, DOT_RADIUS.icon, 0, Math.PI * 2);
-          } else {
-            ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = "transparent";
-            ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+              ctx.beginPath();
+              if (isIcon) {
+                ctx.fillStyle = `rgba(${color}, ${maskAlpha})`;
+                ctx.shadowBlur = glowColor ? 8 : 0;
+                ctx.shadowColor = glowColor
+                  ? `rgba(${glowColor}, 0.5)`
+                  : "transparent";
+                ctx.arc(cx, cy, DOT_RADIUS.icon, 0, Math.PI * 2);
+              } else {
+                ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
+                ctx.shadowBlur = 0;
+                ctx.shadowColor = "transparent";
+                ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+              }
+              ctx.fill();
+            }
           }
-          ctx.fill();
-        }
-      }
-    });
-  }, [renderBoth]);
+        },
+      );
+    },
+    [renderBoth],
+  );
 
   /* ───────────────────────── Animation Loop ───────────────────────── */
 
@@ -489,7 +616,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     drawErrorFrameRef.current = drawErrorFrame;
     drawBaseDotsRef.current = drawBaseDots;
     drawStaticIconRef.current = drawStaticIcon;
-  }, [drawAudioFrame, drawProcessingFrame, drawErrorFrame, drawBaseDots, drawStaticIcon]);
+  }, [
+    drawAudioFrame,
+    drawProcessingFrame,
+    drawErrorFrame,
+    drawBaseDots,
+    drawStaticIcon,
+  ]);
 
   useEffect(() => {
     stopAllAnimations();
@@ -630,7 +763,12 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     };
 
     setupSingle(containerRef.current, canvasRef.current, gridRef, heightsRef);
-    setupSingle(bgContainerRef.current, bgCanvasRef.current, bgGridRef, bgHeightsRef);
+    setupSingle(
+      bgContainerRef.current,
+      bgCanvasRef.current,
+      bgGridRef,
+      bgHeightsRef,
+    );
 
     if (pillStatus === "idle") {
       drawBaseDotsRef.current();
@@ -668,7 +806,8 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
           id: "pill.status.error",
           message: "Error occurred",
         });
-      default: return "";
+      default:
+        return "";
     }
   };
 
@@ -687,12 +826,8 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     ? "padding 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)"
     : "none";
   const topFadeTransition = isExpanded ? "opacity 0.2s ease" : "none";
-  const bgOpacityTransition = isExpanded
-    ? "opacity 0.32s ease 0.08s"
-    : "none";
-  const baseOpacityTransition = isExpanded
-    ? "opacity 0.22s ease"
-    : "none";
+  const bgOpacityTransition = isExpanded ? "opacity 0.32s ease 0.08s" : "none";
+  const baseOpacityTransition = isExpanded ? "opacity 0.22s ease" : "none";
   const isWarmEntry =
     pillStatus !== "idle" &&
     hasShownPillRef.current &&
@@ -765,7 +900,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                   mass: 0.34,
                   filter: { duration: 0.12, ease: "easeIn" },
                   opacity: { duration: 0.12, ease: "easeIn" },
-                }
+                },
               }}
               transition={{
                 ...pillTransition,
@@ -776,13 +911,33 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 scaleX: isHovered
                   ? { duration: 0.16, ease: "easeOut" }
                   : returningFromHover
-                    ? { type: "spring", stiffness: 460, damping: 12, mass: 0.55 }
-                    : { type: "spring", stiffness: 760, damping: 32, mass: 0.36 },
+                    ? {
+                        type: "spring",
+                        stiffness: 460,
+                        damping: 12,
+                        mass: 0.55,
+                      }
+                    : {
+                        type: "spring",
+                        stiffness: 760,
+                        damping: 32,
+                        mass: 0.36,
+                      },
                 scaleY: isHovered
                   ? { duration: 0.16, ease: "easeOut" }
                   : returningFromHover
-                    ? { type: "spring", stiffness: 460, damping: 12, mass: 0.55 }
-                    : { type: "spring", stiffness: 760, damping: 32, mass: 0.36 },
+                    ? {
+                        type: "spring",
+                        stiffness: 460,
+                        damping: 12,
+                        mass: 0.55,
+                      }
+                    : {
+                        type: "spring",
+                        stiffness: 760,
+                        damping: 32,
+                        mass: 0.36,
+                      },
               }}
               style={{
                 width: shellWidth,
@@ -795,10 +950,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 transformOrigin: "bottom center",
               }}
             >
-              <div
-                aria-hidden="true"
-                className="pill-cleanup-field"
-              />
+              <div aria-hidden="true" className="pill-cleanup-field" />
 
               {/* Expanded content area — positioned above background dots */}
               <div
@@ -840,7 +992,8 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                           margin: 0,
                           fontSize: "13px",
                           lineHeight: "1.5",
-                          fontFamily: "'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif",
+                          fontFamily:
+                            "'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif",
                           color: "rgba(255, 255, 255, 0.85)",
                           fontWeight: 400,
                           letterSpacing: "-0.01em",
@@ -849,44 +1002,81 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                           wordBreak: "break-word",
                         }}
                       >
-                        {expandedTextSegments.map(({ key, text, isWhitespace }) => {
-                          if (isWhitespace) {
+                        {expandedTextSegments.map(
+                          ({ key, text, isWhitespace }) => {
+                            if (isWhitespace) {
+                              return (
+                                <motion.span
+                                  key={key}
+                                  layout={isHovered ? false : "position"}
+                                  transition={{
+                                    layout: {
+                                      type: "spring",
+                                      bounce: 0,
+                                      duration: 0.24,
+                                    },
+                                  }}
+                                  style={{
+                                    display: "inline-block",
+                                    whiteSpace: "pre",
+                                  }}
+                                >
+                                  {text}
+                                </motion.span>
+                              );
+                            }
                             return (
                               <motion.span
                                 key={key}
                                 layout={isHovered ? false : "position"}
-                                transition={{ layout: { type: "spring", bounce: 0, duration: 0.24 } }}
-                                style={{ display: "inline-block", whiteSpace: "pre" }}
+                                initial={
+                                  isHovered
+                                    ? { opacity: 0, y: 4 }
+                                    : { opacity: 0, filter: "blur(2px)", y: 4 }
+                                }
+                                animate={
+                                  isHovered
+                                    ? { opacity: 1, y: 0 }
+                                    : { opacity: 1, filter: "blur(0px)", y: 0 }
+                                }
+                                transition={
+                                  isHovered
+                                    ? {
+                                        opacity: {
+                                          duration: 0.2,
+                                          ease: "easeOut",
+                                        },
+                                        y: { duration: 0.2, ease: "easeOut" },
+                                      }
+                                    : {
+                                        opacity: {
+                                          duration: 0.2,
+                                          ease: "easeOut",
+                                        },
+                                        filter: {
+                                          duration: 0.18,
+                                          ease: "easeOut",
+                                        },
+                                        y: { duration: 0.2, ease: "easeOut" },
+                                        layout: {
+                                          type: "spring",
+                                          bounce: 0,
+                                          duration: 0.24,
+                                        },
+                                      }
+                                }
+                                style={{
+                                  display: "inline-block",
+                                  willChange: isHovered
+                                    ? "transform, opacity"
+                                    : "transform, opacity, filter",
+                                }}
                               >
                                 {text}
                               </motion.span>
                             );
-                          }
-                          return (
-                            <motion.span
-                              key={key}
-                              layout={isHovered ? false : "position"}
-                              initial={isHovered ? { opacity: 0, y: 4 } : { opacity: 0, filter: "blur(2px)", y: 4 }}
-                              animate={isHovered ? { opacity: 1, y: 0 } : { opacity: 1, filter: "blur(0px)", y: 0 }}
-                              transition={
-                                isHovered
-                                  ? {
-                                      opacity: { duration: 0.2, ease: "easeOut" },
-                                      y: { duration: 0.2, ease: "easeOut" },
-                                    }
-                                  : {
-                                      opacity: { duration: 0.2, ease: "easeOut" },
-                                      filter: { duration: 0.18, ease: "easeOut" },
-                                      y: { duration: 0.2, ease: "easeOut" },
-                                      layout: { type: "spring", bounce: 0, duration: 0.24 },
-                                    }
-                              }
-                              style={{ display: "inline-block", willChange: isHovered ? "transform, opacity" : "transform, opacity, filter" }}
-                            >
-                              {text}
-                            </motion.span>
-                          );
-                        })}
+                          },
+                        )}
                       </p>
                     </motion.div>
                   </div>

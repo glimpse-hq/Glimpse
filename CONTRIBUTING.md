@@ -4,13 +4,13 @@ Thanks for helping out. Glimpse is a small project with a big surface area: loca
 
 ## Ways to help
 
-| | What you can do |
-| --- | --- |
-| **Translations** | Help localize Glimpse into your language |
-| **Bug reports** | Tell us when something breaks |
-| **Feature ideas** | Suggest improvements on GitHub |
-| **Code** | Fix bugs, polish UI, improve the Rust backend |
-| **Word of mouth** | Star the repo, share Glimpse, write about it |
+|                   | What you can do                               |
+| ----------------- | --------------------------------------------- |
+| **Translations**  | Help localize Glimpse into your language      |
+| **Bug reports**   | Tell us when something breaks                 |
+| **Feature ideas** | Suggest improvements on GitHub                |
+| **Code**          | Fix bugs, polish UI, improve the Rust backend |
+| **Word of mouth** | Star the repo, share Glimpse, write about it  |
 
 ---
 

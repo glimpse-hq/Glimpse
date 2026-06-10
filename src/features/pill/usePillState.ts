@@ -89,7 +89,7 @@ export function usePillState() {
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
 
-    const register = <TPayload,>(
+    const register = <TPayload>(
       event: string,
       handler: (payload: TPayload) => void,
     ) => {

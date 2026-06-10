@@ -135,7 +135,9 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     settingsQuery.error ?? modelsQuery.error ?? replacementsQuery.error;
   const loading =
     isActive &&
-    (settingsQuery.isLoading || modelsQuery.isLoading || replacementsQuery.isLoading);
+    (settingsQuery.isLoading ||
+      modelsQuery.isLoading ||
+      replacementsQuery.isLoading);
 
   const {
     currentRef: entriesRef,
@@ -164,21 +166,27 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     : entries;
   const isSearching = searchQuery.length > 0;
 
-  const persistEntries = useCallback(async (next: string[]) => {
-    setEditingIndex(null);
-    setEditingValue("");
-    setNewEntry("");
-    await persistEntriesNext(next);
-  }, [persistEntriesNext]);
+  const persistEntries = useCallback(
+    async (next: string[]) => {
+      setEditingIndex(null);
+      setEditingValue("");
+      setNewEntry("");
+      await persistEntriesNext(next);
+    },
+    [persistEntriesNext],
+  );
 
-  const persistReplacements = useCallback(async (next: Replacement[]) => {
-    setEditingReplacementIndex(null);
-    setEditingFrom("");
-    setEditingTo("");
-    setNewFrom("");
-    setNewTo("");
-    await persistReplacementsNext(next);
-  }, [persistReplacementsNext]);
+  const persistReplacements = useCallback(
+    async (next: Replacement[]) => {
+      setEditingReplacementIndex(null);
+      setEditingFrom("");
+      setEditingTo("");
+      setNewFrom("");
+      setNewTo("");
+      await persistReplacementsNext(next);
+    },
+    [persistReplacementsNext],
+  );
 
   const handleAdd = async () => {
     const value = normalizeEntry(newEntry);
@@ -308,15 +316,15 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
           id: "dictionary.full_hint",
           message: "Dictionary is full",
         })
-    : isSearching && entries.length > 0
-      ? t({
-          id: "dictionary.press_enter_to_add_match",
-          message: "Press Enter to add this word",
-        })
-      : t({
-          id: "dictionary.press_enter_to_add",
-          message: "Press Enter to add",
-        });
+      : isSearching && entries.length > 0
+        ? t({
+            id: "dictionary.press_enter_to_add_match",
+            message: "Press Enter to add this word",
+          })
+        : t({
+            id: "dictionary.press_enter_to_add",
+            message: "Press Enter to add",
+          });
   const replacementHintLabel = isEditingReplacement
     ? editHintLabel
     : t({
@@ -334,8 +342,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
       });
   const panelBodyClassName =
     "mt-4 min-h-[16rem] max-h-[calc(100vh-330px)] overflow-x-hidden overflow-y-auto custom-scrollbar";
-  const panelBodyFadeClassName =
-    "pb-20";
+  const panelBodyFadeClassName = "pb-20";
   const itemRowClassName =
     "group relative flex min-h-[42px] items-center overflow-hidden rounded-lg transition-colors hover:bg-[var(--surface-interactive)]";
   const editRowClassName =
@@ -396,7 +403,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
               >
                 <span
                   className="block rounded-lg border bg-surface-overlay p-3 ui-color-warning shadow-xl leading-relaxed ui-text-body-sm shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-                  style={{ borderColor: "color-mix(in srgb, var(--color-warning) 30%, transparent)" }}
+                  style={{
+                    borderColor:
+                      "color-mix(in srgb, var(--color-warning) 30%, transparent)",
+                  }}
                 >
                   {t({
                     id: "dictionary.warning",
@@ -488,8 +498,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                         {isDictionaryFull
                           ? t({
                               id: "dictionary.full_add_prompt",
-                              message:
-                                "Delete an entry before adding another.",
+                              message: "Delete an entry before adding another.",
                             })
                           : t({
                               id: "dictionary.add_prompt",
@@ -624,7 +633,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
               />
             )}
           </div>
-
         </div>
 
         {/* Replacements Column */}
@@ -914,7 +922,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
               />
             )}
           </div>
-
         </div>
       </div>
 

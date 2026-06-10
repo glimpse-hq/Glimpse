@@ -87,20 +87,20 @@ const AboutTab = ({
           id: "settings.about.cli.locked_info",
           message: "Command line install requires an active license.",
         })
-    : cliInstalled
-      ? t({
-          id: "settings.about.cli.installed_info",
-          message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
-        })
-    : cliInstallStatus && !cliInstallStatus.pathInShell
-      ? t({
-          id: "settings.about.cli.path_missing_info",
-          message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
-        })
-      : t({
-          id: "settings.about.cli.default_info",
-          message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
-        });
+      : cliInstalled
+        ? t({
+            id: "settings.about.cli.installed_info",
+            message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
+          })
+        : cliInstallStatus && !cliInstallStatus.pathInShell
+          ? t({
+              id: "settings.about.cli.path_missing_info",
+              message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
+            })
+          : t({
+              id: "settings.about.cli.default_info",
+              message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
+            });
   const cliSubtitle = cliUnavailable
     ? t({
         id: "settings.about.cli.unavailable_subtitle",
@@ -111,15 +111,15 @@ const AboutTab = ({
           id: "settings.about.cli.locked_subtitle",
           message: "Requires an active license",
         })
-    : cliInstalled
-      ? t({
-          id: "settings.about.cli.installed_subtitle",
-          message: `Installed at ${cliInstallPath}`,
-        })
-      : t({
-          id: "settings.about.cli.default_subtitle",
-          message: "Use Glimpse from Terminal or scripts",
-        });
+      : cliInstalled
+        ? t({
+            id: "settings.about.cli.installed_subtitle",
+            message: `Installed at ${cliInstallPath}`,
+          })
+        : t({
+            id: "settings.about.cli.default_subtitle",
+            message: "Use Glimpse from Terminal or scripts",
+          });
   const storageRows = [
     {
       label: t({

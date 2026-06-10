@@ -14,10 +14,14 @@ import {
 import "./App.css";
 
 const Home = lazy(() => import("../Home"));
-const OnboardingScreen = lazy(() => import("../features/onboarding/OnboardingScreen"));
+const OnboardingScreen = lazy(
+  () => import("../features/onboarding/OnboardingScreen"),
+);
 
 const parseThemeMode = (value: string | null): ThemeMode =>
-  value === "light" || value === "dark" || value === "system" ? value : "system";
+  value === "light" || value === "dark" || value === "system"
+    ? value
+    : "system";
 
 const resolveThemeAttribute = (mode: ThemeMode): "light" | "dark" => {
   if (mode === "system") {
@@ -63,12 +67,17 @@ function App() {
       root.style.setProperty("--ui-text-scale", scaleValue);
     };
 
-    applyTextScale(parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)));
+    applyTextScale(
+      parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
+    );
     root.classList.add("text-scale-anim-ready");
 
-    const unlistenPromise = listen<{ mode?: TextSizeMode }>("ui:text_size_changed", (event) => {
-      applyTextScale(parseTextSizeMode(event.payload?.mode ?? null));
-    });
+    const unlistenPromise = listen<{ mode?: TextSizeMode }>(
+      "ui:text_size_changed",
+      (event) => {
+        applyTextScale(parseTextSizeMode(event.payload?.mode ?? null));
+      },
+    );
 
     return () => {
       root.classList.remove("text-scale-anim-ready");

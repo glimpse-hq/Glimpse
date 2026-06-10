@@ -132,7 +132,8 @@ export const onboardingMachine = setup({
       actions: assign({
         captureActive: false,
         capturePreview: "",
-        smartShortcut: ({ context, event }) => event.shortcut ?? context.smartShortcut,
+        smartShortcut: ({ context, event }) =>
+          event.shortcut ?? context.smartShortcut,
       }),
     },
     SET_CAPTURE_PREVIEW: {

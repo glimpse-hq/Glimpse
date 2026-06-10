@@ -29,7 +29,14 @@ import { useSettingsForm } from "../useSettingsForm";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: "general" | "account" | "models" | "providers" | "local-api" | "about" | "app";
+  initialTab?:
+    | "general"
+    | "account"
+    | "models"
+    | "providers"
+    | "local-api"
+    | "about"
+    | "app";
   whatsNewRequest?: number;
   transcriptionMode: TranscriptionMode;
 }
@@ -262,10 +269,7 @@ const SettingsModal = ({
                 {form.loading ? null : (
                   <AnimatePresence mode="wait">
                     {form.activeTab === "account" && (
-                      <AccountTab
-                        key="account"
-                        variants={tabContentVariants}
-                      />
+                      <AccountTab key="account" variants={tabContentVariants} />
                     )}
 
                     {form.activeTab === "general" && (
@@ -281,7 +285,9 @@ const SettingsModal = ({
                         remoteSpeechEndpoint={form.remoteSpeechEndpoint}
                         remoteSpeechModel={form.remoteSpeechModel}
                         onOpenModelsTab={() => form.setActiveTab("models")}
-                        onOpenProvidersTab={() => form.setActiveTab("providers")}
+                        onOpenProvidersTab={() =>
+                          form.setActiveTab("providers")
+                        }
                         onOpenAccountTab={() => form.setActiveTab("account")}
                         inputDevices={form.inputDevices}
                         microphoneDevice={form.microphoneDevice}
@@ -357,7 +363,9 @@ const SettingsModal = ({
                         remoteSpeechModel={form.remoteSpeechModel}
                         setRemoteSpeechModel={form.setRemoteSpeechModel}
                         availableSpeechModels={form.availableSpeechModels}
-                        fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
+                        fetchAvailableSpeechModels={
+                          form.fetchAvailableSpeechModels
+                        }
                       />
                     )}
 
@@ -469,8 +477,17 @@ const SettingsErrorBanner = ({
   onOpenTab,
 }: {
   error: string | null;
-  sourceTab: "general" | "models" | "providers" | "local-api" | "about" | "app" | null;
-  onOpenTab: (tab: "general" | "models" | "providers" | "local-api" | "about" | "app") => void;
+  sourceTab:
+    | "general"
+    | "models"
+    | "providers"
+    | "local-api"
+    | "about"
+    | "app"
+    | null;
+  onOpenTab: (
+    tab: "general" | "models" | "providers" | "local-api" | "about" | "app",
+  ) => void;
 }) => {
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<number | null>(null);
@@ -509,7 +526,9 @@ const SettingsErrorBanner = ({
           exit={{ opacity: 0, y: 4 }}
           transition={{ duration: 0.12, ease: "easeOut" }}
           className={`rounded-lg border border-error/20 bg-error/5 px-2 py-1.5 ${
-            sourceTab ? "cursor-pointer transition-colors hover:bg-error/10" : ""
+            sourceTab
+              ? "cursor-pointer transition-colors hover:bg-error/10"
+              : ""
           }`}
           role={sourceTab ? "button" : undefined}
           tabIndex={sourceTab ? 0 : undefined}
@@ -578,11 +597,7 @@ const ModalNavItem = ({
             : "text-content-disabled"
       }
     >
-      <Icon
-        size={14}
-        weight={active ? "fill" : "regular"}
-        aria-hidden="true"
-      />
+      <Icon size={14} weight={active ? "fill" : "regular"} aria-hidden="true" />
     </div>
     {label}
   </motion.button>

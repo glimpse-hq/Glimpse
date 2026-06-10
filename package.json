@@ -11,7 +11,9 @@
     "lingui:compile": "lingui compile",
     "preview": "bun ./node_modules/vite/bin/vite.js preview",
     "tauri": "bun ./scripts/tauri.mjs",
-    "lint": "bun ./node_modules/eslint/bin/eslint.js src/"
+    "lint": "bun ./node_modules/eslint/bin/eslint.js src/",
+    "format": "prettier --write . && cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "format:check": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml -- --check"
   },
   "dependencies": {
     "@lingui/core": "^6.2.0",
@@ -52,6 +54,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^10.4.1",
     "eslint-plugin-boundaries": "^6.0.2",
+    "prettier": "3.7.4",
     "tailwindcss": "^4.3.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.60.1",

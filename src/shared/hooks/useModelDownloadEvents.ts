@@ -23,9 +23,11 @@ export function useModelDownloadEvents({
   const handleComplete = useEffectEvent((payload: { model: string }) => {
     onComplete?.(payload);
   });
-  const handleError = useEffectEvent((payload: { model: string; error: string }) => {
-    onError?.(payload);
-  });
+  const handleError = useEffectEvent(
+    (payload: { model: string; error: string }) => {
+      onError?.(payload);
+    },
+  );
   const handleCancelled = useEffectEvent((payload: { model: string }) => {
     onCancelled?.(payload);
   });
@@ -36,7 +38,7 @@ export function useModelDownloadEvents({
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
 
-    const register = <TPayload,>(
+    const register = <TPayload>(
       event: string,
       handler: (payload: TPayload) => void,
     ) => {

@@ -36,7 +36,9 @@ function resolveRequestedLocale(
   localeSetting?: AppLocaleSetting | string | null,
 ): string | null {
   if (!localeSetting || localeSetting === DEFAULT_APP_LOCALE) {
-    return typeof navigator !== "undefined" ? navigator.language : DEFAULT_LOCALE;
+    return typeof navigator !== "undefined"
+      ? navigator.language
+      : DEFAULT_LOCALE;
   }
   return localeSetting;
 }

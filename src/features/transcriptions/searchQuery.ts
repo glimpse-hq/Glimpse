@@ -102,10 +102,7 @@ export function matchesDateRange(
   return true;
 }
 
-export function withSortToken(
-  query: string,
-  sort: TranscriptionSort,
-): string {
+export function withSortToken(query: string, sort: TranscriptionSort): string {
   const parts = query.split(/\s+/).filter((p) => p && !/^sort:/i.test(p));
   if (sort !== "recent") parts.push(`sort:${sort}`);
   return parts.join(" ");

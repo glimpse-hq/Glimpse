@@ -19,7 +19,9 @@ export type TodayStatSlide =
   | "pace_wpm"
   | "llm_cleaned";
 
-export function getTodayStatSlides(stats: TodayDictationStats): TodayStatSlide[] {
+export function getTodayStatSlides(
+  stats: TodayDictationStats,
+): TodayStatSlide[] {
   const slides: TodayStatSlide[] = ["dictations_words", "minutes_spoken"];
 
   if (stats.count > 0) {

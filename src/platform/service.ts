@@ -9,8 +9,7 @@ export const detectAppPlatform = (): AppPlatformId => {
   const userAgentData = (
     navigator as Navigator & { userAgentData?: { platform?: string } }
   ).userAgentData;
-  const platform =
-    `${userAgentData?.platform ?? ""} ${navigator.platform ?? ""} ${navigator.userAgent ?? ""}`;
+  const platform = `${userAgentData?.platform ?? ""} ${navigator.platform ?? ""} ${navigator.userAgent ?? ""}`;
 
   if (/mac/i.test(platform)) return "macos";
   if (/^win/i.test(platform)) return "windows";

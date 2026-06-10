@@ -27,7 +27,9 @@ export const deriveModelStats = (model: ModelInfo): ModelStats => {
         model.supported_languages.every((l) =>
           l.code.toLowerCase().startsWith("en"),
         );
-  const languagesLabel = englishOnly ? "English only" : `${langCount} languages`;
+  const languagesLabel = englishOnly
+    ? "English only"
+    : `${langCount} languages`;
 
   return {
     languagesLabel,

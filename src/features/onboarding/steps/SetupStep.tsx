@@ -105,23 +105,43 @@ export function SetupStep({
   }> = [
     {
       value: "quality",
-      label: t({ id: "onboarding.setup.priority.quality", message: "Best quality" }),
-      helper: t({ id: "onboarding.setup.priority.quality.helper", message: "Most accurate" }),
+      label: t({
+        id: "onboarding.setup.priority.quality",
+        message: "Best quality",
+      }),
+      helper: t({
+        id: "onboarding.setup.priority.quality.helper",
+        message: "Most accurate",
+      }),
     },
     {
       value: "balanced",
-      label: t({ id: "onboarding.setup.priority.balanced", message: "Balanced" }),
-      helper: t({ id: "onboarding.setup.priority.balanced.helper", message: "Accuracy & size" }),
+      label: t({
+        id: "onboarding.setup.priority.balanced",
+        message: "Balanced",
+      }),
+      helper: t({
+        id: "onboarding.setup.priority.balanced.helper",
+        message: "Accuracy & size",
+      }),
     },
     {
       value: "compact",
-      label: t({ id: "onboarding.setup.priority.compact", message: "Smallest" }),
-      helper: t({ id: "onboarding.setup.priority.compact.helper", message: "Less storage" }),
+      label: t({
+        id: "onboarding.setup.priority.compact",
+        message: "Smallest",
+      }),
+      helper: t({
+        id: "onboarding.setup.priority.compact.helper",
+        message: "Less storage",
+      }),
     },
   ];
 
   const finalizeCapture = useCallback(async () => {
-    await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+    await invoke("set_shortcut_capture_active", { active: false }).catch(
+      () => {},
+    );
     onEndCapture();
   }, [onEndCapture]);
 
@@ -144,7 +164,8 @@ export function SetupStep({
 
   const hasLanguage = Boolean(languagePreference);
   const hasPriority = Boolean(modelPriority);
-  const canContinue = hasLanguage && hasPriority && !captureActive && !isLoading;
+  const canContinue =
+    hasLanguage && hasPriority && !captureActive && !isLoading;
   const modelStatus: ModelStatus | undefined = recommendedModel
     ? {
         key: recommendedModel.key,

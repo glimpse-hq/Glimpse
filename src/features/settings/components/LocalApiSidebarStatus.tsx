@@ -9,7 +9,8 @@ import {
 import ActivityDots from "../../../shared/ui/ActivityDots";
 import type { LocalApiStatus } from "../../../types";
 
-const SIDEBAR_TRANSITION = "transition-[width,opacity,max-height] duration-200 ease-out";
+const SIDEBAR_TRANSITION =
+  "transition-[width,opacity,max-height] duration-200 ease-out";
 
 const LocalApiSidebarStatus = ({
   collapsed,

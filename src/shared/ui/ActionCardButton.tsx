@@ -1,8 +1,4 @@
-import type {
-  ButtonHTMLAttributes,
-  CSSProperties,
-  ReactNode,
-} from "react";
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import {
   ACTION_CARD_BUTTON_ACCENTS,
   type ActionCardAccent,
@@ -69,7 +65,9 @@ const ActionCardButton = ({
         isCardLayout
           ? joinClasses(
               "px-3 py-2.5",
-              fullWidth ? "w-full active:translate-y-[2px]" : "inline-flex w-fit",
+              fullWidth
+                ? "w-full active:translate-y-[2px]"
+                : "inline-flex w-fit",
             )
           : "inline-flex w-auto px-2.5 py-1",
         className,

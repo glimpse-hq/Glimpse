@@ -441,9 +441,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                             role="menuitemradio"
                             aria-checked={selected}
                             onClick={() =>
-                              setSearchQuery((q) =>
-                                withSortToken(q, opt.value),
-                              )
+                              setSearchQuery((q) => withSortToken(q, opt.value))
                             }
                             className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
                               selected

@@ -156,24 +156,21 @@ export function useLibraryItems(
       else unlisteners.push(fn);
     });
 
-    listen<LibraryImportProgressPayload>(
-      "library:import_progress",
-      (event) => {
-        if (cancelled) return;
-        const { id, progress } = event.payload;
-        patchItemInCache(queryClient, filter, id, (item) => {
-          if (
-            item.status.type === "transcribing" ||
-            item.status.type === "complete" ||
-            item.status.type === "cancelling" ||
-            item.status.type === "cancelled"
-          ) {
-            return item;
-          }
-          return { ...item, status: { type: "importing" as const, progress } };
-        });
-      },
-    ).then((fn) => {
+    listen<LibraryImportProgressPayload>("library:import_progress", (event) => {
+      if (cancelled) return;
+      const { id, progress } = event.payload;
+      patchItemInCache(queryClient, filter, id, (item) => {
+        if (
+          item.status.type === "transcribing" ||
+          item.status.type === "complete" ||
+          item.status.type === "cancelling" ||
+          item.status.type === "cancelled"
+        ) {
+          return item;
+        }
+        return { ...item, status: { type: "importing" as const, progress } };
+      });
+    }).then((fn) => {
       if (cancelled) fn();
       else unlisteners.push(fn);
     });

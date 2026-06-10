@@ -66,19 +66,19 @@ Configure AI writing in **Settings → Providers**. Speech models live in **Sett
 
 Glimpse Personal is a one-time purchase, not a subscription. Core dictation stays free.
 
-| Edition | Price | For |
-| --- | --- | --- |
-| **Personal** | $24.99 | You, on up to 5 personal devices |
-| **Commercial** | from $19.99 / seat | Work use, one person per seat |
+| Edition        | Price              | For                              |
+| -------------- | ------------------ | -------------------------------- |
+| **Personal**   | $24.99             | You, on up to 5 personal devices |
+| **Commercial** | from $19.99 / seat | Work use, one person per seat    |
 
 Commercial volume pricing:
 
-| Seats | Price per seat |
-| --- | --- |
-| 1 to 5 | $19.99 |
-| 6 to 15 | $17.99 |
-| 16 to 30 | $14.99 |
-| 31+ | $11.99 |
+| Seats    | Price per seat |
+| -------- | -------------- |
+| 1 to 5   | $19.99         |
+| 6 to 15  | $17.99         |
+| 16 to 30 | $14.99         |
+| 31+      | $11.99         |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 

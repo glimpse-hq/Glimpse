@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 
 type GlimpseLogoSize = "sm" | "md" | "lg";
 
-const GLIMPSE_LOGO_SIZES: Record<GlimpseLogoSize, { dot: number; gap: number }> = {
+const GLIMPSE_LOGO_SIZES: Record<
+  GlimpseLogoSize,
+  { dot: number; gap: number }
+> = {
   sm: { dot: 5, gap: 4 },
   md: { dot: 10, gap: 7 },
   lg: { dot: 14, gap: 10 },
@@ -31,7 +34,10 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
   const stdDev = sizes.dot * 0.35;
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: gridSize, height: gridSize }}>
+    <div
+      className="relative flex items-center justify-center"
+      style={{ width: gridSize, height: gridSize }}
+    >
       <svg
         aria-hidden="true"
         focusable="false"
@@ -41,9 +47,24 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
         style={{ overflow: "visible" }}
       >
         <defs>
-          <filter id={`goo-${size}`} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation={stdDev} result="blur" />
-            <feColorMatrix in="blur" mode="matrix" values={COLOR_MATRIX_VALUES} result="goo" />
+          <filter
+            id={`goo-${size}`}
+            x="-50%"
+            y="-50%"
+            width="200%"
+            height="200%"
+          >
+            <feGaussianBlur
+              in="SourceGraphic"
+              stdDeviation={stdDev}
+              result="blur"
+            />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values={COLOR_MATRIX_VALUES}
+              result="goo"
+            />
             <feBlend in="SourceGraphic" in2="goo" />
           </filter>
         </defs>
@@ -61,8 +82,20 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
             r={radius}
             fill="var(--color-cloud)"
             animate={{
-              cx: [coords[0].cx, coords[3].cx, coords[3].cx, coords[0].cx, coords[0].cx],
-              cy: [coords[0].cy, coords[3].cy, coords[3].cy, coords[0].cy, coords[0].cy],
+              cx: [
+                coords[0].cx,
+                coords[3].cx,
+                coords[3].cx,
+                coords[0].cx,
+                coords[0].cx,
+              ],
+              cy: [
+                coords[0].cy,
+                coords[3].cy,
+                coords[3].cy,
+                coords[0].cy,
+                coords[0].cy,
+              ],
             }}
             transition={{
               duration: 4,
@@ -75,8 +108,20 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
             r={radius}
             fill="var(--color-local)"
             animate={{
-              cx: [coords[1].cx, coords[1].cx, coords[2].cx, coords[2].cx, coords[1].cx],
-              cy: [coords[1].cy, coords[1].cy, coords[2].cy, coords[2].cy, coords[1].cy],
+              cx: [
+                coords[1].cx,
+                coords[1].cx,
+                coords[2].cx,
+                coords[2].cx,
+                coords[1].cx,
+              ],
+              cy: [
+                coords[1].cy,
+                coords[1].cy,
+                coords[2].cy,
+                coords[2].cy,
+                coords[1].cy,
+              ],
             }}
             transition={{
               duration: 4,

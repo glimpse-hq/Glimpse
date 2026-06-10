@@ -1,4 +1,7 @@
-import type { PurchaseSource, PurchaseTier } from "../../shared/lib/purchaseConfig";
+import type {
+  PurchaseSource,
+  PurchaseTier,
+} from "../../shared/lib/purchaseConfig";
 
 export type { PurchaseSource, PurchaseTier };
 export { tierInfo } from "../../shared/lib/purchaseConfig";

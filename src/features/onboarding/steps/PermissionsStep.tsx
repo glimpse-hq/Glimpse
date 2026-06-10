@@ -171,7 +171,9 @@ function PermissionRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-content-muted">{icon}</span>
-          <h3 className="ui-text-body-lg-strong text-content-primary">{title}</h3>
+          <h3 className="ui-text-body-lg-strong text-content-primary">
+            {title}
+          </h3>
         </div>
         <p className="mt-1 ui-text-body-sm text-content-muted">{body}</p>
         {!granted && help && (

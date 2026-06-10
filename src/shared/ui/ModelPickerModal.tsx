@@ -11,7 +11,11 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
-import { deriveModelStats, formatModelSize, variantLabel } from "../lib/modelStats";
+import {
+  deriveModelStats,
+  formatModelSize,
+  variantLabel,
+} from "../lib/modelStats";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
 import DotMatrix from "./DotMatrix";
@@ -464,7 +468,10 @@ function ModelRow({
                           id: "model_picker.variant_installed",
                           message: "Model variant (installed)",
                         })
-                      : t({ id: "model_picker.variant", message: "Model variant" })
+                      : t({
+                          id: "model_picker.variant",
+                          message: "Model variant",
+                        })
                   }
                 >
                   {variantLabel(variant.variant)}
@@ -481,14 +488,21 @@ function ModelRow({
               <div className="mt-1 flex h-3 w-full items-center justify-end">
                 {isVerifying ? (
                   <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
-                    {t({ id: "models.card.verifying", message: "Verifying install" })}
+                    {t({
+                      id: "models.card.verifying",
+                      message: "Verifying install",
+                    })}
                   </p>
                 ) : isDownloading ? (
                   <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
                     {percent}% ·{" "}
                     {
-                      (progress as Extract<DownloadEvent, { status: "downloading" }>)
-                        .file
+                      (
+                        progress as Extract<
+                          DownloadEvent,
+                          { status: "downloading" }
+                        >
+                      ).file
                     }
                   </p>
                 ) : null}
@@ -497,8 +511,12 @@ function ModelRow({
                     <AlertCircle size={9} className="shrink-0" />
                     <span className="truncate">
                       {
-                        (progress as Extract<DownloadEvent, { status: "error" }>)
-                          .message
+                        (
+                          progress as Extract<
+                            DownloadEvent,
+                            { status: "error" }
+                          >
+                        ).message
                       }
                     </span>
                   </p>
@@ -561,7 +579,10 @@ function ModelRow({
                 onClick={onDownload}
                 className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
                 title={t({ id: "model_picker.download", message: "Download" })}
-                aria-label={t({ id: "model_picker.download", message: "Download" })}
+                aria-label={t({
+                  id: "model_picker.download",
+                  message: "Download",
+                })}
               >
                 <Download size={13} aria-hidden="true" />
               </button>

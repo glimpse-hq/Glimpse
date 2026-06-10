@@ -172,7 +172,9 @@ child.on("error", (error) => {
 });
 
 function iconOutputDir() {
-  const outputIndex = args.findIndex((arg) => arg === "--output" || arg === "-o");
+  const outputIndex = args.findIndex(
+    (arg) => arg === "--output" || arg === "-o",
+  );
   if (outputIndex >= 0 && args[outputIndex + 1]) {
     return path.resolve(process.cwd(), args[outputIndex + 1]);
   }
@@ -189,7 +191,10 @@ function removeMobileIconOutputs() {
   const outputDir = iconOutputDir();
 
   for (const directory of ["android", "ios"]) {
-    fs.rmSync(path.join(outputDir, directory), { recursive: true, force: true });
+    fs.rmSync(path.join(outputDir, directory), {
+      recursive: true,
+      force: true,
+    });
   }
 }
 

@@ -127,10 +127,7 @@ function normalizeShortcutToken(token: string): string {
 }
 
 function shortcutTokens(shortcut: string): string[] {
-  return shortcut
-    .split("+")
-    .map(normalizeShortcutToken)
-    .filter(Boolean);
+  return shortcut.split("+").map(normalizeShortcutToken).filter(Boolean);
 }
 
 export function formatShortcutForDisplay(shortcut: string): string {

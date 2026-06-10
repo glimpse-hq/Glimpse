@@ -217,7 +217,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const isRemoteSpeechModel = isRemoteTranscriptionSpeechModel(normalizedModel);
   const isCloudModel =
     normalizedModel.startsWith("cloud-") || isRemoteSpeechModel;
-  const speechModelLabel = resolveSpeechModelLabel(speechModels, normalizedModel);
+  const speechModelLabel = resolveSpeechModelLabel(
+    speechModels,
+    normalizedModel,
+  );
   const llmModelLabel = record.llm_model
     ? formatTranscriptionLlmModel(record.llm_model)
     : null;
