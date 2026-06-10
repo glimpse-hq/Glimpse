@@ -360,7 +360,6 @@ where
     let channels = spec.channels.max(1) as usize;
     let chunk_samples = chunk_samples.max(1);
     let overlap_samples = overlap_samples.min(chunk_samples);
-    let step = chunk_samples.saturating_sub(overlap_samples).max(1);
 
     let mut raw_samples: Vec<i16> = Vec::with_capacity(chunk_samples.saturating_mul(channels));
     let mut mono_samples: Vec<i16> = Vec::with_capacity(chunk_samples);
@@ -401,24 +400,21 @@ where
         if chunk.is_empty() {
             break;
         }
-        on_chunk(start_idx, &chunk)?;
-
-        if overlap_samples > 0 {
-            carry.clear();
-            if chunk.len() > overlap_samples {
-                carry.extend_from_slice(&chunk[chunk.len() - overlap_samples..]);
-            } else {
-                carry.extend_from_slice(&chunk);
-            }
+        let cut = if eof {
+            chunk.len()
         } else {
-            carry.clear();
-        }
+            crate::recorder::quiet_cut_index(&chunk, spec.sample_rate)
+        };
+        on_chunk(start_idx, &chunk[..cut])?;
 
         if eof {
             break;
         }
-        start_idx = start_idx.saturating_add(step);
-        next_read = step;
+        let keep_from = cut.saturating_sub(overlap_samples);
+        carry.clear();
+        carry.extend_from_slice(&chunk[keep_from..]);
+        start_idx = start_idx.saturating_add(keep_from);
+        next_read = chunk_samples.saturating_sub(carry.len()).max(1);
     }
 
     Ok(())

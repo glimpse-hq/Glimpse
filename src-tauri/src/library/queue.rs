@@ -454,7 +454,8 @@ fn transcribe_library_item(
             let chunk_speech_percent =
                 speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
             if chunk_speech_percent < VAD_MIN_SPEECH_PERCENT_CHUNK {
-                let progress = (chunk_index as f32) / total_chunks as f32;
+                let progress =
+                    ((start_idx + chunk.len()) as f32 / wav_info.total_samples as f32).min(1.0);
                 report_progress(
                     app,
                     state.storage(),
@@ -504,7 +505,8 @@ fn transcribe_library_item(
                 }
             }
 
-            let progress = (chunk_index as f32) / total_chunks as f32;
+            let progress =
+                ((start_idx + chunk.len()) as f32 / wav_info.total_samples as f32).min(1.0);
             let transcript_patch = appended_text.as_ref().map(|_| full_text.clone());
             let segments_patch = if new_segments.is_empty() {
                 None
@@ -596,7 +598,8 @@ fn transcribe_library_item(
         let chunk_speech_percent =
             speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
         if chunk_speech_percent < VAD_MIN_SPEECH_PERCENT_CHUNK {
-            let progress = (chunk_index as f32) / total_chunks as f32;
+            let progress =
+                ((start_idx + chunk.len()) as f32 / wav_info.total_samples as f32).min(1.0);
             report_progress(
                 app,
                 state.storage(),
@@ -641,7 +644,7 @@ fn transcribe_library_item(
             }
         }
 
-        let progress = (chunk_index as f32) / total_chunks as f32;
+        let progress = ((start_idx + chunk.len()) as f32 / wav_info.total_samples as f32).min(1.0);
         report_progress(
             app,
             state.storage(),

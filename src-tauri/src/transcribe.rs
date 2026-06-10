@@ -342,44 +342,33 @@ async fn transcribe_completed_recording_locally(
     let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
 
     match async_runtime::spawn_blocking(move || {
-        if is_whisper {
-            transcribe_local_chunked(
-                &transcriber,
-                &ready_model,
-                &recording.samples,
-                recording.sample_rate,
-                LocalChunkingConfig {
-                    dictionary: &dictionary_terms,
-                    language: Some(&language),
-                    chunk_seconds: speech::WHISPER_CHUNK_SECONDS as f32,
-                    overlap_seconds: speech::WHISPER_CHUNK_OVERLAP_SECONDS as f32,
-                    cancel_token: cancel_token.as_ref(),
-                    strip_hallucinated_thank_you: true,
-                },
+        let (chunk_seconds, overlap_seconds, strip_hallucinated_thank_you) = if is_whisper {
+            (
+                speech::WHISPER_CHUNK_SECONDS,
+                speech::WHISPER_CHUNK_OVERLAP_SECONDS,
+                true,
             )
         } else {
-            let speech_percent = speech_percentage_i16_with_mode(
-                &recording.samples,
-                recording.sample_rate,
-                VadMode::VeryAggressive,
-            );
-            if speech_percent < speech::VAD_MIN_SPEECH_PERCENT_FILE {
-                Ok(transcription_api::TranscriptionSuccess {
-                    transcript: String::new(),
-                    speech_model: None,
-                    segments: None,
-                    words: None,
-                })
-            } else {
-                transcriber.transcribe(
-                    &ready_model,
-                    &recording.samples,
-                    recording.sample_rate,
-                    &dictionary_terms,
-                    Some(&language),
-                )
-            }
-        }
+            (
+                speech::PARAKEET_CHUNK_SECONDS,
+                speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
+                false,
+            )
+        };
+        transcribe_local_chunked(
+            &transcriber,
+            &ready_model,
+            &recording.samples,
+            recording.sample_rate,
+            LocalChunkingConfig {
+                dictionary: &dictionary_terms,
+                language: Some(&language),
+                chunk_seconds: chunk_seconds as f32,
+                overlap_seconds: overlap_seconds as f32,
+                cancel_token: cancel_token.as_ref(),
+                strip_hallucinated_thank_you,
+            },
+        )
     })
     .await
     {
@@ -1469,7 +1458,6 @@ fn transcribe_local_chunked(
     let chunk_samples = chunk_samples.max(1);
     let overlap_samples = ((sample_rate.max(1) as f32) * overlap_seconds).round() as usize;
     let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
-    let step = chunk_samples.saturating_sub(overlap_samples).max(1);
 
     let mut full_text = String::new();
     let mut start = 0usize;
@@ -1481,7 +1469,12 @@ fn transcribe_local_chunked(
                 return Err(anyhow!("Transcription cancelled"));
             }
         }
-        let end = (start + chunk_samples).min(samples.len());
+        let nominal_end = (start + chunk_samples).min(samples.len());
+        let end = if nominal_end == samples.len() {
+            nominal_end
+        } else {
+            start + crate::recorder::quiet_cut_index(&samples[start..nominal_end], sample_rate)
+        };
         let chunk = &samples[start..end];
         let chunk_speech_percent =
             speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
@@ -1490,27 +1483,27 @@ fn transcribe_local_chunked(
         } else {
             speech::VAD_MIN_SPEECH_PERCENT_CHUNK
         };
-        if chunk_speech_percent < min_chunk_threshold {
-            start += step;
-            continue;
-        }
-        let result = transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
-        if model_label.is_none() {
-            model_label = result.speech_model.clone();
-        }
+        if chunk_speech_percent >= min_chunk_threshold {
+            let result = transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
+            if model_label.is_none() {
+                model_label = result.speech_model.clone();
+            }
 
-        let chunk_text = result.transcript;
-        if !chunk_text.trim().is_empty() {
-            let deduped = dedupe_overlap_text(&full_text, &chunk_text);
-            if !deduped.trim().is_empty() {
-                append_deduped_chunk(&mut full_text, &deduped);
+            let chunk_text = result.transcript;
+            if !chunk_text.trim().is_empty() {
+                let deduped = dedupe_overlap_text(&full_text, &chunk_text);
+                if !deduped.trim().is_empty() {
+                    append_deduped_chunk(&mut full_text, &deduped);
+                }
             }
         }
 
         if end == samples.len() {
             break;
         }
-        start += step;
+        start = end
+            .saturating_sub(overlap_samples)
+            .max(start.saturating_add(1));
     }
 
     let transcript = if strip_hallucinated_thank_you {

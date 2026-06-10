@@ -701,6 +701,35 @@ fn calculate_speech_percentage(samples: &[f32], sample_rate: u32) -> f32 {
     calculate_speech_percentage_with_mode(samples, sample_rate, VadMode::Quality)
 }
 
+pub fn quiet_cut_index(samples: &[i16], sample_rate: u32) -> usize {
+    let len = samples.len();
+    let rate = sample_rate.max(1) as usize;
+    let window = (len / 10).clamp(rate, rate * 20);
+    let frame = (rate * 150) / 1000;
+    let step = (rate * 50) / 1000;
+    if frame == 0 || step == 0 || len <= window + frame {
+        return len;
+    }
+
+    let floor = len - window;
+    let mut best_end = len;
+    let mut best_energy = u64::MAX;
+    let mut frame_end = len;
+    while frame_end >= floor + frame {
+        let energy: u64 = samples[frame_end - frame..frame_end]
+            .iter()
+            .map(|s| (*s as i64).unsigned_abs())
+            .sum();
+        if energy < best_energy {
+            best_energy = energy;
+            best_end = frame_end;
+        }
+        frame_end -= step;
+    }
+
+    best_end - frame / 2
+}
+
 pub fn speech_percentage_i16_with_mode(samples: &[i16], sample_rate: u32, mode: VadMode) -> f32 {
     if samples.is_empty() {
         return 0.0;

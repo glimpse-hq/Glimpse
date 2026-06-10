@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 
 pub(crate) const SUPPORTED_AUDIO_FORMATS: &[&str] = &["wav", "mp3", "m4a", "aac", "ogg", "flac"];
 pub(crate) const SUPPORTED_VIDEO_FORMATS: &[&str] = &["mp4", "mov", "webm", "mkv"];
-pub(crate) const MAX_CHUNK_MINUTES: u32 = 5;
+pub(crate) const MAX_CHUNK_MINUTES: u32 = crate::speech::PARAKEET_CHUNK_SECONDS / 60;
 pub(crate) const CHUNK_OVERLAP_SECONDS: u32 = 5;
-pub(crate) const DIRECT_TRANSCRIBE_MINUTES: u32 = 10;
+pub(crate) const DIRECT_TRANSCRIBE_MINUTES: u32 = MAX_CHUNK_MINUTES;
 pub(crate) const TARGET_SAMPLE_RATE: u32 = 16_000;
 
 /// Typed marker error so cancellation survives `anyhow` propagation without
@@ -192,8 +192,8 @@ pub(crate) struct LibraryProgressUpdate {
 impl LibraryProgressUpdate {
     pub fn with_chunk_counts(progress: f32, current_chunk: u32, total_chunks: u32) -> Self {
         Self {
-            progress,
-            current_chunk,
+            progress: progress.min(1.0),
+            current_chunk: current_chunk.min(total_chunks),
             total_chunks,
             transcript: None,
             segments: None,
