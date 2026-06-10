@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import PillOverlay from "../features/pill/PillOverlay";
 import ToastOverlay from "../features/toast/ToastOverlay";
+import AneCompileOverlay from "../features/settings/components/AneCompileOverlay";
 import { useSettings } from "../features/settings/queries";
 import type { TextSizeMode, ThemeMode } from "../types";
 import { detectAppPlatform } from "../platform/service";
@@ -160,6 +161,7 @@ function App() {
           ) : (
             <Home />
           )}
+          <AneCompileOverlay />
         </div>
       </Suspense>
     );

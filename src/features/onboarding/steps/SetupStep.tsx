@@ -10,15 +10,12 @@ import ModelPickerModal from "../../../shared/ui/ModelPickerModal";
 import type { StepMotionProps } from "./shared";
 import ModelStatCard from "../../settings/components/ModelStatCard";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../../types";
-import type {
-  OnboardingLanguagePreference,
-  OnboardingModelPriority,
-} from "../machine";
+import type { OnboardingModelPriority } from "../machine";
 
 interface SetupStepProps {
   stepMotionProps: StepMotionProps;
-  languagePreference: OnboardingLanguagePreference | null;
   modelPriority: OnboardingModelPriority | null;
+  customModel: boolean;
   smartShortcut: string;
   captureActive: boolean;
   capturePreview: string;
@@ -33,14 +30,13 @@ interface SetupStepProps {
   displayState: DownloadEvent;
   selectedModelReady: boolean;
   showLocalConfirm: boolean;
-  onSelectLanguage: (language: OnboardingLanguagePreference) => void;
   onSelectPriority: (priority: OnboardingModelPriority) => void;
   onStartCapture: () => void;
   onEndCapture: (shortcut?: string) => void;
   onSetPreview: (preview: string) => void;
   onSetShortcut: (shortcut: string) => void;
   onShowConfirm: (show: boolean) => void;
-  onDownload: (key: string) => void;
+  onDownload: (key: string, ane?: boolean) => void;
   onDelete: (key: string) => void;
   onCancelDownload: (key: string) => void;
   onNext: () => void;
@@ -48,8 +44,8 @@ interface SetupStepProps {
 
 export function SetupStep({
   stepMotionProps,
-  languagePreference,
   modelPriority,
+  customModel,
   smartShortcut,
   captureActive,
   capturePreview,
@@ -64,7 +60,6 @@ export function SetupStep({
   displayState,
   selectedModelReady,
   showLocalConfirm,
-  onSelectLanguage,
   onSelectPriority,
   onStartCapture,
   onEndCapture,
@@ -77,27 +72,11 @@ export function SetupStep({
   onNext,
 }: SetupStepProps) {
   const { t } = useLingui();
-  const [step, setStep] = useState<"language" | "priority" | "review">(
-    languagePreference ? (modelPriority ? "review" : "priority") : "language",
+  const [step, setStep] = useState<"priority" | "review">(
+    modelPriority ? "review" : "priority",
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const languageOptions: Array<{
-    value: OnboardingLanguagePreference;
-    label: string;
-  }> = [
-    {
-      value: "english",
-      label: t({ id: "onboarding.setup.language.english", message: "English" }),
-    },
-    {
-      value: "multilingual",
-      label: t({
-        id: "onboarding.setup.language.multilingual",
-        message: "Multiple languages",
-      }),
-    },
-  ];
   const priorityOptions: Array<{
     value: OnboardingModelPriority;
     label: string;
@@ -162,14 +141,13 @@ export function SetupStep({
     });
   };
 
-  const hasLanguage = Boolean(languagePreference);
   const hasPriority = Boolean(modelPriority);
-  const canContinue =
-    hasLanguage && hasPriority && !captureActive && !isLoading;
+  const canContinue = hasPriority && !captureActive && !isLoading;
   const modelStatus: ModelStatus | undefined = recommendedModel
     ? {
         key: recommendedModel.key,
         installed: displayState.status === "complete",
+        ane_installed: false,
         bytes_on_disk: 0,
         missing_files: [],
         directory: "",
@@ -177,6 +155,17 @@ export function SetupStep({
     : undefined;
   const progress =
     displayState.status === "downloading" ? displayState : undefined;
+  // The Neural Engine encoder is bundled into onboarding downloads, so show its size too.
+  const alreadyInstalled = Boolean(
+    recommendedModel && modelStatusByKey[recommendedModel.key]?.installed,
+  );
+  const displayModel =
+    recommendedModel?.ane_size_mb != null && !alreadyInstalled
+      ? {
+          ...recommendedModel,
+          size_mb: recommendedModel.size_mb + recommendedModel.ane_size_mb,
+        }
+      : recommendedModel;
 
   const handleContinue = () => {
     if (!canContinue) return;
@@ -203,31 +192,6 @@ export function SetupStep({
 
       <div className="relative min-h-[17rem] w-full">
         <AnimatePresence mode="wait" initial={false}>
-          {step === "language" && (
-            <StepPanel
-              key="language"
-              question={t({
-                id: "onboarding.setup.language.question",
-                message: "Which language do you dictate in?",
-              })}
-            >
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
-                {languageOptions.map((option) => (
-                  <ChoicePill
-                    key={option.value}
-                    selected={languagePreference === option.value}
-                    onClick={() => {
-                      onSelectLanguage(option.value);
-                      setStep(modelPriority ? "review" : "priority");
-                    }}
-                  >
-                    {option.label}
-                  </ChoicePill>
-                ))}
-              </div>
-            </StepPanel>
-          )}
-
           {step === "priority" && (
             <StepPanel
               key="priority"
@@ -235,7 +199,6 @@ export function SetupStep({
                 id: "onboarding.setup.priority.question",
                 message: "What should your model prioritize?",
               })}
-              onBack={() => setStep("language")}
             >
               <div className="flex flex-wrap items-center justify-center gap-2.5">
                 {priorityOptions.map((option) => (
@@ -259,24 +222,19 @@ export function SetupStep({
             <StepPanel key="review">
               <div className="flex w-full flex-col items-center gap-4">
                 <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 ui-text-meta text-content-muted">
-                  <EditLink onClick={() => setStep("language")}>
-                    {languageOptions.find(
-                      (option) => option.value === languagePreference,
-                    )?.label ??
-                      t({
-                        id: "onboarding.setup.language.placeholder",
-                        message: "choose a language",
-                      })}
-                  </EditLink>
-                  <span aria-hidden="true">·</span>
                   <EditLink onClick={() => setStep("priority")}>
-                    {priorityOptions.find(
-                      (option) => option.value === modelPriority,
-                    )?.label ??
-                      t({
-                        id: "onboarding.setup.priority.placeholder",
-                        message: "choose a priority",
-                      })}
+                    {customModel
+                      ? t({
+                          id: "onboarding.setup.priority.custom",
+                          message: "Custom",
+                        })
+                      : (priorityOptions.find(
+                          (option) => option.value === modelPriority,
+                        )?.label ??
+                        t({
+                          id: "onboarding.setup.priority.placeholder",
+                          message: "choose a priority",
+                        }))}
                   </EditLink>
                 </div>
 
@@ -307,7 +265,7 @@ export function SetupStep({
                   </div>
                 ) : (
                   <ModelStatCard
-                    model={recommendedModel}
+                    model={displayModel ?? recommendedModel}
                     status={modelStatus}
                     progress={progress}
                     onDownload={() => onDownload(recommendedModel.key)}
@@ -407,6 +365,7 @@ export function SetupStep({
           Boolean(modelStatusByKey[key]?.installed) ||
           displayStateByModel[key]?.status === "complete"
         }
+        isAneInstalled={(key) => Boolean(modelStatusByKey[key]?.ane_installed)}
         progressFor={(key) => displayStateByModel[key]}
         onUse={onUse}
         onDownload={onDownload}

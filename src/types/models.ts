@@ -13,6 +13,7 @@ export type ModelInfo = {
     code: string;
     name: string;
   }[];
+  ane_size_mb: number | null;
 };
 
 export type SpeechModel = {
@@ -36,6 +37,7 @@ export type SpeechModel = {
 export type ModelStatus = {
   key: string;
   installed: boolean;
+  ane_installed: boolean;
   bytes_on_disk: number;
   missing_files: string[];
   directory: string;
@@ -48,6 +50,12 @@ export type DownloadProgressPayload = {
   total: number;
   percent: number;
   verifying: boolean;
+};
+
+export type AneCompileEvent = {
+  model: string;
+  label: string;
+  status: "start" | "done" | "error";
 };
 
 export type DownloadEvent =

@@ -1,10 +1,21 @@
 0.9.6
 
+### Features
+
+- Whisper models can now run on the Apple Neural Engine (ANE on Apple Silicon Macs. The ANE makes transcriptions faster and uses a fraction of the power.
+
 ### Improvements
 
+
+- Local Whisper transcription is up to 30% faster after decoder tuning.
 - Improved performance and reduced memory use during transcription, especially for longer recordings and cloud speech providers.
 - Improved recording pill responsiveness and reduced unnecessary background work while recording.
 - Improved History performance when loading recordings or importing transcripts.
+- Parakeet now transcribes long recordings in chunks, improving transcriptions past around 5 minutes.
+
+### Changes
+
+- Onboarding setup is down to one question and on Apple Silicon the Neural Engine encoder comes included automatically.
 
 ---
 

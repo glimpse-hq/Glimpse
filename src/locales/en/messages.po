@@ -602,6 +602,26 @@ msgstr ""
 #~ msgstr "Quantization"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+#~ msgid "onboarding.setup.language.placeholder"
+#~ msgstr "choose a language"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+#~ msgid "onboarding.setup.language.english"
+#~ msgstr "English"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+#~ msgid "onboarding.setup.language.multilingual"
+#~ msgstr "Multiple languages"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+#~ msgid "onboarding.setup.language.question"
+#~ msgstr "Which language do you dictate in?"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -797,6 +817,11 @@ msgid "settings.modal.tab.about"
 msgstr "About"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.info_aria"
+msgstr "About the Apple Neural Engine encoder"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.accessibility"
 msgstr "Accessibility"
@@ -937,6 +962,11 @@ msgstr "Allow browser requests"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Allow cross-origin browser requests"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.ane"
+msgstr "ANE"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1249,11 +1279,6 @@ msgstr "Checking..."
 #: src/features/settings/useSettingsForm.ts
 msgid "transcription.language.unsupported_description"
 msgstr "Choose a compatible model to enable these."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.language.placeholder"
-msgstr "choose a language"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1658,6 +1683,11 @@ msgid "settings.speech_model.provider.custom"
 msgstr "Custom"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SetupStep.tsx
+msgid "onboarding.setup.priority.custom"
+msgstr "Custom"
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.custom_instructions"
 msgstr "Custom instructions"
@@ -1891,6 +1921,11 @@ msgid "models.card.download_model"
 msgstr "Download model"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.download"
+msgstr "Download Neural Engine encoder"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.download_one"
 msgstr "Download one"
@@ -1978,11 +2013,6 @@ msgstr "English"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.english"
-msgstr "English"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.language.english"
 msgstr "English"
 
 #. js-lingui-explicit-id
@@ -2344,6 +2374,11 @@ msgid "onboarding.welcome.cloud.badge"
 msgstr "In progress"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.toggle"
+msgstr "Include the Apple Neural Engine encoder"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryModal.tsx
 msgid "library.modal.playback.increase"
 msgstr "Increase playback speed"
@@ -2570,6 +2605,12 @@ msgid "settings.app.auto_pause_media.body_duck"
 msgstr "Lowers system volume while recording."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AneCompileOverlay.tsx
+msgid "ane_compile.body"
+msgstr "macOS is compiling {label} for the Apple Neural Engine. This happens "
+"once and can take a few minutes."
+
+#. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.major_release"
 msgstr "Major Release"
@@ -2670,6 +2711,11 @@ msgid "model_picker.variant"
 msgstr "Model variant"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.variant_installed"
+msgstr "Model variant (installed)"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.models"
 msgstr "Models"
@@ -2730,9 +2776,9 @@ msgid "settings.models.installed.multilingual"
 msgstr "Multilingual"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.language.multilingual"
-msgstr "Multiple languages"
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.installed"
+msgstr "Neural Engine encoder installed"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3019,6 +3065,11 @@ msgstr "Open Settings"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.command_line.open_wiki_aria"
 msgstr "Open the command line documentation"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AneCompileOverlay.tsx
+msgid "ane_compile.title"
+msgstr "Optimizing for the Neural Engine"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3518,6 +3569,13 @@ msgstr "Runs Cleanup for that shortcut only."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.local.description"
 msgstr "Runs entirely on your device"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.info"
+msgstr "Adds a Core ML encoder that runs on the Apple Neural Engine for faster, "
+"more power-efficient transcription. The first load takes longer while "
+"macOS optimizes it for your chip."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4285,6 +4343,7 @@ msgstr "v{version} available"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
+#: src/shared/ui/ModelPickerModal.tsx
 msgid "models.card.verifying"
 msgstr "Verifying install"
 
@@ -4379,11 +4438,6 @@ msgstr "When does text leave my device?"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.question"
 msgstr "Where does my data go?"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.language.question"
-msgstr "Which language do you dictate in?"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

@@ -172,7 +172,7 @@ const ModelStatCard = ({
             {isVerifying
               ? t({
                   id: "models.card.verifying",
-                  message: "Verifying download",
+                  message: "Verifying install",
                 })
               : isDownloading
                 ? t({ id: "models.card.downloading", message: "Downloading" })

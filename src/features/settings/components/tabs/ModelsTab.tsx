@@ -34,7 +34,7 @@ type ModelsTabProps = {
   remoteSpeechEnabled: boolean;
   remoteSpeechProvider: RemoteSpeechProvider;
   setLocalModel: (value: string) => void;
-  handleDownload: (modelKey: string) => void;
+  handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
   handleCancelDownload: (modelKey: string) => void;
 };
@@ -58,12 +58,14 @@ const pickInstalledModel = (
 const InstalledModelRow = ({
   model,
   active,
+  aneInstalled,
   shiftHeld,
   onUse,
   onDelete,
 }: {
   model: ModelInfo;
   active: boolean;
+  aneInstalled: boolean;
   shiftHeld: boolean;
   onUse: () => void;
   onDelete: () => void;
@@ -79,9 +81,15 @@ const InstalledModelRow = ({
           message: "Multilingual",
         }),
   ];
-  facts.push(formatModelSize(model.size_mb));
+  facts.push(
+    formatModelSize(
+      model.size_mb + (aneInstalled ? (model.ane_size_mb ?? 0) : 0),
+    ),
+  );
   const quant = formatQuantLabel(model.variant);
   if (quant) facts.push(quant);
+  if (aneInstalled)
+    facts.push(t({ id: "settings.models.installed.ane", message: "ANE" }));
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
@@ -197,6 +205,7 @@ const ModelsTab = ({
             catalog={modelCatalog}
             activeKey={localModel}
             isInstalled={(key) => Boolean(modelStatus[key]?.installed)}
+            isAneInstalled={(key) => Boolean(modelStatus[key]?.ane_installed)}
             progressFor={(key) => downloadState[key]}
             onUse={setLocalModel}
             onDownload={handleDownload}
@@ -270,6 +279,7 @@ const ModelsTab = ({
                   key={model.key}
                   model={model}
                   active={model.key === localModel}
+                  aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
                   shiftHeld={shiftHeld}
                   onUse={() => setLocalModel(model.key)}
                   onDelete={() => handleDelete(model.key)}

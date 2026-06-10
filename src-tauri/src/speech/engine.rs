@@ -90,6 +90,10 @@ impl LocalTranscriber {
         Ok(())
     }
 
+    pub fn loaded_model_id(&self) -> Option<String> {
+        self.service.loaded_model_id()
+    }
+
     pub fn transcribe(
         &self,
         model: &ReadyModel,

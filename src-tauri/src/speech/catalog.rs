@@ -32,6 +32,7 @@ pub struct ModelInfo {
     pub tags: Vec<String>,
     pub capabilities: Vec<String>,
     pub supported_languages: Vec<SupportedLanguageInfo>,
+    pub ane_size_mb: Option<f32>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -173,10 +174,85 @@ macro_rules! distil_whisper_files {
     };
 }
 
+const ANE_SUPPORTED: bool = cfg!(all(target_os = "macos", target_arch = "aarch64"));
+
+struct AneEncoder {
+    family: &'static str,
+    size_bytes: u64,
+    sha256: &'static str,
+}
+
+impl AneEncoder {
+    fn dir_name(&self) -> String {
+        format!("ggml-{}-encoder.mlmodelc", self.family)
+    }
+}
+
+const ANE_ENCODERS: &[AneEncoder] = &[
+    AneEncoder {
+        family: "tiny",
+        size_bytes: 15_037_446,
+        sha256: "c88cbd2648e1f5415092bcf5256add463a0f19943e6938f46e8d4ffdebd47739",
+    },
+    AneEncoder {
+        family: "base",
+        size_bytes: 37_922_638,
+        sha256: "7e6ab77041942572f239b5b602f8aaa1c3ed29d73e3d8f20abea03a773541089",
+    },
+    AneEncoder {
+        family: "small",
+        size_bytes: 163_083_239,
+        sha256: "de43fb9fed471e95c19e60ae67575c2bf09e8fb607016da171b06ddad313988b",
+    },
+    AneEncoder {
+        family: "medium",
+        size_bytes: 567_829_413,
+        sha256: "79b0b8d436d47d3f24dd3afc91f19447dd686a4f37521b2f6d9c30a642133fbd",
+    },
+    AneEncoder {
+        family: "large-v3",
+        size_bytes: 1_175_711_232,
+        sha256: "47837be7594a29429ec08620043390c4d6d467f8bd362df09e9390ace76a55a4",
+    },
+    AneEncoder {
+        family: "large-v3-turbo",
+        size_bytes: 1_173_393_014,
+        sha256: "84bedfe895bd7b5de6e8e89a0803dfc5addf8c0c5bc4c937451716bf7cf7988a",
+    },
+];
+
+// whisper.cpp strips "-qX_X" too, so one fp16 encoder serves every quant.
+fn strip_quant_suffix(stem: &str) -> &str {
+    if let Some(pos) = stem.rfind('-') {
+        let suffix = stem[pos..].as_bytes();
+        if suffix.len() == 5 && suffix[1] == b'q' && suffix[3] == b'_' {
+            return &stem[..pos];
+        }
+    }
+    stem
+}
+
+fn ane_encoder(manifest: &LocalModelManifest) -> Option<&'static AneEncoder> {
+    if !ANE_SUPPORTED || manifest.engine != LocalModelEngine::Whisper {
+        return None;
+    }
+    let [file] = manifest.files else {
+        return None;
+    };
+    let family = strip_quant_suffix(file.path.strip_prefix("ggml-")?.strip_suffix(".bin")?);
+    ANE_ENCODERS.iter().find(|encoder| encoder.family == family)
+}
+
+pub fn ane_encoder_dir(model: &str) -> Option<String> {
+    definition(model)
+        .and_then(ane_encoder)
+        .map(AneEncoder::dir_name)
+}
+
 const WHISPER_DESCRIPTION: &str =
     "Local Whisper model with multilingual support and dictionary support.";
 const DISTIL_WHISPER_DESCRIPTION: &str =
-    "Fast English-only Distil-Whisper Q8 model with dictionary support.";
+    "Fast English-only Distil-Whisper Q8 model. Dictionary support is limited.";
 const WHISPER_CAPABILITIES: &[&str] = &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS];
 
 const MODEL_MANIFESTS: &[LocalModelManifest] = &[
@@ -258,7 +334,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         family: "distil-large",
         label: "Distil-Whisper Large V3.5",
         description: DISTIL_WHISPER_DESCRIPTION,
-        tags: &["English", "Dictionary", "Fast"],
+        tags: &["English", "Fast"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
@@ -275,7 +351,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         family: "distil-medium",
         label: "Distil-Whisper Medium",
         description: DISTIL_WHISPER_DESCRIPTION,
-        tags: &["English", "Dictionary", "Fast"],
+        tags: &["English", "Fast"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
@@ -292,7 +368,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         family: "distil-small",
         label: "Distil-Whisper Small",
         description: DISTIL_WHISPER_DESCRIPTION,
-        tags: &["English", "Dictionary", "Fast", "Compute Friendly"],
+        tags: &["English", "Fast", "Compute Friendly"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
@@ -554,14 +630,15 @@ pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
     MODEL_MANIFESTS.iter().find(|manifest| manifest.id == key)
 }
 
-fn to_install_spec(manifest: &LocalModelManifest) -> InstallSpec {
+pub fn install_spec(model: &str, ane: bool) -> Option<InstallSpec> {
+    let manifest = definition(model)?;
     let storage = match manifest.files {
         [single] => ModelStorage::File {
             artifact: single.path.to_string(),
         },
         _ => ModelStorage::Directory,
     };
-    let files = manifest
+    let mut files: Vec<RemoteFile> = manifest
         .files
         .iter()
         .map(|file| RemoteFile {
@@ -569,18 +646,29 @@ fn to_install_spec(manifest: &LocalModelManifest) -> InstallSpec {
             path: file.path.to_string(),
             size_bytes: file.size_bytes,
             sha256: file.sha256.map(str::to_string),
+            extract: false,
         })
         .collect();
-    InstallSpec {
+    if ane {
+        if let Some(encoder) = ane_encoder(manifest) {
+            let dir_name = encoder.dir_name();
+            files.push(RemoteFile {
+                url: format!(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{dir_name}.zip"
+                ),
+                path: dir_name,
+                size_bytes: Some(encoder.size_bytes),
+                sha256: Some(encoder.sha256.to_string()),
+                extract: true,
+            });
+        }
+    }
+    Some(InstallSpec {
         id: manifest.id.to_string(),
         engine: manifest.engine,
         storage,
         files,
-    }
-}
-
-pub fn install_spec(model: &str) -> Option<InstallSpec> {
-    definition(model).map(to_install_spec)
+    })
 }
 
 pub fn model_label(key: &str) -> String {
@@ -680,6 +768,7 @@ fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
         tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
         capabilities: capability_strings(manifest.capabilities),
         supported_languages: supported_languages(manifest),
+        ane_size_mb: ane_encoder(manifest).map(|encoder| encoder.size_bytes as f32 / 1_000_000.0),
     }
 }
 

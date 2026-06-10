@@ -24,7 +24,6 @@ import {
 import {
   onboardingMachine,
   getSteps,
-  type OnboardingLanguagePreference,
   type OnboardingModelPriority,
 } from "./machine";
 import { useImportableApps } from "../import/queries";
@@ -87,32 +86,22 @@ const pickDefaultOnboardingModel = (
   return models[0]?.key ?? persistedModel;
 };
 
-const ONBOARDING_MODEL: Record<
-  OnboardingLanguagePreference,
-  Record<OnboardingModelPriority, string>
-> = {
-  english: {
-    compact: "distil_whisper_small_en",
-    balanced: "distil_whisper_medium_en",
-    quality: "distil_whisper_large_v35",
-  },
-  multilingual: {
-    compact: "whisper_small_q5",
-    balanced: "whisper_medium_q5",
-    quality: "whisper_large_v3_turbo_q8",
-  },
+const ONBOARDING_MODEL: Record<OnboardingModelPriority, string> = {
+  compact: "whisper_small_q5",
+  balanced: "whisper_large_v3_turbo_q5",
+  quality: "whisper_large_v3_turbo_q8",
 };
 
 const pickRecommendedOnboardingModel = (
   models: ModelInfo[],
-  language: OnboardingLanguagePreference | null,
   priority: OnboardingModelPriority | null,
 ) => {
-  if (!language || !priority) {
+  if (!priority) {
     return models.find(hasRecommendedTag) ?? models[0] ?? null;
   }
-  const key = ONBOARDING_MODEL[language][priority];
-  return models.find((model) => model.key === key) ?? null;
+  return (
+    models.find((model) => model.key === ONBOARDING_MODEL[priority]) ?? null
+  );
 };
 
 const checkMicrophonePermission = () =>
@@ -189,10 +178,9 @@ export default function OnboardingScreen({
     () =>
       pickRecommendedOnboardingModel(
         modelCatalogQuery.data ?? [],
-        ctx.languagePreference,
         ctx.modelPriority,
       ),
-    [modelCatalogQuery.data, ctx.languagePreference, ctx.modelPriority],
+    [modelCatalogQuery.data, ctx.modelPriority],
   );
   const selectedModel =
     ctx.localModelChoice ||
@@ -340,7 +328,7 @@ export default function OnboardingScreen({
   });
 
   const handleDownload = useCallback(
-    async (modelKey: string) => {
+    async (modelKey: string, ane?: boolean) => {
       updateDownloadStatus(modelKey, {
         status: "downloading",
         percent: 0,
@@ -350,7 +338,13 @@ export default function OnboardingScreen({
         }),
       });
       try {
-        await invoke("download_model", { model: modelKey });
+        // Include the Neural Engine encoder by default
+        const includeAne =
+          ane ??
+          modelCatalogQuery.data?.some(
+            (model) => model.key === modelKey && model.ane_size_mb != null,
+          );
+        await invoke("download_model", { model: modelKey, ane: includeAne });
         void refreshModelStatus(queryClient, modelKey);
       } catch {
         updateDownloadStatus(modelKey, {
@@ -363,7 +357,7 @@ export default function OnboardingScreen({
         });
       }
     },
-    [queryClient, t, updateDownloadStatus],
+    [modelCatalogQuery.data, queryClient, t, updateDownloadStatus],
   );
 
   const handleDelete = useCallback(
@@ -548,12 +542,7 @@ export default function OnboardingScreen({
           remoteSpeechApiKey: latestSettings.remote_speech_api_key ?? "",
           remoteSpeechModel: latestSettings.remote_speech_model ?? "",
           microphoneDevice: latestSettings.microphone_device ?? null,
-          language:
-            ctx.languagePreference === "english"
-              ? "en"
-              : ctx.languagePreference === "multilingual"
-                ? ""
-                : (latestSettings.language ?? "en"),
+          language: latestSettings.language ?? "",
           appLocale: latestSettings.app_locale ?? "system",
           themeMode: latestSettings.theme_mode ?? "system",
           llmEnabled: false,
@@ -671,8 +660,11 @@ export default function OnboardingScreen({
           <SetupStep
             key="setup"
             stepMotionProps={stepMotionProps}
-            languagePreference={ctx.languagePreference}
             modelPriority={ctx.modelPriority}
+            customModel={
+              Boolean(ctx.localModelChoice) &&
+              ctx.localModelChoice !== recommendedOnboardingModel?.key
+            }
             smartShortcut={ctx.smartShortcut}
             captureActive={ctx.captureActive}
             capturePreview={ctx.capturePreview}
@@ -692,9 +684,6 @@ export default function OnboardingScreen({
             }
             selectedModelReady={selectedModelReady}
             showLocalConfirm={ctx.showLocalConfirm}
-            onSelectLanguage={(language) =>
-              send({ type: "SELECT_LANGUAGE", language })
-            }
             onSelectPriority={(priority) =>
               send({ type: "SELECT_PRIORITY", priority })
             }

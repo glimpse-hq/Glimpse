@@ -22,6 +22,7 @@ pub struct ReadyModel {
 pub struct ModelStatus {
     pub key: String,
     pub installed: bool,
+    pub ane_installed: bool,
     pub bytes_on_disk: u64,
     pub missing_files: Vec<String>,
     pub directory: String,
@@ -53,14 +54,90 @@ struct DownloadCancelledPayload {
     model: String,
 }
 
+#[derive(Serialize, Clone)]
+struct AneCompilePayload {
+    model: String,
+    label: String,
+    status: &'static str,
+}
+
+fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
+    std::thread::spawn(move || {
+        let label = super::catalog::model_label(&model);
+        let emit = |status: &'static str| {
+            let _ = app.emit(
+                "ane:compile",
+                AneCompilePayload {
+                    model: model.clone(),
+                    label: label.clone(),
+                    status,
+                },
+            );
+        };
+
+        let result = ensure_model_ready(&app, &model).and_then(|ready| {
+            emit("start");
+            let transcriber = app.state::<crate::AppState>().local_transcriber();
+            let _ = glimpse_speech::take_coreml_log();
+            if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
+                transcriber.unload();
+                transcriber.preload_and_warm(&ready)
+            } else {
+                // Compile in a throwaway engine so the live model isn't evicted.
+                use glimpse_speech::TranscriptionEngine;
+                let mut engine = glimpse_speech::engines::whisper::WhisperEngine::new();
+                engine
+                    .load_model(&ready.path)
+                    .map_err(|err| anyhow!("{err}"))
+            }
+        });
+
+        // whisper.cpp falls back to GPU when the Core ML load fails, so a
+        // successful model load alone doesn't prove the encoder engaged.
+        let coreml_failed = || {
+            glimpse_speech::take_coreml_log()
+                .iter()
+                .any(|line| line.contains("failed to load Core ML model"))
+        };
+
+        match result {
+            Ok(()) if coreml_failed() => {
+                eprintln!(
+                    "[speech] Core ML encoder for {model} failed to load; whisper fell back to the GPU"
+                );
+                crate::toast::show(
+                    &app,
+                    "error",
+                    None,
+                    &format!(
+                        "{label} couldn't use the Neural Engine and will run on the GPU instead."
+                    ),
+                );
+                emit("error");
+            }
+            Ok(()) => emit("done"),
+            Err(err) => {
+                eprintln!("[speech] ANE compile warm-up failed: {err}");
+                crate::toast::show(
+                    &app,
+                    "error",
+                    None,
+                    &format!("Couldn't optimize {label} for the Neural Engine."),
+                );
+                emit("error");
+            }
+        }
+    });
+}
+
 const MODELS_ROOT: &str = "models";
 
 pub fn local_resolver() -> glimpse_speech::service::ModelResolver {
-    std::sync::Arc::new(super::catalog::install_spec)
+    std::sync::Arc::new(|model| super::catalog::install_spec(model, false))
 }
 
-fn spec_for(model: &str) -> Result<speech_models::InstallSpec> {
-    super::catalog::install_spec(model).ok_or_else(|| anyhow!("Unknown model: {model}"))
+fn spec_for(model: &str, ane: bool) -> Result<speech_models::InstallSpec> {
+    super::catalog::install_spec(model, ane).ok_or_else(|| anyhow!("Unknown model: {model}"))
 }
 
 pub fn model_cache_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
@@ -83,10 +160,16 @@ fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     Ok(dir)
 }
 
-fn map_status(status: speech_models::ModelStatus) -> ModelStatus {
+fn map_status(
+    status: speech_models::ModelStatus,
+    manager: &speech_models::ModelInstallManager,
+) -> ModelStatus {
+    let ane_installed = super::catalog::ane_encoder_dir(&status.id)
+        .is_some_and(|dir_name| manager.model_dir(&status.id).join(dir_name).is_dir());
     ModelStatus {
         key: status.id,
         installed: status.installed,
+        ane_installed,
         bytes_on_disk: status.bytes_on_disk,
         missing_files: status.missing_files,
         directory: status.directory,
@@ -104,9 +187,9 @@ pub fn check_model_status<R: Runtime>(
     model: String,
 ) -> Result<ModelStatus, String> {
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
-    let spec = spec_for(&model).map_err(|err| err.to_string())?;
+    let spec = spec_for(&model, false).map_err(|err| err.to_string())?;
     let status = manager.status(&spec).map_err(|err| err.to_string())?;
-    Ok(map_status(status))
+    Ok(map_status(status, &manager))
 }
 
 #[tauri::command]
@@ -114,10 +197,15 @@ pub async fn download_model(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, crate::AppState>,
     model: String,
+    ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
-    let spec = spec_for(&model).map_err(|err| err.to_string())?;
+    let ane = ane.unwrap_or(false);
+    let spec = spec_for(&model, ane).map_err(|err| err.to_string())?;
     ensure_models_root(&app).map_err(|err| err.to_string())?;
+    let ane_pending = ane
+        && super::catalog::ane_encoder_dir(&model)
+            .is_some_and(|dir_name| !manager.model_dir(&model).join(dir_name).is_dir());
     let cancel_token = state.create_download_token(&model);
     let progress_app = app.clone();
     let progress = |event: speech_models::ModelDownloadProgress| {
@@ -157,7 +245,7 @@ pub async fn download_model(
                     },
                 );
                 let status = manager.status(&spec).map_err(|err| err.to_string())?;
-                return Ok(map_status(status));
+                return Ok(map_status(status, &manager));
             }
             let _ = app.emit(
                 "download:error",
@@ -179,19 +267,24 @@ pub async fn download_model(
 
     crate::analytics::track_model_downloaded(&app, &status.id);
 
+    if ane_pending {
+        spawn_ane_compile(app.clone(), model.clone());
+    }
+
     let settings = state.current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
         eprintln!("Failed to refresh tray menu after download: {err}");
     }
 
-    Ok(map_status(status))
+    Ok(map_status(status, &manager))
 }
 
 #[tauri::command]
 pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelStatus, String> {
-    let status = model_manager(&app)
-        .and_then(|manager| manager.delete(&model))
-        .map(map_status)
+    let manager = model_manager(&app).map_err(|err| err.to_string())?;
+    let status = manager
+        .delete(&model)
+        .map(|status| map_status(status, &manager))
         .map_err(|err| err.to_string())?;
 
     if let Some(state) = app.try_state::<crate::AppState>() {
@@ -214,7 +307,7 @@ pub fn cancel_download(
 
 pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result<ReadyModel> {
     let manager = model_manager(app)?;
-    let spec = spec_for(model)?;
+    let spec = spec_for(model, false)?;
     let resolved = manager.resolve(&spec)?;
     Ok(ReadyModel {
         key: resolved.id,

@@ -1386,7 +1386,7 @@ export function useSettingsForm({
   ]);
 
   const handleDownload = useCallback(
-    async (modelKey: string) => {
+    async (modelKey: string, ane?: boolean) => {
       setDownloadState((prev) => ({
         ...prev,
         [modelKey]: {
@@ -1398,6 +1398,7 @@ export function useSettingsForm({
       try {
         const status = await invoke<ModelStatus>("download_model", {
           model: modelKey,
+          ane,
         });
         queryClient.setQueryData(modelKeys.status(modelKey), status);
         void queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
