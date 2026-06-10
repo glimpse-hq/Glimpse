@@ -123,13 +123,7 @@ fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) -> Op
     }
 
     let state = app.state::<AppState>();
-    let mut settings = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for model selection: {err}");
-            return None;
-        }
-    };
+    let mut settings = state.current_settings_unmasked();
     if settings.local_model == model_key && !settings.remote_speech_enabled {
         return None;
     }
@@ -140,13 +134,7 @@ fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) -> Op
 
 fn toggle_remote_model_from_menu(app: &AppHandle<AppRuntime>) -> Option<UserSettings> {
     let state = app.state::<AppState>();
-    let mut settings = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for remote model selection: {err}");
-            return None;
-        }
-    };
+    let mut settings = state.current_settings_unmasked();
 
     let next_enabled = !settings.remote_speech_enabled;
     if next_enabled && !remote::has_valid_config(&settings) {

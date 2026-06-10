@@ -232,7 +232,8 @@ export default function OnboardingScreen({
     queryKey: onboardingPermissionKeys.microphone(),
     queryFn: checkMicrophonePermission,
     enabled: ctx.platform.requiresMicrophonePermission,
-    refetchInterval: currentStep === "permissions" ? 1_500 : false,
+    refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
+    staleTime: 0,
     retry: false,
   });
 
@@ -240,7 +241,8 @@ export default function OnboardingScreen({
     queryKey: onboardingPermissionKeys.accessibility(),
     queryFn: checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
-    refetchInterval: currentStep === "permissions" ? 800 : false,
+    refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
+    staleTime: 0,
     retry: false,
   });
 

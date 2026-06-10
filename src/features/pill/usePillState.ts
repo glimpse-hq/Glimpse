@@ -9,7 +9,7 @@ import type {
   PillTone,
 } from "../../types";
 
-const EMPTY_SPECTRUM = new Uint8Array(256);
+const SPECTRUM_BINS = 256;
 const ERROR_FLASH_MS = 1200;
 
 export function usePillState() {
@@ -21,7 +21,7 @@ export function usePillState() {
   const [isHovered, setIsHovered] = useState(false);
 
   const statusRef = useRef<PillStatus>("idle");
-  const spectrumBinsRef = useRef<Uint8Array>(EMPTY_SPECTRUM);
+  const spectrumBinsRef = useRef<Uint8Array>(new Uint8Array(SPECTRUM_BINS));
   const lastSpectrumAtRef = useRef(0);
   const errorFlashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -34,7 +34,7 @@ export function usePillState() {
   }, []);
 
   const resetAudioState = useCallback(() => {
-    spectrumBinsRef.current = EMPTY_SPECTRUM;
+    spectrumBinsRef.current.fill(0);
     lastSpectrumAtRef.current = 0;
   }, []);
 
@@ -116,7 +116,12 @@ export function usePillState() {
 
     register<AudioSpectrumPayload>("audio:spectrum", ({ bins }) => {
       if (statusRef.current !== "listening") return;
-      spectrumBinsRef.current = new Uint8Array(bins);
+      const buffer = spectrumBinsRef.current;
+      if (bins.length === buffer.length) {
+        buffer.set(bins);
+      } else {
+        spectrumBinsRef.current = new Uint8Array(bins);
+      }
       lastSpectrumAtRef.current = performance.now();
     });
 

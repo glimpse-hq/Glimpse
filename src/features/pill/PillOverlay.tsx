@@ -33,6 +33,8 @@ const WARM_ENTRY_IDLE_MS = 5 * 1000;
 const EXPANDED_TEXT_TOP_FADE =
   "linear-gradient(to bottom, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.38) 74%, transparent 100%)";
 
+const EMPTY_SPECTRUM = new Uint8Array(256);
+
 const ICONS = {
   warning: [
     [0, 0, 1, 0, 0],
@@ -237,6 +239,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const bgHeightsRef = useRef<number[]>([]);
 
   // Animation & audio state
+  const isExpandedRef = useRef(isExpanded);
   const animationRef = useRef<number | null>(null);
   const loaderTimeRef = useRef<number>(0);
   const colorPaletteRef = useRef<PillColorPalette>(FALLBACK_PILL_COLOR_PALETTE);
@@ -246,8 +249,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const lastIdleAtRef = useRef(0);
   const hoverPrevRef = useRef(false);
 
-  /** Render to both canvases (primary + background). */
-  const renderBoth = useCallback(
+  const renderVisible = useCallback(
     (
       render: (
         ctx: CanvasRenderingContext2D,
@@ -258,8 +260,11 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       ) => void,
     ) => {
       const palette = colorPaletteRef.current;
-      renderToCanvas(canvasRef.current, gridRef.current, palette, render);
-      renderToCanvas(bgCanvasRef.current, bgGridRef.current, palette, render);
+      if (isExpandedRef.current) {
+        renderToCanvas(bgCanvasRef.current, bgGridRef.current, palette, render);
+      } else {
+        renderToCanvas(canvasRef.current, gridRef.current, palette, render);
+      }
     },
     [],
   );
@@ -272,7 +277,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
   const drawProcessingFrame = useCallback(
     (time: number) => {
-      renderBoth(
+      renderVisible(
         (
           ctx,
           width,
@@ -325,14 +330,14 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         },
       );
     },
-    [renderBoth],
+    [renderVisible],
   );
 
   /* ── Draw: Error (flashing warning icon) ── */
 
   const drawErrorFrame = useCallback(
     (time: number) => {
-      renderBoth(
+      renderVisible(
         (
           ctx,
           width,
@@ -378,7 +383,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         },
       );
     },
-    [renderBoth],
+    [renderVisible],
   );
 
   /* ── Draw: Audio spectrum (listening waveform) ── */
@@ -420,19 +425,21 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         normalizationFactor = TARGET_PEAK / effectiveRef;
       }
 
-      // Render to each canvas with its own height array
-      const targets = [
-        {
-          canvas: canvasRef.current,
-          grid: gridRef.current,
-          heights: heightsRef,
-        },
-        {
-          canvas: bgCanvasRef.current,
-          grid: bgGridRef.current,
-          heights: bgHeightsRef,
-        },
-      ] as const;
+      const targets = isExpandedRef.current
+        ? [
+            {
+              canvas: bgCanvasRef.current,
+              grid: bgGridRef.current,
+              heights: bgHeightsRef,
+            },
+          ]
+        : [
+            {
+              canvas: canvasRef.current,
+              grid: gridRef.current,
+              heights: heightsRef,
+            },
+          ];
 
       const palette = colorPaletteRef.current;
 
@@ -522,7 +529,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   /* ── Draw: Idle (static base dots) ── */
 
   const drawBaseDots = useCallback(() => {
-    renderBoth(
+    renderVisible(
       (
         ctx,
         width,
@@ -545,13 +552,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         }
       },
     );
-  }, [renderBoth]);
+  }, [renderVisible]);
 
   /* ── Draw: Static icon (error settled state) ── */
 
   const drawStaticIcon = useCallback(
     (icon: number[][], color: string, glowColor?: string) => {
-      renderBoth(
+      renderVisible(
         (
           ctx,
           width,
@@ -591,7 +598,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
         },
       );
     },
-    [renderBoth],
+    [renderVisible],
   );
 
   /* ───────────────────────── Animation Loop ───────────────────────── */
@@ -640,7 +647,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
 
     loaderTimeRef.current = 0;
     let animationStartTime: number | null = null;
-    const emptySpectrum = new Uint8Array(256);
 
     const tick = (frameTime: number) => {
       if (animationStartTime === null) {
@@ -653,7 +659,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
           const now = performance.now();
           const audioData =
             now - lastSpectrumAtRef.current > 250
-              ? emptySpectrum
+              ? EMPTY_SPECTRUM
               : spectrumBinsRef.current;
           drawAudioFrameRef.current(audioData);
           break;
@@ -682,6 +688,16 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       drawStaticIconRef.current(ICONS.warning, errorColor, errorColor);
     }
   }, [pillStatus, isErrorFlashing, stopAllAnimations]);
+
+  useEffect(() => {
+    isExpandedRef.current = isExpanded;
+    if (pillStatus === "idle") {
+      drawBaseDotsRef.current();
+    } else if (pillStatus === "error" && !isErrorFlashing) {
+      const errorColor = colorPaletteRef.current.error;
+      drawStaticIconRef.current(ICONS.warning, errorColor, errorColor);
+    }
+  }, [isExpanded, pillStatus, isErrorFlashing]);
 
   useEffect(() => {
     if (pillStatus === "idle") {

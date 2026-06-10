@@ -214,13 +214,7 @@ fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &settings::UserSe
 #[cfg(target_os = "macos")]
 fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for microphone selection: {err}");
-            return;
-        }
-    };
+    let mut current = state.current_settings_unmasked();
     if current.microphone_device.as_deref() == device_id {
         return;
     }
@@ -701,29 +695,11 @@ impl AppState {
     }
 
     pub fn current_settings(&self) -> UserSettings {
-        match self.settings_store.load() {
-            Ok(latest) => {
-                // Cache the unmasked truth so subsequent saves don't accidentally
-                // persist the license-gated mask back to disk. The masked view is
-                // only ever returned to the caller, never stored.
-                *self.settings.lock() = latest.clone();
-                self.settings_for_response(latest)
-            }
-            Err(err) => {
-                eprintln!("Failed to load settings from DB, using cache: {err}");
-                self.settings_for_response(self.settings.lock().clone())
-            }
-        }
+        self.settings_for_response(self.settings.lock().clone())
     }
 
-    pub(crate) fn current_settings_unmasked(&self) -> Result<UserSettings, String> {
-        match self.settings_store.load() {
-            Ok(latest) => {
-                *self.settings.lock() = latest.clone();
-                Ok(latest)
-            }
-            Err(err) => Err(err.to_string()),
-        }
+    pub(crate) fn current_settings_unmasked(&self) -> UserSettings {
+        self.settings.lock().clone()
     }
 
     pub(crate) fn settings_for_response(&self, mut settings: UserSettings) -> UserSettings {

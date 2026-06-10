@@ -135,8 +135,8 @@ pub(crate) fn queue_transcription(
 
     let http = state.http();
     let app_handle = app.clone();
-    let saved_for_task = saved.clone();
-    let recording_for_task = recording.clone();
+    let saved_for_task = saved;
+    let recording_for_task = recording;
 
     async_runtime::spawn(async move {
         let cancel_for_check = cancel_token.clone();
@@ -150,6 +150,9 @@ pub(crate) fn queue_transcription(
         let active_mode = mode_context::resolve_active_personality(&settings);
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
+        let app_for_local = &app_handle;
+        let settings_for_local = &settings;
+        let cancel_for_local = cancel_token.clone();
         let result = speech::transcribe(
             &app_handle,
             &http,
@@ -160,12 +163,12 @@ pub(crate) fn queue_transcription(
             false,
             || is_cancelled(),
             |success| success,
-            || {
+            move || {
                 transcribe_completed_recording_locally(
-                    &app_handle,
-                    &settings,
-                    recording_for_task.clone(),
-                    Some(cancel_token.clone()),
+                    app_for_local,
+                    settings_for_local,
+                    recording_for_task,
+                    Some(cancel_for_local),
                     use_remote,
                 )
             },
@@ -485,7 +488,6 @@ async fn transcribe_recovered_recording(
     let active_mode = mode_context::resolve_active_personality(settings);
     let model_id = speech::selected_model(settings);
     let use_remote = remote_speech::is_remote_model(&model_id);
-    let recording_for_local = recording.clone();
 
     let result = match speech::transcribe(
         app,
@@ -497,15 +499,7 @@ async fn transcribe_recovered_recording(
         false,
         || false,
         |success| success,
-        || {
-            transcribe_completed_recording_locally(
-                app,
-                settings,
-                recording_for_local.clone(),
-                None,
-                use_remote,
-            )
-        },
+        move || transcribe_completed_recording_locally(app, settings, recording, None, use_remote),
     )
     .await
     {

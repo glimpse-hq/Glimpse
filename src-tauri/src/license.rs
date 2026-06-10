@@ -4,6 +4,7 @@
 // activation_id is what actually constrains credential copying across machines.
 
 use chrono::{DateTime, Duration, Utc};
+use parking_lot::Mutex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
@@ -173,14 +174,30 @@ struct PolarConditions<'a> {
     os: &'a str,
 }
 
+static GATE_CACHE: Mutex<Option<(bool, DateTime<Utc>)>> = Mutex::new(None);
+const GATE_CACHE_TTL_SECONDS: i64 = 60;
+
 pub fn license_gate_active(store: &SettingsStore) -> bool {
     if developer_license_bypass_active() {
         return true;
     }
 
-    get_license_state(store)
+    let now = Utc::now();
+    if let Some((gate, valid_until)) = *GATE_CACHE.lock() {
+        if now < valid_until {
+            return gate;
+        }
+    }
+
+    let gate = get_license_state(store)
         .map(|state| state.license_gate_active)
-        .unwrap_or(false)
+        .unwrap_or(false);
+    *GATE_CACHE.lock() = Some((gate, now + Duration::seconds(GATE_CACHE_TTL_SECONDS)));
+    gate
+}
+
+fn invalidate_gate_cache() {
+    *GATE_CACHE.lock() = None;
 }
 
 fn developer_license_bypass_active() -> bool {
@@ -344,6 +361,7 @@ pub async fn activate_license(
     write_license_key(store, Some(&key))?;
     write_string(store, KEY_LICENSE_ACTIVATION_ID, &activated.id)?;
     write_cache_from_polar(store, &activated.license_key)?;
+    invalidate_gate_cache();
     get_license_state(store)
 }
 
@@ -382,6 +400,7 @@ pub async fn refresh_license(
             write_license_key(store, None)?;
             write_string(store, KEY_LICENSE_ACTIVATION_ID, "")?;
             write_string(store, KEY_LICENSE_STATUS, "invalid")?;
+            invalidate_gate_cache();
         }
         return Err(polar_error_message(status.as_u16()).to_string());
     }
@@ -395,6 +414,7 @@ pub async fn refresh_license(
     }
     write_license_key(store, Some(&key))?;
     write_cache_from_polar(store, &validated)?;
+    invalidate_gate_cache();
     get_license_state(store)
 }
 
@@ -407,6 +427,7 @@ pub async fn deactivate_license(
         Err(err) => {
             eprintln!("Clearing local license after decryption failure during deactivate: {err}");
             clear_cache(store)?;
+            invalidate_gate_cache();
             return get_license_state(store);
         }
     };
@@ -437,6 +458,7 @@ pub async fn deactivate_license(
     }
 
     clear_cache(store)?;
+    invalidate_gate_cache();
     get_license_state(store)
 }
 

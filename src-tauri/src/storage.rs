@@ -221,19 +221,9 @@ impl StorageManager {
         let mut conn = self.connection.lock();
         let tx = conn.transaction()?;
 
-        let mut seen: HashSet<(i64, String)> = HashSet::new();
-        {
-            let mut stmt = tx.prepare("SELECT timestamp, text FROM transcriptions")?;
-            let rows = stmt.query_map([], |row| {
-                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
-            })?;
-            for row in rows {
-                let (ts, text) = row?;
-                seen.insert((ts, text.trim().to_string()));
-            }
-        }
-
         let mut added = 0usize;
+        let mut existing_at = tx.prepare("SELECT text FROM transcriptions WHERE timestamp = ?1")?;
+        let mut seen: HashSet<(i64, String)> = HashSet::new();
         for item in items {
             let text = item.text.trim();
             if text.is_empty() {
@@ -243,7 +233,19 @@ impl StorageManager {
                 .timestamp_millis_opt(item.timestamp_ms)
                 .single()
                 .unwrap_or_else(Local::now);
-            if !seen.insert((timestamp.timestamp_millis(), text.to_string())) {
+            let ts_ms = timestamp.timestamp_millis();
+            if !seen.insert((ts_ms, text.to_string())) {
+                continue;
+            }
+            let mut rows = existing_at.query(params![ts_ms])?;
+            let mut duplicate = false;
+            while let Some(row) = rows.next()? {
+                if row.get::<_, String>(0)?.trim() == text {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if duplicate {
                 continue;
             }
             let record = TranscriptionRecord {
@@ -267,6 +269,7 @@ impl StorageManager {
             Self::insert_record(&tx, &record)?;
             added += 1;
         }
+        drop(existing_at);
         tx.commit()?;
         Ok(added)
     }
@@ -343,26 +346,30 @@ impl StorageManager {
     }
 
     pub fn get_all_filtered(&self, search_query: Option<&str>) -> Result<Vec<TranscriptionRecord>> {
-        let conn = self.connection.lock();
-        let (where_clause, params) = Self::build_search_query(search_query);
+        let mut records = {
+            let conn = self.connection.lock();
+            let (where_clause, params) = Self::build_search_query(search_query);
 
-        let sql = format!(
-            "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
-             FROM transcriptions
-             {}
-             ORDER BY timestamp DESC",
-            where_clause
-        );
+            let sql = format!(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions
+                 {}
+                 ORDER BY timestamp DESC",
+                where_clause
+            );
 
-        let mut stmt = conn.prepare(&sql)?;
-        let records = stmt
-            .query_map(
-                rusqlite::params_from_iter(params.iter()),
-                Self::record_from_row,
-            )?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
+            let mut stmt = conn.prepare(&sql)?;
+            let records = stmt
+                .query_map(
+                    rusqlite::params_from_iter(params.iter()),
+                    Self::record_from_row,
+                )?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            records
+        };
 
+        Self::resolve_audio_availability(&mut records);
         Ok(records)
     }
 
@@ -402,23 +409,27 @@ impl StorageManager {
             return Ok(Vec::new());
         }
 
-        let conn = self.connection.lock();
-        let mut stmt = conn.prepare(
-            "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
-             FROM transcriptions
-             WHERE status = ?1 AND text <> ''
-             ORDER BY timestamp DESC
-             LIMIT ?2",
-        )?;
+        let mut records = {
+            let conn = self.connection.lock();
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions
+                 WHERE status = ?1 AND text <> ''
+                 ORDER BY timestamp DESC
+                 LIMIT ?2",
+            )?;
 
-        let records = stmt
-            .query_map(
-                params![TranscriptionStatus::Success.as_str(), limit as i64],
-                Self::record_from_row,
-            )?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
+            let records = stmt
+                .query_map(
+                    params![TranscriptionStatus::Success.as_str(), limit as i64],
+                    Self::record_from_row,
+                )?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            records
+        };
 
+        Self::resolve_audio_availability(&mut records);
         Ok(records)
     }
 
@@ -624,15 +635,26 @@ impl StorageManager {
     }
 
     fn get_record(conn: &Connection, id: &str) -> Result<Option<TranscriptionRecord>> {
-        conn.query_row(
-            "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
-                    speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
-             FROM transcriptions WHERE id = ?1",
-            params![id],
-            Self::record_from_row,
-        )
-        .optional()
-        .map_err(Into::into)
+        let mut record = conn
+            .query_row(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions WHERE id = ?1",
+                params![id],
+                Self::record_from_row,
+            )
+            .optional()?;
+        if let Some(record) = record.as_mut() {
+            Self::resolve_audio_availability(std::slice::from_mut(record));
+        }
+        Ok(record)
+    }
+
+    fn resolve_audio_availability(records: &mut [TranscriptionRecord]) {
+        for record in records {
+            record.audio_available =
+                !record.audio_path.is_empty() && PathBuf::from(&record.audio_path).exists();
+        }
     }
 
     fn record_from_row(row: &Row<'_>) -> rusqlite::Result<TranscriptionRecord> {
@@ -661,20 +683,14 @@ impl StorageManager {
             )
         })?;
 
-        let audio_path: String = row.get("audio_path")?;
-        let audio_available = if audio_path.is_empty() {
-            false
-        } else {
-            PathBuf::from(&audio_path).exists()
-        };
-
         Ok(TranscriptionRecord {
             id: row.get("id")?,
             timestamp,
             text: row.get("text")?,
             raw_text: row.get("raw_text")?,
-            audio_path,
-            audio_available,
+            audio_path: row.get("audio_path")?,
+            // Filled in by resolve_audio_availability after the query.
+            audio_available: false,
             status,
             error_message: row.get("error_message")?,
             llm_cleaned: row.get::<_, i64>("llm_cleaned")? == 1,

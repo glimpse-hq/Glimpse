@@ -1,3 +1,13 @@
+0.9.6
+
+### Improvements
+
+- Improved performance and reduced memory use during transcription, especially for longer recordings and cloud speech providers.
+- Improved recording pill responsiveness and reduced unnecessary background work while recording.
+- Improved History performance when loading recordings or importing transcripts.
+
+---
+
 0.9.5
 
 ### Improvements

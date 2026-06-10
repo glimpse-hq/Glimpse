@@ -245,7 +245,7 @@ pub(crate) fn complete_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = true;
     let next = state
         .persist_settings(settings)
@@ -261,7 +261,7 @@ pub(crate) fn reset_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = false;
     let next = state
         .persist_settings(settings)
@@ -277,7 +277,7 @@ pub(crate) fn set_user_name(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     settings.user_name = name.trim().to_string();
     let next = state
         .persist_settings(settings)
@@ -315,9 +315,9 @@ pub(crate) fn update_settings(
     let license_active = crate::license::license_gate_active(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
-    // Read truth directly from the store so the gated-feature mask the frontend
-    // sees (when the license is inactive) can't round-trip back to disk.
-    let mut next = state.settings_store.load().map_err(|err| err.to_string())?;
+    // Read the unmasked truth so the gated-feature mask the frontend sees
+    // (when the license is inactive) can't round-trip back to disk.
+    let mut next = state.current_settings_unmasked();
     let prev = next.clone();
     next.shortcut_bindings = shortcut_bindings;
     next.smart_shortcut = next

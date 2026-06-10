@@ -75,7 +75,7 @@ pub fn apply_import(
     selections: &ImportSelections,
 ) -> Result<ImportResult, String> {
     let bundle = parse_app(id, home)?;
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     let previous_auto_launch_enabled = settings.auto_launch_enabled;
     let mut result = ImportResult::default();
 
