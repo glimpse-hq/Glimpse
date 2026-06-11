@@ -8,7 +8,7 @@
     alt="Glimpse"
   />
   <p>
-    <a href="https://github.com/LegendarySpy/Glimpse/releases/latest">Download</a> ·
+    <a href="https://github.com/glimpse-hq/Glimpse/releases/latest">Download</a> ·
     <a href="https://tryglimpse.cc/">Website</a> ·
     <a href="#pricing">Pricing</a> ·
     <a href="#roadmap">Roadmap</a> ·
@@ -56,7 +56,7 @@ Included in a 14-day trial, then a one-time [license](#pricing):
 - **Library.** Drop in audio or video, scrub the synced transcript, assign speakers, export to `.txt`, `.md`, `.srt`, or `.vtt`.
 - **AI Cleanup.** Polish dictated text with your own LLM.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
-- **Personalization.** Different tones per app or site, with [snippets](https://github.com/LegendarySpy/Glimpse/wiki/snippets) for dynamic context.
+- **Personalization.** Different tones per app or site, with [snippets](https://github.com/glimpse-hq/Glimpse/wiki/snippets) for dynamic context.
 - **Local API.** An OpenAI-compatible speech endpoint, running on your machine.
 - **CLI.** An optional `glimpse` command for the terminal.
 
@@ -102,7 +102,7 @@ Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps priorit
 - **Collected:** launches, exits, uptime, transcription count, transcription engine and model, model downloads, onboarding completion.
 - **Never collected:** transcripts, audio, API keys, prompts, or anything personally identifiable.
 
-Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/LegendarySpy/Glimpse/wiki/Analytics) for the full picture.
+Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
 
 If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to that provider when those features run. Your API key stays stored locally.
 
@@ -124,7 +124,7 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 
 - <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="16" alt="Lokalise" align="center" /></a> [Lokalise](https://lokalise.com/) (localization platform, OSS supporter)
 - [Tauri](https://v2.tauri.app/) (app framework)
-- [Glimpse-Speech](https://github.com/LegendarySpy/Glimpse-Speech) (MIT, local transcription engine)
+- [Glimpse-Speech](https://github.com/glimpse-hq/Glimpse-Speech) (MIT, local transcription engine)
 - [whisper-rs](https://codeberg.org/tazz4843/whisper-rs) (Unlicense, Rust bindings for Whisper)
 - [parakeet-rs](https://github.com/altunenes/parakeet-rs) (MIT OR Apache-2.0, ONNX Runtime bindings for Parakeet)
 

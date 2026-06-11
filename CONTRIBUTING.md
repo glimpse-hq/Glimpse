@@ -32,7 +32,7 @@ Active translators get a **Personal** license (full access on up to 5 devices) a
 
 ## Bug reports
 
-Found a bug? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) and include:
+Found a bug? [Open an issue](https://github.com/glimpse-hq/Glimpse/issues/new) and include:
 
 - **Steps to reproduce:** what you did, in order
 - **Expected vs. actual:** what you thought would happen, and what did
@@ -46,7 +46,7 @@ For security or privacy issues, email [hello@tryglimpse.cc](mailto:hello@tryglim
 
 ## Feature requests
 
-Have an idea? [Open an issue](https://github.com/LegendarySpy/Glimpse/issues/new) with what you'd like and why it's useful. Check [existing issues](https://github.com/LegendarySpy/Glimpse/issues) first to avoid duplicates.
+Have an idea? [Open an issue](https://github.com/glimpse-hq/Glimpse/issues/new) with what you'd like and why it's useful. Check [existing issues](https://github.com/glimpse-hq/Glimpse/issues) first to avoid duplicates.
 
 Glimpse is local-first by design. Features that send audio or transcripts to a server by default probably won't fit the project's direction.
 
@@ -83,7 +83,7 @@ Star the repo, tell a friend, mention Glimpse in a post or on social. Visibility
 
 ```bash
 xcode-select --install
-git clone https://github.com/LegendarySpy/Glimpse.git
+git clone https://github.com/glimpse-hq/Glimpse.git
 cd Glimpse
 bun install
 bun tauri dev    # Development with hot reload
@@ -97,7 +97,7 @@ bun tauri build  # Production build
 ```powershell
 rustup default stable-x86_64-pc-windows-msvc
 rustup target add x86_64-pc-windows-msvc
-git clone https://github.com/LegendarySpy/Glimpse.git
+git clone https://github.com/glimpse-hq/Glimpse.git
 cd Glimpse
 bun install
 bun tauri dev    # Development with hot reload

@@ -786,7 +786,7 @@ const AppTab = ({
                   <button
                     onClick={() =>
                       openUrl(
-                        "https://github.com/LegendarySpy/Glimpse/wiki/Analytics",
+                        "https://github.com/glimpse-hq/Glimpse/wiki/Analytics",
                       )
                     }
                     className="ui-color-muted hover:text-content-secondary transition-colors underline"

@@ -76,12 +76,12 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
-pub(crate) const FEEDBACK_URL: &str = "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
+pub(crate) const FEEDBACK_URL: &str = "https://github.com/glimpse-hq/Glimpse/issues/new/choose";
 #[cfg(target_os = "windows")]
 pub(crate) const FFMPEG_HELP_URL: &str =
-    "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-windows";
+    "https://github.com/glimpse-hq/Glimpse/wiki/ffmpeg-windows";
 #[cfg(not(target_os = "windows"))]
-pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/LegendarySpy/Glimpse/wiki/ffmpeg-mac";
+pub(crate) const FFMPEG_HELP_URL: &str = "https://github.com/glimpse-hq/Glimpse/wiki/ffmpeg-mac";
 
 fn launched_via_autostart() -> bool {
     std::env::args_os().any(|arg| arg == "--autostart")
@@ -179,7 +179,7 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_WEBSITE => {
             let _ = app
                 .opener()
-                .open_url("https://github.com/LegendarySpy/Glimpse", None::<&str>);
+                .open_url("https://github.com/glimpse-hq/Glimpse", None::<&str>);
         }
         MENU_ID_REPORT_ISSUE => {
             let _ = app.opener().open_url(FEEDBACK_URL, None::<&str>);

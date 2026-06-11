@@ -34,7 +34,7 @@ interface ReleaseInfo {
   htmlUrl: string;
 }
 
-const GITHUB_REPO = "LegendarySpy/Glimpse";
+const GITHUB_REPO = "glimpse-hq/Glimpse";
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 const MAX_RELEASES = 15;
 
@@ -276,7 +276,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 <button
                   onClick={() => {
                     openUrl(
-                      "https://github.com/LegendarySpy/Glimpse/releases",
+                      "https://github.com/glimpse-hq/Glimpse/releases",
                     ).catch((err) => {
                       console.error("Failed to open releases:", err);
                     });
