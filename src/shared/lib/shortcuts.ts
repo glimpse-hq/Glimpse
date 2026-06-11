@@ -49,6 +49,9 @@ function humanizeKeyToken(token: string): string {
     Return: "Enter",
     ForwardDelete: isMacPlatform ? "Forward Delete" : "Delete",
     Delete: isMacPlatform ? "Delete" : "Backspace",
+    MouseMiddle: "Middle Click",
+    MouseBack: "Mouse Back",
+    MouseForward: "Mouse Forward",
   };
 
   if (directDisplay[token]) {

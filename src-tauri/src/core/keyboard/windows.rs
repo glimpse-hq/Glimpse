@@ -7,8 +7,9 @@ use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, GetMessageW, PostThreadMessageW, SetWindowsHookExW,
-    TranslateMessage, UnhookWindowsHookEx, KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL, WM_KEYDOWN,
-    WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP,
+    TranslateMessage, UnhookWindowsHookEx, KBDLLHOOKSTRUCT, MSG, MSLLHOOKSTRUCT, WH_KEYBOARD_LL,
+    WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_QUIT, WM_SYSKEYDOWN,
+    WM_SYSKEYUP, WM_XBUTTONDOWN, WM_XBUTTONUP, XBUTTON1, XBUTTON2,
 };
 
 use super::{
@@ -54,6 +55,19 @@ pub(super) fn start(
                 }
             };
 
+            let mouse_hook =
+                unsafe { SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), None, 0) };
+            let mouse_hook = match mouse_hook {
+                Ok(mouse_hook) => mouse_hook,
+                Err(err) => {
+                    unsafe {
+                        let _ = UnhookWindowsHookEx(hook);
+                    }
+                    let _ = ready_tx.send(Err(format!("Failed to install mouse hook: {err}")));
+                    return;
+                }
+            };
+
             let thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
             let _ = ready_tx.send(Ok(thread_id));
 
@@ -66,6 +80,7 @@ pub(super) fn start(
             }
 
             unsafe {
+                let _ = UnhookWindowsHookEx(mouse_hook);
                 let _ = UnhookWindowsHookEx(hook);
             }
             HOOK_STATE.with(|state| {
@@ -118,6 +133,64 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
         LRESULT(1)
     } else {
         unsafe { CallNextHookEx(None, code, wparam, lparam) }
+    }
+}
+
+unsafe extern "system" fn mouse_hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    if code < 0 {
+        return unsafe { CallNextHookEx(None, code, wparam, lparam) };
+    }
+
+    let message = wparam.0 as u32;
+    let is_key_down = matches!(message, WM_MBUTTONDOWN | WM_XBUTTONDOWN);
+    let is_key_up = matches!(message, WM_MBUTTONUP | WM_XBUTTONUP);
+    if !is_key_down && !is_key_up {
+        return unsafe { CallNextHookEx(None, code, wparam, lparam) };
+    }
+
+    let info = unsafe { &*(lparam.0 as *const MSLLHOOKSTRUCT) };
+    let Some(key) = mouse_key(message, info.mouseData) else {
+        return unsafe { CallNextHookEx(None, code, wparam, lparam) };
+    };
+
+    let event = HOOK_STATE.with(|state| {
+        let mut state = state.borrow_mut();
+        let state = state.as_mut()?;
+        let event = KeyEvent {
+            modifiers: state.modifiers,
+            key: Some(key),
+            is_key_down,
+            changed_modifier: None,
+            repeat: false,
+        };
+        Some((event, state.blocking_hotkeys.clone(), state.tx.clone()))
+    });
+
+    let Some((event, blocking_hotkeys, tx)) = event else {
+        return unsafe { CallNextHookEx(None, code, wparam, lparam) };
+    };
+
+    let should_block = should_block_event(&blocking_hotkeys, &event);
+    if should_forward_event(&blocking_hotkeys, &event) {
+        let _ = tx.try_send(event);
+    }
+
+    if should_block {
+        LRESULT(1)
+    } else {
+        unsafe { CallNextHookEx(None, code, wparam, lparam) }
+    }
+}
+
+fn mouse_key(message: u32, mouse_data: u32) -> Option<Key> {
+    match message {
+        WM_MBUTTONDOWN | WM_MBUTTONUP => Some(Key::MouseMiddle),
+        WM_XBUTTONDOWN | WM_XBUTTONUP => match (mouse_data >> 16) as u16 {
+            XBUTTON1 => Some(Key::MouseBack),
+            XBUTTON2 => Some(Key::MouseForward),
+            _ => None,
+        },
+        _ => None,
     }
 }
 

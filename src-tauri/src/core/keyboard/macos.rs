@@ -56,6 +56,8 @@ pub(super) fn start(
                     CGEventType::KeyDown,
                     CGEventType::KeyUp,
                     CGEventType::FlagsChanged,
+                    CGEventType::OtherMouseDown,
+                    CGEventType::OtherMouseUp,
                 ],
                 move |_, event_type, event| {
                     handle_event(
@@ -150,6 +152,8 @@ fn handle_event(
         CGEventType::KeyDown => key_event(event, state, true),
         CGEventType::KeyUp => key_event(event, state, false),
         CGEventType::FlagsChanged => flags_changed_event(event, state),
+        CGEventType::OtherMouseDown => mouse_event(event, state, true),
+        CGEventType::OtherMouseUp => mouse_event(event, state, false),
         CGEventType::TapDisabledByTimeout | CGEventType::TapDisabledByUserInput => {
             state.borrow_mut().modifiers = Modifiers::empty();
             reenable_tap.store(true, Ordering::Release);
@@ -195,6 +199,24 @@ fn key_event(event: &CGEvent, state: &RefCell<MacState>, is_key_down: bool) -> O
         is_key_down,
         changed_modifier: None,
         repeat,
+    })
+}
+
+fn mouse_event(event: &CGEvent, state: &RefCell<MacState>, is_key_down: bool) -> Option<KeyEvent> {
+    let button = event.get_integer_value_field(EventField::MOUSE_EVENT_BUTTON_NUMBER);
+    let key = match button {
+        2 => Key::MouseMiddle,
+        3 => Key::MouseBack,
+        4 => Key::MouseForward,
+        _ => return None,
+    };
+
+    Some(KeyEvent {
+        modifiers: modifiers_for_key_event(state.borrow().modifiers, event.get_flags()),
+        key: Some(key),
+        is_key_down,
+        changed_modifier: None,
+        repeat: false,
     })
 }
 

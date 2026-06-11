@@ -120,14 +120,27 @@ export function useShortcutCapture({
       }
     };
 
+    const handleMouseEvent = (event: MouseEvent) => {
+      if (disposed) return;
+      if (event.button === 0) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
     window.addEventListener("keydown", handleKeyboardEvent, true);
     window.addEventListener("keyup", handleKeyboardEvent, true);
+    window.addEventListener("mousedown", handleMouseEvent, true);
+    window.addEventListener("mouseup", handleMouseEvent, true);
+    window.addEventListener("auxclick", handleMouseEvent, true);
 
     return () => {
       disposed = true;
       unlisten?.();
       window.removeEventListener("keydown", handleKeyboardEvent, true);
       window.removeEventListener("keyup", handleKeyboardEvent, true);
+      window.removeEventListener("mousedown", handleMouseEvent, true);
+      window.removeEventListener("mouseup", handleMouseEvent, true);
+      window.removeEventListener("auxclick", handleMouseEvent, true);
     };
   }, [
     active,
