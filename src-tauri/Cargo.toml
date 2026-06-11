@@ -1,6 +1,6 @@
 [package]
 name = "Glimpse"
-version = "0.9.6"
+version = "0.9.7"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["Glimpse HQ"]
 edition = "2021"
@@ -19,6 +19,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [profile.release]
 lto = "thin"
 codegen-units = 1
+strip = true
 
 [build-dependencies]
 tauri-build = { version = "2.6.2", features = [] }
