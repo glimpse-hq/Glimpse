@@ -99,7 +99,7 @@ Transcription stays on-device by default. Glimpse does not collect your transcri
 
 Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps prioritize development:
 
-- **Collected:** launches, exits, uptime, transcription count, transcription engine and model, model downloads, onboarding completion.
+- **Collected:** launches, exits, os version, uptime, transcription count, transcription engine and model, model downloads, onboarding completion.
 - **Never collected:** transcripts, audio, API keys, prompts, or anything personally identifiable.
 
 Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.

@@ -96,11 +96,7 @@ pub(crate) fn retry_llm_cleanup(
         .await
         {
             Ok(cleaned) => {
-                match storage.update_with_llm_cleanup(
-                    &record_id,
-                    cleaned,
-                    llm_model.clone(),
-                ) {
+                match storage.update_with_llm_cleanup(&record_id, cleaned, llm_model.clone()) {
                     Ok(updated_record) => {
                         let _ = app_handle.emit(
                             EVENT_TRANSCRIPTION_COMPLETE,
