@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::path::PathBuf;
@@ -7,7 +7,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Local, TimeZone};
 use parking_lot::Mutex;
-use rusqlite::{params, types::Type, Connection, OptionalExtension, Row, ToSql};
+use rusqlite::{params, types::Type, Connection, OptionalExtension, Row};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -44,17 +44,6 @@ pub struct TranscriptionRecord {
     pub mode_id: Option<String>,
     #[serde(default)]
     pub mode_name: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TodayDictationStats {
-    pub count: u32,
-    pub words: u32,
-    pub audio_seconds: f32,
-    pub longest_words: u32,
-    pub longest_audio_seconds: f32,
-    pub llm_cleaned_count: u32,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -345,63 +334,23 @@ impl StorageManager {
         Self::get_record(&conn, id)
     }
 
-    pub fn get_all_filtered(&self, search_query: Option<&str>) -> Result<Vec<TranscriptionRecord>> {
+    pub fn get_all(&self) -> Result<Vec<TranscriptionRecord>> {
         let mut records = {
             let conn = self.connection.lock();
-            let (where_clause, params) = Self::build_search_query(search_query);
-
-            let sql = format!(
+            let mut stmt = conn.prepare(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
                         speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
                  FROM transcriptions
-                 {}
                  ORDER BY timestamp DESC",
-                where_clause
-            );
-
-            let mut stmt = conn.prepare(&sql)?;
+            )?;
             let records = stmt
-                .query_map(
-                    rusqlite::params_from_iter(params.iter()),
-                    Self::record_from_row,
-                )?
+                .query_map([], Self::record_from_row)?
                 .collect::<rusqlite::Result<Vec<_>>>()?;
             records
         };
 
         Self::resolve_audio_availability(&mut records);
         Ok(records)
-    }
-
-    pub fn get_today_dictation_stats(
-        &self,
-        start_ms: i64,
-        end_ms: i64,
-    ) -> Result<TodayDictationStats> {
-        let conn = self.connection.lock();
-        conn.query_row(
-            "SELECT
-                COUNT(*) AS count,
-                COALESCE(SUM(word_count), 0) AS words,
-                COALESCE(SUM(audio_duration_seconds), 0) AS audio_seconds,
-                COALESCE(MAX(word_count), 0) AS longest_words,
-                COALESCE(MAX(audio_duration_seconds), 0) AS longest_audio_seconds,
-                COALESCE(SUM(llm_cleaned), 0) AS llm_cleaned_count
-             FROM transcriptions
-             WHERE status = ?1 AND timestamp >= ?2 AND timestamp < ?3",
-            params![TranscriptionStatus::Success.as_str(), start_ms, end_ms],
-            |row| {
-                Ok(TodayDictationStats {
-                    count: row.get::<_, i64>("count")? as u32,
-                    words: row.get::<_, i64>("words")? as u32,
-                    audio_seconds: row.get::<_, f64>("audio_seconds")? as f32,
-                    longest_words: row.get::<_, i64>("longest_words")? as u32,
-                    longest_audio_seconds: row.get::<_, f64>("longest_audio_seconds")? as f32,
-                    llm_cleaned_count: row.get::<_, i64>("llm_cleaned_count")? as u32,
-                })
-            },
-        )
-        .map_err(Into::into)
     }
 
     pub fn get_recent_transcriptions(&self, limit: usize) -> Result<Vec<TranscriptionRecord>> {
@@ -525,19 +474,6 @@ impl StorageManager {
         }
     }
 
-    fn build_search_query(search_query: Option<&str>) -> (String, Vec<Box<dyn ToSql>>) {
-        if let Some(query) = search_query {
-            if !query.trim().is_empty() {
-                let like_query = format!("%{}%", query.trim());
-                return (
-                    "WHERE text LIKE ?1 OR raw_text LIKE ?1".to_string(),
-                    vec![Box::new(like_query)],
-                );
-            }
-        }
-        ("".to_string(), Vec::new())
-    }
-
     fn insert_record(conn: &Connection, record: &TranscriptionRecord) -> Result<()> {
         let timestamp = record.timestamp.timestamp_millis();
         conn.execute(
@@ -651,9 +587,31 @@ impl StorageManager {
     }
 
     fn resolve_audio_availability(records: &mut [TranscriptionRecord]) {
+        let mut dir_listings: HashMap<PathBuf, HashSet<std::ffi::OsString>> = HashMap::new();
+
         for record in records {
-            record.audio_available =
-                !record.audio_path.is_empty() && PathBuf::from(&record.audio_path).exists();
+            if record.audio_path.is_empty() {
+                record.audio_available = false;
+                continue;
+            }
+
+            let path = PathBuf::from(&record.audio_path);
+            let (Some(parent), Some(file_name)) = (path.parent(), path.file_name()) else {
+                record.audio_available = path.exists();
+                continue;
+            };
+
+            let listing = dir_listings.entry(parent.to_path_buf()).or_insert_with(|| {
+                std::fs::read_dir(parent)
+                    .map(|entries| {
+                        entries
+                            .filter_map(|entry| entry.ok().map(|e| e.file_name()))
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            });
+
+            record.audio_available = listing.contains(file_name);
         }
     }
 

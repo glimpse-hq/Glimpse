@@ -93,7 +93,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     data: transcriptions = [],
     isLoading,
     isFetched,
-  } = useTranscriptionList(debouncedText, isActive);
+  } = useTranscriptionList(isActive);
   const totalCount = transcriptions.length;
   const deleteMutation = useDeleteTranscription();
   const {
@@ -105,13 +105,47 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const undoLlmMutation = useUndoLlmCleanup();
   const retryingIdSet = useMemo(() => new Set(retryingIds), [retryingIds]);
 
+  const freshIdsRef = useRef<{
+    data: TranscriptionRecord[] | null;
+    seen: Set<string>;
+    fresh: Set<string>;
+  }>({ data: null, seen: new Set(), fresh: new Set() });
+  let freshIds = freshIdsRef.current.fresh;
+  if (isFetched && freshIdsRef.current.data !== transcriptions) {
+    const cache = freshIdsRef.current;
+    const fresh = new Set<string>();
+    for (const record of transcriptions) {
+      if (cache.data !== null && !cache.seen.has(record.id)) {
+        fresh.add(record.id);
+      }
+      cache.seen.add(record.id);
+    }
+    cache.data = transcriptions;
+    cache.fresh = fresh;
+    freshIds = fresh;
+  }
+
+  useEffect(() => {
+    if (freshIds.size === 0) return;
+    const timer = setTimeout(() => freshIds.clear(), 600);
+    return () => clearTimeout(timer);
+  }, [freshIds]);
+
   const sortedTranscriptions = useMemo(() => {
-    const filtered =
-      parsed.after || parsed.before
-        ? transcriptions.filter((r) =>
-            matchesDateRange(r.timestamp, parsed.after, parsed.before),
-          )
-        : transcriptions;
+    let filtered = transcriptions;
+    const text = debouncedText.trim().toLowerCase();
+    if (text) {
+      filtered = filtered.filter(
+        (r) =>
+          r.text.toLowerCase().includes(text) ||
+          (r.raw_text ?? "").toLowerCase().includes(text),
+      );
+    }
+    if (parsed.after || parsed.before) {
+      filtered = filtered.filter((r) =>
+        matchesDateRange(r.timestamp, parsed.after, parsed.before),
+      );
+    }
     if (parsed.sort === "recent") return filtered;
     const copy = [...filtered];
     switch (parsed.sort) {
@@ -129,7 +163,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
         break;
     }
     return copy;
-  }, [transcriptions, parsed.sort, parsed.after, parsed.before]);
+  }, [transcriptions, debouncedText, parsed.sort, parsed.after, parsed.before]);
 
   const isTimeSorted = parsed.sort === "recent" || parsed.sort === "oldest";
 
@@ -277,7 +311,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
     (_index: number, entry: ListEntry) => {
       if (entry.type === "header") {
         return (
-          <div className="transcription-entry-fade flex items-center gap-3 pt-6 pb-2 px-1 first:pt-1">
+          <div className="transcription-entry flex items-center gap-3 pt-6 pb-2 px-1 first:pt-1">
             <span className="ui-text-body-sm-strong ui-color-secondary shrink-0">
               {entry.label}
             </span>
@@ -288,7 +322,13 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
 
       const record = entry.record;
       return (
-        <div className="transcription-entry-fade">
+        <div
+          className={
+            freshIds.has(record.id)
+              ? "transcription-entry transcription-entry-fade"
+              : "transcription-entry"
+          }
+        >
           <TranscriptionItem
             record={record}
             isRetrying={retryingIdSet.has(record.id)}
@@ -305,6 +345,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
       );
     },
     [
+      freshIds,
       retryingIdSet,
       deleteTranscription,
       retryTranscription,
@@ -327,18 +368,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
 
   const hasQuery = searchQuery.trim().length > 0;
   const resultSearchText = parsed.text.trim();
-  const showInitialLoading =
-    isLoading && transcriptions.length === 0 && !debouncedText && !isFetched;
+  const showInitialLoading = isLoading && !isFetched;
   const hasAnyResults = sortedTranscriptions.length > 0;
-  const showEmptyState =
-    isFetched && totalCount === 0 && !debouncedText && !isLoading && !hasQuery;
-  const showNoResults =
-    !showInitialLoading &&
-    !showEmptyState &&
-    !isLoading &&
-    isFetched &&
-    !hasAnyResults &&
-    hasQuery;
+  const showEmptyState = isFetched && totalCount === 0 && !hasQuery;
+  const showNoResults = isFetched && !hasAnyResults && hasQuery;
   const listEntries = showInitialLoading ? [] : entries;
 
   return (

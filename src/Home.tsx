@@ -419,20 +419,11 @@ const Home = () => {
       });
 
   const homeViewActive = activeView === "home";
+  const dayTick = useTimeOfDayPeriodTick(homeViewActive);
   const {
     data: todayStats = EMPTY_TODAY_DICTATION_STATS,
     isFetched: todayStatsFetched,
-    refetch: refetchTodayStats,
-  } = useTodayDictationStats(homeViewActive);
-  const dayTick = useTimeOfDayPeriodTick(homeViewActive);
-  const todayStatsTickRef = useRef(dayTick);
-
-  useEffect(() => {
-    if (homeViewActive && todayStatsTickRef.current !== dayTick) {
-      todayStatsTickRef.current = dayTick;
-      refetchTodayStats().catch(() => {});
-    }
-  }, [dayTick, homeViewActive, refetchTodayStats]);
+  } = useTodayDictationStats(homeViewActive, dayTick);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">

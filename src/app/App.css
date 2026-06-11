@@ -1227,7 +1227,7 @@ body {
 @keyframes transcription-entry-fade {
   from {
     opacity: 0;
-    transform: translateY(2px);
+    transform: translateY(6px);
   }
 
   to {
@@ -1236,13 +1236,16 @@ body {
   }
 }
 
-.transcription-entry-fade {
-  animation: transcription-entry-fade 180ms ease-out both;
+.transcription-entry {
   position: relative;
 }
 
-.transcription-entry-fade:has([aria-expanded="true"]) {
+.transcription-entry:has([aria-expanded="true"]) {
   z-index: 20;
+}
+
+.transcription-entry-fade {
+  animation: transcription-entry-fade 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {

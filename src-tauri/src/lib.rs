@@ -426,7 +426,6 @@ pub fn run() {
             get_app_info,
             open_data_dir,
             get_transcriptions,
-            get_today_dictation_stats,
             delete_transcription,
             retry_transcription,
             retry_llm_cleanup,
@@ -1342,32 +1341,11 @@ fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
 #[tauri::command]
 fn get_transcriptions(
     state: tauri::State<AppState>,
-    search_query: Option<String>,
 ) -> Result<Vec<storage::TranscriptionRecord>, String> {
     state
         .storage()
-        .get_all_filtered(search_query.as_deref())
+        .get_all()
         .map_err(|err| format!("Failed to get transcriptions: {err}"))
-}
-
-#[tauri::command]
-fn get_today_dictation_stats(
-    state: tauri::State<AppState>,
-) -> Result<storage::TodayDictationStats, String> {
-    let today = Local::now().date_naive();
-    let start = today
-        .and_hms_opt(0, 0, 0)
-        .and_then(|time| time.and_local_timezone(Local).single())
-        .ok_or_else(|| "Failed to resolve local start of day".to_string())?;
-    let end = (today + chrono::Days::new(1))
-        .and_hms_opt(0, 0, 0)
-        .and_then(|time| time.and_local_timezone(Local).single())
-        .ok_or_else(|| "Failed to resolve local end of day".to_string())?;
-
-    state
-        .storage()
-        .get_today_dictation_stats(start.timestamp_millis(), end.timestamp_millis())
-        .map_err(|err| format!("Failed to get today stats: {err}"))
 }
 
 #[tauri::command]
@@ -1592,6 +1570,7 @@ fn emit_recording_history_refresh(app: &AppHandle<AppRuntime>, deleted_count: u3
             TranscriptionCompletePayload {
                 transcript: String::new(),
                 auto_paste: false,
+                record: None,
             },
         );
     }
@@ -1779,6 +1758,7 @@ pub(crate) struct AudioSpectrumPayload {
 pub(crate) struct TranscriptionCompletePayload {
     pub(crate) transcript: String,
     pub(crate) auto_paste: bool,
+    pub(crate) record: Option<storage::TranscriptionRecord>,
 }
 
 #[derive(Serialize, Clone)]

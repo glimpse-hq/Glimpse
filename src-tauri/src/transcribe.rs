@@ -33,6 +33,7 @@ pub(crate) fn run_transcription_prune_for_settings(
             TranscriptionCompletePayload {
                 transcript: String::new(),
                 auto_paste: false,
+                record: None,
             },
         )?;
     }
@@ -904,7 +905,7 @@ pub(crate) fn retry_transcription_async(
                     llm_cleaned
                 );
 
-                let _ = app_handle
+                let updated_record = app_handle
                     .state::<AppState>()
                     .storage()
                     .update_transcription_result(
@@ -914,7 +915,9 @@ pub(crate) fn retry_transcription_async(
                         storage::TranscriptionStatus::Success,
                         None,
                         metadata.clone(),
-                    );
+                    )
+                    .ok()
+                    .flatten();
 
                 analytics::track_transcription_completed(
                     &app_handle,
@@ -934,6 +937,7 @@ pub(crate) fn retry_transcription_async(
                     TranscriptionCompletePayload {
                         transcript: final_transcript,
                         auto_paste: false,
+                        record: updated_record,
                     },
                 );
             }
@@ -984,12 +988,51 @@ fn emit_transcription_complete_with_cleanup(
     );
     app.state::<AppState>().record_transcription_completed();
 
+    let (record, persisted) = if temporary {
+        (None, true)
+    } else {
+        let save_result = if llm_cleaned {
+            app.state::<AppState>()
+                .storage()
+                .save_transcription_with_cleanup(
+                    raw_transcript,
+                    final_transcript.clone(),
+                    audio_path.clone(),
+                    metadata,
+                    None,
+                    timestamp_override,
+                )
+        } else {
+            app.state::<AppState>().storage().save_transcription(
+                final_transcript.clone(),
+                audio_path.clone(),
+                storage::TranscriptionStatus::Success,
+                None,
+                metadata,
+                None,
+                timestamp_override,
+            )
+        };
+
+        match save_result {
+            Ok(record) => {
+                discard_pending_recording(pending_path.as_deref());
+                (Some(record), true)
+            }
+            Err(err) => {
+                eprintln!("Failed to persist transcription: {err}");
+                (None, false)
+            }
+        }
+    };
+
     crate::emit_event(
         app,
         EVENT_TRANSCRIPTION_COMPLETE,
         TranscriptionCompletePayload {
-            transcript: final_transcript.clone(),
+            transcript: final_transcript,
             auto_paste,
+            record,
         },
     );
 
@@ -1000,40 +1043,6 @@ fn emit_transcription_complete_with_cleanup(
         discard_pending_recording(pending_path.as_deref());
         return true;
     }
-
-    let save_result = if llm_cleaned {
-        app.state::<AppState>()
-            .storage()
-            .save_transcription_with_cleanup(
-                raw_transcript,
-                final_transcript,
-                audio_path,
-                metadata,
-                None,
-                timestamp_override,
-            )
-    } else {
-        app.state::<AppState>().storage().save_transcription(
-            final_transcript,
-            audio_path,
-            storage::TranscriptionStatus::Success,
-            None,
-            metadata,
-            None,
-            timestamp_override,
-        )
-    };
-
-    let persisted = match save_result {
-        Ok(_) => {
-            discard_pending_recording(pending_path.as_deref());
-            true
-        }
-        Err(err) => {
-            eprintln!("Failed to persist transcription: {err}");
-            false
-        }
-    };
 
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
@@ -1070,6 +1079,7 @@ fn handle_empty_transcription(
         TranscriptionCompletePayload {
             transcript: String::new(),
             auto_paste: false,
+            record: None,
         },
     );
 

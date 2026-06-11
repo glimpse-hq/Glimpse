@@ -1,31 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import * as transcriptionsApi from "./api";
+import { deriveTodayStats } from "./todayStats";
+import type { TranscriptionRecord } from "../../types";
 
 export const transcriptionKeys = {
   all: ["transcriptions"] as const,
-  list: (search: string) => [...transcriptionKeys.all, "list", search] as const,
-  todayStats: () => [...transcriptionKeys.all, "todayStats"] as const,
+  list: () => [...transcriptionKeys.all, "list"] as const,
 };
 
-export function useTranscriptionList(
-  searchQuery: string = "",
-  enabled: boolean = true,
-) {
+export function useTranscriptionList(enabled: boolean = true) {
   return useQuery({
-    queryKey: transcriptionKeys.list(searchQuery),
-    queryFn: () => transcriptionsApi.getTranscriptions(searchQuery || null),
+    queryKey: transcriptionKeys.list(),
+    queryFn: transcriptionsApi.getTranscriptions,
     enabled,
-    gcTime: 60_000,
+    staleTime: Infinity,
   });
 }
 
-export function useTodayDictationStats(enabled: boolean = true) {
+export function useTodayDictationStats(
+  enabled: boolean = true,
+  dayTick: number = 0,
+) {
+  const select = useCallback(
+    (records: TranscriptionRecord[]) => deriveTodayStats(records),
+    [dayTick],
+  );
+
   return useQuery({
-    queryKey: transcriptionKeys.todayStats(),
-    queryFn: transcriptionsApi.getTodayDictationStats,
+    queryKey: transcriptionKeys.list(),
+    queryFn: transcriptionsApi.getTranscriptions,
     enabled,
+    staleTime: Infinity,
+    select,
   });
 }
 
@@ -34,15 +42,27 @@ export function useDeleteTranscription() {
 
   return useMutation({
     mutationFn: transcriptionsApi.deleteTranscription,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: transcriptionKeys.list() });
+      const previous = queryClient.getQueryData<TranscriptionRecord[]>(
+        transcriptionKeys.list(),
+      );
+      queryClient.setQueryData<TranscriptionRecord[]>(
+        transcriptionKeys.list(),
+        (old) => old?.filter((record) => record.id !== id),
+      );
+      return { previous };
+    },
+    onError: (_error, _id, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(transcriptionKeys.list(), context.previous);
+      }
     },
   });
 }
 
 export function useRetryTranscription(enabled: boolean = true) {
   const [retryingIds, setRetryingIds] = useState<string[]>([]);
-  const queryClient = useQueryClient();
   const shouldListen = enabled || retryingIds.length > 0;
 
   useEffect(() => {
@@ -83,9 +103,6 @@ export function useRetryTranscription(enabled: boolean = true) {
     onError: (_error, id) => {
       setRetryingIds((prev) => prev.filter((entry) => entry !== id));
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-    },
   });
 
   const cancelRetry = useMutation({
@@ -99,23 +116,13 @@ export function useRetryTranscription(enabled: boolean = true) {
 }
 
 export function useRetryLlmCleanup() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: transcriptionsApi.retryLlmCleanup,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-    },
   });
 }
 
 export function useUndoLlmCleanup() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: transcriptionsApi.undoLlmCleanup,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-    },
   });
 }
