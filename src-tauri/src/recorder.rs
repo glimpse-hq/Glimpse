@@ -634,9 +634,16 @@ pub fn validate_recording_with_config(
         });
     }
 
-    let speech_percentage = recording.speech_percentage.unwrap_or_else(|| {
+    let mut speech_percentage = recording.speech_percentage.unwrap_or_else(|| {
         speech_percentage_i16_with_mode(&recording.samples, recording.sample_rate, VadMode::Quality)
     });
+    if recording.speech_percentage.is_some() && speech_percentage < config.min_speech_percentage {
+        speech_percentage = speech_percentage_i16_with_mode(
+            &recording.samples,
+            recording.sample_rate,
+            VadMode::Quality,
+        );
+    }
     if speech_percentage < config.min_speech_percentage {
         return Err(RecordingRejectionReason::NoSpeechDetected);
     }

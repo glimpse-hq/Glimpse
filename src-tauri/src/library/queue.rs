@@ -438,7 +438,7 @@ fn transcribe_library_item(
             .min(chunk_size.saturating_sub(1));
         let step = chunk_size.saturating_sub(overlap).max(1);
 
-        let total_chunks =
+        let mut total_chunks =
             compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
         let mut full_text = String::new();
         let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
@@ -451,6 +451,10 @@ fn transcribe_library_item(
             }
 
             chunk_index = chunk_index.saturating_add(1);
+            let remaining = wav_info
+                .total_samples
+                .saturating_sub(start_idx + chunk.len());
+            total_chunks = total_chunks.max(chunk_index + u32::from(remaining > 0));
             let chunk_speech_percent =
                 speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
             if chunk_speech_percent < VAD_MIN_SPEECH_PERCENT_CHUNK {
@@ -584,7 +588,8 @@ fn transcribe_library_item(
     let chunk_size = (MAX_CHUNK_MINUTES as usize * 60 * sample_rate as usize).max(1);
     let overlap = (CHUNK_OVERLAP_SECONDS as usize * sample_rate as usize).min(chunk_size);
     let step = chunk_size.saturating_sub(overlap).max(1);
-    let total_chunks = compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
+    let mut total_chunks =
+        compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
     let mut full_text = String::new();
     let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
     let mut last_end_ms: u64 = 0;
@@ -596,6 +601,10 @@ fn transcribe_library_item(
         }
 
         chunk_index = chunk_index.saturating_add(1);
+        let remaining = wav_info
+            .total_samples
+            .saturating_sub(start_idx + chunk.len());
+        total_chunks = total_chunks.max(chunk_index + u32::from(remaining > 0));
         let chunk_speech_percent =
             speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
         if chunk_speech_percent < VAD_MIN_SPEECH_PERCENT_CHUNK {

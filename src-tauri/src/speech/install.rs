@@ -160,12 +160,22 @@ fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     Ok(dir)
 }
 
+fn ane_encoder_complete(dir: &std::path::Path) -> bool {
+    dir.join("coremldata.bin").is_file()
+        && dir.join("model.mil").is_file()
+        && dir.join("weights").join("weight.bin").is_file()
+}
+
+fn ane_installed_for(model: &str, manager: &speech_models::ModelInstallManager) -> bool {
+    super::catalog::ane_encoder_dir(model)
+        .is_some_and(|dir_name| ane_encoder_complete(&manager.model_dir(model).join(dir_name)))
+}
+
 fn map_status(
     status: speech_models::ModelStatus,
     manager: &speech_models::ModelInstallManager,
 ) -> ModelStatus {
-    let ane_installed = super::catalog::ane_encoder_dir(&status.id)
-        .is_some_and(|dir_name| manager.model_dir(&status.id).join(dir_name).is_dir());
+    let ane_installed = ane_installed_for(&status.id, manager);
     ModelStatus {
         key: status.id,
         installed: status.installed,
@@ -204,8 +214,8 @@ pub async fn download_model(
     let spec = spec_for(&model, ane).map_err(|err| err.to_string())?;
     ensure_models_root(&app).map_err(|err| err.to_string())?;
     let ane_pending = ane
-        && super::catalog::ane_encoder_dir(&model)
-            .is_some_and(|dir_name| !manager.model_dir(&model).join(dir_name).is_dir());
+        && super::catalog::ane_encoder_dir(&model).is_some()
+        && !ane_installed_for(&model, &manager);
     let cancel_token = state.create_download_token(&model);
     let progress_app = app.clone();
     let progress = |event: speech_models::ModelDownloadProgress| {

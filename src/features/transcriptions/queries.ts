@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import * as transcriptionsApi from "./api";
 import { deriveTodayStats } from "./todayStats";
@@ -23,9 +23,19 @@ export function useTodayDictationStats(
   enabled: boolean = true,
   dayTick: number = 0,
 ) {
+  const queryClient = useQueryClient();
+  const dayKey = new Date().toDateString();
+  const lastDayKey = useRef(dayKey);
+
+  useEffect(() => {
+    if (lastDayKey.current === dayKey) return;
+    lastDayKey.current = dayKey;
+    queryClient.invalidateQueries({ queryKey: transcriptionKeys.list() });
+  }, [dayKey, queryClient]);
+
   const select = useCallback(
     (records: TranscriptionRecord[]) => deriveTodayStats(records),
-    [dayTick],
+    [dayTick, dayKey],
   );
 
   return useQuery({

@@ -419,7 +419,8 @@ function ModelRow({
   onCancel: () => void;
 }) {
   const { t } = useLingui();
-  const [aneChecked, setAneChecked] = useState(false);
+  const [aneUserChoice, setAneUserChoice] = useState<boolean | null>(null);
+  const aneChecked = aneUserChoice ?? !installed;
   const isDownloading = progress?.status === "downloading";
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
@@ -430,6 +431,8 @@ function ModelRow({
   const showQuants = group.variants.length > 1 && !isBusy;
   const aneAvailable = selected.ane_size_mb != null;
   const aneOn = aneAvailable && (aneInstalled || aneChecked);
+  const encoderDownloadPending =
+    installed && aneAvailable && aneChecked && !aneInstalled;
   const showAne = aneAvailable && !isBusy;
   const displaySize =
     selected.size_mb + (aneOn ? (selected.ane_size_mb ?? 0) : 0);
@@ -444,11 +447,19 @@ function ModelRow({
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
       <button
         type="button"
-        onClick={installed ? onUse : () => onDownload(aneOn)}
+        onClick={
+          !installed
+            ? () => onDownload(aneOn)
+            : encoderDownloadPending
+              ? () => onDownload(true)
+              : onUse
+        }
         title={
-          installed && !active
-            ? t({ id: "model_picker.use", message: "Use" })
-            : undefined
+          encoderDownloadPending
+            ? downloadLabel
+            : installed && !active
+              ? t({ id: "model_picker.use", message: "Use" })
+              : undefined
         }
         className="flex min-w-0 items-center gap-2.5 text-left"
       >
@@ -526,7 +537,7 @@ function ModelRow({
           <AneCheckbox
             checked={aneOn}
             installed={aneInstalled}
-            onToggle={() => setAneChecked((value) => !value)}
+            onToggle={() => setAneUserChoice(!aneChecked)}
           />
         )}
 

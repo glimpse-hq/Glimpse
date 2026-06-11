@@ -716,7 +716,30 @@ impl AppState {
         }
     }
 
-    pub fn persist_settings(&self, mut next: UserSettings) -> GlimpseResult<UserSettings> {
+    pub fn persist_settings(&self, next: UserSettings) -> GlimpseResult<UserSettings> {
+        let mut guard = self.settings.lock();
+        let next = Self::canonicalize_and_save(&self.settings_store, next)?;
+        *guard = next.clone();
+        Ok(next)
+    }
+
+    pub(crate) fn persist_settings_with(
+        &self,
+        mutate: impl FnOnce(&UserSettings, &mut UserSettings),
+    ) -> GlimpseResult<(UserSettings, UserSettings)> {
+        let mut guard = self.settings.lock();
+        let prev = guard.clone();
+        let mut next = prev.clone();
+        mutate(&prev, &mut next);
+        let next = Self::canonicalize_and_save(&self.settings_store, next)?;
+        *guard = next.clone();
+        Ok((prev, next))
+    }
+
+    fn canonicalize_and_save(
+        store: &SettingsStore,
+        mut next: UserSettings,
+    ) -> GlimpseResult<UserSettings> {
         if matches!(next.transcription_mode, TranscriptionMode::Cloud) {
             next.transcription_mode = TranscriptionMode::Local;
         }
@@ -724,8 +747,7 @@ impl AppState {
         next.auto_delete_duration =
             settings::canonicalize_recording_prune_policy(next.auto_delete_duration);
 
-        self.settings_store.save(&next)?;
-        *self.settings.lock() = next.clone();
+        store.save(&next)?;
         Ok(next)
     }
 

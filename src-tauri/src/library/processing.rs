@@ -361,7 +361,7 @@ where
 
     let channels = spec.channels.max(1) as usize;
     let chunk_samples = chunk_samples.max(1);
-    let overlap_samples = overlap_samples.min(chunk_samples);
+    let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
 
     let mut raw_samples: Vec<i16> = Vec::with_capacity(chunk_samples.saturating_mul(channels));
     let mut mono_samples: Vec<i16> = Vec::with_capacity(chunk_samples);
@@ -405,7 +405,10 @@ where
         let cut = if eof {
             chunk.len()
         } else {
-            crate::recorder::quiet_cut_index(&chunk, spec.sample_rate)
+            let min_cut = overlap_samples
+                .saturating_add(chunk_samples.saturating_sub(overlap_samples).div_ceil(2))
+                .min(chunk.len());
+            crate::recorder::quiet_cut_index(&chunk, spec.sample_rate).max(min_cut)
         };
         on_chunk(start_idx, &chunk[..cut])?;
 
