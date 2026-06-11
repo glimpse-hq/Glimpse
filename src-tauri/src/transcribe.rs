@@ -588,6 +588,7 @@ async fn transcribe_saved_recording_locally(
             started_at: saved.started_at,
             ended_at: saved.ended_at,
             pending_path: None,
+            speech_percentage: None,
         },
         cancel_token,
         prefer_any_installed,

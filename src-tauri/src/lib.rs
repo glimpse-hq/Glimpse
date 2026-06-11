@@ -49,10 +49,7 @@ use tokio_util::sync::CancellationToken;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 use pill::PillController;
-use recorder::{
-    validate_recording, CompletedRecording, RecorderManager, RecordingRejectionReason,
-    RecordingSaved,
-};
+use recorder::{validate_recording, CompletedRecording, RecorderManager, RecordingRejectionReason};
 use reqwest::Client;
 use serde::Serialize;
 use settings::{
@@ -1475,34 +1472,7 @@ pub(crate) fn persist_recording_async(
         }
     };
 
-    let recording_for_transcription = recording.clone();
-
-    async_runtime::spawn(async move {
-        let task =
-            async_runtime::spawn_blocking(move || recorder::persist_recording(base_dir, recording));
-        match task.await {
-            Ok(Ok(saved)) => emit_complete(
-                &app,
-                saved,
-                recording_for_transcription,
-                settings,
-                temporary,
-                cancel_token,
-            ),
-            Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
-            Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
-        }
-    });
-}
-
-fn emit_complete(
-    app: &AppHandle<AppRuntime>,
-    saved: RecordingSaved,
-    recording: CompletedRecording,
-    settings: settings::UserSettings,
-    temporary: bool,
-    cancel_token: CancellationToken,
-) {
+    // Validate before persisting so rejected recordings never touch disk.
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
             RecordingRejectionReason::TooShort {
@@ -1521,18 +1491,31 @@ fn emit_complete(
         };
         eprintln!("Recording rejected: {reason}");
 
-        if let Err(err) = std::fs::remove_file(&saved.path) {
-            eprintln!("Failed to remove rejected recording file: {err}");
-        }
         if let Some(path) = recording.pending_path.as_deref() {
             let _ = std::fs::remove_file(path);
         }
 
-        app.state::<AppState>().pill().finish_processing(app);
+        app.state::<AppState>().pill().finish_processing(&app);
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording, settings, temporary, cancel_token);
+    async_runtime::spawn(async move {
+        let task = async_runtime::spawn_blocking(move || {
+            recorder::persist_recording(base_dir, &recording).map(|saved| (saved, recording))
+        });
+        match task.await {
+            Ok(Ok((saved, recording))) => transcribe::queue_transcription(
+                &app,
+                saved,
+                recording,
+                settings,
+                temporary,
+                cancel_token,
+            ),
+            Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
+            Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
+        }
+    });
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {

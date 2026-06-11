@@ -6,7 +6,7 @@
 
 ### Improvements
 
-
+- Much of Glimpse in this update has been optimized for an even smoother experience :)
 - Local Whisper transcription is up to 30% faster after decoder tuning.
 - Improved performance and reduced memory use during transcription, especially for longer recordings and cloud speech providers.
 - Improved recording pill responsiveness and reduced unnecessary background work while recording.
