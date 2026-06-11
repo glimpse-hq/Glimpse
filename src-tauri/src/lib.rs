@@ -439,6 +439,7 @@ pub fn run() {
             library::commands::retry_library_transcription,
             library::commands::export_library_item_to_path,
             library::commands::get_library_tags,
+            library::commands::probe_library_import_files,
             model_manager::list_models,
             model_manager::check_model_status,
             model_manager::download_model,

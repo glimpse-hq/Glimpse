@@ -1053,7 +1053,7 @@ fn find_ffprobe_in_path() -> Option<PathBuf> {
     find_binary_in_path(file_name, fallback_dirs)
 }
 
-fn probe_media_duration_ms(path: &Path) -> Option<u64> {
+pub(crate) fn probe_media_duration_ms(path: &Path) -> Option<u64> {
     if let Some(ffprobe) = find_ffprobe_in_path() {
         let output = Command::new(ffprobe)
             .arg("-v")

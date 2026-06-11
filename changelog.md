@@ -1,3 +1,8 @@
+0.9.7
+
+### Improvements
+- The library import model is now cleaner and supports more options.
+
 0.9.6
 
 ### Features
