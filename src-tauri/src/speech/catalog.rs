@@ -335,7 +335,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Distil-Whisper Large V3.5",
         description: DISTIL_WHISPER_DESCRIPTION,
         tags: &["English", "Fast"],
-        category: "standard",
+        category: "experimental",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: distil_whisper_files!(
@@ -352,7 +352,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Distil-Whisper Medium",
         description: DISTIL_WHISPER_DESCRIPTION,
         tags: &["English", "Fast"],
-        category: "standard",
+        category: "experimental",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: distil_whisper_files!(
@@ -369,7 +369,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Distil-Whisper Small",
         description: DISTIL_WHISPER_DESCRIPTION,
         tags: &["English", "Fast", "Compute Friendly"],
-        category: "standard",
+        category: "experimental",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: distil_whisper_files!(
