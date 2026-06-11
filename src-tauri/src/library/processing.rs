@@ -90,6 +90,8 @@ pub(crate) fn create_item_from_path(
         llm_cleanup_enabled: false,
         speech_model: options.model_key.clone(),
         show_timestamps,
+        kind: crate::library::default_item_kind(),
+        speakers: None,
     };
 
     storage.insert_library_item(item.clone())?;
@@ -359,8 +361,7 @@ where
 
     let channels = spec.channels.max(1) as usize;
     let chunk_samples = chunk_samples.max(1);
-    let overlap_samples = overlap_samples.min(chunk_samples);
-    let step = chunk_samples.saturating_sub(overlap_samples).max(1);
+    let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
 
     let mut raw_samples: Vec<i16> = Vec::with_capacity(chunk_samples.saturating_mul(channels));
     let mut mono_samples: Vec<i16> = Vec::with_capacity(chunk_samples);
@@ -401,24 +402,24 @@ where
         if chunk.is_empty() {
             break;
         }
-        on_chunk(start_idx, &chunk)?;
-
-        if overlap_samples > 0 {
-            carry.clear();
-            if chunk.len() > overlap_samples {
-                carry.extend_from_slice(&chunk[chunk.len() - overlap_samples..]);
-            } else {
-                carry.extend_from_slice(&chunk);
-            }
+        let cut = if eof {
+            chunk.len()
         } else {
-            carry.clear();
-        }
+            let min_cut = overlap_samples
+                .saturating_add(chunk_samples.saturating_sub(overlap_samples).div_ceil(2))
+                .min(chunk.len());
+            crate::recorder::quiet_cut_index(&chunk, spec.sample_rate).max(min_cut)
+        };
+        on_chunk(start_idx, &chunk[..cut])?;
 
         if eof {
             break;
         }
-        start_idx = start_idx.saturating_add(step);
-        next_read = step;
+        let keep_from = cut.saturating_sub(overlap_samples);
+        carry.clear();
+        carry.extend_from_slice(&chunk[keep_from..]);
+        start_idx = start_idx.saturating_add(keep_from);
+        next_read = chunk_samples.saturating_sub(carry.len()).max(1);
     }
 
     Ok(())
@@ -1162,6 +1163,7 @@ pub(crate) fn convert_segments_to_ms(
             start_ms: (segment.start * 1000.0).max(0.0) as u64,
             end_ms: (segment.end * 1000.0).max(0.0) as u64,
             text: segment.text.trim().to_string(),
+            speaker_id: None,
         })
         .collect()
 }
@@ -1176,7 +1178,7 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
             item.transcribed_at
                 .clone()
                 .unwrap_or_else(|| item.created_at.clone()),
-            transcript
+            build_speaker_transcript(item, false).unwrap_or(transcript)
         )),
         ExportFormat::Md => Ok(format!(
             "# {}\n\n**Duration:** {}  \n**Transcribed:** {}  \n**Tags:** {}\n\n---\n\n{}",
@@ -1190,11 +1192,62 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
             } else {
                 item.tags.join(", ")
             },
-            transcript
+            build_speaker_transcript(item, true).unwrap_or(transcript)
         )),
         ExportFormat::Srt => build_srt(item),
         ExportFormat::Vtt => build_vtt(item),
     }
+}
+
+fn speaker_name<'a>(item: &'a LibraryItem, speaker_id: &Option<String>) -> Option<&'a str> {
+    let id = speaker_id.as_deref()?;
+    item.speakers
+        .as_ref()?
+        .iter()
+        .find(|speaker| speaker.id == id)
+        .map(|speaker| speaker.name.as_str())
+}
+
+fn has_assigned_speakers(item: &LibraryItem) -> bool {
+    item.speakers.as_ref().is_some_and(|s| !s.is_empty())
+        && item
+            .segments
+            .as_ref()
+            .is_some_and(|segments| segments.iter().any(|s| s.speaker_id.is_some()))
+}
+
+/// Groups consecutive same-speaker segments into labeled paragraphs.
+fn build_speaker_transcript(item: &LibraryItem, markdown: bool) -> Option<String> {
+    if !has_assigned_speakers(item) {
+        return None;
+    }
+    let segments = item.segments.as_ref()?;
+    let mut out = String::new();
+    let mut current: Option<Option<&str>> = None;
+    for segment in segments {
+        let text = segment.text.trim();
+        if text.is_empty() {
+            continue;
+        }
+        let name = speaker_name(item, &segment.speaker_id);
+        if current != Some(name) {
+            if !out.is_empty() {
+                out.push_str("\n\n");
+            }
+            if let Some(name) = name {
+                if markdown {
+                    out.push_str(&format!("**{}:** ", name));
+                } else {
+                    out.push_str(&format!("{}: ", name));
+                }
+            }
+            current = Some(name);
+        } else {
+            out.push(' ');
+        }
+        out.push_str(text);
+    }
+    Some(out)
 }
 
 fn build_srt(item: &LibraryItem) -> Result<String> {
@@ -1206,14 +1259,36 @@ fn build_srt(item: &LibraryItem) -> Result<String> {
     for (idx, segment) in segments.iter().enumerate() {
         out.push_str(&(idx + 1).to_string());
         out.push('\n');
+        let text = match speaker_name(item, &segment.speaker_id) {
+            Some(name) => format!(
+                "{}: {}",
+                name.replace(['\r', '\n'], " "),
+                segment.text.trim()
+            ),
+            None => segment.text.trim().to_string(),
+        };
         out.push_str(&format!(
             "{} --> {}\n{}\n\n",
             format_srt_timestamp(segment.start_ms),
             format_srt_timestamp(segment.end_ms),
-            segment.text.trim()
+            text
         ));
     }
     Ok(out.trim().to_string())
+}
+
+fn escape_vtt_text(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn escape_vtt_voice(value: &str) -> String {
+    value
+        .chars()
+        .filter(|ch| !matches!(ch, '\r' | '\n' | '>'))
+        .collect()
 }
 
 fn build_vtt(item: &LibraryItem) -> Result<String> {
@@ -1223,11 +1298,20 @@ fn build_vtt(item: &LibraryItem) -> Result<String> {
         .ok_or_else(|| anyhow!("No timestamp segments available"))?;
     let mut out = String::from("WEBVTT\n\n");
     for segment in segments {
+        // WebVTT voice spans render as speaker labels in players.
+        let text = match speaker_name(item, &segment.speaker_id) {
+            Some(name) => format!(
+                "<v {}>{}</v>",
+                escape_vtt_voice(name),
+                escape_vtt_text(segment.text.trim())
+            ),
+            None => escape_vtt_text(segment.text.trim()),
+        };
         out.push_str(&format!(
             "{} --> {}\n{}\n\n",
             format_vtt_timestamp(segment.start_ms),
             format_vtt_timestamp(segment.end_ms),
-            segment.text.trim()
+            text
         ));
     }
     Ok(out.trim().to_string())

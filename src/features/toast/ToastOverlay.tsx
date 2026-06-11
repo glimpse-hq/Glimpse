@@ -3,10 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import {
-  Check,
-  Copy,
-} from "@phosphor-icons/react";
+import { Check, Copy } from "@phosphor-icons/react";
 import DotMatrix from "../../shared/ui/DotMatrix";
 import type { ToastType, ToastPayload } from "../../types";
 
@@ -23,47 +20,54 @@ const COLORS: Record<ToastType, { border: string; dot: string }> = {
   celebration: { border: "border-amber-500/30", dot: "bg-amber-400" },
 };
 
-const TwinklingGrid = React.memo(({ variant = "cloud" }: { variant?: "cloud" | "accent" }) => {
-  const color = variant === "accent" ? "var(--color-accent)" : "var(--color-cloud)";
-  const animationName = variant === "accent" ? "twinkle-accent" : "twinkle";
-  
-  const dots = React.useMemo(() => {
-    const cols = 50;
-    const rows = 12;
-    const gap = 6;
-    const size = 2;
+const TwinklingGrid = React.memo(
+  ({ variant = "cloud" }: { variant?: "cloud" | "accent" }) => {
+    const color =
+      variant === "accent" ? "var(--color-accent)" : "var(--color-cloud)";
+    const animationName = variant === "accent" ? "twinkle-accent" : "twinkle";
 
-    const items = [];
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (Math.random() > 0.4) continue;
+    const dots = React.useMemo(() => {
+      const cols = 50;
+      const rows = 12;
+      const gap = 6;
+      const size = 2;
 
-        const delay = Math.random() * 5;
-        const duration = 2 + Math.random() * 4;
+      const items = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (Math.random() > 0.4) continue;
 
-        items.push(
-          <div
-            key={`${r}-${c}`}
-            className="absolute rounded-full"
-            style={{
-              left: c * (gap + size),
-              top: r * (gap + size),
-              width: size,
-              height: size,
-              backgroundColor: color,
-              opacity: 0.15,
-              animation: `${animationName} ${duration}s ease-in-out infinite`,
-              animationDelay: `-${delay}s`,
-            }}
-          />
-        );
+          const delay = Math.random() * 5;
+          const duration = 2 + Math.random() * 4;
+
+          items.push(
+            <div
+              key={`${r}-${c}`}
+              className="absolute rounded-full"
+              style={{
+                left: c * (gap + size),
+                top: r * (gap + size),
+                width: size,
+                height: size,
+                backgroundColor: color,
+                opacity: 0.15,
+                animation: `${animationName} ${duration}s ease-in-out infinite`,
+                animationDelay: `-${delay}s`,
+              }}
+            />,
+          );
+        }
       }
-    }
-    return items;
-  }, [color, animationName]);
+      return items;
+    }, [color, animationName]);
 
-  return <div className="absolute inset-0 overflow-hidden opacity-60 pointer-events-none">{dots}</div>;
-});
+    return (
+      <div className="absolute inset-0 overflow-hidden opacity-60 pointer-events-none">
+        {dots}
+      </div>
+    );
+  },
+);
 
 const ToastOverlay: React.FC = () => {
   const { t } = useLingui();
@@ -71,7 +75,9 @@ const ToastOverlay: React.FC = () => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dismissAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dismissAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastRef = useRef<ToastState | null>(null);
 
@@ -102,7 +108,9 @@ const ToastOverlay: React.FC = () => {
       setToast(null);
       try {
         await invoke("toast_dismissed");
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       await getCurrentWindow().hide();
     }, 120);
   };
@@ -139,16 +147,21 @@ const ToastOverlay: React.FC = () => {
     } catch (err) {
       console.error("Retry failed:", err);
       setIsRetrying(false);
-      setToast(prev => prev ? {
-        ...prev,
-        message: typeof err === "string"
-          ? err
-          : t({
-              id: "toast.retry_failed",
-              message: "Retry failed. Please try again.",
-            }),
-        type: "error",
-      } : null);
+      setToast((prev) =>
+        prev
+          ? {
+              ...prev,
+              message:
+                typeof err === "string"
+                  ? err
+                  : t({
+                      id: "toast.retry_failed",
+                      message: "Retry failed. Please try again.",
+                    }),
+              type: "error",
+            }
+          : null,
+      );
     }
   };
 
@@ -157,7 +170,10 @@ const ToastOverlay: React.FC = () => {
     e.stopPropagation();
     if (!toast) return;
 
-    const copyText = [toast.type !== "update" ? null : toast.title, toast.message]
+    const copyText = [
+      toast.type !== "update" ? null : toast.title,
+      toast.message,
+    ]
       .filter(Boolean)
       .join("\n");
 
@@ -251,7 +267,9 @@ const ToastOverlay: React.FC = () => {
         setCopied(false);
         try {
           await invoke("toast_dismissed");
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         await getCurrentWindow().hide();
       }
     });
@@ -280,7 +298,7 @@ const ToastOverlay: React.FC = () => {
       className="fixed inset-0 flex flex-col justify-end items-center pb-6"
       onClick={handleBackgroundClick}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           handleBackgroundClick();
         }
@@ -317,24 +335,28 @@ const ToastOverlay: React.FC = () => {
               type="button"
               onClick={handleCopy}
               className="w-5 h-5 flex items-center justify-center rounded-md ui-color-gray-500 ui-hover-on-solid transition-colors"
-              title={copied
-                ? t({
-                    id: "toast.copied",
-                    message: "Copied",
-                  })
-                : t({
-                    id: "toast.copy_message",
-                    message: "Copy message",
-                  })}
-              aria-label={copied
-                ? t({
-                    id: "toast.copied",
-                    message: "Copied",
-                  })
-                : t({
-                    id: "toast.copy_message",
-                    message: "Copy message",
-                  })}
+              title={
+                copied
+                  ? t({
+                      id: "toast.copied",
+                      message: "Copied",
+                    })
+                  : t({
+                      id: "toast.copy_message",
+                      message: "Copy message",
+                    })
+              }
+              aria-label={
+                copied
+                  ? t({
+                      id: "toast.copied",
+                      message: "Copied",
+                    })
+                  : t({
+                      id: "toast.copy_message",
+                      message: "Copy message",
+                    })
+              }
             >
               {copied ? <Check size={12} /> : <Copy size={12} />}
             </button>
@@ -355,13 +377,19 @@ const ToastOverlay: React.FC = () => {
               />
             </div>
           ) : (
-            <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${colors.dot} ${toast.type === "error" ? "animate-pulse" : ""}`} />
+            <div
+              className={`w-2 h-2 rounded-full mt-1 shrink-0 ${colors.dot} ${toast.type === "error" ? "animate-pulse" : ""}`}
+            />
           )}
           <div className="flex-1 min-w-0">
             {toast.type === "update" && (
-              <p className="ui-text-label ui-color-accent font-medium mb-0.5">GLIMPSE</p>
+              <p className="ui-text-label ui-color-accent font-medium mb-0.5">
+                GLIMPSE
+              </p>
             )}
-            <p className="ui-text-body ui-color-gray-200 leading-relaxed break-words">{toast.message}</p>
+            <p className="ui-text-body ui-color-gray-200 leading-relaxed break-words">
+              {toast.message}
+            </p>
             {showRetry && (
               <button
                 type="button"

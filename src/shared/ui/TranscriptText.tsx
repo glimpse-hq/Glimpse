@@ -1,3 +1,4 @@
+import { memo } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
@@ -54,7 +55,7 @@ const components: Components = {
   li: ({ children }) => <li className="ui-text-body pl-0.5">{children}</li>,
 };
 
-export default function TranscriptText({ text }: TranscriptTextProps) {
+function TranscriptText({ text }: TranscriptTextProps) {
   return (
     <ReactMarkdown
       allowedElements={allowedElements}
@@ -66,3 +67,5 @@ export default function TranscriptText({ text }: TranscriptTextProps) {
     </ReactMarkdown>
   );
 }
+
+export default memo(TranscriptText);

@@ -215,7 +215,11 @@ const SpeechModelPanel = ({
         <Dropdown
           value={modelValue}
           onChange={(val) => setModel(val)}
-          onOpen={hasSelectedProvider && canDiscoverModels ? fetchAvailableModels : undefined}
+          onOpen={
+            hasSelectedProvider && canDiscoverModels
+              ? fetchAvailableModels
+              : undefined
+          }
           options={[
             {
               value: "auto",

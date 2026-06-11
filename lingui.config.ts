@@ -13,7 +13,10 @@ const SUPPORTED_APP_LOCALES = JSON.parse(
   readFileSync(SUPPORTED_APP_LOCALES_PATH, "utf8"),
 );
 
-if (!Array.isArray(SUPPORTED_APP_LOCALES) || SUPPORTED_APP_LOCALES.length === 0) {
+if (
+  !Array.isArray(SUPPORTED_APP_LOCALES) ||
+  SUPPORTED_APP_LOCALES.length === 0
+) {
   throw new Error("supported-app-locales.json must be a non-empty array");
 }
 
@@ -26,13 +29,17 @@ if (
       locale !== locale.toLowerCase(),
   )
 ) {
-  throw new Error("supported-app-locales.json must use lowercase, trimmed locale codes");
+  throw new Error(
+    "supported-app-locales.json must use lowercase, trimmed locale codes",
+  );
 }
 
 const seenLocales = new Set<string>();
 for (const locale of SUPPORTED_APP_LOCALES) {
   if (seenLocales.has(locale)) {
-    throw new Error(`supported-app-locales.json contains duplicate locale: ${locale}`);
+    throw new Error(
+      `supported-app-locales.json contains duplicate locale: ${locale}`,
+    );
   }
   seenLocales.add(locale);
 }

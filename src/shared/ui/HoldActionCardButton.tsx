@@ -115,7 +115,9 @@ const HoldActionCardButton = ({
     frameRef.current = requestAnimationFrame(stepHold);
   };
 
-  const handleKeyboardDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+  const handleKeyboardDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+  ) => {
     if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
     if (holdingRef.current) return;
 
@@ -213,9 +215,7 @@ const HoldActionCardButton = ({
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeDasharray={HOLD_RING_CIRCUMFERENCE}
-                strokeDashoffset={
-                  HOLD_RING_CIRCUMFERENCE * (1 - progress)
-                }
+                strokeDashoffset={HOLD_RING_CIRCUMFERENCE * (1 - progress)}
                 transform="rotate(-90 14 14)"
               />
             </svg>

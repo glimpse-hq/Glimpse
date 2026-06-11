@@ -96,9 +96,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": [
-          "glimpse"
-        ]
+        "schemes": ["glimpse"]
       }
     },
     "updater": {

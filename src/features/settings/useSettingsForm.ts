@@ -1,11 +1,5 @@
 import { msg } from "@lingui/core/macro";
-import {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit, type UnlistenFn } from "@tauri-apps/api/event";
@@ -15,7 +9,10 @@ import {
   checkMacInputMonitoringPermission,
 } from "../../shared/lib/macosPermissions";
 import { getPlatformCapabilities } from "../../platform/service";
-import { getProviderPreset, resolvedLlmEndpoint } from "../../shared/lib/llmProviders";
+import {
+  getProviderPreset,
+  resolvedLlmEndpoint,
+} from "../../shared/lib/llmProviders";
 import {
   getSpeechProviderPreset,
   resolvedSpeechEndpoint,
@@ -76,7 +73,9 @@ type ShortcutOverrides = Partial<
   Record<"smartShortcut" | "holdShortcut" | "toggleShortcut", string>
 >;
 type SettingsErrorSourceTab = Exclude<ActiveTab, "account">;
-type InvalidShortcutDrafts = Partial<Record<ShortcutMode, Record<number, string>>>;
+type InvalidShortcutDrafts = Partial<
+  Record<ShortcutMode, Record<number, string>>
+>;
 type InvalidShortcutDraft = { target: ShortcutTarget; message: string } | null;
 
 type SaveSettingsOverrides = ShortcutOverrides & {
@@ -87,7 +86,9 @@ type SaveSettingsOverrides = ShortcutOverrides & {
   shortcutDraftTarget?: ShortcutTarget;
 };
 
-async function waitForLocalApiStopped(timeoutMs = 10000): Promise<LocalApiStatus> {
+async function waitForLocalApiStopped(
+  timeoutMs = 10000,
+): Promise<LocalApiStatus> {
   const started = Date.now();
   let latest = await modelsApi.getLocalApiStatus();
   while (latest.running && Date.now() - started < timeoutMs) {
@@ -98,9 +99,19 @@ async function waitForLocalApiStopped(timeoutMs = 10000): Promise<LocalApiStatus
 }
 
 const defaultShortcutBindings = (): ShortcutBindings => ({
-  smart: [{ shortcut: "Control+Space", temporary: false, cleanup_enabled: false }],
-  hold: [{ shortcut: "Control+Shift+Space", temporary: false, cleanup_enabled: false }],
-  toggle: [{ shortcut: "Control+Alt+Space", temporary: false, cleanup_enabled: false }],
+  smart: [
+    { shortcut: "Control+Space", temporary: false, cleanup_enabled: false },
+  ],
+  hold: [
+    {
+      shortcut: "Control+Shift+Space",
+      temporary: false,
+      cleanup_enabled: false,
+    },
+  ],
+  toggle: [
+    { shortcut: "Control+Alt+Space", temporary: false, cleanup_enabled: false },
+  ],
 });
 
 const bindingsFromSettings = (settings: StoredSettings): ShortcutBindings => ({
@@ -136,10 +147,21 @@ const bindingsFromSettings = (settings: StoredSettings): ShortcutBindings => ({
         ],
 });
 
-const withoutShortcutCleanup = (bindings: ShortcutBindings): ShortcutBindings => ({
-  smart: bindings.smart.map((binding) => ({ ...binding, cleanup_enabled: false })),
-  hold: bindings.hold.map((binding) => ({ ...binding, cleanup_enabled: false })),
-  toggle: bindings.toggle.map((binding) => ({ ...binding, cleanup_enabled: false })),
+const withoutShortcutCleanup = (
+  bindings: ShortcutBindings,
+): ShortcutBindings => ({
+  smart: bindings.smart.map((binding) => ({
+    ...binding,
+    cleanup_enabled: false,
+  })),
+  hold: bindings.hold.map((binding) => ({
+    ...binding,
+    cleanup_enabled: false,
+  })),
+  toggle: bindings.toggle.map((binding) => ({
+    ...binding,
+    cleanup_enabled: false,
+  })),
 });
 
 const primaryShortcut = (
@@ -198,8 +220,12 @@ export function useSettingsForm({
   const [shortcutBindings, setShortcutBindings] = useState<ShortcutBindings>(
     defaultShortcutBindings,
   );
-  const shortcutBindingsRef = useRef<ShortcutBindings>(defaultShortcutBindings());
-  const persistedShortcutBindingsRef = useRef<ShortcutBindings>(defaultShortcutBindings());
+  const shortcutBindingsRef = useRef<ShortcutBindings>(
+    defaultShortcutBindings(),
+  );
+  const persistedShortcutBindingsRef = useRef<ShortcutBindings>(
+    defaultShortcutBindings(),
+  );
   const [invalidShortcutDraft, setInvalidShortcutDraftState] =
     useState<InvalidShortcutDraft>(null);
   const invalidShortcutDraftRef = useRef<InvalidShortcutDraft>(null);
@@ -209,8 +235,9 @@ export function useSettingsForm({
   const [remoteSpeechEnabled, setRemoteSpeechEnabled] = useState(false);
   const [remoteSpeechProvider, setRemoteSpeechProviderRaw] =
     useState<RemoteSpeechProvider>("openai");
-  const [remoteSpeechEndpoint, setRemoteSpeechEndpointRaw] =
-    useState("https://api.openai.com/v1");
+  const [remoteSpeechEndpoint, setRemoteSpeechEndpointRaw] = useState(
+    "https://api.openai.com/v1",
+  );
   const [remoteSpeechApiKey, setRemoteSpeechApiKey] = useState("");
   const [remoteSpeechModel, setRemoteSpeechModel] = useState("auto");
   const [microphoneDevice, setMicrophoneDevice] = useState<string | null>(null);
@@ -232,7 +259,9 @@ export function useSettingsForm({
   const [llmApiKey, setLlmApiKeyRaw] = useState("");
   const [llmModel, setLlmModel] = useState("");
   const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [availableSpeechModels, setAvailableSpeechModels] = useState<string[]>([]);
+  const [availableSpeechModels, setAvailableSpeechModels] = useState<string[]>(
+    [],
+  );
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaAction, setMediaAction] = useState<MediaAction>("off");
@@ -250,7 +279,9 @@ export function useSettingsForm({
   const [localApiHost, setLocalApiHost] = useState("127.0.0.1");
   const [localApiStartOnLaunch, setLocalApiStartOnLaunch] = useState(false);
   const [localApiCors, setLocalApiCors] = useState(false);
-  const [localApiStatus, setLocalApiStatus] = useState<LocalApiStatus | null>(null);
+  const [localApiStatus, setLocalApiStatus] = useState<LocalApiStatus | null>(
+    null,
+  );
   const [localApiBusy, setLocalApiBusy] = useState(false);
   const [cliInstallStatus, setCliInstallStatus] =
     useState<CliInstallStatus | null>(null);
@@ -315,8 +346,9 @@ export function useSettingsForm({
   const showSettingsError = useCallback(
     (
       message: string,
-      sourceTab: SettingsErrorSourceTab =
-        activeTab === "account" ? "general" : activeTab,
+      sourceTab: SettingsErrorSourceTab = activeTab === "account"
+        ? "general"
+        : activeTab,
     ) => {
       setError(message);
       setErrorSourceTab(sourceTab);
@@ -365,18 +397,24 @@ export function useSettingsForm({
     clearInvalidShortcutDraft();
   }, [clearInvalidShortcutDraft, holdShortcut, smartShortcut, toggleShortcut]);
 
-  const setLlmEnabled = useCallback((value: boolean) => {
-    setLlmEnabledRaw(value);
-    if (!value) {
-      setEditModeEnabled(false);
-      clearSettingsErrorIfNoInvalidDrafts();
-    }
-  }, [clearSettingsErrorIfNoInvalidDrafts]);
+  const setLlmEnabled = useCallback(
+    (value: boolean) => {
+      setLlmEnabledRaw(value);
+      if (!value) {
+        setEditModeEnabled(false);
+        clearSettingsErrorIfNoInvalidDrafts();
+      }
+    },
+    [clearSettingsErrorIfNoInvalidDrafts],
+  );
 
   const setTranscriptionMode = useCallback(
     (mode: TranscriptionMode) => {
       setTranscriptionModeRaw(mode);
-      if (mode === "cloud" && (activeTab === "models" || activeTab === "providers")) {
+      if (
+        mode === "cloud" &&
+        (activeTab === "models" || activeTab === "providers")
+      ) {
         setActiveTab("general");
       }
     },
@@ -416,58 +454,66 @@ export function useSettingsForm({
     setAvailableSpeechModels([]);
     setRemoteSpeechModel("auto");
   }, []);
-  const setRemoteSpeechApiKeyRawAndClearModels = useCallback((value: string) => {
-    setRemoteSpeechApiKey(value);
-    setAvailableSpeechModels([]);
-  }, []);
+  const setRemoteSpeechApiKeyRawAndClearModels = useCallback(
+    (value: string) => {
+      setRemoteSpeechApiKey(value);
+      setAvailableSpeechModels([]);
+    },
+    [],
+  );
 
-  const hydrateFromSettings = useCallback((s: StoredSettings) => {
-    const hydratedBindings = bindingsFromSettings(s);
-    persistedShortcutBindingsRef.current = hydratedBindings;
-    clearInvalidShortcutDraft();
-    setSmartShortcut(s.smart_shortcut);
-    setSmartEnabled(s.smart_enabled);
-    setHoldShortcut(s.hold_shortcut);
-    setHoldEnabled(s.hold_enabled);
-    setToggleShortcut(s.toggle_shortcut);
-    setToggleEnabled(s.toggle_enabled);
-    shortcutBindingsRef.current = hydratedBindings;
-    setShortcutBindings(hydratedBindings);
-    setTranscriptionModeRaw(s.transcription_mode);
-    setLocalModel(s.local_model);
-    setRemoteSpeechEnabled(s.remote_speech_enabled ?? false);
-    setRemoteSpeechProviderRaw(s.remote_speech_provider ?? "openai");
-    setRemoteSpeechEndpointRaw(s.remote_speech_endpoint ?? "https://api.openai.com/v1");
-    setRemoteSpeechApiKey(s.remote_speech_api_key ?? "");
-    setRemoteSpeechModel(s.remote_speech_model ?? "auto");
-    setMicrophoneDevice(s.microphone_device);
-    setLanguage(s.language);
-    setAppLocale(s.app_locale ?? "system");
+  const hydrateFromSettings = useCallback(
+    (s: StoredSettings) => {
+      const hydratedBindings = bindingsFromSettings(s);
+      persistedShortcutBindingsRef.current = hydratedBindings;
+      clearInvalidShortcutDraft();
+      setSmartShortcut(s.smart_shortcut);
+      setSmartEnabled(s.smart_enabled);
+      setHoldShortcut(s.hold_shortcut);
+      setHoldEnabled(s.hold_enabled);
+      setToggleShortcut(s.toggle_shortcut);
+      setToggleEnabled(s.toggle_enabled);
+      shortcutBindingsRef.current = hydratedBindings;
+      setShortcutBindings(hydratedBindings);
+      setTranscriptionModeRaw(s.transcription_mode);
+      setLocalModel(s.local_model);
+      setRemoteSpeechEnabled(s.remote_speech_enabled ?? false);
+      setRemoteSpeechProviderRaw(s.remote_speech_provider ?? "openai");
+      setRemoteSpeechEndpointRaw(
+        s.remote_speech_endpoint ?? "https://api.openai.com/v1",
+      );
+      setRemoteSpeechApiKey(s.remote_speech_api_key ?? "");
+      setRemoteSpeechModel(s.remote_speech_model ?? "auto");
+      setMicrophoneDevice(s.microphone_device);
+      setLanguage(s.language);
+      setAppLocale(s.app_locale ?? "system");
 
-    setLlmEnabledRaw(s.llm_enabled ?? false);
-    setLlmProviderRaw(s.llm_provider ?? "none");
-    setLlmEndpointRaw(s.llm_endpoint ?? "");
-    setLlmApiKeyRaw(s.llm_api_key ?? "");
-    setLlmModel(s.llm_model ?? "");
-    setEditModeEnabled(s.edit_mode_enabled ?? false);
-    setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
-    setMediaAction(s.media_action ?? "off");
-    setAutoUpdateEnabled(s.auto_update_enabled ?? false);
-    setAutoLaunchEnabledState(s.auto_launch_enabled ?? false);
-    setStartInBackground(
-      (s.auto_launch_enabled ?? false) && (s.start_in_background ?? false),
-    );
-    setAutoDeleteTarget(s.auto_delete_target ?? "transcripts");
-    setAutoDeleteDuration(s.auto_delete_duration ?? "never");
-    setAnalyticsEnabled(s.analytics_enabled ?? true);
-    setLocalApiKey(s.local_api_key ?? "");
-    setLocalApiPort(s.local_api_port ?? 11435);
-    setLocalApiModel(s.local_api_model ?? "auto");
-    setLocalApiHost(s.local_api_host ?? "127.0.0.1");
-    setLocalApiStartOnLaunch(s.local_api_start_on_launch ?? false);
-    setLocalApiCors(s.local_api_cors ?? false);
-    setThemeModeRaw(s.theme_mode ?? "system");
-  }, [clearInvalidShortcutDraft]);
+      setLlmEnabledRaw(s.llm_enabled ?? false);
+      setLlmProviderRaw(s.llm_provider ?? "none");
+      setLlmEndpointRaw(s.llm_endpoint ?? "");
+      setLlmApiKeyRaw(s.llm_api_key ?? "");
+      setLlmModel(s.llm_model ?? "");
+      setEditModeEnabled(s.edit_mode_enabled ?? false);
+      setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
+      setMediaAction(s.media_action ?? "off");
+      setAutoUpdateEnabled(s.auto_update_enabled ?? false);
+      setAutoLaunchEnabledState(s.auto_launch_enabled ?? false);
+      setStartInBackground(
+        (s.auto_launch_enabled ?? false) && (s.start_in_background ?? false),
+      );
+      setAutoDeleteTarget(s.auto_delete_target ?? "transcripts");
+      setAutoDeleteDuration(s.auto_delete_duration ?? "never");
+      setAnalyticsEnabled(s.analytics_enabled ?? true);
+      setLocalApiKey(s.local_api_key ?? "");
+      setLocalApiPort(s.local_api_port ?? 11435);
+      setLocalApiModel(s.local_api_model ?? "auto");
+      setLocalApiHost(s.local_api_host ?? "127.0.0.1");
+      setLocalApiStartOnLaunch(s.local_api_start_on_launch ?? false);
+      setLocalApiCors(s.local_api_cors ?? false);
+      setThemeModeRaw(s.theme_mode ?? "system");
+    },
+    [clearInvalidShortcutDraft],
+  );
 
   const setAutoLaunchEnabled = useCallback((enabled: boolean) => {
     setAutoLaunchEnabledState(enabled);
@@ -506,15 +552,15 @@ export function useSettingsForm({
   );
   const llmConfigReady = Boolean(
     llmProviderPreset &&
-      resolvedLlmEndpoint(llmProvider, llmEndpoint) &&
-      (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
-      llmModel.trim(),
+    resolvedLlmEndpoint(llmProvider, llmEndpoint) &&
+    (!llmProviderPreset.apiKeyRequired || llmApiKey.trim()) &&
+    llmModel.trim(),
   );
   const remoteSpeechConfigReady = Boolean(
     remoteSpeechProviderPreset &&
-      resolvedSpeechEndpoint(remoteSpeechProvider, remoteSpeechEndpoint) &&
-      resolvedSpeechModel(remoteSpeechProvider, remoteSpeechModel) &&
-      (!remoteSpeechProviderPreset.apiKeyRequired || remoteSpeechApiKey.trim()),
+    resolvedSpeechEndpoint(remoteSpeechProvider, remoteSpeechEndpoint) &&
+    resolvedSpeechModel(remoteSpeechProvider, remoteSpeechModel) &&
+    (!remoteSpeechProviderPreset.apiKeyRequired || remoteSpeechApiKey.trim()),
   );
   const remoteSpeechActive = remoteSpeechEnabled && remoteSpeechConfigReady;
   const allTranscriptionLanguages = useMemo(
@@ -566,7 +612,8 @@ export function useSettingsForm({
 
   const buildSettingsArgs = useCallback(
     (overrides: SaveSettingsOverrides = {}) => {
-      const rawShortcutBindings = overrides.shortcutBindings ?? shortcutBindings;
+      const rawShortcutBindings =
+        overrides.shortcutBindings ?? shortcutBindings;
       const shouldTryDraftShortcut =
         overrides.shortcutBindings !== undefined &&
         overrides.shortcutDraftTarget !== undefined;
@@ -585,7 +632,10 @@ export function useSettingsForm({
         remoteSpeechProvider,
         remoteSpeechEndpoint,
       );
-      const persistedLlmEndpoint = resolvedLlmEndpoint(llmProvider, llmEndpoint);
+      const persistedLlmEndpoint = resolvedLlmEndpoint(
+        llmProvider,
+        llmEndpoint,
+      );
       const modelToValidate = overrides.localModel
         ? modelCatalog.find((model) => model.key === overrides.localModel)
         : activeLocalModel;
@@ -630,7 +680,9 @@ export function useSettingsForm({
         llmApiKey,
         llmModel,
         editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
-        autoDictionaryEnabled: autoDictionarySupported ? autoDictionaryEnabled : false,
+        autoDictionaryEnabled: autoDictionarySupported
+          ? autoDictionaryEnabled
+          : false,
         mediaAction,
         autoUpdateEnabled,
         autoLaunchEnabled,
@@ -642,7 +694,9 @@ export function useSettingsForm({
         localApiPort,
         localApiModel: overrides.localApiModel ?? localApiModel,
         localApiHost,
-        localApiStartOnLaunch: licenseGateActive ? localApiStartOnLaunch : false,
+        localApiStartOnLaunch: licenseGateActive
+          ? localApiStartOnLaunch
+          : false,
         localApiCors,
       };
     },
@@ -757,7 +811,11 @@ export function useSettingsForm({
     if (target) {
       const current = shortcutBindingsRef.current;
       const binding = current[target.mode][target.index];
-      if (binding && binding.shortcut.trim() === "" && current[target.mode].length > 1) {
+      if (
+        binding &&
+        binding.shortcut.trim() === "" &&
+        current[target.mode].length > 1
+      ) {
         const next = {
           ...current,
           [target.mode]: current[target.mode].filter(
@@ -774,7 +832,9 @@ export function useSettingsForm({
   const finalizeCapture = useCallback(async () => {
     flushPendingSettingsSave();
     setCaptureActive(null);
-    await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+    await invoke("set_shortcut_capture_active", { active: false }).catch(
+      () => {},
+    );
   }, [flushPendingSettingsSave]);
 
   const { resetCaptureState } = useShortcutCapture({
@@ -790,7 +850,9 @@ export function useSettingsForm({
           const next = {
             ...current,
             [target.mode]: current[target.mode].map((binding, index) =>
-              index === target.index ? { ...binding, shortcut: combo } : binding,
+              index === target.index
+                ? { ...binding, shortcut: combo }
+                : binding,
             ),
           };
           shortcutBindingsRef.current = next;
@@ -871,7 +933,9 @@ export function useSettingsForm({
         : Promise.resolve<boolean | null>(null),
     ]);
 
-    setMicPermission(nativeMic.status === "fulfilled" ? nativeMic.value : false);
+    setMicPermission(
+      nativeMic.status === "fulfilled" ? nativeMic.value : false,
+    );
     setAccessibilityPermission(acc.status === "fulfilled" ? acc.value : false);
     setInputMonitoringPermission(
       inputMonitoring.status === "fulfilled" ? inputMonitoring.value : false,
@@ -961,7 +1025,13 @@ export function useSettingsForm({
     if (!settingsQuery.data || isSavingRef.current) return;
 
     hydrateFromSettings(settingsQuery.data);
-  }, [hydrateFromSettings, isOpen, settingsQuery.data, settingsQuery.error, showSettingsError]);
+  }, [
+    hydrateFromSettings,
+    isOpen,
+    settingsQuery.data,
+    settingsQuery.error,
+    showSettingsError,
+  ]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -1228,7 +1298,9 @@ export function useSettingsForm({
           captureActiveRef.current = null;
           setCaptureActive(null);
           resetCaptureState();
-          void invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+          void invoke("set_shortcut_capture_active", { active: false }).catch(
+            () => {},
+          );
         } else if (activeTarget.index > index) {
           const nextTarget = { ...activeTarget, index: activeTarget.index - 1 };
           captureActiveRef.current = nextTarget;
@@ -1238,15 +1310,13 @@ export function useSettingsForm({
       updateShortcutBindings((current) => {
         return {
           ...current,
-          [mode]: current[mode].filter((_, bindingIndex) => bindingIndex !== index),
+          [mode]: current[mode].filter(
+            (_, bindingIndex) => bindingIndex !== index,
+          ),
         };
       });
     },
-    [
-      discardInvalidShortcutDraft,
-      resetCaptureState,
-      updateShortcutBindings,
-    ],
+    [discardInvalidShortcutDraft, resetCaptureState, updateShortcutBindings],
   );
 
   const handleLocalModelChange = useCallback(
@@ -1316,7 +1386,7 @@ export function useSettingsForm({
   ]);
 
   const handleDownload = useCallback(
-    async (modelKey: string) => {
+    async (modelKey: string, ane?: boolean) => {
       setDownloadState((prev) => ({
         ...prev,
         [modelKey]: {
@@ -1328,6 +1398,7 @@ export function useSettingsForm({
       try {
         const status = await invoke<ModelStatus>("download_model", {
           model: modelKey,
+          ane,
         });
         queryClient.setQueryData(modelKeys.status(modelKey), status);
         void queryClient.invalidateQueries({ queryKey: modelKeys.speech() });

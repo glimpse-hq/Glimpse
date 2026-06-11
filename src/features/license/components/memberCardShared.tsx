@@ -64,7 +64,8 @@ export const MEMBER_CARD_DARK_PALETTE: MemberCardPalette = {
   securityDotOpacity: 0.1,
   vignette:
     "inset 0 0 48px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.06), inset 1px 0 0 rgba(255, 255, 255, 0.03)",
-  wordmarkShadow: "0 1px 0 rgba(255, 255, 255, 0.08), 0 -1px 0 rgba(0, 0, 0, 0.28)",
+  wordmarkShadow:
+    "0 1px 0 rgba(255, 255, 255, 0.08), 0 -1px 0 rgba(0, 0, 0, 0.28)",
 };
 
 function readAppTheme(): "light" | "dark" {
@@ -83,7 +84,11 @@ export function useMemberCardPalette() {
   return useContext(MemberCardPaletteContext);
 }
 
-export function MemberCardPaletteProvider({ children }: { children: ReactNode }) {
+export function MemberCardPaletteProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [palette, setPalette] = useState(() =>
     paletteForAppTheme(readAppTheme()),
   );
@@ -102,13 +107,15 @@ export function MemberCardPaletteProvider({ children }: { children: ReactNode })
     const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
     mediaQuery.addEventListener("change", sync);
 
-    void listen("ui:theme_changed", sync).then((unlisten) => {
-      if (disposed) {
-        unlisten();
-      } else {
-        unlistenTheme = unlisten;
-      }
-    }).catch(() => {});
+    void listen("ui:theme_changed", sync)
+      .then((unlisten) => {
+        if (disposed) {
+          unlisten();
+        } else {
+          unlistenTheme = unlisten;
+        }
+      })
+      .catch(() => {});
 
     return () => {
       disposed = true;
@@ -488,11 +495,7 @@ function SweepBlinkDotLayers({
             : inactiveOpacity
           : 0;
 
-        if (
-          outgoing &&
-          incoming &&
-          outgoing.active === incoming.active
-        ) {
+        if (outgoing && incoming && outgoing.active === incoming.active) {
           return (
             <circle
               key={key}
@@ -627,7 +630,9 @@ function StripeDotField({
   );
 }
 
-export function formatCardDate(value: string | null | undefined): string | null {
+export function formatCardDate(
+  value: string | null | undefined,
+): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
@@ -712,7 +717,10 @@ export const MemberCardPaperOverlays = ({
 
       <div
         className="absolute inset-0"
-        style={{ boxShadow: palette.vignette, borderRadius: `${CARD_RADIUS}px` }}
+        style={{
+          boxShadow: palette.vignette,
+          borderRadius: `${CARD_RADIUS}px`,
+        }}
       />
     </div>
   );
@@ -820,11 +828,7 @@ export const CardHeadlineBlock = ({
   </div>
 );
 
-export const CardDetailsGrid = ({
-  children,
-}: {
-  children: ReactNode;
-}) => (
+export const CardDetailsGrid = ({ children }: { children: ReactNode }) => (
   <dl
     className="mt-2 shrink-0 grid grid-cols-2 gap-x-6 gap-y-2"
     style={{ height: `${CARD_DETAILS_HEIGHT}px` }}
@@ -882,7 +886,10 @@ export const TierStamp = ({
   };
 
   return (
-    <span className="relative inline-flex shrink-0" style={{ transform: "rotate(3deg)" }}>
+    <span
+      className="relative inline-flex shrink-0"
+      style={{ transform: "rotate(3deg)" }}
+    >
       <span
         aria-hidden="true"
         style={{
@@ -974,51 +981,51 @@ export const MemberCardStripe = ({
     <div
       aria-hidden="true"
       className="relative shrink-0"
-        style={{
-          marginLeft: `-${CARD_PADDING}px`,
-          marginRight: `-${CARD_PADDING}px`,
-          marginTop: `${CARD_STRIPE_GAP}px`,
-          width: `${CARD_WIDTH}px`,
-          height: `${STRIPE_HEIGHT}px`,
-          backgroundColor: palette.stripeBg,
-          borderBottomLeftRadius: `${STRIPE_CORNER_RADIUS}px`,
-          borderBottomRightRadius: `${STRIPE_CORNER_RADIUS}px`,
-          overflow: "hidden",
-        }}
+      style={{
+        marginLeft: `-${CARD_PADDING}px`,
+        marginRight: `-${CARD_PADDING}px`,
+        marginTop: `${CARD_STRIPE_GAP}px`,
+        width: `${CARD_WIDTH}px`,
+        height: `${STRIPE_HEIGHT}px`,
+        backgroundColor: palette.stripeBg,
+        borderBottomLeftRadius: `${STRIPE_CORNER_RADIUS}px`,
+        borderBottomRightRadius: `${STRIPE_CORNER_RADIUS}px`,
+        overflow: "hidden",
+      }}
+    >
+      <svg
+        width={CARD_WIDTH}
+        height={3}
+        viewBox={`0 0 ${CARD_WIDTH} 3`}
+        xmlns="http://www.w3.org/2000/svg"
+        className="pointer-events-none absolute inset-x-0 z-[2]"
+        style={{ top: `${STRIPE_DIVIDER_OFFSET}px` }}
+        preserveAspectRatio="none"
+        aria-hidden="true"
       >
-        <svg
-          width={CARD_WIDTH}
-          height={3}
-          viewBox={`0 0 ${CARD_WIDTH} 3`}
-          xmlns="http://www.w3.org/2000/svg"
-          className="pointer-events-none absolute inset-x-0 z-[2]"
-          style={{ top: `${STRIPE_DIVIDER_OFFSET}px` }}
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <line
-            x1={0}
-            y1={1.5}
-            x2={CARD_WIDTH}
-            y2={1.5}
-            stroke={palette.border}
-            strokeWidth={2}
-            strokeDasharray="6 4"
-            strokeLinecap="butt"
-          />
-        </svg>
-        <StripeDotField
-          currentDots={currentDots}
-          outgoingDots={outgoingDots}
-          isTransitioning={isTransitioning}
-          sweep={sweep}
-          width={CARD_WIDTH}
-          dotRadius={STRIPE_DOT_SIZE / 2}
-          color={palette.dotColor}
-          activeOpacity={1}
-          inactiveOpacity={0.2}
+        <line
+          x1={0}
+          y1={1.5}
+          x2={CARD_WIDTH}
+          y2={1.5}
+          stroke={palette.border}
+          strokeWidth={2}
+          strokeDasharray="6 4"
+          strokeLinecap="butt"
         />
-      </div>
+      </svg>
+      <StripeDotField
+        currentDots={currentDots}
+        outgoingDots={outgoingDots}
+        isTransitioning={isTransitioning}
+        sweep={sweep}
+        width={CARD_WIDTH}
+        dotRadius={STRIPE_DOT_SIZE / 2}
+        color={palette.dotColor}
+        activeOpacity={1}
+        inactiveOpacity={0.2}
+      />
+    </div>
   );
 };
 

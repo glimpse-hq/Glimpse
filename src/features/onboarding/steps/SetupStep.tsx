@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
@@ -10,15 +11,12 @@ import ModelPickerModal from "../../../shared/ui/ModelPickerModal";
 import type { StepMotionProps } from "./shared";
 import ModelStatCard from "../../settings/components/ModelStatCard";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../../types";
-import type {
-  OnboardingLanguagePreference,
-  OnboardingModelPriority,
-} from "../machine";
+import type { OnboardingModelPriority } from "../machine";
 
 interface SetupStepProps {
   stepMotionProps: StepMotionProps;
-  languagePreference: OnboardingLanguagePreference | null;
   modelPriority: OnboardingModelPriority | null;
+  customModel: boolean;
   smartShortcut: string;
   captureActive: boolean;
   capturePreview: string;
@@ -33,14 +31,13 @@ interface SetupStepProps {
   displayState: DownloadEvent;
   selectedModelReady: boolean;
   showLocalConfirm: boolean;
-  onSelectLanguage: (language: OnboardingLanguagePreference) => void;
   onSelectPriority: (priority: OnboardingModelPriority) => void;
   onStartCapture: () => void;
   onEndCapture: (shortcut?: string) => void;
   onSetPreview: (preview: string) => void;
   onSetShortcut: (shortcut: string) => void;
   onShowConfirm: (show: boolean) => void;
-  onDownload: (key: string) => void;
+  onDownload: (key: string, ane?: boolean) => void;
   onDelete: (key: string) => void;
   onCancelDownload: (key: string) => void;
   onNext: () => void;
@@ -48,8 +45,8 @@ interface SetupStepProps {
 
 export function SetupStep({
   stepMotionProps,
-  languagePreference,
   modelPriority,
+  customModel,
   smartShortcut,
   captureActive,
   capturePreview,
@@ -64,7 +61,6 @@ export function SetupStep({
   displayState,
   selectedModelReady,
   showLocalConfirm,
-  onSelectLanguage,
   onSelectPriority,
   onStartCapture,
   onEndCapture,
@@ -77,27 +73,12 @@ export function SetupStep({
   onNext,
 }: SetupStepProps) {
   const { t } = useLingui();
-  const [step, setStep] = useState<"language" | "priority" | "review">(
-    languagePreference ? (modelPriority ? "review" : "priority") : "language",
+  const [step, setStep] = useState<"priority" | "review">(
+    modelPriority ? "review" : "priority",
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [confirmDismissed, setConfirmDismissed] = useState(false);
 
-  const languageOptions: Array<{
-    value: OnboardingLanguagePreference;
-    label: string;
-  }> = [
-    {
-      value: "english",
-      label: t({ id: "onboarding.setup.language.english", message: "English" }),
-    },
-    {
-      value: "multilingual",
-      label: t({
-        id: "onboarding.setup.language.multilingual",
-        message: "Multiple languages",
-      }),
-    },
-  ];
   const priorityOptions: Array<{
     value: OnboardingModelPriority;
     label: string;
@@ -105,23 +86,43 @@ export function SetupStep({
   }> = [
     {
       value: "quality",
-      label: t({ id: "onboarding.setup.priority.quality", message: "Best quality" }),
-      helper: t({ id: "onboarding.setup.priority.quality.helper", message: "Most accurate" }),
+      label: t({
+        id: "onboarding.setup.priority.quality",
+        message: "Best quality",
+      }),
+      helper: t({
+        id: "onboarding.setup.priority.quality.helper",
+        message: "Most accurate",
+      }),
     },
     {
       value: "balanced",
-      label: t({ id: "onboarding.setup.priority.balanced", message: "Balanced" }),
-      helper: t({ id: "onboarding.setup.priority.balanced.helper", message: "Accuracy & size" }),
+      label: t({
+        id: "onboarding.setup.priority.balanced",
+        message: "Balanced",
+      }),
+      helper: t({
+        id: "onboarding.setup.priority.balanced.helper",
+        message: "Accuracy & size",
+      }),
     },
     {
       value: "compact",
-      label: t({ id: "onboarding.setup.priority.compact", message: "Smallest" }),
-      helper: t({ id: "onboarding.setup.priority.compact.helper", message: "Less storage" }),
+      label: t({
+        id: "onboarding.setup.priority.compact",
+        message: "Smallest",
+      }),
+      helper: t({
+        id: "onboarding.setup.priority.compact.helper",
+        message: "Less storage",
+      }),
     },
   ];
 
   const finalizeCapture = useCallback(async () => {
-    await invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
+    await invoke("set_shortcut_capture_active", { active: false }).catch(
+      () => {},
+    );
     onEndCapture();
   }, [onEndCapture]);
 
@@ -142,13 +143,13 @@ export function SetupStep({
     });
   };
 
-  const hasLanguage = Boolean(languagePreference);
   const hasPriority = Boolean(modelPriority);
-  const canContinue = hasLanguage && hasPriority && !captureActive && !isLoading;
+  const canContinue = hasPriority && !captureActive && !isLoading;
   const modelStatus: ModelStatus | undefined = recommendedModel
     ? {
         key: recommendedModel.key,
         installed: displayState.status === "complete",
+        ane_installed: false,
         bytes_on_disk: 0,
         missing_files: [],
         directory: "",
@@ -156,6 +157,17 @@ export function SetupStep({
     : undefined;
   const progress =
     displayState.status === "downloading" ? displayState : undefined;
+  // The Neural Engine encoder is bundled into onboarding downloads, so show its size too.
+  const alreadyInstalled = Boolean(
+    recommendedModel && modelStatusByKey[recommendedModel.key]?.installed,
+  );
+  const displayModel =
+    recommendedModel?.ane_size_mb != null && !alreadyInstalled
+      ? {
+          ...recommendedModel,
+          size_mb: recommendedModel.size_mb + recommendedModel.ane_size_mb,
+        }
+      : recommendedModel;
 
   const handleContinue = () => {
     if (!canContinue) return;
@@ -182,31 +194,6 @@ export function SetupStep({
 
       <div className="relative min-h-[17rem] w-full">
         <AnimatePresence mode="wait" initial={false}>
-          {step === "language" && (
-            <StepPanel
-              key="language"
-              question={t({
-                id: "onboarding.setup.language.question",
-                message: "Which language do you dictate in?",
-              })}
-            >
-              <div className="flex flex-wrap items-center justify-center gap-2.5">
-                {languageOptions.map((option) => (
-                  <ChoicePill
-                    key={option.value}
-                    selected={languagePreference === option.value}
-                    onClick={() => {
-                      onSelectLanguage(option.value);
-                      setStep(modelPriority ? "review" : "priority");
-                    }}
-                  >
-                    {option.label}
-                  </ChoicePill>
-                ))}
-              </div>
-            </StepPanel>
-          )}
-
           {step === "priority" && (
             <StepPanel
               key="priority"
@@ -214,7 +201,6 @@ export function SetupStep({
                 id: "onboarding.setup.priority.question",
                 message: "What should your model prioritize?",
               })}
-              onBack={() => setStep("language")}
             >
               <div className="flex flex-wrap items-center justify-center gap-2.5">
                 {priorityOptions.map((option) => (
@@ -238,24 +224,19 @@ export function SetupStep({
             <StepPanel key="review">
               <div className="flex w-full flex-col items-center gap-4">
                 <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 ui-text-meta text-content-muted">
-                  <EditLink onClick={() => setStep("language")}>
-                    {languageOptions.find(
-                      (option) => option.value === languagePreference,
-                    )?.label ??
-                      t({
-                        id: "onboarding.setup.language.placeholder",
-                        message: "choose a language",
-                      })}
-                  </EditLink>
-                  <span aria-hidden="true">·</span>
                   <EditLink onClick={() => setStep("priority")}>
-                    {priorityOptions.find(
-                      (option) => option.value === modelPriority,
-                    )?.label ??
-                      t({
-                        id: "onboarding.setup.priority.placeholder",
-                        message: "choose a priority",
-                      })}
+                    {customModel
+                      ? t({
+                          id: "onboarding.setup.priority.custom",
+                          message: "Custom",
+                        })
+                      : (priorityOptions.find(
+                          (option) => option.value === modelPriority,
+                        )?.label ??
+                        t({
+                          id: "onboarding.setup.priority.placeholder",
+                          message: "choose a priority",
+                        }))}
                   </EditLink>
                 </div>
 
@@ -286,7 +267,7 @@ export function SetupStep({
                   </div>
                 ) : (
                   <ModelStatCard
-                    model={recommendedModel}
+                    model={displayModel ?? recommendedModel}
                     status={modelStatus}
                     progress={progress}
                     onDownload={() => onDownload(recommendedModel.key)}
@@ -386,6 +367,7 @@ export function SetupStep({
           Boolean(modelStatusByKey[key]?.installed) ||
           displayStateByModel[key]?.status === "complete"
         }
+        isAneInstalled={(key) => Boolean(modelStatusByKey[key]?.ane_installed)}
         progressFor={(key) => displayStateByModel[key]}
         onUse={onUse}
         onDownload={onDownload}
@@ -393,74 +375,78 @@ export function SetupStep({
         onCancel={onCancelDownload}
       />
 
-      <AnimatePresence>
-        {showLocalConfirm && (
-          <motion.div
-            key="setup-local-confirm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-xs"
-            onClick={() => onShowConfirm(false)}
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showLocalConfirm && !confirmDismissed && (
             <motion.div
-              initial={{ scale: 0.96, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.96, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
-              onClick={(event) => event.stopPropagation()}
+              key="setup-local-confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.18 } }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-xs"
+              onClick={() => onShowConfirm(false)}
             >
-              <div className="mb-3 flex items-center gap-3">
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.96, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-6 text-center ui-shadow-modal-deep"
+                onClick={(event) => event.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="setup-local-confirm-title"
+                aria-describedby="setup-local-confirm-body"
+              >
                 <AlertTriangle
-                  size={20}
-                  className="ui-color-warning-strong shrink-0"
+                  size={22}
+                  className="ui-color-warning-strong mx-auto mb-3"
                 />
-                <div>
-                  <p className="ui-text-body-lg font-semibold text-content-primary">
+                <p id="setup-local-confirm-title" className="ui-text-body-lg font-semibold text-content-primary">
+                  {t({
+                    id: "onboarding.setup.confirm_without_model.title",
+                    message: "Continue without a model?",
+                  })}
+                </p>
+                <p id="setup-local-confirm-body" className="mt-1 ui-text-label text-content-disabled">
+                  {t({
+                    id: "onboarding.setup.confirm_without_model.body",
+                    message:
+                      "Transcription will not run offline until you download a local model.",
+                  })}
+                </p>
+                <div className="mt-5 flex justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onShowConfirm(false)}
+                    className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover"
+                  >
                     {t({
-                      id: "onboarding.setup.confirm_without_model.title",
-                      message: "Continue without a model?",
+                      id: "onboarding.setup.confirm_without_model.stay",
+                      message: "Stay here",
                     })}
-                  </p>
-                  <p className="ui-text-label text-content-disabled">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmDismissed(true);
+                      onShowConfirm(false);
+                      onNext();
+                    }}
+                    className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning transition-colors hover:bg-amber-300"
+                  >
                     {t({
-                      id: "onboarding.setup.confirm_without_model.body",
-                      message:
-                        "Transcription will not run offline until you download a local model.",
+                      id: "onboarding.setup.confirm_without_model.continue",
+                      message: "Continue anyway",
                     })}
-                  </p>
+                  </button>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => onShowConfirm(false)}
-                  className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover"
-                >
-                  {t({
-                    id: "onboarding.setup.confirm_without_model.stay",
-                    message: "Stay here",
-                  })}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onShowConfirm(false);
-                    onNext();
-                  }}
-                  className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning transition-colors hover:bg-amber-300"
-                >
-                  {t({
-                    id: "onboarding.setup.confirm_without_model.continue",
-                    message: "Continue anyway",
-                  })}
-                </button>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </motion.div>
   );
 }

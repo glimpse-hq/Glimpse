@@ -34,7 +34,9 @@ export function ScreenHeader({
             </p>
           ) : null}
         </div>
-        {trailing ? <div className="shrink-0 self-center">{trailing}</div> : null}
+        {trailing ? (
+          <div className="shrink-0 self-center">{trailing}</div>
+        ) : null}
       </div>
       <div
         className="mt-4 h-px w-full"

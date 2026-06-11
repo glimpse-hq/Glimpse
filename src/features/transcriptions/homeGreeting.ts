@@ -134,10 +134,7 @@ export function getHomeGreetingVariant(
   const occasions = getHomeOccasions(now).map(
     (id): HomeGreetingVariant => ({ kind: "occasion", id }),
   );
-  const pool: HomeGreetingVariant[] = [
-    { kind: "time" },
-    ...occasions,
-  ];
+  const pool: HomeGreetingVariant[] = [{ kind: "time" }, ...occasions];
   return pool[stableIndex(pool.length, now, 0)] ?? pool[0];
 }
 

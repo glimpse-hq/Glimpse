@@ -2,7 +2,7 @@ use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension, Row, ToSql};
 
 use crate::library::{
-    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, TranscriptSegment,
+    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, Speaker, TranscriptSegment,
 };
 
 pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Result<LibraryItem> {
@@ -10,6 +10,7 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
     let segments = serialize_segments(&item.segments)?;
     let words = serialize_segments(&item.words)?;
     let tags = serialize_tags(&item.tags)?;
+    let speakers = serialize_speakers(&item.speakers)?;
 
     conn.execute(
         "INSERT INTO library_items (
@@ -32,8 +33,10 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             tags,
             llm_cleanup_enabled,
             speech_model,
-            show_timestamps
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20)",
+            show_timestamps,
+            kind,
+            speakers
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)",
         params![
             item.id,
             item.name,
@@ -55,6 +58,8 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             if item.llm_cleanup_enabled { 1 } else { 0 },
             item.speech_model,
             if item.show_timestamps { 1 } else { 0 },
+            item.kind,
+            speakers,
         ],
     )?;
 
@@ -75,7 +80,7 @@ pub(crate) fn get_library_items_page(
     let sql = format!(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
-                tags, llm_cleanup_enabled, speech_model, show_timestamps
+                tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
          FROM library_items
          {}
          ORDER BY created_at DESC
@@ -106,7 +111,7 @@ pub(crate) fn get_recoverable_library_items(conn: &Connection) -> Result<Vec<Lib
     let mut stmt = conn.prepare(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
-                tags, llm_cleanup_enabled, speech_model, show_timestamps
+                tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
          FROM library_items
          WHERE status IN ('pending', 'importing', 'transcribing', 'cancelling')
          ORDER BY created_at ASC",
@@ -162,6 +167,12 @@ pub(crate) fn update_library_item(
     if let Some(duration_seconds) = patch.duration_seconds {
         item.duration_seconds = duration_seconds;
     }
+    if let Some(kind) = patch.kind {
+        item.kind = kind;
+    }
+    if let Some(speakers) = patch.speakers {
+        item.speakers = Some(speakers);
+    }
 
     update_library_item_full(&tx, &item)?;
     tx.commit()?;
@@ -197,7 +208,7 @@ fn get_library_item_by_id(conn: &Connection, id: &str) -> Result<Option<LibraryI
     conn.query_row(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
-                tags, llm_cleanup_enabled, speech_model, show_timestamps
+                tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
          FROM library_items WHERE id = ?1",
         params![id],
         library_item_from_row,
@@ -211,6 +222,7 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
     let segments = serialize_segments(&item.segments)?;
     let words = serialize_segments(&item.words)?;
     let tags = serialize_tags(&item.tags)?;
+    let speakers = serialize_speakers(&item.speakers)?;
 
     conn.execute(
         "UPDATE library_items SET
@@ -232,8 +244,10 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             tags = ?16,
             llm_cleanup_enabled = ?17,
             speech_model = ?18,
-            show_timestamps = ?19
-         WHERE id = ?20",
+            show_timestamps = ?19,
+            kind = ?20,
+            speakers = ?21
+         WHERE id = ?22",
         params![
             item.name,
             item.audio_path,
@@ -254,6 +268,8 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             if item.llm_cleanup_enabled { 1 } else { 0 },
             item.speech_model,
             if item.show_timestamps { 1 } else { 0 },
+            item.kind,
+            speakers,
             item.id,
         ],
     )?;
@@ -267,10 +283,12 @@ fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
     let segments_json: Option<String> = row.get("segments")?;
     let words_json: Option<String> = row.get("words").ok();
     let tags_json: String = row.get("tags")?;
+    let speakers_json: Option<String> = row.get("speakers").ok().flatten();
 
     let segments = parse_segments_column(segments_json);
     let words = parse_segments_column(words_json);
     let tags: Vec<String> = serde_json::from_str(&tags_json).unwrap_or_default();
+    let speakers = parse_speakers_column(speakers_json);
 
     Ok(LibraryItem {
         id: row.get("id")?,
@@ -291,6 +309,12 @@ fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
         llm_cleanup_enabled: row.get::<_, i64>("llm_cleanup_enabled")? == 1,
         speech_model: row.get("speech_model")?,
         show_timestamps: row.get::<_, i64>("show_timestamps")? == 1,
+        kind: row
+            .get::<_, Option<String>>("kind")
+            .ok()
+            .flatten()
+            .unwrap_or_else(crate::library::default_item_kind),
+        speakers,
     })
 }
 
@@ -305,6 +329,19 @@ fn parse_segments_column(value: Option<String>) -> Option<Vec<TranscriptSegment>
     value
         .filter(|raw| !raw.trim().is_empty())
         .and_then(|raw| serde_json::from_str::<Vec<TranscriptSegment>>(&raw).ok())
+}
+
+fn serialize_speakers(speakers: &Option<Vec<Speaker>>) -> Result<Option<String>> {
+    match speakers {
+        Some(value) => Ok(Some(serde_json::to_string(value)?)),
+        None => Ok(None),
+    }
+}
+
+fn parse_speakers_column(value: Option<String>) -> Option<Vec<Speaker>> {
+    value
+        .filter(|raw| !raw.trim().is_empty())
+        .and_then(|raw| serde_json::from_str::<Vec<Speaker>>(&raw).ok())
 }
 
 fn serialize_tags(tags: &[String]) -> Result<String> {
@@ -353,9 +390,14 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
     }
 
     if let Some(status) = filter.status.as_ref() {
-        if !status.trim().is_empty() {
-            clauses.push("status = ?".to_string());
-            params.push(Box::new(status.trim().to_string()));
+        let trimmed = status.trim();
+        if !trimmed.is_empty() {
+            if trimmed == "active" {
+                clauses.push("status IN ('pending', 'importing', 'transcribing')".to_string());
+            } else {
+                clauses.push("status = ?".to_string());
+                params.push(Box::new(trimmed.to_string()));
+            }
         }
     }
 

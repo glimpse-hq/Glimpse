@@ -1,4 +1,4 @@
-import type { TodayDictationStats } from "../../types";
+import type { TodayDictationStats, TranscriptionRecord } from "../../types";
 import { pickStableForCurrentPeriod } from "./homeGreeting";
 
 export const EMPTY_TODAY_DICTATION_STATS: TodayDictationStats = {
@@ -10,6 +10,39 @@ export const EMPTY_TODAY_DICTATION_STATS: TodayDictationStats = {
   llmCleanedCount: 0,
 };
 
+export function deriveTodayStats(
+  records: TranscriptionRecord[],
+): TodayDictationStats {
+  const now = new Date();
+  const startMs = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  ).getTime();
+  const endMs = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1,
+  ).getTime();
+
+  const stats = { ...EMPTY_TODAY_DICTATION_STATS };
+  for (const record of records) {
+    if (record.status !== "success") continue;
+    const ts = new Date(record.timestamp).getTime();
+    if (Number.isNaN(ts) || ts < startMs || ts >= endMs) continue;
+    stats.count += 1;
+    stats.words += record.word_count;
+    stats.audioSeconds += record.audio_duration_seconds;
+    stats.longestWords = Math.max(stats.longestWords, record.word_count);
+    stats.longestAudioSeconds = Math.max(
+      stats.longestAudioSeconds,
+      record.audio_duration_seconds,
+    );
+    if (record.llm_cleaned) stats.llmCleanedCount += 1;
+  }
+  return stats;
+}
+
 export type TodayStatSlide =
   | "dictations_words"
   | "minutes_spoken"
@@ -19,7 +52,9 @@ export type TodayStatSlide =
   | "pace_wpm"
   | "llm_cleaned";
 
-export function getTodayStatSlides(stats: TodayDictationStats): TodayStatSlide[] {
+export function getTodayStatSlides(
+  stats: TodayDictationStats,
+): TodayStatSlide[] {
   const slides: TodayStatSlide[] = ["dictations_words", "minutes_spoken"];
 
   if (stats.count > 0) {

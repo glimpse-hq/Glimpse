@@ -8,10 +8,8 @@ const WEBSITE_ICON_STALE_TIME = 10 * 60 * 1000;
 
 export const personalizationKeys = {
   all: ["personalization"] as const,
-  personalities: () =>
-    [...personalizationKeys.all, "personalities"] as const,
-  installedApps: () =>
-    [...personalizationKeys.all, "installedApps"] as const,
+  personalities: () => [...personalizationKeys.all, "personalities"] as const,
+  installedApps: () => [...personalizationKeys.all, "installedApps"] as const,
   websiteIcons: (sites: string[]) =>
     [...personalizationKeys.all, "websiteIcons", sites] as const,
 };
@@ -47,8 +45,5 @@ export function setPersonalitiesCache(
   queryClient: QueryClient,
   personalities: Personality[],
 ) {
-  queryClient.setQueryData(
-    personalizationKeys.personalities(),
-    personalities,
-  );
+  queryClient.setQueryData(personalizationKeys.personalities(), personalities);
 }

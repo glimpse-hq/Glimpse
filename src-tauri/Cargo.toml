@@ -1,6 +1,6 @@
 [package]
 name = "Glimpse"
-version = "0.9.5"
+version = "0.9.6"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["LegendarySpy"]
 edition = "2021"
@@ -15,6 +15,10 @@ license = "AGPL-3.0"
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "glimpse_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
 
 [build-dependencies]
 tauri-build = { version = "2.6.2", features = [] }
@@ -38,7 +42,7 @@ rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
 posthog-rs = "0.8"
 arboard = "3"
-glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.4.6", features = ["whisper", "nvidia", "api", "cli", "remote"] }
+glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.4.7", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.2", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"

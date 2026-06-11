@@ -1,6 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Personality } from "../../types";
-import type { InstalledApp, WebsiteIcon } from "./components/personalization-utils";
+import type {
+  InstalledApp,
+  WebsiteIcon,
+} from "./components/personalization-utils";
 
 export function getPersonalities() {
   return invoke<Personality[]>("get_personalities");

@@ -722,7 +722,7 @@ impl PillController {
                         }
 
                         let saved = match crate::recordings_root(&app_handle).and_then(|base_dir| {
-                            crate::recorder::persist_recording(base_dir, recording)
+                            crate::recorder::persist_recording(base_dir, &recording)
                         }) {
                             Ok(saved) => saved,
                             Err(err) => {

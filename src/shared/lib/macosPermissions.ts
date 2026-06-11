@@ -2,8 +2,7 @@ import { detectAppPlatform } from "../../platform/service";
 
 const isMacRuntime = () => detectAppPlatform() === "macos";
 
-const loadMacosPermissions = () =>
-  import("tauri-plugin-macos-permissions-api");
+const loadMacosPermissions = () => import("tauri-plugin-macos-permissions-api");
 
 export const checkMacAccessibilityPermission = async () => {
   if (!isMacRuntime()) return true;

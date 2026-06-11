@@ -108,8 +108,10 @@ export function useShortcutCapture({
     const handleKeyboardEvent = (event: KeyboardEvent) => {
       if (disposed) return;
 
-      const hasModifier = event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
-      const shouldCancel = event.type === "keydown" && event.key === "Escape" && !hasModifier;
+      const hasModifier =
+        event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
+      const shouldCancel =
+        event.type === "keydown" && event.key === "Escape" && !hasModifier;
 
       event.preventDefault();
       event.stopPropagation();

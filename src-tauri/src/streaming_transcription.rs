@@ -86,7 +86,8 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
 
     let recorder = state.pill().recorder();
     let mut buffer_offset: usize = 0;
-    let mut resample_remainder: Vec<f32> = Vec::new();
+    let mut resampler: Option<StreamResampler> = None;
+    let mut pending: Vec<f32> = Vec::new();
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     let mut last_text = String::new();
 
@@ -105,20 +106,23 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
 
         buffer_offset = new_offset;
 
-        let samples_16k = if sample_rate == 16_000 {
-            new_samples
+        if sample_rate == 16_000 {
+            pending.extend_from_slice(&new_samples);
         } else {
-            resample_linear(&new_samples, sample_rate, 16_000)
-        };
-
-        let mut all_samples = std::mem::take(&mut resample_remainder);
-        all_samples.extend_from_slice(&samples_16k);
+            if resampler.as_ref().is_none_or(|r| r.in_rate != sample_rate) {
+                resampler = Some(StreamResampler::new(sample_rate, 16_000));
+            }
+            resampler
+                .as_mut()
+                .unwrap()
+                .process(&new_samples, &mut pending);
+        }
 
         let mut processed = 0;
-        while processed + CHUNK_SAMPLES_16K <= all_samples.len() {
+        while processed + CHUNK_SAMPLES_16K <= pending.len() {
             #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
             {
-                let chunk = &all_samples[processed..processed + CHUNK_SAMPLES_16K];
+                let chunk = &pending[processed..processed + CHUNK_SAMPLES_16K];
                 match transcriber.streaming_transcribe_chunk(&model, chunk) {
                     Ok(transcript) => {
                         if transcript != last_text {
@@ -135,16 +139,15 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
             processed += CHUNK_SAMPLES_16K;
         }
 
-        if processed < all_samples.len() {
-            resample_remainder = all_samples[processed..].to_vec();
+        if processed > 0 {
+            pending.drain(..processed);
         }
     }
 
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    if !resample_remainder.is_empty() {
-        resample_remainder.resize(CHUNK_SAMPLES_16K, 0.0);
-        if let Ok(transcript) = transcriber.streaming_transcribe_chunk(&model, &resample_remainder)
-        {
+    if !pending.is_empty() {
+        pending.resize(CHUNK_SAMPLES_16K, 0.0);
+        if let Ok(transcript) = transcriber.streaming_transcribe_chunk(&model, &pending) {
             if transcript != last_text {
                 pill::emit_pill_mode(&app, true, &transcript);
             }
@@ -152,24 +155,49 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
     }
 }
 
-fn resample_linear(samples: &[f32], from_rate: u32, to_rate: u32) -> Vec<f32> {
-    if samples.is_empty() || from_rate == 0 || to_rate == 0 || from_rate == to_rate {
-        return samples.to_vec();
+struct StreamResampler {
+    in_rate: u32,
+    step: f64,
+    pos: f64,
+    prev: f32,
+    has_prev: bool,
+}
+
+impl StreamResampler {
+    fn new(in_rate: u32, out_rate: u32) -> Self {
+        Self {
+            in_rate,
+            step: in_rate as f64 / out_rate as f64,
+            pos: 0.0,
+            prev: 0.0,
+            has_prev: false,
+        }
     }
 
-    let ratio = to_rate as f64 / from_rate as f64;
-    let target_len = ((samples.len() as f64) * ratio).ceil().max(1.0) as usize;
-    let last_index = samples.len() - 1;
-    let mut output = Vec::with_capacity(target_len);
-
-    for idx in 0..target_len {
-        let src_pos = idx as f64 / ratio;
-        let base = src_pos.floor() as usize;
-        let frac = (src_pos - base as f64) as f32;
-        let current = samples[base.min(last_index)];
-        let next = samples[(base + 1).min(last_index)];
-        output.push(current + (next - current) * frac);
+    fn process(&mut self, input: &[f32], out: &mut Vec<f32>) {
+        if input.is_empty() {
+            return;
+        }
+        let last = (input.len() - 1) as f64;
+        while self.pos <= last {
+            let base = self.pos.floor();
+            let frac = (self.pos - base) as f32;
+            let idx = base as isize;
+            let current = if idx < 0 {
+                if self.has_prev {
+                    self.prev
+                } else {
+                    input[0]
+                }
+            } else {
+                input[idx as usize]
+            };
+            let next = input[(idx + 1).clamp(0, input.len() as isize - 1) as usize];
+            out.push(current + (next - current) * frac);
+            self.pos += self.step;
+        }
+        self.pos -= input.len() as f64;
+        self.prev = input[input.len() - 1];
+        self.has_prev = true;
     }
-
-    output
 }

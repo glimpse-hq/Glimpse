@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { useLingui } from "@lingui/react/macro";
-import {
-  Download,
-  Square,
-  Trash as Trash2,
-} from "@phosphor-icons/react";
+import { Download, Square, Trash as Trash2 } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import ActivityDots from "../../../shared/ui/ActivityDots";
-import { deriveModelStats, formatModelSize, formatQuantLabel } from "../../../shared/lib/modelStats";
+import {
+  deriveModelStats,
+  formatModelSize,
+  formatQuantLabel,
+} from "../../../shared/lib/modelStats";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../../types";
 
 const CARD_WIDTH = 300;
@@ -20,8 +20,14 @@ const FEATHER_MASK =
 
 const BLUR_LAYERS = [
   { blur: 1, mask: "radial-gradient(closest-side, transparent 50%, #000 92%)" },
-  { blur: 2.5, mask: "radial-gradient(closest-side, transparent 68%, #000 100%)" },
-  { blur: 5, mask: "radial-gradient(closest-side, transparent 84%, #000 108%)" },
+  {
+    blur: 2.5,
+    mask: "radial-gradient(closest-side, transparent 68%, #000 100%)",
+  },
+  {
+    blur: 5,
+    mask: "radial-gradient(closest-side, transparent 84%, #000 108%)",
+  },
 ];
 
 const waveDots = (seedSource: string): number[] => {
@@ -68,6 +74,10 @@ const ModelStatCard = ({
 
   const installed = status?.installed;
   const isDownloading = progress?.status === "downloading";
+  const downloadingFile =
+    progress?.status === "downloading"
+      ? progress.file.split("/").pop()
+      : undefined;
   const percent = progress?.percent ?? 0;
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
@@ -101,7 +111,10 @@ const ModelStatCard = ({
         boxShadow:
           "0 1px 2px rgba(0,0,0,0.05), 0 16px 40px -20px rgba(0,0,0,0.45)",
       }}
-      aria-label={t({ id: "models.card.aria", message: `${model.label} model` })}
+      aria-label={t({
+        id: "models.card.aria",
+        message: `${model.label} model`,
+      })}
     >
       <div
         className="relative flex items-center justify-center overflow-hidden"
@@ -157,13 +170,18 @@ const ModelStatCard = ({
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <p
-            className="ui-color-muted font-mono tabular-nums"
+            className="ui-color-muted min-w-0 truncate font-mono tabular-nums"
             style={{ fontSize: "11.5px" }}
+            title={isDownloading && !isVerifying ? downloadingFile : undefined}
           >
             {isVerifying
-              ? t({ id: "models.card.verifying", message: "Verifying download" })
+              ? t({
+                  id: "models.card.verifying",
+                  message: "Verifying install",
+                })
               : isDownloading
-                ? t({ id: "models.card.downloading", message: "Downloading" })
+                ? downloadingFile ||
+                  t({ id: "models.card.downloading", message: "Downloading" })
                 : facts.join("  ·  ")}
           </p>
 

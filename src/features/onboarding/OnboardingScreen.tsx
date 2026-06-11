@@ -13,10 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
-import {
-  checkoutUrlFor,
-  type PurchaseTier,
-} from "../license/purchaseConfig";
+import { checkoutUrlFor, type PurchaseTier } from "../license/purchaseConfig";
 import { useSettings } from "../settings/queries";
 import { getSettings } from "../settings/api";
 import {
@@ -27,7 +24,6 @@ import {
 import {
   onboardingMachine,
   getSteps,
-  type OnboardingLanguagePreference,
   type OnboardingModelPriority,
 } from "./machine";
 import { useImportableApps } from "../import/queries";
@@ -55,12 +51,14 @@ const ONBOARDING_MODEL_LIMIT = 2;
 const onboardingPermissionKeys = {
   all: ["onboarding", "permissions"] as const,
   microphone: () => [...onboardingPermissionKeys.all, "microphone"] as const,
-  accessibility: () => [...onboardingPermissionKeys.all, "accessibility"] as const,
+  accessibility: () =>
+    [...onboardingPermissionKeys.all, "accessibility"] as const,
 };
 
 const sortOnboardingModels = (models: ModelInfo[]) =>
   [...models].sort((a, b) => {
-    const recommendedDelta = Number(hasRecommendedTag(b)) - Number(hasRecommendedTag(a));
+    const recommendedDelta =
+      Number(hasRecommendedTag(b)) - Number(hasRecommendedTag(a));
     if (recommendedDelta !== 0) return recommendedDelta;
     return a.label.localeCompare(b.label);
   });
@@ -71,7 +69,9 @@ const pickOnboardingModels = (models: ModelInfo[]) => {
     sortedModels.find((model) => model.key === key),
   ).filter((model): model is ModelInfo => Boolean(model));
   const preferredKeys = new Set(preferred.map((model) => model.key));
-  const fallback = sortedModels.filter((model) => !preferredKeys.has(model.key));
+  const fallback = sortedModels.filter(
+    (model) => !preferredKeys.has(model.key),
+  );
 
   return [...preferred, ...fallback].slice(0, ONBOARDING_MODEL_LIMIT);
 };
@@ -86,32 +86,22 @@ const pickDefaultOnboardingModel = (
   return models[0]?.key ?? persistedModel;
 };
 
-const ONBOARDING_MODEL: Record<
-  OnboardingLanguagePreference,
-  Record<OnboardingModelPriority, string>
-> = {
-  english: {
-    compact: "distil_whisper_small_en",
-    balanced: "distil_whisper_medium_en",
-    quality: "distil_whisper_large_v35",
-  },
-  multilingual: {
-    compact: "whisper_small_q5",
-    balanced: "whisper_medium_q5",
-    quality: "whisper_large_v3_turbo_q8",
-  },
+const ONBOARDING_MODEL: Record<OnboardingModelPriority, string> = {
+  compact: "whisper_small_q5",
+  balanced: "whisper_large_v3_turbo_q5",
+  quality: "whisper_large_v3_turbo_q8",
 };
 
 const pickRecommendedOnboardingModel = (
   models: ModelInfo[],
-  language: OnboardingLanguagePreference | null,
   priority: OnboardingModelPriority | null,
 ) => {
-  if (!language || !priority) {
+  if (!priority) {
     return models.find(hasRecommendedTag) ?? models[0] ?? null;
   }
-  const key = ONBOARDING_MODEL[language][priority];
-  return models.find((model) => model.key === key) ?? null;
+  return (
+    models.find((model) => model.key === ONBOARDING_MODEL[priority]) ?? null
+  );
 };
 
 const checkMicrophonePermission = () =>
@@ -123,10 +113,8 @@ const checkAccessibilityPermission = () =>
 const stopShortcutCapture = () =>
   invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
 
-const refreshModelStatus = (
-  queryClient: QueryClient,
-  model: string,
-) => queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
+const refreshModelStatus = (queryClient: QueryClient, model: string) =>
+  queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -138,7 +126,9 @@ const stepTransitionVariants = {
   exit: (direction: 1 | -1) => ({ opacity: 0, x: direction > 0 ? -28 : 28 }),
 };
 
-export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+export default function OnboardingScreen({
+  onComplete,
+}: OnboardingScreenProps) {
   const { t } = useLingui();
   const [state, send] = useMachine(onboardingMachine);
   const [downloadStatus, setDownloadStatus] = useState<
@@ -166,7 +156,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     [ctx.platform, hasImportStep],
   );
   const currentStep = state.value as string;
-  const currentStepIndex = steps.indexOf(currentStep as typeof steps[number]);
+  const currentStepIndex = Math.max(0, steps.indexOf(currentStep as (typeof steps)[number]));
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const licenseQuery = useLicenseState();
@@ -188,12 +178,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     () =>
       pickRecommendedOnboardingModel(
         modelCatalogQuery.data ?? [],
-        ctx.languagePreference,
         ctx.modelPriority,
       ),
-    [modelCatalogQuery.data, ctx.languagePreference, ctx.modelPriority],
+    [modelCatalogQuery.data, ctx.modelPriority],
   );
-  const selectedModel = ctx.localModelChoice ||
+  const selectedModel =
+    ctx.localModelChoice ||
     recommendedOnboardingModel?.key ||
     pickDefaultOnboardingModel(onboardingModelCatalog, persistedLocalModel);
   const selectedModelInfo = useMemo(
@@ -212,10 +202,12 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const statusModelKeys = useMemo(
     () =>
       Array.from(
-        new Set([
-          ...onboardingModelCatalog.map((model) => model.key),
-          selectedModel,
-        ].filter(Boolean)),
+        new Set(
+          [
+            ...onboardingModelCatalog.map((model) => model.key),
+            selectedModel,
+          ].filter(Boolean),
+        ),
       ),
     [onboardingModelCatalog, selectedModel],
   );
@@ -228,7 +220,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     queryKey: onboardingPermissionKeys.microphone(),
     queryFn: checkMicrophonePermission,
     enabled: ctx.platform.requiresMicrophonePermission,
-    refetchInterval: currentStep === "permissions" ? 1_500 : false,
+    refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
+    refetchInterval: (query) =>
+      currentStep === "permissions" && query.state.data !== true ? 2000 : false,
+    staleTime: 0,
     retry: false,
   });
 
@@ -236,7 +231,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     queryKey: onboardingPermissionKeys.accessibility(),
     queryFn: checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
-    refetchInterval: currentStep === "permissions" ? 800 : false,
+    refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
+    refetchInterval: (query) =>
+      currentStep === "permissions" && query.state.data !== true ? 2000 : false,
+    staleTime: 0,
     retry: false,
   });
 
@@ -334,7 +332,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   });
 
   const handleDownload = useCallback(
-    async (modelKey: string) => {
+    async (modelKey: string, ane?: boolean) => {
       updateDownloadStatus(modelKey, {
         status: "downloading",
         percent: 0,
@@ -344,7 +342,13 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         }),
       });
       try {
-        await invoke("download_model", { model: modelKey });
+        // Include the Neural Engine encoder by default
+        const includeAne =
+          ane ??
+          modelCatalogQuery.data?.some(
+            (model) => model.key === modelKey && model.ane_size_mb != null,
+          );
+        await invoke("download_model", { model: modelKey, ane: includeAne });
         void refreshModelStatus(queryClient, modelKey);
       } catch {
         updateDownloadStatus(modelKey, {
@@ -357,7 +361,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         });
       }
     },
-    [queryClient, t, updateDownloadStatus],
+    [modelCatalogQuery.data, queryClient, t, updateDownloadStatus],
   );
 
   const handleDelete = useCallback(
@@ -431,18 +435,22 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       if (installed) return { status: "complete", percent: 100 };
       return base ?? { status: "idle", percent: 0 };
     };
-    return (modelCatalogQuery.data ?? []).reduce<
-      Record<string, DownloadEvent>
-    >((acc, model) => {
-      acc[model.key] = buildState(model.key);
-      return acc;
-    }, {});
+    return (modelCatalogQuery.data ?? []).reduce<Record<string, DownloadEvent>>(
+      (acc, model) => {
+        acc[model.key] = buildState(model.key);
+        return acc;
+      },
+      {},
+    );
   }, [downloadStatus, modelStatus, modelCatalogQuery.data]);
 
   const selectedModelReady = useMemo(() => {
     if (!selectedModel) return false;
     const displayState = displayStateByModel[selectedModel];
-    return Boolean(modelStatus[selectedModel]?.installed || displayState?.status === "complete");
+    return Boolean(
+      modelStatus[selectedModel]?.installed ||
+      displayState?.status === "complete",
+    );
   }, [displayStateByModel, modelStatus, selectedModel]);
 
   const micPermission = ctx.platform.requiresMicrophonePermission
@@ -451,18 +459,23 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const accessibilityPermission = ctx.platform.requiresAccessibilityPermission
     ? accessibilityPermissionQuery.data === true
     : true;
-  const isCheckingMic = ctx.platform.requiresMicrophonePermission &&
+  const isCheckingMic =
+    ctx.platform.requiresMicrophonePermission &&
     (microphonePermissionQuery.isPending || isRequestingMicrophonePermission);
-  const isCheckingAccessibility = ctx.platform.requiresAccessibilityPermission &&
-    (
-      accessibilityPermissionQuery.isPending ||
-      isRequestingAccessibilityPermission
-    );
-  const isModelCatalogLoading = modelCatalogQuery.isLoading || settingsQuery.isLoading;
+  const isCheckingAccessibility =
+    ctx.platform.requiresAccessibilityPermission &&
+    (accessibilityPermissionQuery.isPending ||
+      isRequestingAccessibilityPermission);
+  const isModelCatalogLoading =
+    modelCatalogQuery.isLoading || settingsQuery.isLoading;
   const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleComplete = useCallback(async () => {
-    if (settingsQuery.isLoading || settingsQuery.isError || !persistedSettings) {
+    if (
+      settingsQuery.isLoading ||
+      settingsQuery.isError ||
+      !persistedSettings
+    ) {
       send({
         type: "COMPLETE_ERROR",
         error: t({
@@ -502,24 +515,38 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           toggleShortcut,
           toggleEnabled: false,
           shortcutBindings: {
-            smart: [{ shortcut: ctx.smartShortcut, temporary: false, cleanup_enabled: false }],
-            hold: [{ shortcut: holdShortcut, temporary: false, cleanup_enabled: false }],
-            toggle: [{ shortcut: toggleShortcut, temporary: false, cleanup_enabled: false }],
+            smart: [
+              {
+                shortcut: ctx.smartShortcut,
+                temporary: false,
+                cleanup_enabled: false,
+              },
+            ],
+            hold: [
+              {
+                shortcut: holdShortcut,
+                temporary: false,
+                cleanup_enabled: false,
+              },
+            ],
+            toggle: [
+              {
+                shortcut: toggleShortcut,
+                temporary: false,
+                cleanup_enabled: false,
+              },
+            ],
           },
           transcriptionMode: ctx.selectedMode,
           localModel: resolvedLocalModel,
           remoteSpeechEnabled: false,
-          remoteSpeechProvider: latestSettings.remote_speech_provider ?? "custom",
+          remoteSpeechProvider:
+            latestSettings.remote_speech_provider ?? "custom",
           remoteSpeechEndpoint: latestSettings.remote_speech_endpoint ?? "",
           remoteSpeechApiKey: latestSettings.remote_speech_api_key ?? "",
           remoteSpeechModel: latestSettings.remote_speech_model ?? "",
           microphoneDevice: latestSettings.microphone_device ?? null,
-          language:
-            ctx.languagePreference === "english"
-              ? "en"
-              : ctx.languagePreference === "multilingual"
-                ? ""
-                : (latestSettings.language ?? "en"),
+          language: latestSettings.language ?? "",
           appLocale: latestSettings.app_locale ?? "system",
           themeMode: latestSettings.theme_mode ?? "system",
           llmEnabled: false,
@@ -541,7 +568,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           localApiPort: latestSettings.local_api_port ?? 11435,
           localApiModel: latestSettings.local_api_model ?? "auto",
           localApiHost: latestSettings.local_api_host ?? "127.0.0.1",
-          localApiStartOnLaunch: latestSettings.local_api_start_on_launch ?? false,
+          localApiStartOnLaunch:
+            latestSettings.local_api_start_on_launch ?? false,
           localApiCors: latestSettings.local_api_cors ?? false,
         },
       });
@@ -553,7 +581,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       const message = typeof err === "string" ? err : String(err);
       send({
         type: "COMPLETE_ERROR",
-        error: message ||
+        error:
+          message ||
           t({
             id: "onboarding.complete.failed",
             message:
@@ -635,8 +664,11 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           <SetupStep
             key="setup"
             stepMotionProps={stepMotionProps}
-            languagePreference={ctx.languagePreference}
             modelPriority={ctx.modelPriority}
+            customModel={
+              Boolean(ctx.localModelChoice) &&
+              ctx.localModelChoice !== recommendedOnboardingModel?.key
+            }
             smartShortcut={ctx.smartShortcut}
             captureActive={ctx.captureActive}
             capturePreview={ctx.capturePreview}
@@ -648,15 +680,25 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             onUse={(key) => send({ type: "SELECT_MODEL", key })}
             isLoading={isModelCatalogLoading}
             unavailable={modelCatalogUnavailable}
-            displayState={displayStateByModel[selectedModel] ?? { status: "idle", percent: 0 }}
+            displayState={
+              displayStateByModel[selectedModel] ?? {
+                status: "idle",
+                percent: 0,
+              }
+            }
             selectedModelReady={selectedModelReady}
             showLocalConfirm={ctx.showLocalConfirm}
-            onSelectLanguage={(language) => send({ type: "SELECT_LANGUAGE", language })}
-            onSelectPriority={(priority) => send({ type: "SELECT_PRIORITY", priority })}
+            onSelectPriority={(priority) =>
+              send({ type: "SELECT_PRIORITY", priority })
+            }
             onStartCapture={() => send({ type: "CAPTURE_START" })}
             onEndCapture={(shortcut) => send({ type: "CAPTURE_END", shortcut })}
-            onSetPreview={(preview) => send({ type: "SET_CAPTURE_PREVIEW", preview })}
-            onSetShortcut={(shortcut) => send({ type: "SET_SHORTCUT", shortcut })}
+            onSetPreview={(preview) =>
+              send({ type: "SET_CAPTURE_PREVIEW", preview })
+            }
+            onSetShortcut={(shortcut) =>
+              send({ type: "SET_SHORTCUT", shortcut })
+            }
             onShowConfirm={(show) => send({ type: "SHOW_LOCAL_CONFIRM", show })}
             onDownload={handleDownload}
             onDelete={handleDelete}
@@ -736,7 +778,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         </div>
       </div>
 
-      <FAQModal isOpen={ctx.showFAQModal} onClose={() => send({ type: "TOGGLE_FAQ", show: false })} />
+      <FAQModal
+        isOpen={ctx.showFAQModal}
+        onClose={() => send({ type: "TOGGLE_FAQ", show: false })}
+      />
 
       {currentStepIndex > 0 && (
         <button

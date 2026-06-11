@@ -245,7 +245,7 @@ pub(crate) fn complete_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = true;
     let next = state
         .persist_settings(settings)
@@ -261,7 +261,7 @@ pub(crate) fn reset_onboarding(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<(), String> {
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = false;
     let next = state
         .persist_settings(settings)
@@ -277,7 +277,7 @@ pub(crate) fn set_user_name(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
 ) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings_unmasked()?;
+    let mut settings = state.current_settings_unmasked();
     settings.user_name = name.trim().to_string();
     let next = state
         .persist_settings(settings)
@@ -315,110 +315,104 @@ pub(crate) fn update_settings(
     let license_active = crate::license::license_gate_active(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
-    // Read truth directly from the store so the gated-feature mask the frontend
-    // sees (when the license is inactive) can't round-trip back to disk.
-    let mut next = state.settings_store.load().map_err(|err| err.to_string())?;
-    let prev = next.clone();
-    next.shortcut_bindings = shortcut_bindings;
-    next.smart_shortcut = next
-        .shortcut_bindings
-        .smart
-        .first()
-        .map(|binding| binding.shortcut.clone())
-        .unwrap_or(args.smart_shortcut);
-    next.smart_enabled = args.smart_enabled;
-    next.hold_shortcut = next
-        .shortcut_bindings
-        .hold
-        .first()
-        .map(|binding| binding.shortcut.clone())
-        .unwrap_or(args.hold_shortcut);
-    next.hold_enabled = args.hold_enabled;
-    next.toggle_shortcut = next
-        .shortcut_bindings
-        .toggle
-        .first()
-        .map(|binding| binding.shortcut.clone())
-        .unwrap_or(args.toggle_shortcut);
-    next.toggle_enabled = args.toggle_enabled;
-    next.transcription_mode = args.transcription_mode;
-    next.local_model = args.local_model;
-    next.remote_speech_enabled = args.remote_speech_enabled;
-    next.remote_speech_provider = args.remote_speech_provider;
-    next.remote_speech_endpoint = args.remote_speech_endpoint.trim().to_string();
-    next.remote_speech_api_key = args.remote_speech_api_key;
-    next.remote_speech_model = args.remote_speech_model.trim().to_string();
-    next.microphone_device = args.microphone_device;
-    next.language = args.language;
-    next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
-    next.theme_mode = args.theme_mode;
-    if license_active {
-        // License-gated fields are only writable when the license is active.
-        // Otherwise the frontend's masked view (which shows them disabled) would
-        // round-trip false back to disk on the next unrelated save.
-        next.llm_enabled = args.llm_enabled;
-        next.cleanup_enabled = args.cleanup_enabled;
-        next.edit_mode_enabled = args.edit_mode_enabled;
-        next.local_api_start_on_launch = args.local_api_start_on_launch;
-        // shortcut_bindings is already set above; cleanup_enabled fields within
-        // each binding are gated through canonicalize_shortcut_bindings: they
-        // come from args and are subject to the require_license_gate check.
-    } else {
-        // Restore the on-disk truth for shortcut binding cleanup flags, since
-        // canonicalize_shortcut_bindings just wrote args-derived values.
-        for (next_bindings, prev_bindings) in [
-            (
-                &mut next.shortcut_bindings.smart,
-                &prev.shortcut_bindings.smart,
-            ),
-            (
-                &mut next.shortcut_bindings.hold,
-                &prev.shortcut_bindings.hold,
-            ),
-            (
-                &mut next.shortcut_bindings.toggle,
-                &prev.shortcut_bindings.toggle,
-            ),
-        ] {
-            for (out, before) in next_bindings.iter_mut().zip(prev_bindings.iter()) {
-                out.cleanup_enabled = before.cleanup_enabled;
+    let requested_auto_launch_enabled = args.auto_launch_enabled;
+    let launch_changed =
+        state.current_settings_unmasked().auto_launch_enabled != requested_auto_launch_enabled;
+    if launch_changed {
+        crate::sync_launch_at_login(app, requested_auto_launch_enabled)?;
+    }
+
+    let result = state.persist_settings_with(|prev, next| {
+        next.shortcut_bindings = shortcut_bindings;
+        next.smart_shortcut = next
+            .shortcut_bindings
+            .smart
+            .first()
+            .map(|binding| binding.shortcut.clone())
+            .unwrap_or(args.smart_shortcut);
+        next.smart_enabled = args.smart_enabled;
+        next.hold_shortcut = next
+            .shortcut_bindings
+            .hold
+            .first()
+            .map(|binding| binding.shortcut.clone())
+            .unwrap_or(args.hold_shortcut);
+        next.hold_enabled = args.hold_enabled;
+        next.toggle_shortcut = next
+            .shortcut_bindings
+            .toggle
+            .first()
+            .map(|binding| binding.shortcut.clone())
+            .unwrap_or(args.toggle_shortcut);
+        next.toggle_enabled = args.toggle_enabled;
+        next.transcription_mode = args.transcription_mode;
+        next.local_model = args.local_model;
+        next.remote_speech_enabled = args.remote_speech_enabled;
+        next.remote_speech_provider = args.remote_speech_provider;
+        next.remote_speech_endpoint = args.remote_speech_endpoint.trim().to_string();
+        next.remote_speech_api_key = args.remote_speech_api_key;
+        next.remote_speech_model = args.remote_speech_model.trim().to_string();
+        next.microphone_device = args.microphone_device;
+        next.language = args.language;
+        next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
+        next.theme_mode = args.theme_mode;
+        if license_active {
+            next.llm_enabled = args.llm_enabled;
+            next.cleanup_enabled = args.cleanup_enabled;
+            next.edit_mode_enabled = args.edit_mode_enabled;
+            next.local_api_start_on_launch = args.local_api_start_on_launch;
+        } else {
+            for (next_bindings, prev_bindings) in [
+                (
+                    &mut next.shortcut_bindings.smart,
+                    &prev.shortcut_bindings.smart,
+                ),
+                (
+                    &mut next.shortcut_bindings.hold,
+                    &prev.shortcut_bindings.hold,
+                ),
+                (
+                    &mut next.shortcut_bindings.toggle,
+                    &prev.shortcut_bindings.toggle,
+                ),
+            ] {
+                for (out, before) in next_bindings.iter_mut().zip(prev_bindings.iter()) {
+                    out.cleanup_enabled = before.cleanup_enabled;
+                }
             }
         }
-    }
-    next.llm_provider = args.llm_provider;
-    next.llm_endpoint = args.llm_endpoint;
-    next.llm_api_key = args.llm_api_key;
-    next.llm_model = args.llm_model.trim().to_string();
-    next.auto_dictionary_enabled = args.auto_dictionary_enabled;
-    next.media_action = args.media_action;
-    next.auto_update_enabled = args.auto_update_enabled;
-    next.auto_launch_enabled = args.auto_launch_enabled;
-    next.start_in_background = args.auto_launch_enabled && args.start_in_background;
-    next.auto_delete_target = args.auto_delete_target;
-    next.auto_delete_duration = args.auto_delete_duration;
-    next.analytics_enabled = args.analytics_enabled;
-    next.local_api_key = args.local_api_key.trim().to_string();
-    next.local_api_port = args.local_api_port;
-    next.local_api_model = args.local_api_model;
-    next.local_api_host = crate::settings::canonicalize_local_api_host(&args.local_api_host);
-    next.local_api_cors = args.local_api_cors;
+        next.llm_provider = args.llm_provider;
+        next.llm_endpoint = args.llm_endpoint;
+        next.llm_api_key = args.llm_api_key;
+        next.llm_model = args.llm_model.trim().to_string();
+        next.auto_dictionary_enabled = args.auto_dictionary_enabled;
+        next.media_action = args.media_action;
+        next.auto_update_enabled = args.auto_update_enabled;
+        next.auto_launch_enabled = args.auto_launch_enabled;
+        next.start_in_background = args.auto_launch_enabled && args.start_in_background;
+        next.auto_delete_target = args.auto_delete_target;
+        next.auto_delete_duration = args.auto_delete_duration;
+        next.analytics_enabled = args.analytics_enabled;
+        next.local_api_key = args.local_api_key.trim().to_string();
+        next.local_api_port = args.local_api_port;
+        next.local_api_model = args.local_api_model;
+        next.local_api_host = crate::settings::canonicalize_local_api_host(&args.local_api_host);
+        next.local_api_cors = args.local_api_cors;
+    });
 
-    let launch_changed = prev.auto_launch_enabled != next.auto_launch_enabled;
-    if launch_changed {
-        crate::sync_launch_at_login(app, next.auto_launch_enabled)?;
-    }
-    let requested_auto_launch_enabled = next.auto_launch_enabled;
-
-    let next = match state.persist_settings(next) {
-        Ok(next) => next,
+    let (prev, next) = match result {
+        Ok(pair) => pair,
         Err(err) => {
             if launch_changed {
                 if let Err(rollback_err) =
-                    crate::sync_launch_at_login(app, prev.auto_launch_enabled)
+                    crate::sync_launch_at_login(app, !requested_auto_launch_enabled)
                 {
                     return Err(format!(
                         "{} (also failed to roll back launch at login from {} back to {}: {})",
-                        err, requested_auto_launch_enabled, prev.auto_launch_enabled, rollback_err
+                        err,
+                        requested_auto_launch_enabled,
+                        !requested_auto_launch_enabled,
+                        rollback_err
                     ));
                 }
             }

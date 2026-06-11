@@ -10,7 +10,7 @@ const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-  base: './',
+  base: "./",
   plugins: [
     babel({
       plugins: ["@lingui/babel-plugin-lingui-macro"],
@@ -32,10 +32,10 @@ export default defineConfig(async () => ({
     host: host || false,
     hmr: host
       ? {
-        protocol: "ws",
-        host,
-        port: 8736,
-      }
+          protocol: "ws",
+          host,
+          port: 8736,
+        }
       : undefined,
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`

@@ -6,12 +6,17 @@ import {
   Funnel,
   Check,
   Download,
+  Info,
   Square,
   Trash as Trash2,
   X,
 } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
-import { deriveModelStats, formatModelSize, variantLabel } from "../lib/modelStats";
+import {
+  deriveModelStats,
+  formatModelSize,
+  variantLabel,
+} from "../lib/modelStats";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
 import DotMatrix from "./DotMatrix";
@@ -72,9 +77,10 @@ type ModelPickerData = {
   catalog: ModelInfo[];
   activeKey: string;
   isInstalled: (key: string) => boolean;
+  isAneInstalled?: (key: string) => boolean;
   progressFor: (key: string) => DownloadEvent | undefined;
   onUse: (key: string) => void;
-  onDownload: (key: string) => void;
+  onDownload: (key: string, ane?: boolean) => void;
   onDelete: (key: string) => void;
   onCancel: (key: string) => void;
 };
@@ -88,6 +94,7 @@ export function ModelPickerPanel({
   catalog,
   activeKey,
   isInstalled,
+  isAneInstalled,
   progressFor,
   onUse,
   onDownload,
@@ -157,6 +164,7 @@ export function ModelPickerPanel({
         selected={selected}
         active={selected.key === activeKey}
         installed={isInstalled(selected.key)}
+        aneInstalled={isAneInstalled?.(selected.key) ?? false}
         isVariantInstalled={isInstalled}
         shiftHeld={shiftHeld}
         progress={progressFor(selected.key)}
@@ -164,7 +172,7 @@ export function ModelPickerPanel({
           setQuantByGroup((prev) => ({ ...prev, [group.id]: key }))
         }
         onUse={() => onUse(selected.key)}
-        onDownload={() => onDownload(selected.key)}
+        onDownload={(ane) => onDownload(selected.key, ane)}
         onDelete={() => onDelete(selected.key)}
         onCancel={() => onCancel(selected.key)}
       />
@@ -386,6 +394,7 @@ function ModelRow({
   selected,
   active,
   installed,
+  aneInstalled,
   isVariantInstalled,
   shiftHeld,
   progress,
@@ -399,16 +408,19 @@ function ModelRow({
   selected: ModelInfo;
   active: boolean;
   installed: boolean;
+  aneInstalled: boolean;
   isVariantInstalled: (key: string) => boolean;
   shiftHeld: boolean;
   progress?: DownloadEvent;
   onSelectVariant: (key: string) => void;
   onUse: () => void;
-  onDownload: () => void;
+  onDownload: (ane?: boolean) => void;
   onDelete: () => void;
   onCancel: () => void;
 }) {
   const { t } = useLingui();
+  const [aneUserChoice, setAneUserChoice] = useState<boolean | null>(null);
+  const aneChecked = aneUserChoice ?? !installed;
   const isDownloading = progress?.status === "downloading";
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
@@ -417,23 +429,67 @@ function ModelRow({
   const isBusy = isDownloading || showError || isCancelled;
   const percent = Math.round(progress?.percent ?? 0);
   const showQuants = group.variants.length > 1 && !isBusy;
+  const aneAvailable = selected.ane_size_mb != null;
+  const aneOn = aneAvailable && (aneInstalled || aneChecked);
+  const encoderDownloadPending =
+    installed && aneAvailable && aneChecked && !aneInstalled;
+  const showAne = aneAvailable && !isBusy;
+  const displaySize =
+    selected.size_mb + (aneOn ? (selected.ane_size_mb ?? 0) : 0);
+  const downloadLabel = installed
+    ? t({
+        id: "model_picker.ane.download",
+        message: "Download Neural Engine encoder",
+      })
+    : t({ id: "model_picker.download", message: "Download" });
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
       <button
         type="button"
-        onClick={installed ? onUse : onDownload}
-        className="min-w-0 text-left"
+        onClick={
+          !installed
+            ? () => onDownload(aneOn)
+            : encoderDownloadPending
+              ? () => onDownload(true)
+              : onUse
+        }
+        title={
+          encoderDownloadPending
+            ? downloadLabel
+            : installed && !active
+              ? t({ id: "model_picker.use", message: "Use" })
+              : undefined
+        }
+        className="flex min-w-0 items-center gap-2.5 text-left"
       >
-        <span className="block truncate ui-text-body-sm-strong text-content-primary">
-          {group.label}
-        </span>
-        <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
-          {group.englishOnly
-            ? t({ id: "model_picker.english", message: "English" })
-            : t({ id: "model_picker.multilingual", message: "Multilingual" })}
-          {"  ·  "}
-          {formatModelSize(selected.size_mb)}
+        <span
+          aria-hidden="true"
+          className={`h-1.5 w-1.5 shrink-0 rounded-full transition-colors ${
+            active
+              ? "bg-local"
+              : installed
+                ? "bg-content-disabled/50"
+                : "bg-transparent"
+          }`}
+        />
+        <span className="min-w-0">
+          <span className="block truncate ui-text-body-sm-strong text-content-primary">
+            {group.label}
+            {active && (
+              <span className="sr-only">
+                {" "}
+                {t({ id: "model_picker.active", message: "Active" })}
+              </span>
+            )}
+          </span>
+          <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
+            {group.englishOnly
+              ? t({ id: "model_picker.english", message: "English" })
+              : t({ id: "model_picker.multilingual", message: "Multilingual" })}
+            {"  ·  "}
+            {formatModelSize(displaySize)}
+          </span>
         </span>
       </button>
 
@@ -464,7 +520,10 @@ function ModelRow({
                           id: "model_picker.variant_installed",
                           message: "Model variant (installed)",
                         })
-                      : t({ id: "model_picker.variant", message: "Model variant" })
+                      : t({
+                          id: "model_picker.variant",
+                          message: "Model variant",
+                        })
                   }
                 >
                   {variantLabel(variant.variant)}
@@ -474,6 +533,14 @@ function ModelRow({
           </div>
         )}
 
+        {showAne && (
+          <AneCheckbox
+            checked={aneOn}
+            installed={aneInstalled}
+            onToggle={() => setAneUserChoice(!aneChecked)}
+          />
+        )}
+
         {isBusy ? (
           <>
             <div className="flex min-w-[140px] flex-col items-end justify-center">
@@ -481,14 +548,21 @@ function ModelRow({
               <div className="mt-1 flex h-3 w-full items-center justify-end">
                 {isVerifying ? (
                   <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
-                    {t({ id: "models.card.verifying", message: "Verifying install" })}
+                    {t({
+                      id: "models.card.verifying",
+                      message: "Verifying install",
+                    })}
                   </p>
                 ) : isDownloading ? (
                   <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
                     {percent}% ·{" "}
                     {
-                      (progress as Extract<DownloadEvent, { status: "downloading" }>)
-                        .file
+                      (
+                        progress as Extract<
+                          DownloadEvent,
+                          { status: "downloading" }
+                        >
+                      ).file
                     }
                   </p>
                 ) : null}
@@ -497,8 +571,12 @@ function ModelRow({
                     <AlertCircle size={9} className="shrink-0" />
                     <span className="truncate">
                       {
-                        (progress as Extract<DownloadEvent, { status: "error" }>)
-                          .message
+                        (
+                          progress as Extract<
+                            DownloadEvent,
+                            { status: "error" }
+                          >
+                        ).message
                       }
                     </span>
                   </p>
@@ -524,51 +602,138 @@ function ModelRow({
             </div>
           </>
         ) : (
-          <div className="flex items-center gap-2">
-            <div className="flex min-w-[3.5rem] items-center justify-end">
-              {installed &&
-                (active ? (
-                  <span className="ui-text-meta font-medium text-local">
-                    {t({ id: "model_picker.active", message: "Active" })}
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={onUse}
-                    className="ui-text-meta font-medium text-content-secondary transition-colors hover:text-content-primary"
-                  >
-                    {t({ id: "model_picker.use", message: "Use" })}
-                  </button>
-                ))}
-            </div>
-            {installed ? (
-              <button
-                type="button"
-                onClick={onDelete}
-                className={`flex h-6 w-6 items-center justify-center rounded-md transition-all hover:bg-error/10 hover:text-error ${
-                  shiftHeld
-                    ? "text-error opacity-100"
-                    : "text-content-disabled opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:text-error"
-                }`}
-                title={t({ id: "model_picker.delete", message: "Delete" })}
-                aria-label={t({ id: "model_picker.delete", message: "Delete" })}
-              >
-                <Trash2 size={12} aria-hidden="true" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={onDownload}
-                className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
-                title={t({ id: "model_picker.download", message: "Download" })}
-                aria-label={t({ id: "model_picker.download", message: "Download" })}
-              >
-                <Download size={13} aria-hidden="true" />
-              </button>
-            )}
+          <div className="flex items-center gap-1">
+            <span className="flex h-6 w-6 items-center justify-center">
+              {(!installed || (showAne && aneChecked && !aneInstalled)) && (
+                <button
+                  type="button"
+                  onClick={() => onDownload(installed || aneOn)}
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+                  title={downloadLabel}
+                  aria-label={downloadLabel}
+                >
+                  <Download size={13} aria-hidden="true" />
+                </button>
+              )}
+            </span>
+            <span className="flex h-6 w-6 items-center justify-center">
+              {installed && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className={`flex h-6 w-6 items-center justify-center rounded-md transition-all hover:bg-error/10 hover:text-error ${
+                    shiftHeld
+                      ? "text-error opacity-100"
+                      : "text-content-disabled opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:text-error"
+                  }`}
+                  title={t({ id: "model_picker.delete", message: "Delete" })}
+                  aria-label={t({
+                    id: "model_picker.delete",
+                    message: "Delete",
+                  })}
+                >
+                  <Trash2 size={12} aria-hidden="true" />
+                </button>
+              )}
+            </span>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function AneCheckbox({
+  checked,
+  installed,
+  onToggle,
+}: {
+  checked: boolean;
+  installed: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useLingui();
+  const [infoOpen, setInfoOpen] = useState(false);
+  const infoRef = useRef<HTMLDivElement>(null);
+  useClickOutside(infoRef, () => setInfoOpen(false), infoOpen);
+
+  return (
+    <div className="relative flex items-center gap-1" ref={infoRef}>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={checked}
+        disabled={installed}
+        onClick={onToggle}
+        title={
+          installed
+            ? t({
+                id: "model_picker.ane.installed",
+                message: "Neural Engine encoder installed",
+              })
+            : t({
+                id: "model_picker.ane.toggle",
+                message: "Include the Apple Neural Engine encoder",
+              })
+        }
+        className="flex items-center gap-1.5 rounded-md px-1 py-0.5 transition-colors enabled:hover:bg-surface-elevated/60 disabled:cursor-default"
+      >
+        <span
+          aria-hidden="true"
+          className={`flex h-3.5 w-3.5 items-center justify-center rounded-[3px] border transition-colors ${
+            checked
+              ? "border-local bg-local-15 text-local"
+              : "border-border-secondary text-transparent"
+          }`}
+        >
+          {checked && <Check size={9} weight="bold" />}
+        </span>
+        <span
+          className={`font-mono ui-text-micro ${
+            installed
+              ? "text-local"
+              : checked
+                ? "text-content-secondary"
+                : "text-content-muted"
+          }`}
+        >
+          ANE
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={() => setInfoOpen((open) => !open)}
+        aria-expanded={infoOpen}
+        aria-label={t({
+          id: "model_picker.ane.info_aria",
+          message: "About the Apple Neural Engine encoder",
+        })}
+        className="flex h-5 w-5 items-center justify-center rounded-md text-content-disabled transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+      >
+        <Info size={12} aria-hidden="true" />
+      </button>
+
+      <AnimatePresence>
+        {infoOpen && (
+          <motion.div
+            role="tooltip"
+            initial={{ opacity: 0, scale: 0.98, y: -2 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -2 }}
+            transition={{ duration: 0.12 }}
+            className="ui-surface-menu absolute right-0 top-full z-30 mt-1.5 w-60 px-3 py-2"
+          >
+            <p className="ui-text-meta text-content-secondary">
+              {t({
+                id: "model_picker.ane.info",
+                message:
+                  "Runs the audio encoder on the Apple Neural Engine instead of the GPU. Uses far less power and keeps the GPU open. Installing takes a few minutes while macOS optimizes it.",
+              })}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

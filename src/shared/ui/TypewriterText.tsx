@@ -1,10 +1,11 @@
-import { useEffect, useState, type CSSProperties, type ElementType } from "react";
+import {
+  useEffect,
+  useState,
+  type CSSProperties,
+  type ElementType,
+} from "react";
 
-export function useTypewriter(
-  text: string,
-  speedMs = 20,
-  delayMs = 0,
-): string {
+export function useTypewriter(text: string, speedMs = 20, delayMs = 0): string {
   const [displayed, setDisplayed] = useState("");
 
   useEffect(() => {

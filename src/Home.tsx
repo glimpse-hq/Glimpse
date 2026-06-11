@@ -140,7 +140,13 @@ const Home = () => {
   const { t } = useLingui();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<
-    "general" | "account" | "models" | "providers" | "local-api" | "about" | "app"
+    | "general"
+    | "account"
+    | "models"
+    | "providers"
+    | "local-api"
+    | "about"
+    | "app"
   >("general");
   const [whatsNewRequest, setWhatsNewRequest] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -166,7 +172,8 @@ const Home = () => {
   const { data: updateStatus } = useUpdateStatus();
   const { data: appInfoData } = useAppInfo();
 
-  const transcriptionMode: TranscriptionMode = settings?.transcription_mode ?? "local";
+  const transcriptionMode: TranscriptionMode =
+    settings?.transcription_mode ?? "local";
   const remoteSpeechEnabled = settings?.remote_speech_enabled ?? false;
   const llmEnabled = settings?.llm_enabled ?? false;
   const appVersion = appInfoData?.version ?? "-";
@@ -174,7 +181,10 @@ const Home = () => {
 
   useEffect(() => {
     licenseGateActiveRef.current = licenseGateActive;
-    if (!licenseGateActive && (activeView === "brain" || activeView === "library")) {
+    if (
+      !licenseGateActive &&
+      (activeView === "brain" || activeView === "library")
+    ) {
       setActiveView("home");
       setDragActive(false);
       setPendingImportPaths(null);
@@ -228,14 +238,17 @@ const Home = () => {
     let unlistenOpenImport: UnlistenFn | null = null;
     let unlistenLicenseReturn: UnlistenFn | null = null;
 
-    const navigateReady = listen<{ openWhatsNew?: boolean }>("navigate:about", (event) => {
-      setSettingsTab("about");
-      setIsSettingsOpen(true);
-      if (event.payload?.openWhatsNew) {
-        setWhatsNewRequest((request) => request + 1);
-      }
-      emit("updater:check").catch(() => {});
-    }).then((fn) => {
+    const navigateReady = listen<{ openWhatsNew?: boolean }>(
+      "navigate:about",
+      (event) => {
+        setSettingsTab("about");
+        setIsSettingsOpen(true);
+        if (event.payload?.openWhatsNew) {
+          setWhatsNewRequest((request) => request + 1);
+        }
+        emit("updater:check").catch(() => {});
+      },
+    ).then((fn) => {
       if (cancelled) fn();
       else unlistenNavigate = fn;
     });
@@ -406,20 +419,11 @@ const Home = () => {
       });
 
   const homeViewActive = activeView === "home";
+  const dayTick = useTimeOfDayPeriodTick(homeViewActive);
   const {
     data: todayStats = EMPTY_TODAY_DICTATION_STATS,
     isFetched: todayStatsFetched,
-    refetch: refetchTodayStats,
-  } = useTodayDictationStats(homeViewActive);
-  const dayTick = useTimeOfDayPeriodTick(homeViewActive);
-  const todayStatsTickRef = useRef(dayTick);
-
-  useEffect(() => {
-    if (homeViewActive && todayStatsTickRef.current !== dayTick) {
-      todayStatsTickRef.current = dayTick;
-      refetchTodayStats().catch(() => {});
-    }
-  }, [dayTick, homeViewActive, refetchTodayStats]);
+  } = useTodayDictationStats(homeViewActive, dayTick);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">
@@ -438,7 +442,9 @@ const Home = () => {
             <div className="flex items-center justify-center w-[18px] shrink-0">
               <StaticGlimpseLogo
                 cloudActive={isCloudMode || remoteSpeechEnabled || llmEnabled}
-                localActive={transcriptionMode === "local" && !remoteSpeechEnabled}
+                localActive={
+                  transcriptionMode === "local" && !remoteSpeechEnabled
+                }
               />
             </div>
             <span
@@ -513,231 +519,234 @@ const Home = () => {
           ) : null}
 
           <div className="space-y-1 border-t border-border-primary p-2">
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="flex w-full items-center rounded-lg h-9 pl-[17px] text-content-disabled hover:text-content-muted"
-            aria-label={
-              isSidebarCollapsed
-                ? t({
-                    id: "home.sidebar.expand",
-                    message: "Expand sidebar",
-                  })
-                : t({
-                    id: "home.sidebar.collapse",
-                    message: "Collapse sidebar",
-                  })
-            }
-          >
-            <div className="flex items-center justify-center w-[18px]">
-              <motion.div
-                animate={{ rotate: isSidebarCollapsed ? 180 : 0 }}
-                transition={{ type: "tween", duration: 0.2 }}
-              >
-                <ChevronLeft size={16} />
-              </motion.div>
-            </div>
-          </button>
-
-          <div className="relative" ref={supportMenuRef}>
             <button
-              onClick={() => setShowSupportPopup(!showSupportPopup)}
-              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:text-content-secondary transition-colors ${
-                isSidebarCollapsed ? "gap-0" : "gap-3"
-              }`}
-              aria-expanded={showSupportPopup}
-              aria-haspopup="menu"
-              aria-label={t({
-                id: "home.support.menu_aria",
-                message: "Support menu",
-              })}
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="flex w-full items-center rounded-lg h-9 pl-[17px] text-content-disabled hover:text-content-muted"
+              aria-label={
+                isSidebarCollapsed
+                  ? t({
+                      id: "home.sidebar.expand",
+                      message: "Expand sidebar",
+                    })
+                  : t({
+                      id: "home.sidebar.collapse",
+                      message: "Collapse sidebar",
+                    })
+              }
             >
-              <div className="flex items-center justify-center w-[20px] shrink-0 group-hover:text-content-secondary">
-                <Info size={20} weight="regular" />
+              <div className="flex items-center justify-center w-[18px]">
+                <motion.div
+                  animate={{ rotate: isSidebarCollapsed ? 180 : 0 }}
+                  transition={{ type: "tween", duration: 0.2 }}
+                >
+                  <ChevronLeft size={16} />
+                </motion.div>
               </div>
-              <span
-                style={{
-                  width: isSidebarCollapsed ? 0 : "auto",
-                  opacity: isSidebarCollapsed ? 0 : 1,
-                }}
-                className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
-              >
-                {t({
-                  id: "home.support.label",
-                  message: "Support",
-                })}
-              </span>
             </button>
 
-            <AnimatePresence>
-              {showSupportPopup && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  transition={{ duration: 0.15, ease: "easeOut" }}
-                  className="ui-surface-menu absolute bottom-full left-2 mb-2 w-56 z-[60]"
+            <div className="relative" ref={supportMenuRef}>
+              <button
+                onClick={() => setShowSupportPopup(!showSupportPopup)}
+                className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 text-content-muted hover:text-content-secondary transition-colors ${
+                  isSidebarCollapsed ? "gap-0" : "gap-3"
+                }`}
+                aria-expanded={showSupportPopup}
+                aria-haspopup="menu"
+                aria-label={t({
+                  id: "home.support.menu_aria",
+                  message: "Support menu",
+                })}
+              >
+                <div className="flex items-center justify-center w-[20px] shrink-0 group-hover:text-content-secondary">
+                  <Info size={20} weight="regular" />
+                </div>
+                <span
+                  style={{
+                    width: isSidebarCollapsed ? 0 : "auto",
+                    opacity: isSidebarCollapsed ? 0 : 1,
+                  }}
+                  className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
                 >
-                  <div className="p-3 border-b border-border-primary">
-                    <div className="flex items-center justify-between">
-                      <span className="ui-text-body-sm-strong ui-color-primary">
-                        {t({
-                          id: "home.support.title",
-                          message: "Get Support",
-                        })}
-                      </span>
+                  {t({
+                    id: "home.support.label",
+                    message: "Support",
+                  })}
+                </span>
+              </button>
+
+              <AnimatePresence>
+                {showSupportPopup && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15, ease: "easeOut" }}
+                    className="ui-surface-menu absolute bottom-full left-2 mb-2 w-56 z-[60]"
+                  >
+                    <div className="p-3 border-b border-border-primary">
+                      <div className="flex items-center justify-between">
+                        <span className="ui-text-body-sm-strong ui-color-primary">
+                          {t({
+                            id: "home.support.title",
+                            message: "Get Support",
+                          })}
+                        </span>
+                        <button
+                          onClick={() => setShowSupportPopup(false)}
+                          className="p-1 rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-secondary transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-2 space-y-1">
                       <button
-                        onClick={() => setShowSupportPopup(false)}
-                        className="p-1 rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-secondary transition-colors"
+                        onClick={() => {
+                          setShowSupportPopup(false);
+                          setShowFAQ(true);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
                       >
-                        <X size={14} />
+                        <HelpCircle
+                          size={16}
+                          style={{ color: "var(--color-support-help)" }}
+                        />
+                        <div>
+                          <div className="ui-text-body-sm-strong ui-color-primary">
+                            {t({
+                              id: "home.support.faq.title",
+                              message: "FAQ",
+                            })}
+                          </div>
+                          <div className="ui-text-meta ui-color-muted">
+                            {t({
+                              id: "home.support.faq.subtitle",
+                              message: "Common questions",
+                            })}
+                          </div>
+                        </div>
+                      </button>
+                      <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors w-full">
+                        <Bug
+                          size={16}
+                          className="ui-color-secondary shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="ui-text-body-sm-strong ui-color-primary">
+                            {t({
+                              id: "home.support.feedback.title",
+                              message: "Feedback",
+                            })}
+                          </div>
+                          <div className="ui-text-meta ui-color-muted flex items-center flex-nowrap gap-x-1.5">
+                            <a
+                              href={SUPPORT_GITHUB_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => setShowSupportPopup(false)}
+                              className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
+                            >
+                              <Bug size={10} aria-hidden="true" />
+                              {t({
+                                id: "home.support.feedback.github",
+                                message: "GitHub issue",
+                              })}
+                            </a>
+                            <span aria-hidden="true">·</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void copySupportEmail();
+                              }}
+                              className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
+                            >
+                              {supportEmailCopied ? (
+                                <Check size={10} aria-hidden="true" />
+                              ) : (
+                                <Copy size={10} aria-hidden="true" />
+                              )}
+                              {supportEmailCopied
+                                ? t({
+                                    id: "home.support.feedback.email_copied",
+                                    message: "Copied!",
+                                  })
+                                : t({
+                                    id: "home.support.feedback.email",
+                                    message: "Email",
+                                  })}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowSupportPopup(false);
+                          setSettingsTab("about");
+                          setIsSettingsOpen(true);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
+                      >
+                        <Info
+                          size={16}
+                          style={{ color: "var(--color-support-info)" }}
+                        />
+                        <div>
+                          <div className="ui-text-body-sm-strong ui-color-primary">
+                            {t({
+                              id: "home.support.about.title",
+                              message: "About",
+                            })}
+                          </div>
+                          <div className="ui-text-meta ui-color-muted">
+                            {t({
+                              id: "home.support.about.version_mode",
+                              message: `v${{ version: appVersion }} • ${{ mode: currentModeLabel }}`,
+                            })}
+                          </div>
+                        </div>
                       </button>
                     </div>
-                  </div>
-                  <div className="p-2 space-y-1">
-                    <button
-                      onClick={() => {
-                        setShowSupportPopup(false);
-                        setShowFAQ(true);
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
-                    >
-                      <HelpCircle
-                        size={16}
-                        style={{ color: "var(--color-support-help)" }}
-                      />
-                      <div>
-                        <div className="ui-text-body-sm-strong ui-color-primary">
-                          {t({
-                            id: "home.support.faq.title",
-                            message: "FAQ",
-                          })}
-                        </div>
-                        <div className="ui-text-meta ui-color-muted">
-                          {t({
-                            id: "home.support.faq.subtitle",
-                            message: "Common questions",
-                          })}
-                        </div>
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors w-full">
-                      <Bug size={16} className="ui-color-secondary shrink-0" />
-                      <div className="min-w-0">
-                        <div className="ui-text-body-sm-strong ui-color-primary">
-                          {t({
-                            id: "home.support.feedback.title",
-                            message: "Feedback",
-                          })}
-                        </div>
-                        <div className="ui-text-meta ui-color-muted flex items-center flex-nowrap gap-x-1.5">
-                          <a
-                            href={SUPPORT_GITHUB_URL}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={() => setShowSupportPopup(false)}
-                            className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
-                          >
-                            <Bug size={10} aria-hidden="true" />
-                            {t({
-                              id: "home.support.feedback.github",
-                              message: "GitHub issue",
-                            })}
-                          </a>
-                          <span aria-hidden="true">·</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void copySupportEmail();
-                            }}
-                            className="inline-flex items-center gap-0.5 underline underline-offset-2 decoration-border-hover hover:text-content-secondary transition-colors"
-                          >
-                            {supportEmailCopied ? (
-                              <Check size={10} aria-hidden="true" />
-                            ) : (
-                              <Copy size={10} aria-hidden="true" />
-                            )}
-                            {supportEmailCopied
-                              ? t({
-                                  id: "home.support.feedback.email_copied",
-                                  message: "Copied!",
-                                })
-                              : t({
-                                  id: "home.support.feedback.email",
-                                  message: "Email",
-                                })}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setShowSupportPopup(false);
-                        setSettingsTab("about");
-                        setIsSettingsOpen(true);
-                      }}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-elevated transition-colors group w-full text-left"
-                    >
-                      <Info
-                        size={16}
-                        style={{ color: "var(--color-support-info)" }}
-                      />
-                      <div>
-                        <div className="ui-text-body-sm-strong ui-color-primary">
-                          {t({
-                            id: "home.support.about.title",
-                            message: "About",
-                          })}
-                        </div>
-                        <div className="ui-text-meta ui-color-muted">
-                          {t({
-                            id: "home.support.about.version_mode",
-                            message: `v${{ version: appVersion }} • ${{ mode: currentModeLabel }}`,
-                          })}
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-          {updateAvailable && (
-            <button
-              onClick={() => {
-                setSettingsTab("about");
-                setIsSettingsOpen(true);
-              }}
-              className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} transition-colors`}
-              style={{ color: "var(--color-accent)" }}
-            >
-              <div className="flex items-center justify-center w-[20px] shrink-0">
-                <ArrowUpCircle size={20} weight="regular" />
-              </div>
-              <span
-                style={{
-                  width: isSidebarCollapsed ? 0 : "auto",
-                  opacity: isSidebarCollapsed ? 0 : 1,
+            {updateAvailable && (
+              <button
+                onClick={() => {
+                  setSettingsTab("about");
+                  setIsSettingsOpen(true);
                 }}
-                className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                className={`group flex w-full items-center rounded-lg h-9 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"} transition-colors`}
+                style={{ color: "var(--color-accent)" }}
               >
-                {t({
-                  id: "home.update_available",
-                  message: "Update available",
-                })}
-              </span>
-            </button>
-          )}
+                <div className="flex items-center justify-center w-[20px] shrink-0">
+                  <ArrowUpCircle size={20} weight="regular" />
+                </div>
+                <span
+                  style={{
+                    width: isSidebarCollapsed ? 0 : "auto",
+                    opacity: isSidebarCollapsed ? 0 : 1,
+                  }}
+                  className="ui-text-nav-item whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+                >
+                  {t({
+                    id: "home.update_available",
+                    message: "Update available",
+                  })}
+                </span>
+              </button>
+            )}
 
-          <SidebarItem
-            icon={Settings}
-            label={t({
-              id: "home.sidebar.settings",
-              message: "Settings",
-            })}
-            collapsed={isSidebarCollapsed}
-            onClick={() => setIsSettingsOpen(true)}
-          />
+            <SidebarItem
+              icon={Settings}
+              label={t({
+                id: "home.sidebar.settings",
+                message: "Settings",
+              })}
+              collapsed={isSidebarCollapsed}
+              onClick={() => setIsSettingsOpen(true)}
+            />
           </div>
         </div>
       </aside>
@@ -778,12 +787,11 @@ const Home = () => {
           </div>
 
           <div
-            className={`w-full min-w-0 pt-8 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
+            className={`w-full min-w-0 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
           >
             <LibraryView
               pendingImportPaths={pendingImportPaths}
               onSetImportPaths={setPendingImportPaths}
-              sidebarWidth={sidebarWidth}
               isActive={activeView === "library" && licenseGateActive}
             />
           </div>

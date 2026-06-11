@@ -43,7 +43,7 @@ Core dictation is free, with no subscription and no cloud. It all runs on your d
 
 **Free, always**
 
-- **Local transcription.** Turn your wifi off, it still works.
+- **Local transcription.** Turn your wifi off, it still works. ANE supported on Apple Silicon.
 - **Custom dictionary.** Teach it names, brands, or terms.
 - **Auto Dictionary.** It picks up your custom words on its own.
 - **Replacements.** Say "my address," get 221B Baker Street.
@@ -53,7 +53,7 @@ Core dictation is free, with no subscription and no cloud. It all runs on your d
 
 Included in a 14-day trial, then a one-time [license](#pricing):
 
-- **Library.** Drop in audio or video, scrub the synced transcript, export to `.srt`, `.txt`, or `.json`.
+- **Library.** Drop in audio or video, scrub the synced transcript, assign speakers, export to `.txt`, `.md`, `.srt`, or `.vtt`.
 - **AI Cleanup.** Polish dictated text with your own LLM.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
 - **Personalization.** Different tones per app or site, with [snippets](https://github.com/LegendarySpy/Glimpse/wiki/snippets) for dynamic context.
@@ -66,26 +66,28 @@ Configure AI writing in **Settings → Providers**. Speech models live in **Sett
 
 Glimpse Personal is a one-time purchase, not a subscription. Core dictation stays free.
 
-| Edition | Price | For |
-| --- | --- | --- |
-| **Personal** | $24.99 | You, on up to 5 personal devices |
-| **Commercial** | from $19.99 / seat | Work use, one person per seat |
+| Edition        | Price              | For                              |
+| -------------- | ------------------ | -------------------------------- |
+| **Personal**   | $24.99             | You, on up to 5 personal devices |
+| **Commercial** | from $19.99 / seat | Work use, one person per seat    |
 
 Commercial volume pricing:
 
-| Seats | Price per seat |
-| --- | --- |
-| 1 to 5 | $19.99 |
-| 6 to 15 | $17.99 |
-| 16 to 30 | $14.99 |
-| 31+ | $11.99 |
+| Seats    | Price per seat |
+| -------- | -------------- |
+| 1 to 5   | $19.99         |
+| 6 to 15  | $17.99         |
+| 16 to 30 | $14.99         |
+| 31+      | $11.99         |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
 ## Roadmap
 
 - [ ] Meeting mode
-- [ ] Library overhaul
+- [ ] Speaker diarization
+- [x] Library overhaul
+- [x] Speakers & speaker-labeled exports
 - [x] CLI
 - [x] API
 - [x] BYOK STT

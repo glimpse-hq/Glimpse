@@ -211,7 +211,9 @@ const AccountView = ({
             </div>
 
             {openError ? (
-              <p className="w-full max-w-[400px] ui-text-meta text-error">{openError}</p>
+              <p className="w-full max-w-[400px] ui-text-meta text-error">
+                {openError}
+              </p>
             ) : null}
           </>
         )}

@@ -13,7 +13,9 @@ import {
 const applyInitialTextScale = () => {
   if (getCurrentWindow().label !== "settings") return;
 
-  const mode = parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY));
+  const mode = parseTextSizeMode(
+    localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY),
+  );
   document.documentElement.style.setProperty(
     "--ui-text-scale",
     resolveTextScale(mode, detectAppPlatform()),

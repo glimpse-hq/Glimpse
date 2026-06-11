@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { estimateTypewriterMs } from "../../../shared/ui/TypewriterText";
 
 export type CardRevealStage =
@@ -71,7 +77,10 @@ export function useCardActivationSequence(
   useEffect(() => () => clearTimers(), [clearTimers]);
 
   useEffect(() => {
-    if (activationAttempt <= 0 || activationAttempt === lastAttemptRef.current) {
+    if (
+      activationAttempt <= 0 ||
+      activationAttempt === lastAttemptRef.current
+    ) {
       return;
     }
 
@@ -137,7 +146,12 @@ export function useCardActivationSequence(
   }, [activating, active, activationAttempt, beginUserReveal, clearTimers]);
 
   useEffect(() => {
-    if (!active || stage !== "wiping" || revealScheduledRef.current || !licenseReady) {
+    if (
+      !active ||
+      stage !== "wiping" ||
+      revealScheduledRef.current ||
+      !licenseReady
+    ) {
       return;
     }
 
@@ -177,8 +191,10 @@ export function useCardActivationSequence(
   const typingReveal = cinematic;
   const showTierPicker = stage === "draft";
   const showStamp = active && stage !== "draft" && stage !== "wiping";
-  const showName = active && ["name", "email", "details", "coverage", "done"].includes(stage);
-  const showEmail = active && ["email", "details", "coverage", "done"].includes(stage);
+  const showName =
+    active && ["name", "email", "details", "coverage", "done"].includes(stage);
+  const showEmail =
+    active && ["email", "details", "coverage", "done"].includes(stage);
   const showDetails = active && ["details", "coverage", "done"].includes(stage);
   const showCoverage = active && ["coverage", "done"].includes(stage);
   const stampSlam = stage === "stamp";

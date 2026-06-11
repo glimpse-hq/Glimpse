@@ -29,7 +29,9 @@ import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
 
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureMode = { mode: ShortcutMode; index: number } | null;
-type InvalidShortcutDrafts = Partial<Record<ShortcutMode, Record<number, string>>>;
+type InvalidShortcutDrafts = Partial<
+  Record<ShortcutMode, Record<number, string>>
+>;
 type HelpTooltipId = "shortcuts" | "edit-mode";
 type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
 type MicrophoneTestLevels = {
@@ -125,10 +127,12 @@ const GeneralTab = ({
   licenseGateActive,
 }: GeneralTabProps) => {
   const { t } = useLingui();
-  const [openHelpTooltip, setOpenHelpTooltip] =
-    useState<HelpTooltipId | null>(null);
-  const [expandedShortcut, setExpandedShortcut] =
-    useState<ShortcutMode | null>(null);
+  const [openHelpTooltip, setOpenHelpTooltip] = useState<HelpTooltipId | null>(
+    null,
+  );
+  const [expandedShortcut, setExpandedShortcut] = useState<ShortcutMode | null>(
+    null,
+  );
   const [micDropdownOpen, setMicDropdownOpen] = useState(false);
   const [languageDropdownOpen, setLanguageDropdownOpen] = useState(false);
   const deviceRowElevated = micDropdownOpen || languageDropdownOpen;
@@ -182,8 +186,7 @@ const GeneralTab = ({
   };
 
   const isMicrophoneTestActive =
-    microphoneTestStatus === "starting" ||
-    microphoneTestStatus === "listening";
+    microphoneTestStatus === "starting" || microphoneTestStatus === "listening";
 
   const handleMicrophoneTestButton = () => {
     if (isMicrophoneTestActive || microphoneTestStatus === "error") {
@@ -196,135 +199,135 @@ const GeneralTab = ({
 
   return (
     <motion.div
-    key="general"
-    variants={variants}
-    initial="hidden"
-    animate="visible"
-    exit="exit"
-    className="space-y-6"
-  >
-    <div className="space-y-2">
-      <SectionLabel>
-        {t({
-          id: "settings.general.processing",
-          message: "Processing",
-        })}
-      </SectionLabel>
-      <div
-        className="grid grid-cols-2 gap-3"
-        role="radiogroup"
-        aria-label={t({
-          id: "settings.general.processing_mode",
-          message: "Processing Mode",
-        })}
-      >
-        <button
-          onClick={() => {}}
-          disabled
-          role="radio"
-          aria-checked={transcriptionMode === "cloud"}
-          aria-label={t({
-            id: "settings.general.cloud.aria",
-            message: "Cloud processing (Coming soon)",
+      key="general"
+      variants={variants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className="space-y-6"
+    >
+      <div className="space-y-2">
+        <SectionLabel>
+          {t({
+            id: "settings.general.processing",
+            message: "Processing",
           })}
-          className={`py-3 px-3.5 rounded-lg border text-left transition-all duration-100 opacity-60 cursor-not-allowed ${
-            transcriptionMode === "cloud"
-              ? "border-cloud-30 bg-cloud-5 shadow-[0_3px_0_-1px_rgba(251,191,36,0.4),inset_0_1px_0_0_rgba(251,191,36,0.1)]"
-              : "border-border-primary bg-surface-surface shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]"
-          }`}
-          aria-disabled="true"
+        </SectionLabel>
+        <div
+          className="grid grid-cols-2 gap-3"
+          role="radiogroup"
+          aria-label={t({
+            id: "settings.general.processing_mode",
+            message: "Processing Mode",
+          })}
         >
-          <div className="flex items-baseline gap-1.5">
-            <span
-              className={`ui-text-body-strong ${
-                transcriptionMode === "cloud"
-                  ? "ui-color-cloud"
-                  : "ui-color-secondary"
-              }`}
-            >
-              {t({
-                id: "settings.general.cloud.label",
-                message: "Cloud",
-              })}
-            </span>
-            <span
-              className={`ui-text-label ${
+          <button
+            onClick={() => {}}
+            disabled
+            role="radio"
+            aria-checked={transcriptionMode === "cloud"}
+            aria-label={t({
+              id: "settings.general.cloud.aria",
+              message: "Cloud processing (Coming soon)",
+            })}
+            className={`py-3 px-3.5 rounded-lg border text-left transition-all duration-100 opacity-60 cursor-not-allowed ${
+              transcriptionMode === "cloud"
+                ? "border-cloud-30 bg-cloud-5 shadow-[0_3px_0_-1px_rgba(251,191,36,0.4),inset_0_1px_0_0_rgba(251,191,36,0.1)]"
+                : "border-border-primary bg-surface-surface shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)]"
+            }`}
+            aria-disabled="true"
+          >
+            <div className="flex items-baseline gap-1.5">
+              <span
+                className={`ui-text-body-strong ${
+                  transcriptionMode === "cloud"
+                    ? "ui-color-cloud"
+                    : "ui-color-secondary"
+                }`}
+              >
+                {t({
+                  id: "settings.general.cloud.label",
+                  message: "Cloud",
+                })}
+              </span>
+              <span
+                className={`ui-text-label ${
+                  transcriptionMode === "cloud"
+                    ? "text-cloud-50"
+                    : "ui-color-disabled"
+                }`}
+              >
+                {t({
+                  id: "settings.general.cloud.badge",
+                  message: "coming soon",
+                })}
+              </span>
+            </div>
+            <p
+              className={`ui-text-label mt-1 ${
                 transcriptionMode === "cloud"
                   ? "text-cloud-50"
                   : "ui-color-disabled"
               }`}
             >
               {t({
-                id: "settings.general.cloud.badge",
-                message: "coming soon",
+                id: "settings.general.cloud.description",
+                message: "In development",
               })}
-            </span>
-          </div>
-          <p
-            className={`ui-text-label mt-1 ${
-              transcriptionMode === "cloud"
-                ? "text-cloud-50"
-                : "ui-color-disabled"
-            }`}
+            </p>
+          </button>
+          <button
+            onClick={() => onTranscriptionModeChange("local")}
+            role="radio"
+            aria-checked={transcriptionMode === "local"}
+            className={`py-3 px-3.5 rounded-lg border text-left transition-all duration-100 ${
+              transcriptionMode === "local"
+                ? "border-local-30 bg-local-5 shadow-[0_3px_0_-1px_rgba(165,179,254,0.4),inset_0_1px_0_0_rgba(165,179,254,0.1)]"
+                : "border-border-primary bg-surface-surface shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-local-30 hover:bg-local-5 hover:shadow-[0_2px_0_-1px_rgba(165,179,254,0.4),inset_0_1px_0_0_rgba(165,179,254,0.1)] hover:translate-y-[1px]"
+            } active:translate-y-[2px] active:shadow-none`}
           >
-            {t({
-              id: "settings.general.cloud.description",
-              message: "In development",
-            })}
-          </p>
-        </button>
-        <button
-          onClick={() => onTranscriptionModeChange("local")}
-          role="radio"
-          aria-checked={transcriptionMode === "local"}
-          className={`py-3 px-3.5 rounded-lg border text-left transition-all duration-100 ${
-            transcriptionMode === "local"
-              ? "border-local-30 bg-local-5 shadow-[0_3px_0_-1px_rgba(165,179,254,0.4),inset_0_1px_0_0_rgba(165,179,254,0.1)]"
-              : "border-border-primary bg-surface-surface shadow-[0_3px_0_-1px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.06)] hover:border-local-30 hover:bg-local-5 hover:shadow-[0_2px_0_-1px_rgba(165,179,254,0.4),inset_0_1px_0_0_rgba(165,179,254,0.1)] hover:translate-y-[1px]"
-          } active:translate-y-[2px] active:shadow-none`}
-        >
-          <div className="flex items-baseline gap-1.5">
-            <span
-              className={`ui-text-body-strong ${
-                transcriptionMode === "local"
-                  ? "ui-color-local"
-                  : "ui-color-secondary"
-              }`}
-            >
-              {t({
-                id: "settings.general.local.label",
-                message: "Local",
-              })}
-            </span>
-            <span
-              className={`ui-text-label ${
+            <div className="flex items-baseline gap-1.5">
+              <span
+                className={`ui-text-body-strong ${
+                  transcriptionMode === "local"
+                    ? "ui-color-local"
+                    : "ui-color-secondary"
+                }`}
+              >
+                {t({
+                  id: "settings.general.local.label",
+                  message: "Local",
+                })}
+              </span>
+              <span
+                className={`ui-text-label ${
+                  transcriptionMode === "local"
+                    ? "text-local-50"
+                    : "ui-color-disabled"
+                }`}
+              >
+                {t({
+                  id: "settings.general.local.badge",
+                  message: "private",
+                })}
+              </span>
+            </div>
+            <p
+              className={`ui-text-label mt-1 ${
                 transcriptionMode === "local"
                   ? "text-local-50"
                   : "ui-color-disabled"
               }`}
             >
               {t({
-                id: "settings.general.local.badge",
-                message: "private",
+                id: "settings.general.local.description",
+                message: "Runs entirely on your device",
               })}
-            </span>
-          </div>
-          <p
-            className={`ui-text-label mt-1 ${
-              transcriptionMode === "local"
-                ? "text-local-50"
-                : "ui-color-disabled"
-            }`}
-          >
-            {t({
-              id: "settings.general.local.description",
-              message: "Runs entirely on your device",
-            })}
-          </p>
-        </button>
-      </div>
-      <AnimatePresence>
-        {shouldShowMissingModelWarning && (
+            </p>
+          </button>
+        </div>
+        <AnimatePresence>
+          {shouldShowMissingModelWarning && (
             <motion.p
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -350,517 +353,522 @@ const GeneralTab = ({
               })}
             </motion.p>
           )}
-      </AnimatePresence>
-    </div>
-
-    <div
-      className={`grid grid-cols-2 gap-3${deviceRowElevated ? " relative z-dropdown-open" : ""}`}
-    >
-      <div className="space-y-1.5">
-        <div className="flex h-5 items-center justify-between gap-2">
-          <label className="ui-text-label-strong ui-color-primary leading-none">
-            {t({
-              id: "settings.general.microphone",
-              message: "Microphone",
-            })}
-          </label>
-          <button
-            type="button"
-            onClick={handleMicrophoneTestButton}
-            className={`flex h-5 items-center gap-1 rounded-md px-1.5 ui-text-meta transition-colors ${
-              isMicrophoneTestActive
-                ? "ui-color-error hover:bg-error/10"
-                : "ui-color-muted hover:bg-surface-elevated hover:text-content-primary"
-            }`}
-          >
-            {isMicrophoneTestActive ? (
-              <>
-                <Square size={9} fill="currentColor" aria-hidden="true" />
-                {t({
-                  id: "settings.general.microphone_test.stop",
-                  message: "Stop",
-                })}
-              </>
-            ) : microphoneTestStatus === "error" ? (
-              <>
-                <Check size={10} aria-hidden="true" />
-                {t({
-                  id: "settings.general.microphone_test.done",
-                  message: "Done",
-                })}
-              </>
-            ) : (
-              <>
-                <Mic size={10} aria-hidden="true" />
-                {t({
-                  id: "settings.general.microphone_test.test",
-                  message: "Test",
-                })}
-              </>
-            )}
-          </button>
-        </div>
-        <div className="h-[38px]">
-          {microphoneTestStatus === "listening" ||
-          microphoneTestStatus === "error" ? (
-            <MicrophoneTestSlot
-              status={microphoneTestStatus}
-              levels={microphoneTestLevels}
-              label={
-                activeDeviceLabel ??
-                getSelectedMicrophoneName(inputDevices, microphoneDevice) ??
-                systemDefaultLabel
-              }
-              error={microphoneTestError}
-            />
-          ) : (
-            <Dropdown
-              value={microphoneDevice || ""}
-              onChange={(val) =>
-                onMicrophoneDeviceChange(val === "" ? null : val)
-              }
-              onOpenChange={setMicDropdownOpen}
-              options={[
-                {
-                  value: "",
-                  label: systemDefaultLabel,
-                },
-                ...inputDevices.map((device) => ({
-                  value: device.id,
-                  label: device.name,
-                })),
-              ]}
-              placeholder={t({
-                id: "settings.general.select_microphone",
-                message: "Select microphone...",
-              })}
-              className="h-[38px]"
-              buttonClassName="h-[38px] px-3 py-2 ui-text-body-sm"
-              menuClassName="top-[38px]"
-            />
-          )}
-        </div>
+        </AnimatePresence>
       </div>
 
-      <div className="space-y-1.5">
-        <div className="flex h-5 items-center">
-          <div className="flex items-center gap-1">
+      <div
+        className={`grid grid-cols-2 gap-3${deviceRowElevated ? " relative z-dropdown-open" : ""}`}
+      >
+        <div className="space-y-1.5">
+          <div className="flex h-5 items-center justify-between gap-2">
             <label className="ui-text-label-strong ui-color-primary leading-none">
               {t({
-                id: "settings.general.transcription_language",
-                message: "Transcription Language",
+                id: "settings.general.microphone",
+                message: "Microphone",
               })}
             </label>
-            <div className="relative group">
-              <button
-                className="flex h-4 w-4 items-center justify-center text-content-disabled hover:text-content-muted transition-colors"
-                aria-label={t({
-                  id: "settings.general.language_info_aria",
-                  message:
-                    "More information about transcription language support",
-                })}
-              >
-                <Info size={10} aria-hidden="true" />
-              </button>
-              <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-tooltip">
-                <div className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight">
-                  <p>
-                    {t({
-                      id: "settings.general.language_info.active_model",
-                      message:
-                        "Unsupported languages aren't available on your active model. Switch to a supported model to use them.",
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <Dropdown
-            value={language}
-            onChange={(val) => onLanguageChange(val)}
-            onOpenChange={setLanguageDropdownOpen}
-            options={languages.map((lang) => ({
-              value: lang.code,
-              label: lang.name,
-              locked: lang.locked,
-              isHeader: lang.isHeader,
-              prominentHeader: lang.prominentHeader,
-              description: lang.description,
-            }))}
-            searchable
-            searchPlaceholder={t({
-              id: "settings.general.search_language",
-              message: "Search language...",
-            })}
-            buttonClassName="min-h-[38px] px-3 py-2 ui-text-body-sm"
-          />
-        </div>
-      </div>
-    </div>
-
-    <div className="grid grid-cols-2 gap-3">
-      <div className="space-y-2">
-        <SectionLabel
-          trailing={
-            <div
-              className="relative"
-              onMouseEnter={() => showHelpTooltip("shortcuts")}
-              onMouseLeave={() => hideHelpTooltip("shortcuts")}
-            >
             <button
               type="button"
-              className="flex h-4 w-4 items-center justify-center text-content-disabled transition-colors hover:text-content-muted"
-              aria-label={t({
-                id: "settings.general.shortcuts.info_aria",
-                message: "More information about shortcut options",
-              })}
-              aria-expanded={openHelpTooltip === "shortcuts"}
-              aria-controls="shortcuts-help-tooltip"
-              onFocus={() => showHelpTooltip("shortcuts")}
-              onBlur={() => hideHelpTooltip("shortcuts")}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  event.preventDefault();
-                  hideHelpTooltip("shortcuts");
-                }
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  toggleHelpTooltip("shortcuts");
-                }
-              }}
-            >
-              <Info size={10} aria-hidden="true" />
-            </button>
-            <div
-              id="shortcuts-help-tooltip"
-              role="tooltip"
-              className={`absolute left-0 bottom-full mb-1 z-tooltip ${
-                openHelpTooltip === "shortcuts" ? "block" : "hidden"
+              onClick={handleMicrophoneTestButton}
+              className={`flex h-5 items-center gap-1 rounded-md px-1.5 ui-text-meta transition-colors ${
+                isMicrophoneTestActive
+                  ? "ui-color-error hover:bg-error/10"
+                  : "ui-color-muted hover:bg-surface-elevated hover:text-content-primary"
               }`}
             >
-              <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
-                <p>
-                  <Ghost size={10} className="mr-1 inline-block align-[-1px]" aria-hidden="true" />
+              {isMicrophoneTestActive ? (
+                <>
+                  <Square size={9} fill="currentColor" aria-hidden="true" />
                   {t({
-                    id: "settings.general.shortcuts.help_temporary",
-                    message:
-                      "Makes a shortcut temporary. It will not save audio, transcript, or history.",
+                    id: "settings.general.microphone_test.stop",
+                    message: "Stop",
                   })}
-                </p>
-                <p className="mt-1">
-                  <BrushCleaning
-                    size={10}
-                    className="mr-1 inline-block align-[-1px]"
-                    aria-hidden="true"
-                  />
+                </>
+              ) : microphoneTestStatus === "error" ? (
+                <>
+                  <Check size={10} aria-hidden="true" />
                   {t({
-                    id: "settings.general.shortcuts.help_cleanup",
-                    message:
-                      "Runs Cleanup for that shortcut only.",
+                    id: "settings.general.microphone_test.done",
+                    message: "Done",
                   })}
-                </p>
-              </div>
-            </div>
-            </div>
-          }
-        >
-          {t({
-            id: "settings.general.shortcuts",
-            message: "Shortcuts",
-          })}
-        </SectionLabel>
-
-        <div className="relative space-y-3 rounded-lg bg-surface-surface p-2.5">
-          <ShortcutRow
-            mode="smart"
-            isExpanded={expandedShortcut === "smart"}
-            onToggleExpand={() =>
-              setExpandedShortcut(expandedShortcut === "smart" ? null : "smart")
-            }
-            label={t({
-              id: "settings.general.shortcuts.smart",
-              message: "Smart",
-            })}
-            description={t({
-              id: "settings.general.shortcuts.smart_description",
-              message: "tap to toggle, hold to talk",
-            })}
-            bindings={shortcutBindings.smart}
-            invalidDrafts={invalidShortcutDrafts.smart}
-            enabled={smartEnabled}
-            captureActive={captureActive}
-            capturePreview={capturePreview}
-            onToggle={() => {
-              if (!smartEnabled && !holdEnabled && !toggleEnabled) return;
-              setSmartEnabled(!smartEnabled);
-            }}
-            onCapture={(index) => {
-              if (!smartEnabled) return;
-              onStartCapture("smart", index);
-            }}
-            onUpdateBinding={updateShortcutBinding}
-            onAddBinding={addShortcutBinding}
-            onRemoveBinding={removeShortcutBinding}
-            canDisable={holdEnabled || toggleEnabled}
-            cleanupDisabled={aiFeaturesDisabled}
-          />
-          <ShortcutRow
-            mode="hold"
-            isExpanded={expandedShortcut === "hold"}
-            onToggleExpand={() =>
-              setExpandedShortcut(expandedShortcut === "hold" ? null : "hold")
-            }
-            label={t({
-              id: "settings.general.shortcuts.hold",
-              message: "Hold",
-            })}
-            description={t({
-              id: "settings.general.shortcuts.hold_description",
-              message: "hold to talk, release to stop",
-            })}
-            bindings={shortcutBindings.hold}
-            invalidDrafts={invalidShortcutDrafts.hold}
-            enabled={holdEnabled}
-            captureActive={captureActive}
-            capturePreview={capturePreview}
-            onToggle={() => {
-              if (!holdEnabled && !toggleEnabled && !smartEnabled) return;
-              setHoldEnabled(!holdEnabled);
-            }}
-            onCapture={(index) => {
-              if (!holdEnabled) return;
-              onStartCapture("hold", index);
-            }}
-            onUpdateBinding={updateShortcutBinding}
-            onAddBinding={addShortcutBinding}
-            onRemoveBinding={removeShortcutBinding}
-            canDisable={smartEnabled || toggleEnabled}
-            cleanupDisabled={aiFeaturesDisabled}
-          />
-          <ShortcutRow
-            mode="toggle"
-            isExpanded={expandedShortcut === "toggle"}
-            onToggleExpand={() =>
-              setExpandedShortcut(
-                expandedShortcut === "toggle" ? null : "toggle",
-              )
-            }
-            label={t({
-              id: "settings.general.shortcuts.toggle",
-              message: "Toggle",
-            })}
-            description={t({
-              id: "settings.general.shortcuts.toggle_description",
-              message: "tap to start, tap to stop",
-            })}
-            bindings={shortcutBindings.toggle}
-            invalidDrafts={invalidShortcutDrafts.toggle}
-            enabled={toggleEnabled}
-            captureActive={captureActive}
-            capturePreview={capturePreview}
-            onToggle={() => {
-              if (!toggleEnabled && !holdEnabled && !smartEnabled) return;
-              setToggleEnabled(!toggleEnabled);
-            }}
-            onCapture={(index) => {
-              if (!toggleEnabled) return;
-              onStartCapture("toggle", index);
-            }}
-            onUpdateBinding={updateShortcutBinding}
-            onAddBinding={addShortcutBinding}
-            onRemoveBinding={removeShortcutBinding}
-            canDisable={smartEnabled || holdEnabled}
-            cleanupDisabled={aiFeaturesDisabled}
-          />
+                </>
+              ) : (
+                <>
+                  <Mic size={10} aria-hidden="true" />
+                  {t({
+                    id: "settings.general.microphone_test.test",
+                    message: "Test",
+                  })}
+                </>
+              )}
+            </button>
+          </div>
+          <div className="h-[38px]">
+            {microphoneTestStatus === "listening" ||
+            microphoneTestStatus === "error" ? (
+              <MicrophoneTestSlot
+                status={microphoneTestStatus}
+                levels={microphoneTestLevels}
+                label={
+                  activeDeviceLabel ??
+                  getSelectedMicrophoneName(inputDevices, microphoneDevice) ??
+                  systemDefaultLabel
+                }
+                error={microphoneTestError}
+              />
+            ) : (
+              <Dropdown
+                value={microphoneDevice || ""}
+                onChange={(val) =>
+                  onMicrophoneDeviceChange(val === "" ? null : val)
+                }
+                onOpenChange={setMicDropdownOpen}
+                options={[
+                  {
+                    value: "",
+                    label: systemDefaultLabel,
+                  },
+                  ...inputDevices.map((device) => ({
+                    value: device.id,
+                    label: device.name,
+                  })),
+                ]}
+                placeholder={t({
+                  id: "settings.general.select_microphone",
+                  message: "Select microphone...",
+                })}
+                className="h-[38px]"
+                buttonClassName="h-[38px] px-3 py-2 ui-text-body-sm"
+                menuClassName="top-[38px]"
+              />
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <SectionLabel>
-          {t({
-            id: "settings.general.features",
-            message: "Features",
-          })}
-        </SectionLabel>
-
-        <div className="space-y-3">
-          <div
-            className={`rounded-lg bg-surface-surface transition-opacity ${
-              aiFeaturesDisabled ? "opacity-55" : "opacity-100"
-            }`}
-          >
-            <div className="py-2 px-2.5">
-              <div className="flex items-center justify-between">
-                <span className="ui-text-label-strong ui-color-primary">
-                  {t({
-                    id: "settings.general.edit_mode",
-                    message: "Edit Mode",
+        <div className="space-y-1.5">
+          <div className="flex h-5 items-center">
+            <div className="flex items-center gap-1">
+              <label className="ui-text-label-strong ui-color-primary leading-none">
+                {t({
+                  id: "settings.general.transcription_language",
+                  message: "Transcription Language",
+                })}
+              </label>
+              <div className="relative group">
+                <button
+                  className="flex h-4 w-4 items-center justify-center text-content-disabled hover:text-content-muted transition-colors"
+                  aria-label={t({
+                    id: "settings.general.language_info_aria",
+                    message:
+                      "More information about transcription language support",
                   })}
-                </span>
-                <ToggleSwitch
-                  enabled={editModeEnabled}
-                  onToggle={() => aiFeaturesReady && setEditModeEnabled(!editModeEnabled)}
-                  ariaLabel={t({
-                    id: "settings.general.edit_mode.toggle_aria",
-                    message: "Toggle Edit Mode",
-                  })}
-                  disabled={aiFeaturesDisabled}
-                />
-              </div>
-              <div className="flex items-center justify-between mt-0.5">
-                <span className="ui-text-meta ui-color-muted">
-                  {aiFeaturesDisabled ? (
-                    <>
-                      {aiFeaturesRequireLicense
-                        ? t({
-                            id: "settings.general.edit_mode.license_prefix",
-                            message: "Activate Glimpse Personal in",
-                          })
-                        : t({
-                            id: "settings.general.edit_mode.configure_prefix",
-                            message: "Set up AI writing in",
-                          })}{" "}
-                      <button
-                        type="button"
-                        onClick={
-                          aiFeaturesRequireLicense
-                            ? onOpenAccountTab
-                            : onOpenProvidersTab
-                        }
-                        className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
-                      >
-                        {aiFeaturesRequireLicense
-                          ? t({
-                              id: "settings.general.account_tab",
-                              message: "Account",
-                            })
-                          : t({
-                              id: "settings.general.providers_tab",
-                              message: "Providers",
-                            })}
-                      </button>{" "}
-                      {t({
-                        id: "settings.general.edit_mode.models_suffix",
-                        message: "to use Edit Mode.",
-                      })}
-                    </>
-                  ) : (
-                    t({
-                      id: "settings.general.edit_mode.body",
-                      message: "transform selected text with voice",
-                    })
-                  )}
-                </span>
-                <div
-                  className="relative"
-                  onMouseEnter={() => {
-                    if (!aiFeaturesDisabled) showHelpTooltip("edit-mode");
-                  }}
-                  onMouseLeave={() => hideHelpTooltip("edit-mode")}
                 >
-                  <button
-                    type="button"
-                    disabled={aiFeaturesDisabled}
-                    className="p-0.5 text-content-disabled transition-colors enabled:hover:text-content-muted disabled:pointer-events-none"
-                    aria-label={t({
-                      id: "settings.general.edit_mode.info_aria",
-                      message: "More information about Edit Mode",
-                    })}
-                    aria-expanded={
-                      !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
-                    }
-                    aria-controls="edit-mode-help-tooltip"
-                    onFocus={() => {
-                      if (!aiFeaturesDisabled) showHelpTooltip("edit-mode");
-                    }}
-                    onBlur={() => hideHelpTooltip("edit-mode")}
-                    onKeyDown={(event) => {
-                      if (aiFeaturesDisabled) return;
-                      if (event.key === "Escape") {
-                        event.preventDefault();
-                        hideHelpTooltip("edit-mode");
-                      }
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        toggleHelpTooltip("edit-mode");
-                      }
-                    }}
-                  >
-                    <Info size={10} aria-hidden="true" />
-                  </button>
-                  <div
-                    id="edit-mode-help-tooltip"
-                    role="tooltip"
-                    className={`absolute right-0 bottom-full mb-1 z-tooltip ${
-                      !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
-                        ? "block"
-                        : "hidden"
-                    }`}
-                  >
-                    <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
-                      <p>
-                        {t({
-                          id: "settings.general.edit_mode.help",
-                          message:
-                            'Select text in any app, and speak a command like "make this formal" or "fix my grammar".',
-                        })}
-                      </p>
-                      {!aiFeaturesReady && (
-                        <p className="text-warning mt-1">
-                          {aiFeaturesRequireLicense
-                            ? t({
-                                id: "settings.general.edit_mode.help_license_requirement",
-                                message: "Requires Glimpse Personal.",
-                              })
-                            : t({
-                                id: "settings.general.edit_mode.help_requirement",
-                                message:
-                                  "Requires an enabled and configured writing provider.",
-                              })}
-                        </p>
-                      )}
-                    </div>
+                  <Info size={10} aria-hidden="true" />
+                </button>
+                <div className="absolute right-0 bottom-full mb-1 hidden group-hover:block group-focus-within:block z-tooltip">
+                  <div className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight">
+                    <p>
+                      {t({
+                        id: "settings.general.language_info.active_model",
+                        message:
+                          "Unsupported languages aren't available on your active model. Switch to a supported model to use them.",
+                      })}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          <div className="rounded-lg bg-surface-surface">
-            <div className="py-2 px-2.5">
-              <div className="flex items-center justify-between">
-                <span className="ui-text-label-strong ui-color-primary">
-                  {t({
-                    id: "settings.general.auto_dictionary",
-                    message: "Auto Dictionary",
-                  })}
-                </span>
-                <ToggleSwitch
-                  enabled={autoDictionarySupported && autoDictionaryEnabled}
-                  disabled={!autoDictionarySupported}
-                  onToggle={() => {
-                    if (autoDictionarySupported) {
-                      setAutoDictionaryEnabled(!autoDictionaryEnabled);
-                    }
-                  }}
-                  ariaLabel={t({
-                    id: "settings.general.auto_dictionary.toggle_aria",
-                    message: "Toggle Auto Dictionary",
-                  })}
-                />
-              </div>
-              <span className="ui-text-meta ui-color-muted block mt-0.5">
-                {autoDictionaryBody}
-              </span>
-            </div>
+          <div>
+            <Dropdown
+              value={language}
+              onChange={(val) => onLanguageChange(val)}
+              onOpenChange={setLanguageDropdownOpen}
+              options={languages.map((lang) => ({
+                value: lang.code,
+                label: lang.name,
+                locked: lang.locked,
+                isHeader: lang.isHeader,
+                prominentHeader: lang.prominentHeader,
+                description: lang.description,
+              }))}
+              searchable
+              searchPlaceholder={t({
+                id: "settings.general.search_language",
+                message: "Search language...",
+              })}
+              buttonClassName="min-h-[38px] px-3 py-2 ui-text-body-sm"
+            />
           </div>
-
         </div>
       </div>
-    </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <SectionLabel
+            trailing={
+              <div
+                className="relative"
+                onMouseEnter={() => showHelpTooltip("shortcuts")}
+                onMouseLeave={() => hideHelpTooltip("shortcuts")}
+              >
+                <button
+                  type="button"
+                  className="flex h-4 w-4 items-center justify-center text-content-disabled transition-colors hover:text-content-muted"
+                  aria-label={t({
+                    id: "settings.general.shortcuts.info_aria",
+                    message: "More information about shortcut options",
+                  })}
+                  aria-expanded={openHelpTooltip === "shortcuts"}
+                  aria-controls="shortcuts-help-tooltip"
+                  onFocus={() => showHelpTooltip("shortcuts")}
+                  onBlur={() => hideHelpTooltip("shortcuts")}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      hideHelpTooltip("shortcuts");
+                    }
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      toggleHelpTooltip("shortcuts");
+                    }
+                  }}
+                >
+                  <Info size={10} aria-hidden="true" />
+                </button>
+                <div
+                  id="shortcuts-help-tooltip"
+                  role="tooltip"
+                  className={`absolute left-0 bottom-full mb-1 z-tooltip ${
+                    openHelpTooltip === "shortcuts" ? "block" : "hidden"
+                  }`}
+                >
+                  <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
+                    <p>
+                      <Ghost
+                        size={10}
+                        className="mr-1 inline-block align-[-1px]"
+                        aria-hidden="true"
+                      />
+                      {t({
+                        id: "settings.general.shortcuts.help_temporary",
+                        message:
+                          "Makes a shortcut temporary. It will not save audio, transcript, or history.",
+                      })}
+                    </p>
+                    <p className="mt-1">
+                      <BrushCleaning
+                        size={10}
+                        className="mr-1 inline-block align-[-1px]"
+                        aria-hidden="true"
+                      />
+                      {t({
+                        id: "settings.general.shortcuts.help_cleanup",
+                        message: "Runs Cleanup for that shortcut only.",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            }
+          >
+            {t({
+              id: "settings.general.shortcuts",
+              message: "Shortcuts",
+            })}
+          </SectionLabel>
+
+          <div className="relative space-y-3 rounded-lg bg-surface-surface p-2.5">
+            <ShortcutRow
+              mode="smart"
+              isExpanded={expandedShortcut === "smart"}
+              onToggleExpand={() =>
+                setExpandedShortcut(
+                  expandedShortcut === "smart" ? null : "smart",
+                )
+              }
+              label={t({
+                id: "settings.general.shortcuts.smart",
+                message: "Smart",
+              })}
+              description={t({
+                id: "settings.general.shortcuts.smart_description",
+                message: "tap to toggle, hold to talk",
+              })}
+              bindings={shortcutBindings.smart}
+              invalidDrafts={invalidShortcutDrafts.smart}
+              enabled={smartEnabled}
+              captureActive={captureActive}
+              capturePreview={capturePreview}
+              onToggle={() => {
+                if (!smartEnabled && !holdEnabled && !toggleEnabled) return;
+                setSmartEnabled(!smartEnabled);
+              }}
+              onCapture={(index) => {
+                if (!smartEnabled) return;
+                onStartCapture("smart", index);
+              }}
+              onUpdateBinding={updateShortcutBinding}
+              onAddBinding={addShortcutBinding}
+              onRemoveBinding={removeShortcutBinding}
+              canDisable={holdEnabled || toggleEnabled}
+              cleanupDisabled={aiFeaturesDisabled}
+            />
+            <ShortcutRow
+              mode="hold"
+              isExpanded={expandedShortcut === "hold"}
+              onToggleExpand={() =>
+                setExpandedShortcut(expandedShortcut === "hold" ? null : "hold")
+              }
+              label={t({
+                id: "settings.general.shortcuts.hold",
+                message: "Hold",
+              })}
+              description={t({
+                id: "settings.general.shortcuts.hold_description",
+                message: "hold to talk, release to stop",
+              })}
+              bindings={shortcutBindings.hold}
+              invalidDrafts={invalidShortcutDrafts.hold}
+              enabled={holdEnabled}
+              captureActive={captureActive}
+              capturePreview={capturePreview}
+              onToggle={() => {
+                if (!holdEnabled && !toggleEnabled && !smartEnabled) return;
+                setHoldEnabled(!holdEnabled);
+              }}
+              onCapture={(index) => {
+                if (!holdEnabled) return;
+                onStartCapture("hold", index);
+              }}
+              onUpdateBinding={updateShortcutBinding}
+              onAddBinding={addShortcutBinding}
+              onRemoveBinding={removeShortcutBinding}
+              canDisable={smartEnabled || toggleEnabled}
+              cleanupDisabled={aiFeaturesDisabled}
+            />
+            <ShortcutRow
+              mode="toggle"
+              isExpanded={expandedShortcut === "toggle"}
+              onToggleExpand={() =>
+                setExpandedShortcut(
+                  expandedShortcut === "toggle" ? null : "toggle",
+                )
+              }
+              label={t({
+                id: "settings.general.shortcuts.toggle",
+                message: "Toggle",
+              })}
+              description={t({
+                id: "settings.general.shortcuts.toggle_description",
+                message: "tap to start, tap to stop",
+              })}
+              bindings={shortcutBindings.toggle}
+              invalidDrafts={invalidShortcutDrafts.toggle}
+              enabled={toggleEnabled}
+              captureActive={captureActive}
+              capturePreview={capturePreview}
+              onToggle={() => {
+                if (!toggleEnabled && !holdEnabled && !smartEnabled) return;
+                setToggleEnabled(!toggleEnabled);
+              }}
+              onCapture={(index) => {
+                if (!toggleEnabled) return;
+                onStartCapture("toggle", index);
+              }}
+              onUpdateBinding={updateShortcutBinding}
+              onAddBinding={addShortcutBinding}
+              onRemoveBinding={removeShortcutBinding}
+              canDisable={smartEnabled || holdEnabled}
+              cleanupDisabled={aiFeaturesDisabled}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <SectionLabel>
+            {t({
+              id: "settings.general.features",
+              message: "Features",
+            })}
+          </SectionLabel>
+
+          <div className="space-y-3">
+            <div
+              className={`rounded-lg bg-surface-surface transition-opacity ${
+                aiFeaturesDisabled ? "opacity-55" : "opacity-100"
+              }`}
+            >
+              <div className="py-2 px-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="ui-text-label-strong ui-color-primary">
+                    {t({
+                      id: "settings.general.edit_mode",
+                      message: "Edit Mode",
+                    })}
+                  </span>
+                  <ToggleSwitch
+                    enabled={editModeEnabled}
+                    onToggle={() =>
+                      aiFeaturesReady && setEditModeEnabled(!editModeEnabled)
+                    }
+                    ariaLabel={t({
+                      id: "settings.general.edit_mode.toggle_aria",
+                      message: "Toggle Edit Mode",
+                    })}
+                    disabled={aiFeaturesDisabled}
+                  />
+                </div>
+                <div className="flex items-center justify-between mt-0.5">
+                  <span className="ui-text-meta ui-color-muted">
+                    {aiFeaturesDisabled ? (
+                      <>
+                        {aiFeaturesRequireLicense
+                          ? t({
+                              id: "settings.general.edit_mode.license_prefix",
+                              message: "Activate Glimpse Personal in",
+                            })
+                          : t({
+                              id: "settings.general.edit_mode.configure_prefix",
+                              message: "Set up AI writing in",
+                            })}{" "}
+                        <button
+                          type="button"
+                          onClick={
+                            aiFeaturesRequireLicense
+                              ? onOpenAccountTab
+                              : onOpenProvidersTab
+                          }
+                          className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
+                        >
+                          {aiFeaturesRequireLicense
+                            ? t({
+                                id: "settings.general.account_tab",
+                                message: "Account",
+                              })
+                            : t({
+                                id: "settings.general.providers_tab",
+                                message: "Providers",
+                              })}
+                        </button>{" "}
+                        {t({
+                          id: "settings.general.edit_mode.models_suffix",
+                          message: "to use Edit Mode.",
+                        })}
+                      </>
+                    ) : (
+                      t({
+                        id: "settings.general.edit_mode.body",
+                        message: "transform selected text with voice",
+                      })
+                    )}
+                  </span>
+                  <div
+                    className="relative"
+                    onMouseEnter={() => {
+                      if (!aiFeaturesDisabled) showHelpTooltip("edit-mode");
+                    }}
+                    onMouseLeave={() => hideHelpTooltip("edit-mode")}
+                  >
+                    <button
+                      type="button"
+                      disabled={aiFeaturesDisabled}
+                      className="p-0.5 text-content-disabled transition-colors enabled:hover:text-content-muted disabled:pointer-events-none"
+                      aria-label={t({
+                        id: "settings.general.edit_mode.info_aria",
+                        message: "More information about Edit Mode",
+                      })}
+                      aria-expanded={
+                        !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
+                      }
+                      aria-controls="edit-mode-help-tooltip"
+                      onFocus={() => {
+                        if (!aiFeaturesDisabled) showHelpTooltip("edit-mode");
+                      }}
+                      onBlur={() => hideHelpTooltip("edit-mode")}
+                      onKeyDown={(event) => {
+                        if (aiFeaturesDisabled) return;
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          hideHelpTooltip("edit-mode");
+                        }
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggleHelpTooltip("edit-mode");
+                        }
+                      }}
+                    >
+                      <Info size={10} aria-hidden="true" />
+                    </button>
+                    <div
+                      id="edit-mode-help-tooltip"
+                      role="tooltip"
+                      className={`absolute right-0 bottom-full mb-1 z-tooltip ${
+                        !aiFeaturesDisabled && openHelpTooltip === "edit-mode"
+                          ? "block"
+                          : "hidden"
+                      }`}
+                    >
+                      <div className="bg-surface-overlay border border-border-secondary rounded-lg px-2.5 py-1.5 ui-text-micro ui-color-secondary w-44 shadow-lg leading-tight">
+                        <p>
+                          {t({
+                            id: "settings.general.edit_mode.help",
+                            message:
+                              'Select text in any app, and speak a command like "make this formal" or "fix my grammar".',
+                          })}
+                        </p>
+                        {!aiFeaturesReady && (
+                          <p className="text-warning mt-1">
+                            {aiFeaturesRequireLicense
+                              ? t({
+                                  id: "settings.general.edit_mode.help_license_requirement",
+                                  message: "Requires Glimpse Personal.",
+                                })
+                              : t({
+                                  id: "settings.general.edit_mode.help_requirement",
+                                  message:
+                                    "Requires an enabled and configured writing provider.",
+                                })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-surface-surface">
+              <div className="py-2 px-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="ui-text-label-strong ui-color-primary">
+                    {t({
+                      id: "settings.general.auto_dictionary",
+                      message: "Auto Dictionary",
+                    })}
+                  </span>
+                  <ToggleSwitch
+                    enabled={autoDictionarySupported && autoDictionaryEnabled}
+                    disabled={!autoDictionarySupported}
+                    onToggle={() => {
+                      if (autoDictionarySupported) {
+                        setAutoDictionaryEnabled(!autoDictionaryEnabled);
+                      }
+                    }}
+                    ariaLabel={t({
+                      id: "settings.general.auto_dictionary.toggle_aria",
+                      message: "Toggle Auto Dictionary",
+                    })}
+                  />
+                </div>
+                <span className="ui-text-meta ui-color-muted block mt-0.5">
+                  {autoDictionaryBody}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -933,26 +941,23 @@ const MicrophoneLevelMeter = ({ levels }: MicrophoneLevelMeterProps) => (
     }}
   >
     {[levels.left, levels.right].flatMap((level, row) =>
-      Array.from(
-        { length: MICROPHONE_TEST_DOT_COLS },
-        (_, col) => {
-          const active = col < levelToDotCount(level);
-          return (
-            <div
-              key={`${row}-${col}`}
-              style={{
-                width: MICROPHONE_TEST_DOT_SIZE,
-                height: MICROPHONE_TEST_DOT_SIZE,
-                backgroundColor: getMicrophoneDotColor(col),
-                opacity: active ? 0.95 : 0.16,
-                borderRadius: active ? 0.5 : "50%",
-                transition:
-                  "border-radius 0.18s ease-out, opacity 0.18s ease-out",
-              }}
-            />
-          );
-        },
-      ),
+      Array.from({ length: MICROPHONE_TEST_DOT_COLS }, (_, col) => {
+        const active = col < levelToDotCount(level);
+        return (
+          <div
+            key={`${row}-${col}`}
+            style={{
+              width: MICROPHONE_TEST_DOT_SIZE,
+              height: MICROPHONE_TEST_DOT_SIZE,
+              backgroundColor: getMicrophoneDotColor(col),
+              opacity: active ? 0.95 : 0.16,
+              borderRadius: active ? 0.5 : "50%",
+              transition:
+                "border-radius 0.18s ease-out, opacity 0.18s ease-out",
+            }}
+          />
+        );
+      }),
     )}
   </div>
 );
@@ -1093,9 +1098,11 @@ const useMicrophoneTest = (
 
       const AudioContextCtor =
         window.AudioContext ??
-        (window as typeof window & {
-          webkitAudioContext?: typeof AudioContext;
-        }).webkitAudioContext;
+        (
+          window as typeof window & {
+            webkitAudioContext?: typeof AudioContext;
+          }
+        ).webkitAudioContext;
 
       if (!AudioContextCtor) {
         throw new Error("AudioContext is not available");
@@ -1155,13 +1162,7 @@ const useMicrophoneTest = (
       setStatus("error");
       setError(t(formatMicrophoneTestError(err)));
     }
-  }, [
-    clearMeterState,
-    inputDevices,
-    microphoneDevice,
-    releaseResources,
-    t,
-  ]);
+  }, [clearMeterState, inputDevices, microphoneDevice, releaseResources, t]);
 
   useEffect(() => releaseResources, [releaseResources]);
 
@@ -1222,8 +1223,7 @@ const findBrowserMicrophoneDeviceId = async (
 
     const browserLabel = normalizeMicrophoneLabel(device.label);
     return (
-      browserLabel.includes(selectedName) ||
-      selectedName.includes(browserLabel)
+      browserLabel.includes(selectedName) || selectedName.includes(browserLabel)
     );
   });
 
@@ -1339,9 +1339,9 @@ const ShortcutBindingsList = ({
             ? "border-border-hover ui-color-primary"
             : primaryInvalid
               ? "border-error/40 ui-color-error"
-            : enabled
-              ? "border-border-primary ui-color-secondary hover:border-border-secondary"
-              : "border-border-primary ui-color-disabled"
+              : enabled
+                ? "border-border-primary ui-color-secondary hover:border-border-secondary"
+                : "border-border-primary ui-color-disabled"
         }`}
       >
         <button
@@ -1367,7 +1367,7 @@ const ShortcutBindingsList = ({
               </span>
             </>
           ) : (
-              <span className="truncate">{primaryDisplay}</span>
+            <span className="truncate">{primaryDisplay}</span>
           )}
         </button>
 
@@ -1395,10 +1395,7 @@ const ShortcutBindingsList = ({
             })
           }
         >
-          <BrushCleaning
-            size={13}
-            aria-hidden="true"
-          />
+          <BrushCleaning size={13} aria-hidden="true" />
         </ShortcutIconToggle>
 
         {(alternateCount > 0 || canAdd) && (
@@ -1485,7 +1482,7 @@ const ShortcutBindingsList = ({
                         ? "border-border-hover ui-color-primary"
                         : isInvalid
                           ? "border-error/40 ui-color-error"
-                        : "border-border-primary ui-color-muted hover:border-border-secondary hover:ui-color-secondary"
+                          : "border-border-primary ui-color-muted hover:border-border-secondary hover:ui-color-secondary"
                     }`}
                   >
                     <button

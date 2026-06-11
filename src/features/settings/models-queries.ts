@@ -42,7 +42,10 @@ export function resolveSpeechModelLabel(
   return formatTranscriptionSpeechModel(normalized) ?? normalized;
 }
 
-export function useModelStatuses(models: readonly string[], enabled: boolean = true) {
+export function useModelStatuses(
+  models: readonly string[],
+  enabled: boolean = true,
+) {
   const uniqueModels = useMemo(
     () => Array.from(new Set(models.filter(Boolean))),
     [models],

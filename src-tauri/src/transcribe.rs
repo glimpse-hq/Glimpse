@@ -33,6 +33,7 @@ pub(crate) fn run_transcription_prune_for_settings(
             TranscriptionCompletePayload {
                 transcript: String::new(),
                 auto_paste: false,
+                record: None,
             },
         )?;
     }
@@ -135,8 +136,8 @@ pub(crate) fn queue_transcription(
 
     let http = state.http();
     let app_handle = app.clone();
-    let saved_for_task = saved.clone();
-    let recording_for_task = recording.clone();
+    let saved_for_task = saved;
+    let recording_for_task = recording;
 
     async_runtime::spawn(async move {
         let cancel_for_check = cancel_token.clone();
@@ -150,6 +151,9 @@ pub(crate) fn queue_transcription(
         let active_mode = mode_context::resolve_active_personality(&settings);
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
+        let app_for_local = &app_handle;
+        let settings_for_local = &settings;
+        let cancel_for_local = cancel_token.clone();
         let result = speech::transcribe(
             &app_handle,
             &http,
@@ -160,12 +164,12 @@ pub(crate) fn queue_transcription(
             false,
             || is_cancelled(),
             |success| success,
-            || {
+            move || {
                 transcribe_completed_recording_locally(
-                    &app_handle,
-                    &settings,
-                    recording_for_task.clone(),
-                    Some(cancel_token.clone()),
+                    app_for_local,
+                    settings_for_local,
+                    recording_for_task,
+                    Some(cancel_for_local),
                     use_remote,
                 )
             },
@@ -339,44 +343,33 @@ async fn transcribe_completed_recording_locally(
     let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
 
     match async_runtime::spawn_blocking(move || {
-        if is_whisper {
-            transcribe_local_chunked(
-                &transcriber,
-                &ready_model,
-                &recording.samples,
-                recording.sample_rate,
-                LocalChunkingConfig {
-                    dictionary: &dictionary_terms,
-                    language: Some(&language),
-                    chunk_seconds: speech::WHISPER_CHUNK_SECONDS as f32,
-                    overlap_seconds: speech::WHISPER_CHUNK_OVERLAP_SECONDS as f32,
-                    cancel_token: cancel_token.as_ref(),
-                    strip_hallucinated_thank_you: true,
-                },
+        let (chunk_seconds, overlap_seconds, strip_hallucinated_thank_you) = if is_whisper {
+            (
+                speech::WHISPER_CHUNK_SECONDS,
+                speech::WHISPER_CHUNK_OVERLAP_SECONDS,
+                true,
             )
         } else {
-            let speech_percent = speech_percentage_i16_with_mode(
-                &recording.samples,
-                recording.sample_rate,
-                VadMode::VeryAggressive,
-            );
-            if speech_percent < speech::VAD_MIN_SPEECH_PERCENT_FILE {
-                Ok(transcription_api::TranscriptionSuccess {
-                    transcript: String::new(),
-                    speech_model: None,
-                    segments: None,
-                    words: None,
-                })
-            } else {
-                transcriber.transcribe(
-                    &ready_model,
-                    &recording.samples,
-                    recording.sample_rate,
-                    &dictionary_terms,
-                    Some(&language),
-                )
-            }
-        }
+            (
+                speech::PARAKEET_CHUNK_SECONDS,
+                speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
+                false,
+            )
+        };
+        transcribe_local_chunked(
+            &transcriber,
+            &ready_model,
+            &recording.samples,
+            recording.sample_rate,
+            LocalChunkingConfig {
+                dictionary: &dictionary_terms,
+                language: Some(&language),
+                chunk_seconds: chunk_seconds as f32,
+                overlap_seconds: overlap_seconds as f32,
+                cancel_token: cancel_token.as_ref(),
+                strip_hallucinated_thank_you,
+            },
+        )
     })
     .await
     {
@@ -485,7 +478,6 @@ async fn transcribe_recovered_recording(
     let active_mode = mode_context::resolve_active_personality(settings);
     let model_id = speech::selected_model(settings);
     let use_remote = remote_speech::is_remote_model(&model_id);
-    let recording_for_local = recording.clone();
 
     let result = match speech::transcribe(
         app,
@@ -497,15 +489,7 @@ async fn transcribe_recovered_recording(
         false,
         || false,
         |success| success,
-        || {
-            transcribe_completed_recording_locally(
-                app,
-                settings,
-                recording_for_local.clone(),
-                None,
-                use_remote,
-            )
-        },
+        move || transcribe_completed_recording_locally(app, settings, recording, None, use_remote),
     )
     .await
     {
@@ -605,6 +589,7 @@ async fn transcribe_saved_recording_locally(
             started_at: saved.started_at,
             ended_at: saved.ended_at,
             pending_path: None,
+            speech_percentage: None,
         },
         cancel_token,
         prefer_any_installed,
@@ -920,7 +905,7 @@ pub(crate) fn retry_transcription_async(
                     llm_cleaned
                 );
 
-                let _ = app_handle
+                let updated_record = match app_handle
                     .state::<AppState>()
                     .storage()
                     .update_transcription_result(
@@ -930,7 +915,13 @@ pub(crate) fn retry_transcription_async(
                         storage::TranscriptionStatus::Success,
                         None,
                         metadata.clone(),
-                    );
+                    ) {
+                    Ok(record) => record,
+                    Err(err) => {
+                        eprintln!("Failed to save retry result: {err}");
+                        return;
+                    }
+                };
 
                 analytics::track_transcription_completed(
                     &app_handle,
@@ -950,6 +941,7 @@ pub(crate) fn retry_transcription_async(
                     TranscriptionCompletePayload {
                         transcript: final_transcript,
                         auto_paste: false,
+                        record: updated_record,
                     },
                 );
             }
@@ -1000,12 +992,51 @@ fn emit_transcription_complete_with_cleanup(
     );
     app.state::<AppState>().record_transcription_completed();
 
+    let (record, persisted) = if temporary {
+        (None, true)
+    } else {
+        let save_result = if llm_cleaned {
+            app.state::<AppState>()
+                .storage()
+                .save_transcription_with_cleanup(
+                    raw_transcript,
+                    final_transcript.clone(),
+                    audio_path.clone(),
+                    metadata,
+                    None,
+                    timestamp_override,
+                )
+        } else {
+            app.state::<AppState>().storage().save_transcription(
+                final_transcript.clone(),
+                audio_path.clone(),
+                storage::TranscriptionStatus::Success,
+                None,
+                metadata,
+                None,
+                timestamp_override,
+            )
+        };
+
+        match save_result {
+            Ok(record) => {
+                discard_pending_recording(pending_path.as_deref());
+                (Some(record), true)
+            }
+            Err(err) => {
+                eprintln!("Failed to persist transcription: {err}");
+                (None, false)
+            }
+        }
+    };
+
     crate::emit_event(
         app,
         EVENT_TRANSCRIPTION_COMPLETE,
         TranscriptionCompletePayload {
-            transcript: final_transcript.clone(),
+            transcript: final_transcript,
             auto_paste,
+            record,
         },
     );
 
@@ -1016,40 +1047,6 @@ fn emit_transcription_complete_with_cleanup(
         discard_pending_recording(pending_path.as_deref());
         return true;
     }
-
-    let save_result = if llm_cleaned {
-        app.state::<AppState>()
-            .storage()
-            .save_transcription_with_cleanup(
-                raw_transcript,
-                final_transcript,
-                audio_path,
-                metadata,
-                None,
-                timestamp_override,
-            )
-    } else {
-        app.state::<AppState>().storage().save_transcription(
-            final_transcript,
-            audio_path,
-            storage::TranscriptionStatus::Success,
-            None,
-            metadata,
-            None,
-            timestamp_override,
-        )
-    };
-
-    let persisted = match save_result {
-        Ok(_) => {
-            discard_pending_recording(pending_path.as_deref());
-            true
-        }
-        Err(err) => {
-            eprintln!("Failed to persist transcription: {err}");
-            false
-        }
-    };
 
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
@@ -1086,6 +1083,7 @@ fn handle_empty_transcription(
         TranscriptionCompletePayload {
             transcript: String::new(),
             auto_paste: false,
+            record: None,
         },
     );
 
@@ -1475,7 +1473,6 @@ fn transcribe_local_chunked(
     let chunk_samples = chunk_samples.max(1);
     let overlap_samples = ((sample_rate.max(1) as f32) * overlap_seconds).round() as usize;
     let overlap_samples = overlap_samples.min(chunk_samples.saturating_sub(1));
-    let step = chunk_samples.saturating_sub(overlap_samples).max(1);
 
     let mut full_text = String::new();
     let mut start = 0usize;
@@ -1487,7 +1484,12 @@ fn transcribe_local_chunked(
                 return Err(anyhow!("Transcription cancelled"));
             }
         }
-        let end = (start + chunk_samples).min(samples.len());
+        let nominal_end = (start + chunk_samples).min(samples.len());
+        let end = if nominal_end == samples.len() {
+            nominal_end
+        } else {
+            start + crate::recorder::quiet_cut_index(&samples[start..nominal_end], sample_rate)
+        };
         let chunk = &samples[start..end];
         let chunk_speech_percent =
             speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
@@ -1496,27 +1498,27 @@ fn transcribe_local_chunked(
         } else {
             speech::VAD_MIN_SPEECH_PERCENT_CHUNK
         };
-        if chunk_speech_percent < min_chunk_threshold {
-            start += step;
-            continue;
-        }
-        let result = transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
-        if model_label.is_none() {
-            model_label = result.speech_model.clone();
-        }
+        if chunk_speech_percent >= min_chunk_threshold {
+            let result = transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
+            if model_label.is_none() {
+                model_label = result.speech_model.clone();
+            }
 
-        let chunk_text = result.transcript;
-        if !chunk_text.trim().is_empty() {
-            let deduped = dedupe_overlap_text(&full_text, &chunk_text);
-            if !deduped.trim().is_empty() {
-                append_deduped_chunk(&mut full_text, &deduped);
+            let chunk_text = result.transcript;
+            if !chunk_text.trim().is_empty() {
+                let deduped = dedupe_overlap_text(&full_text, &chunk_text);
+                if !deduped.trim().is_empty() {
+                    append_deduped_chunk(&mut full_text, &deduped);
+                }
             }
         }
 
         if end == samples.len() {
             break;
         }
-        start += step;
+        start = end
+            .saturating_sub(overlap_samples)
+            .max(start.saturating_add(1));
     }
 
     let transcript = if strip_hallucinated_thank_you {

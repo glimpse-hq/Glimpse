@@ -49,10 +49,7 @@ use tokio_util::sync::CancellationToken;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 use pill::PillController;
-use recorder::{
-    validate_recording, CompletedRecording, RecorderManager, RecordingRejectionReason,
-    RecordingSaved,
-};
+use recorder::{validate_recording, CompletedRecording, RecorderManager, RecordingRejectionReason};
 use reqwest::Client;
 use serde::Serialize;
 use settings::{
@@ -214,13 +211,7 @@ fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &settings::UserSe
 #[cfg(target_os = "macos")]
 fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     let state = app.state::<AppState>();
-    let mut current = match state.current_settings_unmasked() {
-        Ok(settings) => settings,
-        Err(err) => {
-            eprintln!("Failed to load settings for microphone selection: {err}");
-            return;
-        }
-    };
+    let mut current = state.current_settings_unmasked();
     if current.microphone_device.as_deref() == device_id {
         return;
     }
@@ -435,7 +426,6 @@ pub fn run() {
             get_app_info,
             open_data_dir,
             get_transcriptions,
-            get_today_dictation_stats,
             delete_transcription,
             retry_transcription,
             retry_llm_cleanup,
@@ -701,29 +691,11 @@ impl AppState {
     }
 
     pub fn current_settings(&self) -> UserSettings {
-        match self.settings_store.load() {
-            Ok(latest) => {
-                // Cache the unmasked truth so subsequent saves don't accidentally
-                // persist the license-gated mask back to disk. The masked view is
-                // only ever returned to the caller, never stored.
-                *self.settings.lock() = latest.clone();
-                self.settings_for_response(latest)
-            }
-            Err(err) => {
-                eprintln!("Failed to load settings from DB, using cache: {err}");
-                self.settings_for_response(self.settings.lock().clone())
-            }
-        }
+        self.settings_for_response(self.settings.lock().clone())
     }
 
-    pub(crate) fn current_settings_unmasked(&self) -> Result<UserSettings, String> {
-        match self.settings_store.load() {
-            Ok(latest) => {
-                *self.settings.lock() = latest.clone();
-                Ok(latest)
-            }
-            Err(err) => Err(err.to_string()),
-        }
+    pub(crate) fn current_settings_unmasked(&self) -> UserSettings {
+        self.settings.lock().clone()
     }
 
     pub(crate) fn settings_for_response(&self, mut settings: UserSettings) -> UserSettings {
@@ -744,7 +716,30 @@ impl AppState {
         }
     }
 
-    pub fn persist_settings(&self, mut next: UserSettings) -> GlimpseResult<UserSettings> {
+    pub fn persist_settings(&self, next: UserSettings) -> GlimpseResult<UserSettings> {
+        let mut guard = self.settings.lock();
+        let next = Self::canonicalize_and_save(&self.settings_store, next)?;
+        *guard = next.clone();
+        Ok(next)
+    }
+
+    pub(crate) fn persist_settings_with(
+        &self,
+        mutate: impl FnOnce(&UserSettings, &mut UserSettings),
+    ) -> GlimpseResult<(UserSettings, UserSettings)> {
+        let mut guard = self.settings.lock();
+        let prev = guard.clone();
+        let mut next = prev.clone();
+        mutate(&prev, &mut next);
+        let next = Self::canonicalize_and_save(&self.settings_store, next)?;
+        *guard = next.clone();
+        Ok((prev, next))
+    }
+
+    fn canonicalize_and_save(
+        store: &SettingsStore,
+        mut next: UserSettings,
+    ) -> GlimpseResult<UserSettings> {
         if matches!(next.transcription_mode, TranscriptionMode::Cloud) {
             next.transcription_mode = TranscriptionMode::Local;
         }
@@ -752,8 +747,7 @@ impl AppState {
         next.auto_delete_duration =
             settings::canonicalize_recording_prune_policy(next.auto_delete_duration);
 
-        self.settings_store.save(&next)?;
-        *self.settings.lock() = next.clone();
+        store.save(&next)?;
         Ok(next)
     }
 
@@ -1369,32 +1363,11 @@ fn calculate_dir_size(path: &std::path::Path) -> Result<u64> {
 #[tauri::command]
 fn get_transcriptions(
     state: tauri::State<AppState>,
-    search_query: Option<String>,
 ) -> Result<Vec<storage::TranscriptionRecord>, String> {
     state
         .storage()
-        .get_all_filtered(search_query.as_deref())
+        .get_all()
         .map_err(|err| format!("Failed to get transcriptions: {err}"))
-}
-
-#[tauri::command]
-fn get_today_dictation_stats(
-    state: tauri::State<AppState>,
-) -> Result<storage::TodayDictationStats, String> {
-    let today = Local::now().date_naive();
-    let start = today
-        .and_hms_opt(0, 0, 0)
-        .and_then(|time| time.and_local_timezone(Local).single())
-        .ok_or_else(|| "Failed to resolve local start of day".to_string())?;
-    let end = (today + chrono::Days::new(1))
-        .and_hms_opt(0, 0, 0)
-        .and_then(|time| time.and_local_timezone(Local).single())
-        .ok_or_else(|| "Failed to resolve local end of day".to_string())?;
-
-    state
-        .storage()
-        .get_today_dictation_stats(start.timestamp_millis(), end.timestamp_millis())
-        .map_err(|err| format!("Failed to get today stats: {err}"))
 }
 
 #[tauri::command]
@@ -1499,34 +1472,7 @@ pub(crate) fn persist_recording_async(
         }
     };
 
-    let recording_for_transcription = recording.clone();
-
-    async_runtime::spawn(async move {
-        let task =
-            async_runtime::spawn_blocking(move || recorder::persist_recording(base_dir, recording));
-        match task.await {
-            Ok(Ok(saved)) => emit_complete(
-                &app,
-                saved,
-                recording_for_transcription,
-                settings,
-                temporary,
-                cancel_token,
-            ),
-            Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
-            Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
-        }
-    });
-}
-
-fn emit_complete(
-    app: &AppHandle<AppRuntime>,
-    saved: RecordingSaved,
-    recording: CompletedRecording,
-    settings: settings::UserSettings,
-    temporary: bool,
-    cancel_token: CancellationToken,
-) {
+    // Validate before persisting so rejected recordings never touch disk.
     if let Err(rejection) = validate_recording(&recording) {
         let reason = match rejection {
             RecordingRejectionReason::TooShort {
@@ -1545,18 +1491,31 @@ fn emit_complete(
         };
         eprintln!("Recording rejected: {reason}");
 
-        if let Err(err) = std::fs::remove_file(&saved.path) {
-            eprintln!("Failed to remove rejected recording file: {err}");
-        }
         if let Some(path) = recording.pending_path.as_deref() {
             let _ = std::fs::remove_file(path);
         }
 
-        app.state::<AppState>().pill().finish_processing(app);
+        app.state::<AppState>().pill().finish_processing(&app);
         return;
     }
 
-    transcribe::queue_transcription(app, saved, recording, settings, temporary, cancel_token);
+    async_runtime::spawn(async move {
+        let task = async_runtime::spawn_blocking(move || {
+            recorder::persist_recording(base_dir, &recording).map(|saved| (saved, recording))
+        });
+        match task.await {
+            Ok(Ok((saved, recording))) => transcribe::queue_transcription(
+                &app,
+                saved,
+                recording,
+                settings,
+                temporary,
+                cancel_token,
+            ),
+            Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
+            Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
+        }
+    });
 }
 
 pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {
@@ -1633,6 +1592,7 @@ fn emit_recording_history_refresh(app: &AppHandle<AppRuntime>, deleted_count: u3
             TranscriptionCompletePayload {
                 transcript: String::new(),
                 auto_paste: false,
+                record: None,
             },
         );
     }
@@ -1820,6 +1780,7 @@ pub(crate) struct AudioSpectrumPayload {
 pub(crate) struct TranscriptionCompletePayload {
     pub(crate) transcript: String,
     pub(crate) auto_paste: bool,
+    pub(crate) record: Option<storage::TranscriptionRecord>,
 }
 
 #[derive(Serialize, Clone)]

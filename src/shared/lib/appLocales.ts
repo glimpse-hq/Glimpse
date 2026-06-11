@@ -10,18 +10,28 @@ function parseSupportedAppLocales(value: unknown): string[] {
 
   const locales = value.map((entry) => {
     if (typeof entry !== "string") {
-      throw new Error("supported-app-locales.json must only contain locale strings");
+      throw new Error(
+        "supported-app-locales.json must only contain locale strings",
+      );
     }
 
-    if (entry.length === 0 || entry !== entry.trim() || entry !== entry.toLowerCase()) {
-      throw new Error("supported-app-locales.json must use lowercase, trimmed locale codes");
+    if (
+      entry.length === 0 ||
+      entry !== entry.trim() ||
+      entry !== entry.toLowerCase()
+    ) {
+      throw new Error(
+        "supported-app-locales.json must use lowercase, trimmed locale codes",
+      );
     }
 
     return entry;
   });
 
   if (new Set(locales).size !== locales.length) {
-    throw new Error("supported-app-locales.json cannot contain duplicate locale codes");
+    throw new Error(
+      "supported-app-locales.json cannot contain duplicate locale codes",
+    );
   }
 
   return locales;

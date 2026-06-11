@@ -1,18 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import {
-  ArrowUpRight,
-  CircleNotch as Loader2,
-} from "@phosphor-icons/react";
+import { ArrowUpRight, CircleNotch as Loader2 } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import {
   editionFromLicenseState,
   editionInfo,
 } from "../../../shared/lib/licenseEdition";
-import {
-  tierInfo,
-  type PurchaseTier,
-} from "../../license/purchaseConfig";
+import { tierInfo, type PurchaseTier } from "../../license/purchaseConfig";
 import { TypewriterText } from "../../../shared/ui/TypewriterText";
 import type { LicenseState } from "../api";
 import { useDictationStats } from "../queries";
@@ -77,7 +71,9 @@ const MemberCardInner = ({
   const palette = useMemberCardPalette();
   const [previewTier, setPreviewTier] = useState<PurchaseTier | null>(null);
   const stripeSeedRef = useRef(
-    licenseState?.displayKey && active ? licenseState.displayKey : "draft-glimpse",
+    licenseState?.displayKey && active
+      ? licenseState.displayKey
+      : "draft-glimpse",
   );
 
   const personal = tierInfo("personal");
@@ -110,9 +106,7 @@ const MemberCardInner = ({
   const wordsSpokenValue =
     wordsSpoken !== null ? wordsSpoken.toLocaleString() : PLACEHOLDER;
   const licenseReady = Boolean(
-    active &&
-      displayKey &&
-      (name || email || memberSinceISO || memberSince),
+    active && displayKey && (name || email || memberSinceISO || memberSince),
   );
 
   const cardHeight = getMemberCardHeight();
@@ -231,9 +225,7 @@ const MemberCardInner = ({
       <MemberCardFrame>
         <CardHeaderRow
           price={previewInfo?.price ?? null}
-          priceColor={
-            previewTier ? TIER_COLORS[previewTier].fg : undefined
-          }
+          priceColor={previewTier ? TIER_COLORS[previewTier].fg : undefined}
           stamp={
             showStamp && displayKey ? (
               <SlamTierStamp
@@ -318,7 +310,11 @@ const MemberCardInner = ({
             ) : cinematic ? (
               <motion.h2
                 className="truncate font-bold tracking-[-0.02em]"
-                style={{ ...titleStyle, color: palette.textDisabled, opacity: 0.35 }}
+                style={{
+                  ...titleStyle,
+                  color: palette.textDisabled,
+                  opacity: 0.35,
+                }}
                 initial={{ opacity: 0.55 }}
                 animate={{ opacity: 0.35 }}
                 transition={{ duration: 0.45 }}
@@ -433,7 +429,9 @@ const MemberCardInner = ({
                   />
                 </div>
               ) : showCoverage ? (
-                isUserActivationReveal && typingReveal && stage === "coverage" ? (
+                isUserActivationReveal &&
+                typingReveal &&
+                stage === "coverage" ? (
                   <motion.div
                     key="coverage-reveal"
                     className="absolute inset-x-0 top-0 truncate font-mono"
@@ -655,7 +653,11 @@ const TierOption = ({
         </span>
       </span>
       {opening ? (
-        <Loader2 size={11} className="shrink-0 animate-spin" style={{ color: accent.fg }} />
+        <Loader2
+          size={11}
+          className="shrink-0 animate-spin"
+          style={{ color: accent.fg }}
+        />
       ) : (
         <ArrowUpRight
           size={11}

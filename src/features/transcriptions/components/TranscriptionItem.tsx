@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy,
@@ -72,7 +72,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     menuOpen,
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isExpanded) {
       setIsOverflowing(true);
       return;
@@ -81,14 +81,8 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     const element = textRef.current;
     if (!element) return;
 
-    let frameId = 0;
     const updateOverflow = () => {
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
-      frameId = window.requestAnimationFrame(() => {
-        setIsOverflowing(element.scrollHeight > element.clientHeight);
-      });
+      setIsOverflowing(element.scrollHeight > element.clientHeight);
     };
 
     updateOverflow();
@@ -98,9 +92,6 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
 
     return () => {
       observer.disconnect();
-      if (frameId) {
-        window.cancelAnimationFrame(frameId);
-      }
     };
   }, [record.text, isExpanded]);
 
@@ -217,7 +208,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const isRemoteSpeechModel = isRemoteTranscriptionSpeechModel(normalizedModel);
   const isCloudModel =
     normalizedModel.startsWith("cloud-") || isRemoteSpeechModel;
-  const speechModelLabel = resolveSpeechModelLabel(speechModels, normalizedModel);
+  const speechModelLabel = resolveSpeechModelLabel(
+    speechModels,
+    normalizedModel,
+  );
   const llmModelLabel = record.llm_model
     ? formatTranscriptionLlmModel(record.llm_model)
     : null;

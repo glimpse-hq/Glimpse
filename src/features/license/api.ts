@@ -2,7 +2,11 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { LicenseState } from "../../shared/types/license";
 
-export type { LicenseEdition, LicenseState, LicenseStatus } from "../../shared/types/license";
+export type {
+  LicenseEdition,
+  LicenseState,
+  LicenseStatus,
+} from "../../shared/types/license";
 
 export async function getLicenseState(): Promise<LicenseState> {
   return invoke<LicenseState>("get_license_state");

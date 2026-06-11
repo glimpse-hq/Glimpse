@@ -8,7 +8,7 @@ import { settingsKeys, useSettings } from "../features/settings/queries";
 import { modelKeys } from "../features/settings/models-queries";
 import { transcriptionKeys } from "../features/transcriptions/queries";
 import { updateKeys } from "../features/updates/queries";
-import type { StoredSettings } from "../types";
+import type { StoredSettings, TranscriptionRecord } from "../types";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,9 +56,41 @@ function QuerySyncBridge() {
       register("update:cleared", () => {
         queryClient.invalidateQueries({ queryKey: updateKeys.status() });
       });
-      register("transcription:complete", () => {
-        queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
-      });
+      register<{ record: TranscriptionRecord | null }>(
+        "transcription:complete",
+        ({ record }) => {
+          const listKey = transcriptionKeys.list();
+          const listState = queryClient.getQueryState(listKey);
+
+          if (
+            !record ||
+            !listState?.data ||
+            listState.fetchStatus === "fetching"
+          ) {
+            void queryClient
+              .cancelQueries({ queryKey: transcriptionKeys.all })
+              .then(() =>
+                queryClient.invalidateQueries({
+                  queryKey: transcriptionKeys.all,
+                }),
+              );
+            return;
+          }
+          queryClient.setQueryData<TranscriptionRecord[]>(listKey, (old) => {
+            if (!old) return old;
+            if (old.some((r) => r.id === record.id)) {
+              return old.map((r) => (r.id === record.id ? record : r));
+            }
+            const ts = new Date(record.timestamp).getTime();
+            const index = old.findIndex(
+              (r) => ts >= new Date(r.timestamp).getTime(),
+            );
+            const next = [...old];
+            next.splice(index === -1 ? next.length : index, 0, record);
+            return next;
+          });
+        },
+      );
       register("transcription:error", () => {
         queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
       });

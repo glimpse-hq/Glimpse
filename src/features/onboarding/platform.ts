@@ -25,7 +25,9 @@ export const getOnboardingPlatform = (): OnboardingPlatform => {
 
   return {
     id,
-    requiresMicrophonePermission: capabilities.requiresNativeMicrophonePermission,
-    requiresAccessibilityPermission: capabilities.requiresAccessibilityPermission,
+    requiresMicrophonePermission:
+      capabilities.requiresNativeMicrophonePermission,
+    requiresAccessibilityPermission:
+      capabilities.requiresAccessibilityPermission,
   };
 };
