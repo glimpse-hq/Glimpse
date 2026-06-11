@@ -96,25 +96,25 @@ pub(crate) fn retry_llm_cleanup(
         .await
         {
             Ok(cleaned) => {
-                let updated_record = match storage.update_with_llm_cleanup(
+                match storage.update_with_llm_cleanup(
                     &record_id,
                     cleaned,
                     llm_model.clone(),
                 ) {
-                    Ok(record) => record,
+                    Ok(updated_record) => {
+                        let _ = app_handle.emit(
+                            EVENT_TRANSCRIPTION_COMPLETE,
+                            TranscriptionCompletePayload {
+                                transcript: String::new(),
+                                auto_paste: false,
+                                record: updated_record,
+                            },
+                        );
+                    }
                     Err(err) => {
                         warn!(error = ?err, transcription_id = %record_id, "failed to save cleanup");
-                        None
                     }
-                };
-                let _ = app_handle.emit(
-                    EVENT_TRANSCRIPTION_COMPLETE,
-                    TranscriptionCompletePayload {
-                        transcript: String::new(),
-                        auto_paste: false,
-                        record: updated_record,
-                    },
-                );
+                }
             }
             Err(err) => {
                 let message = llm_cleanup::llm_issue_message(&err);

@@ -80,14 +80,17 @@ const LibraryImportModal = ({
   const handleConfirm = async () => {
     if (!selectedModelKey) return;
     setIsImporting(true);
-    const options: LibraryImportOptions = {
-      store_original: storeOriginal,
-      model_key: selectedModelKey,
-      llm_cleanup_enabled: false,
-      show_timestamps: showTimestamps,
-    };
-    await onConfirm(importPaths, options);
-    setIsImporting(false);
+    try {
+      const options: LibraryImportOptions = {
+        store_original: storeOriginal,
+        model_key: selectedModelKey,
+        llm_cleanup_enabled: false,
+        show_timestamps: showTimestamps,
+      };
+      await onConfirm(importPaths, options);
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   return (

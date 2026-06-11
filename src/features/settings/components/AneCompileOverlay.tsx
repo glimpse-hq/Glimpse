@@ -12,13 +12,13 @@ export default function AneCompileOverlay() {
   useEffect(() => {
     let cancelled = false;
     let unlisten: UnlistenFn | undefined;
-    listen<AneCompileEvent>("ane:compile", (event) => {
-      if (cancelled) return;
-      setLabel(event.payload.status === "start" ? event.payload.label : null);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlisten = fn;
-    });
+    (async () => {
+      unlisten = await listen<AneCompileEvent>("ane:compile", (event) => {
+        if (cancelled) return;
+        setLabel(event.payload.status === "start" ? event.payload.label : null);
+      });
+      if (cancelled) unlisten();
+    })();
     return () => {
       cancelled = true;
       unlisten?.();

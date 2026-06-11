@@ -447,7 +447,9 @@ const LibraryDetail = ({
     if (transcriptTimer.current) clearTimeout(transcriptTimer.current);
     transcriptTimer.current = setTimeout(() => {
       if (transcriptDraft !== (item.transcript ?? "")) {
-        onUpdate({ transcript: transcriptDraft });
+        Promise.resolve(onUpdate({ transcript: transcriptDraft })).catch((err) => {
+          console.error("failed to save transcript:", err);
+        });
       }
     }, 600);
     return () => {
@@ -929,6 +931,15 @@ const LibraryDetail = ({
       const tag = target?.tagName.toLowerCase();
       const isTextInput =
         tag === "input" || tag === "textarea" || target?.isContentEditable;
+      const isInteractiveElement =
+        isTextInput ||
+        tag === "button" ||
+        tag === "a" ||
+        tag === "select" ||
+        (tag === "input" && (target?.getAttribute("type") === "checkbox" || target?.getAttribute("type") === "radio")) ||
+        target?.getAttribute("role") === "button" ||
+        target?.getAttribute("role") === "link" ||
+        target?.getAttribute("role") === "menuitem";
 
       if (event.key === "Escape") {
         event.preventDefault();
@@ -941,7 +952,7 @@ const LibraryDetail = ({
       }
 
       if (event.key === " ") {
-        if (isTextInput) return;
+        if (isInteractiveElement) return;
         event.preventDefault();
         handleTogglePlayback();
         return;
@@ -1512,7 +1523,9 @@ const LibraryDetail = ({
                       <button
                         onClick={() => {
                           setOverflowOpen(false);
-                          onRetry();
+                          Promise.resolve(onRetry()).catch((err) => {
+                            console.error("failed to retry:", err);
+                          });
                         }}
                         className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors"
                       >

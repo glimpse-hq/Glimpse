@@ -29,7 +29,7 @@ export function deriveTodayStats(
   for (const record of records) {
     if (record.status !== "success") continue;
     const ts = new Date(record.timestamp).getTime();
-    if (ts < startMs || ts >= endMs) continue;
+    if (Number.isNaN(ts) || ts < startMs || ts >= endMs) continue;
     stats.count += 1;
     stats.words += record.word_count;
     stats.audioSeconds += record.audio_duration_seconds;

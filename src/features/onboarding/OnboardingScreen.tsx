@@ -156,7 +156,7 @@ export default function OnboardingScreen({
     [ctx.platform, hasImportStep],
   );
   const currentStep = state.value as string;
-  const currentStepIndex = steps.indexOf(currentStep as (typeof steps)[number]);
+  const currentStepIndex = Math.max(0, steps.indexOf(currentStep as (typeof steps)[number]));
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const licenseQuery = useLicenseState();

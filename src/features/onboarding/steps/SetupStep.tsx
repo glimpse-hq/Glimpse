@@ -393,18 +393,22 @@ export function SetupStep({
                 transition={{ duration: 0.18 }}
                 className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-6 text-center ui-shadow-modal-deep"
                 onClick={(event) => event.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="setup-local-confirm-title"
+                aria-describedby="setup-local-confirm-body"
               >
                 <AlertTriangle
                   size={22}
                   className="ui-color-warning-strong mx-auto mb-3"
                 />
-                <p className="ui-text-body-lg font-semibold text-content-primary">
+                <p id="setup-local-confirm-title" className="ui-text-body-lg font-semibold text-content-primary">
                   {t({
                     id: "onboarding.setup.confirm_without_model.title",
                     message: "Continue without a model?",
                   })}
                 </p>
-                <p className="mt-1 ui-text-label text-content-disabled">
+                <p id="setup-local-confirm-body" className="mt-1 ui-text-label text-content-disabled">
                   {t({
                     id: "onboarding.setup.confirm_without_model.body",
                     message:

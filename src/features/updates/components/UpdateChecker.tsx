@@ -98,6 +98,7 @@ export function UpdateChecker({
   }, [queryClient]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlistenCheck: UnlistenFn | undefined;
 
     if (autoCheck) {
@@ -107,15 +108,18 @@ export function UpdateChecker({
     listen("updater:check", () => {
       void checkForUpdates();
     }).then((fn) => {
-      unlistenCheck = fn;
+      if (cancelled) fn();
+      else unlistenCheck = fn;
     });
 
     return () => {
+      cancelled = true;
       unlistenCheck?.();
     };
-  }, [checkForUpdates]);
+  }, [autoCheck, checkForUpdates]);
 
   useEffect(() => {
+    let cancelled = false;
     let unlistenProgress: UnlistenFn | undefined;
 
     listen<UpdateDownloadProgressPayload>(
@@ -140,10 +144,12 @@ export function UpdateChecker({
         }
       },
     ).then((fn) => {
-      unlistenProgress = fn;
+      if (cancelled) fn();
+      else unlistenProgress = fn;
     });
 
     return () => {
+      cancelled = true;
       unlistenProgress?.();
     };
   }, []);

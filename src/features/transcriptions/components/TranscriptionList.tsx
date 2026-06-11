@@ -108,11 +108,12 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const freshIdsRef = useRef<{
     data: TranscriptionRecord[] | null;
     seen: Set<string>;
-    fresh: Set<string>;
-  }>({ data: null, seen: new Set(), fresh: new Set() });
-  let freshIds = freshIdsRef.current.fresh;
-  if (isFetched && freshIdsRef.current.data !== transcriptions) {
+  }>({ data: null, seen: new Set() });
+
+  const freshIds = useMemo(() => {
+    if (!isFetched) return new Set<string>();
     const cache = freshIdsRef.current;
+    if (cache.data === transcriptions) return new Set<string>();
     const fresh = new Set<string>();
     for (const record of transcriptions) {
       if (cache.data !== null && !cache.seen.has(record.id)) {
@@ -121,9 +122,8 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
       cache.seen.add(record.id);
     }
     cache.data = transcriptions;
-    cache.fresh = fresh;
-    freshIds = fresh;
-  }
+    return fresh;
+  }, [transcriptions, isFetched]);
 
   useEffect(() => {
     if (freshIds.size === 0) return;

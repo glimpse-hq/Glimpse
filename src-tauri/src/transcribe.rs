@@ -905,7 +905,7 @@ pub(crate) fn retry_transcription_async(
                     llm_cleaned
                 );
 
-                let updated_record = app_handle
+                let updated_record = match app_handle
                     .state::<AppState>()
                     .storage()
                     .update_transcription_result(
@@ -915,9 +915,13 @@ pub(crate) fn retry_transcription_async(
                         storage::TranscriptionStatus::Success,
                         None,
                         metadata.clone(),
-                    )
-                    .ok()
-                    .flatten();
+                    ) {
+                    Ok(record) => record,
+                    Err(err) => {
+                        eprintln!("Failed to save retry result: {err}");
+                        return;
+                    }
+                };
 
                 analytics::track_transcription_completed(
                     &app_handle,

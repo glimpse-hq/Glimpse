@@ -80,10 +80,8 @@ fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
             let transcriber = app.state::<crate::AppState>().local_transcriber();
             let _ = glimpse_speech::take_coreml_log();
             if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
-                transcriber.unload();
                 transcriber.preload_and_warm(&ready)
             } else {
-                // Compile in a throwaway engine so the live model isn't evicted.
                 use glimpse_speech::TranscriptionEngine;
                 let mut engine = glimpse_speech::engines::whisper::WhisperEngine::new();
                 engine

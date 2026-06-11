@@ -390,9 +390,14 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
     }
 
     if let Some(status) = filter.status.as_ref() {
-        if !status.trim().is_empty() {
-            clauses.push("status = ?".to_string());
-            params.push(Box::new(status.trim().to_string()));
+        let trimmed = status.trim();
+        if !trimmed.is_empty() {
+            if trimmed == "active" {
+                clauses.push("status IN ('pending', 'importing', 'transcribing')".to_string());
+            } else {
+                clauses.push("status = ?".to_string());
+                params.push(Box::new(trimmed.to_string()));
+            }
         }
     }
 

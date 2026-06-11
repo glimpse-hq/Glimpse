@@ -2,7 +2,7 @@
 
 ### Features
 
-- Whisper models can now run on the Apple Neural Engine (ANE on Apple Silicon Macs. The ANE makes transcriptions faster and uses a fraction of the power.
+- Whisper models can now run on the Apple Neural Engine (ANE) on Apple Silicon Macs, making transcriptions faster and more power-efficient.
 - Library overhaul: A new cleaner UI, support for assigning speakers, and better performance.
 
 ### Improvements
@@ -262,7 +262,6 @@
 
 - Large UI overhaul: Light mode, new styles - lots to see!
 - Settings: change light / dark mode, enable auto launch.
--
 
 ### Bug Fixes
 

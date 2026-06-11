@@ -117,6 +117,7 @@ const LibraryRetranscribeModal = ({
           </div>
           <button
             onClick={onCancel}
+            aria-label="Close"
             className="rounded-lg border border-border-primary bg-surface-surface p-2 text-content-muted hover:text-content-secondary"
           >
             <X size={14} />
