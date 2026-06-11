@@ -1197,15 +1197,42 @@ body {
   box-shadow: 0 0 6px var(--color-toggle-on-20);
 }
 
+.transcript-segment {
+  transition: background-color 0.2s ease;
+}
+
+.transcript-segment-active {
+  background-color: var(--color-cloud-10);
+}
+
+.transcript-segment-active .transcript-segment-time {
+  color: var(--color-text-secondary);
+}
+
 .transcript-search-hit {
-  background: var(--color-cloud-20);
+  background: linear-gradient(
+    100deg,
+    var(--color-cloud-10) 0%,
+    var(--color-cloud-30) 10%,
+    var(--color-cloud-20) 55%,
+    var(--color-cloud-30) 100%
+  );
   color: inherit;
-  border-radius: 3px;
-  padding: 0 1px;
+  border-radius: 0.4em 0.25em 0.35em 0.3em;
+  padding: 0.08em 0.25em;
+  margin: 0 -0.08em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .transcript-search-hit-active {
-  background: var(--color-cloud-50);
+  background: linear-gradient(
+    100deg,
+    var(--color-cloud-30) 0%,
+    var(--color-cloud-50) 12%,
+    var(--color-cloud-50) 100%
+  );
+  box-shadow: inset 0 -2px 0 var(--color-cloud-80);
 }
 
 @keyframes tag-input-intro {

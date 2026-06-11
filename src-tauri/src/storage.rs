@@ -712,7 +712,9 @@ impl StorageManager {
                 tags TEXT NOT NULL DEFAULT '[]',
                 llm_cleanup_enabled INTEGER NOT NULL DEFAULT 0,
                 speech_model TEXT NOT NULL,
-                show_timestamps INTEGER NOT NULL DEFAULT 0
+                show_timestamps INTEGER NOT NULL DEFAULT 0,
+                kind TEXT NOT NULL DEFAULT 'import',
+                speakers TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_library_items_created_at ON library_items(created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_library_items_status ON library_items(status);
@@ -790,6 +792,18 @@ impl StorageManager {
             "library_items",
             "words",
             "ALTER TABLE library_items ADD COLUMN words TEXT",
+        )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "kind",
+            "ALTER TABLE library_items ADD COLUMN kind TEXT NOT NULL DEFAULT 'import'",
+        )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "speakers",
+            "ALTER TABLE library_items ADD COLUMN speakers TEXT",
         )?;
 
         let stats_seeded: bool = conn.query_row(

@@ -498,6 +498,7 @@ fn transcribe_library_item(
                         start_ms,
                         end_ms,
                         text: seg.text,
+                        speaker_id: None,
                     };
                     merged_segments.push(new_segment.clone());
                     new_segments.push(new_segment);
@@ -639,6 +640,7 @@ fn transcribe_library_item(
                     start_ms,
                     end_ms,
                     text: seg.text,
+                    speaker_id: None,
                 });
                 last_end_ms = end_ms;
             }

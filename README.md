@@ -43,7 +43,7 @@ Core dictation is free, with no subscription and no cloud. It all runs on your d
 
 **Free, always**
 
-- **Local transcription.** Turn your wifi off, it still works.
+- **Local transcription.** Turn your wifi off, it still works. ANE supported on Apple Silicon.
 - **Custom dictionary.** Teach it names, brands, or terms.
 - **Auto Dictionary.** It picks up your custom words on its own.
 - **Replacements.** Say "my address," get 221B Baker Street.
@@ -53,7 +53,7 @@ Core dictation is free, with no subscription and no cloud. It all runs on your d
 
 Included in a 14-day trial, then a one-time [license](#pricing):
 
-- **Library.** Drop in audio or video, scrub the synced transcript, export to `.srt`, `.txt`, or `.json`.
+- **Library.** Drop in audio or video, scrub the synced transcript, assign speakers, export to `.txt`, `.md`, `.srt`, or `.vtt`.
 - **AI Cleanup.** Polish dictated text with your own LLM.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
 - **Personalization.** Different tones per app or site, with [snippets](https://github.com/LegendarySpy/Glimpse/wiki/snippets) for dynamic context.
@@ -85,7 +85,9 @@ Start with the 14-day trial, then buy or paste a license key in **Settings → A
 ## Roadmap
 
 - [ ] Meeting mode
-- [ ] Library overhaul
+- [ ] Speaker diarization
+- [x] Library overhaul
+- [x] Speakers & speaker-labeled exports
 - [x] CLI
 - [x] API
 - [x] BYOK STT

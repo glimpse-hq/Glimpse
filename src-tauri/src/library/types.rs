@@ -49,6 +49,20 @@ pub struct TranscriptSegment {
     pub start_ms: u64,
     pub end_ms: u64,
     pub text: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speaker_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Speaker {
+    pub id: String,
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+}
+
+pub(crate) fn default_item_kind() -> String {
+    "import".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,6 +132,10 @@ pub struct LibraryItem {
     pub llm_cleanup_enabled: bool,
     pub speech_model: String,
     pub show_timestamps: bool,
+    #[serde(default = "default_item_kind")]
+    pub kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speakers: Option<Vec<Speaker>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -147,6 +165,8 @@ pub struct LibraryItemPatch {
     pub transcribed_at: Option<String>,
     pub show_timestamps: Option<bool>,
     pub duration_seconds: Option<f32>,
+    pub kind: Option<String>,
+    pub speakers: Option<Vec<Speaker>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

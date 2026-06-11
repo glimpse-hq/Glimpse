@@ -787,12 +787,11 @@ const Home = () => {
           </div>
 
           <div
-            className={`w-full min-w-0 pt-8 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
+            className={`w-full min-w-0 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
           >
             <LibraryView
               pendingImportPaths={pendingImportPaths}
               onSetImportPaths={setPendingImportPaths}
-              sidebarWidth={sidebarWidth}
               isActive={activeView === "library" && licenseGateActive}
             />
           </div>

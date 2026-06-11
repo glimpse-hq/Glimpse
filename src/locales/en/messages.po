@@ -622,6 +622,79 @@ msgstr ""
 #~ msgstr "Which language do you dictate in?"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.audio"
+#~ msgstr "Audio"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.timestamps.available_later"
+#~ msgstr "Available after transcription"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.close"
+#~ msgstr "Close"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.tags.none"
+#~ msgstr "None"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.timestamps.unsupported"
+#~ msgstr "Not supported"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.settings"
+#~ msgstr "Settings"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.timestamps.supported"
+#~ msgstr "Supported"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryModal.tsx
+#~ msgid "library.modal.tags"
+#~ msgstr "Tags"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.tags.select_existing"
+#~ msgstr "Select existing tag"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.discuss"
+#~ msgstr "ChatGPT"
+
+#. placeholder {0}: item.name
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.discuss.header"
+#~ msgstr "Here's a transcript titled \"{0}\". Help me review, summarize, and "
+#~ "discuss it."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.discuss.instruction"
+#~ msgstr "I have a transcript copied to my clipboard and will paste it in my next "
+#~ "message. Help me review, summarize, and discuss it."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.discuss.tooltip"
+#~ msgstr "Open this transcript in ChatGPT"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.discuss.copied"
+#~ msgstr "Transcript copied — paste it into ChatGPT."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -924,6 +997,16 @@ msgid "dictionary.search_or_add_aria"
 msgstr "Add or search dictionary entry"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.add_speaker"
+msgstr "Add speaker"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.tags.add"
+msgstr "Add tag"
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites.aria"
 msgstr "Add website domain"
@@ -952,6 +1035,11 @@ msgstr "All"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.all"
 msgstr "All models"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.filter.all"
+msgstr "All speakers"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1030,13 +1118,18 @@ msgid "personalization.apps"
 msgstr "Apps"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.prune_target.audio"
-msgstr "Audio"
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.assign_new_speaker"
+msgstr "Assign new speaker"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.audio"
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker.unassigned"
+msgstr "Assign"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.prune_target.audio"
 msgstr "Audio"
 
 #. js-lingui-explicit-id
@@ -1055,12 +1148,12 @@ msgid "settings.app.prune.noun.audio.other"
 msgstr "audio files"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.audio_scrubber"
 msgstr "Audio scrubber"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.audio_unavailable"
 msgstr "Audio unavailable"
 
@@ -1111,11 +1204,6 @@ msgid "settings.app.automation"
 msgstr "Automation"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.timestamps.available_later"
-msgstr "Available after transcription"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.back"
 msgstr "Back"
@@ -1129,6 +1217,11 @@ msgstr "Back"
 #: src/features/onboarding/steps/SetupStep.tsx
 msgid "onboarding.setup.back"
 msgstr "Back"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.back"
+msgstr "Back to library"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -1202,13 +1295,13 @@ msgid "library.card.cancel"
 msgstr "Cancel"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.cancel"
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.cancel"
 msgstr "Cancel"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.cancel"
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.cancel"
 msgstr "Cancel"
 
 #. js-lingui-explicit-id
@@ -1316,9 +1409,14 @@ msgid "transcriptions.list.search.clear"
 msgstr "Clear search"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "Clear search"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker.clear"
+msgstr "Clear speaker"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -1336,13 +1434,13 @@ msgid "library.view.empty_state"
 msgstr "Drag files here to build your Library."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.close"
-msgstr "Close"
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker.rename"
+msgstr "Click to rename"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.close"
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.close"
 msgstr "Close"
 
 #. js-lingui-explicit-id
@@ -1481,13 +1579,13 @@ msgid "member_card.tier_contributor"
 msgstr "Contributor"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.import_status.converting"
 msgstr "Converting audio..."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: Math.round(clampProgress(item.status.progress) * 100)
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.import_status.converting_progress"
 msgstr "Converting audio... {0}%"
 
@@ -1507,7 +1605,7 @@ msgid "settings.local_api.logs.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.copy.copied"
 msgstr "Copied"
 
@@ -1527,7 +1625,7 @@ msgid "settings.local_api.logs.copy"
 msgstr "Copy"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.copy"
 msgstr "Copy"
 
@@ -1638,7 +1736,7 @@ msgid "library.delete_error.storage_missing"
 msgstr "Couldn't delete this item. Library storage couldn't be found."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "Couldn't find this library item. Try reopening it."
 
@@ -1658,7 +1756,7 @@ msgid "settings.general.microphone_test.start_error"
 msgstr "Couldn't start microphone test."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.write_failed"
 msgstr "Couldn't write the export file. Try a different location."
 
@@ -1718,7 +1816,7 @@ msgid "settings.account.action.deactivate"
 msgstr "Deactivate this device"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.playback.decrease"
 msgstr "Decrease playback speed"
 
@@ -1758,7 +1856,7 @@ msgid "library.card.delete"
 msgstr "Delete"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.delete"
 msgstr "Delete"
 
@@ -1829,7 +1927,7 @@ msgid "dictionary.replacements.delete"
 msgstr "Delete replacement for {0}"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "Delete this item?"
 
@@ -2046,17 +2144,17 @@ msgid "model_picker.category.experimental"
 msgstr "Experimental"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export"
 msgstr "Export"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.failed"
 msgstr "Export failed. Try again."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.title"
 msgstr "Export transcription"
 
@@ -2111,7 +2209,7 @@ msgid "home.support.feedback.title"
 msgstr "Feedback"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.ffmpeg_help"
 msgstr "FFmpeg Help"
 
@@ -2134,6 +2232,11 @@ msgstr "File not found. It may have moved or been deleted."
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.files"
 msgstr "Files"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.filter.aria"
+msgstr "Filter by speaker"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2161,7 +2264,7 @@ msgid "onboarding.setup.model.loading_title"
 msgstr "Finding your local model"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.follow_timestamp"
 msgstr "Follow timestamp"
 
@@ -2324,7 +2427,7 @@ msgid "import.cta"
 msgstr "Import"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.import_failed"
 msgstr "Import failed"
 
@@ -2379,7 +2482,7 @@ msgid "model_picker.ane.toggle"
 msgstr "Include the Apple Neural Engine encoder"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.playback.increase"
 msgstr "Increase playback speed"
 
@@ -2726,6 +2829,11 @@ msgid "settings.about.storage.models"
 msgstr "Models"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.more_actions"
+msgstr "More actions"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.analytics.more_info"
 msgstr "More info"
@@ -2802,7 +2910,7 @@ msgid "library.card.new_tag"
 msgstr "New tag..."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.new_tag"
 msgstr "New tag..."
 
@@ -2914,7 +3022,7 @@ msgid "library.card.no_other_tags"
 msgstr "No other tags"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.no_other_tags"
 msgstr "No other tags"
 
@@ -2939,12 +3047,17 @@ msgid "personalization.no_sites"
 msgstr "No sites yet"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.filter.no_speakers"
+msgstr "No speakers yet"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.no_tags_yet"
 msgstr "No tags yet"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.no_tags_yet"
 msgstr "No tags yet"
 
@@ -2956,11 +3069,6 @@ msgstr "No websites added"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none"
-msgstr "None"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.tags.none"
 msgstr "None"
 
 #. js-lingui-explicit-id
@@ -2987,11 +3095,6 @@ msgstr "Not enough disk space."
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.applications.not_installed"
 msgstr "Not installed"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.timestamps.unsupported"
-msgstr "Not supported"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3102,7 +3205,7 @@ msgid "settings.app.auto_pause_media.pause"
 msgstr "Pause"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.pause_audio"
 msgstr "Pause audio"
 
@@ -3147,7 +3250,7 @@ msgid "member_card.draft_idle"
 msgstr "Pick a license"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.play_audio"
 msgstr "Play audio"
 
@@ -3265,7 +3368,7 @@ msgid "member_card.tier_purchase_aria"
 msgstr "Purchase {label} for {price}"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.import_status.queued"
 msgstr "Queued for transcription..."
 
@@ -3321,6 +3424,12 @@ msgid "personalization.modal.remove"
 msgstr "Remove"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: speaker.name
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker.remove"
+msgstr "Remove {0}"
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.remove_app"
 msgstr "Remove {app}"
@@ -3336,7 +3445,7 @@ msgid "library.card.remove_tag"
 msgstr "Remove {tag}"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.remove"
 msgstr "Remove {tag}"
 
@@ -3471,7 +3580,7 @@ msgid "library.card.retranscribe"
 msgstr "Retranscribe"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.retranscribe"
 msgstr "Retranscribe"
 
@@ -3511,7 +3620,7 @@ msgid "library.card.retry"
 msgstr "Retry"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.retry"
 msgstr "Retry"
 
@@ -3663,12 +3772,12 @@ msgid "settings.speech_model.provider.search"
 msgstr "Search speech providers..."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.aria"
 msgstr "Search transcript"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.placeholder"
 msgstr "Search transcript..."
 
@@ -3705,11 +3814,6 @@ msgstr "Select app to import from"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.select_existing_tag"
-msgstr "Select existing tag"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.tags.select_existing"
 msgstr "Select existing tag"
 
 #. js-lingui-explicit-id
@@ -3776,11 +3880,6 @@ msgstr "Settings"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.title"
-msgstr "Settings"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.settings"
 msgstr "Settings"
 
 #. js-lingui-explicit-id
@@ -3867,6 +3966,16 @@ msgstr "Sort"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.filter.aria"
 msgstr "Sort and filter transcriptions"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_default_name"
+msgstr "Speaker {nextIndex}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speakers"
+msgstr "Speakers"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -3959,11 +4068,6 @@ msgid "home.support.menu_aria"
 msgstr "Support menu"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.timestamps.supported"
-msgstr "Supported"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.section.replacements_description"
 msgstr "Swap common phrases automatically after transcription."
@@ -3989,9 +4093,9 @@ msgid "settings.general.system_default"
 msgstr "System Default"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-msgid "library.modal.tags"
-msgstr "Tags"
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.tags.label"
+msgstr "Tag"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4061,7 +4165,7 @@ msgid "library.import_error.unsupported_sample_rate"
 msgstr "This file has an unsupported sample rate."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.no_timestamps"
 msgstr "This item doesn't have timestamps. Retranscribe with timestamps to "
 "export subtitles."
@@ -4077,12 +4181,12 @@ msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "This only removes saved audio files, not your transcripts."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.delete_confirm.description"
 msgstr "This removes the transcript and audio from your library."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.timestamps"
 msgstr "Timestamps"
 
@@ -4168,7 +4272,7 @@ msgstr "Transcribe recordings through OpenAI-compatible cloud or self-hosted "
 "APIs."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcribing"
 msgstr "Transcribing..."
 
@@ -4183,7 +4287,7 @@ msgid "import.cat.history"
 msgstr "Transcript history"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcript_placeholder"
 msgstr "Transcript will appear here."
 

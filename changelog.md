@@ -3,6 +3,7 @@
 ### Features
 
 - Whisper models can now run on the Apple Neural Engine (ANE on Apple Silicon Macs. The ANE makes transcriptions faster and uses a fraction of the power.
+- Library overhaul: A new cleaner UI, support for assigning speakers, and better performance.
 
 ### Improvements
 
@@ -16,6 +17,7 @@
 ### Changes
 
 - Onboarding setup is down to one question and on Apple Silicon the Neural Engine encoder comes included automatically.
+- Distil whisper models are now under experimental (They're not great at following dictionary rules).
 
 ---
 

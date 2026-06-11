@@ -2,7 +2,16 @@ export type TranscriptSegment = {
   start_ms: number;
   end_ms: number;
   text: string;
+  speaker_id?: string | null;
 };
+
+export type Speaker = {
+  id: string;
+  name: string;
+  color?: string | null;
+};
+
+export type LibraryItemKind = "import" | "recording" | "meeting";
 
 export type LibraryItemStatus =
   | { type: "pending" }
@@ -31,6 +40,8 @@ export type LibraryItem = {
   llm_cleanup_enabled: boolean;
   speech_model: string;
   show_timestamps: boolean;
+  kind: LibraryItemKind;
+  speakers?: Speaker[] | null;
 };
 
 export type LibraryItemsPage = {
@@ -56,6 +67,8 @@ export type LibraryItemPatch = {
   transcribed_at?: string | null;
   show_timestamps?: boolean | null;
   duration_seconds?: number | null;
+  kind?: LibraryItemKind | null;
+  speakers?: Speaker[] | null;
 };
 
 export type LibraryImportOptions = {
