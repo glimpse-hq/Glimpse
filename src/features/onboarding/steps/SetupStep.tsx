@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
@@ -76,6 +77,7 @@ export function SetupStep({
     modelPriority ? "review" : "priority",
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [confirmDismissed, setConfirmDismissed] = useState(false);
 
   const priorityOptions: Array<{
     value: OnboardingModelPriority;
@@ -373,74 +375,74 @@ export function SetupStep({
         onCancel={onCancelDownload}
       />
 
-      <AnimatePresence>
-        {showLocalConfirm && (
-          <motion.div
-            key="setup-local-confirm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-xs"
-            onClick={() => onShowConfirm(false)}
-          >
+      {createPortal(
+        <AnimatePresence>
+          {showLocalConfirm && !confirmDismissed && (
             <motion.div
-              initial={{ scale: 0.96, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.96, opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
-              onClick={(event) => event.stopPropagation()}
+              key="setup-local-confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.18 } }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-xs"
+              onClick={() => onShowConfirm(false)}
             >
-              <div className="mb-3 flex items-center gap-3">
+              <motion.div
+                initial={{ scale: 0.96, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.96, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-6 text-center ui-shadow-modal-deep"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <AlertTriangle
-                  size={20}
-                  className="ui-color-warning-strong shrink-0"
+                  size={22}
+                  className="ui-color-warning-strong mx-auto mb-3"
                 />
-                <div>
-                  <p className="ui-text-body-lg font-semibold text-content-primary">
+                <p className="ui-text-body-lg font-semibold text-content-primary">
+                  {t({
+                    id: "onboarding.setup.confirm_without_model.title",
+                    message: "Continue without a model?",
+                  })}
+                </p>
+                <p className="mt-1 ui-text-label text-content-disabled">
+                  {t({
+                    id: "onboarding.setup.confirm_without_model.body",
+                    message:
+                      "Transcription will not run offline until you download a local model.",
+                  })}
+                </p>
+                <div className="mt-5 flex justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onShowConfirm(false)}
+                    className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover"
+                  >
                     {t({
-                      id: "onboarding.setup.confirm_without_model.title",
-                      message: "Continue without a model?",
+                      id: "onboarding.setup.confirm_without_model.stay",
+                      message: "Stay here",
                     })}
-                  </p>
-                  <p className="ui-text-label text-content-disabled">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmDismissed(true);
+                      onShowConfirm(false);
+                      onNext();
+                    }}
+                    className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning transition-colors hover:bg-amber-300"
+                  >
                     {t({
-                      id: "onboarding.setup.confirm_without_model.body",
-                      message:
-                        "Transcription will not run offline until you download a local model.",
+                      id: "onboarding.setup.confirm_without_model.continue",
+                      message: "Continue anyway",
                     })}
-                  </p>
+                  </button>
                 </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => onShowConfirm(false)}
-                  className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover"
-                >
-                  {t({
-                    id: "onboarding.setup.confirm_without_model.stay",
-                    message: "Stay here",
-                  })}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onShowConfirm(false);
-                    onNext();
-                  }}
-                  className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning transition-colors hover:bg-amber-300"
-                >
-                  {t({
-                    id: "onboarding.setup.confirm_without_model.continue",
-                    message: "Continue anyway",
-                  })}
-                </button>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </motion.div>
   );
 }

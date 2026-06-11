@@ -74,6 +74,10 @@ const ModelStatCard = ({
 
   const installed = status?.installed;
   const isDownloading = progress?.status === "downloading";
+  const downloadingFile =
+    progress?.status === "downloading"
+      ? progress.file.split("/").pop()
+      : undefined;
   const percent = progress?.percent ?? 0;
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
@@ -166,8 +170,9 @@ const ModelStatCard = ({
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <p
-            className="ui-color-muted font-mono tabular-nums"
+            className="ui-color-muted min-w-0 truncate font-mono tabular-nums"
             style={{ fontSize: "11.5px" }}
+            title={isDownloading && !isVerifying ? downloadingFile : undefined}
           >
             {isVerifying
               ? t({
@@ -175,7 +180,8 @@ const ModelStatCard = ({
                   message: "Verifying install",
                 })
               : isDownloading
-                ? t({ id: "models.card.downloading", message: "Downloading" })
+                ? downloadingFile ||
+                  t({ id: "models.card.downloading", message: "Downloading" })
                 : facts.join("  ·  ")}
           </p>
 
