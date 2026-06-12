@@ -443,6 +443,16 @@ pub(crate) fn update_settings(
 
     state.emit_settings_changed(app, &next);
 
+    if prev.analytics_enabled && !next.analytics_enabled {
+        analytics::track_analytics_opt_out(app);
+    } else if !prev.analytics_enabled && next.analytics_enabled {
+        // Re-init in case analytics was off at launch and the client never started.
+        let handle = app.clone();
+        tauri::async_runtime::spawn(async move {
+            analytics::init(&handle).await;
+        });
+    }
+
     if crate::settings::auto_delete_recording_policy(&prev)
         != crate::settings::auto_delete_recording_policy(&next)
     {
