@@ -179,7 +179,7 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_WEBSITE => {
             let _ = app
                 .opener()
-                .open_url("https://github.com/glimpse-hq/Glimpse", None::<&str>);
+                .open_url("https://tryglimpse.cc/", None::<&str>);
         }
         MENU_ID_REPORT_ISSUE => {
             let _ = app.opener().open_url(FEEDBACK_URL, None::<&str>);

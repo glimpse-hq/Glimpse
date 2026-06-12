@@ -4,7 +4,7 @@
 - Added support for using mouse buttons as keybinds.
 
 ### Improvements
-- The library import model is now cleaner and supports more options.
+- The library import modal is now cleaner and supports more options.
 
 0.9.6
 

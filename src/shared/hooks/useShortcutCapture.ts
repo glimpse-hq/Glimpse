@@ -106,22 +106,19 @@ export function useShortcutCapture({
       });
 
     const handleKeyboardEvent = (event: KeyboardEvent) => {
-      if (disposed) return;
+      event.preventDefault();
+      event.stopPropagation();
 
       const hasModifier =
         event.metaKey || event.ctrlKey || event.altKey || event.shiftKey;
       const shouldCancel =
         event.type === "keydown" && event.key === "Escape" && !hasModifier;
-
-      event.preventDefault();
-      event.stopPropagation();
-      if (shouldCancel) {
+      if (shouldCancel && !disposed) {
         void cancelCapture();
       }
     };
 
     const handleMouseEvent = (event: MouseEvent) => {
-      if (disposed) return;
       if (event.button === 0) return;
       event.preventDefault();
       event.stopPropagation();
