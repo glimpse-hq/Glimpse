@@ -56,17 +56,15 @@ pub(super) fn start(
             };
 
             let mouse_hook =
-                unsafe { SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), None, 0) };
-            let mouse_hook = match mouse_hook {
-                Ok(mouse_hook) => mouse_hook,
-                Err(err) => {
-                    unsafe {
-                        let _ = UnhookWindowsHookEx(hook);
+                match unsafe { SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), None, 0) } {
+                    Ok(mouse_hook) => Some(mouse_hook),
+                    Err(err) => {
+                        tracing::warn!(
+                            "Failed to install mouse hook, mouse-button shortcuts disabled: {err}"
+                        );
+                        None
                     }
-                    let _ = ready_tx.send(Err(format!("Failed to install mouse hook: {err}")));
-                    return;
-                }
-            };
+                };
 
             let thread_id = unsafe { windows::Win32::System::Threading::GetCurrentThreadId() };
             let _ = ready_tx.send(Ok(thread_id));
@@ -80,7 +78,9 @@ pub(super) fn start(
             }
 
             unsafe {
-                let _ = UnhookWindowsHookEx(mouse_hook);
+                if let Some(mouse_hook) = mouse_hook {
+                    let _ = UnhookWindowsHookEx(mouse_hook);
+                }
                 let _ = UnhookWindowsHookEx(hook);
             }
             HOOK_STATE.with(|state| {
