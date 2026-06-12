@@ -100,7 +100,7 @@ fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
 
         match result {
             Ok(()) if coreml_failed() => {
-                eprintln!(
+                tracing::error!(
                     "[speech] Core ML encoder for {model} failed to load; whisper fell back to the GPU"
                 );
                 crate::toast::show(
@@ -115,7 +115,7 @@ fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
             }
             Ok(()) => emit("done"),
             Err(err) => {
-                eprintln!("[speech] ANE compile warm-up failed: {err}");
+                tracing::error!("[speech] ANE compile warm-up failed: {err}");
                 crate::toast::show(
                     &app,
                     "error",
@@ -281,7 +281,7 @@ pub async fn download_model(
 
     let settings = state.current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu after download: {err}");
+        tracing::error!("Failed to refresh tray menu after download: {err}");
     }
 
     Ok(map_status(status, &manager))
@@ -298,7 +298,7 @@ pub fn delete_model(app: AppHandle<AppRuntime>, model: String) -> Result<ModelSt
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();
         if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-            eprintln!("Failed to refresh tray menu after delete: {err}");
+            tracing::error!("Failed to refresh tray menu after delete: {err}");
         }
     }
 
@@ -337,7 +337,7 @@ pub fn ensure_local_fallback_model<R: Runtime>(
             continue;
         }
         if let Ok(model) = ensure_model_ready(app, manifest.id) {
-            eprintln!(
+            tracing::error!(
                 "[LocalTranscriber] Using installed local model `{}` for remote fallback (preferred `{preferred}` is unavailable)",
                 manifest.id
             );

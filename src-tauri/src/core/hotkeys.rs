@@ -316,7 +316,7 @@ fn hotkey_rank(hotkey: Hotkey) -> (u32, u32) {
 
 fn emit_capture_event(app: &AppHandle<AppRuntime>, payload: ShortcutCapturePayload) {
     if let Err(err) = app.emit(SHORTCUT_CAPTURE_EVENT, payload) {
-        eprintln!("Failed to emit shortcut capture event: {err}");
+        tracing::error!("Failed to emit shortcut capture event: {err}");
     }
 }
 
@@ -336,7 +336,7 @@ impl WorkerSession {
             .name(thread_name.to_string())
             .spawn(move || {
                 if let Err(err) = task(stop_rx) {
-                    eprintln!("Hotkey worker exited with error: {err}");
+                    tracing::error!("Hotkey worker exited with error: {err}");
                 }
             })
             .map_err(|err| anyhow!("Failed to spawn hotkey worker: {err}"))?;
@@ -370,12 +370,12 @@ impl Drop for WorkerSession {
                         .name(format!("{thread_name}-watch"))
                         .spawn(move || {
                             if done_rx.recv_timeout(Duration::from_secs(2)).is_err() {
-                                eprintln!("Hotkey worker `{watch_name}` did not stop within 2s");
+                                tracing::error!("Hotkey worker `{watch_name}` did not stop within 2s");
                             }
                         });
                 }
                 Err(err) => {
-                    eprintln!("Failed to spawn hotkey worker `{thread_name}` join thread: {err}");
+                    tracing::error!("Failed to spawn hotkey worker `{thread_name}` join thread: {err}");
                 }
             }
         }

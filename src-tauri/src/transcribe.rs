@@ -146,7 +146,7 @@ pub(crate) fn queue_transcription(
 
         let auto_paste = transcription_api::auto_paste_enabled();
 
-        eprintln!("[transcription] mode={:?}", settings.transcription_mode,);
+        tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
         accessibility_context::log_active_context();
 
         let active_mode = mode_context::resolve_active_personality(&settings);
@@ -396,7 +396,7 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
         {
             Ok(list) => list,
             Err(err) => {
-                eprintln!("Recovery scan failed: {err}");
+                tracing::error!("Recovery scan failed: {err}");
                 return;
             }
         };
@@ -430,7 +430,7 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                     saved_count += 1;
                 }
                 Ok(RecoveredTranscriptionOutcome::Empty) => {}
-                Err(err) => eprintln!("Failed to transcribe recovered recording: {err}"),
+                Err(err) => tracing::error!("Failed to transcribe recovered recording: {err}"),
             }
         }
 
@@ -645,9 +645,9 @@ async fn process_transcript_text(
                 Err(err) => {
                     let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
-                        eprintln!("LLM edit failed ({context}): {message}");
+                        tracing::error!("LLM edit failed ({context}): {message}");
                     } else {
-                        eprintln!("LLM edit failed, keeping original selected text: {message}");
+                        tracing::error!("LLM edit failed, keeping original selected text: {message}");
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, true);
@@ -662,9 +662,9 @@ async fn process_transcript_text(
                 Err(err) => {
                     let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
-                        eprintln!("Cleanup failed ({context}): {message}");
+                        tracing::error!("Cleanup failed ({context}): {message}");
                     } else {
-                        eprintln!("Cleanup failed, using raw transcript: {message}");
+                        tracing::error!("Cleanup failed, using raw transcript: {message}");
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, false);
@@ -803,7 +803,7 @@ pub(crate) fn retry_transcription_async(
             return;
         }
 
-        eprintln!(
+        tracing::info!(
             "[retry_transcription] mode={:?}",
             settings.transcription_mode,
         );
@@ -861,7 +861,7 @@ pub(crate) fn retry_transcription_async(
                         Ok(cleaned) => (cleaned, true),
                         Err(err) => {
                             let message = llm_cleanup::llm_issue_message(&err);
-                            eprintln!(
+                            tracing::error!(
                                 "Cleanup failed during retry, using raw transcript: {message}"
                             );
                             llm_cleanup::note_preflight_failure();
@@ -911,7 +911,7 @@ pub(crate) fn retry_transcription_async(
                     None
                 };
 
-                eprintln!(
+                tracing::info!(
                     "[retry_transcription] Updating local record {}: text_len={} llm_cleaned={}",
                     retry_id,
                     final_transcript.len(),
@@ -931,7 +931,7 @@ pub(crate) fn retry_transcription_async(
                     ) {
                     Ok(record) => record,
                     Err(err) => {
-                        eprintln!("Failed to save retry result: {err}");
+                        tracing::error!("Failed to save retry result: {err}");
                         return;
                     }
                 };
@@ -1037,7 +1037,7 @@ fn emit_transcription_complete_with_cleanup(
                 (Some(record), true)
             }
             Err(err) => {
-                eprintln!("Failed to persist transcription: {err}");
+                tracing::error!("Failed to persist transcription: {err}");
                 (None, false)
             }
         }
@@ -1063,11 +1063,11 @@ fn emit_transcription_complete_with_cleanup(
 
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
     if let Err(err) = crate::set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
 
     crate::schedule_recording_prune(app.clone(), settings.clone());
@@ -1119,7 +1119,7 @@ fn handle_empty_transcription(
 
     if audio_path.exists() {
         if let Err(err) = std::fs::remove_file(audio_path) {
-            eprintln!(
+            tracing::error!(
                 "Failed to remove empty transcription audio {}: {err}",
                 audio_path.display()
             );
@@ -1213,7 +1213,7 @@ fn emit_transcription_error_inner(
 
         match record_result {
             Ok(_) => discard_pending_recording(pending_path),
-            Err(err) => eprintln!("Failed to persist failed transcription: {err}"),
+            Err(err) => tracing::error!("Failed to persist failed transcription: {err}"),
         }
     }
 

@@ -502,7 +502,7 @@ pub async fn cleanup_transcription(
         ));
     }
 
-    eprintln!("[LLM] Processing transcription: {} chars", text.len());
+    tracing::info!("[LLM] Processing transcription: {} chars", text.len());
     let has_style_guidance = personality_has_style_guidance(mode);
 
     let result = run_text_task(
@@ -516,11 +516,11 @@ pub async fn cleanup_transcription(
     .await?;
 
     if !cleanup_result_looks_safe(text, &result, has_style_guidance) {
-        eprintln!("[LLM] Cleanup candidate rejected by safety checks, keeping raw transcript");
+        tracing::error!("[LLM] Cleanup candidate rejected by safety checks, keeping raw transcript");
         return Ok(text.to_string());
     }
 
-    eprintln!("[LLM] Cleanup complete: {} chars", result.len());
+    tracing::info!("[LLM] Cleanup complete: {} chars", result.len());
 
     Ok(result)
 }
@@ -556,7 +556,7 @@ pub async fn edit_transcription(
         ));
     }
 
-    eprintln!(
+    tracing::info!(
         "[LLM Edit] Processing {} char command on {} chars of text",
         voice_command.len(),
         selected_text.len()
@@ -573,11 +573,11 @@ pub async fn edit_transcription(
     .await?;
 
     if !edit_result_looks_safe(selected_text, &result) {
-        eprintln!("[LLM Edit] Candidate rejected by safety checks, keeping selected text");
+        tracing::error!("[LLM Edit] Candidate rejected by safety checks, keeping selected text");
         return Ok(selected_text.to_string());
     }
 
-    eprintln!("[LLM Edit] Final output: {} chars", result.len());
+    tracing::info!("[LLM Edit] Final output: {} chars", result.len());
 
     Ok(result)
 }

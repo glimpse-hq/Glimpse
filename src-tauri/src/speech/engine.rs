@@ -70,7 +70,7 @@ impl LocalTranscriber {
             .unwrap_or(false);
 
         if should_unload {
-            eprintln!(
+            tracing::info!(
                 "[LocalTranscriber] Unloading model after {} seconds of inactivity",
                 IDLE_TIMEOUT.as_secs()
             );

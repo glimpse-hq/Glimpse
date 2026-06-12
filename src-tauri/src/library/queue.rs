@@ -109,7 +109,7 @@ fn start_library_transcription_internal(
     let item = match storage.get_library_item(&id) {
         Ok(Some(item)) => item,
         Ok(None) => {
-            eprintln!("Library item not found for transcription: {id}");
+            tracing::error!("Library item not found for transcription: {id}");
             let _ = app.emit(
                 EVENT_LIBRARY_ERROR,
                 LibraryErrorPayload {
@@ -122,7 +122,7 @@ fn start_library_transcription_internal(
             return;
         }
         Err(err) => {
-            eprintln!("Failed to load library item {id}: {err}");
+            tracing::error!("Failed to load library item {id}: {err}");
             let _ = app.emit(
                 EVENT_LIBRARY_ERROR,
                 LibraryErrorPayload {

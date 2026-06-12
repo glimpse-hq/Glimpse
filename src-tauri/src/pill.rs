@@ -297,7 +297,7 @@ impl PillController {
         let status = *self.status.lock();
 
         if let Err(err) = app.emit(EVENT_PILL_STATE, PillStatePayload { status }) {
-            eprintln!("Failed to emit pill state: {err}");
+            tracing::error!("Failed to emit pill state: {err}");
         }
     }
 
@@ -319,12 +319,12 @@ impl PillController {
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
         let status = self.status();
         if matches!(status, PillStatus::Listening | PillStatus::Processing) {
-            eprintln!("[Pill] Suppressing error during active recording ({status}): {message}");
+            tracing::error!("[Pill] Suppressing error during active recording ({status}): {message}");
             return;
         }
-        eprintln!("[Pill] {message}");
+        tracing::error!("[Pill] {message}");
         if let Err(err) = self.recorder.stop() {
-            eprintln!("[Pill] Failed to stop recorder during error transition: {err}");
+            tracing::error!("[Pill] Failed to stop recorder during error transition: {err}");
         }
         self.resume_paused_media();
         self.reset_recording_state();
@@ -335,7 +335,7 @@ impl PillController {
     }
 
     fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, message: &str) {
-        eprintln!("[Pill] {message}");
+        tracing::error!("[Pill] {message}");
         self.resume_paused_media();
         self.reset_recording_state();
         self.set_hold_key_down(false);
@@ -832,7 +832,7 @@ impl PillController {
             })
         {
             self.resume_paused_media();
-            eprintln!("Failed to stop recorder: {err}");
+            tracing::error!("Failed to stop recorder: {err}");
         }
         self.reset(app);
     }
@@ -855,7 +855,7 @@ impl PillController {
             })
         {
             self.resume_paused_media();
-            eprintln!("Failed to stop recorder: {err}");
+            tracing::error!("Failed to stop recorder: {err}");
         }
 
         if let Some(path) = state.take_pending_path() {
@@ -883,7 +883,7 @@ pub(crate) fn emit_pill_mode_with_tone(
         EVENT_PILL_MODE,
         serde_json::json!({ "expanded": expanded, "text": text, "tone": tone }),
     ) {
-        eprintln!("Failed to emit pill mode: {err}");
+        tracing::error!("Failed to emit pill mode: {err}");
     }
 }
 
@@ -905,7 +905,7 @@ fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
         }
 
         if let Err(err) = permissions::request_microphone_permission() {
-            eprintln!("Failed to request microphone permission: {err}");
+            tracing::error!("Failed to request microphone permission: {err}");
         }
 
         if !permissions::check_microphone_permission() {
@@ -1006,12 +1006,12 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
         let hotkey = match hotkeys::parse_shortcut(raw_shortcut) {
             Ok(hotkey) => hotkey,
             Err(err) => {
-                eprintln!("Skipping invalid {label} shortcut `{raw_shortcut}`: {err}");
+                tracing::error!("Skipping invalid {label} shortcut `{raw_shortcut}`: {err}");
                 return;
             }
         };
         if let Err(err) = hotkeys::validate_recording_shortcut(&hotkey) {
-            eprintln!("Skipping unsupported {label} shortcut `{raw_shortcut}`: {err}");
+            tracing::error!("Skipping unsupported {label} shortcut `{raw_shortcut}`: {err}");
             return;
         }
 
@@ -1020,7 +1020,7 @@ pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
             .find(|(_, existing_hotkey)| hotkeys::shortcuts_conflict(existing_hotkey, &hotkey))
         {
             let existing_shortcut = existing_hotkey.to_string();
-            eprintln!(
+            tracing::error!(
                 "Skipping {label} shortcut `{raw_shortcut}` because it conflicts with {existing_label} shortcut `{existing_shortcut}`"
             );
             return;

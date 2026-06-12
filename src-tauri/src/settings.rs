@@ -956,7 +956,7 @@ impl SettingsStore {
                         if !key_looks_encrypted {
                             settings.llm_api_key = encrypted_llm_api_key;
                         } else {
-                            eprintln!(
+                            tracing::error!(
                                 "Error: Failed to decrypt API key: {}. Preserving encrypted value.",
                                 e
                             );
@@ -966,7 +966,7 @@ impl SettingsStore {
                     }
                 }
             } else {
-                eprintln!("Warning: Could not get hardware UUID, preserving stored API key");
+                tracing::error!("Warning: Could not get hardware UUID, preserving stored API key");
                 if key_looks_encrypted {
                     settings.llm_api_key = String::new();
                     llm_api_key_ciphertext = Some(encrypted_llm_api_key);
@@ -987,7 +987,7 @@ impl SettingsStore {
                         if !key_looks_encrypted {
                             settings.remote_speech_api_key = encrypted_remote_speech_api_key;
                         } else {
-                            eprintln!(
+                            tracing::error!(
                                 "Error: Failed to decrypt remote speech API key: {}. Preserving encrypted value.",
                                 e
                             );
@@ -998,7 +998,7 @@ impl SettingsStore {
                     }
                 }
             } else {
-                eprintln!(
+                tracing::error!(
                     "Warning: Could not get hardware UUID, preserving stored remote speech API key"
                 );
                 if key_looks_encrypted {
@@ -1020,7 +1020,7 @@ impl SettingsStore {
                         if !key_looks_encrypted {
                             settings.local_api_key = encrypted_local_api_key;
                         } else {
-                            eprintln!(
+                            tracing::error!(
                                 "Error: Failed to decrypt Local API key: {}. Preserving encrypted value.",
                                 e
                             );
@@ -1030,7 +1030,7 @@ impl SettingsStore {
                     }
                 }
             } else {
-                eprintln!("Warning: Could not get hardware UUID, preserving stored Local API key");
+                tracing::error!("Warning: Could not get hardware UUID, preserving stored Local API key");
                 if key_looks_encrypted {
                     settings.local_api_key = String::new();
                     local_api_key_ciphertext = Some(encrypted_local_api_key);
@@ -1147,7 +1147,7 @@ impl SettingsStore {
                     .map_err(|e| anyhow::anyhow!("Failed to encrypt API key: {}", e))?
             } else {
                 *llm_api_key_ciphertext = None;
-                eprintln!("Warning: Could not get hardware UUID, storing API key unencrypted");
+                tracing::error!("Warning: Could not get hardware UUID, storing API key unencrypted");
                 settings.llm_api_key.clone()
             }
         };
@@ -1167,7 +1167,7 @@ impl SettingsStore {
                 )?
             } else {
                 *remote_speech_api_key_ciphertext = None;
-                eprintln!(
+                tracing::error!(
                     "Warning: Could not get hardware UUID, storing remote speech API key unencrypted"
                 );
                 settings.remote_speech_api_key.clone()
@@ -1188,7 +1188,7 @@ impl SettingsStore {
                     .map_err(|e| anyhow::anyhow!("Failed to encrypt Local API key: {}", e))?
             } else {
                 *local_api_key_ciphertext = None;
-                eprintln!(
+                tracing::error!(
                     "Warning: Could not get hardware UUID, storing Local API key unencrypted"
                 );
                 settings.local_api_key.clone()

@@ -463,7 +463,7 @@ impl RecorderCore {
             {
                 Ok(writer) => Some(writer),
                 Err(err) => {
-                    eprintln!("Crash-safe recording writer unavailable: {err}");
+                    tracing::error!("Crash-safe recording writer unavailable: {err}");
                     None
                 }
             }
@@ -887,7 +887,7 @@ pub fn recover_pending_recordings(base_dir: PathBuf) -> Vec<(RecordingSaved, Com
                 let _ = fs::remove_file(&path);
             }
             Err(err) => {
-                eprintln!("Failed to recover {}: {err}", path.display());
+                tracing::error!("Failed to recover {}: {err}", path.display());
                 let _ = fs::rename(&path, path.with_extension("wav.failed"));
             }
         }
@@ -1337,7 +1337,7 @@ fn resample_audio(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     }
 
     resample_with_rubato(input, in_rate, out_rate).unwrap_or_else(|| {
-        eprintln!(
+        tracing::error!(
             "rubato resampler failed ({in_rate}→{out_rate}); falling back to linear resampler"
         );
         resample_linear(input, in_rate, out_rate)
@@ -1403,7 +1403,7 @@ where
     device.build_input_stream(
         config,
         move |data: &[T], _| push_samples(data, &buffer, &spectrum, channels),
-        |err| eprintln!("Microphone stream error: {err}"),
+        |err| tracing::error!("Microphone stream error: {err}"),
         None,
     )
 }

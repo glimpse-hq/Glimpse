@@ -45,7 +45,7 @@ pub fn build_recent_transcriptions_menu(
                 submenu = submenu.item(&item);
             }
             Err(err) => {
-                eprintln!("Failed to load recent transcriptions for menu: {err}");
+                tracing::error!("Failed to load recent transcriptions for menu: {err}");
                 let item = MenuItem::with_id(
                     app,
                     MENU_ID_RECENT_TRANSCRIPTION_ERROR,
@@ -87,7 +87,7 @@ pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcriptio
         return;
     }
     if let Err(err) = assistive::copy_text_to_clipboard(text) {
-        eprintln!("Failed to copy transcription to clipboard: {err}");
+        tracing::error!("Failed to copy transcription to clipboard: {err}");
         emit_copy_error_toast(app, "Unable to copy to clipboard");
         return;
     }
@@ -132,11 +132,11 @@ fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
 fn refresh_recent_menus(app: &AppHandle<AppRuntime>) {
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
     if let Err(err) = crate::set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
 }
 

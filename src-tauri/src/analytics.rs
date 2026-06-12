@@ -32,13 +32,13 @@ pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
     {
         Ok(opts) => opts,
         Err(err) => {
-            eprintln!("Failed to build PostHog client options: {err}");
+            tracing::error!("Failed to build PostHog client options: {err}");
             return;
         }
     };
 
     if let Err(err) = posthog_rs::init_global(options).await {
-        eprintln!("Failed to init PostHog: {err}");
+        tracing::error!("Failed to init PostHog: {err}");
         return;
     }
 

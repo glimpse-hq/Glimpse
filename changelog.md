@@ -3,6 +3,7 @@
 ### Improvements
 
 - Fixed a bug where live streamed words could be blurred and improved streaming animations.
+- The about page now has a new support page, you can export logs here too.
 
 0.9.7
 

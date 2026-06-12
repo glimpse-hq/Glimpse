@@ -329,7 +329,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     let items = match storage.get_recoverable_library_items() {
         Ok(items) => items,
         Err(err) => {
-            eprintln!("Failed to load recoverable library items: {err}");
+            tracing::error!("Failed to load recoverable library items: {err}");
             return;
         }
     };
@@ -387,7 +387,7 @@ pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> R
     let state = app.state::<AppState>();
     if require_library_license(&state).is_err() {
         if let Err(err) = crate::tray::toggle_settings_window(app) {
-            eprintln!("Failed to open settings window: {err}");
+            tracing::error!("Failed to open settings window: {err}");
         }
         return Ok(());
     }
@@ -402,7 +402,7 @@ pub fn handle_opened_paths(app: &AppHandle<AppRuntime>, urls: Vec<PathBuf>) -> R
     }
     pending_library_import().lock().paths = paths;
     if let Err(err) = crate::tray::toggle_settings_window(app) {
-        eprintln!("Failed to open settings window: {err}");
+        tracing::error!("Failed to open settings window: {err}");
     }
     flush_pending_library_import(app);
     Ok(())
@@ -425,7 +425,7 @@ fn determine_delete_scope(app: &AppHandle<AppRuntime>, audio_path: &str) -> Libr
     }) {
         Ok(root) => root,
         Err(err) => {
-            eprintln!("Skipping library file deletion: {err}");
+            tracing::error!("Skipping library file deletion: {err}");
             return LibraryDeleteScope::SkipFilesystemDeletion;
         }
     };
@@ -438,7 +438,7 @@ fn determine_delete_scope_from_paths(root: &Path, path: &Path) -> LibraryDeleteS
         match path.canonicalize() {
             Ok(path) => path,
             Err(err) => {
-                eprintln!("Skipping library file deletion, failed to canonicalize file: {err}");
+                tracing::error!("Skipping library file deletion, failed to canonicalize file: {err}");
                 return LibraryDeleteScope::SkipFilesystemDeletion;
             }
         }
@@ -447,7 +447,7 @@ fn determine_delete_scope_from_paths(root: &Path, path: &Path) -> LibraryDeleteS
             match parent.canonicalize() {
                 Ok(parent) => parent.join(path.file_name().unwrap_or_default()),
                 Err(err) => {
-                    eprintln!(
+                    tracing::error!(
                         "Skipping library file deletion, failed to canonicalize parent folder: {err}"
                     );
                     return LibraryDeleteScope::SkipFilesystemDeletion;

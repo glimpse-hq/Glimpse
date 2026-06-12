@@ -234,11 +234,11 @@ pub(crate) fn refresh_tray_menu(
 
 fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
     if let Err(err) = refresh_tray_menu(app, settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
     if let Err(err) = crate::set_app_menu(app, settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
 }
 
@@ -253,10 +253,10 @@ fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>
         Ok(saved) => {
             refresh_speech_menus(app, &saved);
             if let Err(err) = app.emit(crate::EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
+                tracing::error!("Failed to emit settings change: {err}");
             }
         }
-        Err(err) => eprintln!("Failed to update microphone selection: {err}"),
+        Err(err) => tracing::error!("Failed to update microphone selection: {err}"),
     }
 }
 
@@ -270,12 +270,12 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
         MENU_ID_FEEDBACK => {
             if let Err(err) = app.opener().open_url(FEEDBACK_URL, None::<&str>) {
-                eprintln!("Failed to open feedback link: {err}");
+                tracing::error!("Failed to open feedback link: {err}");
             }
         }
         MENU_ID_CHECK_UPDATES => {
             if let Err(err) = open_settings_about(app) {
-                eprintln!("Failed to open settings for update check: {err}");
+                tracing::error!("Failed to open settings for update check: {err}");
             }
         }
         _ => {
@@ -317,7 +317,7 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
                 ..
             } if button == MouseButton::Left && button_state == MouseButtonState::Up => {
                 if let Err(err) = toggle_settings_window(tray.app_handle()) {
-                    eprintln!("Failed to toggle settings window: {err}");
+                    tracing::error!("Failed to toggle settings window: {err}");
                 }
             }
             _ => {}
@@ -325,7 +325,7 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open_settings" => {
                 if let Err(err) = toggle_settings_window(app) {
-                    eprintln!("Failed to open settings window: {err}");
+                    tracing::error!("Failed to open settings window: {err}");
                 }
             }
             "quit_glimpse" => {

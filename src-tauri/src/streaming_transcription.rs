@@ -77,7 +77,7 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
     let transcriber = state.local_transcriber();
 
     if let Err(err) = transcriber.preload_and_warm(&model) {
-        eprintln!("[streaming] Failed to preload model: {err}");
+        tracing::error!("[streaming] Failed to preload model: {err}");
         return;
     }
 
@@ -131,7 +131,7 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
                         }
                     }
                     Err(err) => {
-                        eprintln!("[streaming] Chunk transcription failed: {err}");
+                        tracing::error!("[streaming] Chunk transcription failed: {err}");
                     }
                 }
             }

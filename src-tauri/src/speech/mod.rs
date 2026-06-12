@@ -79,13 +79,13 @@ pub fn warm(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
         let ready = match install::ensure_model_ready(&app_handle, &model_key) {
             Ok(model) => model,
             Err(err) => {
-                eprintln!("[speech] skipping warm: {err}");
+                tracing::error!("[speech] skipping warm: {err}");
                 return;
             }
         };
         let transcriber = app_handle.state::<AppState>().local_transcriber();
         if let Err(err) = transcriber.preload_and_warm(&ready) {
-            eprintln!("[speech] warm failed: {err}");
+            tracing::error!("[speech] warm failed: {err}");
         }
     });
 }

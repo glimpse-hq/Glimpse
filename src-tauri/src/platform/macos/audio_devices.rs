@@ -20,7 +20,7 @@ pub fn init(app: &AppHandle<AppRuntime>) -> Result<(), String> {
         .name("audio-device-watcher".to_string())
         .spawn(move || {
             if let Err(err) = run_input_device_watcher(app) {
-                eprintln!("Failed to start input device watcher: {err}");
+                tracing::error!("Failed to start input device watcher: {err}");
             }
         })
         .map(|_| ())
@@ -45,10 +45,10 @@ fn run_input_device_watcher(app: AppHandle<AppRuntime>) -> Result<(), String> {
 fn refresh_native_menus(app: &AppHandle<AppRuntime>) {
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu after input device change: {err}");
+        tracing::error!("Failed to refresh app menu after input device change: {err}");
     }
     if let Err(err) = tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu after input device change: {err}");
+        tracing::error!("Failed to refresh tray menu after input device change: {err}");
     }
 }
 

@@ -39,6 +39,11 @@ jobs:
             echo "Failed to resolve app version from src-tauri/Cargo.toml" >&2
             exit 1
           fi
+          PKG_VERSION=$(jq -r .version package.json)
+          if [[ "$PKG_VERSION" != "$VERSION" ]]; then
+            echo "Version mismatch: src-tauri/Cargo.toml=$VERSION package.json=$PKG_VERSION" >&2
+            exit 1
+          fi
           if [[ "$VERSION" =~ -rc\.[0-9]+$ ]]; then
             PRERELEASE=true
           else
