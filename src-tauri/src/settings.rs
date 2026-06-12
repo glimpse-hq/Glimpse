@@ -28,7 +28,6 @@ const KEY_LANGUAGE: &str = "language";
 const KEY_APP_LOCALE: &str = "app_locale";
 const KEY_THEME_MODE: &str = "theme_mode";
 
-const LEGACY_KEY_LLM_CLEANUP_ENABLED: &str = "llm_cleanup_enabled";
 const KEY_LLM_ENABLED: &str = "llm_enabled";
 const KEY_CLEANUP_ENABLED: &str = "cleanup_enabled";
 const KEY_LLM_PROVIDER: &str = "llm_provider";
@@ -780,9 +779,6 @@ impl SettingsStore {
         let encrypted_llm_api_key: String;
         let encrypted_remote_speech_api_key: String;
         let encrypted_local_api_key: String;
-        let legacy_llm_cleanup_enabled_exists: bool;
-        let llm_enabled_exists: bool;
-        let cleanup_enabled_exists: bool;
         let theme_mode_exists: bool;
         let shortcut_bindings_exists: bool;
         {
@@ -852,19 +848,10 @@ impl SettingsStore {
             theme_mode_exists = theme_mode.is_some();
             settings.theme_mode = theme_mode.unwrap_or(settings.theme_mode);
 
-            let legacy_llm_cleanup_enabled =
-                self.read_optional_value::<bool>(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)?;
-            let llm_enabled = self.read_optional_value::<bool>(&conn, KEY_LLM_ENABLED)?;
-            let cleanup_enabled = self.read_optional_value::<bool>(&conn, KEY_CLEANUP_ENABLED)?;
-            legacy_llm_cleanup_enabled_exists = legacy_llm_cleanup_enabled.is_some();
-            llm_enabled_exists = llm_enabled.is_some();
-            cleanup_enabled_exists = cleanup_enabled.is_some();
-            settings.llm_enabled = llm_enabled
-                .or(legacy_llm_cleanup_enabled)
-                .unwrap_or(settings.llm_enabled);
-            settings.cleanup_enabled = cleanup_enabled
-                .or(legacy_llm_cleanup_enabled)
-                .unwrap_or(settings.cleanup_enabled);
+            settings.llm_enabled =
+                self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
+            settings.cleanup_enabled =
+                self.read_value(&conn, KEY_CLEANUP_ENABLED, settings.cleanup_enabled)?;
             settings.llm_provider =
                 self.read_value(&conn, KEY_LLM_PROVIDER, settings.llm_provider.clone())?;
             settings.llm_endpoint =
@@ -1072,10 +1059,6 @@ impl SettingsStore {
             should_persist = true;
         }
 
-        if legacy_llm_cleanup_enabled_exists && (!llm_enabled_exists || !cleanup_enabled_exists) {
-            should_persist = true;
-        }
-
         if !theme_mode_exists {
             should_persist = true;
         }
@@ -1147,11 +1130,6 @@ impl SettingsStore {
 
         if should_persist {
             self.save(&settings)?;
-        }
-
-        if legacy_llm_cleanup_enabled_exists {
-            let conn = self.conn.lock();
-            self.delete_value(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)?;
         }
 
         Ok(settings)
@@ -1394,11 +1372,6 @@ impl SettingsStore {
         Ok(())
     }
 
-    fn delete_value(&self, conn: &Connection, key: &str) -> Result<()> {
-        conn.execute("DELETE FROM settings WHERE key = ?1", params![key])
-            .with_context(|| format!("Failed to delete setting '{key}' from DB"))?;
-        Ok(())
-    }
 }
 
 fn db_path(app: &AppHandle) -> Result<PathBuf> {
@@ -1432,82 +1405,6 @@ mod tests {
         store
             .write_value(&conn, key, value)
             .expect("write test setting");
-    }
-
-    fn read_bool_setting(store: &SettingsStore, key: &str) -> bool {
-        let conn = store.conn.lock();
-        store
-            .read_value(&conn, key, false)
-            .expect("read bool setting")
-    }
-
-    #[test]
-    fn legacy_cleanup_flag_migrates_and_removes_legacy_key() {
-        let store = test_store();
-        write_setting(&store, LEGACY_KEY_LLM_CLEANUP_ENABLED, &true);
-        write_setting(&store, KEY_PERSONALITIES_NOTES_SEEDED, &true);
-
-        let loaded = store.load().expect("load settings");
-
-        assert!(loaded.llm_enabled);
-        assert!(!loaded.cleanup_enabled);
-        assert!(loaded
-            .shortcut_bindings
-            .smart
-            .iter()
-            .all(|binding| binding.cleanup_enabled));
-        assert!(loaded
-            .shortcut_bindings
-            .hold
-            .iter()
-            .all(|binding| binding.cleanup_enabled));
-        assert!(loaded
-            .shortcut_bindings
-            .toggle
-            .iter()
-            .all(|binding| binding.cleanup_enabled));
-        assert!(read_bool_setting(&store, KEY_LLM_ENABLED));
-        assert!(!read_bool_setting(&store, KEY_CLEANUP_ENABLED));
-        let conn = store.conn.lock();
-        let legacy_raw = store
-            .read_optional_raw_value_from_conn(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)
-            .expect("read legacy key");
-        assert!(legacy_raw.is_none());
-    }
-
-    #[test]
-    fn legacy_cleanup_flag_only_backfills_missing_new_keys() {
-        let store = test_store();
-        write_setting(&store, LEGACY_KEY_LLM_CLEANUP_ENABLED, &true);
-        write_setting(&store, KEY_LLM_ENABLED, &false);
-        write_setting(&store, KEY_PERSONALITIES_NOTES_SEEDED, &true);
-
-        let loaded = store.load().expect("load settings");
-
-        assert!(!loaded.llm_enabled);
-        assert!(!loaded.cleanup_enabled);
-        assert!(loaded
-            .shortcut_bindings
-            .smart
-            .iter()
-            .all(|binding| binding.cleanup_enabled));
-        assert!(loaded
-            .shortcut_bindings
-            .hold
-            .iter()
-            .all(|binding| binding.cleanup_enabled));
-        assert!(loaded
-            .shortcut_bindings
-            .toggle
-            .iter()
-            .all(|binding| binding.cleanup_enabled));
-        assert!(!read_bool_setting(&store, KEY_LLM_ENABLED));
-        assert!(!read_bool_setting(&store, KEY_CLEANUP_ENABLED));
-        let conn = store.conn.lock();
-        let legacy_raw = store
-            .read_optional_raw_value_from_conn(&conn, LEGACY_KEY_LLM_CLEANUP_ENABLED)
-            .expect("read legacy key");
-        assert!(legacy_raw.is_none());
     }
 
     #[test]

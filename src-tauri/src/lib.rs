@@ -6,7 +6,6 @@ mod auto_dictionary;
 mod cli_install;
 mod core;
 mod crypto;
-mod data_migration;
 mod dictionary;
 mod import;
 mod library;
@@ -279,10 +278,6 @@ pub fn run() {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             let handle = app.handle();
-            if let Err(err) = data_migration::migrate_legacy_app_dirs(handle) {
-                eprintln!("Failed to migrate legacy app directories: {err}");
-            }
-
             let crash_marker = handle
                 .path()
                 .app_data_dir()
