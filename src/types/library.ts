@@ -31,6 +31,7 @@ export type LibraryItem = {
   status: LibraryItemStatus;
   transcript?: string | null;
   segments?: TranscriptSegment[] | null;
+  words?: TranscriptSegment[] | null;
   duration_seconds: number;
   file_size_bytes: number;
   original_format: string;

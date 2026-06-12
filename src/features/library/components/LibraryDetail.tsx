@@ -1,7 +1,9 @@
 import { useLingui } from "@lingui/react/macro";
 import {
+  Fragment,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -66,6 +68,62 @@ const SPEAKER_COLORS = [
   "#bb9af7",
   "#7dcfff",
 ];
+
+const SegmentWordsRow = ({
+  tokens,
+  activePosition,
+}: {
+  tokens: string[];
+  activePosition: number;
+}) => {
+  const containerRef = useRef<HTMLSpanElement>(null);
+  const [underline, setUnderline] = useState<{
+    x: number;
+    y: number;
+    width: number;
+  } | null>(null);
+
+  useLayoutEffect(() => {
+    const active = containerRef.current?.querySelector<HTMLElement>(
+      '[data-word-active="true"]',
+    );
+    if (!active) return;
+    setUnderline({
+      x: active.offsetLeft,
+      y: active.offsetTop + active.offsetHeight - 2,
+      width: active.offsetWidth,
+    });
+  }, [activePosition, tokens]);
+
+  return (
+    <span ref={containerRef} className="transcript-words select-text">
+      {tokens.map((token, position) => (
+        <Fragment key={position}>
+          {position > 0 ? " " : null}
+          <span
+            data-word-active={position === activePosition || undefined}
+            className={`transcript-word${
+              position === activePosition ? " transcript-word-active" : ""
+            }`}
+          >
+            {token}
+          </span>
+        </Fragment>
+      ))}
+      {underline ? (
+        <span
+          className="transcript-word-underline"
+          aria-hidden="true"
+          style={{
+            transform: `translate(${underline.x}px, ${underline.y}px)`,
+            width: underline.width,
+            opacity: activePosition >= 0 ? 1 : 0,
+          }}
+        />
+      ) : null}
+    </span>
+  );
+};
 
 const LibraryDetail = ({
   item,
@@ -762,6 +820,76 @@ const LibraryDetail = ({
     }
     return match;
   }, [audioCurrentTime, showTimestamps, canShowTimestamps, item.segments]);
+
+  const itemWords = item.words ?? null;
+
+  // Whisper word and segment clocks overlap and backtrack, so words are
+  // assigned to rows by sequential text alignment, not by time. Rows that
+  // fail to align (chunk seams, edited text) get null and fall back.
+  const segmentWordStarts = useMemo(() => {
+    const segments = item.segments ?? [];
+    if (!itemWords?.length || !segments.length) return null;
+    const normalize = (text: string) => text.toLowerCase().replace(/\s+/g, "");
+    const SCAN_AHEAD = 24;
+    const starts: (number | null)[] = [];
+    let pointer = 0;
+    for (const segment of segments) {
+      const tokenCount = segment.text.trim().split(/\s+/).filter(Boolean).length;
+      const target = normalize(segment.text);
+      let matched: number | null = null;
+      for (let offset = 0; tokenCount > 0 && offset < SCAN_AHEAD; offset += 1) {
+        const start = pointer + offset;
+        if (start + tokenCount > itemWords.length) break;
+        let joined = "";
+        for (let i = start; i < start + tokenCount; i += 1) {
+          joined += itemWords[i].text;
+        }
+        if (normalize(joined) === target) {
+          matched = start;
+          pointer = start + tokenCount;
+          break;
+        }
+      }
+      starts.push(matched);
+    }
+    return starts;
+  }, [item.segments, itemWords]);
+
+  const activeWordIndex = useMemo(() => {
+    if (!showSegmentView || !itemWords?.length || activeSegmentIndex < 0) {
+      return -1;
+    }
+    const wordStart = segmentWordStarts?.[activeSegmentIndex];
+    const segment = (item.segments ?? [])[activeSegmentIndex];
+    if (wordStart == null || !segment) return -1;
+    const count = segment.text.trim().split(/\s+/).filter(Boolean).length;
+    const targetMs = Math.max(0, Math.round(audioCurrentTime * 1000));
+    let match = -1;
+    const limit = Math.min(wordStart + count, itemWords.length);
+    for (let i = wordStart; i < limit; i += 1) {
+      if (itemWords[i].start_ms <= targetMs) match = i;
+    }
+    return match;
+  }, [
+    audioCurrentTime,
+    showSegmentView,
+    itemWords,
+    activeSegmentIndex,
+    segmentWordStarts,
+    item.segments,
+  ]);
+
+  const renderSegmentWords = (segment: TranscriptSegment, segmentIndex: number) => {
+    const wordStart = segmentWordStarts?.[segmentIndex];
+    if (wordStart == null) return null;
+    const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
+    const activePosition =
+      activeWordIndex >= wordStart &&
+      activeWordIndex < wordStart + tokens.length
+        ? activeWordIndex - wordStart
+        : -1;
+    return <SegmentWordsRow tokens={tokens} activePosition={activePosition} />;
+  };
 
   const segmentMatchIndexes = useMemo(() => {
     if (!normalizedSearchQuery || !showSegmentView) return [];
@@ -1896,6 +2024,10 @@ const LibraryDetail = ({
                 itemContent={(idx, entry) => {
                   const segment = entry.segment;
                   const isActive = entry.index === activeSegmentIndex;
+                  const wordSpans =
+                    isActive && !normalizedSearchQuery
+                      ? renderSegmentWords(segment, entry.index)
+                      : null;
                   return (
                     <div className="pb-1.5 pr-4">
                       <div
@@ -1924,10 +2056,11 @@ const LibraryDetail = ({
                         </div>
                         <div className="min-w-0 select-none w-fit">
                           <span className="select-text">
-                            {renderHighlightedText(
-                              segment.text,
-                              idx === activeSegmentMatch,
-                            )}
+                            {wordSpans ??
+                              renderHighlightedText(
+                                segment.text,
+                                idx === activeSegmentMatch,
+                              )}
                           </span>
                         </div>
                       </div>

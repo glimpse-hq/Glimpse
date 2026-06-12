@@ -1,5 +1,9 @@
 0.9.8
 
+### Features
+
+- Playing back transcripts in library view now show word level timestamps. (You will need to retranscribe library items for this to take effect)
+
 ### Improvements
 
 - Local transcription is faster: Parakeet and Nemotron now use more performance cores, making them up to 50% quicker.

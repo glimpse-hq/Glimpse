@@ -442,7 +442,9 @@ fn transcribe_library_item(
             compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
         let mut full_text = String::new();
         let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
+        let mut merged_words: Vec<TranscriptSegment> = Vec::new();
         let mut last_end_ms: u64 = 0;
+        let mut last_word_end_ms: u64 = 0;
         let mut chunk_index: u32 = 0;
 
         stream_wav_chunks(&audio_path, chunk_size, overlap, |start_idx, chunk| {
@@ -510,6 +512,27 @@ fn transcribe_library_item(
                 }
             }
 
+            if let Some(words) = result.words {
+                let offset_ms = (start_idx as f64 / sample_rate as f64 * 1000.0) as u64;
+                // Whisper word clocks can backtrack between segments, so only
+                // dedupe against the previous chunk's seam, never within a chunk.
+                let chunk_word_floor = last_word_end_ms;
+                for word in convert_segments_to_ms(&words) {
+                    let start_ms = word.start_ms + offset_ms;
+                    let end_ms = word.end_ms + offset_ms;
+                    if end_ms <= chunk_word_floor {
+                        continue;
+                    }
+                    last_word_end_ms = last_word_end_ms.max(end_ms);
+                    merged_words.push(TranscriptSegment {
+                        start_ms,
+                        end_ms,
+                        text: word.text,
+                        speaker_id: None,
+                    });
+                }
+            }
+
             let progress =
                 ((start_idx + chunk.len()) as f32 / wav_info.total_samples as f32).min(1.0);
             let transcript_patch = appended_text.as_ref().map(|_| full_text.clone());
@@ -548,7 +571,7 @@ fn transcribe_library_item(
             } else {
                 Some(merged_segments)
             },
-            words: None,
+            words: (!merged_words.is_empty()).then_some(merged_words),
             speech_model: None,
         });
     }
@@ -580,7 +603,7 @@ fn transcribe_library_item(
         return Ok(LibraryTranscriptionResult {
             transcript: result.transcript,
             segments: result.segments.as_deref().map(convert_segments_to_ms),
-            words: None,
+            words: result.words.as_deref().map(convert_segments_to_ms),
             speech_model: None,
         });
     }
@@ -592,7 +615,9 @@ fn transcribe_library_item(
         compute_total_chunks(wav_info.total_samples, chunk_size, step).max(1) as u32;
     let mut full_text = String::new();
     let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
+    let mut merged_words: Vec<TranscriptSegment> = Vec::new();
     let mut last_end_ms: u64 = 0;
+    let mut last_word_end_ms: u64 = 0;
     let mut chunk_index: u32 = 0;
 
     stream_wav_chunks(&audio_path, chunk_size, overlap, |start_idx, chunk| {
@@ -655,6 +680,27 @@ fn transcribe_library_item(
             }
         }
 
+        if let Some(words) = result.words {
+            let offset_ms = (start_idx as f64 / sample_rate as f64 * 1000.0) as u64;
+            // Whisper word clocks can backtrack between segments, so only
+            // dedupe against the previous chunk's seam, never within a chunk.
+            let chunk_word_floor = last_word_end_ms;
+            for word in convert_segments_to_ms(&words) {
+                let start_ms = word.start_ms + offset_ms;
+                let end_ms = word.end_ms + offset_ms;
+                if end_ms <= chunk_word_floor {
+                    continue;
+                }
+                last_word_end_ms = last_word_end_ms.max(end_ms);
+                merged_words.push(TranscriptSegment {
+                    start_ms,
+                    end_ms,
+                    text: word.text,
+                    speaker_id: None,
+                });
+            }
+        }
+
         let progress = ((start_idx + chunk.len()) as f32 / wav_info.total_samples as f32).min(1.0);
         report_progress(
             app,
@@ -672,7 +718,7 @@ fn transcribe_library_item(
         } else {
             Some(merged_segments)
         },
-        words: None,
+        words: (!merged_words.is_empty()).then_some(merged_words),
         speech_model: None,
     })
 }

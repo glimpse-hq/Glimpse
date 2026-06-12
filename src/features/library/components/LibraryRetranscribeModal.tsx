@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { X } from "@phosphor-icons/react";
+import { X, Warning } from "@phosphor-icons/react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import {
@@ -90,76 +90,85 @@ const LibraryRetranscribeModal = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 backdrop-blur-xs"
+      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 px-6 backdrop-blur-xs"
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 20 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="relative w-[420px] max-w-[92vw] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl"
+        className="relative w-[440px] max-w-[92vw] rounded-2xl border border-border-primary bg-surface-tertiary ui-shadow-modal-deep"
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
-          <div>
-            <p className="ui-text-meta text-content-disabled">
+        <div className="flex items-start justify-between px-5 pt-4">
+          <div className="min-w-0">
+            <h2 className="ui-text-body-lg font-semibold text-content-primary">
               {t({
                 id: "library.retranscribe.title",
                 message: "Retranscribe",
               })}
-            </p>
-            <p className="ui-text-body-lg text-content-primary mt-1 truncate">
+            </h2>
+            <p className="mt-0.5 truncate ui-text-meta text-content-muted">
               {item.name}
             </p>
           </div>
           <button
             onClick={onCancel}
-            aria-label="Close"
-            className="rounded-lg border border-border-primary bg-surface-surface p-2 text-content-muted hover:text-content-secondary"
+            aria-label={t({
+              id: "library.retranscribe.close",
+              message: "Close",
+            })}
+            className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-surface-elevated hover:text-content-primary"
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="flex flex-col gap-5 px-5 py-5">
           {modelOptions.length === 0 && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
-              {t({
-                id: "library.retranscribe.no_models",
-                message:
-                  "No local models are installed. Download a model in Settings -> Models before retranscribing.",
-              })}
+            <div className="flex items-start gap-2 ui-text-body-sm ui-color-warning-strong">
+              <Warning size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>
+                {t({
+                  id: "library.retranscribe.no_models",
+                  message:
+                    "No models available. Configure a remote provider or download a local model in Settings -> Models before retranscribing.",
+                })}
+              </span>
             </div>
           )}
+
           <div>
-            <label className="ui-text-label font-medium text-content-muted ml-1">
+            <label className="ui-text-label text-content-muted">
               {t({
                 id: "library.retranscribe.model",
                 message: "Model",
               })}
             </label>
-            <Dropdown
-              value={selectedModelKey || null}
-              onChange={(value) => setSelectedModelKey(value)}
-              options={modelOptions}
-              placeholder={t({
-                id: "library.retranscribe.select_model",
-                message: "Select a model",
-              })}
-              searchable
-              searchPlaceholder={t({
-                id: "library.retranscribe.search_models",
-                message: "Search installed models...",
-              })}
-            />
+            <div className="mt-1.5">
+              <Dropdown
+                value={selectedModelKey || null}
+                onChange={(value) => setSelectedModelKey(value)}
+                options={modelOptions}
+                placeholder={t({
+                  id: "library.retranscribe.select_model",
+                  message: "Select a model",
+                })}
+                searchable
+                searchPlaceholder={t({
+                  id: "library.retranscribe.search_models",
+                  message: "Search installed models...",
+                })}
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
-            <div>
-              <div className="ui-text-body-sm text-content-primary font-medium">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="ui-text-body-sm text-content-primary">
                 {t({
                   id: "library.retranscribe.show_timestamps",
                   message: "Show timestamps",
@@ -183,7 +192,7 @@ const LibraryRetranscribeModal = ({
                 timestampsSupported && setShowTimestamps(!showTimestamps)
               }
               ariaLabel={t({
-                id: "library.retranscribe.show_timestamps",
+                id: "library.retranscribe.show_timestamps.aria",
                 message: "Show timestamps",
               })}
               disabled={!timestampsSupported}
@@ -192,10 +201,10 @@ const LibraryRetranscribeModal = ({
           </div>
         </div>
 
-        <div className="px-5 py-3 border-t border-border-primary flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2 px-5 pb-4">
           <button
             onClick={onCancel}
-            className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-label text-content-muted hover:text-content-secondary"
+            className="rounded-lg px-3 py-2 ui-text-body-sm font-medium text-content-muted transition-colors hover:text-content-primary"
           >
             {t({
               id: "library.retranscribe.cancel",
@@ -205,7 +214,7 @@ const LibraryRetranscribeModal = ({
           <button
             onClick={handleConfirm}
             disabled={isSubmitting || !selectedModelKey}
-            className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-label text-content-primary hover:border-border-secondary disabled:opacity-50"
+            className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting
               ? t({

@@ -128,7 +128,7 @@ impl LocalTranscriber {
             transcript: normalize_transcript(&result.text),
             speech_model: Some(model_manager::model_label(&model.key)),
             segments: result.segments,
-            words: None,
+            words: result.words,
         })
     }
 
@@ -151,7 +151,7 @@ impl LocalTranscriber {
             prompt: None,
             dictionary: dictionary.to_vec(),
             timestamps: with_segments,
-            timestamp_granularity: with_segments.then_some(TimestampGranularity::Segment),
+            timestamp_granularity: with_segments.then_some(TimestampGranularity::Word),
         })?;
         self.touch();
         Ok(response)
