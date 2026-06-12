@@ -90,10 +90,12 @@ jobs:
             os: macos
             rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
             tauri-args: --target universal-apple-darwin
+            cargo-cache-dir: src-tauri/target
           - platform: blacksmith-2vcpu-windows-2025
             os: windows
             rust-targets: x86_64-pc-windows-msvc
             tauri-args: ""
+            cargo-cache-dir: C:\t
 
     runs-on: ${{ matrix.platform }}
 
@@ -122,7 +124,7 @@ jobs:
         if: matrix.os == 'windows'
         shell: pwsh
         run: |
-          $cargoTargetDir = Join-Path $env:RUNNER_TEMP "cargo-target"
+          $cargoTargetDir = "C:\t"
           $libclangPath = Join-Path $env:RUNNER_TEMP "llvm\bin"
           New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
@@ -155,10 +157,9 @@ jobs:
       - name: cache rust
         uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.platform }}-${{ matrix.rust-targets }}
+          key: ${{ matrix.platform }}
           workspaces: src-tauri -> target
-          cache-directories: |
-            ${{ runner.temp }}/cargo-target
+          cache-directories: ${{ matrix.cargo-cache-dir }}
           cache-on-failure: true
 
       - name: install frontend dependencies
