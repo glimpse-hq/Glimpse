@@ -111,15 +111,19 @@ jobs:
         with:
           bun-version-file: package.json
 
+      - name: install LLVM
+        if: matrix.os == 'windows'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "20.1.8"
+          directory: ${{ runner.temp }}/llvm
+
       - name: configure Windows build paths
         if: matrix.os == 'windows'
         shell: pwsh
         run: |
           $cargoTargetDir = Join-Path $env:RUNNER_TEMP "cargo-target"
-          $libclangPath = Join-Path $env:ProgramFiles "LLVM\bin"
-          if (-not (Test-Path (Join-Path $libclangPath "libclang.dll"))) {
-            throw "Blacksmith's Windows 2025 image is missing $libclangPath\libclang.dll"
-          }
+          $libclangPath = Join-Path $env:RUNNER_TEMP "llvm\bin"
           New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
           "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
