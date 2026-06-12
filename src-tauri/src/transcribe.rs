@@ -96,6 +96,7 @@ struct ProcessTranscriptInput<'a> {
     auto_paste: bool,
     log_context: Option<&'a str>,
     cancel_token: Option<&'a CancellationToken>,
+    keep_pill_expanded: bool,
 }
 
 struct CompletionInput {
@@ -236,6 +237,7 @@ pub(crate) fn queue_transcription(
                         auto_paste,
                         log_context: None,
                         cancel_token: Some(&cancel_token),
+                        keep_pill_expanded: false,
                     },
                 )
                 .await
@@ -526,6 +528,7 @@ async fn transcribe_recovered_recording(
             auto_paste: false,
             log_context: Some("recovery"),
             cancel_token: None,
+            keep_pill_expanded: false,
         },
     )
     .await
@@ -610,6 +613,7 @@ async fn process_transcript_text(
         auto_paste,
         log_context,
         cancel_token,
+        keep_pill_expanded,
     } = input;
 
     let is_edit_mode = pending_selected_text.is_some();
@@ -625,7 +629,16 @@ async fn process_transcript_text(
     };
 
     let (final_transcript, llm_cleaned) = if should_use_llm {
-        crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
+        if keep_pill_expanded {
+            crate::pill::emit_pill_mode_with_tone(
+                app,
+                true,
+                &raw_transcript,
+                crate::pill::PILL_TONE_CLEANUP,
+            );
+        } else {
+            crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
+        }
         if let Some(ref selected) = pending_selected_text {
             match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
                 Ok(edited) => (edited, true),
@@ -1748,6 +1761,7 @@ pub(crate) fn finalize_streaming_transcription(
                 auto_paste,
                 log_context: Some("streaming"),
                 cancel_token: Some(&cancel_token),
+                keep_pill_expanded: true,
             },
         )
         .await
