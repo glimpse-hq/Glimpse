@@ -401,11 +401,9 @@ pub fn run() {
             activate_license,
             refresh_license,
             deactivate_license,
-            reveal_license_key,
             get_dictation_stats,
             preview_recording_prune,
             preview_transcription_prune,
-            set_user_name,
             dictionary::set_dictionary,
             dictionary::get_replacements,
             dictionary::set_replacements,
@@ -461,12 +459,10 @@ pub fn run() {
             complete_onboarding,
             cancel_recording,
             view_recovered_transcriptions,
-            pill::set_pill_expanded,
             reset_onboarding,
             toast::debug_show_toast,
             fetch_llm_models,
             fetch_remote_speech_models,
-            open_whats_new,
             open_about_page,
             update_checker::get_update_status,
             update_checker::check_for_updates,
@@ -1119,11 +1115,6 @@ async fn deactivate_license(
     license::deactivate_license(state.http(), &state.settings_store).await
 }
 
-#[tauri::command]
-fn reveal_license_key(state: tauri::State<AppState>) -> Result<String, String> {
-    license::reveal_license_key(&state.settings_store)
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
@@ -1177,15 +1168,6 @@ async fn preview_transcription_prune(
     .map_err(|err| err.to_string())?;
 
     Ok(RecordingPrunePreview { candidate_count })
-}
-
-#[tauri::command]
-fn set_user_name(
-    name: String,
-    app: AppHandle<AppRuntime>,
-    state: tauri::State<AppState>,
-) -> Result<UserSettings, String> {
-    core::settings::set_user_name(name, &app, &state)
 }
 
 #[derive(Serialize)]
@@ -1287,13 +1269,6 @@ async fn fetch_remote_speech_models(
         .list_models()
         .await
         .map_err(|error| error.user_message())
-}
-
-#[tauri::command]
-fn open_whats_new(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::open_settings_whats_new(&app) {
-        eprintln!("Failed to open settings window: {err}");
-    }
 }
 
 #[tauri::command]

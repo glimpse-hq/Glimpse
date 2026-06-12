@@ -272,22 +272,6 @@ pub(crate) fn reset_onboarding(
     Ok(())
 }
 
-pub(crate) fn set_user_name(
-    name: String,
-    app: &AppHandle<AppRuntime>,
-    state: &AppState,
-) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings_unmasked();
-    settings.user_name = name.trim().to_string();
-    let next = state
-        .persist_settings(settings)
-        .map_err(|err| err.to_string())?;
-
-    state.emit_settings_changed(app, &next);
-
-    Ok(state.settings_for_response(next))
-}
-
 pub(crate) fn update_settings(
     args: UpdateSettingsArgs,
     app: &AppHandle<AppRuntime>,

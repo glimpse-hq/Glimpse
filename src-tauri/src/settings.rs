@@ -34,7 +34,6 @@ const KEY_LLM_PROVIDER: &str = "llm_provider";
 const KEY_LLM_ENDPOINT: &str = "llm_endpoint";
 const KEY_LLM_API_KEY: &str = "llm_api_key";
 const KEY_LLM_MODEL: &str = "llm_model";
-const KEY_USER_NAME: &str = "user_name";
 const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
 const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
@@ -152,8 +151,6 @@ pub struct UserSettings {
     pub llm_api_key: String,
     #[serde(default)]
     pub llm_model: String,
-    #[serde(default)]
-    pub user_name: String,
     #[serde(default)]
     pub personalities_notes_seeded: bool,
     #[serde(default)]
@@ -470,7 +467,6 @@ impl Default for UserSettings {
             llm_endpoint: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
-            user_name: String::new(),
             personalities_notes_seeded: false,
             dictionary: Vec::new(),
             auto_dictionary_enabled: false,
@@ -861,8 +857,6 @@ impl SettingsStore {
 
             settings.llm_model =
                 self.read_value(&conn, KEY_LLM_MODEL, settings.llm_model.clone())?;
-            settings.user_name =
-                self.read_value(&conn, KEY_USER_NAME, settings.user_name.clone())?;
             settings.personalities_notes_seeded = self.read_value(
                 &conn,
                 KEY_PERSONALITIES_NOTES_SEEDED,
@@ -1253,7 +1247,6 @@ impl SettingsStore {
         self.write_value(&conn, KEY_LLM_API_KEY, &stored_key)?;
 
         self.write_value(&conn, KEY_LLM_MODEL, &settings.llm_model)?;
-        self.write_value(&conn, KEY_USER_NAME, &settings.user_name)?;
         self.write_value(
             &conn,
             KEY_PERSONALITIES_NOTES_SEEDED,

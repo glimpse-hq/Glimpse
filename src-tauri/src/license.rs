@@ -462,10 +462,6 @@ pub async fn deactivate_license(
     get_license_state(store)
 }
 
-pub fn reveal_license_key(store: &SettingsStore) -> Result<String, String> {
-    read_license_key(store)?.ok_or_else(|| "No license key is stored on this device.".to_string())
-}
-
 fn write_cache_from_polar(
     store: &SettingsStore,
     license: &PolarLicenseResponse,

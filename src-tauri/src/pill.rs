@@ -1177,19 +1177,3 @@ fn simplify_recording_error(message: &str) -> String {
     "Recording failed".to_string()
 }
 
-/// Toggle the pill between basic (collapsed) and dynamic (expanded) mode.
-#[tauri::command]
-pub fn set_pill_expanded(app: AppHandle<AppRuntime>, expanded: bool) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-        // Show the overlay if it isn't visible
-        platform::overlay::show(&app, &window);
-    }
-
-    let text = if expanded {
-        "Cloud transcription streaming will appear here in real-time. This is a preview of the dynamic pill mode."
-    } else {
-        ""
-    };
-    emit_pill_mode(&app, expanded, text);
-    Ok(())
-}

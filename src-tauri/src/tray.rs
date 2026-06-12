@@ -126,10 +126,6 @@ pub(crate) fn open_settings_models(app: &AppHandle<AppRuntime>) -> tauri::Result
     open_settings_navigation(app, SettingsNavigationTarget::Models, false)
 }
 
-pub(crate) fn open_settings_whats_new(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    open_settings_navigation(app, SettingsNavigationTarget::About, true)
-}
-
 fn build_tray_menu(
     app: &AppHandle<AppRuntime>,
     settings: &UserSettings,
