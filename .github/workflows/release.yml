@@ -116,8 +116,13 @@ jobs:
         shell: pwsh
         run: |
           $cargoTargetDir = Join-Path $env:RUNNER_TEMP "cargo-target"
+          $libclangPath = Join-Path $env:ProgramFiles "LLVM\bin"
+          if (-not (Test-Path (Join-Path $libclangPath "libclang.dll"))) {
+            throw "Blacksmith's Windows 2025 image is missing $libclangPath\libclang.dll"
+          }
           New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
+          "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
 
       - name: install Vulkan SDK
         if: matrix.os == 'windows'
