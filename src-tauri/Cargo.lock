@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Glimpse"
-version = "0.9.7"
+version = "0.9.8"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -2346,8 +2346,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "1.4.7"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.4.7#d754bc659bf01c023491e948c973c911f7d85fe3"
+version = "1.4.8"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.4.8#b5c95e1a8ab6cf4770f59cb88254c9589825bf39"
 dependencies = [
  "anyhow",
  "axum",
@@ -2356,6 +2356,7 @@ dependencies = [
  "flacenc",
  "hound",
  "httpdate",
+ "libc",
  "parakeet-rs",
  "reqwest",
  "serde",
@@ -2365,7 +2366,7 @@ dependencies = [
  "tokio-util",
  "tower-http",
  "whisper-rs",
- "zip 7.2.0",
+ "zip 8.6.0",
 ]
 
 [[package]]
@@ -8307,9 +8308,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "7.2.0"
+version = "8.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c42e33efc22a0650c311c2ef19115ce232583abbe80850bc8b66509ebef02de0"
+checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
 dependencies = [
  "crc32fast",
  "flate2",

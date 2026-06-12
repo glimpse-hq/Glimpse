@@ -2,6 +2,7 @@
 
 ### Improvements
 
+- Local transcription is faster: Parakeet and Nemotron now use more performance cores, making them up to 50% quicker.
 - Fixed a bug where live streamed words could be blurred and improved streaming animations.
 - The about page now has a new support page, you can export logs here too.
 
