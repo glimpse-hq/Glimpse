@@ -172,23 +172,47 @@ interface ExpandedTextSegment {
   key: number;
   text: string;
   isWhitespace: boolean;
+  delay: number;
 }
 
-function getExpandedTextSegments(text: string): ExpandedTextSegment[] {
+const WORD_SPREAD_WINDOW_S = 0.5;
+const WORD_STAGGER_MIN_S = 0.03;
+const WORD_STAGGER_MAX_S = 0.12;
+
+function getExpandedTextSegments(
+  text: string,
+  previousKeys: Set<number>,
+): ExpandedTextSegment[] {
   let offset = 0;
 
-  return text
+  const segments = text
     .split(/(\s+)/)
     .filter((segment) => segment !== "")
     .map((segment) => {
       const key = offset;
       offset += segment.length;
+      const isWhitespace = /^\s+$/.test(segment);
       return {
         key,
         text: segment,
-        isWhitespace: /^\s+$/.test(segment),
+        isWhitespace,
+        isNew: !isWhitespace && !previousKeys.has(key),
       };
     });
+
+  const newWordCount = segments.filter((s) => s.isNew).length;
+  const stagger = Math.min(
+    Math.max(WORD_SPREAD_WINDOW_S / newWordCount, WORD_STAGGER_MIN_S),
+    WORD_STAGGER_MAX_S,
+  );
+
+  let newWordIndex = 0;
+  return segments.map(({ key, text: segText, isWhitespace, isNew }) => ({
+    key,
+    text: segText,
+    isWhitespace,
+    delay: isNew ? newWordIndex++ * stagger : 0,
+  }));
 }
 
 const PillOverlay: React.FC<PillOverlayProps> = ({
@@ -209,10 +233,14 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     isHovered,
     dismiss,
   } = usePillState();
-  const expandedTextSegments = useMemo(
-    () => (expandedText ? getExpandedTextSegments(expandedText) : []),
-    [expandedText],
-  );
+  const prevSegmentKeysRef = useRef<Set<number>>(new Set());
+  const expandedTextSegments = useMemo(() => {
+    const segments = expandedText
+      ? getExpandedTextSegments(expandedText, prevSegmentKeysRef.current)
+      : [];
+    prevSegmentKeysRef.current = new Set(segments.map((s) => s.key));
+    return segments;
+  }, [expandedText]);
 
   // Primary canvas (small pill dots)
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1019,7 +1047,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                         }}
                       >
                         {expandedTextSegments.map(
-                          ({ key, text, isWhitespace }) => {
+                          ({ key, text, isWhitespace, delay }) => {
                             if (isWhitespace) {
                               return (
                                 <motion.span
@@ -1050,30 +1078,45 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                                     ? { opacity: 0, y: 4 }
                                     : { opacity: 0, filter: "blur(2px)", y: 4 }
                                 }
-                                animate={
-                                  isHovered
-                                    ? { opacity: 1, y: 0 }
-                                    : { opacity: 1, filter: "blur(0px)", y: 0 }
-                                }
+                                animate={{
+                                  opacity: 1,
+                                  filter: "blur(0px)",
+                                  y: 0,
+                                }}
                                 transition={
                                   isHovered
                                     ? {
                                         opacity: {
                                           duration: 0.2,
                                           ease: "easeOut",
-                                        },
-                                        y: { duration: 0.2, ease: "easeOut" },
-                                      }
-                                    : {
-                                        opacity: {
-                                          duration: 0.2,
-                                          ease: "easeOut",
+                                          delay,
                                         },
                                         filter: {
                                           duration: 0.18,
                                           ease: "easeOut",
                                         },
-                                        y: { duration: 0.2, ease: "easeOut" },
+                                        y: {
+                                          duration: 0.2,
+                                          ease: "easeOut",
+                                          delay,
+                                        },
+                                      }
+                                    : {
+                                        opacity: {
+                                          duration: 0.2,
+                                          ease: "easeOut",
+                                          delay,
+                                        },
+                                        filter: {
+                                          duration: 0.18,
+                                          ease: "easeOut",
+                                          delay,
+                                        },
+                                        y: {
+                                          duration: 0.2,
+                                          ease: "easeOut",
+                                          delay,
+                                        },
                                         layout: {
                                           type: "spring",
                                           bounce: 0,

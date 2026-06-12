@@ -11,7 +11,7 @@ use tauri::{AppHandle, Manager};
 use crate::pill;
 use crate::{model_manager::ReadyModel, AppRuntime, AppState};
 
-const POLL_INTERVAL: Duration = Duration::from_millis(400);
+const POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 const CHUNK_SAMPLES_16K: usize = 8960;
 

@@ -1,3 +1,9 @@
+0.9.8
+
+### Improvements
+
+- Fixed a bug where live streamed words could be blurred and improved streaming animations.
+
 0.9.7
 
 ### Features
