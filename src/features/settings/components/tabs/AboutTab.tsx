@@ -11,7 +11,7 @@ import {
   TerminalWindow as Terminal,
 } from "@phosphor-icons/react";
 
-const CLI_WIKI_URL = "https://github.com/LegendarySpy/Glimpse/wiki/CLI";
+const CLI_WIKI_URL = "https://github.com/glimpse-hq/Glimpse/wiki/CLI";
 import ActionCardButton from "../../../../shared/ui/ActionCardButton";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import HoldActionCardButton from "../../../../shared/ui/HoldActionCardButton";

@@ -1,3 +1,11 @@
+0.9.7
+
+### Features
+- Added support for using mouse buttons as keybinds.
+
+### Improvements
+- The library import modal is now cleaner and supports more options.
+
 0.9.6
 
 ### Features

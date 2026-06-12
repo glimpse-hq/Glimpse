@@ -49,6 +49,9 @@ function humanizeKeyToken(token: string): string {
     Return: "Enter",
     ForwardDelete: isMacPlatform ? "Forward Delete" : "Delete",
     Delete: isMacPlatform ? "Delete" : "Backspace",
+    MouseMiddle: "Middle Click",
+    MouseBack: "Mouse Back",
+    MouseForward: "Mouse Forward",
   };
 
   if (directDisplay[token]) {
@@ -121,6 +124,21 @@ function normalizeShortcutToken(token: string): string {
     case "spacebar":
     case "space":
       return "Space";
+    case "mousemiddle":
+    case "middleclick":
+    case "mouse3":
+    case "mb3":
+      return "MouseMiddle";
+    case "mouseback":
+    case "mouse4":
+    case "mb4":
+    case "xbutton1":
+      return "MouseBack";
+    case "mouseforward":
+    case "mouse5":
+    case "mb5":
+    case "xbutton2":
+      return "MouseForward";
     default:
       return token.trim();
   }

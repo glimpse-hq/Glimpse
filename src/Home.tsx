@@ -62,7 +62,7 @@ const STATIC_LOGO_COORDS = [
 ];
 
 const SUPPORT_GITHUB_URL =
-  "https://github.com/LegendarySpy/Glimpse/issues/new/choose";
+  "https://github.com/glimpse-hq/Glimpse/issues/new/choose";
 const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
 const StaticGlimpseLogo = ({

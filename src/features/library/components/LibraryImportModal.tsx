@@ -1,14 +1,29 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { X } from "@phosphor-icons/react";
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
+import { X, Warning, Plus } from "@phosphor-icons/react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
+import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import {
   hasModelCapability,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../shared/lib/modelCapabilities";
+import {
+  SUPPORTED_EXTENSIONS,
+  uniquePaths,
+  formatBytes,
+  formatDuration,
+} from "./library-utils";
 import type { LibraryImportOptions, SpeechModel } from "../../../types";
+
+type ImportFileProbe = {
+  path: string;
+  duration_ms: number | null;
+  size_bytes: number | null;
+};
 
 type LibraryImportModalProps = {
   paths: string[];
@@ -21,6 +36,8 @@ type LibraryImportModalProps = {
   ) => Promise<void> | void;
 };
 
+const fileName = (path: string) => path.split(/[\\/]/).pop() ?? path;
+
 const LibraryImportModal = ({
   paths,
   models,
@@ -29,7 +46,11 @@ const LibraryImportModal = ({
   onConfirm,
 }: LibraryImportModalProps) => {
   const { t } = useLingui();
+  const [importPaths, setImportPaths] = useState(paths);
+  const [showFileList, setShowFileList] = useState(paths.length > 1);
+  const [probes, setProbes] = useState<Record<string, ImportFileProbe>>({});
   const [storeOriginal, setStoreOriginal] = useState(true);
+  const shiftHeld = useShiftHeld();
   const [selectedModelKey, setSelectedModelKey] = useState<string>(
     defaultModelKey || "",
   );
@@ -65,17 +86,82 @@ const LibraryImportModal = ({
     }
   }, [timestampsSupported]);
 
-  const importPaths = paths.length > 0 ? paths : [];
+  useEffect(() => {
+    if (importPaths.length > 1) {
+      setShowFileList(true);
+    }
+  }, [importPaths.length]);
+
+  useEffect(() => {
+    const unprobed = importPaths.filter((path) => !(path in probes));
+    if (unprobed.length === 0) return;
+    let cancelled = false;
+    invoke<ImportFileProbe[]>("probe_library_import_files", {
+      paths: unprobed,
+    })
+      .then((results) => {
+        if (cancelled) return;
+        setProbes((current) => {
+          const next = { ...current };
+          for (const probe of results) {
+            next[probe.path] = probe;
+          }
+          return next;
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [importPaths, probes]);
+
+  const fileMeta = (path: string) => {
+    const probe = probes[path];
+    if (!probe) return "";
+    return [
+      probe.duration_ms != null
+        ? formatDuration(probe.duration_ms / 1000)
+        : null,
+      probe.size_bytes != null ? formatBytes(probe.size_bytes) : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  };
+
+  const singleMeta = importPaths.length === 1 ? fileMeta(importPaths[0]) : "";
   const summary =
     importPaths.length === 1
-      ? t({
-          id: "library.import.summary.single",
-          message: "1 file",
-        })
+      ? [fileName(importPaths[0]), singleMeta].filter(Boolean).join(" · ")
       : t({
           id: "library.import.summary.multiple",
           message: `${importPaths.length} files`,
         });
+
+  const removePath = (idx: number) => {
+    setImportPaths((current) => current.filter((_, i) => i !== idx));
+  };
+
+  const handleAddFiles = async () => {
+    try {
+      const selection = await open({
+        multiple: true,
+        filters: [
+          {
+            name: t({
+              id: "library.view.file_filter",
+              message: "Audio & Video",
+            }),
+            extensions: SUPPORTED_EXTENSIONS,
+          },
+        ],
+      });
+      if (!selection) return;
+      const added = Array.isArray(selection) ? selection : [selection];
+      setImportPaths((current) => uniquePaths([...current, ...added]));
+    } catch (err) {
+      console.error("Failed to open add files dialog:", err);
+    }
+  };
 
   const handleConfirm = async () => {
     if (!selectedModelKey) return;
@@ -99,92 +185,124 @@ const LibraryImportModal = ({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
-      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/70 backdrop-blur-xs"
+      className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 px-6 backdrop-blur-xs"
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 20 }}
+        exit={{ opacity: 0, scale: 0.96, y: 12 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="relative w-[520px] max-w-[92vw] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-[440px] max-w-[92vw] rounded-2xl border border-border-primary bg-surface-tertiary ui-shadow-modal-deep"
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border-primary">
-          <div>
-            <p className="ui-text-meta text-content-disabled">
+        <div className="flex items-start justify-between px-5 pt-4">
+          <div className="min-w-0">
+            <h2 className="ui-text-body-lg font-semibold text-content-primary">
               {t({
                 id: "library.import.title",
                 message: "Import to Library",
               })}
-            </p>
-            <p className="ui-text-body-lg text-content-primary mt-1">
+            </h2>
+            <p className="mt-0.5 truncate ui-text-meta text-content-muted">
               {summary}
             </p>
           </div>
           <button
             onClick={onCancel}
-            className="rounded-lg border border-border-primary bg-surface-surface p-2 text-content-muted hover:text-content-secondary"
+            aria-label={t({
+              id: "library.import.close",
+              message: "Close",
+            })}
+            className="ml-3 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-surface-elevated hover:text-content-primary"
           >
-            <X size={14} />
+            <X size={14} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="flex flex-col gap-5 px-5 py-5">
           {modelOptions.length === 0 && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 ui-text-label text-amber-200">
-              {t({
-                id: "library.import.no_models",
-                message:
-                  "No models available. Configure a remote provider or download a local model in Settings -> Models before importing.",
-              })}
+            <div className="flex items-start gap-2 ui-text-body-sm ui-color-warning-strong">
+              <Warning size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>
+                {t({
+                  id: "library.import.no_models",
+                  message:
+                    "No models available. Configure a remote provider or download a local model in Settings -> Models before importing.",
+                })}
+              </span>
             </div>
           )}
-          <div className="rounded-lg border border-border-primary bg-surface-surface p-3">
-            <div className="ui-text-label text-content-muted mb-2">
-              {t({
-                id: "library.import.files",
-                message: "Files",
-              })}
-            </div>
-            <div className="max-h-28 overflow-auto custom-scrollbar ui-text-body-sm text-content-secondary space-y-1">
+
+          {showFileList && (
+            <div className="max-h-24 overflow-y-auto custom-scrollbar">
               {importPaths.map((path, idx) => (
-                <div key={`${path}-${idx}`} className="truncate">
-                  {path}
+                <div
+                  key={`${path}-${idx}`}
+                  title={path}
+                  className="group flex items-center gap-2 py-0.5"
+                >
+                  <span className="min-w-0 flex-1 truncate ui-text-body-sm text-content-secondary">
+                    {fileName(path)}
+                  </span>
+                  <span className="shrink-0 ui-text-meta text-content-disabled">
+                    {fileMeta(path)}
+                  </span>
+                  <button
+                    onClick={() => removePath(idx)}
+                    aria-label={t({
+                      id: "library.import.remove_file",
+                      message: `Remove ${fileName(path)}`,
+                    })}
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-content-disabled transition-all hover:bg-surface-elevated hover:text-content-primary focus-visible:opacity-100 group-hover:opacity-100 ${
+                      shiftHeld ? "opacity-100" : "opacity-0"
+                    }`}
+                  >
+                    <X size={11} aria-hidden="true" />
+                  </button>
                 </div>
               ))}
+              {importPaths.length === 0 && (
+                <p className="py-0.5 ui-text-body-sm text-content-disabled">
+                  {t({
+                    id: "library.import.no_files",
+                    message: "No files left to import",
+                  })}
+                </p>
+              )}
             </div>
-          </div>
+          )}
 
           <div>
-            <label className="ui-text-label font-medium text-content-muted ml-1">
+            <label className="ui-text-label text-content-muted">
               {t({
                 id: "library.import.model",
                 message: "Model",
               })}
             </label>
-            <Dropdown
-              value={selectedModelKey || null}
-              onChange={(value) => setSelectedModelKey(value)}
-              options={modelOptions}
-              placeholder={t({
-                id: "library.import.select_model",
-                message: "Select a model",
-              })}
-              searchable
-              searchPlaceholder={t({
-                id: "library.import.search_models",
-                message: "Search installed models...",
-              })}
-            />
-            <div className="mt-2 flex items-start gap-2 ui-text-meta text-content-disabled ml-1"></div>
+            <div className="mt-1.5">
+              <Dropdown
+                value={selectedModelKey || null}
+                onChange={(value) => setSelectedModelKey(value)}
+                options={modelOptions}
+                placeholder={t({
+                  id: "library.import.select_model",
+                  message: "Select a model",
+                })}
+                searchable
+                searchPlaceholder={t({
+                  id: "library.import.search_models",
+                  message: "Search installed models...",
+                })}
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
-            <div>
-              <div className="ui-text-body-sm text-content-primary font-medium">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="ui-text-body-sm text-content-primary">
                 {t({
                   id: "library.import.store_original",
                   message: "Store original file",
@@ -208,9 +326,9 @@ const LibraryImportModal = ({
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border-primary bg-surface-surface px-4 py-3">
-            <div>
-              <div className="ui-text-body-sm text-content-primary font-medium">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="ui-text-body-sm text-content-primary">
                 {t({
                   id: "library.import.show_timestamps",
                   message: "Show timestamps",
@@ -243,33 +361,45 @@ const LibraryImportModal = ({
           </div>
         </div>
 
-        <div className="px-5 py-3 border-t border-border-primary flex items-center justify-end gap-2">
+        <div className="flex items-center justify-between gap-2 px-5 pb-4">
           <button
-            onClick={onCancel}
-            className="rounded-lg border border-border-primary bg-surface-surface px-3 py-2 ui-text-label text-content-muted hover:text-content-secondary"
+            onClick={handleAddFiles}
+            className="flex items-center gap-1.5 rounded-lg px-2 py-2 ui-text-body-sm font-medium text-content-muted transition-colors hover:text-content-primary"
           >
+            <Plus size={12} aria-hidden="true" />
             {t({
-              id: "library.import.cancel",
-              message: "Cancel",
+              id: "library.import.add_files",
+              message: "Add files",
             })}
           </button>
-          <button
-            onClick={handleConfirm}
-            disabled={
-              isImporting || importPaths.length === 0 || !selectedModelKey
-            }
-            className="rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-label text-content-primary hover:border-border-secondary disabled:opacity-50"
-          >
-            {isImporting
-              ? t({
-                  id: "library.import.importing",
-                  message: "Importing...",
-                })
-              : t({
-                  id: "library.import.confirm",
-                  message: "Import",
-                })}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCancel}
+              className="rounded-lg px-3 py-2 ui-text-body-sm font-medium text-content-muted transition-colors hover:text-content-primary"
+            >
+              {t({
+                id: "library.import.cancel",
+                message: "Cancel",
+              })}
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={
+                isImporting || importPaths.length === 0 || !selectedModelKey
+              }
+              className="rounded-lg bg-amber-400 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-warning transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isImporting
+                ? t({
+                    id: "library.import.importing",
+                    message: "Importing...",
+                  })
+                : t({
+                    id: "library.import.confirm",
+                    message: "Import",
+                  })}
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>

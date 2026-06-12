@@ -405,6 +405,9 @@ pub(crate) enum Key {
     KeypadMinus,
     KeypadEquals,
     CapsLock,
+    MouseMiddle,
+    MouseBack,
+    MouseForward,
 }
 
 impl fmt::Display for Key {
@@ -511,6 +514,9 @@ impl fmt::Display for Key {
             Key::KeypadMinus => "KeypadMinus",
             Key::KeypadEquals => "KeypadEquals",
             Key::CapsLock => "CapsLock",
+            Key::MouseMiddle => "MouseMiddle",
+            Key::MouseBack => "MouseBack",
+            Key::MouseForward => "MouseForward",
         };
         write!(f, "{name}")
     }
@@ -623,6 +629,9 @@ impl FromStr for Key {
             "keypad-" | "keypadminus" => Key::KeypadMinus,
             "keypad=" | "keypadequals" => Key::KeypadEquals,
             "capslock" | "caps" => Key::CapsLock,
+            "mousemiddle" | "middleclick" | "mouse3" | "mb3" => Key::MouseMiddle,
+            "mouseback" | "mouse4" | "mb4" | "xbutton1" => Key::MouseBack,
+            "mouseforward" | "mouse5" | "mb5" | "xbutton2" => Key::MouseForward,
             _ => return Err(anyhow!("Unknown key `{token}`")),
         };
 

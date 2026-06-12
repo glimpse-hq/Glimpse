@@ -58,7 +58,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' asset: http://asset.localhost customprotocol:; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+      "csp": "default-src 'self' asset: http://asset.localhost customprotocol:; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data: blob: https:; connect-src 'self' ipc: http://ipc.localhost https://api.github.com http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
       "assetProtocol": {
         "enable": true,
         "scope": [
@@ -102,7 +102,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIwRjZFNTY4MTZGNjc3RkQKUldUOWQvWVdhT1gySUtvN0IwSUQxTW8rWitVeHRlMC9FcjZ0TWp6RlVld0ltUnA5QVc2S0N0TVUK",
       "endpoints": [
-        "https://github.com/LegendarySpy/Glimpse/releases/latest/download/latest.json"
+        "https://github.com/glimpse-hq/Glimpse/releases/latest/download/latest.json"
       ]
     }
   }

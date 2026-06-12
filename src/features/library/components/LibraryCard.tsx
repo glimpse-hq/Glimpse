@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import {
   clampProgress,
+  formatBytes,
   formatDuration,
   getLibraryErrorDetails,
   shouldShowImportProgress,
@@ -20,14 +21,6 @@ import {
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type { LibraryItem } from "../../../types";
-
-const formatBytes = (bytes: number) => {
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-};
 
 const LibraryCard = ({
   item,

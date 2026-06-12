@@ -11,7 +11,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
 
 use super::processing::{
-    build_export_content, create_item_from_path, library_root, stored_original_path,
+    build_export_content, create_item_from_path, library_root, probe_media_duration_ms,
+    stored_original_path,
 };
 use super::queue::{release_library_slot, schedule_library_job};
 #[cfg(target_os = "macos")]
@@ -282,6 +283,32 @@ pub fn export_library_item_to_path(
         .map_err(|err| err.to_string())?;
 
     Ok(())
+}
+
+#[derive(serde::Serialize)]
+pub struct LibraryImportFileProbe {
+    pub path: String,
+    pub duration_ms: Option<u64>,
+    pub size_bytes: Option<u64>,
+}
+
+#[tauri::command]
+pub async fn probe_library_import_files(paths: Vec<String>) -> Vec<LibraryImportFileProbe> {
+    tauri::async_runtime::spawn_blocking(move || {
+        paths
+            .into_iter()
+            .map(|path| {
+                let file_path = Path::new(&path);
+                LibraryImportFileProbe {
+                    duration_ms: probe_media_duration_ms(file_path),
+                    size_bytes: fs::metadata(file_path).ok().map(|meta| meta.len()),
+                    path,
+                }
+            })
+            .collect()
+    })
+    .await
+    .unwrap_or_default()
 }
 
 #[tauri::command]

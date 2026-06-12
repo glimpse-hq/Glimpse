@@ -18,7 +18,7 @@ const AUTO_UPDATE_POLL_SECS: u64 = 30;
 const AUTO_UPDATE_IDLE_POLL_SECS: u64 = 5 * 60;
 const AUTO_UPDATE_MARKER_FILE: &str = ".auto_updated";
 const STABLE_UPDATE_ENDPOINT: &str =
-    "https://github.com/LegendarySpy/Glimpse/releases/latest/download/latest.json";
+    "https://github.com/glimpse-hq/Glimpse/releases/latest/download/latest.json";
 const EVENT_UPDATE_DOWNLOAD_PROGRESS: &str = "update:download-progress";
 
 #[derive(Default)]

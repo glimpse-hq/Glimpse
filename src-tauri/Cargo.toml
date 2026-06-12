@@ -1,10 +1,10 @@
 [package]
 name = "Glimpse"
-version = "0.9.6"
+version = "0.9.7"
 description = "Open-source voice-to-text productivity app built with Tauri"
-authors = ["LegendarySpy"]
+authors = ["Glimpse HQ"]
 edition = "2021"
-repository = "https://github.com/LegendarySpy/Glimpse"
+repository = "https://github.com/glimpse-hq/Glimpse"
 license = "AGPL-3.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,6 +19,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [profile.release]
 lto = "thin"
 codegen-units = 1
+strip = true
 
 [build-dependencies]
 tauri-build = { version = "2.6.2", features = [] }
@@ -30,7 +31,7 @@ tauri-plugin-dialog = "2.7.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
-cpal = "0.17"
+cpal = "0.18"
 anyhow = "1"
 tracing = "0.1"
 symphonia = { version = "0.6.0", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4"] }
@@ -40,9 +41,9 @@ crossbeam-channel = "0.5"
 webrtc-vad = "0.4"
 rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
-posthog-rs = "0.8"
+posthog-rs = "0.11"
 arboard = "3"
-glimpse-speech = { git = "https://github.com/LegendarySpy/Glimpse-Speech.git", tag = "1.4.7", features = ["whisper", "nvidia", "api", "cli", "remote"] }
+glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.4.7", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.2", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"

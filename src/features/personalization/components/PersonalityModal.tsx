@@ -125,7 +125,7 @@ type PersonalityModalProps = {
 };
 
 const PERSONALIZATION_SNIPPETS_WIKI_URL =
-  "https://github.com/LegendarySpy/Glimpse/wiki/Personalization-Snippets";
+  "https://github.com/glimpse-hq/Glimpse/wiki/Personalization-Snippets";
 
 const PersonalityModal = ({
   personality,

@@ -14,7 +14,7 @@ use std::{
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local, TimeZone};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use cpal::{SampleFormat, Stream};
+use cpal::{FromSample, Sample, SampleFormat, SizedSample, Stream};
 use crossbeam_channel::{bounded, unbounded, Sender};
 use parking_lot::Mutex;
 use rubato::{audioadapter_buffers::direct::InterleavedSlice, Fft, FixedSync, Resampler};
@@ -419,53 +419,34 @@ impl RecorderCore {
         let buffer = Arc::new(Mutex::new(Vec::with_capacity(
             (sample_rate as usize * channels as usize).max(48_000),
         )));
-        let buffer_ref = buffer.clone();
-        let spectrum_ref = Arc::clone(&self.spectrum);
-        let channels_usize = channels as usize;
         self.spectrum.lock().reset();
 
-        let err_fn = |err| {
-            eprintln!("Microphone stream error: {err}");
-        };
-
+        let spectrum = &self.spectrum;
         let stream = match format {
             SampleFormat::F32 => {
-                let spectrum_ref = Arc::clone(&spectrum_ref);
-                let channels = channels_usize;
-                device.build_input_stream(
-                    &stream_config,
-                    move |data: &[f32], _| {
-                        push_f32_samples(data, &buffer_ref, &spectrum_ref, channels)
-                    },
-                    err_fn,
-                    None,
-                )?
+                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum)?
             }
+            SampleFormat::F64 => {
+                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum)?
+            }
+            SampleFormat::I8 => build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum)?,
             SampleFormat::I16 => {
-                let spectrum_ref = Arc::clone(&spectrum_ref);
-                let channels = channels_usize;
-                device.build_input_stream(
-                    &stream_config,
-                    move |data: &[i16], _| {
-                        push_i16_samples(data, &buffer_ref, &spectrum_ref, channels)
-                    },
-                    err_fn,
-                    None,
-                )?
+                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum)?
             }
+            SampleFormat::I24 => {
+                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum)?
+            }
+            SampleFormat::I32 => {
+                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum)?
+            }
+            SampleFormat::U8 => build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum)?,
             SampleFormat::U16 => {
-                let spectrum_ref = Arc::clone(&spectrum_ref);
-                let channels = channels_usize;
-                device.build_input_stream(
-                    &stream_config,
-                    move |data: &[u16], _| {
-                        push_u16_samples(data, &buffer_ref, &spectrum_ref, channels)
-                    },
-                    err_fn,
-                    None,
-                )?
+                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum)?
             }
-            _ => return Err(anyhow!("Unsupported sample format")),
+            SampleFormat::U32 => {
+                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum)?
+            }
+            other => return Err(anyhow!("Unsupported sample format: {other}")),
         };
 
         stream.play()?;
@@ -1405,91 +1386,50 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     output
 }
 
-fn push_f32_samples(
-    data: &[f32],
+fn build_mic_stream<T>(
+    device: &cpal::Device,
+    config: cpal::StreamConfig,
     buffer: &Arc<Mutex<Vec<i16>>>,
     spectrum: &Arc<Mutex<AudioSpectrumState>>,
-    channels: usize,
-) {
-    let channels = channels.max(1);
-    if let Some(mut analysis) = spectrum.try_lock() {
-        for frame in data.chunks(channels) {
-            let mut mono = 0f32;
-            let mut count = 0usize;
-            for &sample in frame {
-                let clamped = sample.clamp(-1.0, 1.0);
-                mono += clamped;
-                count += 1;
-            }
-            if count > 0 {
-                analysis.push_sample(mono / count as f32);
-            }
-        }
-    }
-
-    let mut writer = buffer.lock();
-    for &sample in data {
-        let clamped = sample.clamp(-1.0, 1.0);
-        writer.push((clamped * i16::MAX as f32) as i16);
-    }
+) -> Result<Stream, cpal::Error>
+where
+    T: SizedSample + 'static,
+    i16: FromSample<T>,
+    f32: FromSample<T>,
+{
+    let buffer = Arc::clone(buffer);
+    let spectrum = Arc::clone(spectrum);
+    let channels = (config.channels as usize).max(1);
+    device.build_input_stream(
+        config,
+        move |data: &[T], _| push_samples(data, &buffer, &spectrum, channels),
+        |err| eprintln!("Microphone stream error: {err}"),
+        None,
+    )
 }
 
-fn push_i16_samples(
-    data: &[i16],
-    buffer: &Arc<Mutex<Vec<i16>>>,
-    spectrum: &Arc<Mutex<AudioSpectrumState>>,
+fn push_samples<T>(
+    data: &[T],
+    buffer: &Mutex<Vec<i16>>,
+    spectrum: &Mutex<AudioSpectrumState>,
     channels: usize,
-) {
-    let channels = channels.max(1);
-    let scale = 1.0 / i16::MAX as f32;
+) where
+    T: Sample,
+    i16: FromSample<T>,
+    f32: FromSample<T>,
+{
     if let Some(mut analysis) = spectrum.try_lock() {
         for frame in data.chunks(channels) {
-            let mut mono = 0f32;
-            let mut count = 0usize;
-            for &sample in frame {
-                let normalized = (sample as f32 * scale).clamp(-1.0, 1.0);
-                mono += normalized;
-                count += 1;
-            }
-            if count > 0 {
-                analysis.push_sample(mono / count as f32);
-            }
+            let mono: f32 = frame
+                .iter()
+                .map(|&sample| f32::from_sample(sample).clamp(-1.0, 1.0))
+                .sum();
+            analysis.push_sample(mono / frame.len() as f32);
         }
     }
 
     let mut writer = buffer.lock();
-    writer.extend_from_slice(data);
-}
-
-fn push_u16_samples(
-    data: &[u16],
-    buffer: &Arc<Mutex<Vec<i16>>>,
-    spectrum: &Arc<Mutex<AudioSpectrumState>>,
-    channels: usize,
-) {
-    let channels = channels.max(1);
-    let scale = 1.0 / i16::MAX as f32;
-    if let Some(mut analysis) = spectrum.try_lock() {
-        for frame in data.chunks(channels) {
-            let mut mono = 0f32;
-            let mut count = 0usize;
-            for &sample in frame {
-                let centered = sample as i32 - i16::MAX as i32;
-                let normalized = (centered as f32 * scale).clamp(-1.0, 1.0);
-                mono += normalized;
-                count += 1;
-            }
-            if count > 0 {
-                analysis.push_sample(mono / count as f32);
-            }
-        }
-    }
-
-    let mut writer = buffer.lock();
-    for &sample in data {
-        let centered = sample as i32 - i16::MAX as i32;
-        writer.push(centered as i16);
-    }
+    writer.extend(data.iter().map(|&sample| i16::from_sample(sample)));
 }
 
 pub(crate) fn downmix_to_mono(samples: &[i16], channels: usize) -> Vec<i16> {
