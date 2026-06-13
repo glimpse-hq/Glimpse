@@ -712,12 +712,17 @@ impl PillController {
                         }
 
                         if streaming_transcript.trim().is_empty() {
-                            discard_pending_recording(&recording);
+                            // Streaming can miss very short utterances (model
+                            // lookahead + final-chunk latency); fall back to
+                            // batch transcription of the captured audio.
                             collapse_expanded_pill(&app_handle);
-                            app_handle
-                                .state::<AppState>()
-                                .pill()
-                                .finish_processing(&app_handle);
+                            crate::persist_recording_async(
+                                app_handle,
+                                recording,
+                                settings_for_transcription,
+                                recording_options.temporary,
+                                cancel_token,
+                            );
                             return;
                         }
 

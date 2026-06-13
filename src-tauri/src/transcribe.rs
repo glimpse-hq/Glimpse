@@ -1512,12 +1512,26 @@ fn transcribe_local_chunked(
             speech::VAD_MIN_SPEECH_PERCENT_CHUNK
         };
         if chunk_speech_percent >= min_chunk_threshold {
-            let result = transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
-            if model_label.is_none() {
-                model_label = result.speech_model.clone();
-            }
-
-            let chunk_text = result.transcript;
+            let chunk_text = if strip_hallucinated_thank_you {
+                let result = transcriber
+                    .transcribe_with_segments(model, chunk, sample_rate, dictionary, language)?;
+                if model_label.is_none() {
+                    model_label = result.speech_model.clone();
+                }
+                let regions = glimpse_speech::vad::speech_regions(chunk, sample_rate);
+                transcription_api::keep_spoken_segments(
+                    &result.transcript,
+                    result.segments.as_deref(),
+                    regions.as_deref(),
+                )
+            } else {
+                let result =
+                    transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
+                if model_label.is_none() {
+                    model_label = result.speech_model.clone();
+                }
+                result.transcript
+            };
             if !chunk_text.trim().is_empty() {
                 let deduped = dedupe_overlap_text(&full_text, &chunk_text);
                 if !deduped.trim().is_empty() {
@@ -1535,7 +1549,7 @@ fn transcribe_local_chunked(
     }
 
     let transcript = if strip_hallucinated_thank_you {
-        transcription_api::strip_hallucinated_thank_you(full_text.trim())
+        transcription_api::strip_non_speech_tags(&full_text)
     } else {
         full_text.trim().to_string()
     };
