@@ -234,13 +234,18 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     dismiss,
   } = usePillState();
   const prevSegmentKeysRef = useRef<Set<number>>(new Set());
-  const expandedTextSegments = useMemo(() => {
-    const segments = expandedText
-      ? getExpandedTextSegments(expandedText, prevSegmentKeysRef.current)
-      : [];
-    prevSegmentKeysRef.current = new Set(segments.map((s) => s.key));
-    return segments;
-  }, [expandedText]);
+  const expandedTextSegments = useMemo(
+    () =>
+      expandedText
+        ? getExpandedTextSegments(expandedText, prevSegmentKeysRef.current)
+        : [],
+    [expandedText],
+  );
+  useEffect(() => {
+    prevSegmentKeysRef.current = new Set(
+      expandedTextSegments.map((s) => s.key),
+    );
+  }, [expandedTextSegments]);
 
   // Primary canvas (small pill dots)
   const canvasRef = useRef<HTMLCanvasElement>(null);

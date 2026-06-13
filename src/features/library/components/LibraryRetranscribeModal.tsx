@@ -94,6 +94,7 @@ const LibraryRetranscribeModal = ({
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="retranscribe-modal-title"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -105,7 +106,10 @@ const LibraryRetranscribeModal = ({
       >
         <div className="flex items-start justify-between px-5 pt-4">
           <div className="min-w-0">
-            <h2 className="ui-text-body-lg font-semibold text-content-primary">
+            <h2
+              id="retranscribe-modal-title"
+              className="ui-text-body-lg font-semibold text-content-primary"
+            >
               {t({
                 id: "library.retranscribe.title",
                 message: "Retranscribe",
