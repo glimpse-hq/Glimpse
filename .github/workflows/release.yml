@@ -20,7 +20,7 @@ jobs:
       prerelease: ${{ steps.release-type.outputs.prerelease }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: determine release type
         id: release-type
