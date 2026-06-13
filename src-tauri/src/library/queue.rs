@@ -538,15 +538,15 @@ fn transcribe_library_item(
 
             if let Some(words) = result.words {
                 let offset_ms = (start_idx as f64 / sample_rate as f64 * 1000.0) as u64;
-                let overlap_ms = (overlap as f64 / sample_rate as f64 * 1000.0) as u64;
-                for word in convert_segments_to_ms(&words) {
-                    // Drop words inside the region this chunk overlaps with the
-                    // previous one; the previous chunk already emitted them.
-                    if (start_idx > 0 && word.start_ms < overlap_ms)
-                        || !in_speech(word.start_ms, word.end_ms)
-                    {
-                        continue;
-                    }
+                let spoken: Vec<_> = convert_segments_to_ms(&words)
+                    .into_iter()
+                    .filter(|w| in_speech(w.start_ms, w.end_ms))
+                    .collect();
+                let appended_words = appended_text
+                    .as_deref()
+                    .map_or(0, |t| t.split_whitespace().count());
+                let skip = spoken.len().saturating_sub(appended_words);
+                for word in spoken.into_iter().skip(skip) {
                     merged_words.push(TranscriptSegment {
                         start_ms: word.start_ms + offset_ms,
                         end_ms: word.end_ms + offset_ms,
