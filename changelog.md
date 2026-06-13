@@ -9,6 +9,8 @@
 - Local transcription is faster: Parakeet and Nemotron now use more performance cores, making them up to 50% quicker.
 - Fixed a bug where live-streamed words could be blurred and improved streaming animations.
 - The about page now has a new support page, you can export logs here too.
+- Glimpse now uses Silero VAD for higher quality noise cancellation.
+- You can now say Thank you. 
 
 0.9.7
 
