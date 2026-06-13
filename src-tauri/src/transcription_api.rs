@@ -65,29 +65,3 @@ pub fn keep_spoken_segments(
         .collect::<Vec<_>>()
         .join(" ")
 }
-
-/// Removes whisper's non-speech tags (`[BLANK_AUDIO]`, `(music)`). Returns empty
-/// when nothing but tags or punctuation remains.
-pub fn strip_non_speech_tags(transcript: &str) -> String {
-    let mut out = String::with_capacity(transcript.len());
-    let mut rest = transcript;
-    while let Some(open_idx) = rest.find(['[', '(']) {
-        let close = if rest.as_bytes()[open_idx] == b'[' {
-            ']'
-        } else {
-            ')'
-        };
-        let Some(rel_close) = rest[open_idx + 1..].find(close) else {
-            break;
-        };
-        out.push_str(&rest[..open_idx]);
-        rest = &rest[open_idx + 1 + rel_close + 1..];
-    }
-    out.push_str(rest);
-
-    let cleaned = out.split_whitespace().collect::<Vec<_>>().join(" ");
-    if !cleaned.chars().any(char::is_alphanumeric) {
-        return String::new();
-    }
-    cleaned
-}

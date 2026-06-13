@@ -1548,11 +1548,7 @@ fn transcribe_local_chunked(
             .max(start.saturating_add(1));
     }
 
-    let transcript = if strip_hallucinated_thank_you {
-        transcription_api::strip_non_speech_tags(&full_text)
-    } else {
-        full_text.trim().to_string()
-    };
+    let transcript = full_text.trim().to_string();
 
     Ok(transcription_api::TranscriptionSuccess {
         transcript,

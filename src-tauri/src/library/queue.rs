@@ -455,7 +455,6 @@ fn transcribe_library_item(
         let mut merged_segments: Vec<TranscriptSegment> = Vec::new();
         let mut merged_words: Vec<TranscriptSegment> = Vec::new();
         let mut last_end_ms: u64 = 0;
-        let mut last_word_end_ms: u64 = 0;
         let mut chunk_index: u32 = 0;
 
         stream_wav_chunks(&audio_path, chunk_size, overlap, |start_idx, chunk| {
@@ -539,21 +538,18 @@ fn transcribe_library_item(
 
             if let Some(words) = result.words {
                 let offset_ms = (start_idx as f64 / sample_rate as f64 * 1000.0) as u64;
-                let converted = convert_segments_to_ms(&words);
-                let chunk_word_floor = last_word_end_ms;
-                for word in converted {
-                    if !in_speech(word.start_ms, word.end_ms) {
+                let overlap_ms = (overlap as f64 / sample_rate as f64 * 1000.0) as u64;
+                for word in convert_segments_to_ms(&words) {
+                    // Drop words inside the region this chunk overlaps with the
+                    // previous one; the previous chunk already emitted them.
+                    if (start_idx > 0 && word.start_ms < overlap_ms)
+                        || !in_speech(word.start_ms, word.end_ms)
+                    {
                         continue;
                     }
-                    let start_ms = word.start_ms + offset_ms;
-                    let end_ms = word.end_ms + offset_ms;
-                    if end_ms <= chunk_word_floor {
-                        continue;
-                    }
-                    last_word_end_ms = last_word_end_ms.max(end_ms);
                     merged_words.push(TranscriptSegment {
-                        start_ms,
-                        end_ms,
+                        start_ms: word.start_ms + offset_ms,
+                        end_ms: word.end_ms + offset_ms,
                         text: word.text,
                         speaker_id: None,
                     });
@@ -592,7 +588,7 @@ fn transcribe_library_item(
         })?;
 
         return Ok(LibraryTranscriptionResult {
-            transcript: transcription_api::strip_non_speech_tags(&full_text),
+            transcript: full_text.trim().to_string(),
             segments: if merged_segments.is_empty() {
                 None
             } else {
