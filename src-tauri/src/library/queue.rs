@@ -542,10 +542,15 @@ fn transcribe_library_item(
                     .into_iter()
                     .filter(|w| in_speech(w.start_ms, w.end_ms))
                     .collect();
-                let appended_words = appended_text
-                    .as_deref()
-                    .map_or(0, |t| t.split_whitespace().count());
-                let skip = spoken.len().saturating_sub(appended_words);
+
+                let skip = if start_idx == 0 {
+                    0
+                } else {
+                    let appended_words = appended_text
+                        .as_deref()
+                        .map_or(0, |t| t.split_whitespace().count());
+                    spoken.len().saturating_sub(appended_words)
+                };
                 for word in spoken.into_iter().skip(skip) {
                     merged_words.push(TranscriptSegment {
                         start_ms: word.start_ms + offset_ms,
