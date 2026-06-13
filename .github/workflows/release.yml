@@ -39,6 +39,11 @@ jobs:
             echo "Failed to resolve app version from src-tauri/Cargo.toml" >&2
             exit 1
           fi
+          PKG_VERSION=$(jq -r .version package.json)
+          if [[ "$PKG_VERSION" != "$VERSION" ]]; then
+            echo "Version mismatch: src-tauri/Cargo.toml=$VERSION package.json=$PKG_VERSION" >&2
+            exit 1
+          fi
           if [[ "$VERSION" =~ -rc\.[0-9]+$ ]]; then
             PRERELEASE=true
           else
@@ -91,7 +96,7 @@ jobs:
             rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
             tauri-args: --target universal-apple-darwin
             cargo-cache-dir: src-tauri/target
-          - platform: blacksmith-2vcpu-windows-2025
+          - platform: blacksmith-4vcpu-windows-2025
             os: windows
             rust-targets: x86_64-pc-windows-msvc
             tauri-args: ""

@@ -8,7 +8,6 @@ use crate::speech::menu::{
 };
 use crate::{audio, AppRuntime, AppState, FEEDBACK_URL, SETTINGS_WINDOW_LABEL};
 use parking_lot::Mutex;
-use serde::Serialize;
 use std::sync::{atomic::Ordering, OnceLock};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
@@ -33,12 +32,6 @@ const EVENT_NAVIGATE_ABOUT: &str = "navigate:about";
 const EVENT_NAVIGATE_HISTORY: &str = "navigate:history";
 const EVENT_NAVIGATE_MODELS: &str = "navigate:models";
 
-#[derive(Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct SettingsNavigationPayload {
-    open_whats_new: bool,
-}
-
 #[derive(Clone, Copy)]
 enum SettingsNavigationTarget {
     About,
@@ -50,7 +43,6 @@ enum SettingsNavigationTarget {
 struct PendingSettingsNavigation {
     renderer_ready: bool,
     target: Option<SettingsNavigationTarget>,
-    open_whats_new: bool,
 }
 
 fn pending_settings_navigation() -> &'static Mutex<PendingSettingsNavigation> {
@@ -59,23 +51,17 @@ fn pending_settings_navigation() -> &'static Mutex<PendingSettingsNavigation> {
 }
 
 fn flush_pending_settings_navigation(app: &AppHandle<AppRuntime>) {
-    let (target, open_whats_new) = {
+    let target = {
         let mut pending = pending_settings_navigation().lock();
         if !pending.renderer_ready {
             return;
         }
-        (
-            pending.target.take(),
-            std::mem::take(&mut pending.open_whats_new),
-        )
+        pending.target.take()
     };
 
     match target {
         Some(SettingsNavigationTarget::About) => {
-            let _ = app.emit(
-                EVENT_NAVIGATE_ABOUT,
-                SettingsNavigationPayload { open_whats_new },
-            );
+            let _ = app.emit(EVENT_NAVIGATE_ABOUT, ());
         }
         Some(SettingsNavigationTarget::History) => {
             let _ = app.emit(EVENT_NAVIGATE_HISTORY, ());
@@ -92,22 +78,19 @@ pub(crate) fn mark_settings_renderer_ready(app: &AppHandle<AppRuntime>) {
     flush_pending_settings_navigation(app);
 }
 
-fn queue_settings_navigation(target: SettingsNavigationTarget, open_whats_new: bool) {
+fn queue_settings_navigation(target: SettingsNavigationTarget) {
     let mut pending = pending_settings_navigation().lock();
     pending.target = Some(target);
-    pending.open_whats_new = pending.open_whats_new || open_whats_new;
 }
 
 fn open_settings_navigation(
     app: &AppHandle<AppRuntime>,
     target: SettingsNavigationTarget,
-    open_whats_new: bool,
 ) -> tauri::Result<()> {
-    queue_settings_navigation(target, open_whats_new);
+    queue_settings_navigation(target);
     if let Err(err) = toggle_settings_window(app) {
         let mut pending = pending_settings_navigation().lock();
         pending.target = None;
-        pending.open_whats_new = false;
         return Err(err);
     }
     flush_pending_settings_navigation(app);
@@ -115,19 +98,15 @@ fn open_settings_navigation(
 }
 
 pub(crate) fn open_settings_about(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    open_settings_navigation(app, SettingsNavigationTarget::About, false)
+    open_settings_navigation(app, SettingsNavigationTarget::About)
 }
 
 pub(crate) fn open_settings_history(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    open_settings_navigation(app, SettingsNavigationTarget::History, false)
+    open_settings_navigation(app, SettingsNavigationTarget::History)
 }
 
 pub(crate) fn open_settings_models(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    open_settings_navigation(app, SettingsNavigationTarget::Models, false)
-}
-
-pub(crate) fn open_settings_whats_new(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    open_settings_navigation(app, SettingsNavigationTarget::About, true)
+    open_settings_navigation(app, SettingsNavigationTarget::Models)
 }
 
 fn build_tray_menu(
@@ -238,11 +217,11 @@ pub(crate) fn refresh_tray_menu(
 
 fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
     if let Err(err) = refresh_tray_menu(app, settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
     if let Err(err) = crate::set_app_menu(app, settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
 }
 
@@ -257,10 +236,10 @@ fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>
         Ok(saved) => {
             refresh_speech_menus(app, &saved);
             if let Err(err) = app.emit(crate::EVENT_SETTINGS_CHANGED, &saved) {
-                eprintln!("Failed to emit settings change: {err}");
+                tracing::error!("Failed to emit settings change: {err}");
             }
         }
-        Err(err) => eprintln!("Failed to update microphone selection: {err}"),
+        Err(err) => tracing::error!("Failed to update microphone selection: {err}"),
     }
 }
 
@@ -274,12 +253,12 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
         MENU_ID_FEEDBACK => {
             if let Err(err) = app.opener().open_url(FEEDBACK_URL, None::<&str>) {
-                eprintln!("Failed to open feedback link: {err}");
+                tracing::error!("Failed to open feedback link: {err}");
             }
         }
         MENU_ID_CHECK_UPDATES => {
             if let Err(err) = open_settings_about(app) {
-                eprintln!("Failed to open settings for update check: {err}");
+                tracing::error!("Failed to open settings for update check: {err}");
             }
         }
         _ => {
@@ -321,7 +300,7 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
                 ..
             } if button == MouseButton::Left && button_state == MouseButtonState::Up => {
                 if let Err(err) = toggle_settings_window(tray.app_handle()) {
-                    eprintln!("Failed to toggle settings window: {err}");
+                    tracing::error!("Failed to toggle settings window: {err}");
                 }
             }
             _ => {}
@@ -329,7 +308,7 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open_settings" => {
                 if let Err(err) = toggle_settings_window(app) {
-                    eprintln!("Failed to open settings window: {err}");
+                    tracing::error!("Failed to open settings window: {err}");
                 }
             }
             "quit_glimpse" => {

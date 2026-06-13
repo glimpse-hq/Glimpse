@@ -96,6 +96,7 @@ struct ProcessTranscriptInput<'a> {
     auto_paste: bool,
     log_context: Option<&'a str>,
     cancel_token: Option<&'a CancellationToken>,
+    keep_pill_expanded: bool,
 }
 
 struct CompletionInput {
@@ -145,7 +146,7 @@ pub(crate) fn queue_transcription(
 
         let auto_paste = transcription_api::auto_paste_enabled();
 
-        eprintln!("[transcription] mode={:?}", settings.transcription_mode,);
+        tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
         accessibility_context::log_active_context();
 
         let active_mode = mode_context::resolve_active_personality(&settings);
@@ -236,6 +237,7 @@ pub(crate) fn queue_transcription(
                         auto_paste,
                         log_context: None,
                         cancel_token: Some(&cancel_token),
+                        keep_pill_expanded: false,
                     },
                 )
                 .await
@@ -394,7 +396,7 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
         {
             Ok(list) => list,
             Err(err) => {
-                eprintln!("Recovery scan failed: {err}");
+                tracing::error!("Recovery scan failed: {err}");
                 return;
             }
         };
@@ -428,7 +430,7 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                     saved_count += 1;
                 }
                 Ok(RecoveredTranscriptionOutcome::Empty) => {}
-                Err(err) => eprintln!("Failed to transcribe recovered recording: {err}"),
+                Err(err) => tracing::error!("Failed to transcribe recovered recording: {err}"),
             }
         }
 
@@ -526,6 +528,7 @@ async fn transcribe_recovered_recording(
             auto_paste: false,
             log_context: Some("recovery"),
             cancel_token: None,
+            keep_pill_expanded: false,
         },
     )
     .await
@@ -610,6 +613,7 @@ async fn process_transcript_text(
         auto_paste,
         log_context,
         cancel_token,
+        keep_pill_expanded,
     } = input;
 
     let is_edit_mode = pending_selected_text.is_some();
@@ -625,16 +629,25 @@ async fn process_transcript_text(
     };
 
     let (final_transcript, llm_cleaned) = if should_use_llm {
-        crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
+        if keep_pill_expanded {
+            crate::pill::emit_pill_mode_with_tone(
+                app,
+                true,
+                &raw_transcript,
+                crate::pill::PILL_TONE_CLEANUP,
+            );
+        } else {
+            crate::pill::emit_pill_mode_with_tone(app, false, "", crate::pill::PILL_TONE_CLEANUP);
+        }
         if let Some(ref selected) = pending_selected_text {
             match llm_cleanup::edit_transcription(http, selected, &raw_transcript, settings).await {
                 Ok(edited) => (edited, true),
                 Err(err) => {
                     let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
-                        eprintln!("LLM edit failed ({context}): {message}");
+                        tracing::error!("LLM edit failed ({context}): {message}");
                     } else {
-                        eprintln!("LLM edit failed, keeping original selected text: {message}");
+                        tracing::error!("LLM edit failed, keeping original selected text: {message}");
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, true);
@@ -649,9 +662,9 @@ async fn process_transcript_text(
                 Err(err) => {
                     let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
-                        eprintln!("Cleanup failed ({context}): {message}");
+                        tracing::error!("Cleanup failed ({context}): {message}");
                     } else {
-                        eprintln!("Cleanup failed, using raw transcript: {message}");
+                        tracing::error!("Cleanup failed, using raw transcript: {message}");
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, false);
@@ -790,7 +803,7 @@ pub(crate) fn retry_transcription_async(
             return;
         }
 
-        eprintln!(
+        tracing::info!(
             "[retry_transcription] mode={:?}",
             settings.transcription_mode,
         );
@@ -848,7 +861,7 @@ pub(crate) fn retry_transcription_async(
                         Ok(cleaned) => (cleaned, true),
                         Err(err) => {
                             let message = llm_cleanup::llm_issue_message(&err);
-                            eprintln!(
+                            tracing::error!(
                                 "Cleanup failed during retry, using raw transcript: {message}"
                             );
                             llm_cleanup::note_preflight_failure();
@@ -898,7 +911,7 @@ pub(crate) fn retry_transcription_async(
                     None
                 };
 
-                eprintln!(
+                tracing::info!(
                     "[retry_transcription] Updating local record {}: text_len={} llm_cleaned={}",
                     retry_id,
                     final_transcript.len(),
@@ -918,7 +931,7 @@ pub(crate) fn retry_transcription_async(
                     ) {
                     Ok(record) => record,
                     Err(err) => {
-                        eprintln!("Failed to save retry result: {err}");
+                        tracing::error!("Failed to save retry result: {err}");
                         return;
                     }
                 };
@@ -1024,7 +1037,7 @@ fn emit_transcription_complete_with_cleanup(
                 (Some(record), true)
             }
             Err(err) => {
-                eprintln!("Failed to persist transcription: {err}");
+                tracing::error!("Failed to persist transcription: {err}");
                 (None, false)
             }
         }
@@ -1050,11 +1063,11 @@ fn emit_transcription_complete_with_cleanup(
 
     let settings = app.state::<AppState>().current_settings();
     if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
     if let Err(err) = crate::set_app_menu(app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
 
     crate::schedule_recording_prune(app.clone(), settings.clone());
@@ -1106,7 +1119,7 @@ fn handle_empty_transcription(
 
     if audio_path.exists() {
         if let Err(err) = std::fs::remove_file(audio_path) {
-            eprintln!(
+            tracing::error!(
                 "Failed to remove empty transcription audio {}: {err}",
                 audio_path.display()
             );
@@ -1200,7 +1213,7 @@ fn emit_transcription_error_inner(
 
         match record_result {
             Ok(_) => discard_pending_recording(pending_path),
-            Err(err) => eprintln!("Failed to persist failed transcription: {err}"),
+            Err(err) => tracing::error!("Failed to persist failed transcription: {err}"),
         }
     }
 
@@ -1499,12 +1512,26 @@ fn transcribe_local_chunked(
             speech::VAD_MIN_SPEECH_PERCENT_CHUNK
         };
         if chunk_speech_percent >= min_chunk_threshold {
-            let result = transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
-            if model_label.is_none() {
-                model_label = result.speech_model.clone();
-            }
-
-            let chunk_text = result.transcript;
+            let chunk_text = if strip_hallucinated_thank_you {
+                let result = transcriber
+                    .transcribe_with_segments(model, chunk, sample_rate, dictionary, language)?;
+                if model_label.is_none() {
+                    model_label = result.speech_model.clone();
+                }
+                let regions = glimpse_speech::vad::speech_regions(chunk, sample_rate);
+                transcription_api::keep_spoken_segments(
+                    &result.transcript,
+                    result.segments.as_deref(),
+                    regions.as_deref(),
+                )
+            } else {
+                let result =
+                    transcriber.transcribe(model, chunk, sample_rate, dictionary, language)?;
+                if model_label.is_none() {
+                    model_label = result.speech_model.clone();
+                }
+                result.transcript
+            };
             if !chunk_text.trim().is_empty() {
                 let deduped = dedupe_overlap_text(&full_text, &chunk_text);
                 if !deduped.trim().is_empty() {
@@ -1521,11 +1548,7 @@ fn transcribe_local_chunked(
             .max(start.saturating_add(1));
     }
 
-    let transcript = if strip_hallucinated_thank_you {
-        transcription_api::strip_hallucinated_thank_you(full_text.trim())
-    } else {
-        full_text.trim().to_string()
-    };
+    let transcript = full_text.trim().to_string();
 
     Ok(transcription_api::TranscriptionSuccess {
         transcript,
@@ -1748,6 +1771,7 @@ pub(crate) fn finalize_streaming_transcription(
                 auto_paste,
                 log_context: Some("streaming"),
                 cancel_token: Some(&cancel_token),
+                keep_pill_expanded: true,
             },
         )
         .await

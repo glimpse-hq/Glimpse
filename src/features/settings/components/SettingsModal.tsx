@@ -37,7 +37,6 @@ interface SettingsModalProps {
     | "local-api"
     | "about"
     | "app";
-  whatsNewRequest?: number;
   transcriptionMode: TranscriptionMode;
 }
 
@@ -72,7 +71,6 @@ const SettingsModal = ({
   isOpen,
   onClose,
   initialTab = "general",
-  whatsNewRequest = 0,
   transcriptionMode: initialTranscriptionMode,
 }: SettingsModalProps) => {
   const { t } = useLingui();
@@ -91,14 +89,6 @@ const SettingsModal = ({
       setActiveTab("general");
     }
   }, [activeTab, licenseGateLocked, setActiveTab]);
-
-  const lastConsumedWhatsNewRef = useRef(0);
-  useEffect(() => {
-    if (!isOpen || whatsNewRequest === 0) return;
-    if (whatsNewRequest <= lastConsumedWhatsNewRef.current) return;
-    lastConsumedWhatsNewRef.current = whatsNewRequest;
-    form.setWhatsNewOpen(true);
-  }, [form.setWhatsNewOpen, isOpen, whatsNewRequest]);
 
   const handleOpenTab = (
     tab: "general" | "models" | "providers" | "local-api" | "about" | "app",

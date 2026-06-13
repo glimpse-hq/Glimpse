@@ -108,7 +108,6 @@ export type StoredSettings = {
   llm_endpoint: string;
   llm_api_key: string;
   llm_model: string;
-  user_name: string;
   dictionary: string[];
   auto_dictionary_enabled: boolean;
   auto_dictionary_ignored: string[];

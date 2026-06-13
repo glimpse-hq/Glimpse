@@ -2,11 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import type { LicenseState } from "../../shared/types/license";
 
-export type {
-  LicenseEdition,
-  LicenseState,
-  LicenseStatus,
-} from "../../shared/types/license";
+export type { LicenseState } from "../../shared/types/license";
 
 export async function getLicenseState(): Promise<LicenseState> {
   return invoke<LicenseState>("get_license_state");
@@ -22,10 +18,6 @@ export async function refreshLicense(): Promise<LicenseState> {
 
 export async function deactivateLicense(): Promise<LicenseState> {
   return invoke<LicenseState>("deactivate_license");
-}
-
-export async function revealLicenseKey(): Promise<string> {
-  return invoke<string>("reveal_license_key");
 }
 
 export type DictationStats = {

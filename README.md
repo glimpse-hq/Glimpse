@@ -102,7 +102,7 @@ Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps priorit
 - **Collected:** launches, exits, os version, uptime, transcription count, transcription engine and model, model downloads, onboarding completion.
 - **Never collected:** transcripts, audio, API keys, prompts, or anything personally identifiable.
 
-Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
+Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App** — opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
 
 If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to that provider when those features run. Your API key stays stored locally.
 

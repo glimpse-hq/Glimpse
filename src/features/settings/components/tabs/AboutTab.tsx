@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
 import { motion, type Variants } from "framer-motion";
 import {
   ArrowUpRight,
+  Check,
+  EnvelopeSimple,
+  FileText,
+  GithubLogo,
   Question as HelpCircle,
   Info,
   CircleNotch as Loader2,
@@ -12,10 +17,20 @@ import {
 } from "@phosphor-icons/react";
 
 const CLI_WIKI_URL = "https://github.com/glimpse-hq/Glimpse/wiki/CLI";
+const REPORT_ISSUE_URL = "https://github.com/glimpse-hq/Glimpse/issues/new";
+const SUPPORT_EMAIL = "hello@tryglimpse.cc";
+
+const SUPPORT_ACTION_CLASS =
+  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-border-primary bg-surface-surface [box-shadow:var(--ui-action-card-rest-shadow)] outline-hidden transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-10)] hover:[box-shadow:var(--ui-action-card-hover-shadow)] active:translate-y-[2px] active:[box-shadow:none] focus-visible:ring-2 focus-visible:ring-border-hover";
+const SUPPORT_ACTION_ICON_CLASS =
+  "shrink-0 text-[var(--color-text-muted)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]";
+const SUPPORT_ACTION_LABEL_CLASS =
+  "flex items-center gap-0.5 ui-text-micro leading-none text-[var(--color-text-secondary)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]";
 import ActionCardButton from "../../../../shared/ui/ActionCardButton";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import HoldActionCardButton from "../../../../shared/ui/HoldActionCardButton";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
+import { detectAppPlatform } from "../../../../platform/service";
 import type {
   AppInfo,
   CliInstallStatus,
@@ -52,6 +67,7 @@ const AboutTab = ({
   onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
+  const [supportEmailCopied, setSupportEmailCopied] = useState(false);
 
   const isCloudMode = transcriptionMode === "cloud";
   const modeLabel = isCloudMode
@@ -159,6 +175,30 @@ const AboutTab = ({
     },
   ];
 
+  const handleReportIssue = () => {
+    const platformLabel =
+      detectAppPlatform() === "windows" ? "Windows" : "macOS";
+    const setup = [
+      `Glimpse version: ${appInfo?.version ?? "unknown"}`,
+      `OS version: ${platformLabel}`,
+      `Recording mode / model: ${transcriptionMode}`,
+    ].join("\n");
+    void openUrl(
+      `${REPORT_ISSUE_URL}?template=bug_report.yml&setup=${encodeURIComponent(setup)}`,
+    );
+  };
+
+  const handleCopyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(SUPPORT_EMAIL);
+      setSupportEmailCopied(true);
+      window.setTimeout(() => setSupportEmailCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy support email:", err);
+      setSupportEmailCopied(false);
+    }
+  };
+
   const handleResetOnboarding = async () => {
     try {
       await invoke("reset_onboarding");
@@ -208,6 +248,114 @@ const AboutTab = ({
             })}
           </SectionLabel>
           <UpdateChecker onOpenWhatsNew={onOpenWhatsNew} />
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5">
+            <SectionLabel>
+              {t({
+                id: "settings.about.support",
+                message: "Support",
+              })}
+            </SectionLabel>
+            <div className="relative group shrink-0">
+              <button
+                type="button"
+                className="flex size-4 items-center justify-center ui-color-disabled transition-colors hover:ui-color-muted focus:ui-color-muted focus:outline-none"
+                aria-label={t({
+                  id: "settings.about.support.info_aria",
+                  message: "More information about support logs",
+                })}
+              >
+                <Info size={10} aria-hidden="true" />
+              </button>
+              <div className="absolute left-1/2 bottom-full z-20 mb-1 hidden -translate-x-1/2 group-hover:block group-focus-within:block">
+                <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
+                  {t({
+                    id: "settings.about.support.info",
+                    message:
+                      "Attaching the log file helps debug serious issues. Logs contain technical events only — never transcripts, audio, or keys. File paths in them may include your computer's username.",
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid h-[52px] grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                void invoke("reveal_logs");
+              }}
+              className={SUPPORT_ACTION_CLASS}
+            >
+              <FileText
+                size={14}
+                aria-hidden="true"
+                className={SUPPORT_ACTION_ICON_CLASS}
+              />
+              <span className={SUPPORT_ACTION_LABEL_CLASS}>
+                {t({
+                  id: "settings.about.show_logs",
+                  message: "Logs",
+                })}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={handleReportIssue}
+              className={SUPPORT_ACTION_CLASS}
+            >
+              <GithubLogo
+                size={14}
+                aria-hidden="true"
+                className={SUPPORT_ACTION_ICON_CLASS}
+              />
+              <span className={SUPPORT_ACTION_LABEL_CLASS}>
+                {t({
+                  id: "settings.about.report_issue",
+                  message: "GitHub",
+                })}
+                <ArrowUpRight
+                  size={9}
+                  aria-hidden="true"
+                  className="shrink-0 text-[var(--color-text-disabled)] transition-colors duration-150 group-hover:text-[var(--color-text-muted)]"
+                />
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void handleCopyEmail();
+              }}
+              disabled={supportEmailCopied}
+              title={SUPPORT_EMAIL}
+              className={`${SUPPORT_ACTION_CLASS} disabled:pointer-events-none`}
+            >
+              {supportEmailCopied ? (
+                <Check
+                  size={14}
+                  aria-hidden="true"
+                  className="text-[var(--color-success)]"
+                />
+              ) : (
+                <EnvelopeSimple
+                  size={14}
+                  aria-hidden="true"
+                  className={SUPPORT_ACTION_ICON_CLASS}
+                />
+              )}
+              <span className={SUPPORT_ACTION_LABEL_CLASS}>
+                {supportEmailCopied
+                  ? t({
+                      id: "settings.about.email_support.copied",
+                      message: "Copied",
+                    })
+                  : t({
+                      id: "settings.about.email_support",
+                      message: "Email",
+                    })}
+              </span>
+            </button>
+          </div>
         </div>
       </section>
 

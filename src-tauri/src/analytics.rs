@@ -32,13 +32,13 @@ pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
     {
         Ok(opts) => opts,
         Err(err) => {
-            eprintln!("Failed to build PostHog client options: {err}");
+            tracing::error!("Failed to build PostHog client options: {err}");
             return;
         }
     };
 
     if let Err(err) = posthog_rs::init_global(options).await {
-        eprintln!("Failed to init PostHog: {err}");
+        tracing::error!("Failed to init PostHog: {err}");
         return;
     }
 
@@ -61,13 +61,14 @@ fn build_event(
     app: &tauri::AppHandle<AppRuntime>,
     event_name: &str,
     props: serde_json::Value,
+    require_enabled: bool,
 ) -> Option<posthog_rs::Event> {
     if POSTHOG_API_KEY.is_none_or(|k| k.is_empty()) || POSTHOG_HOST.is_none_or(|h| h.is_empty()) {
         return None;
     }
 
     let (enabled, distinct_id) = app.state::<AppState>().analytics_state();
-    if !enabled || distinct_id.is_empty() {
+    if (require_enabled && !enabled) || distinct_id.is_empty() {
         return None;
     }
 
@@ -83,7 +84,7 @@ fn build_event(
 }
 
 fn capture_event(app: &tauri::AppHandle<AppRuntime>, event_name: &str, props: serde_json::Value) {
-    if let Some(event) = build_event(app, event_name, props) {
+    if let Some(event) = build_event(app, event_name, props, true) {
         tauri::async_runtime::spawn(async move {
             let _ = posthog_rs::capture(event).await;
         });
@@ -98,13 +99,23 @@ fn capture_event_blocking(
     event_name: &str,
     props: serde_json::Value,
 ) {
-    if let Some(event) = build_event(app, event_name, props) {
+    if let Some(event) = build_event(app, event_name, props, true) {
         let _ = tauri::async_runtime::block_on(async {
             tokio::time::timeout(
                 std::time::Duration::from_secs(2),
                 posthog_rs::capture(event),
             )
             .await
+        });
+    }
+}
+
+/// Records, only on the opt-out click, that this install opted out.
+/// Final event sent; bypasses the enabled check since the setting is already off.
+pub fn track_analytics_opt_out(app: &tauri::AppHandle<AppRuntime>) {
+    if let Some(event) = build_event(app, "analytics_opt_out", json!({}), false) {
+        tauri::async_runtime::spawn(async move {
+            let _ = posthog_rs::capture(event).await;
         });
     }
 }

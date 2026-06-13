@@ -1,6 +1,6 @@
 [package]
 name = "Glimpse"
-version = "0.9.7"
+version = "0.9.8"
 description = "Open-source voice-to-text productivity app built with Tauri"
 authors = ["Glimpse HQ"]
 edition = "2021"
@@ -34,6 +34,8 @@ chrono = { version = "0.4", features = ["serde"] }
 cpal = "0.18"
 anyhow = "1"
 tracing = "0.1"
+tracing-subscriber = "0.3"
+tracing-appender = "0.2"
 symphonia = { version = "0.6.0", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4"] }
 hound = "3.5.1"
 parking_lot = "0.12"
@@ -43,7 +45,7 @@ rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
 posthog-rs = "0.11"
 arboard = "3"
-glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.4.7", features = ["whisper", "nvidia", "api", "cli", "remote"] }
+glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.4.9", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.2", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"

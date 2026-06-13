@@ -256,7 +256,7 @@ pub fn log_active_context() {
         .map(|url| truncate_text(url, 160))
         .unwrap_or_else(|| "(none)".to_string());
 
-    eprintln!(
+    tracing::debug!(
         "[Accessibility] Active app: {} | Window: {} | URL: {}",
         context.app_name, window_summary, url_summary
     );

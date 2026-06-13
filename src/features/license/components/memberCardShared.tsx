@@ -16,10 +16,7 @@ import {
   seededDotField,
 } from "../licenseFingerprint";
 import type { PurchaseTier } from "../../license/purchaseConfig";
-import {
-  EDITION_COLORS,
-  type LicenseEdition,
-} from "../../../shared/lib/licenseEdition";
+import { EDITION_COLORS } from "../../../shared/lib/licenseEdition";
 
 export type MemberCardPalette = {
   bg: string;
@@ -211,7 +208,6 @@ export const TIER_COLORS: Record<PurchaseTier, { fg: string; bg: string }> = {
   commercial: EDITION_COLORS.commercial,
 };
 
-export type { LicenseEdition };
 
 export const MEMBER_CARD_LAYOUT_ID = "glimpse-member-card";
 

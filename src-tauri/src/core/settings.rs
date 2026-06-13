@@ -272,22 +272,6 @@ pub(crate) fn reset_onboarding(
     Ok(())
 }
 
-pub(crate) fn set_user_name(
-    name: String,
-    app: &AppHandle<AppRuntime>,
-    state: &AppState,
-) -> Result<UserSettings, String> {
-    let mut settings = state.current_settings_unmasked();
-    settings.user_name = name.trim().to_string();
-    let next = state
-        .persist_settings(settings)
-        .map_err(|err| err.to_string())?;
-
-    state.emit_settings_changed(app, &next);
-
-    Ok(state.settings_for_response(next))
-}
-
 pub(crate) fn update_settings(
     args: UpdateSettingsArgs,
     app: &AppHandle<AppRuntime>,
@@ -433,15 +417,25 @@ pub(crate) fn update_settings(
         || prev.microphone_device != next.microphone_device
     {
         if let Err(err) = tray::refresh_tray_menu(app, &next) {
-            eprintln!("Failed to refresh tray menu: {err}");
+            tracing::error!("Failed to refresh tray menu: {err}");
         }
         #[cfg(target_os = "macos")]
         if let Err(err) = crate::set_app_menu(app, &next) {
-            eprintln!("Failed to refresh app menu: {err}");
+            tracing::error!("Failed to refresh app menu: {err}");
         }
     }
 
     state.emit_settings_changed(app, &next);
+
+    if prev.analytics_enabled && !next.analytics_enabled {
+        analytics::track_analytics_opt_out(app);
+    } else if !prev.analytics_enabled && next.analytics_enabled {
+        // Re-init in case analytics was off at launch and the client never started.
+        let handle = app.clone();
+        tauri::async_runtime::spawn(async move {
+            analytics::init(&handle).await;
+        });
+    }
 
     if crate::settings::auto_delete_recording_policy(&prev)
         != crate::settings::auto_delete_recording_policy(&next)

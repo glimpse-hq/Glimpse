@@ -668,6 +668,7 @@ pub fn install_spec(model: &str, ane: bool) -> Option<InstallSpec> {
         engine: manifest.engine,
         storage,
         files,
+        variant: Some(manifest.family.to_string()),
     })
 }
 

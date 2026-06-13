@@ -7,6 +7,6 @@ pub fn init(settings_window: &WebviewWindow<AppRuntime>) {
 
     #[cfg(target_os = "windows")]
     if let Err(err) = crate::platform::windows::settings_window::init(settings_window) {
-        eprintln!("Failed to initialize Windows settings window chrome: {err}");
+        tracing::error!("Failed to initialize Windows settings window chrome: {err}");
     }
 }

@@ -138,7 +138,7 @@ pub(crate) async fn attempt_remote(
         Ok(result) => RemoteAttempt::Success(result),
         Err(_) if is_cancelled() => RemoteAttempt::Cancelled,
         Err(error) => {
-            eprintln!("Remote speech failed, falling back to local model: {error}");
+            tracing::error!("Remote speech failed, falling back to local model: {error}");
             if model_manager::ensure_local_fallback_model(app, local_fallback_model).is_err() {
                 let message = fallback_unavailable_toast_message(&error);
                 emit_fallback_unavailable_toast_message(app, &message);

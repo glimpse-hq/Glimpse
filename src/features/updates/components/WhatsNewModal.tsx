@@ -14,8 +14,7 @@ import {
   WarningCircle as AlertCircle,
 } from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import ReactMarkdown, { Components } from "react-markdown";
-import type { PluggableList } from "unified";
+import ReactMarkdown, { type Components, type Options } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkGithub from "remark-github";
 import remarkBreaks from "remark-breaks";
@@ -54,7 +53,10 @@ const isSafeHttpUrl = (value: string): boolean => {
   }
 };
 
-const markdownPlugins: { remark: PluggableList; rehype: PluggableList } = {
+const markdownPlugins: {
+  remark: Options["remarkPlugins"];
+  rehype: Options["rehypePlugins"];
+} = {
   remark: [
     remarkGfm,
     [remarkGithub, { repository: GITHUB_REPO, mentionStrong: false }],

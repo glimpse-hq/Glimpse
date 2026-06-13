@@ -106,18 +106,18 @@ pub fn handle_speech_menu_event(app: &AppHandle<AppRuntime>, id: &str) -> Option
 
 fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) -> Option<UserSettings> {
     if install::definition(model_key).is_none() {
-        eprintln!("Ignoring unknown model selection: {model_key}");
+        tracing::error!("Ignoring unknown model selection: {model_key}");
         return None;
     }
 
     match install::check_model_status(app.clone(), model_key.to_string()) {
         Ok(status) if status.installed => {}
         Ok(_) => {
-            eprintln!("Model not installed: {model_key}");
+            tracing::error!("Model not installed: {model_key}");
             return None;
         }
         Err(err) => {
-            eprintln!("Failed to check model status for {model_key}: {err}");
+            tracing::error!("Failed to check model status for {model_key}: {err}");
             return None;
         }
     }
@@ -157,7 +157,7 @@ fn persist_menu_settings(
             Some(saved)
         }
         Err(err) => {
-            eprintln!("Failed to update speech menu settings: {err}");
+            tracing::error!("Failed to update speech menu settings: {err}");
             None
         }
     }

@@ -1,8 +1,4 @@
-import { useLingui } from "@lingui/react/macro";
-import { useMemo } from "react";
 import { motion, type Variants, type Easing } from "framer-motion";
-import { Check, CircleNotch as Loader2 } from "@phosphor-icons/react";
-import DotMatrix from "../../../shared/ui/DotMatrix";
 
 export { GlimpseLogo } from "../../../shared/ui/GlimpseLogo";
 
@@ -27,95 +23,6 @@ export const StepIndicator = ({
     ))}
   </div>
 );
-
-export const StatusBadge = ({
-  granted,
-  checking,
-}: {
-  granted: boolean;
-  checking?: boolean;
-}) => {
-  const { t } = useLingui();
-
-  if (checking) {
-    return (
-      <span className="inline-flex items-center gap-1.5 ui-text-label text-content-muted">
-        <Loader2 size={11} className="animate-spin" />
-        {t({
-          id: "onboarding.status.checking",
-          message: "Checking...",
-        })}
-      </span>
-    );
-  }
-
-  if (granted) {
-    return (
-      <motion.span
-        className="inline-flex items-center gap-1 ui-text-label font-medium ui-color-success-strong"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-      >
-        <Check size={12} />
-        {t({
-          id: "onboarding.status.enabled",
-          message: "Enabled",
-        })}
-      </motion.span>
-    );
-  }
-
-  return (
-    <span className="ui-text-label text-content-muted">
-      {t({
-        id: "onboarding.status.not_enabled",
-        message: "Not enabled",
-      })}
-    </span>
-  );
-};
-
-export const ModelProgress = ({
-  percent,
-  status,
-}: {
-  percent: number;
-  status: string;
-}) => {
-  const cols = 40;
-  const rows = 2;
-  const totalDots = cols * rows;
-  const activeCount = Math.round((percent / 100) * totalDots);
-
-  const activeDots = useMemo(() => {
-    const dots: number[] = [];
-    for (let i = 0; i < activeCount && i < totalDots; i++) {
-      dots.push(i);
-    }
-    return dots;
-  }, [activeCount, totalDots]);
-
-  const color =
-    status === "error"
-      ? "var(--color-error)"
-      : status === "complete"
-        ? "var(--color-success)"
-        : "var(--color-cloud)";
-
-  return (
-    <DotMatrix
-      rows={rows}
-      cols={cols}
-      activeDots={activeDots}
-      dotSize={2}
-      gap={2}
-      color={color}
-      className={status === "downloading" ? "opacity-80" : "opacity-60"}
-      morphOnActive={true}
-      activeScale={1.0}
-    />
-  );
-};
 
 type ApplePermissionIconProps = {
   size?: number;

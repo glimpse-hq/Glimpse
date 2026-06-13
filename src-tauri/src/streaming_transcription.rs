@@ -11,7 +11,7 @@ use tauri::{AppHandle, Manager};
 use crate::pill;
 use crate::{model_manager::ReadyModel, AppRuntime, AppState};
 
-const POLL_INTERVAL: Duration = Duration::from_millis(400);
+const POLL_INTERVAL: Duration = Duration::from_millis(100);
 
 const CHUNK_SAMPLES_16K: usize = 8960;
 
@@ -77,7 +77,7 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
     let transcriber = state.local_transcriber();
 
     if let Err(err) = transcriber.preload_and_warm(&model) {
-        eprintln!("[streaming] Failed to preload model: {err}");
+        tracing::error!("[streaming] Failed to preload model: {err}");
         return;
     }
 
@@ -131,7 +131,7 @@ fn streaming_thread(app: AppHandle<AppRuntime>, model: ReadyModel, stop_flag: Ar
                         }
                     }
                     Err(err) => {
-                        eprintln!("[streaming] Chunk transcription failed: {err}");
+                        tracing::error!("[streaming] Chunk transcription failed: {err}");
                     }
                 }
             }

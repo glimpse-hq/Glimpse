@@ -70,7 +70,7 @@ impl LocalTranscriber {
             .unwrap_or(false);
 
         if should_unload {
-            eprintln!(
+            tracing::info!(
                 "[LocalTranscriber] Unloading model after {} seconds of inactivity",
                 IDLE_TIMEOUT.as_secs()
             );
@@ -85,7 +85,15 @@ impl LocalTranscriber {
     }
 
     pub fn preload_and_warm(&self, model: &ReadyModel) -> Result<()> {
+        let was_loaded = self.service.is_loaded();
+        let started = Instant::now();
         self.service.preload_and_warm(&model.key)?;
+        tracing::info!(
+            "[LocalTranscriber] warm {} took {:.2}s (was_loaded={})",
+            model.key,
+            started.elapsed().as_secs_f32(),
+            was_loaded
+        );
         self.touch();
         Ok(())
     }
@@ -128,7 +136,7 @@ impl LocalTranscriber {
             transcript: normalize_transcript(&result.text),
             speech_model: Some(model_manager::model_label(&model.key)),
             segments: result.segments,
-            words: None,
+            words: result.words,
         })
     }
 
@@ -141,6 +149,8 @@ impl LocalTranscriber {
         language: Option<&str>,
         with_segments: bool,
     ) -> Result<glimpse_speech::Transcription> {
+        let was_loaded = self.service.is_loaded();
+        let started = Instant::now();
         let response = self.service.transcribe(TranscribeRequest {
             audio: AudioInput::PcmI16 {
                 samples: samples.to_vec(),
@@ -151,8 +161,14 @@ impl LocalTranscriber {
             prompt: None,
             dictionary: dictionary.to_vec(),
             timestamps: with_segments,
-            timestamp_granularity: with_segments.then_some(TimestampGranularity::Segment),
+            timestamp_granularity: with_segments.then_some(TimestampGranularity::Word),
         })?;
+        tracing::info!(
+            "[LocalTranscriber] transcribe took {:.2}s (audio {:.2}s, was_loaded={})",
+            started.elapsed().as_secs_f32(),
+            response.duration_ms as f32 / 1000.0,
+            was_loaded
+        );
         self.touch();
         Ok(response)
     }

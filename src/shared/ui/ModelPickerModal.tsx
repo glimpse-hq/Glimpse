@@ -771,5 +771,3 @@ function ModelProgressDots({
   );
 }
 
-export type { ModelGroup };
-export { groupModels, defaultVariantKey };

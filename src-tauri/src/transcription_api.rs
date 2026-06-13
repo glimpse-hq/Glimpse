@@ -41,21 +41,27 @@ pub fn normalize_transcript(input: &str) -> String {
         .to_string()
 }
 
-pub fn strip_hallucinated_thank_you(input: &str) -> String {
-    const HALLUCINATED_THANK_YOU: &str = "Thank you.";
+/// True if a segment spanning `[start, end]` seconds overlaps any speech region.
+pub fn overlaps_speech(start: f32, end: f32, regions: &[(f32, f32)]) -> bool {
+    regions.iter().any(|&(rs, re)| start < re && end > rs)
+}
 
-    let trimmed = input.trim();
-    if trimmed == HALLUCINATED_THANK_YOU {
+pub fn keep_spoken_segments(
+    transcript: &str,
+    segments: Option<&[glimpse_speech::TranscriptionSegment]>,
+    regions: Option<&[(f32, f32)]>,
+) -> String {
+    let (Some(segments), Some(regions)) = (segments, regions) else {
+        return transcript.trim().to_string();
+    };
+    if regions.is_empty() {
         return String::new();
     }
-
-    if let Some(prefix) = trimmed.strip_suffix(HALLUCINATED_THANK_YOU) {
-        let prefix_trimmed_end = prefix.trim_end();
-        let has_separator = prefix.len() > prefix_trimmed_end.len();
-        if has_separator && prefix_trimmed_end.ends_with('.') {
-            return prefix_trimmed_end.to_string();
-        }
-    }
-
-    trimmed.to_string()
+    segments
+        .iter()
+        .filter(|s| overlaps_speech(s.start, s.end, regions))
+        .map(|s| s.text.trim())
+        .filter(|t| !t.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ")
 }

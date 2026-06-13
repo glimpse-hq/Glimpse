@@ -143,7 +143,7 @@ pub(crate) fn accept_auto_dictionary_suggestion(
     clear_pending_suggestion_value(&suggestion);
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-        eprintln!("Failed to emit settings change: {err}");
+        tracing::error!("Failed to emit settings change: {err}");
     }
 
     Ok(saved.dictionary)
@@ -171,7 +171,7 @@ pub(crate) fn reject_auto_dictionary_suggestion(
     clear_pending_suggestion_value(&suggestion);
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-        eprintln!("Failed to emit settings change: {err}");
+        tracing::error!("Failed to emit settings change: {err}");
     }
 
     Ok(saved.auto_dictionary_ignored)

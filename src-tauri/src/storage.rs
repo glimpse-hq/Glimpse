@@ -468,7 +468,7 @@ impl StorageManager {
         match Self::get_record(&conn, id) {
             Ok(record) => record,
             Err(err) => {
-                eprintln!("Failed to read transcription {id}: {err}");
+                tracing::error!("Failed to read transcription {id}: {err}");
                 None
             }
         }

@@ -425,7 +425,7 @@ pub async fn deactivate_license(
     let key = match read_license_key(store) {
         Ok(key) => key,
         Err(err) => {
-            eprintln!("Clearing local license after decryption failure during deactivate: {err}");
+            tracing::error!("Clearing local license after decryption failure during deactivate: {err}");
             clear_cache(store)?;
             invalidate_gate_cache();
             return get_license_state(store);
@@ -460,10 +460,6 @@ pub async fn deactivate_license(
     clear_cache(store)?;
     invalidate_gate_cache();
     get_license_state(store)
-}
-
-pub fn reveal_license_key(store: &SettingsStore) -> Result<String, String> {
-    read_license_key(store)?.ok_or_else(|| "No license key is stored on this device.".to_string())
 }
 
 fn write_cache_from_polar(
@@ -593,7 +589,7 @@ fn write_license_key(store: &SettingsStore, key: Option<&str>) -> Result<(), Str
     };
 
     let Some(hardware_uuid) = crate::crypto::get_hardware_uuid() else {
-        eprintln!("Warning: Could not get hardware UUID, storing license key unencrypted");
+        tracing::error!("Warning: Could not get hardware UUID, storing license key unencrypted");
         return write_string(store, KEY_LICENSE_KEY, key);
     };
 

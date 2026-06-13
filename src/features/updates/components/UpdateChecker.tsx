@@ -67,11 +67,6 @@ export function UpdateChecker({
   useEffect(() => {
     const pendingVersion = localStorage.getItem(PENDING_RESTART_KEY);
     if (!pendingVersion) return;
-    if (pendingVersion === "true") {
-      // Legacy sentinel from older builds; real pending restarts now store the target version.
-      localStorage.removeItem(PENDING_RESTART_KEY);
-      return;
-    }
     getVersion().then((currentVersion) => {
       if (pendingVersion === currentVersion) {
         // Update was already applied — clear stale key

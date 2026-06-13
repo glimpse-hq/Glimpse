@@ -6,7 +6,6 @@ mod auto_dictionary;
 mod cli_install;
 mod core;
 mod crypto;
-mod data_migration;
 mod dictionary;
 mod import;
 mod library;
@@ -68,6 +67,48 @@ use tauri::ActivationPolicy;
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt as AutostartManagerExt};
 use tauri_plugin_opener::OpenerExt;
 
+static LOG_GUARD: std::sync::OnceLock<tracing_appender::non_blocking::WorkerGuard> =
+    std::sync::OnceLock::new();
+
+/// Writes app logs to daily-rotated files in the OS log dir (kept 7 days)
+fn init_logging(app: &AppHandle<AppRuntime>) {
+    use tracing_subscriber::fmt::writer::MakeWriterExt;
+    use tracing_subscriber::layer::SubscriberExt;
+
+    let Ok(dir) = app.path().app_log_dir() else {
+        return;
+    };
+    let _ = std::fs::create_dir_all(&dir);
+
+    let appender = match tracing_appender::rolling::RollingFileAppender::builder()
+        .rotation(tracing_appender::rolling::Rotation::DAILY)
+        .filename_prefix("glimpse")
+        .filename_suffix("log")
+        .max_log_files(7)
+        .build(&dir)
+    {
+        Ok(appender) => appender,
+        Err(err) => {
+            eprintln!("Failed to create log file appender: {err}");
+            return;
+        }
+    };
+    let (writer, guard) = tracing_appender::non_blocking(appender);
+
+    let filter = tracing_subscriber::filter::Targets::new()
+        .with_default(tracing::level_filters::LevelFilter::WARN)
+        .with_target("glimpse_lib", tracing::level_filters::LevelFilter::INFO)
+        .with_target("glimpse_speech", tracing::level_filters::LevelFilter::INFO);
+    let subscriber = tracing_subscriber::fmt()
+        .with_writer(writer.and(std::io::stderr))
+        .with_ansi(false)
+        .finish()
+        .with(filter);
+    if tracing::subscriber::set_global_default(subscriber).is_ok() {
+        let _ = LOG_GUARD.set(guard);
+    }
+}
+
 pub(crate) const MAIN_WINDOW_LABEL: &str = "main";
 pub(crate) const SETTINGS_WINDOW_LABEL: &str = "settings";
 pub(crate) const EVENT_RECORDING_START: &str = "recording:start";
@@ -115,7 +156,7 @@ where
         }
 
         if let Err(err) = license::handle_deep_link(app) {
-            eprintln!("{err}");
+            tracing::error!("{err}");
         }
     }
 }
@@ -201,10 +242,10 @@ fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 #[cfg(target_os = "macos")]
 fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &settings::UserSettings) {
     if let Err(err) = set_app_menu(app, settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
     if let Err(err) = tray::refresh_tray_menu(app, settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
 }
 
@@ -221,7 +262,7 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
             refresh_speech_menus(app, &saved);
             state.emit_settings_changed(app, &saved);
         }
-        Err(err) => eprintln!("Failed to update microphone selection: {err}"),
+        Err(err) => tracing::error!("Failed to update microphone selection: {err}"),
     }
 }
 
@@ -279,10 +320,7 @@ pub fn run() {
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             let handle = app.handle();
-            if let Err(err) = data_migration::migrate_legacy_app_dirs(handle) {
-                eprintln!("Failed to migrate legacy app directories: {err}");
-            }
-
+            init_logging(handle);
             let crash_marker = handle
                 .path()
                 .app_data_dir()
@@ -296,7 +334,7 @@ pub fn run() {
             if model_manager::definition(&settings.local_model).is_none() {
                 settings.local_model = default_local_model();
                 if let Err(err) = settings_store.save(&settings) {
-                    eprintln!("Failed to persist default local model: {err}");
+                    tracing::error!("Failed to persist default local model: {err}");
                 }
             }
 
@@ -327,7 +365,7 @@ pub fn run() {
                 let handle = app.handle();
                 let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = sync_launch_at_login(handle, settings.auto_launch_enabled) {
-                    eprintln!("Failed to sync launch at login state: {err}");
+                    tracing::error!("Failed to sync launch at login state: {err}");
                 }
             }
 
@@ -336,10 +374,10 @@ pub fn run() {
                 let handle = app.handle();
                 let settings = handle.state::<AppState>().current_settings();
                 if let Err(err) = set_app_menu(handle, &settings) {
-                    eprintln!("Failed to set app menu: {err}");
+                    tracing::error!("Failed to set app menu: {err}");
                 }
                 if let Err(err) = platform::macos::audio_devices::init(handle) {
-                    eprintln!("Failed to initialize input device watcher: {err}");
+                    tracing::error!("Failed to initialize input device watcher: {err}");
                 }
             }
 
@@ -362,7 +400,7 @@ pub fn run() {
             }
 
             if let Err(err) = pill::register_shortcuts(handle) {
-                eprintln!("Failed to register shortcuts: {err}");
+                tracing::error!("Failed to register shortcuts: {err}");
             }
 
             let state = handle.state::<AppState>();
@@ -406,11 +444,9 @@ pub fn run() {
             activate_license,
             refresh_license,
             deactivate_license,
-            reveal_license_key,
             get_dictation_stats,
             preview_recording_prune,
             preview_transcription_prune,
-            set_user_name,
             dictionary::set_dictionary,
             dictionary::get_replacements,
             dictionary::set_replacements,
@@ -466,13 +502,12 @@ pub fn run() {
             complete_onboarding,
             cancel_recording,
             view_recovered_transcriptions,
-            pill::set_pill_expanded,
             reset_onboarding,
             toast::debug_show_toast,
             fetch_llm_models,
             fetch_remote_speech_models,
-            open_whats_new,
             open_about_page,
+            reveal_logs,
             update_checker::get_update_status,
             update_checker::check_for_updates,
             update_checker::download_and_install_update
@@ -487,7 +522,7 @@ pub fn run() {
                     .filter_map(|url| url.to_file_path().ok())
                     .collect();
                 if let Err(err) = library::handle_opened_paths(handler, paths) {
-                    eprintln!("Failed to handle opened files: {err}");
+                    tracing::error!("Failed to handle opened files: {err}");
                 }
             }
             #[cfg(target_os = "macos")]
@@ -713,7 +748,7 @@ impl AppState {
     ) {
         let response = self.settings_for_response(settings.clone());
         if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &response) {
-            eprintln!("Failed to emit settings change: {err}");
+            tracing::error!("Failed to emit settings change: {err}");
         }
     }
 
@@ -1015,7 +1050,9 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
         if let Err(err) = state.hotkeys.start_capture(&app) {
             state.set_shortcut_capture_active(false);
             if let Err(register_err) = pill::register_shortcuts(&app) {
-                eprintln!("Failed to restore shortcuts after capture start error: {register_err}");
+                tracing::error!(
+                    "Failed to restore shortcuts after capture start error: {register_err}"
+                );
             }
             return Err(err.to_string());
         }
@@ -1059,7 +1096,7 @@ fn open_input_monitoring_settings() -> Result<(), String> {
 #[tauri::command]
 fn open_llm_cleanup_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
     tray::open_settings_models(&app).map_err(|err| {
-        eprintln!("Failed to open settings window: {err}");
+        tracing::error!("Failed to open settings window: {err}");
         err.to_string()
     })
 }
@@ -1124,11 +1161,6 @@ async fn deactivate_license(
     license::deactivate_license(state.http(), &state.settings_store).await
 }
 
-#[tauri::command]
-fn reveal_license_key(state: tauri::State<AppState>) -> Result<String, String> {
-    license::reveal_license_key(&state.settings_store)
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
@@ -1182,15 +1214,6 @@ async fn preview_transcription_prune(
     .map_err(|err| err.to_string())?;
 
     Ok(RecordingPrunePreview { candidate_count })
-}
-
-#[tauri::command]
-fn set_user_name(
-    name: String,
-    app: AppHandle<AppRuntime>,
-    state: tauri::State<AppState>,
-) -> Result<UserSettings, String> {
-    core::settings::set_user_name(name, &app, &state)
 }
 
 #[derive(Serialize)]
@@ -1295,17 +1318,18 @@ async fn fetch_remote_speech_models(
 }
 
 #[tauri::command]
-fn open_whats_new(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::open_settings_whats_new(&app) {
-        eprintln!("Failed to open settings window: {err}");
+fn open_about_page(app: AppHandle<AppRuntime>) {
+    if let Err(err) = tray::open_settings_about(&app) {
+        tracing::error!("Failed to open settings window: {err}");
     }
 }
 
 #[tauri::command]
-fn open_about_page(app: AppHandle<AppRuntime>) {
-    if let Err(err) = tray::open_settings_about(&app) {
-        eprintln!("Failed to open settings window: {err}");
-    }
+fn reveal_logs(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    let dir = app.path().app_log_dir().map_err(|err| err.to_string())?;
+    app.opener()
+        .open_path(dir.to_string_lossy(), None::<&str>)
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -1391,11 +1415,11 @@ fn delete_transcription(
 
     let settings = state.current_settings();
     if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        eprintln!("Failed to refresh tray menu: {err}");
+        tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
     if let Err(err) = set_app_menu(&app, &settings) {
-        eprintln!("Failed to refresh app menu: {err}");
+        tracing::error!("Failed to refresh app menu: {err}");
     }
 
     Ok(result)
@@ -1490,7 +1514,7 @@ pub(crate) fn persist_recording_async(
             }
             RecordingRejectionReason::EmptyBuffer => "Recording buffer is empty".to_string(),
         };
-        eprintln!("Recording rejected: {reason}");
+        tracing::error!("Recording rejected: {reason}");
 
         if let Some(path) = recording.pending_path.as_deref() {
             let _ = std::fs::remove_file(path);
@@ -1531,7 +1555,7 @@ pub(crate) fn emit_event<T: Serialize + Clone>(
     payload: T,
 ) {
     if let Err(err) = app.emit(event, payload) {
-        eprintln!("Failed to emit {event}: {err}");
+        tracing::error!("Failed to emit {event}: {err}");
     }
 }
 
@@ -1565,8 +1589,8 @@ pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: Use
         .await
         {
             Ok(Ok(count)) => emit_recording_history_refresh(&app, count),
-            Ok(Err(err)) => eprintln!("Failed to prune recordings: {err}"),
-            Err(err) => eprintln!("Recording prune task failed: {err}"),
+            Ok(Err(err)) => tracing::error!("Failed to prune recordings: {err}"),
+            Err(err) => tracing::error!("Recording prune task failed: {err}"),
         }
     });
 }
@@ -1580,8 +1604,8 @@ pub(crate) fn schedule_transcription_prune(app: AppHandle<AppRuntime>, settings:
         .await
         {
             Ok(Ok(())) => {}
-            Ok(Err(err)) => eprintln!("Failed to prune transcriptions: {err}"),
-            Err(err) => eprintln!("Transcription prune task failed: {err}"),
+            Ok(Err(err)) => tracing::error!("Failed to prune transcriptions: {err}"),
+            Err(err) => tracing::error!("Transcription prune task failed: {err}"),
         }
     });
 }

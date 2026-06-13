@@ -1209,6 +1209,33 @@ body {
   color: var(--color-text-secondary);
 }
 
+.transcript-words {
+  position: relative;
+  display: block;
+}
+
+.transcript-word {
+  transition: color 0.15s ease;
+}
+
+.transcript-word-active {
+  color: var(--color-text-primary);
+}
+
+.transcript-word-underline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--color-text-primary);
+  pointer-events: none;
+  transition:
+    transform 0.22s cubic-bezier(0.33, 1, 0.5, 1),
+    width 0.22s cubic-bezier(0.33, 1, 0.5, 1),
+    opacity 0.15s ease;
+}
+
 .transcript-search-hit {
   background: linear-gradient(
     100deg,

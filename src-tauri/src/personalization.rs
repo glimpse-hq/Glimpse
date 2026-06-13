@@ -131,7 +131,7 @@ pub fn set_personalities(
         .map_err(|err| err.to_string())?;
 
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-        eprintln!("Failed to emit settings change: {err}");
+        tracing::error!("Failed to emit settings change: {err}");
     }
 
     Ok(cleaned)
