@@ -191,6 +191,17 @@ fn start_library_transcription_internal(
                 let settings = state_handle.current_settings();
                 final_transcript =
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
+                if !settings.replacements.is_empty() {
+                    for entries in [result.segments.as_mut(), result.words.as_mut()]
+                        .into_iter()
+                        .flatten()
+                    {
+                        for entry in entries.iter_mut() {
+                            entry.text =
+                                dictionary::apply_replacements(&entry.text, &settings.replacements);
+                        }
+                    }
+                }
 
                 if count_words(&final_transcript) == 0 {
                     let _ = storage.update_library_item(
@@ -483,9 +494,11 @@ fn transcribe_library_item(
 
             let chunk_text = result.transcript;
             let mut appended_text = None;
+            let mut kept_words = 0usize;
             if !chunk_text.trim().is_empty() {
                 let deduped = transcribe::dedupe_overlap_text(&full_text, &chunk_text);
                 if !deduped.trim().is_empty() {
+                    kept_words = deduped.split_whitespace().count();
                     let appended = append_library_chunk(&mut full_text, &deduped);
                     appended_text = Some(appended);
                 }
@@ -514,14 +527,17 @@ fn transcribe_library_item(
 
             if let Some(words) = result.words {
                 let offset_ms = (start_idx as f64 / sample_rate as f64 * 1000.0) as u64;
-                // Whisper word clocks can backtrack between segments, so only
-                // dedupe against the previous chunk's seam, never within a chunk.
+                let converted = convert_segments_to_ms(&words);
+                let exact_skip = (chunk_text.split_whitespace().count() == converted.len())
+                    .then(|| converted.len().saturating_sub(kept_words));
                 let chunk_word_floor = last_word_end_ms;
-                for word in convert_segments_to_ms(&words) {
+                for (index, word) in converted.into_iter().enumerate() {
                     let start_ms = word.start_ms + offset_ms;
                     let end_ms = word.end_ms + offset_ms;
-                    if end_ms <= chunk_word_floor {
-                        continue;
+                    match exact_skip {
+                        Some(skip) if index < skip => continue,
+                        None if end_ms <= chunk_word_floor => continue,
+                        _ => {}
                     }
                     last_word_end_ms = last_word_end_ms.max(end_ms);
                     merged_words.push(TranscriptSegment {
@@ -655,9 +671,11 @@ fn transcribe_library_item(
         }
 
         let chunk_text = result.transcript;
+        let mut kept_words = 0usize;
         if !chunk_text.trim().is_empty() {
             let deduped = transcribe::dedupe_overlap_text(&full_text, &chunk_text);
             if !deduped.trim().is_empty() {
+                kept_words = deduped.split_whitespace().count();
                 append_library_chunk(&mut full_text, &deduped);
             }
         }
@@ -682,14 +700,17 @@ fn transcribe_library_item(
 
         if let Some(words) = result.words {
             let offset_ms = (start_idx as f64 / sample_rate as f64 * 1000.0) as u64;
-            // Whisper word clocks can backtrack between segments, so only
-            // dedupe against the previous chunk's seam, never within a chunk.
+            let converted = convert_segments_to_ms(&words);
+            let exact_skip = (chunk_text.split_whitespace().count() == converted.len())
+                .then(|| converted.len().saturating_sub(kept_words));
             let chunk_word_floor = last_word_end_ms;
-            for word in convert_segments_to_ms(&words) {
+            for (index, word) in converted.into_iter().enumerate() {
                 let start_ms = word.start_ms + offset_ms;
                 let end_ms = word.end_ms + offset_ms;
-                if end_ms <= chunk_word_floor {
-                    continue;
+                match exact_skip {
+                    Some(skip) if index < skip => continue,
+                    None if end_ms <= chunk_word_floor => continue,
+                    _ => {}
                 }
                 last_word_end_ms = last_word_end_ms.max(end_ms);
                 merged_words.push(TranscriptSegment {

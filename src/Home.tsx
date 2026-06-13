@@ -148,7 +148,6 @@ const Home = () => {
     | "about"
     | "app"
   >("general");
-  const [whatsNewRequest, setWhatsNewRequest] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<
     "home" | "dictionary" | "brain" | "library"
@@ -238,17 +237,11 @@ const Home = () => {
     let unlistenOpenImport: UnlistenFn | null = null;
     let unlistenLicenseReturn: UnlistenFn | null = null;
 
-    const navigateReady = listen<{ openWhatsNew?: boolean }>(
-      "navigate:about",
-      (event) => {
-        setSettingsTab("about");
-        setIsSettingsOpen(true);
-        if (event.payload?.openWhatsNew) {
-          setWhatsNewRequest((request) => request + 1);
-        }
-        emit("updater:check").catch(() => {});
-      },
-    ).then((fn) => {
+    const navigateReady = listen("navigate:about", () => {
+      setSettingsTab("about");
+      setIsSettingsOpen(true);
+      emit("updater:check").catch(() => {});
+    }).then((fn) => {
       if (cancelled) fn();
       else unlistenNavigate = fn;
     });
@@ -844,7 +837,6 @@ const Home = () => {
           setSettingsTab("general");
         }}
         initialTab={settingsTab}
-        whatsNewRequest={whatsNewRequest}
         transcriptionMode={transcriptionMode}
       />
 
