@@ -48,6 +48,7 @@ pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
         json!({
             "app_version": APP_VERSION,
             "platform": std::env::consts::OS,
+            "arch": std::env::consts::ARCH,
         }),
     );
     let _ = identify.insert_prop(
