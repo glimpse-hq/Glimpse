@@ -23,9 +23,9 @@
 
 ---
 
-Glimpse is a local-first voice dictation app, an open-source take on Superwhisper and WisprFlow.
+Glimpse is an open-source, local-first voice dictation app for macOS and Windows.
 
-Core dictation is free, with no subscription and no cloud. It all runs on your device. The AI writing features are optional, and they use your own LLM provider only when you turn them on.
+Core dictation is free with no word limits and can run entirely on your device. Cloud speech and AI writing are optional and use providers you configure yourself.
 
 ## Screenshots
 
@@ -71,27 +71,12 @@ Glimpse Personal is a one-time purchase, not a subscription. Core dictation stay
 | **Personal**   | $24.99             | You, on up to 5 personal devices |
 | **Commercial** | from $19.99 / seat | Work use, one person per seat    |
 
-Commercial volume pricing:
-
-| Seats    | Price per seat |
-| -------- | -------------- |
-| 1 to 5   | $19.99         |
-| 6 to 15  | $17.99         |
-| 16 to 30 | $14.99         |
-| 31+      | $11.99         |
-
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
 ## Roadmap
 
-- [ ] Meeting mode
-- [ ] Speaker diarization
-- [x] Library overhaul
-- [x] Speakers & speaker-labeled exports
-- [x] CLI
-- [x] API
-- [x] BYOK STT
-- [x] Import from other apps
+- Meeting mode
+- Automatic speaker diarization
 
 ## Privacy
 
@@ -99,20 +84,18 @@ Transcription stays on-device by default. Glimpse does not collect your transcri
 
 Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps prioritize development:
 
-- **Collected:** launches, exits, os version, uptime, transcription count, transcription engine and model, model downloads, onboarding completion.
+- **Collected:** app version and platform, launches and exits, uptime, transcription counts and duration, engine and model, word counts, failures, model downloads, onboarding completion, and crash locations.
 - **Never collected:** transcripts, audio, API keys, prompts, or anything personally identifiable.
 
 Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App** — opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
 
-If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to that provider when those features run. Your API key stays stored locally.
+If you enable an external speech provider, recorded audio is sent directly to that provider. If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to it. Your API keys stay stored locally.
 
 ## License
 
 **Source code** is licensed under [AGPL-3.0](LICENSE). If you distribute Glimpse or run it as a network service, you must make your modified source available under AGPL-3.0.
 
-**Official app builds** include free core dictation. Advanced features (Library, AI writing, Edit Mode, Local API, CLI) require Glimpse Personal after the trial.
-
-A hosted cloud tier (faster speeds, cloud-only features) is planned for the future.
+**Official app builds** include free core dictation. Advanced features (Library, AI writing, Edit Mode, Personalization, Local API, CLI) require Glimpse Personal after the trial.
 
 ## Contributing
 
