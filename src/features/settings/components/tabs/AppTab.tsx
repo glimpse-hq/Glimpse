@@ -128,6 +128,8 @@ type AppTabProps = {
   onAppLocaleChange: (locale: AppLocaleSetting) => void;
   mediaAction: MediaAction;
   onMediaActionChange: (action: MediaAction) => void;
+  autoCopyEnabled: boolean;
+  onAutoCopyEnabledChange: (enabled: boolean) => void;
   autoUpdateEnabled: boolean;
   onAutoUpdateEnabledChange: (enabled: boolean) => void;
   autoLaunchEnabled: boolean;
@@ -157,6 +159,8 @@ const AppTab = ({
   onAppLocaleChange,
   mediaAction,
   onMediaActionChange,
+  autoCopyEnabled,
+  onAutoCopyEnabledChange,
   autoUpdateEnabled,
   onAutoUpdateEnabledChange,
   autoLaunchEnabled,
@@ -917,6 +921,32 @@ const AppTab = ({
                     id: "settings.app.auto_update.body",
                     message:
                       "downloads and installs updates in the background.",
+                  })}
+                </span>
+              </div>
+
+              <div className="px-2 py-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="ui-text-label-strong ui-color-primary">
+                    {t({
+                      id: "settings.app.auto_copy",
+                      message: "Auto-copy to Clipboard",
+                    })}
+                  </span>
+                  <ToggleSwitch
+                    enabled={autoCopyEnabled}
+                    onToggle={() => onAutoCopyEnabledChange(!autoCopyEnabled)}
+                    ariaLabel={t({
+                      id: "settings.app.auto_copy.toggle_aria",
+                      message: "Toggle auto-copy to clipboard",
+                    })}
+                  />
+                </div>
+                <span className="ui-text-micro ui-color-disabled block mt-0.5">
+                  {t({
+                    id: "settings.app.auto_copy.body",
+                    message:
+                      "copies the transcript to the clipboard when it can't be typed into a text field.",
                   })}
                 </span>
               </div>

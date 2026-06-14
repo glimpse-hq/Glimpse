@@ -483,7 +483,7 @@ fn send_copy_keystroke() -> Result<()> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows"))]
-pub fn paste_text(text: &str) -> Result<()> {
+pub fn paste_text(text: &str, keep_on_clipboard: bool) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
 
     let backup = ClipboardBackup::capture(&mut clipboard);
@@ -495,14 +495,18 @@ pub fn paste_text(text: &str) -> Result<()> {
 
     let paste_result = send_paste_keystroke();
 
-    thread::spawn(move || {
-        thread::sleep(Duration::from_millis(300));
-        if let Ok(mut clipboard) = Clipboard::new() {
-            if should_restore_after_paste(&mut clipboard, &inserted_text) {
-                backup.restore(&mut clipboard);
+    // When auto-copy is leaving the transcript on the clipboard (no detectable
+    // text field to paste into), skip the restore so the copy isn't clobbered.
+    if !keep_on_clipboard {
+        thread::spawn(move || {
+            thread::sleep(Duration::from_millis(300));
+            if let Ok(mut clipboard) = Clipboard::new() {
+                if should_restore_after_paste(&mut clipboard, &inserted_text) {
+                    backup.restore(&mut clipboard);
+                }
             }
-        }
-    });
+        });
+    }
 
     paste_result
 }

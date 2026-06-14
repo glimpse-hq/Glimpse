@@ -702,6 +702,7 @@ async fn process_transcript_text(
         let should_watch_auto_dictionary = can_read_field
             && settings.auto_dictionary_enabled
             && selected_model_supports_dictionary;
+        let auto_copy = settings.auto_copy_enabled;
         let transcript_to_paste = final_transcript.clone();
         let token_for_paste = cancel_token.cloned();
         let app_for_paste = app.clone();
@@ -723,7 +724,11 @@ async fn process_transcript_text(
                     match_insertion_capitalization(&transcript_to_paste, &snapshot.value)
                 })
                 .unwrap_or(transcript_to_paste);
-            let result = assistive::paste_text(&text);
+            // When no editable field is detected, the paste keystroke goes
+            // nowhere; if auto-copy is on, leave the transcript on the clipboard
+            // (skip the post-paste restore) so the user can paste it manually.
+            let keep_on_clipboard = auto_copy && can_read_field && pre_paste_snapshot.is_none();
+            let result = assistive::paste_text(&text, keep_on_clipboard);
             Some((result, pre_paste_snapshot, text))
         })
         .await;
@@ -747,6 +752,19 @@ async fn process_transcript_text(
                 emit_auto_paste_error(app, format!("Auto paste failed: {err}"))
             }
             Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
+        }
+    }
+
+    // When auto-paste is disabled, nothing is typed anywhere, so honor the
+    // auto-copy setting directly. (When auto-paste is enabled, the copy is handled
+    // inline above via `keep_on_clipboard` so it isn't clobbered by the restore.)
+    if !auto_paste && settings.auto_copy_enabled && !final_transcript.trim().is_empty() {
+        let text = final_transcript.clone();
+        match async_runtime::spawn_blocking(move || assistive::copy_text_to_clipboard(&text)).await
+        {
+            Ok(Ok(())) => {}
+            Ok(Err(err)) => tracing::error!("Auto copy failed: {err}"),
+            Err(err) => tracing::error!("Auto copy task error: {err}"),
         }
     }
 

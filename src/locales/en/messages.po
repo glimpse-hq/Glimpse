@@ -4582,3 +4582,18 @@ msgstr "Your trial ended on"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.trial.text_ended"
 msgstr "Your trial has ended"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_copy"
+msgstr "Auto-copy to Clipboard"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_copy.toggle_aria"
+msgstr "Toggle auto-copy to clipboard"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_copy.body"
+msgstr "copies the transcript to the clipboard when it can't be typed into a text field."

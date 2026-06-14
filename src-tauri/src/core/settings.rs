@@ -44,6 +44,8 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_api_key: String,
     pub llm_model: String,
     pub edit_mode_enabled: bool,
+    #[serde(default)]
+    pub auto_copy_enabled: bool,
     pub auto_dictionary_enabled: bool,
     #[serde(default)]
     pub media_action: MediaAction,
@@ -370,6 +372,7 @@ pub(crate) fn update_settings(
         next.llm_api_key = args.llm_api_key;
         next.llm_model = args.llm_model.trim().to_string();
         next.auto_dictionary_enabled = args.auto_dictionary_enabled;
+        next.auto_copy_enabled = args.auto_copy_enabled;
         next.media_action = args.media_action;
         next.auto_update_enabled = args.auto_update_enabled;
         next.auto_launch_enabled = args.auto_launch_enabled;
@@ -485,6 +488,7 @@ mod tests {
             llm_api_key: String::new(),
             llm_model: String::new(),
             edit_mode_enabled: false,
+            auto_copy_enabled: false,
             auto_dictionary_enabled: false,
             media_action: MediaAction::Pause,
             auto_update_enabled: true,

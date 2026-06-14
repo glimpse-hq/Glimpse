@@ -263,6 +263,7 @@ export function useSettingsForm({
     [],
   );
   const [editModeEnabled, setEditModeEnabled] = useState(false);
+  const [autoCopyEnabled, setAutoCopyEnabled] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaAction, setMediaAction] = useState<MediaAction>("off");
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
@@ -494,6 +495,7 @@ export function useSettingsForm({
       setLlmApiKeyRaw(s.llm_api_key ?? "");
       setLlmModel(s.llm_model ?? "");
       setEditModeEnabled(s.edit_mode_enabled ?? false);
+      setAutoCopyEnabled(s.auto_copy_enabled ?? false);
       setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
       setMediaAction(s.media_action ?? "off");
       setAutoUpdateEnabled(s.auto_update_enabled ?? false);
@@ -680,6 +682,7 @@ export function useSettingsForm({
         llmApiKey,
         llmModel,
         editModeEnabled: aiFeaturesReady ? editModeEnabled : false,
+        autoCopyEnabled,
         autoDictionaryEnabled: autoDictionarySupported
           ? autoDictionaryEnabled
           : false,
@@ -730,6 +733,7 @@ export function useSettingsForm({
       llmApiKey,
       llmModel,
       editModeEnabled,
+      autoCopyEnabled,
       autoDictionarySupported,
       autoDictionaryEnabled,
       mediaAction,
@@ -1715,6 +1719,8 @@ export function useSettingsForm({
     fetchAvailableSpeechModels,
     editModeEnabled,
     setEditModeEnabled,
+    autoCopyEnabled,
+    setAutoCopyEnabled,
     autoDictionaryEnabled,
     autoDictionarySupported,
     setAutoDictionaryEnabled,
