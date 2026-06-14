@@ -80,20 +80,24 @@ const SettingsModal = ({
     initialTab,
     transcriptionMode: initialTranscriptionMode,
   });
-  const { activeTab, licenseGateActive, setActiveTab } = form;
-  const licenseGateLocked = !licenseGateActive;
+  const { activeTab, activeLicense, setActiveTab } = form;
+  const localApiLocked = !activeLicense;
+  const localApiLockedReason = t({
+    id: "settings.modal.api_server.full_license_required",
+    message: "API Server requires a full active license.",
+  });
 
   useEffect(() => {
-    if (!licenseGateLocked) return;
+    if (!localApiLocked) return;
     if (activeTab === "local-api") {
       setActiveTab("general");
     }
-  }, [activeTab, licenseGateLocked, setActiveTab]);
+  }, [activeTab, localApiLocked, setActiveTab]);
 
   const handleOpenTab = (
     tab: "general" | "models" | "providers" | "local-api" | "about" | "app",
   ) => {
-    if (licenseGateLocked && tab === "local-api") return;
+    if (localApiLocked && tab === "local-api") return;
     setActiveTab(tab);
   };
 
@@ -237,7 +241,8 @@ const SettingsModal = ({
                       message: "API Server",
                     })}
                     active={form.activeTab === "local-api"}
-                    disabled={licenseGateLocked}
+                    disabled={localApiLocked}
+                    disabledReason={localApiLockedReason}
                     onClick={() => form.setActiveTab("local-api")}
                   />
                 </div>
@@ -359,7 +364,7 @@ const SettingsModal = ({
                       />
                     )}
 
-                    {form.activeTab === "local-api" && !licenseGateLocked && (
+                    {form.activeTab === "local-api" && !localApiLocked && (
                       <LocalApiTab
                         key="local-api"
                         variants={tabContentVariants}
@@ -431,7 +436,7 @@ const SettingsModal = ({
                         formatBytes={form.formatBytes}
                         cliInstallStatus={form.cliInstallStatus}
                         cliInstallBusy={form.cliInstallBusy}
-                        licenseGateActive={form.licenseGateActive}
+                        activeLicense={form.activeLicense}
                         onInstallCli={form.handleInstallCli}
                         onRemoveCli={form.handleRemoveCli}
                         onOpenDataDir={form.handleOpenDataDir}
@@ -558,17 +563,20 @@ const ModalNavItem = ({
   label,
   active,
   disabled = false,
+  disabledReason,
   onClick,
 }: {
   icon: PhosphorIcon;
   label: string;
   active: boolean;
   disabled?: boolean;
+  disabledReason?: string;
   onClick: () => void;
 }) => (
   <motion.button
     onClick={onClick}
     disabled={disabled}
+    title={disabled ? disabledReason : undefined}
     className={`group flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 ui-text-body-sm-strong transition-colors ${
       disabled
         ? "cursor-not-allowed text-content-disabled/60"

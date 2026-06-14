@@ -276,6 +276,57 @@ pub(crate) fn set_app_menu(
     Ok(())
 }
 
+pub fn run_cli() -> Result<()> {
+    if cli_help_requested(std::env::args_os().skip(1)) {
+        return glimpse_speech::cli::run_blocking();
+    }
+
+    let context = app_context();
+    let settings_store = SettingsStore::for_cli(&context.config().identifier)?;
+    let cache_active_before_refresh = license::active_license_gate(&settings_store);
+    if license::secure_grant_refresh_needed(&settings_store).map_err(anyhow::Error::msg)? {
+        let runtime = tokio::runtime::Runtime::new()?;
+        if let Err(err) = runtime.block_on(license::refresh_license(Client::new(), &settings_store))
+        {
+            if !cache_active_before_refresh {
+                anyhow::bail!(
+                    "An active Glimpse license is required to use the CLI.\n\
+                     The saved license could not be refreshed: {err}\n\
+                     Open Glimpse > Settings > Account to check or activate your license."
+                );
+            }
+        }
+    }
+    if !license::active_license_gate(&settings_store) {
+        anyhow::bail!(
+            "An active Glimpse license is required to use the CLI.\n\
+             Open Glimpse > Settings > Account to check or activate your license."
+        );
+    }
+
+    glimpse_speech::cli::run_blocking()
+}
+
+fn app_context() -> tauri::Context<AppRuntime> {
+    tauri::generate_context!()
+}
+
+fn cli_help_requested(args: impl IntoIterator<Item = std::ffi::OsString>) -> bool {
+    for (index, arg) in args.into_iter().enumerate() {
+        if arg == "--" {
+            return false;
+        }
+        if matches!(arg.to_str(), Some("-h" | "--help")) {
+            return true;
+        }
+        if index == 0 && arg == "help" {
+            return true;
+        }
+    }
+
+    false
+}
+
 pub fn run() {
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let _guard = rt.enter();
@@ -339,6 +390,23 @@ pub fn run() {
             }
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            {
+                let h = handle.clone();
+                async_runtime::spawn(async move {
+                    let state = h.state::<AppState>();
+                    match license::secure_grant_refresh_needed(&state.settings_store) {
+                        Ok(true) => {
+                            if let Err(err) =
+                                license::refresh_license(state.http(), &state.settings_store).await
+                            {
+                                tracing::warn!("Could not refresh the saved license: {err}");
+                            }
+                        }
+                        Ok(false) => {}
+                        Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
+                    }
+                });
+            }
             {
                 let settings = handle.state::<AppState>().current_settings();
                 local_api::start_from_settings(handle, &settings);
@@ -512,7 +580,7 @@ pub fn run() {
             update_checker::check_for_updates,
             update_checker::download_and_install_update
         ])
-        .build(tauri::generate_context!())
+        .build(app_context())
         .expect("error while building tauri application")
         .run(|handler, event| match event {
             #[cfg(target_os = "macos")]
@@ -548,6 +616,29 @@ pub fn run() {
             }
             _ => {}
         });
+}
+
+#[cfg(test)]
+mod cli_tests {
+    use super::cli_help_requested;
+    use std::ffi::OsString;
+
+    fn args(values: &[&str]) -> Vec<OsString> {
+        values.iter().map(OsString::from).collect()
+    }
+
+    #[test]
+    fn cli_help_does_not_require_a_license() {
+        assert!(cli_help_requested(args(&["--help"])));
+        assert!(cli_help_requested(args(&["transcribe", "--help"])));
+        assert!(cli_help_requested(args(&["help", "transcribe"])));
+    }
+
+    #[test]
+    fn cli_commands_and_positional_help_names_require_a_license() {
+        assert!(!cli_help_requested(args(&["models", "list"])));
+        assert!(!cli_help_requested(args(&["transcribe", "--", "--help",])));
+    }
 }
 
 pub(crate) type AppRuntime = Wry;
@@ -737,6 +828,9 @@ impl AppState {
     pub(crate) fn settings_for_response(&self, mut settings: UserSettings) -> UserSettings {
         if !license::license_gate_active(&self.settings_store) {
             disable_license_gated_settings(&mut settings);
+        }
+        if !license::active_license_gate(&self.settings_store) {
+            settings.local_api_start_on_launch = false;
         }
         settings
     }
@@ -1023,7 +1117,6 @@ fn disable_license_gated_settings(settings: &mut UserSettings) {
     settings.llm_enabled = false;
     settings.cleanup_enabled = false;
     settings.edit_mode_enabled = false;
-    settings.local_api_start_on_launch = false;
     for binding in settings
         .shortcut_bindings
         .smart

@@ -3,7 +3,7 @@
 
 fn main() {
     if launched_as_cli() {
-        if let Err(err) = glimpse_speech::cli::run_blocking() {
+        if let Err(err) = glimpse_lib::run_cli() {
             eprintln!("{err:?}");
             std::process::exit(1);
         }

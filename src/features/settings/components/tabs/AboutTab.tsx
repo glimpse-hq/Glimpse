@@ -44,7 +44,7 @@ type AboutTabProps = {
   formatBytes: (bytes: number) => string;
   cliInstallStatus: CliInstallStatus | null;
   cliInstallBusy: boolean;
-  licenseGateActive: boolean;
+  activeLicense: boolean;
   onInstallCli: () => void;
   onRemoveCli: () => void;
   onOpenDataDir: () => void;
@@ -59,7 +59,7 @@ const AboutTab = ({
   formatBytes,
   cliInstallStatus,
   cliInstallBusy,
-  licenseGateActive,
+  activeLicense,
   onInstallCli,
   onRemoveCli,
   onOpenDataDir,
@@ -90,7 +90,7 @@ const AboutTab = ({
     0;
   const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
   const cliInstalled = cliInstallStatus?.installed ?? false;
-  const cliInstallLocked = !licenseGateActive && !cliInstalled;
+  const cliInstallLocked = !activeLicense && !cliInstalled;
   const cliInstallPath =
     cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
   const cliInfo = cliUnavailable
@@ -101,7 +101,7 @@ const AboutTab = ({
     : cliInstallLocked
       ? t({
           id: "settings.about.cli.locked_info",
-          message: "Command line install requires an active license.",
+          message: "Command line install requires a full active license.",
         })
       : cliInstalled
         ? t({
@@ -125,7 +125,7 @@ const AboutTab = ({
     : cliInstallLocked
       ? t({
           id: "settings.about.cli.locked_subtitle",
-          message: "Requires an active license",
+          message: "Requires a full active license",
         })
       : cliInstalled
         ? t({
@@ -507,7 +507,7 @@ const AboutTab = ({
                     onClick={cliInstalled ? onRemoveCli : onInstallCli}
                     disabled={
                       cliInstallBusy ||
-                      (!cliInstalled && (cliUnavailable || !licenseGateActive))
+                      (!cliInstalled && (cliUnavailable || !activeLicense))
                     }
                     className="inline-flex h-6 min-w-[4.75rem] shrink-0 items-center justify-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:pointer-events-none disabled:opacity-60"
                   >

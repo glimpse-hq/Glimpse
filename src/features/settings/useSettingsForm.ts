@@ -27,7 +27,7 @@ import {
   MODEL_CAPABILITY_DICTIONARY,
 } from "../../shared/lib/modelCapabilities";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
-import { useLicenseGate } from "../license/queries";
+import { useLicenseGate, useLicenseState } from "../license/queries";
 import {
   buildActiveTranscriptionLanguageOptions,
   collectAllTranscriptionLanguages,
@@ -308,7 +308,9 @@ export function useSettingsForm({
   );
   const queryClient = useQueryClient();
   const settingsQuery = useSettings(undefined, isOpen);
+  const licenseStateQuery = useLicenseState();
   const licenseGateActive = useLicenseGate();
+  const activeLicense = licenseStateQuery.data?.status === "active";
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
@@ -694,7 +696,7 @@ export function useSettingsForm({
         localApiPort,
         localApiModel: overrides.localApiModel ?? localApiModel,
         localApiHost,
-        localApiStartOnLaunch: licenseGateActive
+        localApiStartOnLaunch: activeLicense
           ? localApiStartOnLaunch
           : false,
         localApiCors,
@@ -724,6 +726,7 @@ export function useSettingsForm({
       themeMode,
       aiFeaturesReady,
       licenseGateActive,
+      activeLicense,
       llmEnabled,
       llmProvider,
       llmEndpoint,
@@ -1709,6 +1712,7 @@ export function useSettingsForm({
     llmConfigReady,
     aiFeaturesReady,
     licenseGateActive,
+    activeLicense,
     availableModels,
     fetchAvailableModels,
     availableSpeechModels,

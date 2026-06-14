@@ -921,7 +921,7 @@ msgstr "Activate"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.license_prefix"
-msgstr "Activate Glimpse Personal in"
+msgstr "Activate your Glimpse license in"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1082,6 +1082,11 @@ msgstr "API Key"
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.api_server"
 msgstr "API Server"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.api_server.full_license_required"
+msgstr "API Server requires a full active license."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -1426,6 +1431,11 @@ msgid "library.detail.speaker.rename"
 msgstr "Click to rename"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.close"
+msgstr "Close"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.close"
 msgstr "Close"
@@ -1433,11 +1443,6 @@ msgstr "Close"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.close"
-msgstr "Close"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.close"
 msgstr "Close"
 
 #. js-lingui-explicit-id
@@ -1587,11 +1592,6 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "Converting audio... {0}%"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.email_support.copied"
-msgstr "Copied"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copied"
 msgstr "Copied"
@@ -1599,6 +1599,11 @@ msgstr "Copied"
 #. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.copied"
+msgstr "Copied"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.email_support.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
@@ -2055,13 +2060,13 @@ msgid "personalization.modal.edit_name"
 msgstr "Edit mode name"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.email_support"
+#: src/Home.tsx
+msgid "home.support.feedback.email"
 msgstr "Email"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.feedback.email"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.email_support"
 msgstr "Email"
 
 #. js-lingui-explicit-id
@@ -3407,15 +3412,15 @@ msgid "personalization.modal.remove"
 msgstr "Remove"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: fileName(path)
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.remove_file"
-msgstr "Remove {0}"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: speaker.name
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker.remove"
+msgstr "Remove {0}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: fileName(path)
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.remove_file"
 msgstr "Remove {0}"
 
 #. js-lingui-explicit-id
@@ -3509,24 +3514,24 @@ msgid "settings.local_api.api_key.lan_required"
 msgstr "Required when listening on LAN"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.auto_dictionary.unsupported_body"
-msgstr "requires a model with dictionary support"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle"
 msgstr "Requires an active license"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.help_requirement"
-msgstr "Requires an enabled and configured writing provider."
+msgid "settings.general.edit_mode.help_license_requirement"
+msgstr "Requires a Glimpse license."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.help_license_requirement"
-msgstr "Requires Glimpse Personal."
+msgid "settings.general.auto_dictionary.unsupported_body"
+msgstr "requires a model with dictionary support"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.edit_mode.help_requirement"
+msgstr "Requires an enabled and configured writing provider."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -3904,11 +3909,6 @@ msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "Show shortcuts"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryRetranscribeModal.tsx
-msgid "library.retranscribe.show_timestamps.aria"
-msgstr "Show timestamps"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.show_timestamps"
 msgstr "Show timestamps"
@@ -3921,6 +3921,11 @@ msgstr "Show timestamps"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.show_timestamps"
+msgstr "Show timestamps"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.show_timestamps.aria"
 msgstr "Show timestamps"
 
 #. js-lingui-explicit-id
@@ -4049,13 +4054,13 @@ msgid "settings.general.auto_dictionary.body"
 msgstr "suggests names and terms after you correct dictated text"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.support"
+#: src/Home.tsx
+msgid "home.support.label"
 msgstr "Support"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.label"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.support"
 msgstr "Support"
 
 #. js-lingui-explicit-id
