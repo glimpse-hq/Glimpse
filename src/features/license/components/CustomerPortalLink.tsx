@@ -40,7 +40,7 @@ const CustomerPortalLink = ({
         id: "license.customer_portal",
         message: "Customer portal",
       })}
-      <ExternalLink size={12} aria-hidden="true" />
+      <ExternalLink size={11} aria-hidden="true" />
     </button>
   );
 };
