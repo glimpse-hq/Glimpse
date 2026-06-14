@@ -94,6 +94,9 @@ struct ProcessTranscriptInput<'a> {
     settings: &'a UserSettings,
     active_mode: Option<&'a Personality>,
     auto_paste: bool,
+    /// Whether this is a live foreground transcript (vs. background recovery) and
+    /// may therefore write to the global clipboard via auto-copy.
+    allow_clipboard_copy: bool,
     log_context: Option<&'a str>,
     cancel_token: Option<&'a CancellationToken>,
     keep_pill_expanded: bool,
@@ -235,6 +238,7 @@ pub(crate) fn queue_transcription(
                         settings: &settings,
                         active_mode: active_mode.as_ref(),
                         auto_paste,
+                        allow_clipboard_copy: true,
                         log_context: None,
                         cancel_token: Some(&cancel_token),
                         keep_pill_expanded: false,
@@ -526,6 +530,7 @@ async fn transcribe_recovered_recording(
             settings,
             active_mode: active_mode.as_ref(),
             auto_paste: false,
+            allow_clipboard_copy: false,
             log_context: Some("recovery"),
             cancel_token: None,
             keep_pill_expanded: false,
@@ -611,6 +616,7 @@ async fn process_transcript_text(
         settings,
         active_mode,
         auto_paste,
+        allow_clipboard_copy,
         log_context,
         cancel_token,
         keep_pill_expanded,
@@ -758,7 +764,21 @@ async fn process_transcript_text(
     // When auto-paste is disabled, nothing is typed anywhere, so honor the
     // auto-copy setting directly. (When auto-paste is enabled, the copy is handled
     // inline above via `keep_on_clipboard` so it isn't clobbered by the restore.)
-    if !auto_paste && settings.auto_copy_enabled && !final_transcript.trim().is_empty() {
+    // Edit mode replaces a selection in place and must never leave its result on
+    // the clipboard.
+    if !auto_paste
+        && allow_clipboard_copy
+        && !is_edit_mode
+        && settings.auto_copy_enabled
+        && !final_transcript.trim().is_empty()
+    {
+        // Re-check cancellation: cleanup may have run since the earlier check, and
+        // a canceled transcription must not leave the transcript on the clipboard.
+        let cancelled = cancel_token.map(|token| token.is_cancelled()).unwrap_or(false)
+            || app.state::<AppState>().is_cancelled();
+        if cancelled {
+            return ProcessTranscriptOutcome::Cancelled;
+        }
         let text = final_transcript.clone();
         match async_runtime::spawn_blocking(move || assistive::copy_text_to_clipboard(&text)).await
         {
@@ -1787,6 +1807,7 @@ pub(crate) fn finalize_streaming_transcription(
                 settings: &settings,
                 active_mode: active_mode.as_ref(),
                 auto_paste,
+                allow_clipboard_copy: true,
                 log_context: Some("streaming"),
                 cancel_token: Some(&cancel_token),
                 keep_pill_expanded: true,
