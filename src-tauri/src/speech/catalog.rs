@@ -149,6 +149,34 @@ const NEMOTRON_35_STREAMING_FILES: &[CatalogFile] = &[
     },
 ];
 
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+const PARAKEET_UNIFIED_FILES: &[CatalogFile] = &[
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/encoder.onnx",
+        path: "encoder.onnx",
+        size_bytes: Some(41_901_475),
+        sha256: Some("50083dd0b2af503b87ea8fcf9fd7d7dc15dda3130e4113017c8b37ed00418ba4"),
+    },
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/encoder.onnx.data",
+        path: "encoder.onnx.data",
+        size_bytes: Some(2_437_091_328),
+        sha256: Some("c054b2932ee13aa39ed84982a399822f3193311fb6fd8e1e204566722614bd87"),
+    },
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/decoder_joint.onnx",
+        path: "decoder_joint.onnx",
+        size_bytes: Some(35_779_240),
+        sha256: Some("64648c91935ea4819e9c31ea8a20f011d3b1c960be3861cb8bc74df0259cd998"),
+    },
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/tokenizer.model",
+        path: "tokenizer.model",
+        size_bytes: Some(251_056),
+        sha256: Some("07d4e5a63840a53ab2d4d106d2874768143fb3fbdd47938b3910d2da05bfb0a9"),
+    },
+];
+
 macro_rules! whisper_files {
     ($path:literal, $size_bytes:literal, $sha256:expr) => {
         &[CatalogFile {
@@ -311,6 +339,19 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         engine: LocalModelEngine::Nemotron,
         variant: "Multilingual",
         files: NEMOTRON_35_STREAMING_FILES,
+        capabilities: &[MODEL_CAPABILITY_STREAMING],
+    },
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    LocalModelManifest {
+        id: "parakeet_unified_en",
+        family: "parakeet-unified",
+        label: "Parakeet Unified 0.6B",
+        description: "Real-time streaming transcription. Text appears as you speak.",
+        tags: &["English", "Streaming"],
+        category: "experimental",
+        engine: LocalModelEngine::Unified,
+        variant: "Full",
+        files: PARAKEET_UNIFIED_FILES,
         capabilities: &[MODEL_CAPABILITY_STREAMING],
     },
     LocalModelManifest {
@@ -737,12 +778,18 @@ fn supported_languages(manifest: &LocalModelManifest) -> Vec<SupportedLanguageIn
                 Vec::new()
             }
         }
+        // The unified model is English-only; this arm is only reached if a
+        // future unified manifest drops the "English" tag (which would
+        // otherwise short-circuit above).
+        LocalModelEngine::Unified => english_supported_languages(),
     }
 }
 
 fn engine_id(engine: &LocalModelEngine) -> &'static str {
     match engine {
-        LocalModelEngine::Nemotron | LocalModelEngine::Parakeet => "nvidia",
+        LocalModelEngine::Nemotron | LocalModelEngine::Parakeet | LocalModelEngine::Unified => {
+            "nvidia"
+        }
         LocalModelEngine::Whisper => "whisper",
     }
 }
