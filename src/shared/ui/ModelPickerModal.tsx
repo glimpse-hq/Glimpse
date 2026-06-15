@@ -128,7 +128,15 @@ export function ModelPickerPanel({
     }
   };
 
-  const groups = useMemo(() => groupModels(catalog), [catalog]);
+  const groups = useMemo(
+    () =>
+      groupModels(
+        catalog.filter(
+          (model) => model.downloadable || isInstalled(model.key),
+        ),
+      ),
+    [catalog, isInstalled],
+  );
 
   const availableCategories = useMemo(() => {
     const present = new Set(groups.map((group) => group.category));
@@ -448,7 +456,7 @@ function ModelRow({
       <button
         type="button"
         onClick={
-          !installed
+          !installed && selected.downloadable
             ? () => onDownload(aneOn)
             : encoderDownloadPending
               ? () => onDownload(true)
@@ -604,7 +612,8 @@ function ModelRow({
         ) : (
           <div className="flex items-center gap-1">
             <span className="flex h-6 w-6 items-center justify-center">
-              {(!installed || (showAne && aneChecked && !aneInstalled)) && (
+              {((!installed && selected.downloadable) ||
+                (showAne && aneChecked && !aneInstalled)) && (
                 <button
                   type="button"
                   onClick={() => onDownload(installed || aneOn)}

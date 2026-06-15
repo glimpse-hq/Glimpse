@@ -15,6 +15,7 @@ import {
   deriveModelStats,
   formatModelSize,
   formatQuantLabel,
+  sortInstalledModels,
 } from "../../../../shared/lib/modelStats";
 import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
@@ -46,13 +47,23 @@ const pickInstalledModel = (
 ): ModelInfo | null => {
   const active = catalog.find((m) => m.key === localModel);
   if (active) return active;
-  const installed = catalog.find((m) => modelStatus[m.key]?.installed);
+  const installed = catalog.find(
+    (m) => modelStatus[m.key]?.installed && m.downloadable,
+  );
+  const legacyInstalled = catalog.find(
+    (m) => modelStatus[m.key]?.installed && !m.downloadable,
+  );
   if (installed) return installed;
-  const recommended = catalog.find((m) =>
-    m.tags.some((tag) => tag.toLowerCase() === "recommended"),
+  if (legacyInstalled) return legacyInstalled;
+  const recommended = catalog.find(
+    (m) =>
+      m.downloadable &&
+      m.tags.some((tag) => tag.toLowerCase() === "recommended"),
   );
   if (recommended) return recommended;
-  return [...catalog].sort((a, b) => a.size_mb - b.size_mb)[0] ?? null;
+  return [...catalog]
+    .filter((m) => m.downloadable)
+    .sort((a, b) => a.size_mb - b.size_mb)[0] ?? null;
 };
 
 const InstalledModelRow = ({
@@ -101,6 +112,11 @@ const InstalledModelRow = ({
       >
         <span className="block truncate ui-text-body-sm-strong text-content-primary">
           {model.label}
+          {!model.downloadable && (
+            <span className="ml-1.5 font-normal text-content-muted">
+              {t({ id: "settings.models.installed.legacy", message: "Legacy" })}
+            </span>
+          )}
         </span>
         <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
           {facts.join("  ·  ")}
@@ -176,8 +192,8 @@ const ModelsTab = ({
       message: "your speech provider",
     });
 
-  const installedModels = modelCatalog.filter(
-    (m) => modelStatus[m.key]?.installed,
+  const installedModels = sortInstalledModels(
+    modelCatalog.filter((m) => modelStatus[m.key]?.installed),
   );
 
   return (

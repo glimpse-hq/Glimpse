@@ -200,6 +200,31 @@ pub fn check_model_status<R: Runtime>(
     Ok(map_status(status, &manager))
 }
 
+const MODEL_UNAVAILABLE: &str = "This model is no longer available for download.";
+
+fn ensure_model_downloadable(
+    model: &str,
+    ane: bool,
+    manager: &speech_models::ModelInstallManager,
+) -> Result<(), String> {
+    if super::catalog::model_is_downloadable(model) {
+        return Ok(());
+    }
+    if !ane {
+        return Err(MODEL_UNAVAILABLE.to_string());
+    }
+    let base_spec = spec_for(model, false).map_err(|err| err.to_string())?;
+    let installed = manager
+        .status(&base_spec)
+        .map(|status| status.installed)
+        .map_err(|err| err.to_string())?;
+    if installed {
+        Ok(())
+    } else {
+        Err(MODEL_UNAVAILABLE.to_string())
+    }
+}
+
 #[tauri::command]
 pub async fn download_model(
     app: AppHandle<AppRuntime>,
@@ -209,6 +234,7 @@ pub async fn download_model(
 ) -> Result<ModelStatus, String> {
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
     let ane = ane.unwrap_or(false);
+    ensure_model_downloadable(&model, ane, &manager)?;
     let spec = spec_for(&model, ane).map_err(|err| err.to_string())?;
     ensure_models_root(&app).map_err(|err| err.to_string())?;
     let ane_pending = ane

@@ -16,6 +16,19 @@ use crate::AppRuntime;
 pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
 pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
 pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
+pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
+
+pub fn is_legacy_category(category: &str) -> bool {
+    category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)
+}
+
+pub fn is_downloadable(manifest: &LocalModelManifest) -> bool {
+    !is_legacy_category(manifest.category)
+}
+
+pub fn model_is_downloadable(key: &str) -> bool {
+    definition(key).is_some_and(is_downloadable)
+}
 
 pub use glimpse_speech::models::ModelEngine as LocalModelEngine;
 
@@ -29,6 +42,7 @@ pub struct ModelInfo {
     pub family: String,
     pub variant: String,
     pub category: String,
+    pub downloadable: bool,
     pub tags: Vec<String>,
     pub capabilities: Vec<String>,
     pub supported_languages: Vec<SupportedLanguageInfo>,
@@ -819,6 +833,7 @@ fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
         family: manifest.family.to_string(),
         variant: manifest.variant.to_string(),
         category: manifest.category.to_string(),
+        downloadable: is_downloadable(manifest),
         tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
         capabilities: capability_strings(manifest.capabilities),
         supported_languages: supported_languages(manifest),
@@ -943,5 +958,45 @@ fn provider_display(provider: &str) -> String {
         "custom" => "Custom".to_string(),
         "" => "Remote".to_string(),
         other => other.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_models_are_not_downloadable() {
+        let legacy = LocalModelManifest {
+            id: "legacy_test",
+            label: "Legacy Test",
+            description: "test",
+            category: MODEL_CATEGORY_LEGACY,
+            tags: &[],
+            engine: LocalModelEngine::Whisper,
+            family: "whisper-tiny",
+            variant: "Full",
+            files: whisper_files!(
+                "ggml-tiny.bin",
+                77_691_713,
+                Some("be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21")
+            ),
+            capabilities: WHISPER_CAPABILITIES,
+        };
+
+        assert!(is_legacy_category(MODEL_CATEGORY_LEGACY));
+        assert!(!is_downloadable(&legacy));
+    }
+
+    #[test]
+    fn active_models_remain_downloadable() {
+        let manifest = definition("whisper_tiny").expect("fixture model");
+        assert!(is_downloadable(manifest));
+        assert!(model_is_downloadable("whisper_tiny"));
+    }
+
+    #[test]
+    fn unknown_models_are_not_downloadable() {
+        assert!(!model_is_downloadable("not_a_real_model"));
     }
 }

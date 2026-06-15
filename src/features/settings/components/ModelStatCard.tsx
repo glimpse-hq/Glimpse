@@ -223,7 +223,7 @@ const ModelStatCard = ({
             >
               <Trash2 size={13} aria-hidden="true" />
             </button>
-          ) : (
+          ) : model.downloadable ? (
             <button
               type="button"
               onClick={onDownload}
@@ -236,7 +236,7 @@ const ModelStatCard = ({
             >
               <Download size={13} aria-hidden="true" />
             </button>
-          )}
+          ) : null}
         </div>
       </div>
     </article>

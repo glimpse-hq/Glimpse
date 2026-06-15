@@ -1099,7 +1099,7 @@ export function useSettingsForm({
     setLocalModel((current) =>
       modelCatalog.some((model) => model.key === current)
         ? current
-        : (modelCatalog[0]?.key ?? ""),
+        : (modelCatalog.find((model) => model.downloadable)?.key ?? ""),
     );
   }, [isOpen, modelCatalog]);
 
@@ -1432,9 +1432,16 @@ export function useSettingsForm({
           [modelKey]: { status: "idle", percent: 0 },
         }));
 
-        const otherInstalledModel = modelCatalog.find(
-          (m) => m.key !== modelKey && modelStatus[m.key]?.installed,
-        );
+        const otherInstalledModel =
+          modelCatalog.find(
+            (m) =>
+              m.key !== modelKey &&
+              modelStatus[m.key]?.installed &&
+              m.downloadable,
+          ) ??
+          modelCatalog.find(
+            (m) => m.key !== modelKey && modelStatus[m.key]?.installed,
+          );
         const settingsUpdates: SaveSettingsOverrides = {};
 
         if (localModel === modelKey && otherInstalledModel) {

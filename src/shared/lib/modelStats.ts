@@ -8,6 +8,13 @@ export type ModelStats = {
 export const formatModelSize = (mb: number): string =>
   mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${Math.round(mb)} MB`;
 
+export const sortInstalledModels = (models: ModelInfo[]): ModelInfo[] =>
+  [...models].sort((a, b) => {
+    const legacyDelta = Number(!a.downloadable) - Number(!b.downloadable);
+    if (legacyDelta !== 0) return legacyDelta;
+    return a.label.localeCompare(b.label);
+  });
+
 export const variantLabel = (variant: string): string => variant;
 
 export const formatQuantLabel = (variant: string): string | null => {

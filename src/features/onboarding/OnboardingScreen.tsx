@@ -63,8 +63,11 @@ const sortOnboardingModels = (models: ModelInfo[]) =>
     return a.label.localeCompare(b.label);
   });
 
+const downloadableModels = (models: ModelInfo[]) =>
+  models.filter((model) => model.downloadable);
+
 const pickOnboardingModels = (models: ModelInfo[]) => {
-  const sortedModels = sortOnboardingModels(models);
+  const sortedModels = sortOnboardingModels(downloadableModels(models));
   const preferred = PREFERRED_ONBOARDING_MODEL_KEYS.map((key) =>
     sortedModels.find((model) => model.key === key),
   ).filter((model): model is ModelInfo => Boolean(model));
@@ -80,10 +83,14 @@ const pickDefaultOnboardingModel = (
   models: ModelInfo[],
   persistedModel: string,
 ) => {
-  if (persistedModel && models.some((model) => model.key === persistedModel)) {
+  const available = downloadableModels(models);
+  if (
+    persistedModel &&
+    available.some((model) => model.key === persistedModel)
+  ) {
     return persistedModel;
   }
-  return models[0]?.key ?? persistedModel;
+  return available[0]?.key ?? persistedModel;
 };
 
 const ONBOARDING_MODEL: Record<OnboardingModelPriority, string> = {
@@ -96,11 +103,12 @@ const pickRecommendedOnboardingModel = (
   models: ModelInfo[],
   priority: OnboardingModelPriority | null,
 ) => {
+  const available = downloadableModels(models);
   if (!priority) {
-    return models.find(hasRecommendedTag) ?? models[0] ?? null;
+    return available.find(hasRecommendedTag) ?? available[0] ?? null;
   }
   return (
-    models.find((model) => model.key === ONBOARDING_MODEL[priority]) ?? null
+    available.find((model) => model.key === ONBOARDING_MODEL[priority]) ?? null
   );
 };
 
