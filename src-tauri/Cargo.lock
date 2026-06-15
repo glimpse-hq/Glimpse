@@ -2347,7 +2347,7 @@ dependencies = [
 [[package]]
 name = "glimpse-speech"
 version = "1.4.9"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.4.9#cd03114b5773335ecbc65a50a2e494fb4f89f2be"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=fd5ff7ce6f10f836eb0d4c23b3b96b359f801eb5#fd5ff7ce6f10f836eb0d4c23b3b96b359f801eb5"
 dependencies = [
  "anyhow",
  "axum",

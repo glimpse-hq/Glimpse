@@ -12,8 +12,7 @@ export const variantLabel = (variant: string): string => variant;
 
 export const formatQuantLabel = (variant: string): string | null => {
   if (!variant) return null;
-  const label = variantLabel(variant);
-  return label === "Multilingual" ? null : label;
+  return variantLabel(variant);
 };
 
 export const deriveModelStats = (model: ModelInfo): ModelStats => {

@@ -23,7 +23,7 @@ import DotMatrix from "./DotMatrix";
 import type { DownloadEvent, ModelInfo } from "../../types";
 
 const CATEGORY_ORDER = ["standard", "experimental", "legacy"] as const;
-const VARIANT_ORDER = ["Q5_1", "Q5_0", "Q8_0", "Full", "Int8", "Multilingual"];
+const VARIANT_ORDER = ["Q5_1", "Q5_0", "Q8_0", "Full", "Int8"];
 
 type ModelGroup = {
   id: string;
