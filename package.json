@@ -12,6 +12,7 @@
     "preview": "bun ./node_modules/vite/bin/vite.js preview",
     "tauri": "bun ./scripts/tauri.mjs",
     "lint": "bun ./node_modules/eslint/bin/eslint.js src/",
+    "lint:ci": "bun ./node_modules/eslint/bin/eslint.js src/ --max-warnings 0",
     "format": "prettier --write . && cargo fmt --manifest-path src-tauri/Cargo.toml",
     "format:check": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml -- --check"
   },
