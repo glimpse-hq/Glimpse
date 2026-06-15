@@ -647,7 +647,9 @@ async fn process_transcript_text(
                     if let Some(context) = log_context {
                         tracing::error!("LLM edit failed ({context}): {message}");
                     } else {
-                        tracing::error!("LLM edit failed, keeping original selected text: {message}");
+                        tracing::error!(
+                            "LLM edit failed, keeping original selected text: {message}"
+                        );
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, true);
@@ -1513,8 +1515,13 @@ fn transcribe_local_chunked(
         };
         if chunk_speech_percent >= min_chunk_threshold {
             let chunk_text = if strip_hallucinated_thank_you {
-                let result = transcriber
-                    .transcribe_with_segments(model, chunk, sample_rate, dictionary, language)?;
+                let result = transcriber.transcribe_with_segments(
+                    model,
+                    chunk,
+                    sample_rate,
+                    dictionary,
+                    language,
+                )?;
                 if model_label.is_none() {
                     model_label = result.speech_model.clone();
                 }

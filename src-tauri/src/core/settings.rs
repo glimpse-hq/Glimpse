@@ -285,13 +285,12 @@ pub(crate) fn update_settings(
         .chain(args.shortcut_bindings.hold.iter())
         .chain(args.shortcut_bindings.toggle.iter())
         .any(|binding| binding.cleanup_enabled);
-    let license_gated_requested =
-        args.llm_enabled || args.cleanup_enabled || shortcut_cleanup_enabled || args.edit_mode_enabled;
+    let license_gated_requested = args.llm_enabled
+        || args.cleanup_enabled
+        || shortcut_cleanup_enabled
+        || args.edit_mode_enabled;
     if license_gated_requested {
-        crate::license::require_license_gate(
-            &state.settings_store,
-            "AI writing and Edit Mode",
-        )?;
+        crate::license::require_license_gate(&state.settings_store, "AI writing and Edit Mode")?;
     }
     if args.local_api_start_on_launch {
         crate::license::require_active_license(&state.settings_store, "the API server")?;

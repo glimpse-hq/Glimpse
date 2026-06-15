@@ -402,13 +402,19 @@ export function SetupStep({
                   size={22}
                   className="ui-color-warning-strong mx-auto mb-3"
                 />
-                <p id="setup-local-confirm-title" className="ui-text-body-lg font-semibold text-content-primary">
+                <p
+                  id="setup-local-confirm-title"
+                  className="ui-text-body-lg font-semibold text-content-primary"
+                >
                   {t({
                     id: "onboarding.setup.confirm_without_model.title",
                     message: "Continue without a model?",
                   })}
                 </p>
-                <p id="setup-local-confirm-body" className="mt-1 ui-text-label text-content-disabled">
+                <p
+                  id="setup-local-confirm-body"
+                  className="mt-1 ui-text-label text-content-disabled"
+                >
                   {t({
                     id: "onboarding.setup.confirm_without_model.body",
                     message:

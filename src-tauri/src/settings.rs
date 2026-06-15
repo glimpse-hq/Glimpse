@@ -851,8 +851,7 @@ impl SettingsStore {
             theme_mode_exists = theme_mode.is_some();
             settings.theme_mode = theme_mode.unwrap_or(settings.theme_mode);
 
-            settings.llm_enabled =
-                self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
+            settings.llm_enabled = self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
             settings.cleanup_enabled =
                 self.read_value(&conn, KEY_CLEANUP_ENABLED, settings.cleanup_enabled)?;
             settings.llm_provider =
@@ -1037,7 +1036,9 @@ impl SettingsStore {
                     }
                 }
             } else {
-                tracing::error!("Warning: Could not get hardware UUID, preserving stored Local API key");
+                tracing::error!(
+                    "Warning: Could not get hardware UUID, preserving stored Local API key"
+                );
                 if key_looks_encrypted {
                     settings.local_api_key = String::new();
                     local_api_key_ciphertext = Some(encrypted_local_api_key);
@@ -1154,7 +1155,9 @@ impl SettingsStore {
                     .map_err(|e| anyhow::anyhow!("Failed to encrypt API key: {}", e))?
             } else {
                 *llm_api_key_ciphertext = None;
-                tracing::error!("Warning: Could not get hardware UUID, storing API key unencrypted");
+                tracing::error!(
+                    "Warning: Could not get hardware UUID, storing API key unencrypted"
+                );
                 settings.llm_api_key.clone()
             }
         };

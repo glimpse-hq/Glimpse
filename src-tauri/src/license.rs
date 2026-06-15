@@ -270,7 +270,9 @@ pub(crate) fn require_active_license(store: &SettingsStore, feature: &str) -> Re
     if active_license_gate(store) {
         Ok(())
     } else {
-        Err(format!("An active Glimpse license is required for {feature}."))
+        Err(format!(
+            "An active Glimpse license is required for {feature}."
+        ))
     }
 }
 
@@ -315,7 +317,9 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         trial_ends_at: trial_ends_at.to_rfc3339(),
         trial_days_remaining: trial_days_remaining.max(0),
         display_key: grant.as_ref().and_then(|grant| grant.display_key.clone()),
-        customer_email: grant.as_ref().and_then(|grant| grant.customer_email.clone()),
+        customer_email: grant
+            .as_ref()
+            .and_then(|grant| grant.customer_email.clone()),
         customer_name: grant.as_ref().and_then(|grant| grant.customer_name.clone()),
         last_validated_at: grant.as_ref().map(|grant| grant.last_validated_at.clone()),
         activated_at: grant.as_ref().and_then(|grant| grant.activated_at.clone()),

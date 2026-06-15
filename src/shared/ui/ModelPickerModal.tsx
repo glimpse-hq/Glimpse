@@ -131,9 +131,7 @@ export function ModelPickerPanel({
   const groups = useMemo(
     () =>
       groupModels(
-        catalog.filter(
-          (model) => model.downloadable || isInstalled(model.key),
-        ),
+        catalog.filter((model) => model.downloadable || isInstalled(model.key)),
       ),
     [catalog, isInstalled],
   );
@@ -779,4 +777,3 @@ function ModelProgressDots({
     />
   );
 }
-

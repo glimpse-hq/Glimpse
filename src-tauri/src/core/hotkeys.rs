@@ -370,12 +370,16 @@ impl Drop for WorkerSession {
                         .name(format!("{thread_name}-watch"))
                         .spawn(move || {
                             if done_rx.recv_timeout(Duration::from_secs(2)).is_err() {
-                                tracing::error!("Hotkey worker `{watch_name}` did not stop within 2s");
+                                tracing::error!(
+                                    "Hotkey worker `{watch_name}` did not stop within 2s"
+                                );
                             }
                         });
                 }
                 Err(err) => {
-                    tracing::error!("Failed to spawn hotkey worker `{thread_name}` join thread: {err}");
+                    tracing::error!(
+                        "Failed to spawn hotkey worker `{thread_name}` join thread: {err}"
+                    );
                 }
             }
         }

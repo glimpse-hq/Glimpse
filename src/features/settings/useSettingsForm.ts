@@ -696,9 +696,7 @@ export function useSettingsForm({
         localApiPort,
         localApiModel: overrides.localApiModel ?? localApiModel,
         localApiHost,
-        localApiStartOnLaunch: activeLicense
-          ? localApiStartOnLaunch
-          : false,
+        localApiStartOnLaunch: activeLicense ? localApiStartOnLaunch : false,
         localApiCors,
       };
     },

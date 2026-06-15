@@ -10,14 +10,16 @@
 - Fixed a bug where live-streamed words could be blurred and improved streaming animations.
 - The about page now has a new support page, you can export logs here too.
 - Glimpse now uses Silero VAD for higher quality noise cancellation.
-- You can now say Thank you. 
+- You can now say Thank you.
 
 0.9.7
 
 ### Features
+
 - Added support for using mouse buttons as keybinds.
 
 ### Improvements
+
 - The library import modal is now cleaner and supports more options.
 
 0.9.6

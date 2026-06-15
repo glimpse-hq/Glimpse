@@ -258,6 +258,8 @@ pub fn log_active_context() {
 
     tracing::debug!(
         "[Accessibility] Active app: {} | Window: {} | URL: {}",
-        context.app_name, window_summary, url_summary
+        context.app_name,
+        window_summary,
+        url_summary
     );
 }

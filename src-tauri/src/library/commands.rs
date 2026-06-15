@@ -438,7 +438,9 @@ fn determine_delete_scope_from_paths(root: &Path, path: &Path) -> LibraryDeleteS
         match path.canonicalize() {
             Ok(path) => path,
             Err(err) => {
-                tracing::error!("Skipping library file deletion, failed to canonicalize file: {err}");
+                tracing::error!(
+                    "Skipping library file deletion, failed to canonicalize file: {err}"
+                );
                 return LibraryDeleteScope::SkipFilesystemDeletion;
             }
         }

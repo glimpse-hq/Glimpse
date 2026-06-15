@@ -319,7 +319,9 @@ impl PillController {
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
         let status = self.status();
         if matches!(status, PillStatus::Listening | PillStatus::Processing) {
-            tracing::error!("[Pill] Suppressing error during active recording ({status}): {message}");
+            tracing::error!(
+                "[Pill] Suppressing error during active recording ({status}): {message}"
+            );
             return;
         }
         tracing::error!("[Pill] {message}");
@@ -1181,4 +1183,3 @@ fn simplify_recording_error(message: &str) -> String {
 
     "Recording failed".to_string()
 }
-

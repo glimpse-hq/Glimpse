@@ -61,9 +61,11 @@ const pickInstalledModel = (
       m.tags.some((tag) => tag.toLowerCase() === "recommended"),
   );
   if (recommended) return recommended;
-  return [...catalog]
-    .filter((m) => m.downloadable)
-    .sort((a, b) => a.size_mb - b.size_mb)[0] ?? null;
+  return (
+    [...catalog]
+      .filter((m) => m.downloadable)
+      .sort((a, b) => a.size_mb - b.size_mb)[0] ?? null
+  );
 };
 
 const InstalledModelRow = ({

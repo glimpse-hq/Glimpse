@@ -505,9 +505,11 @@ const LibraryDetail = ({
     if (transcriptTimer.current) clearTimeout(transcriptTimer.current);
     transcriptTimer.current = setTimeout(() => {
       if (transcriptDraft !== (item.transcript ?? "")) {
-        Promise.resolve(onUpdate({ transcript: transcriptDraft })).catch((err) => {
-          console.error("failed to save transcript:", err);
-        });
+        Promise.resolve(onUpdate({ transcript: transcriptDraft })).catch(
+          (err) => {
+            console.error("failed to save transcript:", err);
+          },
+        );
       }
     }, 600);
     return () => {
@@ -834,7 +836,10 @@ const LibraryDetail = ({
     const starts: (number | null)[] = [];
     let pointer = 0;
     for (const segment of segments) {
-      const tokenCount = segment.text.trim().split(/\s+/).filter(Boolean).length;
+      const tokenCount = segment.text
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length;
       const target = normalize(segment.text);
       let matched: number | null = null;
       for (let offset = 0; tokenCount > 0 && offset < SCAN_AHEAD; offset += 1) {
@@ -879,7 +884,10 @@ const LibraryDetail = ({
     item.segments,
   ]);
 
-  const renderSegmentWords = (segment: TranscriptSegment, segmentIndex: number) => {
+  const renderSegmentWords = (
+    segment: TranscriptSegment,
+    segmentIndex: number,
+  ) => {
     const wordStart = segmentWordStarts?.[segmentIndex];
     if (wordStart == null) return null;
     const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
@@ -1064,7 +1072,9 @@ const LibraryDetail = ({
         tag === "button" ||
         tag === "a" ||
         tag === "select" ||
-        (tag === "input" && (target?.getAttribute("type") === "checkbox" || target?.getAttribute("type") === "radio")) ||
+        (tag === "input" &&
+          (target?.getAttribute("type") === "checkbox" ||
+            target?.getAttribute("type") === "radio")) ||
         target?.getAttribute("role") === "button" ||
         target?.getAttribute("role") === "link" ||
         target?.getAttribute("role") === "menuitem";
