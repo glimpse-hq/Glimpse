@@ -1,3 +1,9 @@
+0.9.9
+
+### Improvements
+
+- The Glimpse command-line tool can now do much more. Beyond transcribing files, you can browse and search your history, import and export library items, manage your dictionary and replacements, switch models, and check status, so you can script Glimpse or build your own integrations (Raycast, alfred, etc). Run `glimpse --help` to explore, and add `--json` to any command for easy scripting.
+
 0.9.8
 
 ### Features

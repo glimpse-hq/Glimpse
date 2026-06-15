@@ -875,6 +875,26 @@ pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<
     models
 }
 
+/// Headless variant of [`list_models`] that derives installed status from a
+/// models directory path instead of an `AppHandle`.
+pub(crate) fn list_models_at(
+    models_dir: &std::path::Path,
+    settings: &UserSettings,
+) -> Vec<SpeechModel> {
+    let mut models = Vec::new();
+
+    if remote::is_configured(settings) {
+        models.push(remote_entry(settings));
+    }
+
+    for info in list_local_models() {
+        let installed = install::check_model_installed_at(models_dir, &info.key);
+        models.push(from_local(info, installed));
+    }
+
+    models
+}
+
 fn from_local(info: ModelInfo, installed: bool) -> SpeechModel {
     SpeechModel {
         id: info.key.clone(),

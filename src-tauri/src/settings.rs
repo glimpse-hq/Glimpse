@@ -1390,6 +1390,12 @@ fn cli_app_config_dir(app_identifier: &str) -> Result<PathBuf> {
     Ok(platform_config_dir()?.join(app_identifier))
 }
 
+/// Resolve the app data directory for headless CLI use (no Tauri app handle).
+/// Mirrors the directory Tauri's `app_data_dir()` resolves to at runtime.
+pub(crate) fn cli_data_dir(app_identifier: &str) -> Result<PathBuf> {
+    cli_app_config_dir(app_identifier)
+}
+
 #[cfg(target_os = "macos")]
 fn platform_config_dir() -> Result<PathBuf> {
     let home = env::var_os("HOME")

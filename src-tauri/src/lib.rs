@@ -8,6 +8,7 @@ mod core;
 mod crypto;
 mod dictionary;
 mod import;
+mod integrations;
 mod library;
 mod license;
 mod llm_cleanup;
@@ -277,6 +278,17 @@ pub(crate) fn set_app_menu(
 }
 
 pub fn run_cli() -> Result<()> {
+    let args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .collect();
+    if let Some(verb) = args.first() {
+        if integrations::is_integration_command(verb) {
+            let context = app_context();
+            return integrations::dispatch(&context.config().identifier, &args);
+        }
+    }
+
     if cli_help_requested(std::env::args_os().skip(1)) {
         return glimpse_speech::cli::run_blocking();
     }
@@ -411,6 +423,7 @@ pub fn run() {
                 let settings = handle.state::<AppState>().current_settings();
                 local_api::start_from_settings(handle, &settings);
             }
+            integrations::start_control_server(handle.clone());
             library::commands::recover_interrupted_library_items(handle);
             register_deep_link_handlers(app);
 
@@ -901,7 +914,7 @@ impl AppState {
         self.http.clone()
     }
 
-    fn local_transcriber(&self) -> Arc<local_transcription::LocalTranscriber> {
+    pub(crate) fn local_transcriber(&self) -> Arc<local_transcription::LocalTranscriber> {
         Arc::clone(&self.local_transcriber)
     }
 

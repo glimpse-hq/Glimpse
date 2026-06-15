@@ -138,6 +138,16 @@ fn spec_for(model: &str, ane: bool) -> Result<speech_models::InstallSpec> {
     super::catalog::install_spec(model, ane).ok_or_else(|| anyhow!("Unknown model: {model}"))
 }
 
+/// Headless installed-check against a models directory, without an `AppHandle`.
+pub(crate) fn check_model_installed_at(models_dir: &std::path::Path, model: &str) -> bool {
+    let manager = speech_models::ModelInstallManager::new(models_dir.to_path_buf());
+    spec_for(model, false)
+        .ok()
+        .and_then(|spec| manager.status(&spec).ok())
+        .map(|status| status.installed)
+        .unwrap_or(false)
+}
+
 pub fn model_cache_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     let mut dir = app
         .path()
