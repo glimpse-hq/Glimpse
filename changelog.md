@@ -1,8 +1,16 @@
 0.9.9
 
+### Features
+
+- Added Parakeet Unified (experimental), a fast English local model with streaming support.
+
 ### Improvements
 
 - The Glimpse command-line tool can now do much more. Beyond transcribing files, you can browse and search your history, import and export library items, manage your dictionary and replacements, switch models, and check status, so you can script Glimpse or build your own integrations (Raycast, alfred, etc). Run `glimpse --help` to explore, and add `--json` to any command for easy scripting.
+- Tidied up model names so it's clearer what each one is.
+- Older models can now be marked Legacy. They no longer show up to download, but if you already have one installed you can keep using it.
+- You can now open the customer portal to manage your license straight from the account view, even when you're signed out.
+- Licensing is more reliable behind the scenes.
 
 0.9.8
 
