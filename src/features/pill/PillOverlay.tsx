@@ -33,8 +33,6 @@ const WARM_ENTRY_IDLE_MS = 5 * 1000;
 const EXPANDED_TEXT_TOP_FADE =
   "linear-gradient(to bottom, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.38) 74%, transparent 100%)";
 
-const EMPTY_SPECTRUM = new Uint8Array(256);
-
 const ICONS = {
   warning: [
     [0, 0, 1, 0, 0],
@@ -690,11 +688,11 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       switch (pillStatus) {
         case "listening": {
           const now = performance.now();
-          const audioData =
-            now - lastSpectrumAtRef.current > 250
-              ? EMPTY_SPECTRUM
-              : spectrumBinsRef.current;
-          drawAudioFrameRef.current(audioData);
+          if (now - lastSpectrumAtRef.current > 250) {
+            drawBaseDotsRef.current();
+          } else {
+            drawAudioFrameRef.current(spectrumBinsRef.current);
+          }
           break;
         }
         case "processing":

@@ -147,13 +147,9 @@ pub(crate) fn queue_transcription(
         let auto_paste = transcription_api::auto_paste_enabled();
 
         tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
-        let __t = std::time::Instant::now();
         accessibility_context::log_active_context();
-        tracing::info!("[timing] log_active_context {:.2}s", __t.elapsed().as_secs_f32());
 
-        let __t = std::time::Instant::now();
         let active_mode = mode_context::resolve_active_personality(&settings);
-        tracing::info!("[timing] resolve_active_personality {:.2}s", __t.elapsed().as_secs_f32());
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
         let app_for_local = &app_handle;
@@ -338,34 +334,33 @@ async fn transcribe_completed_recording_locally(
     cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
 ) -> Result<transcription_api::TranscriptionSuccess> {
-    let __t = std::time::Instant::now();
     let ready_model = if prefer_any_installed {
         model_manager::ensure_local_fallback_model(app, &settings.local_model)?
     } else {
         model_manager::ensure_model_ready(app, &settings.local_model)?
     };
-    tracing::info!("[timing] ensure_model_ready {:.2}s", __t.elapsed().as_secs_f32());
-    let __t = std::time::Instant::now();
     let dictionary_terms = dictionary::dictionary_entries_for_model(&ready_model, settings);
-    tracing::info!("[timing] dictionary_entries {:.2}s", __t.elapsed().as_secs_f32());
     let language = settings.language.clone();
     let transcriber = app.state::<AppState>().local_transcriber();
     let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
 
     match async_runtime::spawn_blocking(move || {
-        let (chunk_seconds, overlap_seconds, strip_hallucinated_thank_you) = if is_whisper {
-            (
-                speech::WHISPER_CHUNK_SECONDS,
-                speech::WHISPER_CHUNK_OVERLAP_SECONDS,
-                true,
-            )
-        } else {
-            (
-                speech::PARAKEET_CHUNK_SECONDS,
-                speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
-                false,
-            )
-        };
+        let (chunk_seconds, overlap_seconds, leading_pad_seconds, strip_hallucinated_thank_you) =
+            if is_whisper {
+                (
+                    speech::WHISPER_CHUNK_SECONDS,
+                    speech::WHISPER_CHUNK_OVERLAP_SECONDS,
+                    speech::WHISPER_LEADING_PAD_SECONDS,
+                    true,
+                )
+            } else {
+                (
+                    speech::PARAKEET_CHUNK_SECONDS,
+                    speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
+                    0.0,
+                    false,
+                )
+            };
         transcribe_local_chunked(
             &transcriber,
             &ready_model,
@@ -376,6 +371,7 @@ async fn transcribe_completed_recording_locally(
                 language: Some(&language),
                 chunk_seconds: chunk_seconds as f32,
                 overlap_seconds: overlap_seconds as f32,
+                leading_pad_seconds,
                 cancel_token: cancel_token.as_ref(),
                 strip_hallucinated_thank_you,
             },
@@ -1457,6 +1453,7 @@ struct LocalChunkingConfig<'a> {
     language: Option<&'a str>,
     chunk_seconds: f32,
     overlap_seconds: f32,
+    leading_pad_seconds: f32,
     cancel_token: Option<&'a CancellationToken>,
     strip_hallucinated_thank_you: bool,
 }
@@ -1473,6 +1470,7 @@ fn transcribe_local_chunked(
         language,
         chunk_seconds,
         overlap_seconds,
+        leading_pad_seconds,
         cancel_token,
         strip_hallucinated_thank_you,
     } = config;
@@ -1491,6 +1489,18 @@ fn transcribe_local_chunked(
             words: None,
         });
     }
+
+    let pad_samples = ((sample_rate as f32) * leading_pad_seconds).round() as usize;
+    let padded_storage: Vec<i16>;
+    let samples: &[i16] = if pad_samples > 0 {
+        let mut padded = Vec::with_capacity(pad_samples + samples.len());
+        padded.resize(pad_samples, 0);
+        padded.extend_from_slice(samples);
+        padded_storage = padded;
+        &padded_storage
+    } else {
+        samples
+    };
 
     let chunk_samples = ((sample_rate.max(1) as f32) * chunk_seconds).round() as usize;
     let chunk_samples = chunk_samples.max(1);

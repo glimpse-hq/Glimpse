@@ -10,6 +10,8 @@
 - Tidied up model names so it's clearer what each one is.
 - Older models can now be marked Legacy. They no longer show up to download, but if you already have one installed you can keep using it.
 - You can now open the customer portal to manage your license straight from the account view, even when you're signed out.
+- The start of your recordings no longer gets clipped: the mic now warms up as the pill appears, so your first word makes it in.
+- Fixed a rare hang where transcription could stall for a while if the app you were in was slow to respond.
 - Licensing is more reliable behind the scenes.
 
 0.9.8

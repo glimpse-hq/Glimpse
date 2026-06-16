@@ -23,6 +23,7 @@ const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
+const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
 pub const EVENT_PILL_HOVER: &str = "pill:hover";
@@ -532,6 +533,10 @@ impl PillController {
 
         crate::speech::warm(app, &settings);
 
+        let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        self.transition_to(app, PillStatus::Listening);
+        self.arm_capture_after_settle(app, generation);
+
         let pending_dir = crate::recordings_root(app)
             .ok()
             .map(|root| root.join(crate::recorder::PENDING_DIR_NAME));
@@ -540,8 +545,6 @@ impl PillController {
             .start(settings.microphone_device.clone(), pending_dir)
         {
             Ok(started) => {
-                let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
-                self.transition_to(app, PillStatus::Listening);
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
                 self.start_streaming_session_if_supported(app, &settings);
@@ -565,18 +568,36 @@ impl PillController {
         }
     }
 
-    fn spawn_recording_cap(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+    fn after_delay_if_recording(
+        app: &AppHandle<AppRuntime>,
+        generation: u64,
+        delay: Duration,
+        action: impl FnOnce(&Self, &AppHandle<AppRuntime>) + Send + 'static,
+    ) {
         let app = app.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(MAX_RECORDING_DURATION);
+            std::thread::sleep(delay);
             let state = app.state::<AppState>();
             let pill = state.pill();
             if pill.recording_generation.load(Ordering::SeqCst) == generation
-                && pill.status() == PillStatus::Listening
                 && pill.is_recording()
             {
-                pill.stop_and_process(&app);
+                action(pill, &app);
             }
+        });
+    }
+
+    fn spawn_recording_cap(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+        Self::after_delay_if_recording(app, generation, MAX_RECORDING_DURATION, |pill, app| {
+            if pill.status() == PillStatus::Listening {
+                pill.stop_and_process(app);
+            }
+        });
+    }
+
+    fn arm_capture_after_settle(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+        Self::after_delay_if_recording(app, generation, CAPTURE_ARM_DELAY, |pill, _| {
+            pill.recorder().arm();
         });
     }
 
