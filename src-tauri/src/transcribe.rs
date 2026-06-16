@@ -147,9 +147,13 @@ pub(crate) fn queue_transcription(
         let auto_paste = transcription_api::auto_paste_enabled();
 
         tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
+        let __t = std::time::Instant::now();
         accessibility_context::log_active_context();
+        tracing::info!("[timing] log_active_context {:.2}s", __t.elapsed().as_secs_f32());
 
+        let __t = std::time::Instant::now();
         let active_mode = mode_context::resolve_active_personality(&settings);
+        tracing::info!("[timing] resolve_active_personality {:.2}s", __t.elapsed().as_secs_f32());
         let model_id = speech::selected_model(&settings);
         let use_remote = remote_speech::is_remote_model(&model_id);
         let app_for_local = &app_handle;
@@ -334,12 +338,16 @@ async fn transcribe_completed_recording_locally(
     cancel_token: Option<CancellationToken>,
     prefer_any_installed: bool,
 ) -> Result<transcription_api::TranscriptionSuccess> {
+    let __t = std::time::Instant::now();
     let ready_model = if prefer_any_installed {
         model_manager::ensure_local_fallback_model(app, &settings.local_model)?
     } else {
         model_manager::ensure_model_ready(app, &settings.local_model)?
     };
+    tracing::info!("[timing] ensure_model_ready {:.2}s", __t.elapsed().as_secs_f32());
+    let __t = std::time::Instant::now();
     let dictionary_terms = dictionary::dictionary_entries_for_model(&ready_model, settings);
+    tracing::info!("[timing] dictionary_entries {:.2}s", __t.elapsed().as_secs_f32());
     let language = settings.language.clone();
     let transcriber = app.state::<AppState>().local_transcriber();
     let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
