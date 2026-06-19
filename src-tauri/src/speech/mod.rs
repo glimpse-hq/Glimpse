@@ -85,7 +85,7 @@ pub fn warm(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
             }
         };
         let transcriber = app_handle.state::<AppState>().local_transcriber();
-        if let Err(err) = transcriber.preload_and_warm(&ready) {
+        if let Err(err) = transcriber.preload_and_warm_if_needed(&ready) {
             tracing::error!("[speech] warm failed: {err}");
         }
     });

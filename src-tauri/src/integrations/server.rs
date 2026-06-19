@@ -2,6 +2,7 @@
 //! requests to [`super::handlers`].
 
 use std::io::{BufRead, BufReader, Write};
+use std::time::Duration;
 
 use interprocess::local_socket::{prelude::*, ListenerOptions, Stream};
 use tauri::AppHandle;
@@ -30,13 +31,19 @@ fn serve(app: AppHandle<AppRuntime>) -> std::io::Result<()> {
         Ok(listener) => listener,
         Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {
             // If something answers, another instance owns the socket; defer to
-            // it. Otherwise it's stale (rare crash case) — log and bail.
+            // it. Otherwise it's stale (rare crash/dev-stop case), so reclaim it.
             if Stream::connect(socket_name()?).is_ok() {
                 tracing::debug!("CLI control socket already served by another instance");
+                return Ok(());
             } else {
-                tracing::warn!("CLI control socket address in use but unreachable; skipping");
+                tracing::warn!("CLI control socket address in use but unreachable; reclaiming");
             }
-            return Ok(());
+
+            ListenerOptions::new()
+                .name(socket_name()?)
+                .try_overwrite(true)
+                .max_spin_time(Duration::from_millis(250))
+                .create_sync()?
         }
         Err(err) => return Err(err),
     };

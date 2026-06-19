@@ -17,6 +17,7 @@ pub struct LocalTranscriber {
     service: SpeechService,
     last_used: Mutex<Option<Instant>>,
     idle_wait: Condvar,
+    warm_in_flight: Mutex<Option<String>>,
 }
 
 impl LocalTranscriber {
@@ -28,6 +29,7 @@ impl LocalTranscriber {
             }),
             last_used: Mutex::new(None),
             idle_wait: Condvar::new(),
+            warm_in_flight: Mutex::new(None),
         }
     }
 
@@ -96,6 +98,36 @@ impl LocalTranscriber {
         );
         self.touch();
         Ok(())
+    }
+
+    pub fn preload_and_warm_if_needed(&self, model: &ReadyModel) -> Result<()> {
+        if self.loaded_model_id().as_deref() == Some(model.key.as_str()) {
+            tracing::debug!(
+                "[LocalTranscriber] warm {} skipped (already loaded)",
+                model.key
+            );
+            return Ok(());
+        }
+
+        {
+            let mut warm_in_flight = self.warm_in_flight.lock();
+            if warm_in_flight.is_some() {
+                tracing::debug!(
+                    "[LocalTranscriber] warm {} skipped (warm already in flight for {})",
+                    model.key,
+                    warm_in_flight.as_deref().unwrap_or("unknown")
+                );
+                return Ok(());
+            }
+            *warm_in_flight = Some(model.key.clone());
+        }
+
+        let result = self.preload_and_warm(model);
+        let mut warm_in_flight = self.warm_in_flight.lock();
+        if warm_in_flight.as_deref() == Some(model.key.as_str()) {
+            *warm_in_flight = None;
+        }
+        result
     }
 
     pub fn loaded_model_id(&self) -> Option<String> {
