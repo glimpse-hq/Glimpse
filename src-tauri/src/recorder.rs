@@ -220,8 +220,11 @@ impl Default for RecorderManager {
         std::thread::Builder::new()
             .name("glimpse-recorder".into())
             .spawn(move || {
-                let mut core =
-                    RecorderCore::new(spectrum_for_thread, live_buffer_for_thread, armed_for_thread);
+                let mut core = RecorderCore::new(
+                    spectrum_for_thread,
+                    live_buffer_for_thread,
+                    armed_for_thread,
+                );
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
                         RecorderCommand::Start {

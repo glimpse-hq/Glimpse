@@ -17,11 +17,11 @@
     "format:check": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml -- --check"
   },
   "dependencies": {
-    "@lingui/core": "^6.3.0",
-    "@lingui/react": "^6.3.0",
+    "@lingui/core": "^6.4.0",
+    "@lingui/react": "^6.4.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-query": "^5.101.0",
-    "@tauri-apps/api": "2.11.0",
+    "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-process": "^2.3.1",
@@ -38,27 +38,27 @@
     "remark-gfm": "^4.0.1",
     "remark-github": "^12.0.0",
     "tauri-plugin-macos-permissions-api": "^2.3.0",
-    "xstate": "^5.32.0"
+    "xstate": "^5.32.1"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
     "@eslint/js": "^10.0.1",
-    "@lingui/babel-plugin-lingui-macro": "^6.3.0",
-    "@lingui/cli": "^6.3.0",
-    "@lingui/format-po": "^6.3.0",
-    "@lingui/vite-plugin": "^6.3.0",
+    "@lingui/babel-plugin-lingui-macro": "^6.4.0",
+    "@lingui/cli": "^6.4.0",
+    "@lingui/format-po": "^6.4.0",
+    "@lingui/vite-plugin": "^6.4.0",
     "@rolldown/plugin-babel": "^0.2.3",
-    "@tailwindcss/vite": "^4.3.0",
+    "@tailwindcss/vite": "^4.3.1",
     "@tauri-apps/cli": "^2.11.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
-    "eslint": "^10.4.1",
+    "eslint": "^10.5.0",
     "eslint-plugin-boundaries": "^6.0.2",
-    "prettier": "3.7.4",
-    "tailwindcss": "^4.3.0",
+    "prettier": "3.8.4",
+    "tailwindcss": "^4.3.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.61.0",
+    "typescript-eslint": "^8.61.1",
     "vite": "^8.0.16"
   }
 }

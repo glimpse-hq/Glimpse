@@ -14,6 +14,8 @@
 - Fixed a rare hang where transcription could stall for a while if the app you were in was slow to respond.
 - Licensing is more reliable behind the scenes.
 
+---
+
 0.9.8
 
 ### Features
@@ -28,6 +30,8 @@
 - Glimpse now uses Silero VAD for higher quality noise cancellation.
 - You can now say Thank you.
 
+---
+
 0.9.7
 
 ### Features
@@ -37,6 +41,8 @@
 ### Improvements
 
 - The library import modal is now cleaner and supports more options.
+
+---
 
 0.9.6
 

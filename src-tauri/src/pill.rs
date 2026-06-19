@@ -579,8 +579,7 @@ impl PillController {
             std::thread::sleep(delay);
             let state = app.state::<AppState>();
             let pill = state.pill();
-            if pill.recording_generation.load(Ordering::SeqCst) == generation
-                && pill.is_recording()
+            if pill.recording_generation.load(Ordering::SeqCst) == generation && pill.is_recording()
             {
                 action(pill, &app);
             }

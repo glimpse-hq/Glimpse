@@ -22,10 +22,10 @@ codegen-units = 1
 strip = true
 
 [build-dependencies]
-tauri-build = { version = "2.6.2", features = [] }
+tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
-tauri = { version = "2.11.2", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
+tauri = { version = "2.11.3", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
 tauri-plugin-opener = "2.5.4"
 tauri-plugin-dialog = "2.7.1"
 serde = { version = "1", features = ["derive"] }
@@ -43,11 +43,11 @@ crossbeam-channel = "0.5"
 webrtc-vad = "0.4"
 rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
-posthog-rs = "0.11"
+posthog-rs = "0.13"
 arboard = "3"
 # Temp until 1.5.0 is out
 glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", rev = "fd5ff7ce6f10f836eb0d4c23b3b96b359f801eb5", features = ["whisper", "nvidia", "api", "cli", "remote"] }
-uuid = { version = "1.23.2", features = ["v4"] }
+uuid = { version = "1.23.3", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"
 sha2 = "0.11"
@@ -73,7 +73,7 @@ tokio-util = "0.7"
 windows = { version = "0.62.2", features = ["Foundation", "Media_Control", "Win32_Foundation", "Win32_Graphics_Gdi", "Win32_Media_Audio", "Win32_Media_Audio_Endpoints", "Win32_Storage_FileSystem", "Win32_System_Com", "Win32_System_Threading", "Win32_UI_Accessibility", "Win32_UI_Controls", "Win32_UI_Input_KeyboardAndMouse", "Win32_UI_Shell", "Win32_UI_Shell_Common", "Win32_UI_WindowsAndMessaging"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "da9c9a8" }
+tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", rev = "a3122e8" }
 tauri-plugin-macos-permissions = "2.3.0"
 core-graphics = "0.25"
 core-foundation = "0.10"
