@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "bun ./node_modules/vite/bin/vite.js",
     "build": "bun ./node_modules/typescript/lib/tsc.js && bun ./node_modules/vite/bin/vite.js build",
+    "typecheck:native": "bun ./node_modules/@typescript/native-preview/bin/tsgo.js --project tsconfig.json",
     "lingui:extract": "lingui extract",
     "lingui:compile": "lingui compile",
     "preview": "bun ./node_modules/vite/bin/vite.js preview",
@@ -41,7 +42,7 @@
     "xstate": "^5.32.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.29.7",
+    "@babel/core": "8.0.1",
     "@eslint/js": "^10.0.1",
     "@lingui/babel-plugin-lingui-macro": "^6.4.0",
     "@lingui/cli": "^6.4.0",
@@ -52,6 +53,7 @@
     "@tauri-apps/cli": "^2.11.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260618.1",
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^10.5.0",
     "eslint-plugin-boundaries": "^6.0.2",
