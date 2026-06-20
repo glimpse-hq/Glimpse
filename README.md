@@ -84,10 +84,10 @@ Transcription stays on-device by default. Glimpse does not collect your transcri
 
 Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps prioritize development:
 
-- **Collected:** app version and platform, launches and exits, uptime, transcription counts and duration, engine and model, word counts, failures, model downloads, onboarding completion, and crash locations.
-- **Never collected:** transcripts, audio, API keys, prompts, or anything personally identifiable.
+- **Collected:** anonymous app-health and usage signals only, version and platform, launches and uptime, durations and counts, country location, and bounded error/crash categories. [See the full list →](https://github.com/glimpse-hq/Glimpse/wiki/Analytics)
+- **Never collected:** transcripts, audio, API keys, prompts, raw error messages or stacks, file paths or names, microphone names, provider endpoints, your stored IP address, or anything personally identifiable.
 
-Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App** — opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
+Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App** - opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
 
 If you enable an external speech provider, recorded audio is sent directly to that provider. If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to it. Your API keys stay stored locally.
 
