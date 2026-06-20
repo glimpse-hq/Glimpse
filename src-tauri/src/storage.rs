@@ -79,6 +79,7 @@ impl TranscriptionStatus {
 
 pub struct StorageManager {
     connection: Arc<Mutex<Connection>>,
+    library_root: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -130,8 +131,14 @@ impl StorageManager {
         Self::configure_connection(&connection)?;
         Self::apply_migrations(&connection)?;
 
+        let library_root = db_path
+            .parent()
+            .map(|parent| parent.join("library"))
+            .unwrap_or_else(|| PathBuf::from("library"));
+
         Ok(Self {
             connection: Arc::new(Mutex::new(connection)),
+            library_root,
         })
     }
 
@@ -856,7 +863,7 @@ impl StorageManager {
 
     pub fn get_library_item(&self, id: &str) -> Result<Option<LibraryItem>> {
         let conn = self.connection.lock();
-        crate::library::repo::get_library_item(&conn, id)
+        crate::library::repo::get_library_item(&conn, &self.library_root, id)
     }
 
     pub fn get_library_items_page(
@@ -866,12 +873,18 @@ impl StorageManager {
         offset: usize,
     ) -> Result<(Vec<LibraryItem>, bool)> {
         let conn = self.connection.lock();
-        crate::library::repo::get_library_items_page(&conn, filter, limit, offset)
+        crate::library::repo::get_library_items_page(
+            &conn,
+            &self.library_root,
+            filter,
+            limit,
+            offset,
+        )
     }
 
     pub fn get_recoverable_library_items(&self) -> Result<Vec<LibraryItem>> {
         let conn = self.connection.lock();
-        crate::library::repo::get_recoverable_library_items(&conn)
+        crate::library::repo::get_recoverable_library_items(&conn, &self.library_root)
     }
 
     pub fn update_library_item(
@@ -880,12 +893,12 @@ impl StorageManager {
         patch: LibraryItemPatch,
     ) -> Result<Option<LibraryItem>> {
         let mut conn = self.connection.lock();
-        crate::library::repo::update_library_item(&mut conn, id, patch)
+        crate::library::repo::update_library_item(&mut conn, &self.library_root, id, patch)
     }
 
     pub fn delete_library_item(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection.lock();
-        crate::library::repo::delete_library_item(&conn, id)
+        crate::library::repo::delete_library_item(&conn, &self.library_root, id)
     }
 
     pub fn get_library_tags(&self) -> Result<Vec<String>> {

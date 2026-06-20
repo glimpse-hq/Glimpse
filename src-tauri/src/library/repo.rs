@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension, Row, ToSql};
 
@@ -66,12 +68,17 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
     Ok(item)
 }
 
-pub(crate) fn get_library_item(conn: &Connection, id: &str) -> Result<Option<LibraryItem>> {
-    get_library_item_by_id(conn, id)
+pub(crate) fn get_library_item(
+    conn: &Connection,
+    root: &Path,
+    id: &str,
+) -> Result<Option<LibraryItem>> {
+    get_library_item_by_id(conn, root, id)
 }
 
 pub(crate) fn get_library_items_page(
     conn: &Connection,
+    root: &Path,
     filter: LibraryFilter,
     limit: usize,
     offset: usize,
@@ -95,7 +102,7 @@ pub(crate) fn get_library_items_page(
     let mut stmt = conn.prepare(&sql)?;
     let mut items = stmt
         .query_map(rusqlite::params_from_iter(params.iter()), |row| {
-            library_item_from_row(row)
+            library_item_from_row(root, row)
         })?
         .collect::<rusqlite::Result<Vec<_>>>()?;
 
@@ -107,7 +114,10 @@ pub(crate) fn get_library_items_page(
     Ok((items, has_more))
 }
 
-pub(crate) fn get_recoverable_library_items(conn: &Connection) -> Result<Vec<LibraryItem>> {
+pub(crate) fn get_recoverable_library_items(
+    conn: &Connection,
+    root: &Path,
+) -> Result<Vec<LibraryItem>> {
     let mut stmt = conn.prepare(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
@@ -118,18 +128,19 @@ pub(crate) fn get_recoverable_library_items(conn: &Connection) -> Result<Vec<Lib
     )?;
 
     let items = stmt
-        .query_map([], library_item_from_row)?
+        .query_map([], |row| library_item_from_row(root, row))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
     Ok(items)
 }
 
 pub(crate) fn update_library_item(
     conn: &mut Connection,
+    root: &Path,
     id: &str,
     patch: LibraryItemPatch,
 ) -> Result<Option<LibraryItem>> {
     let tx = conn.transaction()?;
-    let mut item = match get_library_item_by_id(&tx, id)? {
+    let mut item = match get_library_item_by_id(&tx, root, id)? {
         Some(item) => item,
         None => return Ok(None),
     };
@@ -179,8 +190,12 @@ pub(crate) fn update_library_item(
     Ok(Some(item))
 }
 
-pub(crate) fn delete_library_item(conn: &Connection, id: &str) -> Result<Option<String>> {
-    let item = get_library_item_by_id(conn, id)?;
+pub(crate) fn delete_library_item(
+    conn: &Connection,
+    root: &Path,
+    id: &str,
+) -> Result<Option<String>> {
+    let item = get_library_item_by_id(conn, root, id)?;
     if item.is_some() {
         conn.execute("DELETE FROM library_items WHERE id = ?1", params![id])?;
     }
@@ -204,14 +219,14 @@ pub(crate) fn get_library_tags(conn: &Connection) -> Result<Vec<String>> {
     Ok(set.into_iter().collect())
 }
 
-fn get_library_item_by_id(conn: &Connection, id: &str) -> Result<Option<LibraryItem>> {
+fn get_library_item_by_id(conn: &Connection, root: &Path, id: &str) -> Result<Option<LibraryItem>> {
     conn.query_row(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
                 tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
          FROM library_items WHERE id = ?1",
         params![id],
-        library_item_from_row,
+        |row| library_item_from_row(root, row),
     )
     .optional()
     .map_err(Into::into)
@@ -276,7 +291,24 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
     Ok(())
 }
 
-fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
+// Re-root a stored audio path onto the current library location when the
+// original no longer exists (e.g. the app data directory moved).
+fn resolve_audio_path(root: &Path, stored: String) -> String {
+    let path = Path::new(&stored);
+    if path.exists() {
+        return stored;
+    }
+    if let (Some(folder), Some(file)) = (path.parent().and_then(Path::file_name), path.file_name())
+    {
+        let rebased = root.join(folder).join(file);
+        if rebased.exists() {
+            return rebased.display().to_string();
+        }
+    }
+    stored
+}
+
+fn library_item_from_row(root: &Path, row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
     let status_value: String = row.get("status")?;
     let progress: f32 = row.get::<_, f64>("progress").unwrap_or(0.0) as f32;
     let error_message: Option<String> = row.get("error_message")?;
@@ -293,7 +325,7 @@ fn library_item_from_row(row: &Row<'_>) -> rusqlite::Result<LibraryItem> {
     Ok(LibraryItem {
         id: row.get("id")?,
         name: row.get("name")?,
-        audio_path: row.get("audio_path")?,
+        audio_path: resolve_audio_path(root, row.get("audio_path")?),
         source_path: row.get("source_path")?,
         store_original: row.get::<_, i64>("store_original")? == 1,
         status: LibraryItemStatus::from_fields(&status_value, progress, error_message),
