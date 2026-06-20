@@ -70,7 +70,7 @@ const LocalApiSidebarStatus = ({
     id: "home.local_api.status_hint",
     message: "Your API server is running in the background.",
   });
-  const collapsedTitle = `${runningLabel} — ${statusHint} ${displayUrl} · ${requests} ${requestsLabel.toLowerCase()}. ${openSettingsLabel}.`;
+  const collapsedTitle = `${runningLabel}: ${statusHint} ${displayUrl} · ${requests} ${requestsLabel.toLowerCase()}. ${openSettingsLabel}.`;
 
   return (
     <div className="shrink-0">

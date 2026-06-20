@@ -1,4 +1,4 @@
-//! `glimpse status` — report app/runtime state. Never launches the app.
+//! `glimpse status` - report app/runtime state. Never launches the app.
 
 use anyhow::Result;
 use serde_json::{json, Value};

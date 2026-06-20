@@ -1,4 +1,4 @@
-//! `glimpse open …` — bring up the app and navigate. Always needs the app.
+//! `glimpse open …` - bring up the app and navigate. Always needs the app.
 
 use anyhow::Result;
 use serde_json::json;

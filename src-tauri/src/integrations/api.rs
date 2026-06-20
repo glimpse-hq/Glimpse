@@ -1,4 +1,4 @@
-//! `glimpse api start|stop|status` — control the local OpenAI-compatible API.
+//! `glimpse api start|stop|status` - control the local OpenAI-compatible API.
 
 use anyhow::{bail, Result};
 use serde_json::{json, Value};

@@ -1,4 +1,4 @@
-//! `glimpse transcribe …` — applies the user's model/language/dictionary/
+//! `glimpse transcribe …` - applies the user's model/language/dictionary/
 //! replacements/cleanup. With no Glimpse-specific flag it delegates to the
 //! glimpse-speech CLI; otherwise it reuses the running app's warm model.
 

@@ -86,13 +86,13 @@ function App() {
     };
   }, [windowLabel]);
 
+  // Pill & toast overlays always render in dark: they're transparent
+  // floating chrome that lives on top of the user's workspace, not app UI.
+  // The settings window also boots dark until onboarding state is known, and
+  // onboarding itself stays dark regardless of the user's saved theme.
   useEffect(() => {
     const root = document.documentElement;
 
-    // Pill & toast overlays always render in dark: they're transparent
-    // floating chrome that lives on top of the user's workspace, not app UI.
-    // The settings window also boots dark until onboarding state is known, and
-    // onboarding itself stays dark regardless of the user's saved theme.
     if (windowLabel !== "settings" || settingsLoading || showOnboarding) {
       root.dataset.theme = "dark";
       return;

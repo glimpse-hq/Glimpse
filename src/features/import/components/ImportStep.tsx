@@ -365,7 +365,7 @@ export function ImportStep({
             {t({
               id: "import.model.unrecognized",
               message:
-                "We don't recognize this app's model — you'll pick one on the next step.",
+                "We don't recognize this app's model, so you'll pick one on the next step.",
             })}
           </p>
         )}

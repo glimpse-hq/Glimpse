@@ -1,4 +1,4 @@
-//! `glimpse library …` — import (via the app) and read-only status/list/export.
+//! `glimpse library …` - import (via the app) and read-only status/list/export.
 
 use std::path::PathBuf;
 use std::time::{Duration, Instant};

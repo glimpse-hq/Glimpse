@@ -273,7 +273,7 @@ const AboutTab = ({
                   {t({
                     id: "settings.about.support.info",
                     message:
-                      "Attaching the log file helps debug serious issues. Logs contain technical events only — never transcripts, audio, or keys. File paths in them may include your computer's username.",
+                      "Attaching the log file helps debug serious issues. Logs contain technical events only, never transcripts, audio, or keys. File paths in them may include your computer's username.",
                   })}
                 </div>
               </div>

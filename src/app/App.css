@@ -29,8 +29,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Cloud - Amber/Yellow - Used for cloud transcription features */
-  /* Opacity scale: 5, 10, 20, 30, 50, 80 for layering/hover states */
   --color-cloud: #fbbf24;
   --color-cloud-light: #fcd34d;
   --color-cloud-dark: #d97706;
@@ -42,7 +40,6 @@
   --color-cloud-50: rgba(251, 191, 36, 0.5);
   --color-cloud-80: rgba(251, 191, 36, 0.8);
 
-  /* Local - Blue/Indigo - Used for local/on-device transcription features */
   --color-local: #a5b3fe;
   --color-local-light: #c4cbff;
   --color-local-dark: #818cf8;
@@ -57,7 +54,6 @@
   --color-local-60: rgba(165, 179, 254, 0.6);
   --color-local-80: rgba(165, 179, 254, 0.8);
 
-  /* Accent - Purple - Used for general UI accents, buttons, links */
   --color-accent: #8f6ff7;
   --color-accent-light: #a78bfa;
   --color-accent-dark: #7c5ce7;
@@ -114,7 +110,6 @@
   --ui-text-size-nano: 0.5rem;
   --ui-text-line-nano: 0.875rem;
 
-  /* Legacy gradients, shadows, and pill colors */
   --ui-shadow-onboarding-local: 0 10px 24px rgba(0, 0, 0, 0.18);
   --ui-shadow-onboarding-model: 0 10px 24px rgba(0, 0, 0, 0.16);
   --ui-shadow-onboarding-model-alt: 0 10px 24px rgba(0, 0, 0, 0.2);
@@ -129,14 +124,12 @@
   --ui-pill-shell-shadow:
     0 0 10px rgba(0, 0, 0, 0.36), inset 0 -2px 5px rgba(0, 0, 0, 0.5);
 
-  /* Semantic (note: warning matches cloud-hover intentionally) */
   --color-success: #10b981;
   --color-error: #ef4444;
   --color-warning: #f59e0b;
   --color-warning-strong: #fbbf24;
   --color-info: #3b82f6;
 
-  /* Scrollbar */
   --color-scrollbar-thumb: rgba(255, 255, 255, 0.1);
   --color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
   --color-scrollbar-thumb-subtle: rgba(255, 255, 255, 0.08);

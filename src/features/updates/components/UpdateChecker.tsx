@@ -69,7 +69,7 @@ export function UpdateChecker({
     if (!pendingVersion) return;
     getVersion().then((currentVersion) => {
       if (pendingVersion === currentVersion) {
-        // Update was already applied — clear stale key
+        // Update was already applied - clear stale key
         localStorage.removeItem(PENDING_RESTART_KEY);
       } else {
         setInstalled(true);

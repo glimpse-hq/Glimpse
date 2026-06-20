@@ -1206,7 +1206,7 @@ fn apply_peak_limiter(samples: &mut [f32]) {
 
 /// Returns the trimmed samples plus the speech percentage of the kept audio,
 /// so validation can reuse this VAD pass instead of running its own. Returns
-/// None when no usable measurement was made (e.g. no speech detected here —
+/// None when no usable measurement was made (e.g. no speech detected here -
 /// compression/normalization may still surface quiet speech for validation).
 fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
     if samples.is_empty() {

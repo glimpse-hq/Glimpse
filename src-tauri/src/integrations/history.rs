@@ -1,4 +1,4 @@
-//! `glimpse history …` — read-only dictation history. Headless, no app needed.
+//! `glimpse history …` - read-only dictation history. Headless, no app needed.
 
 use anyhow::{bail, Result};
 use serde::Serialize;

@@ -327,7 +327,7 @@
 ### Changes
 
 - Dictionary & Replacements have been merged into one view.
-- Library views have had a small redesign — `_` and `.` in file names are now stripped for cleaner titles.
+- Library views have had a small redesign - `_` and `.` in file names are now stripped for cleaner titles.
 - Models tab now has a new system models category.
 - Media is now unpaused after recording rather than after recording + processing.
 - Edit mode is now significantly more consistent.
@@ -370,7 +370,7 @@
 ### Features
 
 - Added Auto-pause media in Settings > App to pause playback during transcription.
-- Added auto-update in Settings > App — when idle for 10+ minutes Glimpse will auto-update.
+- Added auto-update in Settings > App - when idle for 10+ minutes Glimpse will auto-update.
 
 ### Changes
 
