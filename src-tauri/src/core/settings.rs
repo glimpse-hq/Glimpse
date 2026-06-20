@@ -427,6 +427,8 @@ pub(crate) fn update_settings(
 
     state.emit_settings_changed(app, &next);
 
+    analytics::track_settings_changes(app, &prev, &next);
+
     if prev.analytics_enabled && !next.analytics_enabled {
         analytics::track_analytics_opt_out(app);
     } else if !prev.analytics_enabled && next.analytics_enabled {

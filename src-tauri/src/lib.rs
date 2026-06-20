@@ -257,9 +257,11 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     if current.microphone_device.as_deref() == device_id {
         return;
     }
+    let previous = current.clone();
     current.microphone_device = device_id.map(|id| id.to_string());
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
+            analytics::track_settings_changes(app, &previous, &saved);
             refresh_speech_menus(app, &saved);
             state.emit_settings_changed(app, &saved);
         }
@@ -585,6 +587,8 @@ pub fn run() {
             view_recovered_transcriptions,
             reset_onboarding,
             toast::debug_show_toast,
+            analytics::report_frontend_crash,
+            analytics::track_onboarding_step_viewed,
             fetch_llm_models,
             fetch_remote_speech_models,
             open_about_page,
@@ -1592,9 +1596,20 @@ pub(crate) fn persist_recording_async(
     temporary: bool,
     cancel_token: CancellationToken,
 ) {
+    let input = if settings.microphone_device.is_some() {
+        "selected"
+    } else {
+        "default"
+    };
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
         Err(err) => {
+            analytics::track_recording_failed(
+                &app,
+                "persist",
+                analytics::classify_failure_reason(&err.to_string()),
+                input,
+            );
             emit_error(
                 &app,
                 format!("Failed to resolve recordings directory: {err}"),
@@ -1643,8 +1658,24 @@ pub(crate) fn persist_recording_async(
                 temporary,
                 cancel_token,
             ),
-            Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
-            Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
+            Ok(Err(err)) => {
+                analytics::track_recording_failed(
+                    &app,
+                    "persist",
+                    analytics::classify_failure_reason(&err.to_string()),
+                    input,
+                );
+                emit_error(&app, format!("Unable to save recording: {err}"));
+            }
+            Err(err) => {
+                analytics::track_recording_failed(
+                    &app,
+                    "persist",
+                    analytics::classify_failure_reason(&err.to_string()),
+                    input,
+                );
+                emit_error(&app, format!("Recording task failed: {err}"));
+            }
         }
     });
 }

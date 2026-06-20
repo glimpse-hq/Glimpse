@@ -339,6 +339,13 @@ impl PillController {
 
     fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, message: &str) {
         tracing::error!("[Pill] {message}");
+        let settings = app.state::<AppState>().current_settings();
+        crate::analytics::track_recording_failed(
+            app,
+            "stop",
+            crate::analytics::classify_failure_reason(message),
+            microphone_input_kind(&settings),
+        );
         self.resume_paused_media();
         self.reset_recording_state();
         self.set_hold_key_down(false);
@@ -377,6 +384,8 @@ impl PillController {
         self.transition_to(app, PillStatus::Idle);
     }
 
+    // Stop-processing cleanup should not invent a release event.
+    // Reset/error paths clear this when the whole pill state is discarded.
     pub fn finish_processing(&self, app: &AppHandle<AppRuntime>) {
         let status = self.status();
         let recording = self.is_recording();
@@ -416,8 +425,6 @@ impl PillController {
         *self.recording_options.lock() = hotkeys::ShortcutOptions::default();
         *self.recording_settings.lock() = None;
         *self.smart_press_time.lock() = None;
-        // Stop-processing cleanup should not invent a release event.
-        // Reset/error paths clear this when the whole pill state is discarded.
     }
 
     fn capture_selected_text_if_enabled(
@@ -561,6 +568,12 @@ impl PillController {
                 true
             }
             Err(err) => {
+                crate::analytics::track_recording_failed(
+                    app,
+                    "start",
+                    crate::analytics::classify_failure_reason(&err.to_string()),
+                    microphone_input_kind(&settings),
+                );
                 self.reset_recording_state();
                 self.transition_to_error(app, &format!("Unable to start recording: {err}"));
                 false
@@ -733,10 +746,10 @@ impl PillController {
                             return;
                         }
 
+                        // Streaming can miss very short utterances (model
+                        // lookahead + final-chunk latency); fall back to
+                        // batch transcription of the captured audio.
                         if streaming_transcript.trim().is_empty() {
-                            // Streaming can miss very short utterances (model
-                            // lookahead + final-chunk latency); fall back to
-                            // batch transcription of the captured audio.
                             collapse_expanded_pill(&app_handle);
                             crate::persist_recording_async(
                                 app_handle,
@@ -1176,16 +1189,22 @@ fn position_overlay_on_cursor_screen(window: &WebviewWindow<AppRuntime>) {
     }
 }
 
+fn microphone_input_kind(settings: &UserSettings) -> &'static str {
+    if settings.microphone_device.is_some() {
+        "selected"
+    } else {
+        "default"
+    }
+}
+
 /// Simplifies recording error messages
 fn simplify_recording_error(message: &str) -> String {
     let msg_lower = message.to_lowercase();
 
-    // Check for permission-related errors first
     if msg_lower.contains("permission")
         || msg_lower.contains("not allowed")
         || msg_lower.contains("access denied")
         || msg_lower.contains("coreaudio")
-    // macOS specific permission error
     {
         return "Microphone permission needed. Check System Settings.".to_string();
     }

@@ -139,15 +139,44 @@ pub(crate) async fn attempt_remote(
         Err(_) if is_cancelled() => RemoteAttempt::Cancelled,
         Err(error) => {
             tracing::error!("Remote speech failed, falling back to local model: {error}");
+            let remote_model = speech_model_storage_label(settings, None);
+            let local_model = model_manager::model_label(local_fallback_model);
+            let reason = remote_error_reason(&error);
             if model_manager::ensure_local_fallback_model(app, local_fallback_model).is_err() {
+                crate::analytics::track_transcription_fallback(
+                    app,
+                    &remote_model,
+                    &local_model,
+                    reason,
+                    "unavailable",
+                );
                 let message = fallback_unavailable_toast_message(&error);
                 emit_fallback_unavailable_toast_message(app, &message);
                 RemoteAttempt::Unavailable(message)
             } else {
+                crate::analytics::track_transcription_fallback(
+                    app,
+                    &remote_model,
+                    &local_model,
+                    reason,
+                    "used",
+                );
                 emit_fallback_toast(app, &error);
                 RemoteAttempt::Fallback
             }
         }
+    }
+}
+
+fn remote_error_reason(error: &RemoteError) -> &'static str {
+    match error.kind {
+        RemoteErrorKind::RateLimited => "rate_limited",
+        RemoteErrorKind::QuotaExceeded => "quota_exceeded",
+        RemoteErrorKind::Unauthorized => "unauthorized",
+        RemoteErrorKind::InvalidRequest => "invalid_request",
+        RemoteErrorKind::NotFound => "not_found",
+        RemoteErrorKind::UpstreamUnavailable => "upstream_unavailable",
+        RemoteErrorKind::Other => "unknown",
     }
 }
 

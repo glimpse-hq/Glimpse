@@ -168,6 +168,10 @@ export default function OnboardingScreen({
     0,
     steps.indexOf(currentStep as (typeof steps)[number]),
   );
+  useEffect(() => {
+    const step = currentStep === "setup" ? "model_select" : currentStep;
+    void invoke("track_onboarding_step_viewed", { step }).catch(() => {});
+  }, [currentStep]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const licenseQuery = useLicenseState();
@@ -344,6 +348,9 @@ export default function OnboardingScreen({
 
   const handleDownload = useCallback(
     async (modelKey: string, ane?: boolean) => {
+      void invoke("track_onboarding_step_viewed", {
+        step: "model_downloading",
+      }).catch(() => {});
       updateDownloadStatus(modelKey, {
         status: "downloading",
         percent: 0,

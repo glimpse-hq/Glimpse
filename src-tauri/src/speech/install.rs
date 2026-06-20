@@ -111,11 +111,23 @@ fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
                         "{label} couldn't use the Neural Engine and will run on the GPU instead."
                     ),
                 );
+                crate::analytics::track_model_download_failed(
+                    &app,
+                    &model,
+                    "ane_compile",
+                    "model_error",
+                );
                 emit("error");
             }
             Ok(()) => emit("done"),
             Err(err) => {
                 tracing::error!("[speech] ANE compile warm-up failed: {err}");
+                crate::analytics::track_model_download_failed(
+                    &app,
+                    &model,
+                    "ane_compile",
+                    crate::analytics::classify_failure_reason(&err.to_string()),
+                );
                 crate::toast::show(
                     &app,
                     "error",
@@ -242,11 +254,15 @@ pub async fn download_model(
     model: String,
     ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
-    let manager = model_manager(&app).map_err(|err| err.to_string())?;
+    let manager = model_manager(&app)
+        .map_err(|err| track_download_error(&app, &model, "resolve", err.to_string()))?;
     let ane = ane.unwrap_or(false);
-    ensure_model_downloadable(&model, ane, &manager)?;
-    let spec = spec_for(&model, ane).map_err(|err| err.to_string())?;
-    ensure_models_root(&app).map_err(|err| err.to_string())?;
+    ensure_model_downloadable(&model, ane, &manager)
+        .map_err(|err| track_download_error(&app, &model, "resolve", err))?;
+    let spec = spec_for(&model, ane)
+        .map_err(|err| track_download_error(&app, &model, "resolve", err.to_string()))?;
+    ensure_models_root(&app)
+        .map_err(|err| track_download_error(&app, &model, "install", err.to_string()))?;
     let ane_pending = ane
         && super::catalog::ane_encoder_dir(&model).is_some()
         && !ane_installed_for(&model, &manager);
@@ -291,6 +307,13 @@ pub async fn download_model(
                 let status = manager.status(&spec).map_err(|err| err.to_string())?;
                 return Ok(map_status(status, &manager));
             }
+            let reason = crate::analytics::classify_failure_reason(&err.to_string());
+            let stage = match reason {
+                "verification" => "verify",
+                "storage" => "install",
+                _ => "download",
+            };
+            crate::analytics::track_model_download_failed(&app, &model, stage, reason);
             let _ = app.emit(
                 "download:error",
                 DownloadErrorPayload {
@@ -321,6 +344,21 @@ pub async fn download_model(
     }
 
     Ok(map_status(status, &manager))
+}
+
+fn track_download_error(
+    app: &AppHandle<AppRuntime>,
+    model: &str,
+    stage: &str,
+    message: String,
+) -> String {
+    crate::analytics::track_model_download_failed(
+        app,
+        model,
+        stage,
+        crate::analytics::classify_failure_reason(&message),
+    );
+    message
 }
 
 #[tauri::command]

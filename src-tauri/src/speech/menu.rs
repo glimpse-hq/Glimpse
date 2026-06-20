@@ -186,8 +186,10 @@ fn persist_menu_settings(
     settings: UserSettings,
 ) -> Option<UserSettings> {
     let state = app.state::<AppState>();
+    let previous = state.current_settings_unmasked();
     match state.persist_settings(settings) {
         Ok(saved) => {
+            crate::analytics::track_settings_changes(app, &previous, &saved);
             state.emit_settings_changed(app, &saved);
             Some(saved)
         }

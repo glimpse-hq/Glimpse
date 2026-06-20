@@ -76,6 +76,7 @@ pub fn apply_import(
 ) -> Result<ImportResult, String> {
     let bundle = parse_app(id, home)?;
     let mut settings = state.current_settings_unmasked();
+    let previous_settings = settings.clone();
     let previous_auto_launch_enabled = settings.auto_launch_enabled;
     let mut result = ImportResult::default();
 
@@ -177,6 +178,7 @@ pub fn apply_import(
             return Err(err.to_string());
         }
     };
+    crate::analytics::track_settings_changes(app, &previous_settings, &next);
     state.emit_settings_changed(app, &next);
 
     // Write transcripts last so a settings/launch failure can't leave them committed.
