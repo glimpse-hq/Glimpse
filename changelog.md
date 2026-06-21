@@ -2,7 +2,7 @@
 
 ### Features
 
-- Added Parakeet Unified (experimental), a fast English local model with streaming support.
+- Added Parakeet Unified (experimental): one English model that handles both fast file transcription and live streaming, so a single download covers what used to take two. It's about a quarter the size of Nemotron Streaming, faster, and adds word-level timestamps.
 
 ### Improvements
 
@@ -17,6 +17,7 @@
 
 ### Changes
 
+- Nemotron Streaming is now Legacy, superseded by Parakeet Unified. It won't appear to download anymore, but if you already have it installed it keeps working.
 - Updated onboarding for a more unified experience.
 - Small UI changes.
 - Small change to the UI icon for a cleaner look.

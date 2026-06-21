@@ -349,7 +349,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Nemotron Streaming",
         description: "Real-time streaming transcription. Text appears as you speak.",
         tags: &["English", "Streaming"],
-        category: "experimental",
+        category: "legacy",
         engine: LocalModelEngine::Nemotron,
         variant: "Full",
         files: NEMOTRON_STREAMING_FILES,
