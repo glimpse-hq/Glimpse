@@ -435,20 +435,32 @@ impl StorageManager {
             return Ok(Vec::new());
         }
 
-        let pattern = format!("%{needle}%");
+        let escaped = needle
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
+        let pattern = format!("%{escaped}%");
         let mut records = {
             let conn = self.connection.lock();
             let mut stmt = conn.prepare(
                 "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
                         speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
                  FROM transcriptions
-                 WHERE text LIKE ?1 OR raw_text LIKE ?1
+                 WHERE status = ?1 AND text <> ''
+                   AND (text LIKE ?2 ESCAPE '\\' OR raw_text LIKE ?2 ESCAPE '\\')
                  ORDER BY timestamp DESC
-                 LIMIT ?2",
+                 LIMIT ?3",
             )?;
 
             let records = stmt
-                .query_map(params![pattern, limit as i64], Self::record_from_row)?
+                .query_map(
+                    params![
+                        TranscriptionStatus::Success.as_str(),
+                        pattern,
+                        limit as i64
+                    ],
+                    Self::record_from_row,
+                )?
                 .collect::<rusqlite::Result<Vec<_>>>()?;
             records
         };

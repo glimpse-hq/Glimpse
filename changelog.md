@@ -22,6 +22,10 @@
 - Small UI changes.
 - Small change to the UI icon for a cleaner look.
 
+### Fixes
+
+- When using a streaming model, it could get mixed with ongoing library transcriptions if being done simultaneously.
+
 ---
 
 0.9.8
