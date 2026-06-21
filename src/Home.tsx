@@ -432,7 +432,7 @@ const Home = () => {
           <div
             className={`flex items-center h-6 pl-[17px] pr-3 ${isSidebarCollapsed ? "gap-0" : "gap-3"}`}
           >
-            <div className="flex items-center justify-center w-[18px] shrink-0">
+            <div className="flex w-[20px] shrink-0 items-center justify-center">
               <StaticGlimpseLogo
                 cloudActive={isCloudMode || remoteSpeechEnabled || llmEnabled}
                 localActive={
@@ -445,7 +445,7 @@ const Home = () => {
                 width: isSidebarCollapsed ? 0 : "auto",
                 opacity: isSidebarCollapsed ? 0 : 1,
               }}
-              className="ui-text-nav-brand ui-color-primary whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
+              className="font-satoshi ui-text-nav-brand ui-color-primary whitespace-nowrap overflow-hidden transition-[width,opacity] duration-200 ease-out"
             >
               Glimpse
             </span>
@@ -576,7 +576,7 @@ const Home = () => {
                     transition={{ duration: 0.15, ease: "easeOut" }}
                     className="ui-surface-menu absolute bottom-full left-2 mb-2 w-56 z-[60]"
                   >
-                    <div className="p-3 border-b border-border-primary">
+                    <div className="px-3 pt-3 pb-1">
                       <div className="flex items-center justify-between">
                         <span className="ui-text-body-sm-strong ui-color-primary">
                           {t({
@@ -592,7 +592,7 @@ const Home = () => {
                         </button>
                       </div>
                     </div>
-                    <div className="p-2 space-y-1">
+                    <div className="px-2 pb-2 space-y-1">
                       <button
                         onClick={() => {
                           setShowSupportPopup(false);

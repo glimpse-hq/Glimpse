@@ -15,6 +15,12 @@
 - Fixed library items that could come unstuck from their audio after an update. 
 - Licensing is more reliable behind the scenes.
 
+### Changes
+
+- Updated onboarding for a more unified experience.
+- Small UI changes.
+- Small change to the UI icon for a cleaner look.
+
 ---
 
 0.9.8
