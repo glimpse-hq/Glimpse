@@ -167,6 +167,7 @@ fn status(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
 fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
     let path = arg_str(args, "path")?;
     let state = app.state::<AppState>();
+    require_license(&state)?;
     let settings = state.current_settings_unmasked();
 
     let options = crate::library::LibraryImportOptions {

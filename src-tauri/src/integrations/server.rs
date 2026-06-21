@@ -27,6 +27,7 @@ pub(crate) fn start(app: AppHandle<AppRuntime>) {
 }
 
 fn serve(app: AppHandle<AppRuntime>) -> std::io::Result<()> {
+    super::ipc::init_socket_label(&app.config().identifier);
     let listener = match ListenerOptions::new().name(socket_name()?).create_sync() {
         Ok(listener) => listener,
         Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {

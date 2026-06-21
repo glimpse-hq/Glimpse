@@ -332,6 +332,8 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
             .as_ref()
             .and_then(|grant| grant.limit_activations)
             .unwrap_or(5),
+        // TODO: At somepoint return tally of how many devices are activiated
+        // // But this is probably going to be apart of a larger cloud thing as it needs a worker to do this.
         activations_count: None,
         edition,
         status,

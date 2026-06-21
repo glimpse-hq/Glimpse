@@ -45,6 +45,7 @@ pub fn is_integration_command(verb: &str) -> bool {
 /// Owns process exit: maps errors to the documented exit codes and prints
 /// machine-readable errors in `--json` mode.
 pub fn dispatch(identifier: &str, args: &[String]) -> Result<()> {
+    ipc::init_socket_label(identifier);
     let json = args.iter().any(|arg| arg == "--json");
     match run(identifier, args, json) {
         Ok(()) => Ok(()),

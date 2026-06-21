@@ -454,11 +454,7 @@ impl StorageManager {
 
             let records = stmt
                 .query_map(
-                    params![
-                        TranscriptionStatus::Success.as_str(),
-                        pattern,
-                        limit as i64
-                    ],
+                    params![TranscriptionStatus::Success.as_str(), pattern, limit as i64],
                     Self::record_from_row,
                 )?
                 .collect::<rusqlite::Result<Vec<_>>>()?;
