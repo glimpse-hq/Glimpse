@@ -1,6 +1,13 @@
 @config "../../tailwind.config.js";
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
 @layer base {
   *,
   ::before,

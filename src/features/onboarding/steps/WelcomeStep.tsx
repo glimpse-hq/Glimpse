@@ -1,221 +1,91 @@
 import { useLingui } from "@lingui/react/macro";
-import { motion } from "framer-motion";
-import DotMatrix from "../../../shared/ui/DotMatrix";
-import type { StepMotionProps } from "./shared";
-import type { TranscriptionMode } from "../../../types";
+import { motion, useReducedMotion } from "framer-motion";
+import type { CSSProperties } from "react";
+import {
+  GlimpseLogo,
+  OnboardingStep,
+  PRIMARY_BUTTON_CLASS,
+  type StepMotionProps,
+} from "./shared";
 
 interface WelcomeStepProps {
   stepMotionProps: StepMotionProps;
   hasStepTransitioned: boolean;
-  selectedMode: TranscriptionMode;
-  onSelectMode: (mode: TranscriptionMode) => void;
-  onNext: () => void;
-  continueDisabled?: boolean;
+  onStart: () => void;
 }
+
+const LOGO_COLORS = {
+  "--color-cloud": "#fbbf24",
+  "--color-local": "#a5b3fe",
+} as CSSProperties;
 
 export function WelcomeStep({
   stepMotionProps,
   hasStepTransitioned,
-  selectedMode,
-  onSelectMode,
-  onNext,
-  continueDisabled = false,
+  onStart,
 }: WelcomeStepProps) {
   const { t } = useLingui();
+  const reduceMotion = useReducedMotion();
 
   return (
-    <motion.div
-      key="welcome"
-      {...stepMotionProps}
+    <OnboardingStep
+      stepKey="welcome"
+      motionProps={stepMotionProps}
       initial={hasStepTransitioned ? "enter" : false}
-      className="flex flex-col items-center text-center w-full max-w-2xl"
+      align="center"
     >
-      <h1 className="ui-text-display font-semibold text-content-primary mb-2">
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+        className="mb-7 flex h-[100px] w-[100px] items-center justify-center rounded-[28px] bg-[#1b1b20] shadow-xl ring-1 ring-white/10"
+        style={LOGO_COLORS}
+      >
+        <GlimpseLogo size="xl" />
+      </motion.div>
+
+      <span className="relative inline-block">
+        <h1
+          className="text-[3.5rem] font-bold leading-none tracking-[-0.03em] text-content-primary"
+          style={{ fontFamily: '"Satoshi", "Inter", system-ui, sans-serif' }}
+        >
+          Glimpse
+        </h1>
+        <motion.svg
+          aria-hidden="true"
+          viewBox="0 0 300 16"
+          preserveAspectRatio="none"
+          className="absolute inset-x-0 w-full"
+          style={{ bottom: "-0.80em", height: "0.32em", overflow: "visible" }}
+        >
+          <motion.path
+            d="M 4 11 Q 150 5, 296 6"
+            fill="none"
+            stroke="var(--color-local)"
+            strokeWidth={4}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            initial={reduceMotion ? false : { pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ delay: 0.45, duration: 0.45, ease: [0.4, 0, 0.1, 1] }}
+          />
+        </motion.svg>
+      </span>
+
+      <p className="mt-8 text-[1.2rem] text-content-muted text-pretty">
         {t({
           id: "onboarding.welcome.title",
-          message: "Welcome",
-        })}
-      </h1>
-
-      <p className="ui-text-body-lg text-content-muted mb-8">
-        {t({
-          id: "onboarding.welcome.subtitle",
-          message: "Choose how you want to transcribe.",
+          message: "Free dictation anywhere",
         })}
       </p>
 
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div
-          className="relative w-full rounded-2xl border border-border-primary bg-surface-tertiary overflow-hidden opacity-45 cursor-not-allowed"
-          aria-disabled="true"
-        >
-          <div className="absolute inset-0 pointer-events-none opacity-[0.05]">
-            <DotMatrix
-              rows={10}
-              cols={22}
-              activeDots={[
-                1, 4, 7, 10, 13, 23, 26, 29, 32, 35, 45, 48, 51, 54, 57, 67, 70,
-                73, 76, 79, 89, 92, 95, 98, 101, 111, 114, 117, 120, 123, 133,
-                136, 139, 142, 145, 155, 158, 161, 164, 167,
-              ]}
-              dotSize={2}
-              gap={4}
-              color="var(--color-cloud)"
-            />
-          </div>
-
-          <div className="relative flex flex-col items-center justify-center py-12 px-5">
-            <DotMatrix
-              rows={2}
-              cols={2}
-              activeDots={[0, 3]}
-              dotSize={5}
-              gap={3}
-              color="var(--color-cloud-30)"
-            />
-            <span className="mt-4 ui-text-body-lg font-semibold text-content-disabled">
-              {t({
-                id: "onboarding.welcome.cloud.title",
-                message: "Cloud",
-              })}
-            </span>
-            <span className="mt-2.5 rounded-md bg-surface-elevated px-2.5 py-1 ui-text-micro font-medium text-content-disabled">
-              {t({
-                id: "onboarding.welcome.cloud.badge",
-                message: "In progress",
-              })}
-            </span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onSelectMode("local")}
-          className={`group relative w-full rounded-2xl border text-left overflow-hidden transition-all duration-200 ${
-            selectedMode === "local"
-              ? "border-local-40 bg-surface-tertiary ring-1 ring-local-20 ui-shadow-onboarding-local"
-              : "border-border-primary bg-surface-tertiary hover:border-local-30"
-          }`}
-          aria-pressed={selectedMode === "local"}
-          aria-label={t({
-            id: "onboarding.welcome.local.aria",
-            message:
-              "Select Local mode: privacy-first, on-device transcription",
-          })}
-        >
-          <div className="absolute inset-0 pointer-events-none opacity-[0.07] transition-opacity duration-300 group-hover:opacity-[0.12]">
-            <DotMatrix
-              rows={10}
-              cols={22}
-              activeDots={[
-                0, 5, 10, 15, 20, 22, 27, 32, 37, 42, 44, 49, 54, 59, 64, 66,
-                71, 76, 81, 86, 88, 93, 98, 103, 108, 110, 115, 120, 125, 130,
-                132, 137, 142, 147, 152, 154, 159, 164, 169, 174, 176, 181, 186,
-                191, 196, 198, 203, 208, 213, 218,
-              ]}
-              dotSize={2}
-              gap={4}
-              color="var(--color-local)"
-            />
-          </div>
-
-          {selectedMode === "local" && (
-            <motion.div
-              className="absolute inset-0 pointer-events-none rounded-2xl"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              style={{
-                background:
-                  "radial-gradient(ellipse at 30% 20%, var(--color-local-10) 0%, transparent 70%)",
-              }}
-            />
-          )}
-
-          <div className="relative flex flex-col gap-5 p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <DotMatrix
-                  rows={2}
-                  cols={2}
-                  activeDots={[1, 2]}
-                  dotSize={5}
-                  gap={3}
-                  color="var(--color-local)"
-                />
-                <span className="ui-text-body-lg font-semibold text-local">
-                  {t({
-                    id: "onboarding.welcome.local.title",
-                    message: "Local",
-                  })}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <DotMatrix
-                  rows={1}
-                  cols={3}
-                  activeDots={[0, 1, 2]}
-                  dotSize={3}
-                  gap={2}
-                  color="var(--color-local-80)"
-                />
-                <span className="ui-text-label text-content-secondary font-medium">
-                  {t({
-                    id: "onboarding.welcome.local.feature.models",
-                    message: "On-device transcription models",
-                  })}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <DotMatrix
-                  rows={1}
-                  cols={3}
-                  activeDots={[0, 2]}
-                  dotSize={3}
-                  gap={2}
-                  color="var(--color-local-80)"
-                />
-                <span className="ui-text-label text-content-secondary font-medium">
-                  {t({
-                    id: "onboarding.welcome.local.feature.byok",
-                    message: "Bring your own API key for AI features",
-                  })}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <DotMatrix
-                  rows={1}
-                  cols={3}
-                  activeDots={[1]}
-                  dotSize={3}
-                  gap={2}
-                  color="var(--color-local-80)"
-                />
-                <span className="ui-text-label text-content-secondary font-medium">
-                  {t({
-                    id: "onboarding.welcome.local.feature.free",
-                    message: "Free, no account required",
-                  })}
-                </span>
-              </div>
-            </div>
-          </div>
-        </button>
-      </div>
-
       <button
-        onClick={onNext}
-        disabled={continueDisabled}
-        className="flex items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors min-w-[150px] tracking-tight disabled:opacity-40 disabled:hover:bg-content-primary"
+        type="button"
+        onClick={onStart}
+        className={`mt-[13vh] ${PRIMARY_BUTTON_CLASS}`}
       >
-        {t({
-          id: "onboarding.welcome.cta",
-          message: "Continue",
-        })}
+        {t({ id: "onboarding.welcome.cta", message: "Get started" })}
       </button>
-    </motion.div>
+    </OnboardingStep>
   );
 }

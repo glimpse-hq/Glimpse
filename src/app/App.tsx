@@ -88,17 +88,20 @@ function App() {
 
   // Pill & toast overlays always render in dark: they're transparent
   // floating chrome that lives on top of the user's workspace, not app UI.
-  // The settings window also boots dark until onboarding state is known, and
-  // onboarding itself stays dark regardless of the user's saved theme.
+  // The settings window boots dark until settings load. Onboarding follows the
+  // system appearance (the user hasn't picked a theme yet); the app otherwise
+  // follows the saved theme.
   useEffect(() => {
     const root = document.documentElement;
 
-    if (windowLabel !== "settings" || settingsLoading || showOnboarding) {
+    if (windowLabel !== "settings" || settingsLoading) {
       root.dataset.theme = "dark";
       return;
     }
 
-    let currentMode: ThemeMode = parseThemeMode(settings?.theme_mode ?? null);
+    let currentMode: ThemeMode = showOnboarding
+      ? "system"
+      : parseThemeMode(settings?.theme_mode ?? null);
 
     const applyTheme = (mode: ThemeMode) => {
       currentMode = mode;
