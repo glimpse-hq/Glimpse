@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import React, { useEffect, useState, useRef } from "react";
+import { useCopyToClipboard } from "../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -73,12 +74,11 @@ const ToastOverlay: React.FC = () => {
   const { t } = useLingui();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy, reset: resetCopied } = useCopyToClipboard(1500);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastRef = useRef<ToastState | null>(null);
 
   useEffect(() => {
@@ -120,12 +120,8 @@ const ToastOverlay: React.FC = () => {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (copyResetTimerRef.current) {
-      clearTimeout(copyResetTimerRef.current);
-      copyResetTimerRef.current = null;
-    }
     setToast(null);
-    setCopied(false);
+    resetCopied();
     closeAll();
   };
 
@@ -165,7 +161,7 @@ const ToastOverlay: React.FC = () => {
     }
   };
 
-  const handleCopy = async (e: React.MouseEvent) => {
+  const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!toast) return;
@@ -177,19 +173,7 @@ const ToastOverlay: React.FC = () => {
       .filter(Boolean)
       .join("\n");
 
-    try {
-      await navigator.clipboard.writeText(copyText);
-      setCopied(true);
-      if (copyResetTimerRef.current) {
-        clearTimeout(copyResetTimerRef.current);
-      }
-      copyResetTimerRef.current = setTimeout(() => {
-        copyResetTimerRef.current = null;
-        setCopied(false);
-      }, 1500);
-    } catch (err) {
-      console.error("Failed to copy toast:", err);
-    }
+    copy(copyText);
   };
 
   const handleToastAction = async (action: string) => {
@@ -227,11 +211,7 @@ const ToastOverlay: React.FC = () => {
       }
       setToast({ ...ev.payload, isLeaving: false });
       setIsRetrying(false);
-      setCopied(false);
-      if (copyResetTimerRef.current) {
-        clearTimeout(copyResetTimerRef.current);
-        copyResetTimerRef.current = null;
-      }
+      resetCopied();
 
       const durations: Record<ToastType, number> = {
         error: 0,
@@ -259,12 +239,8 @@ const ToastOverlay: React.FC = () => {
         dismissAnimationTimerRef.current = null;
       }
       if (toastRef.current) {
-        if (copyResetTimerRef.current) {
-          clearTimeout(copyResetTimerRef.current);
-          copyResetTimerRef.current = null;
-        }
         setToast(null);
-        setCopied(false);
+        resetCopied();
         try {
           await invoke("toast_dismissed");
         } catch {
@@ -279,7 +255,6 @@ const ToastOverlay: React.FC = () => {
       unsub2.then((u) => u());
       unsub3.then((u) => u());
       if (timerRef.current) clearTimeout(timerRef.current);
-      if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
     };
   }, []);
 

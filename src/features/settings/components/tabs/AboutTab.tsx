@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
@@ -67,7 +67,7 @@ const AboutTab = ({
   onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
-  const [supportEmailCopied, setSupportEmailCopied] = useState(false);
+  const { copied: supportEmailCopied, copy } = useCopyToClipboard(2000);
 
   const isCloudMode = transcriptionMode === "cloud";
   const modeLabel = isCloudMode
@@ -188,16 +188,7 @@ const AboutTab = ({
     );
   };
 
-  const handleCopyEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(SUPPORT_EMAIL);
-      setSupportEmailCopied(true);
-      window.setTimeout(() => setSupportEmailCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy support email:", err);
-      setSupportEmailCopied(false);
-    }
-  };
+  const handleCopyEmail = () => copy(SUPPORT_EMAIL);
 
   const handleResetOnboarding = async () => {
     try {

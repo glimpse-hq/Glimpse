@@ -22,6 +22,7 @@ import SettingsModal from "./features/settings/components/SettingsModal";
 import FAQModal from "./shared/ui/FAQModal";
 import WindowControls from "./shared/ui/WindowControls";
 import { useClickOutside } from "./shared/hooks/useClickOutside";
+import { useCopyToClipboard } from "./shared/hooks/useCopyToClipboard";
 import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeader";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
 import { useTodayDictationStats } from "./features/transcriptions/queries";
@@ -154,7 +155,11 @@ const Home = () => {
   >("home");
   const licenseGateActive = useLicenseGate();
   const [showSupportPopup, setShowSupportPopup] = useState(false);
-  const [supportEmailCopied, setSupportEmailCopied] = useState(false);
+  const {
+    copied: supportEmailCopied,
+    copy: copyEmail,
+    reset: resetEmailCopied,
+  } = useCopyToClipboard(1200);
   const [showFAQ, setShowFAQ] = useState(false);
   const supportMenuRef = useRef<HTMLDivElement>(null);
 
@@ -354,20 +359,11 @@ const Home = () => {
 
   useEffect(() => {
     if (!showSupportPopup) {
-      setSupportEmailCopied(false);
+      resetEmailCopied();
     }
-  }, [showSupportPopup]);
+  }, [showSupportPopup, resetEmailCopied]);
 
-  const copySupportEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(SUPPORT_EMAIL);
-      setSupportEmailCopied(true);
-      window.setTimeout(() => setSupportEmailCopied(false), 1200);
-    } catch (err) {
-      console.error("Failed to copy support email:", err);
-      setSupportEmailCopied(false);
-    }
-  };
+  const copySupportEmail = () => copyEmail(SUPPORT_EMAIL);
 
   useEffect(() => {
     const handleCopy = (event: KeyboardEvent) => {

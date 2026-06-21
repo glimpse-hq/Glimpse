@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
+import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AppWindow,
@@ -484,32 +485,10 @@ const SettingsErrorBanner = ({
     tab: "general" | "models" | "providers" | "local-api" | "about" | "app",
   ) => void;
 }) => {
-  const [copied, setCopied] = useState(false);
-  const copiedTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (copiedTimeoutRef.current !== null) {
-        window.clearTimeout(copiedTimeoutRef.current);
-      }
-    };
-  }, []);
+  const { copied, copy } = useCopyToClipboard(1500);
 
   const handleCopy = () => {
-    if (!error) return;
-    navigator.clipboard
-      .writeText(error)
-      .then(() => {
-        setCopied(true);
-        if (copiedTimeoutRef.current !== null) {
-          window.clearTimeout(copiedTimeoutRef.current);
-        }
-        copiedTimeoutRef.current = window.setTimeout(() => {
-          setCopied(false);
-          copiedTimeoutRef.current = null;
-        }, 1500);
-      })
-      .catch(() => {});
+    if (error) copy(error);
   };
 
   return (

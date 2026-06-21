@@ -49,6 +49,7 @@ import {
 } from "./library-utils";
 import { resolveSpeechModelLabel } from "../../settings/models-queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type {
@@ -167,7 +168,8 @@ const LibraryDetail = ({
   const [isExporting, setIsExporting] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [copyConfirmed, setCopyConfirmed] = useState(false);
+  const { copied: copyConfirmed, copy: copyTranscript } =
+    useCopyToClipboard(1400);
   const [audioDuration, setAudioDuration] = useState(
     item.duration_seconds || 0,
   );
@@ -192,7 +194,6 @@ const LibraryDetail = ({
   const [speakerFilter, setSpeakerFilter] = useState<string | null>(null);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const transcriptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const howlRef = useRef<Howl | null>(null);
   const tagMenuRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -495,12 +496,6 @@ const LibraryDetail = ({
   }, [item.status.type, item.transcript]);
 
   useEffect(() => {
-    return () => {
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!transcriptAvailable) return;
     if (transcriptTimer.current) clearTimeout(transcriptTimer.current);
     transcriptTimer.current = setTimeout(() => {
@@ -701,18 +696,8 @@ const LibraryDetail = ({
     }
   };
 
-  const handleCopy = async () => {
-    if (!transcriptDraft.trim()) return;
-    try {
-      await navigator.clipboard.writeText(transcriptDraft);
-      setCopyConfirmed(true);
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => {
-        setCopyConfirmed(false);
-      }, 1400);
-    } catch (err) {
-      console.error("Failed to copy transcript:", err);
-    }
+  const handleCopy = () => {
+    if (transcriptDraft.trim()) copyTranscript(transcriptDraft);
   };
 
   const handleTogglePlayback = useCallback(() => {
