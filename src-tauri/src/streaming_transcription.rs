@@ -94,6 +94,29 @@ fn streaming_thread(
         let mut pending: Vec<f32> = Vec::new();
         let mut last_text = String::new();
 
+        // Transcribe every whole chunk currently buffered, emitting on change.
+        let transcribe_ready_chunks = |pending: &mut Vec<f32>, last_text: &mut String| {
+            let mut processed = 0;
+            while processed + CHUNK_SAMPLES_16K <= pending.len() {
+                let chunk = &pending[processed..processed + CHUNK_SAMPLES_16K];
+                match session.transcribe_chunk(&model, chunk) {
+                    Ok(transcript) => {
+                        if transcript != *last_text {
+                            last_text.clone_from(&transcript);
+                            pill::emit_pill_mode(&app, true, &transcript);
+                        }
+                    }
+                    Err(err) => {
+                        tracing::error!("[streaming] Chunk transcription failed: {err}");
+                    }
+                }
+                processed += CHUNK_SAMPLES_16K;
+            }
+            if processed > 0 {
+                pending.drain(..processed);
+            }
+        };
+
         while !stop_flag.load(Ordering::SeqCst) {
             std::thread::sleep(POLL_INTERVAL);
 
@@ -108,39 +131,14 @@ fn streaming_thread(
             }
 
             buffer_offset = new_offset;
+            append_samples(&new_samples, sample_rate, &mut resampler, &mut pending);
+            transcribe_ready_chunks(&mut pending, &mut last_text);
+        }
 
-            if sample_rate == 16_000 {
-                pending.extend_from_slice(&new_samples);
-            } else {
-                if resampler.as_ref().is_none_or(|r| r.in_rate != sample_rate) {
-                    resampler = Some(StreamResampler::new(sample_rate, 16_000));
-                }
-                resampler
-                    .as_mut()
-                    .unwrap()
-                    .process(&new_samples, &mut pending);
-            }
-
-            let mut processed = 0;
-            while processed + CHUNK_SAMPLES_16K <= pending.len() {
-                let chunk = &pending[processed..processed + CHUNK_SAMPLES_16K];
-                match session.transcribe_chunk(&model, chunk) {
-                    Ok(transcript) => {
-                        if transcript != last_text {
-                            last_text.clone_from(&transcript);
-                            pill::emit_pill_mode(&app, true, &transcript);
-                        }
-                    }
-                    Err(err) => {
-                        tracing::error!("[streaming] Chunk transcription failed: {err}");
-                    }
-                }
-
-                processed += CHUNK_SAMPLES_16K;
-            }
-
-            if processed > 0 {
-                pending.drain(..processed);
+        if let Some((new_samples, sample_rate, _)) = recorder.read_live_samples(buffer_offset) {
+            if !new_samples.is_empty() {
+                append_samples(&new_samples, sample_rate, &mut resampler, &mut pending);
+                transcribe_ready_chunks(&mut pending, &mut last_text);
             }
         }
 
@@ -154,6 +152,22 @@ fn streaming_thread(
         }
 
         *result.lock().unwrap() = session.finish();
+    }
+}
+
+fn append_samples(
+    new_samples: &[f32],
+    sample_rate: u32,
+    resampler: &mut Option<StreamResampler>,
+    pending: &mut Vec<f32>,
+) {
+    if sample_rate == 16_000 {
+        pending.extend_from_slice(new_samples);
+    } else {
+        if resampler.as_ref().is_none_or(|r| r.in_rate != sample_rate) {
+            *resampler = Some(StreamResampler::new(sample_rate, 16_000));
+        }
+        resampler.as_mut().unwrap().process(new_samples, pending);
     }
 }
 

@@ -1536,7 +1536,7 @@ msgstr "Find word..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.loading"
-msgstr "Finding a model for your Mac"
+msgstr "Finding a model for your device"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx

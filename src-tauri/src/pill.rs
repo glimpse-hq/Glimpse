@@ -729,16 +729,16 @@ impl PillController {
             let resume_app = app_handle.clone();
             let settings_for_transcription = settings.clone();
             std::thread::spawn(move || {
+                let streaming_transcript = app_handle
+                    .state::<AppState>()
+                    .stop_streaming_session(&app_handle)
+                    .unwrap_or_default();
                 match recorder.stop_after_capture(move || {
                     resume_app.state::<AppState>().pill().resume_paused_media();
                 }) {
                     Ok(Some(recording)) => {
                         let duration_ms =
                             (recording.ended_at - recording.started_at).num_milliseconds();
-                        let streaming_transcript = app_handle
-                            .state::<AppState>()
-                            .stop_streaming_session(&app_handle)
-                            .unwrap_or_default();
 
                         if duration_ms < MIN_RECORDING_DURATION_MS {
                             discard_pending_recording(&recording);
@@ -796,9 +796,6 @@ impl PillController {
                         );
                     }
                     Ok(None) => {
-                        let _ = app_handle
-                            .state::<AppState>()
-                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
                         app_handle
                             .state::<AppState>()
@@ -806,9 +803,6 @@ impl PillController {
                             .finish_processing(&app_handle);
                     }
                     Err(err) => {
-                        let _ = app_handle
-                            .state::<AppState>()
-                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
                         app_handle.state::<AppState>().pill().fail_recording_stop(
                             &app_handle,

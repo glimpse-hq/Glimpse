@@ -12,6 +12,7 @@ interface WelcomeStepProps {
   stepMotionProps: StepMotionProps;
   hasStepTransitioned: boolean;
   onStart: () => void;
+  startDisabled?: boolean;
 }
 
 const LOGO_COLORS = {
@@ -23,6 +24,7 @@ export function WelcomeStep({
   stepMotionProps,
   hasStepTransitioned,
   onStart,
+  startDisabled = false,
 }: WelcomeStepProps) {
   const { t } = useLingui();
   const reduceMotion = useReducedMotion();
@@ -82,7 +84,8 @@ export function WelcomeStep({
       <button
         type="button"
         onClick={onStart}
-        className={`mt-[13vh] ${PRIMARY_BUTTON_CLASS}`}
+        disabled={startDisabled}
+        className={`mt-[13vh] ${PRIMARY_BUTTON_CLASS} disabled:opacity-60`}
       >
         {t({ id: "onboarding.welcome.cta", message: "Get started" })}
       </button>

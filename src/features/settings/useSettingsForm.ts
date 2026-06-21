@@ -332,7 +332,8 @@ export function useSettingsForm({
     (settingsQuery.isLoading ||
       modelCatalogQuery.isLoading ||
       inputDevicesQuery.isLoading ||
-      appInfoQuery.isLoading);
+      appInfoQuery.isLoading ||
+      licenseStateQuery.isLoading);
 
   const clearSettingsError = useCallback(() => {
     setError(null);

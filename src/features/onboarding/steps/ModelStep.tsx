@@ -206,7 +206,7 @@ export function ModelStep({
           <p className="p-4 ui-text-body-sm text-content-muted">
             {t({
               id: "onboarding.model.loading",
-              message: "Finding a model for your Mac",
+              message: "Finding a model for your device",
             })}
           </p>
         </div>

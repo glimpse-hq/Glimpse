@@ -670,6 +670,9 @@ export default function OnboardingScreen({
             stepMotionProps={stepMotionProps}
             hasStepTransitioned={ctx.hasStepTransitioned}
             onStart={goNext}
+            startDisabled={
+              ctx.selectedMode === "local" && importableAppsQuery.isLoading
+            }
           />
         );
       case "model":

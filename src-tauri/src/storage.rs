@@ -405,7 +405,7 @@ impl StorageManager {
                         speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
                  FROM transcriptions
                  WHERE status = ?1 AND text <> ''
-                 ORDER BY timestamp DESC
+                 ORDER BY timestamp DESC, id DESC
                  LIMIT ?2 OFFSET ?3",
             )?;
 

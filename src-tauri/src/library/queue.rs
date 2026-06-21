@@ -206,11 +206,16 @@ fn start_library_transcription_internal(
                 }
 
                 if count_words(&final_transcript) == 0 {
+                    let speech_model = result
+                        .speech_model
+                        .as_deref()
+                        .filter(|model| !model.trim().is_empty())
+                        .unwrap_or(&item.speech_model);
                     crate::analytics::track_transcription_failed(
                         &app_handle,
                         "transcription",
-                        library_transcription_mode(&item.speech_model),
-                        &item.speech_model,
+                        library_transcription_mode(speech_model),
+                        speech_model,
                         "no_speech",
                         Some(item.duration_seconds),
                         "uploaded_file",
