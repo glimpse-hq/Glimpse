@@ -259,7 +259,11 @@ const SettingsModal = ({
 
             <main className="flex flex-1 flex-col min-h-0 bg-surface-overlay">
               <div
-                className="flex-1 min-h-0 overflow-y-scroll px-6 pt-8 pb-5 settings-scroll"
+                className={`flex-1 min-h-0 px-6 pt-8 pb-5 settings-scroll ${
+                  form.activeTab === "models"
+                    ? "overflow-hidden"
+                    : "overflow-y-scroll"
+                }`}
                 style={{ scrollbarGutter: "stable" }}
               >
                 {form.loading ? null : (

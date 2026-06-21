@@ -18,6 +18,10 @@ pub struct LocalTranscriber {
     last_used: Mutex<Option<Instant>>,
     idle_wait: Condvar,
     warm_in_flight: Mutex<Option<String>>,
+    // Held for the duration of a live dictation session so batch transcriptions
+    // (library, non-streaming dictation) can't interleave on the shared model
+    // runtime and clobber the streaming transcript buffer.
+    exclusive: Mutex<()>,
 }
 
 impl LocalTranscriber {
@@ -30,6 +34,7 @@ impl LocalTranscriber {
             last_used: Mutex::new(None),
             idle_wait: Condvar::new(),
             warm_in_flight: Mutex::new(None),
+            exclusive: Mutex::new(()),
         }
     }
 
@@ -87,6 +92,12 @@ impl LocalTranscriber {
     }
 
     pub fn preload_and_warm(&self, model: &ReadyModel) -> Result<()> {
+        let _exclusive = self.exclusive.lock();
+        self.warm_locked(model)
+    }
+
+    // Caller must hold `exclusive` (directly or via a streaming session).
+    fn warm_locked(&self, model: &ReadyModel) -> Result<()> {
         let was_loaded = self.service.is_loaded();
         let started = Instant::now();
         self.service.preload_and_warm(&model.key)?;
@@ -181,6 +192,7 @@ impl LocalTranscriber {
         language: Option<&str>,
         with_segments: bool,
     ) -> Result<glimpse_speech::Transcription> {
+        let _exclusive = self.exclusive.lock();
         let was_loaded = self.service.is_loaded();
         let started = Instant::now();
         let response = self.service.transcribe(TranscribeRequest {
@@ -205,27 +217,58 @@ impl LocalTranscriber {
         Ok(response)
     }
 
+    // Take exclusive use of the transcriber for a live dictation session. Batch
+    // transcriptions block until the returned guard drops, so the shared
+    // streaming transcript buffer can't be overwritten mid-session.
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    pub fn streaming_transcribe_chunk(&self, model: &ReadyModel, chunk: &[f32]) -> Result<String> {
-        let transcript = self.service.streaming_transcribe_chunk(&model.key, chunk)?;
-        self.touch();
-        Ok(transcript)
-    }
-
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    pub fn streaming_reset(&self) {
-        self.service.streaming_reset();
-    }
-
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    pub fn streaming_get_transcript(&self) -> String {
-        self.service.streaming_get_transcript()
+    pub fn begin_streaming_session(&self) -> StreamingGuard<'_> {
+        StreamingGuard {
+            _exclusive: self.exclusive.lock(),
+            transcriber: self,
+        }
     }
 
     pub fn unload(&self) {
+        let _exclusive = self.exclusive.lock();
         self.service.unload();
         let mut last_used = self.last_used.lock();
         *last_used = None;
         self.idle_wait.notify_one();
+    }
+}
+
+/// Exclusive hold on the transcriber for one live dictation session. All
+/// streaming calls go through this guard so they share the single held lock;
+/// batch transcriptions wait until it drops.
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+pub struct StreamingGuard<'a> {
+    transcriber: &'a LocalTranscriber,
+    _exclusive: parking_lot::MutexGuard<'a, ()>,
+}
+
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+impl StreamingGuard<'_> {
+    pub fn warm(&self, model: &ReadyModel) -> Result<()> {
+        self.transcriber.warm_locked(model)
+    }
+
+    pub fn reset(&self) {
+        self.transcriber.service.streaming_reset();
+    }
+
+    pub fn transcribe_chunk(&self, model: &ReadyModel, chunk: &[f32]) -> Result<String> {
+        let transcript = self
+            .transcriber
+            .service
+            .streaming_transcribe_chunk(&model.key, chunk)?;
+        self.transcriber.touch();
+        Ok(transcript)
+    }
+
+    /// Read the accumulated transcript and clear the buffer for the next session.
+    pub fn finish(&self) -> String {
+        let transcript = self.transcriber.service.streaming_get_transcript();
+        self.transcriber.service.streaming_reset();
+        transcript
     }
 }

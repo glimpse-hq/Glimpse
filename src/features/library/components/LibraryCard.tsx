@@ -159,15 +159,15 @@ const LibraryCard = ({
           : ""
       }`}
     >
-      <div className="px-4 pt-2.5 pb-2.5 flex flex-col h-full relative w-full min-w-0">
-        <div className="mb-1 flex items-start justify-between gap-2">
+      <div className="px-4 pt-2 pb-2.5 flex flex-col h-full relative w-full min-w-0">
+        <div className="mb-0.5 flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-start gap-2.5">
             <IntelligencePixel
               active={isTranscribing}
               statusType={item.status.type}
             />
 
-            <div className="flex min-w-0 flex-col gap-1.5 pt-[1px] min-h-[28px]">
+            <div className="flex min-w-0 flex-col gap-1 pt-[1px] min-h-[24px]">
               <div className="flex items-center gap-1.5 h-3">
                 <span
                   className={`ui-text-label-strong ${
@@ -362,7 +362,7 @@ const LibraryCard = ({
               }}
               onBlur={onCommitNameEdit}
               onClick={(event) => event.stopPropagation()}
-              className="w-full min-w-0 rounded-md border border-[var(--color-border-hover)] bg-[var(--color-bg-surface)] px-2 py-1 ui-text-title-lg ui-color-primary outline-hidden focus:border-[var(--color-border-hover)]"
+              className="w-full min-w-0 bg-transparent p-0 ui-text-title-lg font-medium leading-snug ui-color-primary border-0 border-b border-[var(--color-border-primary)] outline-hidden focus:border-[var(--color-border-hover)]"
               autoFocus
             />
           ) : (

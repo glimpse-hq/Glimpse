@@ -5,8 +5,10 @@ import {
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
   Check,
+  Clock,
   Cloud,
   Trash as Trash2,
+  Waveform,
 } from "@phosphor-icons/react";
 import ModelStatCard from "../ModelStatCard";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
@@ -17,6 +19,11 @@ import {
   formatQuantLabel,
   sortInstalledModels,
 } from "../../../../shared/lib/modelStats";
+import {
+  hasModelCapability,
+  MODEL_CAPABILITY_STREAMING,
+  MODEL_CAPABILITY_TIMESTAMPS,
+} from "../../../../shared/lib/modelCapabilities";
 import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import type {
@@ -86,6 +93,9 @@ const InstalledModelRow = ({
   const { t } = useLingui();
   const stats = deriveModelStats(model);
 
+  const isStreaming = hasModelCapability(model, MODEL_CAPABILITY_STREAMING);
+  const hasTimestamps = hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
+
   const facts = [
     stats.englishOnly
       ? t({ id: "settings.models.installed.english", message: "English" })
@@ -112,11 +122,33 @@ const InstalledModelRow = ({
         disabled={active}
         className="min-w-0 text-left disabled:cursor-default"
       >
-        <span className="block truncate ui-text-body-sm-strong text-content-primary">
-          {model.label}
+        <span className="flex min-w-0 items-center gap-1.5 ui-text-body-sm-strong text-content-primary">
+          <span className="truncate">{model.label}</span>
           {!model.downloadable && (
-            <span className="ml-1.5 font-normal text-content-muted">
+            <span className="shrink-0 font-normal text-content-muted">
               {t({ id: "settings.models.installed.legacy", message: "Legacy" })}
+            </span>
+          )}
+          {isStreaming && (
+            <span
+              className="inline-flex shrink-0 text-content-muted"
+              title={t({
+                id: "settings.models.capability.streaming",
+                message: "Live streaming",
+              })}
+            >
+              <Waveform size={13} aria-hidden="true" />
+            </span>
+          )}
+          {hasTimestamps && (
+            <span
+              className="inline-flex shrink-0 text-content-muted"
+              title={t({
+                id: "settings.models.capability.timestamps",
+                message: "Word-level timestamps",
+              })}
+            >
+              <Clock size={13} aria-hidden="true" />
             </span>
           )}
         </span>
@@ -232,28 +264,26 @@ const ModelsTab = ({
           />
         </>
       ) : (
-        <div className="flex flex-col gap-5">
-          <div className="min-h-[1.25rem]">
-            {remoteSpeechEnabled && (
-              <div className="flex items-center gap-2 rounded-lg border border-cloud-20 bg-cloud-5 px-3 py-1.5">
-                <Cloud
-                  size={14}
-                  weight="fill"
-                  className="shrink-0 ui-color-cloud opacity-80"
-                  aria-hidden="true"
-                />
-                <p className="ui-text-label ui-color-warning-subtle">
-                  {t({
-                    id: "settings.models.cloud_active",
-                    message: `Glimpse is using ${providerName} to transcribe. Your active local model will be used as a fallback.`,
-                  })}
-                </p>
-              </div>
-            )}
-          </div>
+        <div className="flex h-full min-h-0 flex-col gap-5">
+          {remoteSpeechEnabled && (
+            <div className="flex shrink-0 items-center gap-2 rounded-lg border border-cloud-20 bg-cloud-5 px-3 py-1.5">
+              <Cloud
+                size={14}
+                weight="fill"
+                className="shrink-0 ui-color-cloud opacity-80"
+                aria-hidden="true"
+              />
+              <p className="ui-text-label ui-color-warning-subtle">
+                {t({
+                  id: "settings.models.cloud_active",
+                  message: `Glimpse is using ${providerName} to transcribe. Your active local model will be used as a fallback.`,
+                })}
+              </p>
+            </div>
+          )}
 
           {installedModel && (
-            <div className="flex justify-center">
+            <div className="flex shrink-0 justify-center">
               <ModelStatCard
                 model={installedModel}
                 status={modelStatus[installedModel.key]}
@@ -265,8 +295,8 @@ const ModelsTab = ({
             </div>
           )}
 
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-2">
+            <div className="flex shrink-0 items-center gap-3">
               <SectionLabel className="flex-1">
                 {t({
                   id: "settings.models.installed",
@@ -291,7 +321,7 @@ const ModelsTab = ({
               </button>
             </div>
 
-            <div className="flex min-h-[280px] flex-col">
+            <div className="-mr-2 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2">
               {installedModels.map((model) => (
                 <InstalledModelRow
                   key={model.key}
