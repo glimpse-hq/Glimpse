@@ -81,6 +81,13 @@ jobs:
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
         run: cargo check --manifest-path src-tauri/Cargo.toml
 
+      - name: add native DLLs to PATH
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          "$env:CARGO_TARGET_DIR\debug" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$env:VULKAN_SDK\Bin"         | Out-File -FilePath $env:GITHUB_PATH -Append
+
       - name: test Rust
         env:
           DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
