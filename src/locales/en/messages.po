@@ -14,692 +14,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.after_suffix"
-#~ msgstr " after"
-
-#. placeholder {0}: personality.apps.length
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-#~ msgid "personalization.modal.applications.selected"
-#~ msgstr "{0} selected"
-
-#. placeholder {0}: personality.websites.length
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-#~ msgid "personalization.modal.websites.count"
-#~ msgstr "{0} sites"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.apply"
-#~ msgstr "Apply anyway"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.body"
-#~ msgstr "Auto deletes local audio files."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings"
-#~ msgstr "Auto-delete Recordings"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.threshold.unknown_count"
-#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete local recordings that are already older than {threshold}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.immediately.unknown_count"
-#~ msgstr "Changing auto-delete to {policyLabel} may immediately delete your existing local recordings."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.immediately.known_count"
-#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# existing local recording} other {# existing local recordings}}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.threshold.known_count"
-#~ msgstr "Changing auto-delete to {policyLabel} will immediately delete {candidateCount, plural, one {# local recording that is already older than {threshold}} other {# local recordings that are already older than {threshold}}}."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.preview.loading"
-#~ msgstr "Checking how many recordings would be deleted"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.confirm.checking"
-#~ msgstr "Checking..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.confirm"
-#~ msgstr "Confirm"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.title"
-#~ msgstr "Delete older recordings now?"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "settings.account.activate.body"
-#~ msgstr "Paste your activation code from Polar."
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-#~ msgid "personalization.modal.header"
-#~ msgstr "Personalization"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "settings.account.action.refresh"
-#~ msgstr "Refresh"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-#~ msgid "personalization.modal.applications.search"
-#~ msgstr "Search applications..."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.audio_only"
-#~ msgstr "This only removes saved local audio files, not your transcript history."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_delete_recordings.confirm.unknown_count"
-#~ msgstr "We couldn't count them right now, but the cleanup will still run as soon as you save this change."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "settings.account.trial.text"
-#~ msgstr "Trial · {remaining} of {total} days left"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_launch.body"
-#~ msgstr "starts Glimpse automatically when you sign in."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-#~ msgid "settings.language_model.endpoint.autofilled"
-#~ msgstr "(auto-filled)"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-#~ msgid "settings.language_model.endpoint"
-#~ msgstr "Endpoint"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-#~ msgid "settings.providers.writing_section"
-#~ msgstr "Writing"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_pause_media.body"
-#~ msgstr "pauses music while recording, resumes when done."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-#~ msgid "settings.app.auto_pause_media.toggle_aria"
-#~ msgstr "Toggle auto-pause media while recording"
-
-#. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-#~ msgid "import.subtitle.single"
-#~ msgstr "We noticed you use {sourceName}. Pick what to carry over."
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
-#~ msgid "transcriptions.list.search.close"
-#~ msgstr "Close search"
-
-#. js-lingui-explicit-id
-#: src/features/transcriptions/components/TranscriptionList.tsx
-#~ msgid "transcriptions.list.sort.aria"
-#~ msgstr "Sort transcriptions"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-#~ msgid "home.greeting.afternoon"
-#~ msgstr "Good afternoon"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-#~ msgid "home.greeting.evening"
-#~ msgstr "Good evening"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-#~ msgid "home.greeting.morning"
-#~ msgstr "Good morning"
-
-#. placeholder {0}: todayStats.count
-#. placeholder {1}: todayStats.words
-#. js-lingui-explicit-id
-#: src/Home.tsx
-#~ msgid "home.today.stats"
-#~ msgstr "{0, plural, one {# dictation} other {# dictations}} · {1, plural, one {# word} other {# words}} today"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.cancelled"
-#~ msgstr "Cancelled"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.title"
-#~ msgstr "Choose your local model"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.capture_help_idle"
-#~ msgstr "Click the shortcut to change it."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.continue"
-#~ msgstr "Continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.continue"
-#~ msgstr "Continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.confirm_without_model.continue"
-#~ msgstr "Continue anyway"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.confirm_without_model.title"
-#~ msgstr "Continue without a model?"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.badge"
-#~ msgstr "Default"
-
-#. placeholder {0}: model.label
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.action.delete_aria"
-#~ msgstr "Delete {modelLabel}"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.download"
-#~ msgstr "Download"
-
-#. placeholder {0}: model.label
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.action.download_aria"
-#~ msgstr "Download {modelLabel}"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.download_failed"
-#~ msgstr "Download failed"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.downloaded"
-#~ msgstr "Downloaded"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.loading_body"
-#~ msgstr "Fetching the available local transcription engines for this build."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.unavailable_body"
-#~ msgstr "Glimpse couldn't load the local model list. Setup can continue with the default local engine, and you can manage downloads later in Settings."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.analytics_notice"
-#~ msgstr "Glimpse sends anonymous usage analytics to help improve the app. You can disable this anytime in Settings -> App."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.loading_title"
-#~ msgstr "Loading local models"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.loading_cta"
-#~ msgstr "Loading..."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.unavailable_title"
-#~ msgstr "Model list unavailable"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.subtitle"
-#~ msgstr "More models and language model setup available in Settings after setup."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.empty_title"
-#~ msgstr "No local models found"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.capture_prompt"
-#~ msgstr "Press new shortcut..."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.capture_help_active"
-#~ msgstr "Press your new shortcut, or hit Esc to cancel."
-
-#. placeholder {0}: formatShortcutForDisplay(smartShortcut)
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.capture_aria"
-#~ msgstr "Record new shortcut for Smart, currently {shortcut}"
-
-#. placeholder {0}: model.label
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.select_aria"
-#~ msgstr "Select {modelLabel}"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.label"
-#~ msgstr "Smart"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.subtitle"
-#~ msgstr "Smart is on by default, others available in settings."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.confirm_without_model.stay"
-#~ msgstr "Stay here"
-
-#. placeholder {0}: model.label
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.action.stop_download_aria"
-#~ msgstr "Stop downloading {modelLabel}"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.smart.description"
-#~ msgstr "tap to toggle, hold to talk"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.empty_body"
-#~ msgstr "This build did not return any local models. You can continue setup and manage models later in Settings."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelSelectionStep.tsx
-#~ msgid "onboarding.models.confirm_without_model.body"
-#~ msgstr "You haven't downloaded a local model yet. Transcription will not run offline until you add one in Settings."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.ready.title"
-#~ msgstr "You're ready!"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/AccessibilityStep.tsx
-#~ msgid "onboarding.accessibility.continue"
-#~ msgstr "Continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/MicrophoneStep.tsx
-#~ msgid "onboarding.microphone.continue"
-#~ msgstr "Continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/AccessibilityStep.tsx
-#~ msgid "onboarding.accessibility.skip"
-#~ msgstr "Skip"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/MicrophoneStep.tsx
-#~ msgid "onboarding.microphone.skip"
-#~ msgstr "Skip"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.engine.generic.description"
-#~ msgstr "{engineLabel} transcription engine."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.installed_count"
-#~ msgstr "{installedCount} installed"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.active"
-#~ msgstr "Active"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.sentence.priority_prefix"
-#~ msgstr "and I want"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.subtitle"
-#~ msgstr "Answer a couple of plain questions and Glimpse will pick the local model."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cancel"
-#~ msgstr "Cancel"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cancel_download"
-#~ msgstr "Cancel download"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cancelled"
-#~ msgstr "Cancelled"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.cancelled"
-#~ msgstr "Cancelled"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.priority.aria"
-#~ msgstr "Choose local model priority"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.language.aria"
-#~ msgstr "Choose primary dictation language"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.shortcut.idle_help"
-#~ msgstr "Click the shortcut if you want to change it."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.delete"
-#~ msgstr "Delete"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.delete_model"
-#~ msgstr "Delete model"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.download"
-#~ msgstr "Download"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.download"
-#~ msgstr "Download"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.download_failed"
-#~ msgstr "Download failed"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.download_model"
-#~ msgstr "Download model"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.loading_body"
-#~ msgstr "Glimpse is checking the models available in this build."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.recommendation_label"
-#~ msgstr "Glimpse recommends"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.analytics_notice"
-#~ msgstr "Glimpse sends anonymous usage analytics to help improve the app. You can disable this anytime in Settings -> App."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.sentence.language_prefix"
-#~ msgstr "I primarily dictate in"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.sentence.shortcut_prefix"
-#~ msgstr "I'll use"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.unavailable_title"
-#~ msgstr "Model list unavailable"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.empty_title"
-#~ msgstr "No local models found"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.engine.nvidia.description"
-#~ msgstr "NVIDIA local speech models, including Parakeet for transcription and Nemotron for live streaming."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.engine.whisper.description"
-#~ msgstr "OpenAI's speech recognition with custom vocabulary support."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.recommended"
-#~ msgstr "Recommended"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.remove"
-#~ msgstr "Remove"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.model.stop"
-#~ msgstr "Stop"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.sentence.shortcut_suffix"
-#~ msgstr "to dictate."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.transcription_engines"
-#~ msgstr "Transcription Engines"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.use"
-#~ msgstr "Use"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-#~ msgid "settings.local_api.title"
-#~ msgstr "API Server"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-#~ msgid "settings.providers.description"
-#~ msgstr "Connect local-mode AI providers for Cleanup, Edit Mode, and Personalization."
-
-#. placeholder {0}: remoteSpeechModel && remoteSpeechModel !== "auto" ? ` (${remoteSpeechModel})` : ""
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.remote_speech_active"
-#~ msgstr "Currently using your Speech Provider{0}. Local models remain available as fallback."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.description"
-#~ msgstr "Manage local transcription engines and downloaded speech models."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.title"
-#~ msgstr "Models"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.back_overview"
-#~ msgstr "Overview"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-#~ msgid "settings.providers.title"
-#~ msgstr "Providers"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.quant"
-#~ msgstr "Quantization"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.language.placeholder"
-#~ msgstr "choose a language"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.language.english"
-#~ msgstr "English"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.language.multilingual"
-#~ msgstr "Multiple languages"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-#~ msgid "onboarding.setup.language.question"
-#~ msgstr "Which language do you dictate in?"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.audio"
-#~ msgstr "Audio"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.timestamps.available_later"
-#~ msgstr "Available after transcription"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.close"
-#~ msgstr "Close"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.tags.none"
-#~ msgstr "None"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.timestamps.unsupported"
-#~ msgstr "Not supported"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.settings"
-#~ msgstr "Settings"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.timestamps.supported"
-#~ msgstr "Supported"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryModal.tsx
-#~ msgid "library.modal.tags"
-#~ msgstr "Tags"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-#~ msgid "library.modal.tags.select_existing"
-#~ msgstr "Select existing tag"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-#~ msgid "library.detail.discuss"
-#~ msgstr "ChatGPT"
-
-#. placeholder {0}: item.name
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-#~ msgid "library.detail.discuss.header"
-#~ msgstr "Here's a transcript titled \"{0}\". Help me review, summarize, and discuss it."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-#~ msgid "library.detail.discuss.instruction"
-#~ msgstr "I have a transcript copied to my clipboard and will paste it in my next message. Help me review, summarize, and discuss it."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-#~ msgid "library.detail.discuss.tooltip"
-#~ msgstr "Open this transcript in ChatGPT"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-#~ msgid "library.detail.discuss.copied"
-#~ msgstr "Transcript copied — paste it into ChatGPT."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx
-#~ msgid "library.import.summary.single"
-#~ msgstr "1 file"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/shared.tsx
-#~ msgid "onboarding.status.checking"
-#~ msgstr "Checking..."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/shared.tsx
-#~ msgid "onboarding.status.enabled"
-#~ msgstr "Enabled"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx
-#~ msgid "library.import.files"
-#~ msgstr "Files"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/shared.tsx
-#~ msgid "onboarding.status.not_enabled"
-#~ msgstr "Not enabled"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -904,9 +218,14 @@ msgid "settings.general.account_tab"
 msgstr "Account"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.balanced.helper"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.priority.balanced.helper"
 msgstr "Accuracy & size"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.priority.quality"
+msgstr "Accurate"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -914,19 +233,14 @@ msgid "settings.account.activate.submit"
 msgstr "Activate"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.activate.submit"
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.activate"
 msgstr "Activate"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.license_prefix"
-msgstr "Activate Glimpse Personal in"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.activate.input_aria"
-msgstr "Activation code"
+msgstr "Activate your Glimpse license in"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1044,14 +358,14 @@ msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Allow cross-origin browser requests"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.placeholder"
+msgstr "Already bought? Paste your key"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.ane"
 msgstr "ANE"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.analytics_notice"
-msgstr "Anonymous usage analytics help improve Glimpse. Turn this off anytime in Settings → App."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1082,6 +396,11 @@ msgstr "API Key"
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.tab.api_server"
 msgstr "API Server"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsModal.tsx
+msgid "settings.modal.api_server.full_license_required"
+msgstr "API Server requires a full active license."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
@@ -1121,7 +440,7 @@ msgstr "Assign"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.support.info"
-msgstr "Attaching the log file helps debug serious issues. Logs contain technical events only — never transcripts, audio, or keys. File paths in them may include your computer's username."
+msgstr "Attaching the log file helps debug serious issues. Logs contain technical events only, never transcripts, audio, or keys. File paths in them may include your computer's username."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1211,11 +530,6 @@ msgid "onboarding.back"
 msgstr "Back"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.back"
-msgstr "Back"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.back"
 msgstr "Back to library"
@@ -1226,8 +540,8 @@ msgid "pill.background_visualizer"
 msgstr "Background audio visualizer"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.balanced"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.priority.balanced"
 msgstr "Balanced"
 
 #. js-lingui-explicit-id
@@ -1236,14 +550,14 @@ msgid "settings.local_api.behavior"
 msgstr "Behavior"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.quality"
-msgstr "Best quality"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.priority.quality.helper"
+msgstr "Best results"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.local.feature.byok"
-msgstr "Bring your own API key for AI features"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.subtitle"
+msgstr "Bigger models are more accurate. Smaller ones are faster."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -1251,14 +565,9 @@ msgid "settings.models.browse_all"
 msgstr "Browse all models"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.pick_specific"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.browse"
 msgstr "Browse all models"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.subtitle"
-msgstr "Buy once, or activate the code from your receipt. You can skip this and keep using the trial."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1366,14 +675,9 @@ msgid "model_picker.title"
 msgstr "Choose a model"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.placeholder"
-msgstr "choose a priority"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.subtitle"
-msgstr "Choose how you want to transcribe."
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.title"
+msgstr "Choose a model"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1406,11 +710,6 @@ msgid "library.detail.speaker.clear"
 msgstr "Clear speaker"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.accessibility.instructions"
-msgstr "Click below to open System Settings, then toggle on {appName}"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.dropzone"
 msgstr "Drop files to import"
@@ -1426,6 +725,16 @@ msgid "library.detail.speaker.rename"
 msgstr "Click to rename"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.close"
+msgstr "Close"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.close"
+msgstr "Close"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.close"
 msgstr "Close"
@@ -1433,11 +742,6 @@ msgstr "Close"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.close"
-msgstr "Close"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.close"
 msgstr "Close"
 
 #. js-lingui-explicit-id
@@ -1473,11 +777,6 @@ msgstr "Cloud"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.cloud.label"
-msgstr "Cloud"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.cloud.title"
 msgstr "Cloud"
 
 #. js-lingui-explicit-id
@@ -1536,9 +835,9 @@ msgid "settings.local_api.configuration"
 msgstr "Configuration"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.title"
-msgstr "Connect your license"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.continue"
+msgstr "Continue"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -1546,29 +845,9 @@ msgid "onboarding.permissions.continue"
 msgstr "Continue"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.continue"
-msgstr "Continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.cta"
-msgstr "Continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.confirm_without_model.continue"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.confirm.continue"
 msgstr "Continue anyway"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.continue_trial"
-msgstr "Continue with trial"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.confirm_without_model.title"
-msgstr "Continue without a model?"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -1587,11 +866,6 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "Converting audio... {0}%"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.email_support.copied"
-msgstr "Copied"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copied"
 msgstr "Copied"
@@ -1599,6 +873,11 @@ msgstr "Copied"
 #. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.copied"
+msgstr "Copied"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.email_support.copied"
 msgstr "Copied"
 
 #. js-lingui-explicit-id
@@ -1777,11 +1056,6 @@ msgid "settings.speech_model.provider.custom"
 msgstr "Custom"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.custom"
-msgstr "Custom"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.custom_instructions"
 msgstr "Custom instructions"
@@ -1939,9 +1213,14 @@ msgid "settings.modal.section.developer"
 msgstr "Developer"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.shortcut.label"
-msgstr "Dictate with"
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.free_title"
+msgstr "Dictation is free forever"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.free_title"
+msgstr "Dictation is free forever"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2000,6 +1279,11 @@ msgid "models.card.download"
 msgstr "Download"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.confirm.download"
+msgstr "Download"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.download.failed"
 msgstr "Download failed"
@@ -2018,6 +1302,11 @@ msgstr "Download Neural Engine encoder"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.download_one"
 msgstr "Download one"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.confirm.title"
+msgstr "Download your model?"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
@@ -2055,13 +1344,13 @@ msgid "personalization.modal.edit_name"
 msgstr "Edit mode name"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.email_support"
+#: src/Home.tsx
+msgid "home.support.feedback.email"
 msgstr "Email"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.feedback.email"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.email_support"
 msgstr "Email"
 
 #. js-lingui-explicit-id
@@ -2088,11 +1377,6 @@ msgstr "Enabled for supported models"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.timestamps_supported"
 msgstr "Enabled for supported models"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.accessibility.subtitle"
-msgstr "Enables auto-paste into any application."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2123,6 +1407,11 @@ msgstr "Enter your own endpoint URL"
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.status.error"
 msgstr "Error occurred"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.license_active"
+msgstr "Every feature is unlocked."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2245,9 +1534,9 @@ msgid "dictionary.replacements.find"
 msgstr "Find word..."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.model.loading_title"
-msgstr "Finding your local model"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.loading"
+msgstr "Finding a model for your device"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2261,8 +1550,8 @@ msgstr "Founder"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.local.feature.free"
-msgstr "Free, no account required"
+msgid "onboarding.welcome.title"
+msgstr "Free dictation anywhere"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2280,9 +1569,14 @@ msgid "settings.modal.tab.general"
 msgstr "General"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.continue_active"
-msgstr "Continue"
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.get_license"
+msgstr "Get a license"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/WelcomeStep.tsx
+msgid "onboarding.welcome.cta"
+msgstr "Get started"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2310,16 +1604,6 @@ msgid "settings.about.version_label"
 msgstr "Glimpse"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/OnboardingScreen.tsx
-msgid "onboarding.brand"
-msgstr "Glimpse"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.accessibility.app_name"
-msgstr "Glimpse"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud_active"
 msgstr "Glimpse is using {provider} to transcribe. Your active local model will be used as a fallback."
@@ -2330,14 +1614,14 @@ msgid "member_card.aria"
 msgstr "Glimpse member card"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.permissions.subtitle"
-msgstr "Glimpse needs these to record your voice and put text where your cursor is."
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.confirm.body"
+msgstr "Glimpse needs it to transcribe. It can download in the background while you finish."
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.activate.placeholder"
-msgstr "GLIMPSE_..."
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permissions.subtitle"
+msgstr "Glimpse needs these to hear you and type for you."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -2348,6 +1632,11 @@ msgstr "GLIMPSE_…"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.microphone.grant"
 msgstr "Grant Access"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.microphone.subtitle"
+msgstr "Hears your voice."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2460,11 +1749,6 @@ msgid "settings.general.cloud.description"
 msgstr "In development"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.cloud.badge"
-msgstr "In progress"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.toggle"
 msgstr "Include the Apple Neural Engine encoder"
@@ -2567,9 +1851,14 @@ msgid "model_picker.category.legacy"
 msgstr "Legacy"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.compact.helper"
-msgstr "Less storage"
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.legacy"
+msgstr "Legacy"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.priority.compact.helper"
+msgstr "Less space"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2592,9 +1881,19 @@ msgid "home.drag_import.eyebrow"
 msgstr "Library Import"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.license_active_title"
+msgstr "License active"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.input_aria"
 msgstr "Activation code"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.input_aria"
+msgstr "License key"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2667,11 +1966,6 @@ msgid "settings.general.local.label"
 msgstr "Local"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.local.title"
-msgstr "Local"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.running"
 msgstr "Local API"
@@ -2734,7 +2028,7 @@ msgstr "Microphone"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.microphone.title"
-msgstr "Microphone Access"
+msgstr "Microphone"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2762,6 +2056,11 @@ msgid "settings.speech_model.model"
 msgstr "Model"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.recap.model"
+msgstr "Model"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.model"
 msgstr "Model"
@@ -2784,9 +2083,9 @@ msgid "settings.speech_model.model.placeholder"
 msgstr "Model (default: {0})"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.model.unavailable_body"
-msgstr "Model list unavailable. You can manage local models later in Settings."
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.unavailable"
+msgstr "Model list unavailable. You can add one later in Settings."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -2854,9 +2153,9 @@ msgid "transcriptions.item.more_options"
 msgstr "More options"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.quality.helper"
-msgstr "Most accurate"
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.more_options"
+msgstr "More options available in Settings."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2950,11 +2249,6 @@ msgid "library.import.no_files"
 msgstr "No files left to import"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.model.empty_body"
-msgstr "You can continue setup and manage local models later in Settings."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "No logs yet."
@@ -2988,6 +2282,11 @@ msgstr "No local models are installed. Download a model in Settings -> Models be
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.no_models"
 msgstr "No local models are installed. Download a model in Settings -> Models before retranscribing."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.empty"
+msgstr "No models found. You can add one later in Settings."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3130,11 +2429,6 @@ msgid "import.cat.auto_launch.on"
 msgstr "On"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.local.feature.models"
-msgstr "On-device transcription models"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer"
 msgstr "Only if you enable AI writing and set up a provider under Settings → Providers. Cleanup, Edit Mode, and Personalization then send the relevant text directly to that provider. Your API key stays stored locally in Glimpse."
@@ -3143,6 +2437,11 @@ msgstr "Only if you enable AI writing and set up a provider under Settings → P
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.open_settings"
 msgstr "Open API server settings"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.auto_launch"
+msgstr "Open at login"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3250,9 +2549,9 @@ msgid "settings.local_api.preloaded_model"
 msgstr "Preloaded model"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.shortcut.prompt"
-msgstr "press a shortcut"
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.recap.shortcut_capture"
+msgstr "Press a shortcut"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -3281,14 +2580,14 @@ msgid "dictionary.edit_hint"
 msgstr "Press Enter to save · Esc to cancel"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.shortcut.active_help"
-msgstr "Press the keys you want, or hit Esc to cancel."
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.how_it_works.answer"
 msgstr "Press your dictation shortcut, speak, and release. Glimpse transcribes on your device and inserts the text where your cursor is. Core dictation works offline. No account required."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.subtitle"
+msgstr "Press your shortcut in any app to dictate."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3361,12 +2660,6 @@ msgid "updates.ready_to_install"
 msgstr "Ready to install"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: formatShortcutForDisplay(smartShortcut)
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.shortcut.aria"
-msgstr "Record new shortcut, currently {0}"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.storage.recordings"
 msgstr "Recordings"
@@ -3407,15 +2700,15 @@ msgid "personalization.modal.remove"
 msgstr "Remove"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: fileName(path)
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.remove_file"
-msgstr "Remove {0}"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: speaker.name
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker.remove"
+msgstr "Remove {0}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: fileName(path)
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.remove_file"
 msgstr "Remove {0}"
 
 #. js-lingui-explicit-id
@@ -3499,19 +2792,9 @@ msgid "settings.app.microphone.description"
 msgstr "required for transcription"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/PermissionsStep.tsx
-msgid "onboarding.microphone.subtitle"
-msgstr "Required to capture your voice for transcription."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.api_key.lan_required"
 msgstr "Required when listening on LAN"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.auto_dictionary.unsupported_body"
-msgstr "requires a model with dictionary support"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3520,13 +2803,18 @@ msgstr "Requires an active license"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.help_requirement"
-msgstr "Requires an enabled and configured writing provider."
+msgid "settings.general.edit_mode.help_license_requirement"
+msgstr "Requires a Glimpse license."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.edit_mode.help_license_requirement"
-msgstr "Requires Glimpse Personal."
+msgid "settings.general.auto_dictionary.unsupported_body"
+msgstr "requires a model with dictionary support"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.edit_mode.help_requirement"
+msgstr "Requires an enabled and configured writing provider."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -3679,8 +2967,8 @@ msgid "personalization.modal.save_name"
 msgstr "Save name"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.saving"
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.saving"
 msgstr "Saving..."
 
 #. js-lingui-explicit-id
@@ -3804,11 +3092,6 @@ msgid "library.card.select_existing_tag"
 msgstr "Select existing tag"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.local.aria"
-msgstr "Select Local mode: privacy-first, on-device transcription"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.select_microphone"
 msgstr "Select microphone..."
@@ -3847,11 +3130,6 @@ msgstr "send CORS headers so web apps can call the API"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.edit_mode.configure_prefix"
 msgstr "Set up AI writing in"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.title"
-msgstr "Set up Glimpse"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3904,11 +3182,6 @@ msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "Show shortcuts"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryRetranscribeModal.tsx
-msgid "library.retranscribe.show_timestamps.aria"
-msgstr "Show timestamps"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.show_timestamps"
 msgstr "Show timestamps"
@@ -3921,6 +3194,11 @@ msgstr "Show timestamps"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.show_timestamps"
+msgstr "Show timestamps"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.show_timestamps.aria"
 msgstr "Show timestamps"
 
 #. js-lingui-explicit-id
@@ -3939,14 +3217,19 @@ msgid "settings.app.text_size.small"
 msgstr "Small"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.compact"
-msgstr "Smallest"
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.priority.compact"
+msgstr "Small"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.smart"
 msgstr "Smart"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.recap.shortcut"
+msgstr "Smart shortcut"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3984,6 +3267,16 @@ msgid "settings.local_api.start"
 msgstr "Start API"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.cta"
+msgstr "Start dictating"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.auto_launch.body"
+msgstr "Start Glimpse when you log in."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.start_in_background"
 msgstr "Start in background"
@@ -4002,11 +3295,6 @@ msgstr "Start on launch"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.download.starting"
 msgstr "starting..."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.confirm_without_model.stay"
-msgstr "Stay here"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4049,13 +3337,13 @@ msgid "settings.general.auto_dictionary.body"
 msgstr "suggests names and terms after you correct dictated text"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.support"
+#: src/Home.tsx
+msgid "home.support.label"
 msgstr "Support"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.label"
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.support"
 msgstr "Support"
 
 #. js-lingui-explicit-id
@@ -4162,11 +3450,6 @@ msgstr "This file has an unsupported sample rate."
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.no_timestamps"
 msgstr "This item doesn't have timestamps. Retranscribe with timestamps to export subtitles."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license.active_subtitle"
-msgstr "This Mac is licensed and ready."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4299,11 +3582,6 @@ msgid "import.cat.model"
 msgstr "Transcription model"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.confirm_without_model.body"
-msgstr "Transcription will not run offline until you download a local model."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.noun.transcripts.other"
 msgstr "transcripts"
@@ -4328,6 +3606,11 @@ msgid "settings.account.trial.text_one"
 msgstr "Trial · 1 day left"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.accessibility.subtitle"
+msgstr "Types text into any app."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.uninstall_cli"
 msgstr "Uninstall"
@@ -4336,6 +3619,16 @@ msgstr "Uninstall"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.draft_stamp_empty"
 msgstr "Unissued"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.free_body"
+msgstr "Unlock AI cleanup, voice editing, per-app personalities, audio and video transcription, and more."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.license_adds"
+msgstr "Unlock Cleanup, Edit Mode, Personalities, File Transcription, and more."
 
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
@@ -4476,7 +3769,7 @@ msgstr "We couldn't read this app's data. You can skip and set things up manuall
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.model.unrecognized"
-msgstr "We don't recognize this app's model — you'll pick one on the next step."
+msgstr "We don't recognize this app's model, so you'll pick one on the next step."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4489,11 +3782,6 @@ msgid "personalization.websites"
 msgstr "Websites"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/WelcomeStep.tsx
-msgid "onboarding.welcome.title"
-msgstr "Welcome"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.question"
 msgstr "What is free vs Glimpse Personal?"
@@ -4502,11 +3790,6 @@ msgstr "What is free vs Glimpse Personal?"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.permissions.question"
 msgstr "What permissions does Glimpse need?"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/SetupStep.tsx
-msgid "onboarding.setup.priority.question"
-msgstr "What should your model prioritize?"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -4534,6 +3817,11 @@ msgid "faq.privacy.question"
 msgstr "Where does my data go?"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.why_paid"
+msgstr "Why is there paid stuff?"
+
+#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.label_words_spoken"
 msgstr "Words spoken"
@@ -4547,6 +3835,11 @@ msgstr "Writing Model Provider"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.group.yesterday"
 msgstr "Yesterday"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+msgid "onboarding.done.title"
+msgstr "You're set"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

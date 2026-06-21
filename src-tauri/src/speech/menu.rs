@@ -8,6 +8,41 @@ use crate::{AppRuntime, AppState};
 pub const MENU_ID_MODEL_PREFIX: &str = "menu_model_";
 pub const MENU_ID_MODEL_STATUS_PREFIX: &str = "menu_model_status_";
 
+/// Select a local speech model by key from the CLI. Validates the key and that
+/// the model is installed, then persists and refreshes the menu/tray.
+pub(crate) fn cli_set_local_model(
+    app: &AppHandle<AppRuntime>,
+    model_key: &str,
+) -> Result<(), String> {
+    if catalog::definition(model_key).is_none() {
+        return Err(format!("Unknown model: {model_key}"));
+    }
+    match install::check_model_status(app.clone(), model_key.to_string()) {
+        Ok(status) if status.installed => {}
+        Ok(_) => return Err(format!("Model not installed: {model_key}")),
+        Err(err) => return Err(format!("Failed to check model status: {err}")),
+    }
+
+    let state = app.state::<AppState>();
+    let mut settings = state.current_settings_unmasked();
+    settings.local_model = model_key.to_string();
+    settings.remote_speech_enabled = false;
+    persist_menu_settings(app, settings).ok_or_else(|| "Failed to persist settings".to_string())?;
+    Ok(())
+}
+
+/// Enable remote speech from the CLI. Requires a valid remote configuration.
+pub(crate) fn cli_enable_remote(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut settings = state.current_settings_unmasked();
+    if !remote::has_valid_config(&settings) {
+        return Err("Remote speech is not configured. Set it up in Settings → Models.".to_string());
+    }
+    settings.remote_speech_enabled = true;
+    persist_menu_settings(app, settings).ok_or_else(|| "Failed to persist settings".to_string())?;
+    Ok(())
+}
+
 pub fn model_status_lines(settings: &UserSettings) -> Vec<String> {
     if remote::is_configured(settings) {
         let active = catalog::label(&speech::selected_model(settings));
@@ -151,8 +186,10 @@ fn persist_menu_settings(
     settings: UserSettings,
 ) -> Option<UserSettings> {
     let state = app.state::<AppState>();
+    let previous = state.current_settings_unmasked();
     match state.persist_settings(settings) {
         Ok(saved) => {
+            crate::analytics::track_settings_changes(app, &previous, &saved);
             state.emit_settings_changed(app, &saved);
             Some(saved)
         }

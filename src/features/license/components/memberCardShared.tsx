@@ -208,7 +208,6 @@ export const TIER_COLORS: Record<PurchaseTier, { fg: string; bg: string }> = {
   commercial: EDITION_COLORS.commercial,
 };
 
-
 export const MEMBER_CARD_LAYOUT_ID = "glimpse-member-card";
 
 function gridDotCenter(

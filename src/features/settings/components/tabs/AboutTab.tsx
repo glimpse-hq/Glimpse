@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
@@ -21,7 +21,7 @@ const REPORT_ISSUE_URL = "https://github.com/glimpse-hq/Glimpse/issues/new";
 const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
 const SUPPORT_ACTION_CLASS =
-  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-border-primary bg-surface-surface [box-shadow:var(--ui-action-card-rest-shadow)] outline-hidden transition-[transform,box-shadow,border-color,background-color] duration-100 ease-out hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-10)] hover:[box-shadow:var(--ui-action-card-hover-shadow)] active:translate-y-[2px] active:[box-shadow:none] focus-visible:ring-2 focus-visible:ring-border-hover";
+  "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-border-primary bg-surface-surface outline-hidden transition-[transform,border-color,background-color] duration-100 ease-out hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-10)] active:translate-y-[2px] focus-visible:ring-2 focus-visible:ring-border-hover";
 const SUPPORT_ACTION_ICON_CLASS =
   "shrink-0 text-[var(--color-text-muted)] transition-colors duration-150 group-hover:text-[var(--color-text-primary)]";
 const SUPPORT_ACTION_LABEL_CLASS =
@@ -44,7 +44,7 @@ type AboutTabProps = {
   formatBytes: (bytes: number) => string;
   cliInstallStatus: CliInstallStatus | null;
   cliInstallBusy: boolean;
-  licenseGateActive: boolean;
+  activeLicense: boolean;
   onInstallCli: () => void;
   onRemoveCli: () => void;
   onOpenDataDir: () => void;
@@ -59,7 +59,7 @@ const AboutTab = ({
   formatBytes,
   cliInstallStatus,
   cliInstallBusy,
-  licenseGateActive,
+  activeLicense,
   onInstallCli,
   onRemoveCli,
   onOpenDataDir,
@@ -67,7 +67,7 @@ const AboutTab = ({
   onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
-  const [supportEmailCopied, setSupportEmailCopied] = useState(false);
+  const { copied: supportEmailCopied, copy } = useCopyToClipboard(2000);
 
   const isCloudMode = transcriptionMode === "cloud";
   const modeLabel = isCloudMode
@@ -90,7 +90,7 @@ const AboutTab = ({
     0;
   const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
   const cliInstalled = cliInstallStatus?.installed ?? false;
-  const cliInstallLocked = !licenseGateActive && !cliInstalled;
+  const cliInstallLocked = !activeLicense && !cliInstalled;
   const cliInstallPath =
     cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
   const cliInfo = cliUnavailable
@@ -101,7 +101,7 @@ const AboutTab = ({
     : cliInstallLocked
       ? t({
           id: "settings.about.cli.locked_info",
-          message: "Command line install requires an active license.",
+          message: "Command line install requires a full active license.",
         })
       : cliInstalled
         ? t({
@@ -125,7 +125,7 @@ const AboutTab = ({
     : cliInstallLocked
       ? t({
           id: "settings.about.cli.locked_subtitle",
-          message: "Requires an active license",
+          message: "Requires a full active license",
         })
       : cliInstalled
         ? t({
@@ -136,7 +136,7 @@ const AboutTab = ({
             id: "settings.about.cli.default_subtitle",
             message: "Use Glimpse from Terminal or scripts",
           });
-  const storageRows = [
+  const storageBreakdown = [
     {
       label: t({
         id: "settings.about.storage.recordings",
@@ -188,16 +188,7 @@ const AboutTab = ({
     );
   };
 
-  const handleCopyEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(SUPPORT_EMAIL);
-      setSupportEmailCopied(true);
-      window.setTimeout(() => setSupportEmailCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy support email:", err);
-      setSupportEmailCopied(false);
-    }
-  };
+  const handleCopyEmail = () => copy(SUPPORT_EMAIL);
 
   const handleResetOnboarding = async () => {
     try {
@@ -250,35 +241,12 @@ const AboutTab = ({
           <UpdateChecker onOpenWhatsNew={onOpenWhatsNew} />
         </div>
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5">
-            <SectionLabel>
-              {t({
-                id: "settings.about.support",
-                message: "Support",
-              })}
-            </SectionLabel>
-            <div className="relative group shrink-0">
-              <button
-                type="button"
-                className="flex size-4 items-center justify-center ui-color-disabled transition-colors hover:ui-color-muted focus:ui-color-muted focus:outline-none"
-                aria-label={t({
-                  id: "settings.about.support.info_aria",
-                  message: "More information about support logs",
-                })}
-              >
-                <Info size={10} aria-hidden="true" />
-              </button>
-              <div className="absolute left-1/2 bottom-full z-20 mb-1 hidden -translate-x-1/2 group-hover:block group-focus-within:block">
-                <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
-                  {t({
-                    id: "settings.about.support.info",
-                    message:
-                      "Attaching the log file helps debug serious issues. Logs contain technical events only — never transcripts, audio, or keys. File paths in them may include your computer's username.",
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
+          <SectionLabel>
+            {t({
+              id: "settings.about.support",
+              message: "Support",
+            })}
+          </SectionLabel>
           <div className="grid h-[52px] grid-cols-3 gap-1.5">
             <button
               type="button"
@@ -367,16 +335,14 @@ const AboutTab = ({
           })}
         </SectionLabel>
 
-        <div className="rounded-lg bg-surface-surface p-2.5">
-          <div className="grid grid-cols-5 gap-3 px-2 py-2">
-            {storageRows.map((row) => (
+        <div className="space-y-4 px-1">
+          <div className="grid grid-cols-5 gap-x-6 gap-y-3">
+            {storageBreakdown.map((row) => (
               <div key={row.label} className="min-w-0">
                 <p className="ui-text-micro ui-color-disabled">{row.label}</p>
                 <p
-                  className={`mt-0.5 truncate font-mono tabular-nums ${
-                    row.primary
-                      ? "ui-text-label-strong ui-color-primary"
-                      : "ui-text-meta ui-color-muted"
+                  className={`mt-1 truncate font-mono tabular-nums ui-text-meta ${
+                    row.primary ? "ui-color-primary" : "ui-color-secondary"
                   }`}
                 >
                   {formatBytes(row.value)}
@@ -390,7 +356,7 @@ const AboutTab = ({
             onClick={onOpenDataDir}
             disabled={!appInfo?.data_dir_path}
             title={appInfo?.data_dir_path}
-            className="mt-1 block w-full min-w-0 truncate px-2 py-1 text-left ui-text-meta font-mono ui-color-muted transition-colors hover:ui-color-primary disabled:cursor-not-allowed disabled:opacity-50"
+            className="block w-full min-w-0 truncate text-left ui-text-meta font-mono ui-color-muted transition-colors hover:ui-color-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="border-b border-dotted border-content-disabled/70 pb-px">
               {appInfo?.data_dir_path ?? "-"}
@@ -507,7 +473,7 @@ const AboutTab = ({
                     onClick={cliInstalled ? onRemoveCli : onInstallCli}
                     disabled={
                       cliInstallBusy ||
-                      (!cliInstalled && (cliUnavailable || !licenseGateActive))
+                      (!cliInstalled && (cliUnavailable || !activeLicense))
                     }
                     className="inline-flex h-6 min-w-[4.75rem] shrink-0 items-center justify-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:pointer-events-none disabled:opacity-60"
                   >

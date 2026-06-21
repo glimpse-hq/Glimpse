@@ -30,6 +30,7 @@ pub enum RecordingRejectionReason {
 }
 
 const SPECTRUM_SIZE: usize = 512;
+const ARM_SIGNAL_FLOOR: f32 = 0.01;
 
 struct AudioSpectrumState {
     samples: Vec<f32>,
@@ -82,6 +83,7 @@ pub struct RecorderManager {
     tx: Sender<RecorderCommand>,
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
+    armed: Arc<AtomicBool>,
 }
 
 type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
@@ -210,13 +212,19 @@ impl Default for RecorderManager {
         let (tx, rx) = unbounded();
         let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
         let live_buffer = Arc::new(Mutex::new(None));
+        let armed = Arc::new(AtomicBool::new(false));
         let spectrum_for_thread = Arc::clone(&spectrum);
         let live_buffer_for_thread = Arc::clone(&live_buffer);
+        let armed_for_thread = Arc::clone(&armed);
 
         std::thread::Builder::new()
             .name("glimpse-recorder".into())
             .spawn(move || {
-                let mut core = RecorderCore::new(spectrum_for_thread, live_buffer_for_thread);
+                let mut core = RecorderCore::new(
+                    spectrum_for_thread,
+                    live_buffer_for_thread,
+                    armed_for_thread,
+                );
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
                         RecorderCommand::Start {
@@ -242,6 +250,7 @@ impl Default for RecorderManager {
             tx,
             spectrum,
             live_buffer,
+            armed,
         }
     }
 }
@@ -249,6 +258,10 @@ impl Default for RecorderManager {
 impl RecorderManager {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn arm(&self) {
+        self.armed.store(true, Ordering::Relaxed);
     }
 
     pub fn spectrum_snapshot(&self) -> Option<Vec<f32>> {
@@ -361,17 +374,20 @@ struct RecorderCore {
     active: Option<ActiveRecording>,
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
+    armed: Arc<AtomicBool>,
 }
 
 impl RecorderCore {
     fn new(
         spectrum: Arc<Mutex<AudioSpectrumState>>,
         live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
+        armed: Arc<AtomicBool>,
     ) -> Self {
         Self {
             active: None,
             spectrum,
             live_buffer,
+            armed,
         }
     }
 
@@ -420,31 +436,37 @@ impl RecorderCore {
             (sample_rate as usize * channels as usize).max(48_000),
         )));
         self.spectrum.lock().reset();
+        self.armed.store(false, Ordering::Relaxed);
 
         let spectrum = &self.spectrum;
+        let armed = &self.armed;
         let stream = match format {
             SampleFormat::F32 => {
-                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum, armed)?
             }
             SampleFormat::F64 => {
-                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum, armed)?
             }
-            SampleFormat::I8 => build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum)?,
+            SampleFormat::I8 => {
+                build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum, armed)?
+            }
             SampleFormat::I16 => {
-                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum, armed)?
             }
             SampleFormat::I24 => {
-                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum, armed)?
             }
             SampleFormat::I32 => {
-                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum, armed)?
             }
-            SampleFormat::U8 => build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum)?,
+            SampleFormat::U8 => {
+                build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum, armed)?
+            }
             SampleFormat::U16 => {
-                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum, armed)?
             }
             SampleFormat::U32 => {
-                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum)?
+                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum, armed)?
             }
             other => return Err(anyhow!("Unsupported sample format: {other}")),
         };
@@ -1184,7 +1206,7 @@ fn apply_peak_limiter(samples: &mut [f32]) {
 
 /// Returns the trimmed samples plus the speech percentage of the kept audio,
 /// so validation can reuse this VAD pass instead of running its own. Returns
-/// None when no usable measurement was made (e.g. no speech detected here —
+/// None when no usable measurement was made (e.g. no speech detected here -
 /// compression/normalization may still surface quiet speech for validation).
 fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
     if samples.is_empty() {
@@ -1391,6 +1413,7 @@ fn build_mic_stream<T>(
     config: cpal::StreamConfig,
     buffer: &Arc<Mutex<Vec<i16>>>,
     spectrum: &Arc<Mutex<AudioSpectrumState>>,
+    armed: &Arc<AtomicBool>,
 ) -> Result<Stream, cpal::Error>
 where
     T: SizedSample + 'static,
@@ -1399,10 +1422,11 @@ where
 {
     let buffer = Arc::clone(buffer);
     let spectrum = Arc::clone(spectrum);
+    let armed = Arc::clone(armed);
     let channels = (config.channels as usize).max(1);
     device.build_input_stream(
         config,
-        move |data: &[T], _| push_samples(data, &buffer, &spectrum, channels),
+        move |data: &[T], _| push_samples(data, &buffer, &spectrum, &armed, channels),
         |err| tracing::error!("Microphone stream error: {err}"),
         None,
     )
@@ -1412,12 +1436,24 @@ fn push_samples<T>(
     data: &[T],
     buffer: &Mutex<Vec<i16>>,
     spectrum: &Mutex<AudioSpectrumState>,
+    armed: &AtomicBool,
     channels: usize,
 ) where
     T: Sample,
     i16: FromSample<T>,
     f32: FromSample<T>,
 {
+    if !armed.load(Ordering::Relaxed) {
+        let peak = data
+            .iter()
+            .map(|&sample| f32::from_sample(sample).abs())
+            .fold(0.0_f32, f32::max);
+        if peak < ARM_SIGNAL_FLOOR {
+            return;
+        }
+        armed.store(true, Ordering::Relaxed);
+    }
+
     if let Some(mut analysis) = spectrum.try_lock() {
         for frame in data.chunks(channels) {
             let mono: f32 = frame

@@ -1,4 +1,4 @@
-use glimpse_speech::models::{InstallSpec, ModelStorage, RemoteFile};
+use glimpse_speech::models::{InstallSpec, ModelLayout, ModelStorage, RemoteFile};
 use serde::Serialize;
 use tauri::AppHandle;
 
@@ -16,6 +16,19 @@ use crate::AppRuntime;
 pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
 pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
 pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
+pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
+
+pub fn is_legacy_category(category: &str) -> bool {
+    category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)
+}
+
+pub fn is_downloadable(manifest: &LocalModelManifest) -> bool {
+    !is_legacy_category(manifest.category)
+}
+
+pub fn model_is_downloadable(key: &str) -> bool {
+    definition(key).is_some_and(is_downloadable)
+}
 
 pub use glimpse_speech::models::ModelEngine as LocalModelEngine;
 
@@ -29,6 +42,7 @@ pub struct ModelInfo {
     pub family: String,
     pub variant: String,
     pub category: String,
+    pub downloadable: bool,
     pub tags: Vec<String>,
     pub capabilities: Vec<String>,
     pub supported_languages: Vec<SupportedLanguageInfo>,
@@ -90,6 +104,34 @@ const PARAKEET_TDT_INT8_FILES: &[CatalogFile] = &[
         path: "vocab.txt",
         size_bytes: Some(93_939),
         sha256: Some("d58544679ea4bc6ac563d1f545eb7d474bd6cfa467f0a6e2c1dc1c7d37e3c35d"),
+    },
+];
+
+#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+const PARAKEET_UNIFIED_INT8_FILES: &[CatalogFile] = &[
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/encoder.int8.onnx",
+        path: "encoder.int8.onnx",
+        size_bytes: Some(42_606_669),
+        sha256: Some("c81adfab77634e00c1668a221a14f244c5fb3409e7c14eeebaf6ac963425910f"),
+    },
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/encoder.int8.onnx.data",
+        path: "encoder.int8.onnx.data",
+        size_bytes: Some(611_491_584),
+        sha256: Some("3d54dd04646c15677bd2844a84df3770b12cc1ce183481f7b6e0def31c92114a"),
+    },
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/decoder_joint.int8.onnx",
+        path: "decoder_joint.int8.onnx",
+        size_bytes: Some(8_995_064),
+        sha256: Some("7f76ad5f35035f25630075699c6c942a2c0c05ff42cb398f966f3c256d148e1e"),
+    },
+    CatalogFile {
+        url: "https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx/resolve/main/tokenizer.model",
+        path: "tokenizer.model",
+        size_bytes: Some(251_056),
+        sha256: Some("07d4e5a63840a53ab2d4d106d2874768143fb3fbdd47938b3910d2da05bfb0a9"),
     },
 ];
 
@@ -224,7 +266,7 @@ const ANE_ENCODERS: &[AneEncoder] = &[
 // whisper.cpp strips "-qX_X" too, so one fp16 encoder serves every quant.
 fn strip_quant_suffix(stem: &str) -> &str {
     if let Some(pos) = stem.rfind('-') {
-        let suffix = stem[pos..].as_bytes();
+        let suffix = &stem.as_bytes()[pos..];
         if suffix.len() == 5 && suffix[1] == b'q' && suffix[3] == b'_' {
             return &stem[..pos];
         }
@@ -277,7 +319,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
     LocalModelManifest {
         id: "parakeet_tdt_int8",
         family: "parakeet-tdt",
-        label: "Parakeet TDT 0.6B (Int8)",
+        label: "Parakeet TDT V3",
         description:
             "Fast, multilingual and accurate. Based on ONNX for everyday local transcription.",
         tags: &["Multilingual", "Fast"],
@@ -289,14 +331,27 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
     },
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     LocalModelManifest {
+        id: "parakeet_unified_en_int8",
+        family: "parakeet-unified",
+        label: "Parakeet Unified",
+        description: "Fast English local transcription with streaming support.",
+        tags: &["English", "Fast", "Streaming"],
+        category: "experimental",
+        engine: LocalModelEngine::Parakeet,
+        variant: "Int8",
+        files: PARAKEET_UNIFIED_INT8_FILES,
+        capabilities: &[MODEL_CAPABILITY_TIMESTAMPS, MODEL_CAPABILITY_STREAMING],
+    },
+    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+    LocalModelManifest {
         id: "nemotron_streaming_en",
         family: "nemotron-streaming",
-        label: "Nemotron Streaming 0.6B",
+        label: "Nemotron Streaming",
         description: "Real-time streaming transcription. Text appears as you speak.",
         tags: &["English", "Streaming"],
-        category: "experimental",
+        category: "legacy",
         engine: LocalModelEngine::Nemotron,
-        variant: "Int8",
+        variant: "Full",
         files: NEMOTRON_STREAMING_FILES,
         capabilities: &[MODEL_CAPABILITY_STREAMING],
     },
@@ -304,12 +359,12 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
     LocalModelManifest {
         id: "nemotron_35_streaming_multilingual",
         family: "nemotron-35-streaming",
-        label: "Nemotron 3.5 Streaming 0.6B",
+        label: "Nemotron 3.5 Streaming",
         description: "Multilingual streaming transcription with punctuation and capitalization.",
         tags: &["Multilingual", "Streaming"],
         category: "experimental",
         engine: LocalModelEngine::Nemotron,
-        variant: "Multilingual",
+        variant: "Full",
         files: NEMOTRON_35_STREAMING_FILES,
         capabilities: &[MODEL_CAPABILITY_STREAMING],
     },
@@ -607,7 +662,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
     LocalModelManifest {
         id: "whisper_large_v3_turbo",
         family: "whisper-large-v3-turbo",
-        label: "Whisper Large V3 Turbo (Full)",
+        label: "Whisper Large V3 Turbo",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
         category: "standard",
@@ -666,6 +721,7 @@ pub fn install_spec(model: &str, ane: bool) -> Option<InstallSpec> {
     Some(InstallSpec {
         id: manifest.id.to_string(),
         engine: manifest.engine,
+        layout: Some(model_layout(manifest)),
         storage,
         files,
         variant: Some(manifest.family.to_string()),
@@ -747,6 +803,17 @@ fn engine_id(engine: &LocalModelEngine) -> &'static str {
     }
 }
 
+fn model_layout(manifest: &LocalModelManifest) -> ModelLayout {
+    match manifest.engine {
+        LocalModelEngine::Whisper => ModelLayout::Whisper,
+        LocalModelEngine::Nemotron => ModelLayout::Nemotron,
+        LocalModelEngine::Parakeet if manifest.family == "parakeet-unified" => {
+            ModelLayout::ParakeetUnified
+        }
+        LocalModelEngine::Parakeet => ModelLayout::ParakeetTdt,
+    }
+}
+
 fn capability_strings(capabilities: &[&str]) -> Vec<String> {
     capabilities.iter().map(|c| c.to_string()).collect()
 }
@@ -766,6 +833,7 @@ fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
         family: manifest.family.to_string(),
         variant: manifest.variant.to_string(),
         category: manifest.category.to_string(),
+        downloadable: is_downloadable(manifest),
         tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
         capabilities: capability_strings(manifest.capabilities),
         supported_languages: supported_languages(manifest),
@@ -801,6 +869,26 @@ pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<
         let installed = install::check_model_status(app.clone(), info.key.clone())
             .map(|status| status.installed)
             .unwrap_or(false);
+        models.push(from_local(info, installed));
+    }
+
+    models
+}
+
+/// Headless variant of [`list_models`] that derives installed status from a
+/// models directory path instead of an `AppHandle`.
+pub(crate) fn list_models_at(
+    models_dir: &std::path::Path,
+    settings: &UserSettings,
+) -> Vec<SpeechModel> {
+    let mut models = Vec::new();
+
+    if remote::is_configured(settings) {
+        models.push(remote_entry(settings));
+    }
+
+    for info in list_local_models() {
+        let installed = install::check_model_installed_at(models_dir, &info.key);
         models.push(from_local(info, installed));
     }
 
@@ -890,5 +978,45 @@ fn provider_display(provider: &str) -> String {
         "custom" => "Custom".to_string(),
         "" => "Remote".to_string(),
         other => other.to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_models_are_not_downloadable() {
+        let legacy = LocalModelManifest {
+            id: "legacy_test",
+            label: "Legacy Test",
+            description: "test",
+            category: MODEL_CATEGORY_LEGACY,
+            tags: &[],
+            engine: LocalModelEngine::Whisper,
+            family: "whisper-tiny",
+            variant: "Full",
+            files: whisper_files!(
+                "ggml-tiny.bin",
+                77_691_713,
+                Some("be07e048e1e599ad46341c8d2a135645097a538221678b7acdd1b1919c6e1b21")
+            ),
+            capabilities: WHISPER_CAPABILITIES,
+        };
+
+        assert!(is_legacy_category(MODEL_CATEGORY_LEGACY));
+        assert!(!is_downloadable(&legacy));
+    }
+
+    #[test]
+    fn active_models_remain_downloadable() {
+        let manifest = definition("whisper_tiny").expect("fixture model");
+        assert!(is_downloadable(manifest));
+        assert!(model_is_downloadable("whisper_tiny"));
+    }
+
+    #[test]
+    fn unknown_models_are_not_downloadable() {
+        assert!(!model_is_downloadable("not_a_real_model"));
     }
 }

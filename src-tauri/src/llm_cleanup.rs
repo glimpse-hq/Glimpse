@@ -516,7 +516,9 @@ pub async fn cleanup_transcription(
     .await?;
 
     if !cleanup_result_looks_safe(text, &result, has_style_guidance) {
-        tracing::error!("[LLM] Cleanup candidate rejected by safety checks, keeping raw transcript");
+        tracing::error!(
+            "[LLM] Cleanup candidate rejected by safety checks, keeping raw transcript"
+        );
         return Ok(text.to_string());
     }
 

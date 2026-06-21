@@ -1,6 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
-type GlimpseLogoSize = "sm" | "md" | "lg";
+type GlimpseLogoSize = "sm" | "md" | "lg" | "xl";
 
 const GLIMPSE_LOGO_SIZES: Record<
   GlimpseLogoSize,
@@ -9,6 +9,7 @@ const GLIMPSE_LOGO_SIZES: Record<
   sm: { dot: 5, gap: 4 },
   md: { dot: 10, gap: 7 },
   lg: { dot: 14, gap: 10 },
+  xl: { dot: 19, gap: 13 },
 };
 
 const GLIMPSE_LOGO_DOT_COLORS = [
@@ -20,10 +21,18 @@ const GLIMPSE_LOGO_DOT_COLORS = [
 
 const COLOR_MATRIX_VALUES = "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7";
 
+const MOVE_TRANSITION = {
+  duration: 4,
+  ease: "easeInOut" as const,
+  times: [0, 0.25, 0.5, 0.75, 1],
+  repeat: Infinity,
+};
+
 export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
   const sizes = GLIMPSE_LOGO_SIZES[size];
   const distance = sizes.dot + sizes.gap;
   const radius = sizes.dot / 2;
+  const dotRadius = radius * 1.1;
   const coords = [
     { cx: radius, cy: radius },
     { cx: radius + distance, cy: radius },
@@ -31,7 +40,8 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
     { cx: radius + distance, cy: radius + distance },
   ];
   const gridSize = sizes.dot * 2 + sizes.gap;
-  const stdDev = sizes.dot * 0.35;
+  const stdDev = sizes.dot * 0.2;
+  const reduceMotion = useReducedMotion();
 
   return (
     <div
@@ -71,65 +81,59 @@ export const GlimpseLogo = ({ size = "md" }: { size?: GlimpseLogoSize }) => {
         <g filter={`url(#goo-${size})`}>
           {coords.map((coord, i) => (
             <circle
-              key={`static-${i}`}
+              key={i}
               cx={coord.cx}
               cy={coord.cy}
-              r={radius}
+              r={dotRadius}
               fill={GLIMPSE_LOGO_DOT_COLORS[i]}
             />
           ))}
-          <motion.circle
-            r={radius}
-            fill="var(--color-cloud)"
-            animate={{
-              cx: [
-                coords[0].cx,
-                coords[3].cx,
-                coords[3].cx,
-                coords[0].cx,
-                coords[0].cx,
-              ],
-              cy: [
-                coords[0].cy,
-                coords[3].cy,
-                coords[3].cy,
-                coords[0].cy,
-                coords[0].cy,
-              ],
-            }}
-            transition={{
-              duration: 4,
-              ease: "easeInOut",
-              times: [0, 0.25, 0.5, 0.75, 1],
-              repeat: Infinity,
-            }}
-          />
-          <motion.circle
-            r={radius}
-            fill="var(--color-local)"
-            animate={{
-              cx: [
-                coords[1].cx,
-                coords[1].cx,
-                coords[2].cx,
-                coords[2].cx,
-                coords[1].cx,
-              ],
-              cy: [
-                coords[1].cy,
-                coords[1].cy,
-                coords[2].cy,
-                coords[2].cy,
-                coords[1].cy,
-              ],
-            }}
-            transition={{
-              duration: 4,
-              ease: "easeInOut",
-              times: [0, 0.25, 0.5, 0.75, 1],
-              repeat: Infinity,
-            }}
-          />
+          {reduceMotion ? null : (
+            <>
+              <motion.circle
+                r={dotRadius}
+                fill="var(--color-cloud)"
+                animate={{
+                  cx: [
+                    coords[0].cx,
+                    coords[3].cx,
+                    coords[3].cx,
+                    coords[0].cx,
+                    coords[0].cx,
+                  ],
+                  cy: [
+                    coords[0].cy,
+                    coords[3].cy,
+                    coords[3].cy,
+                    coords[0].cy,
+                    coords[0].cy,
+                  ],
+                }}
+                transition={MOVE_TRANSITION}
+              />
+              <motion.circle
+                r={dotRadius}
+                fill="var(--color-local)"
+                animate={{
+                  cx: [
+                    coords[1].cx,
+                    coords[1].cx,
+                    coords[2].cx,
+                    coords[2].cx,
+                    coords[1].cx,
+                  ],
+                  cy: [
+                    coords[1].cy,
+                    coords[1].cy,
+                    coords[2].cy,
+                    coords[2].cy,
+                    coords[1].cy,
+                  ],
+                }}
+                transition={MOVE_TRANSITION}
+              />
+            </>
+          )}
         </g>
       </svg>
     </div>

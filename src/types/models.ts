@@ -7,6 +7,7 @@ export type ModelInfo = {
   family: string;
   variant: string;
   category: string;
+  downloadable: boolean;
   tags: string[];
   capabilities: string[];
   supported_languages: {

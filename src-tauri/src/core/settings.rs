@@ -288,15 +288,15 @@ pub(crate) fn update_settings(
     let license_gated_requested = args.llm_enabled
         || args.cleanup_enabled
         || shortcut_cleanup_enabled
-        || args.edit_mode_enabled
-        || args.local_api_start_on_launch;
+        || args.edit_mode_enabled;
     if license_gated_requested {
-        crate::license::require_license_gate(
-            &state.settings_store,
-            "AI writing, Edit Mode, and the API server",
-        )?;
+        crate::license::require_license_gate(&state.settings_store, "AI writing and Edit Mode")?;
+    }
+    if args.local_api_start_on_launch {
+        crate::license::require_active_license(&state.settings_store, "the API server")?;
     }
     let license_active = crate::license::license_gate_active(&state.settings_store);
+    let active_license = crate::license::active_license_gate(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
     let requested_auto_launch_enabled = args.auto_launch_enabled;
@@ -344,7 +344,6 @@ pub(crate) fn update_settings(
             next.llm_enabled = args.llm_enabled;
             next.cleanup_enabled = args.cleanup_enabled;
             next.edit_mode_enabled = args.edit_mode_enabled;
-            next.local_api_start_on_launch = args.local_api_start_on_launch;
         } else {
             for (next_bindings, prev_bindings) in [
                 (
@@ -365,6 +364,7 @@ pub(crate) fn update_settings(
                 }
             }
         }
+        next.local_api_start_on_launch = active_license && args.local_api_start_on_launch;
         next.llm_provider = args.llm_provider;
         next.llm_endpoint = args.llm_endpoint;
         next.llm_api_key = args.llm_api_key;
@@ -426,6 +426,8 @@ pub(crate) fn update_settings(
     }
 
     state.emit_settings_changed(app, &next);
+
+    analytics::track_settings_changes(app, &prev, &next);
 
     if prev.analytics_enabled && !next.analytics_enabled {
         analytics::track_analytics_opt_out(app);

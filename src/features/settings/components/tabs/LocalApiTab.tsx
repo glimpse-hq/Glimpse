@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import { useMemo, useRef, useEffect, useState, useCallback } from "react";
+import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
 import { motion, type Variants } from "framer-motion";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
@@ -56,15 +57,13 @@ const LocalApiTab = ({
   onClearLogs,
 }: LocalApiTabProps) => {
   const { t } = useLingui();
-  const [copied, setCopied] = useState(false);
-  const [logsCopied, setLogsCopied] = useState(false);
+  const { copied, copy: copyUrl } = useCopyToClipboard(1200);
+  const { copied: logsCopied, copy: copyLogsText } = useCopyToClipboard(1200);
   const [runningApiKeySnapshot, setRunningApiKeySnapshot] = useState<{
     configId: number;
     value: string;
   } | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const copyBaseUrlTimeoutRef = useRef<number | null>(null);
-  const copyLogsTimeoutRef = useRef<number | null>(null);
   const installedModels = modelCatalog.filter(
     (entry) => modelStatus[entry.key]?.installed,
   );
@@ -127,17 +126,6 @@ const LocalApiTab = ({
       });
 
   useEffect(() => {
-    return () => {
-      if (copyBaseUrlTimeoutRef.current !== null) {
-        window.clearTimeout(copyBaseUrlTimeoutRef.current);
-      }
-      if (copyLogsTimeoutRef.current !== null) {
-        window.clearTimeout(copyLogsTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs.length]);
 
@@ -154,41 +142,15 @@ const LocalApiTab = ({
     );
   }, [configuredApiKey, running, runningConfigId]);
 
-  const copyBaseUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(baseUrl);
-      setCopied(true);
-      if (copyBaseUrlTimeoutRef.current !== null) {
-        window.clearTimeout(copyBaseUrlTimeoutRef.current);
-      }
-      copyBaseUrlTimeoutRef.current = window.setTimeout(() => {
-        setCopied(false);
-        copyBaseUrlTimeoutRef.current = null;
-      }, 1200);
-    } catch {
-      setCopied(false);
-    }
-  };
+  const copyBaseUrl = () => copyUrl(baseUrl);
 
-  const copyLogs = useCallback(async () => {
+  const copyLogs = useCallback(() => {
     if (logs.length === 0) return;
     const text = logs
       .map((entry) => `[${entry.level}] ${entry.message}`)
       .join("\n");
-    try {
-      await navigator.clipboard.writeText(text);
-      setLogsCopied(true);
-      if (copyLogsTimeoutRef.current !== null) {
-        window.clearTimeout(copyLogsTimeoutRef.current);
-      }
-      copyLogsTimeoutRef.current = window.setTimeout(() => {
-        setLogsCopied(false);
-        copyLogsTimeoutRef.current = null;
-      }, 1200);
-    } catch {
-      setLogsCopied(false);
-    }
-  }, [logs]);
+    copyLogsText(text);
+  }, [logs, copyLogsText]);
 
   return (
     <motion.div

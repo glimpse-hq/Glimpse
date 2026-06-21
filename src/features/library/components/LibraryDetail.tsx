@@ -49,6 +49,7 @@ import {
 } from "./library-utils";
 import { resolveSpeechModelLabel } from "../../settings/models-queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type {
@@ -167,7 +168,8 @@ const LibraryDetail = ({
   const [isExporting, setIsExporting] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [copyConfirmed, setCopyConfirmed] = useState(false);
+  const { copied: copyConfirmed, copy: copyTranscript } =
+    useCopyToClipboard(1400);
   const [audioDuration, setAudioDuration] = useState(
     item.duration_seconds || 0,
   );
@@ -192,7 +194,6 @@ const LibraryDetail = ({
   const [speakerFilter, setSpeakerFilter] = useState<string | null>(null);
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const transcriptTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const howlRef = useRef<Howl | null>(null);
   const tagMenuRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -495,19 +496,15 @@ const LibraryDetail = ({
   }, [item.status.type, item.transcript]);
 
   useEffect(() => {
-    return () => {
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-    };
-  }, []);
-
-  useEffect(() => {
     if (!transcriptAvailable) return;
     if (transcriptTimer.current) clearTimeout(transcriptTimer.current);
     transcriptTimer.current = setTimeout(() => {
       if (transcriptDraft !== (item.transcript ?? "")) {
-        Promise.resolve(onUpdate({ transcript: transcriptDraft })).catch((err) => {
-          console.error("failed to save transcript:", err);
-        });
+        Promise.resolve(onUpdate({ transcript: transcriptDraft })).catch(
+          (err) => {
+            console.error("failed to save transcript:", err);
+          },
+        );
       }
     }, 600);
     return () => {
@@ -699,18 +696,8 @@ const LibraryDetail = ({
     }
   };
 
-  const handleCopy = async () => {
-    if (!transcriptDraft.trim()) return;
-    try {
-      await navigator.clipboard.writeText(transcriptDraft);
-      setCopyConfirmed(true);
-      if (copyTimer.current) clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => {
-        setCopyConfirmed(false);
-      }, 1400);
-    } catch (err) {
-      console.error("Failed to copy transcript:", err);
-    }
+  const handleCopy = () => {
+    if (transcriptDraft.trim()) copyTranscript(transcriptDraft);
   };
 
   const handleTogglePlayback = useCallback(() => {
@@ -834,7 +821,10 @@ const LibraryDetail = ({
     const starts: (number | null)[] = [];
     let pointer = 0;
     for (const segment of segments) {
-      const tokenCount = segment.text.trim().split(/\s+/).filter(Boolean).length;
+      const tokenCount = segment.text
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean).length;
       const target = normalize(segment.text);
       let matched: number | null = null;
       for (let offset = 0; tokenCount > 0 && offset < SCAN_AHEAD; offset += 1) {
@@ -879,7 +869,10 @@ const LibraryDetail = ({
     item.segments,
   ]);
 
-  const renderSegmentWords = (segment: TranscriptSegment, segmentIndex: number) => {
+  const renderSegmentWords = (
+    segment: TranscriptSegment,
+    segmentIndex: number,
+  ) => {
     const wordStart = segmentWordStarts?.[segmentIndex];
     if (wordStart == null) return null;
     const tokens = segment.text.trim().split(/\s+/).filter(Boolean);
@@ -1064,7 +1057,9 @@ const LibraryDetail = ({
         tag === "button" ||
         tag === "a" ||
         tag === "select" ||
-        (tag === "input" && (target?.getAttribute("type") === "checkbox" || target?.getAttribute("type") === "radio")) ||
+        (tag === "input" &&
+          (target?.getAttribute("type") === "checkbox" ||
+            target?.getAttribute("type") === "radio")) ||
         target?.getAttribute("role") === "button" ||
         target?.getAttribute("role") === "link" ||
         target?.getAttribute("role") === "menuitem";

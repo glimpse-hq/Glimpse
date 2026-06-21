@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fs, path::PathBuf, sync::OnceLock};
+use std::{collections::HashSet, env, fs, path::PathBuf, sync::OnceLock};
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Days, Local, Months};
@@ -734,7 +734,14 @@ pub struct SettingsStore {
 
 impl SettingsStore {
     pub fn new(app: &AppHandle) -> Result<Self> {
-        let path = db_path(app)?;
+        Self::open(db_path(app)?)
+    }
+
+    pub(crate) fn for_cli(app_identifier: &str) -> Result<Self> {
+        Self::open(settings_db_path(cli_app_config_dir(app_identifier)?))
+    }
+
+    fn open(path: PathBuf) -> Result<Self> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
                 .with_context(|| format!("Failed to create settings dir {}", parent.display()))?;
@@ -844,8 +851,7 @@ impl SettingsStore {
             theme_mode_exists = theme_mode.is_some();
             settings.theme_mode = theme_mode.unwrap_or(settings.theme_mode);
 
-            settings.llm_enabled =
-                self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
+            settings.llm_enabled = self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
             settings.cleanup_enabled =
                 self.read_value(&conn, KEY_CLEANUP_ENABLED, settings.cleanup_enabled)?;
             settings.llm_provider =
@@ -1030,7 +1036,9 @@ impl SettingsStore {
                     }
                 }
             } else {
-                tracing::error!("Warning: Could not get hardware UUID, preserving stored Local API key");
+                tracing::error!(
+                    "Warning: Could not get hardware UUID, preserving stored Local API key"
+                );
                 if key_looks_encrypted {
                     settings.local_api_key = String::new();
                     local_api_key_ciphertext = Some(encrypted_local_api_key);
@@ -1147,7 +1155,9 @@ impl SettingsStore {
                     .map_err(|e| anyhow::anyhow!("Failed to encrypt API key: {}", e))?
             } else {
                 *llm_api_key_ciphertext = None;
-                tracing::error!("Warning: Could not get hardware UUID, storing API key unencrypted");
+                tracing::error!(
+                    "Warning: Could not get hardware UUID, storing API key unencrypted"
+                );
                 settings.llm_api_key.clone()
             }
         };
@@ -1364,18 +1374,58 @@ impl SettingsStore {
         .with_context(|| format!("Failed to upsert setting '{key}' into DB"))?;
         Ok(())
     }
-
 }
 
 fn db_path(app: &AppHandle) -> Result<PathBuf> {
     let resolver = app.path();
-    let mut dir = resolver
+    let dir = resolver
         .app_config_dir()
         .or_else(|_| resolver.app_data_dir())
         .context("Unable to resolve config directory")?;
+
+    Ok(settings_db_path(dir))
+}
+
+fn cli_app_config_dir(app_identifier: &str) -> Result<PathBuf> {
+    Ok(platform_config_dir()?.join(app_identifier))
+}
+
+/// Resolve the app data directory for headless CLI use (no Tauri app handle).
+/// Mirrors the directory Tauri's `app_data_dir()` resolves to at runtime.
+pub(crate) fn cli_data_dir(app_identifier: &str) -> Result<PathBuf> {
+    cli_app_config_dir(app_identifier)
+}
+
+#[cfg(target_os = "macos")]
+fn platform_config_dir() -> Result<PathBuf> {
+    let home = env::var_os("HOME")
+        .map(PathBuf::from)
+        .context("Unable to resolve home directory")?;
+    Ok(home.join("Library").join("Application Support"))
+}
+
+#[cfg(target_os = "windows")]
+fn platform_config_dir() -> Result<PathBuf> {
+    env::var_os("APPDATA")
+        .map(PathBuf::from)
+        .context("Unable to resolve roaming app data directory")
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn platform_config_dir() -> Result<PathBuf> {
+    if let Some(config_home) = env::var_os("XDG_CONFIG_HOME") {
+        return Ok(PathBuf::from(config_home));
+    }
+    let home = env::var_os("HOME")
+        .map(PathBuf::from)
+        .context("Unable to resolve home directory")?;
+    Ok(home.join(".config"))
+}
+
+fn settings_db_path(mut dir: PathBuf) -> PathBuf {
     dir.push("Glimpse");
     dir.push(SETTINGS_DB_FILE_NAME);
-    Ok(dir)
+    dir
 }
 
 #[cfg(test)]

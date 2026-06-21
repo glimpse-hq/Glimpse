@@ -8,6 +8,7 @@ mod core;
 mod crypto;
 mod dictionary;
 mod import;
+mod integrations;
 mod library;
 mod license;
 mod llm_cleanup;
@@ -256,9 +257,11 @@ fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     if current.microphone_device.as_deref() == device_id {
         return;
     }
+    let previous = current.clone();
     current.microphone_device = device_id.map(|id| id.to_string());
     match state.persist_settings(current.clone()) {
         Ok(saved) => {
+            analytics::track_settings_changes(app, &previous, &saved);
             refresh_speech_menus(app, &saved);
             state.emit_settings_changed(app, &saved);
         }
@@ -274,6 +277,68 @@ pub(crate) fn set_app_menu(
     let menu = platform::macos::menu::build_app_menu(app, settings)?;
     app.set_menu(menu)?;
     Ok(())
+}
+
+pub fn run_cli() -> Result<()> {
+    let args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|arg| arg.to_string_lossy().into_owned())
+        .collect();
+    if let Some(verb) = args.first() {
+        if integrations::is_integration_command(verb) {
+            let context = app_context();
+            return integrations::dispatch(&context.config().identifier, &args);
+        }
+    }
+
+    if cli_help_requested(std::env::args_os().skip(1)) {
+        return glimpse_speech::cli::run_blocking();
+    }
+
+    let context = app_context();
+    let settings_store = SettingsStore::for_cli(&context.config().identifier)?;
+    let cache_active_before_refresh = license::active_license_gate(&settings_store);
+    if license::secure_grant_refresh_needed(&settings_store).map_err(anyhow::Error::msg)? {
+        let runtime = tokio::runtime::Runtime::new()?;
+        if let Err(err) = runtime.block_on(license::refresh_license(Client::new(), &settings_store))
+        {
+            if !cache_active_before_refresh {
+                anyhow::bail!(
+                    "An active Glimpse license is required to use the CLI.\n\
+                     The saved license could not be refreshed: {err}\n\
+                     Open Glimpse > Settings > Account to check or activate your license."
+                );
+            }
+        }
+    }
+    if !license::active_license_gate(&settings_store) {
+        anyhow::bail!(
+            "An active Glimpse license is required to use the CLI.\n\
+             Open Glimpse > Settings > Account to check or activate your license."
+        );
+    }
+
+    glimpse_speech::cli::run_blocking()
+}
+
+fn app_context() -> tauri::Context<AppRuntime> {
+    tauri::generate_context!()
+}
+
+fn cli_help_requested(args: impl IntoIterator<Item = std::ffi::OsString>) -> bool {
+    for (index, arg) in args.into_iter().enumerate() {
+        if arg == "--" {
+            return false;
+        }
+        if matches!(arg.to_str(), Some("-h" | "--help")) {
+            return true;
+        }
+        if index == 0 && arg == "help" {
+            return true;
+        }
+    }
+
+    false
 }
 
 pub fn run() {
@@ -340,9 +405,27 @@ pub fn run() {
 
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             {
-                let settings = handle.state::<AppState>().current_settings();
-                local_api::start_from_settings(handle, &settings);
+                let h = handle.clone();
+                async_runtime::spawn(async move {
+                    let state = h.state::<AppState>();
+                    match license::secure_grant_refresh_needed(&state.settings_store) {
+                        Ok(true) => {
+                            if let Err(err) =
+                                license::refresh_license(state.http(), &state.settings_store).await
+                            {
+                                tracing::warn!("Could not refresh the saved license: {err}");
+                            }
+                        }
+                        Ok(false) => {}
+                        Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
+                    }
+
+                    // Start after the refresh so the license gate reflects current state.
+                    let settings = state.current_settings();
+                    local_api::start_from_settings(&h, &settings);
+                });
             }
+            integrations::start_control_server(handle.clone());
             library::commands::recover_interrupted_library_items(handle);
             register_deep_link_handlers(app);
 
@@ -502,8 +585,11 @@ pub fn run() {
             complete_onboarding,
             cancel_recording,
             view_recovered_transcriptions,
+            copy_last_transcription,
             reset_onboarding,
             toast::debug_show_toast,
+            analytics::report_frontend_crash,
+            analytics::track_onboarding_step_viewed,
             fetch_llm_models,
             fetch_remote_speech_models,
             open_about_page,
@@ -512,7 +598,7 @@ pub fn run() {
             update_checker::check_for_updates,
             update_checker::download_and_install_update
         ])
-        .build(tauri::generate_context!())
+        .build(app_context())
         .expect("error while building tauri application")
         .run(|handler, event| match event {
             #[cfg(target_os = "macos")]
@@ -548,6 +634,29 @@ pub fn run() {
             }
             _ => {}
         });
+}
+
+#[cfg(test)]
+mod cli_tests {
+    use super::cli_help_requested;
+    use std::ffi::OsString;
+
+    fn args(values: &[&str]) -> Vec<OsString> {
+        values.iter().map(OsString::from).collect()
+    }
+
+    #[test]
+    fn cli_help_does_not_require_a_license() {
+        assert!(cli_help_requested(args(&["--help"])));
+        assert!(cli_help_requested(args(&["transcribe", "--help"])));
+        assert!(cli_help_requested(args(&["help", "transcribe"])));
+    }
+
+    #[test]
+    fn cli_commands_and_positional_help_names_require_a_license() {
+        assert!(!cli_help_requested(args(&["models", "list"])));
+        assert!(!cli_help_requested(args(&["transcribe", "--", "--help",])));
+    }
 }
 
 pub(crate) type AppRuntime = Wry;
@@ -738,6 +847,9 @@ impl AppState {
         if !license::license_gate_active(&self.settings_store) {
             disable_license_gated_settings(&mut settings);
         }
+        if !license::active_license_gate(&self.settings_store) {
+            settings.local_api_start_on_launch = false;
+        }
         settings
     }
 
@@ -807,7 +919,7 @@ impl AppState {
         self.http.clone()
     }
 
-    fn local_transcriber(&self) -> Arc<local_transcription::LocalTranscriber> {
+    pub(crate) fn local_transcriber(&self) -> Arc<local_transcription::LocalTranscriber> {
         Arc::clone(&self.local_transcriber)
     }
 
@@ -1023,7 +1135,6 @@ fn disable_license_gated_settings(settings: &mut UserSettings) {
     settings.llm_enabled = false;
     settings.cleanup_enabled = false;
     settings.edit_mode_enabled = false;
-    settings.local_api_start_on_launch = false;
     for binding in settings
         .shortcut_bindings
         .smart
@@ -1486,9 +1597,20 @@ pub(crate) fn persist_recording_async(
     temporary: bool,
     cancel_token: CancellationToken,
 ) {
+    let input = if settings.microphone_device.is_some() {
+        "selected"
+    } else {
+        "default"
+    };
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
         Err(err) => {
+            analytics::track_recording_failed(
+                &app,
+                "persist",
+                analytics::classify_failure_reason(&err.to_string()),
+                input,
+            );
             emit_error(
                 &app,
                 format!("Failed to resolve recordings directory: {err}"),
@@ -1537,8 +1659,24 @@ pub(crate) fn persist_recording_async(
                 temporary,
                 cancel_token,
             ),
-            Ok(Err(err)) => emit_error(&app, format!("Unable to save recording: {err}")),
-            Err(err) => emit_error(&app, format!("Recording task failed: {err}")),
+            Ok(Err(err)) => {
+                analytics::track_recording_failed(
+                    &app,
+                    "persist",
+                    analytics::classify_failure_reason(&err.to_string()),
+                    input,
+                );
+                emit_error(&app, format!("Unable to save recording: {err}"));
+            }
+            Err(err) => {
+                analytics::track_recording_failed(
+                    &app,
+                    "persist",
+                    analytics::classify_failure_reason(&err.to_string()),
+                    input,
+                );
+                emit_error(&app, format!("Recording task failed: {err}"));
+            }
         }
     });
 }
@@ -1571,6 +1709,22 @@ pub(crate) fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<Path
 #[tauri::command]
 fn view_recovered_transcriptions(app: AppHandle<AppRuntime>) -> Result<(), String> {
     tray::open_settings_history(&app).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn copy_last_transcription(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<AppState>,
+) -> Result<(), String> {
+    let recent = state
+        .storage()
+        .get_recent_transcriptions(1)
+        .map_err(|err| format!("Failed to load transcriptions: {err}"))?;
+    let Some(record) = recent.into_iter().next() else {
+        return Err("No transcription to copy".to_string());
+    };
+    recent_transcriptions::copy_transcription_to_clipboard(&app, &record.id);
+    Ok(())
 }
 
 pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {

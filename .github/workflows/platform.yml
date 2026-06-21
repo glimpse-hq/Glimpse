@@ -1,0 +1,89 @@
+# Post-merge native build on Blacksmith: macOS + Windows cargo check/test.
+# PRs are gated by ci.yml on GitHub-hosted Ubuntu runners.
+
+name: Platform
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: platform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: blacksmith-6vcpu-macos-15
+            os: macos
+            cargo-cache-dir: src-tauri/target
+          - platform: blacksmith-4vcpu-windows-2025
+            os: windows
+            cargo-cache-dir: C:\t
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: verify Xcode
+        if: matrix.os == 'macos'
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
+        run: xcodebuild -version
+
+      - name: install LLVM
+        if: matrix.os == 'windows'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "20.1.8"
+          directory: ${{ runner.temp }}/llvm
+
+      - name: configure Windows build paths
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: |
+          $cargoTargetDir = "C:\t"
+          $libclangPath = Join-Path $env:RUNNER_TEMP "llvm\bin"
+          New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
+          "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
+          "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
+
+      - name: install Vulkan SDK
+        if: matrix.os == 'windows'
+        uses: humbletim/install-vulkan-sdk@v1.2
+        with:
+          version: 1.4.309.0
+          cache: true
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: platform-${{ matrix.platform }}
+          workspaces: src-tauri -> target
+          cache-directories: ${{ matrix.cargo-cache-dir }}
+          cache-on-failure: true
+
+      - name: check Rust
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
+          # Disable i8mm matmul intrinsics; they fail to build with the CI Xcode toolchain.
+          CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
+          CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+
+      - name: test Rust
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
+          CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
+          CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
+        run: cargo test --manifest-path src-tauri/Cargo.toml

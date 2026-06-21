@@ -67,6 +67,13 @@ All PRs target `main`, regardless of the current release version.
 - Platform parity when touching macOS- or Windows-specific behavior
 - `bun run build` and `cargo check --manifest-path src-tauri/Cargo.toml` passing
 
+**CI workflow:**
+
+1. **Pull requests** - GitHub-hosted Ubuntu runners (`ci.yml`) check formatting, lint, frontend build, Rust check/test, and dependency audit. Fix any failing checks before merge.
+2. **Merge to `main`** - Blacksmith macOS and Windows runners (`platform.yml`) run native `cargo check` and `cargo test`. This catches platform-specific regressions that Ubuntu CI cannot see.
+
+Release builds still go through the manual publish workflow.
+
 ---
 
 ## Spread the word

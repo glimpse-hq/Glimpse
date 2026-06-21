@@ -23,6 +23,7 @@ const MIN_RECORDING_DURATION_MS: i64 = 300;
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
+const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
 pub const EVENT_PILL_HOVER: &str = "pill:hover";
@@ -319,7 +320,9 @@ impl PillController {
     pub fn transition_to_error(&self, app: &AppHandle<AppRuntime>, message: &str) {
         let status = self.status();
         if matches!(status, PillStatus::Listening | PillStatus::Processing) {
-            tracing::error!("[Pill] Suppressing error during active recording ({status}): {message}");
+            tracing::error!(
+                "[Pill] Suppressing error during active recording ({status}): {message}"
+            );
             return;
         }
         tracing::error!("[Pill] {message}");
@@ -336,6 +339,13 @@ impl PillController {
 
     fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, message: &str) {
         tracing::error!("[Pill] {message}");
+        let settings = app.state::<AppState>().current_settings();
+        crate::analytics::track_recording_failed(
+            app,
+            "stop",
+            crate::analytics::classify_failure_reason(message),
+            microphone_input_kind(&settings),
+        );
         self.resume_paused_media();
         self.reset_recording_state();
         self.set_hold_key_down(false);
@@ -374,6 +384,8 @@ impl PillController {
         self.transition_to(app, PillStatus::Idle);
     }
 
+    // Stop-processing cleanup should not invent a release event.
+    // Reset/error paths clear this when the whole pill state is discarded.
     pub fn finish_processing(&self, app: &AppHandle<AppRuntime>) {
         let status = self.status();
         let recording = self.is_recording();
@@ -413,8 +425,6 @@ impl PillController {
         *self.recording_options.lock() = hotkeys::ShortcutOptions::default();
         *self.recording_settings.lock() = None;
         *self.smart_press_time.lock() = None;
-        // Stop-processing cleanup should not invent a release event.
-        // Reset/error paths clear this when the whole pill state is discarded.
     }
 
     fn capture_selected_text_if_enabled(
@@ -530,6 +540,10 @@ impl PillController {
 
         crate::speech::warm(app, &settings);
 
+        let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        // Enter Listening before the device opens for fast visual feedback.
+        self.transition_to(app, PillStatus::Listening);
+
         let pending_dir = crate::recordings_root(app)
             .ok()
             .map(|root| root.join(crate::recorder::PENDING_DIR_NAME));
@@ -538,8 +552,7 @@ impl PillController {
             .start(settings.microphone_device.clone(), pending_dir)
         {
             Ok(started) => {
-                let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
-                self.transition_to(app, PillStatus::Listening);
+                self.arm_capture_after_settle(app, generation);
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
                 self.start_streaming_session_if_supported(app, &settings);
@@ -556,25 +569,51 @@ impl PillController {
                 true
             }
             Err(err) => {
+                crate::analytics::track_recording_failed(
+                    app,
+                    "start",
+                    crate::analytics::classify_failure_reason(&err.to_string()),
+                    microphone_input_kind(&settings),
+                );
                 self.reset_recording_state();
+                self.set_hold_key_down(false);
+                // Drop out of Listening so transition_to_error isn't suppressed.
+                self.transition_to(app, PillStatus::Idle);
                 self.transition_to_error(app, &format!("Unable to start recording: {err}"));
                 false
             }
         }
     }
 
-    fn spawn_recording_cap(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+    fn after_delay_if_recording(
+        app: &AppHandle<AppRuntime>,
+        generation: u64,
+        delay: Duration,
+        action: impl FnOnce(&Self, &AppHandle<AppRuntime>) + Send + 'static,
+    ) {
         let app = app.clone();
         std::thread::spawn(move || {
-            std::thread::sleep(MAX_RECORDING_DURATION);
+            std::thread::sleep(delay);
             let state = app.state::<AppState>();
             let pill = state.pill();
-            if pill.recording_generation.load(Ordering::SeqCst) == generation
-                && pill.status() == PillStatus::Listening
-                && pill.is_recording()
+            if pill.recording_generation.load(Ordering::SeqCst) == generation && pill.is_recording()
             {
-                pill.stop_and_process(&app);
+                action(pill, &app);
             }
+        });
+    }
+
+    fn spawn_recording_cap(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+        Self::after_delay_if_recording(app, generation, MAX_RECORDING_DURATION, |pill, app| {
+            if pill.status() == PillStatus::Listening {
+                pill.stop_and_process(app);
+            }
+        });
+    }
+
+    fn arm_capture_after_settle(&self, app: &AppHandle<AppRuntime>, generation: u64) {
+        Self::after_delay_if_recording(app, generation, CAPTURE_ARM_DELAY, |pill, _| {
+            pill.recorder().arm();
         });
     }
 
@@ -690,16 +729,16 @@ impl PillController {
             let resume_app = app_handle.clone();
             let settings_for_transcription = settings.clone();
             std::thread::spawn(move || {
+                let streaming_transcript = app_handle
+                    .state::<AppState>()
+                    .stop_streaming_session(&app_handle)
+                    .unwrap_or_default();
                 match recorder.stop_after_capture(move || {
                     resume_app.state::<AppState>().pill().resume_paused_media();
                 }) {
                     Ok(Some(recording)) => {
                         let duration_ms =
                             (recording.ended_at - recording.started_at).num_milliseconds();
-                        let streaming_transcript = app_handle
-                            .state::<AppState>()
-                            .stop_streaming_session(&app_handle)
-                            .unwrap_or_default();
 
                         if duration_ms < MIN_RECORDING_DURATION_MS {
                             discard_pending_recording(&recording);
@@ -711,10 +750,10 @@ impl PillController {
                             return;
                         }
 
+                        // Streaming can miss very short utterances (model
+                        // lookahead + final-chunk latency); fall back to
+                        // batch transcription of the captured audio.
                         if streaming_transcript.trim().is_empty() {
-                            // Streaming can miss very short utterances (model
-                            // lookahead + final-chunk latency); fall back to
-                            // batch transcription of the captured audio.
                             collapse_expanded_pill(&app_handle);
                             crate::persist_recording_async(
                                 app_handle,
@@ -757,9 +796,6 @@ impl PillController {
                         );
                     }
                     Ok(None) => {
-                        let _ = app_handle
-                            .state::<AppState>()
-                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
                         app_handle
                             .state::<AppState>()
@@ -767,9 +803,6 @@ impl PillController {
                             .finish_processing(&app_handle);
                     }
                     Err(err) => {
-                        let _ = app_handle
-                            .state::<AppState>()
-                            .stop_streaming_session(&app_handle);
                         collapse_expanded_pill(&app_handle);
                         app_handle.state::<AppState>().pill().fail_recording_stop(
                             &app_handle,
@@ -1154,16 +1187,22 @@ fn position_overlay_on_cursor_screen(window: &WebviewWindow<AppRuntime>) {
     }
 }
 
+fn microphone_input_kind(settings: &UserSettings) -> &'static str {
+    if settings.microphone_device.is_some() {
+        "selected"
+    } else {
+        "default"
+    }
+}
+
 /// Simplifies recording error messages
 fn simplify_recording_error(message: &str) -> String {
     let msg_lower = message.to_lowercase();
 
-    // Check for permission-related errors first
     if msg_lower.contains("permission")
         || msg_lower.contains("not allowed")
         || msg_lower.contains("access denied")
         || msg_lower.contains("coreaudio")
-    // macOS specific permission error
     {
         return "Microphone permission needed. Check System Settings.".to_string();
     }
@@ -1181,4 +1220,3 @@ fn simplify_recording_error(message: &str) -> String {
 
     "Recording failed".to_string()
 }
-

@@ -86,6 +86,7 @@ export default tseslint.config(
       "src/features/*/*.ts",
       "src/features/*/*.tsx",
       "src/Home.tsx",
+      "src/main.tsx",
       "src/app/App.tsx",
       "src/hooks/**/*.ts",
       "src/lib/**/*.ts",

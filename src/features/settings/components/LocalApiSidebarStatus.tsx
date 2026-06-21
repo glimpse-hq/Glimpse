@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useRef, useState } from "react";
+import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import {
   ArrowsDownUp as ArrowUpDown,
   Check,
@@ -22,37 +22,14 @@ const LocalApiSidebarStatus = ({
   onOpenSettings: () => void;
 }) => {
   const { t } = useLingui();
-  const [copied, setCopied] = useState(false);
-  const copyTimeoutRef = useRef<number | null>(null);
+  const { copied, copy } = useCopyToClipboard(1200);
 
   const host = status.host || "127.0.0.1";
   const baseUrl = `http://${host}:${status.port}/v1`;
   const displayUrl = `${host}:${status.port}/v1`;
   const requests = status.requests_total ?? 0;
 
-  useEffect(() => {
-    return () => {
-      if (copyTimeoutRef.current !== null) {
-        window.clearTimeout(copyTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  const copyBaseUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(baseUrl);
-      setCopied(true);
-      if (copyTimeoutRef.current !== null) {
-        window.clearTimeout(copyTimeoutRef.current);
-      }
-      copyTimeoutRef.current = window.setTimeout(() => {
-        setCopied(false);
-        copyTimeoutRef.current = null;
-      }, 1200);
-    } catch {
-      setCopied(false);
-    }
-  };
+  const copyBaseUrl = () => copy(baseUrl);
 
   const runningLabel = t({
     id: "home.local_api.running",
@@ -70,7 +47,7 @@ const LocalApiSidebarStatus = ({
     id: "home.local_api.status_hint",
     message: "Your API server is running in the background.",
   });
-  const collapsedTitle = `${runningLabel} — ${statusHint} ${displayUrl} · ${requests} ${requestsLabel.toLowerCase()}. ${openSettingsLabel}.`;
+  const collapsedTitle = `${runningLabel}: ${statusHint} ${displayUrl} · ${requests} ${requestsLabel.toLowerCase()}. ${openSettingsLabel}.`;
 
   return (
     <div className="shrink-0">

@@ -14,7 +14,7 @@ three native windows (not a routed SPA).
 
 - Speed: keep invoke → record → transcribe → insert low-latency.
 - Native platform behavior: menu bar/accessory, shortcuts, permissions, focus,
-  overlay — correct on both macOS and Windows.
+  overlay - correct on both macOS and Windows.
 - Local-first: transcripts, audio, and API keys stay local by default.
 - Simplicity: extend existing owners instead of adding layers.
 
@@ -74,7 +74,7 @@ Labels and behavior must stay aligned across `tauri.conf.json`,
 - `Home.tsx`: settings-window shell.
 - `features/settings/useSettingsForm.ts`: editable settings + autosave.
 - `features/settings/models-queries.ts`: `useSpeechModels()` and
-  `resolveSpeechModelLabel()` — single source for model lists and display
+  `resolveSpeechModelLabel()` - single source for model lists and display
   labels across pickers, history, and library.
 - `features/onboarding/{machine,OnboardingScreen}.ts(x)`: step flow + first
   settings write.
@@ -83,7 +83,7 @@ Labels and behavior must stay aligned across `tauri.conf.json`,
 - `features/transcriptions/`, `features/library/`: React Query + event-driven.
 - `features/dictionary/`, `features/personalization/`: local state + direct
   invoke.
-- `shared/lib/*`: static metadata/formatting only — not a service layer.
+- `shared/lib/*`: static metadata/formatting only - not a service layer.
 - `shared/ui/*`: small reusable primitives.
 - `types/*`: shared frontend types.
 

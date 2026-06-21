@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   WarningCircle as AlertCircle,
   MagnifyingGlass as Search,
+  Clock,
   Funnel,
   Check,
   Download,
   Info,
   Square,
   Trash as Trash2,
+  Waveform,
   X,
 } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
@@ -17,13 +19,18 @@ import {
   formatModelSize,
   variantLabel,
 } from "../lib/modelStats";
+import {
+  hasModelCapability,
+  MODEL_CAPABILITY_STREAMING,
+  MODEL_CAPABILITY_TIMESTAMPS,
+} from "../lib/modelCapabilities";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
 import DotMatrix from "./DotMatrix";
 import type { DownloadEvent, ModelInfo } from "../../types";
 
 const CATEGORY_ORDER = ["standard", "experimental", "legacy"] as const;
-const VARIANT_ORDER = ["Q5_1", "Q5_0", "Q8_0", "Full", "Int8", "Multilingual"];
+const VARIANT_ORDER = ["Q5_1", "Q5_0", "Q8_0", "Full", "Int8"];
 
 type ModelGroup = {
   id: string;
@@ -128,7 +135,13 @@ export function ModelPickerPanel({
     }
   };
 
-  const groups = useMemo(() => groupModels(catalog), [catalog]);
+  const groups = useMemo(
+    () =>
+      groupModels(
+        catalog.filter((model) => model.downloadable || isInstalled(model.key)),
+      ),
+    [catalog, isInstalled],
+  );
 
   const availableCategories = useMemo(() => {
     const present = new Set(groups.map((group) => group.category));
@@ -421,6 +434,11 @@ function ModelRow({
   const { t } = useLingui();
   const [aneUserChoice, setAneUserChoice] = useState<boolean | null>(null);
   const aneChecked = aneUserChoice ?? !installed;
+  const isStreaming = hasModelCapability(selected, MODEL_CAPABILITY_STREAMING);
+  const hasTimestamps = hasModelCapability(
+    selected,
+    MODEL_CAPABILITY_TIMESTAMPS,
+  );
   const isDownloading = progress?.status === "downloading";
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
@@ -448,7 +466,7 @@ function ModelRow({
       <button
         type="button"
         onClick={
-          !installed
+          !installed && selected.downloadable
             ? () => onDownload(aneOn)
             : encoderDownloadPending
               ? () => onDownload(true)
@@ -474,12 +492,34 @@ function ModelRow({
           }`}
         />
         <span className="min-w-0">
-          <span className="block truncate ui-text-body-sm-strong text-content-primary">
-            {group.label}
+          <span className="flex min-w-0 items-center gap-1.5 ui-text-body-sm-strong text-content-primary">
+            <span className="truncate">{group.label}</span>
             {active && (
               <span className="sr-only">
                 {" "}
                 {t({ id: "model_picker.active", message: "Active" })}
+              </span>
+            )}
+            {isStreaming && (
+              <span
+                className="inline-flex shrink-0 text-content-muted"
+                title={t({
+                  id: "model_picker.capability.streaming",
+                  message: "Live streaming",
+                })}
+              >
+                <Waveform size={13} aria-hidden="true" />
+              </span>
+            )}
+            {hasTimestamps && (
+              <span
+                className="inline-flex shrink-0 text-content-muted"
+                title={t({
+                  id: "model_picker.capability.timestamps",
+                  message: "Word-level timestamps",
+                })}
+              >
+                <Clock size={13} aria-hidden="true" />
               </span>
             )}
           </span>
@@ -604,7 +644,8 @@ function ModelRow({
         ) : (
           <div className="flex items-center gap-1">
             <span className="flex h-6 w-6 items-center justify-center">
-              {(!installed || (showAne && aneChecked && !aneInstalled)) && (
+              {((!installed && selected.downloadable) ||
+                (showAne && aneChecked && !aneInstalled)) && (
                 <button
                   type="button"
                   onClick={() => onDownload(installed || aneOn)}
@@ -770,4 +811,3 @@ function ModelProgressDots({
     />
   );
 }
-

@@ -1,11 +1,15 @@
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import { Check, CircleNotch as Loader2 } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
-import type { StepMotionProps } from "../../onboarding/steps/shared";
+import {
+  OnboardingHeader,
+  OnboardingStep,
+  PRIMARY_BUTTON_CLASS,
+  type StepMotionProps,
+} from "../../onboarding/steps/shared";
 import { settingsKeys } from "../../settings/queries";
 import { transcriptionKeys } from "../../transcriptions/queries";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -262,30 +266,52 @@ export function ImportStep({
   );
 
   return (
-    <motion.div
-      key="import"
-      {...stepMotionProps}
-      initial="enter"
-      className="relative flex w-full max-w-lg flex-col items-center text-center"
+    <OnboardingStep
+      stepKey="import"
+      motionProps={stepMotionProps}
+      widthClass="max-w-lg"
+      footer={
+        <>
+          <button
+            onClick={() => applyMutation.mutate()}
+            disabled={
+              applyMutation.isPending || !hasItems || selectedCount === 0
+            }
+            className={PRIMARY_BUTTON_CLASS}
+          >
+            {applyMutation.isPending ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                {t({ id: "import.importing", message: "Importing..." })}
+              </>
+            ) : (
+              t({ id: "import.cta", message: "Import" })
+            )}
+          </button>
+          <button
+            onClick={onNext}
+            disabled={applyMutation.isPending}
+            className="ui-text-label font-medium text-content-muted hover:text-content-secondary transition-colors disabled:opacity-50"
+          >
+            {t({ id: "import.skip", message: "Skip for now" })}
+          </button>
+        </>
+      }
     >
-      <div className="flex w-full flex-col items-center pt-4">
-        <div className="relative mb-4 flex flex-col items-center gap-2">
-          <h2 className="ui-text-title-lg font-semibold text-content-primary">
-            {t({
-              id: "import.title",
-              message: "Want to bring your settings over?",
-            })}
-          </h2>
-          <p className="max-w-sm ui-text-body-lg text-content-muted text-balance">
-            {t({
-              id: "import.subtitle",
-              message: plural(apps.length, {
-                one: "We found another dictation app. Choose what to import.",
-                other: "We found other dictation apps. Choose what to import.",
-              }),
-            })}
-          </p>
-        </div>
+      <div className="flex w-full flex-col items-center">
+        <OnboardingHeader
+          title={t({
+            id: "import.title",
+            message: "Want to bring your settings over?",
+          })}
+          subtitle={t({
+            id: "import.subtitle",
+            message: plural(apps.length, {
+              one: "We found another dictation app. Choose what to import.",
+              other: "We found other dictation apps. Choose what to import.",
+            }),
+          })}
+        />
 
         {showAppPicker && selectedAppId && (
           <div className="relative mb-4 flex w-full justify-center">
@@ -365,7 +391,7 @@ export function ImportStep({
             {t({
               id: "import.model.unrecognized",
               message:
-                "We don't recognize this app's model — you'll pick one on the next step.",
+                "We don't recognize this app's model, so you'll pick one on the next step.",
             })}
           </p>
         )}
@@ -378,30 +404,6 @@ export function ImportStep({
           })}
         </p>
       )}
-
-      <div className="relative mt-2 flex flex-col items-center gap-2">
-        <button
-          onClick={() => applyMutation.mutate()}
-          disabled={applyMutation.isPending || !hasItems || selectedCount === 0}
-          className="flex min-w-[150px] items-center justify-center gap-2 rounded-lg bg-content-primary px-5 py-2.5 ui-text-body-lg font-mono font-semibold text-surface-secondary hover:bg-white transition-colors tracking-tight disabled:opacity-40 disabled:hover:bg-content-primary"
-        >
-          {applyMutation.isPending ? (
-            <>
-              <Loader2 size={15} className="animate-spin" />
-              {t({ id: "import.importing", message: "Importing..." })}
-            </>
-          ) : (
-            t({ id: "import.cta", message: "Import" })
-          )}
-        </button>
-        <button
-          onClick={onNext}
-          disabled={applyMutation.isPending}
-          className="ui-text-label font-medium text-content-muted hover:text-content-secondary transition-colors disabled:opacity-50"
-        >
-          {t({ id: "import.skip", message: "Skip for now" })}
-        </button>
-      </div>
-    </motion.div>
+    </OnboardingStep>
   );
 }

@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import React, { useState, useRef, useLayoutEffect } from "react";
+import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy,
@@ -51,7 +52,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
 }) => {
   const { t } = useLingui();
   const { data: speechModels } = useSpeechModels();
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard(2000);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCancellingRetry, setIsCancellingRetry] = useState(false);
   const [isRetryingLlm, setIsRetryingLlm] = useState(false);
@@ -96,14 +97,9 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   }, [record.text, isExpanded]);
 
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(record.text);
-      setCopied(true);
+    if (await copy(record.text)) {
       setMenuOpen(false);
       setSelectionText("");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy:", err);
     }
   };
 

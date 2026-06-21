@@ -1,3 +1,33 @@
+0.9.9
+
+### Features
+
+- Added Parakeet Unified (experimental): one English model that handles both fast file transcription and live streaming, so a single download covers what used to take two. It's about a quarter the size of Nemotron Streaming, faster, and adds word-level timestamps.
+
+### Improvements
+
+- The Glimpse command-line tool can now do much more. Beyond transcribing files, you can browse and search your history, import and export library items, manage your dictionary and replacements, switch models, and check status, so you can script Glimpse or build your own integrations (Raycast, alfred, etc.). Run `glimpse --help` to explore, and add `--json` to any command for easy scripting.
+- Tidied up model names so it's clearer what each one is.
+- Older models can now be marked Legacy. They no longer show up to download, but if you already have one installed you can keep using it.
+- You can now open the customer portal to manage your license straight from the account view, even when you're signed out.
+- The start of your recordings no longer gets clipped: the mic now warms up as the pill appears, so your first word makes it in.
+- Fixed a rare hang where transcription could stall for a while if the app you were in was slow to respond.
+- Fixed library items that could come unstuck from their audio after an update.
+- Licensing is more reliable behind the scenes.
+
+### Changes
+
+- Nemotron Streaming is now Legacy, superseded by Parakeet Unified. It won't appear to download anymore, but if you already have it installed it keeps working.
+- Updated onboarding for a more unified experience.
+- Small UI changes.
+- Small change to the UI icon for a cleaner look.
+
+### Fixes
+
+- When using a streaming model, it could get mixed with ongoing library transcriptions if being done simultaneously.
+
+---
+
 0.9.8
 
 ### Features
@@ -10,15 +40,21 @@
 - Fixed a bug where live-streamed words could be blurred and improved streaming animations.
 - The about page now has a new support page, you can export logs here too.
 - Glimpse now uses Silero VAD for higher quality noise cancellation.
-- You can now say Thank you. 
+- You can now say Thank you.
+
+---
 
 0.9.7
 
 ### Features
+
 - Added support for using mouse buttons as keybinds.
 
 ### Improvements
+
 - The library import modal is now cleaner and supports more options.
+
+---
 
 0.9.6
 
@@ -303,7 +339,7 @@
 ### Changes
 
 - Dictionary & Replacements have been merged into one view.
-- Library views have had a small redesign — `_` and `.` in file names are now stripped for cleaner titles.
+- Library views have had a small redesign - `_` and `.` in file names are now stripped for cleaner titles.
 - Models tab now has a new system models category.
 - Media is now unpaused after recording rather than after recording + processing.
 - Edit mode is now significantly more consistent.
@@ -346,7 +382,7 @@
 ### Features
 
 - Added Auto-pause media in Settings > App to pause playback during transcription.
-- Added auto-update in Settings > App — when idle for 10+ minutes Glimpse will auto-update.
+- Added auto-update in Settings > App - when idle for 10+ minutes Glimpse will auto-update.
 
 ### Changes
 

@@ -7,7 +7,7 @@ import {
   useQueryClient,
   type QueryClient,
 } from "@tanstack/react-query";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, MotionConfig } from "framer-motion";
 import { CaretLeft as ChevronLeft } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -29,10 +29,11 @@ import {
 import { useImportableApps } from "../import/queries";
 import { ImportStep } from "../import/components/ImportStep";
 import { WelcomeStep } from "./steps/WelcomeStep";
+import { ModelStep } from "./steps/ModelStep";
 import { PermissionsStep } from "./steps/PermissionsStep";
-import { SetupStep } from "./steps/SetupStep";
-import { LicenseStep } from "./steps/LicenseStep";
-import { GlimpseLogo, StepIndicator } from "./steps/shared";
+import { ReadyStep } from "./steps/ReadyStep";
+import { LicenseModal } from "./steps/LicenseModal";
+import { StepIndicator } from "./steps/shared";
 import { useActivateLicense, useLicenseState } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import WindowControls from "../../shared/ui/WindowControls";
@@ -63,8 +64,11 @@ const sortOnboardingModels = (models: ModelInfo[]) =>
     return a.label.localeCompare(b.label);
   });
 
+const downloadableModels = (models: ModelInfo[]) =>
+  models.filter((model) => model.downloadable);
+
 const pickOnboardingModels = (models: ModelInfo[]) => {
-  const sortedModels = sortOnboardingModels(models);
+  const sortedModels = sortOnboardingModels(downloadableModels(models));
   const preferred = PREFERRED_ONBOARDING_MODEL_KEYS.map((key) =>
     sortedModels.find((model) => model.key === key),
   ).filter((model): model is ModelInfo => Boolean(model));
@@ -80,10 +84,14 @@ const pickDefaultOnboardingModel = (
   models: ModelInfo[],
   persistedModel: string,
 ) => {
-  if (persistedModel && models.some((model) => model.key === persistedModel)) {
+  const available = downloadableModels(models);
+  if (
+    persistedModel &&
+    available.some((model) => model.key === persistedModel)
+  ) {
     return persistedModel;
   }
-  return models[0]?.key ?? persistedModel;
+  return available[0]?.key ?? persistedModel;
 };
 
 const ONBOARDING_MODEL: Record<OnboardingModelPriority, string> = {
@@ -96,11 +104,12 @@ const pickRecommendedOnboardingModel = (
   models: ModelInfo[],
   priority: OnboardingModelPriority | null,
 ) => {
+  const available = downloadableModels(models);
   if (!priority) {
-    return models.find(hasRecommendedTag) ?? models[0] ?? null;
+    return available.find(hasRecommendedTag) ?? available[0] ?? null;
   }
   return (
-    models.find((model) => model.key === ONBOARDING_MODEL[priority]) ?? null
+    available.find((model) => model.key === ONBOARDING_MODEL[priority]) ?? null
   );
 };
 
@@ -110,11 +119,72 @@ const checkMicrophonePermission = () =>
 const checkAccessibilityPermission = () =>
   invoke<boolean>("check_accessibility_permission");
 
-const stopShortcutCapture = () =>
-  invoke("set_shortcut_capture_active", { active: false }).catch(() => {});
-
 const refreshModelStatus = (queryClient: QueryClient, model: string) =>
   queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
+
+type OnboardingSettings = Awaited<ReturnType<typeof getSettings>>;
+
+const buildSettingsArgs = (
+  latest: OnboardingSettings,
+  smartShortcut: string,
+  transcriptionMode: string,
+  localModel: string,
+  autoLaunchEnabled: boolean,
+) => {
+  const holdShortcut = "Control+Shift+Space";
+  const toggleShortcut = "Control+Alt+Space";
+  return {
+    smartShortcut,
+    smartEnabled: true,
+    holdShortcut,
+    holdEnabled: false,
+    toggleShortcut,
+    toggleEnabled: false,
+    shortcutBindings: {
+      smart: [
+        { shortcut: smartShortcut, temporary: false, cleanup_enabled: false },
+      ],
+      hold: [
+        { shortcut: holdShortcut, temporary: false, cleanup_enabled: false },
+      ],
+      toggle: [
+        { shortcut: toggleShortcut, temporary: false, cleanup_enabled: false },
+      ],
+    },
+    transcriptionMode,
+    localModel,
+    remoteSpeechEnabled: false,
+    remoteSpeechProvider: latest.remote_speech_provider ?? "custom",
+    remoteSpeechEndpoint: latest.remote_speech_endpoint ?? "",
+    remoteSpeechApiKey: latest.remote_speech_api_key ?? "",
+    remoteSpeechModel: latest.remote_speech_model ?? "",
+    microphoneDevice: latest.microphone_device ?? null,
+    language: latest.language ?? "",
+    appLocale: latest.app_locale ?? "system",
+    themeMode: latest.theme_mode ?? "system",
+    llmEnabled: false,
+    cleanupEnabled: false,
+    llmProvider: latest.llm_provider ?? "none",
+    llmEndpoint: latest.llm_endpoint ?? "",
+    llmApiKey: latest.llm_api_key ?? "",
+    llmModel: latest.llm_model ?? "",
+    editModeEnabled: false,
+    autoDictionaryEnabled: false,
+    mediaAction: "pause",
+    autoUpdateEnabled: true,
+    autoLaunchEnabled,
+    startInBackground: latest.start_in_background ?? false,
+    autoDeleteTarget: latest.auto_delete_target ?? "transcripts",
+    autoDeleteDuration: latest.auto_delete_duration ?? "never",
+    analyticsEnabled: latest.analytics_enabled ?? true,
+    localApiKey: latest.local_api_key ?? "",
+    localApiPort: latest.local_api_port ?? 11435,
+    localApiModel: latest.local_api_model ?? "auto",
+    localApiHost: latest.local_api_host ?? "127.0.0.1",
+    localApiStartOnLaunch: latest.local_api_start_on_launch ?? false,
+    localApiCors: latest.local_api_cors ?? false,
+  };
+};
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -137,6 +207,7 @@ export default function OnboardingScreen({
   const [openingLicenseTarget, setOpeningLicenseTarget] =
     useState<PurchaseTier | null>(null);
   const [licenseOpenError, setLicenseOpenError] = useState<string | null>(null);
+  const [showLicenseModal, setShowLicenseModal] = useState(false);
   const ctx = state.context;
   const queryClient = useQueryClient();
 
@@ -156,7 +227,15 @@ export default function OnboardingScreen({
     [ctx.platform, hasImportStep],
   );
   const currentStep = state.value as string;
-  const currentStepIndex = Math.max(0, steps.indexOf(currentStep as (typeof steps)[number]));
+  const currentStepIndex = Math.max(
+    0,
+    steps.indexOf(currentStep as (typeof steps)[number]),
+  );
+  useEffect(() => {
+    void invoke("track_onboarding_step_viewed", { step: currentStep }).catch(
+      () => {},
+    );
+  }, [currentStep]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
   const licenseQuery = useLicenseState();
@@ -333,6 +412,9 @@ export default function OnboardingScreen({
 
   const handleDownload = useCallback(
     async (modelKey: string, ane?: boolean) => {
+      void invoke("track_onboarding_step_viewed", {
+        step: "model_downloading",
+      }).catch(() => {});
       updateDownloadStatus(modelKey, {
         status: "downloading",
         percent: 0,
@@ -342,7 +424,6 @@ export default function OnboardingScreen({
         }),
       });
       try {
-        // Include the Neural Engine encoder by default
         const includeAne =
           ane ??
           modelCatalogQuery.data?.some(
@@ -504,74 +585,14 @@ export default function OnboardingScreen({
 
     try {
       const latestSettings = await getSettings();
-      const holdShortcut = "Control+Shift+Space";
-      const toggleShortcut = "Control+Alt+Space";
       await invoke("update_settings", {
-        args: {
-          smartShortcut: ctx.smartShortcut,
-          smartEnabled: true,
-          holdShortcut,
-          holdEnabled: false,
-          toggleShortcut,
-          toggleEnabled: false,
-          shortcutBindings: {
-            smart: [
-              {
-                shortcut: ctx.smartShortcut,
-                temporary: false,
-                cleanup_enabled: false,
-              },
-            ],
-            hold: [
-              {
-                shortcut: holdShortcut,
-                temporary: false,
-                cleanup_enabled: false,
-              },
-            ],
-            toggle: [
-              {
-                shortcut: toggleShortcut,
-                temporary: false,
-                cleanup_enabled: false,
-              },
-            ],
-          },
-          transcriptionMode: ctx.selectedMode,
-          localModel: resolvedLocalModel,
-          remoteSpeechEnabled: false,
-          remoteSpeechProvider:
-            latestSettings.remote_speech_provider ?? "custom",
-          remoteSpeechEndpoint: latestSettings.remote_speech_endpoint ?? "",
-          remoteSpeechApiKey: latestSettings.remote_speech_api_key ?? "",
-          remoteSpeechModel: latestSettings.remote_speech_model ?? "",
-          microphoneDevice: latestSettings.microphone_device ?? null,
-          language: latestSettings.language ?? "",
-          appLocale: latestSettings.app_locale ?? "system",
-          themeMode: latestSettings.theme_mode ?? "system",
-          llmEnabled: false,
-          cleanupEnabled: false,
-          llmProvider: latestSettings.llm_provider ?? "none",
-          llmEndpoint: latestSettings.llm_endpoint ?? "",
-          llmApiKey: latestSettings.llm_api_key ?? "",
-          llmModel: latestSettings.llm_model ?? "",
-          editModeEnabled: false,
-          autoDictionaryEnabled: false,
-          mediaAction: "pause",
-          autoUpdateEnabled: true,
-          autoLaunchEnabled: latestSettings.auto_launch_enabled ?? false,
-          startInBackground: latestSettings.start_in_background ?? false,
-          autoDeleteTarget: latestSettings.auto_delete_target ?? "transcripts",
-          autoDeleteDuration: latestSettings.auto_delete_duration ?? "never",
-          analyticsEnabled: latestSettings.analytics_enabled ?? true,
-          localApiKey: latestSettings.local_api_key ?? "",
-          localApiPort: latestSettings.local_api_port ?? 11435,
-          localApiModel: latestSettings.local_api_model ?? "auto",
-          localApiHost: latestSettings.local_api_host ?? "127.0.0.1",
-          localApiStartOnLaunch:
-            latestSettings.local_api_start_on_launch ?? false,
-          localApiCors: latestSettings.local_api_cors ?? false,
-        },
+        args: buildSettingsArgs(
+          latestSettings,
+          ctx.smartShortcut,
+          ctx.selectedMode,
+          resolvedLocalModel,
+          ctx.autoLaunch,
+        ),
       });
       await invoke("complete_onboarding");
       send({ type: "COMPLETE_SUCCESS" });
@@ -591,6 +612,7 @@ export default function OnboardingScreen({
       });
     }
   }, [
+    ctx.autoLaunch,
     ctx.selectedMode,
     ctx.smartShortcut,
     onComplete,
@@ -602,17 +624,34 @@ export default function OnboardingScreen({
     t,
   ]);
 
+  const applySmartShortcut = useCallback(
+    async (shortcut: string) => {
+      send({ type: "SET_SHORTCUT", shortcut });
+      try {
+        const latest = await getSettings();
+        await invoke("update_settings", {
+          args: buildSettingsArgs(
+            latest,
+            shortcut,
+            ctx.selectedMode,
+            selectedModel,
+            ctx.autoLaunch,
+          ),
+        });
+      } catch {
+        return;
+      }
+    },
+    [ctx.autoLaunch, ctx.selectedMode, selectedModel, send],
+  );
+
   const goNext = useCallback(() => {
     send({ type: "NEXT" });
   }, [send]);
 
   const goBack = useCallback(() => {
-    if (ctx.captureActive) {
-      void stopShortcutCapture();
-      send({ type: "CAPTURE_END" });
-    }
     send({ type: "BACK" });
-  }, [ctx.captureActive, send]);
+  }, [send]);
 
   const stepMotionProps = {
     custom: ctx.transitionDirection,
@@ -630,48 +669,18 @@ export default function OnboardingScreen({
             key="welcome"
             stepMotionProps={stepMotionProps}
             hasStepTransitioned={ctx.hasStepTransitioned}
-            selectedMode={ctx.selectedMode}
-            onSelectMode={(mode) => send({ type: "SELECT_MODE", mode })}
-            onNext={goNext}
-            continueDisabled={
+            onStart={goNext}
+            startDisabled={
               ctx.selectedMode === "local" && importableAppsQuery.isLoading
             }
           />
         );
-      case "import":
+      case "model":
         return (
-          <ImportStep
-            key="import"
-            stepMotionProps={stepMotionProps}
-            apps={ctx.importableApps}
-            onApplied={(result) => {
-              if (result.modelKey) {
-                send({ type: "SELECT_MODEL", key: result.modelKey });
-                if (!modelStatus[result.modelKey]?.installed) {
-                  void handleDownload(result.modelKey);
-                }
-              }
-              if (result.shortcut) {
-                send({ type: "SET_SHORTCUT", shortcut: result.shortcut });
-              }
-              goNext();
-            }}
-            onNext={goNext}
-          />
-        );
-      case "setup":
-        return (
-          <SetupStep
-            key="setup"
+          <ModelStep
+            key="model"
             stepMotionProps={stepMotionProps}
             modelPriority={ctx.modelPriority}
-            customModel={
-              Boolean(ctx.localModelChoice) &&
-              ctx.localModelChoice !== recommendedOnboardingModel?.key
-            }
-            smartShortcut={ctx.smartShortcut}
-            captureActive={ctx.captureActive}
-            capturePreview={ctx.capturePreview}
             recommendedModel={selectedModelInfo}
             catalog={modelCatalogQuery.data ?? []}
             modelStatus={modelStatus}
@@ -691,18 +700,34 @@ export default function OnboardingScreen({
             onSelectPriority={(priority) =>
               send({ type: "SELECT_PRIORITY", priority })
             }
-            onStartCapture={() => send({ type: "CAPTURE_START" })}
-            onEndCapture={(shortcut) => send({ type: "CAPTURE_END", shortcut })}
-            onSetPreview={(preview) =>
-              send({ type: "SET_CAPTURE_PREVIEW", preview })
-            }
-            onSetShortcut={(shortcut) =>
-              send({ type: "SET_SHORTCUT", shortcut })
-            }
             onShowConfirm={(show) => send({ type: "SHOW_LOCAL_CONFIRM", show })}
             onDownload={handleDownload}
             onDelete={handleDelete}
             onCancelDownload={handleCancelDownload}
+            onNext={goNext}
+          />
+        );
+      case "import":
+        return (
+          <ImportStep
+            key="import"
+            stepMotionProps={stepMotionProps}
+            apps={ctx.importableApps}
+            onApplied={(result) => {
+              if (result.modelKey) {
+                send({ type: "SELECT_MODEL", key: result.modelKey });
+                if (!modelStatus[result.modelKey]?.installed) {
+                  void handleDownload(result.modelKey);
+                }
+              }
+              if (result.shortcut) {
+                send({ type: "SET_SHORTCUT", shortcut: result.shortcut });
+              }
+              if (result.autoLaunch !== null) {
+                send({ type: "SET_AUTO_LAUNCH", value: result.autoLaunch });
+              }
+              goNext();
+            }}
             onNext={goNext}
           />
         );
@@ -722,27 +747,22 @@ export default function OnboardingScreen({
             onNext={goNext}
           />
         );
-      case "license":
+      case "done":
         return (
-          <LicenseStep
-            key="license"
+          <ReadyStep
+            key="done"
             stepMotionProps={stepMotionProps}
-            licenseState={licenseQuery.data ?? null}
-            licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
-            activating={activateLicense.isPending}
-            openingTarget={openingLicenseTarget}
-            openError={licenseOpenError}
+            smartShortcut={ctx.smartShortcut}
+            onSetShortcut={applySmartShortcut}
+            modelLabel={selectedModelInfo?.label ?? null}
+            autoLaunch={ctx.autoLaunch}
+            onSetAutoLaunch={(value) =>
+              send({ type: "SET_AUTO_LAUNCH", value })
+            }
+            licenseActive={licenseQuery.data?.status === "active"}
+            onOpenLicense={() => setShowLicenseModal(true)}
             isCompleting={ctx.isCompleting}
             completionError={ctx.completionError}
-            activationError={
-              activateLicense.error instanceof Error
-                ? activateLicense.error.message
-                : activateLicense.error
-                  ? String(activateLicense.error)
-                  : null
-            }
-            onOpenCheckout={openLicenseCheckout}
-            onActivateLicense={(key) => activateLicense.mutate(key)}
             onComplete={handleComplete}
           />
         );
@@ -751,50 +771,71 @@ export default function OnboardingScreen({
     }
   };
 
+  const showChrome = currentStep !== "welcome" && currentStep !== "done";
+
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
-      <WindowControls />
-      <div data-tauri-drag-region className="h-7 w-full shrink-0" />
+    <MotionConfig reducedMotion="user">
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-secondary ui-color-on-solid select-none relative">
+        <WindowControls />
+        <div data-tauri-drag-region className="h-7 w-full shrink-0" />
 
-      <div className="flex justify-center pt-6 pb-6">
-        <StepIndicator currentStep={currentStepIndex} total={steps.length} />
-      </div>
+        <div className="flex justify-center pt-6">
+          <div className="flex h-1.5 items-center">
+            {showChrome && (
+              <StepIndicator
+                currentStep={currentStepIndex}
+                total={steps.length}
+              />
+            )}
+          </div>
+        </div>
 
-      <div className="flex-1 flex items-center justify-center px-10 pb-10">
-        <AnimatePresence mode="wait" custom={ctx.transitionDirection}>
-          {renderStep()}
+        <div className="flex-1 flex flex-col items-center overflow-y-auto px-10 pb-6">
+          <AnimatePresence mode="wait" custom={ctx.transitionDirection}>
+            {renderStep()}
+          </AnimatePresence>
+        </div>
+
+        {currentStep !== "welcome" && (
+          <button
+            onClick={goBack}
+            className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-primary transition-colors"
+          >
+            <ChevronLeft size={14} />
+            {t({
+              id: "onboarding.back",
+              message: "Back",
+            })}
+          </button>
+        )}
+
+        <FAQModal
+          isOpen={ctx.showFAQModal}
+          onClose={() => send({ type: "TOGGLE_FAQ", show: false })}
+        />
+
+        <AnimatePresence>
+          {showLicenseModal && (
+            <LicenseModal
+              licenseState={licenseQuery.data ?? null}
+              licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
+              activating={activateLicense.isPending}
+              openingTarget={openingLicenseTarget}
+              openError={licenseOpenError}
+              activationError={
+                activateLicense.error instanceof Error
+                  ? activateLicense.error.message
+                  : activateLicense.error
+                    ? String(activateLicense.error)
+                    : null
+              }
+              onOpenCheckout={openLicenseCheckout}
+              onActivateLicense={(key) => activateLicense.mutate(key)}
+              onClose={() => setShowLicenseModal(false)}
+            />
+          )}
         </AnimatePresence>
       </div>
-
-      <div className="flex justify-center pb-5">
-        <div className="flex items-center gap-2 text-content-disabled">
-          <GlimpseLogo size="sm" />
-          <span className="ui-text-meta font-medium">
-            {t({
-              id: "onboarding.brand",
-              message: "Glimpse",
-            })}
-          </span>
-        </div>
-      </div>
-
-      <FAQModal
-        isOpen={ctx.showFAQModal}
-        onClose={() => send({ type: "TOGGLE_FAQ", show: false })}
-      />
-
-      {currentStepIndex > 0 && (
-        <button
-          onClick={goBack}
-          className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-muted transition-colors"
-        >
-          <ChevronLeft size={14} />
-          {t({
-            id: "onboarding.back",
-            message: "Back",
-          })}
-        </button>
-      )}
-    </div>
+    </MotionConfig>
   );
 }

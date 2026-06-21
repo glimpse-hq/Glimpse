@@ -6,9 +6,11 @@ mod types;
 
 #[cfg(target_os = "macos")]
 pub(crate) use commands::handle_opened_paths;
+pub(crate) use processing::build_export_content;
 pub(crate) use types::default_item_kind;
 #[cfg(target_os = "macos")]
 pub use types::EVENT_LIBRARY_RENDERER_READY;
 pub use types::{
-    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, Speaker, TranscriptSegment,
+    ExportFormat, LibraryFilter, LibraryImportOptions, LibraryItem, LibraryItemPatch,
+    LibraryItemStatus, Speaker, TranscriptSegment,
 };

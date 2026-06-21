@@ -65,8 +65,6 @@ fn clear_update_state_and_emit(app: &AppHandle<AppRuntime>) {
     let _ = app.emit("update:cleared", ());
 }
 
-// --- Auto-update marker file (persists "just auto-updated" state across restarts) ---
-
 fn marker_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
     app.path()
         .app_data_dir()
@@ -157,13 +155,11 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
     let idle_duration = Duration::from_secs(AUTO_UPDATE_IDLE_MINS * 60);
 
     loop {
-        // Check if auto-update is enabled (in-memory cache, no DB hit)
         if !app.state::<AppState>().is_auto_update_enabled() {
             tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_IDLE_POLL_SECS)).await;
             continue;
         }
 
-        // Check if an update is available
         if !state.lock().is_available() {
             tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_IDLE_POLL_SECS)).await;
             continue;
@@ -171,17 +167,14 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
 
         tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
 
-        // Only auto-update when the settings window is not visible
         if is_settings_window_visible(&app) {
             continue;
         }
 
-        // Wait for idle: pill must be idle for the full duration
         if !wait_for_idle(&app, idle_duration).await {
             continue;
         }
 
-        // Re-check all conditions after the idle wait
         if !should_restart_for_auto_update(&app, &state) {
             continue;
         }
@@ -190,8 +183,11 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
 
         match resolve_available_update(&app).await {
             Ok(Some(update)) => {
+                let version = update.version.clone();
                 match update.download_and_install(|_, _| {}, || {}).await {
                     Ok(()) => {
+                        // Marker-write failures repeat every poll; report once per install.
+                        let mut restart_marker_failure_reported = false;
                         if should_restart_for_auto_update(&app, &state) {
                             if write_marker(&app) {
                                 state.lock().clear();
@@ -200,11 +196,19 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                                 return;
                             }
                             warn!("auto-update: installed, but marker write failed");
+                            crate::analytics::track_update_failed(
+                                &app,
+                                "automatic",
+                                "restart_marker",
+                                Some(&version),
+                                "storage",
+                            );
+                            restart_marker_failure_reported = true;
                         } else {
                             info!("auto-update: installed, waiting for restart conditions");
                         }
 
-                        // Update is already installed — wait for restart conditions
+                        // Update is already installed - wait for restart conditions
                         // without re-downloading.
                         loop {
                             tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
@@ -219,21 +223,44 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                                     return;
                                 }
                                 warn!("auto-update: installed, but deferred marker write failed");
+                                if !restart_marker_failure_reported {
+                                    crate::analytics::track_update_failed(
+                                        &app,
+                                        "automatic",
+                                        "restart_marker",
+                                        Some(&version),
+                                        "storage",
+                                    );
+                                    restart_marker_failure_reported = true;
+                                }
                             }
                         }
                         continue;
                     }
                     Err(err) => {
                         warn!(error = %err, "auto-update: download/install failed");
+                        crate::analytics::track_update_failed(
+                            &app,
+                            "automatic",
+                            "download_install",
+                            Some(&version),
+                            crate::analytics::classify_failure_reason(&err.to_string()),
+                        );
                     }
                 }
             }
             Ok(None) => {}
             Err(err) => {
                 warn!(error = %err, "auto-update: failed to resolve update");
+                crate::analytics::track_update_failed(
+                    &app,
+                    "automatic",
+                    "resolve",
+                    None,
+                    crate::analytics::classify_failure_reason(&err),
+                );
             }
         }
-        // Back off before retrying
         tokio::time::sleep(Duration::from_secs(CHECK_INTERVAL_HOURS * 60 * 60)).await;
     }
 }
@@ -337,9 +364,9 @@ async fn check_for_update(
     Ok(())
 }
 
+// Auto-update installs silently when the app is idle, so the toast is
+// only useful to users who opted out of it.
 pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdateState) {
-    // Auto-update installs silently when the app is idle, so the toast is
-    // only useful to users who opted out of it.
     if app.state::<AppState>().is_auto_update_enabled() {
         return;
     }
@@ -422,15 +449,30 @@ pub async fn check_for_updates(app: AppHandle<AppRuntime>) -> Result<UpdateStatu
 
 #[tauri::command]
 pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(), String> {
-    let update = resolve_available_update(&app)
-        .await?
-        .ok_or_else(|| "No update is currently available.".to_string())?;
+    let update = match resolve_available_update(&app).await {
+        Ok(Some(update)) => update,
+        Ok(None) => {
+            crate::analytics::track_update_failed(&app, "manual", "resolve", None, "not_found");
+            return Err("No update is currently available.".to_string());
+        }
+        Err(err) => {
+            crate::analytics::track_update_failed(
+                &app,
+                "manual",
+                "resolve",
+                None,
+                crate::analytics::classify_failure_reason(&err),
+            );
+            return Err(err);
+        }
+    };
+    let version = update.version.clone();
 
     let mut downloaded = 0_u64;
     let mut total: Option<u64> = None;
     let progress_app = app.clone();
 
-    update
+    if let Err(err) = update
         .download_and_install(
             |chunk_length, content_length| {
                 if total.is_none() {
@@ -458,7 +500,16 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
             || {},
         )
         .await
-        .map_err(|err| err.to_string())?;
+    {
+        crate::analytics::track_update_failed(
+            &app,
+            "manual",
+            "download_install",
+            Some(&version),
+            crate::analytics::classify_failure_reason(&err.to_string()),
+        );
+        return Err(err.to_string());
+    }
 
     let _ = app.emit(
         EVENT_UPDATE_DOWNLOAD_PROGRESS,

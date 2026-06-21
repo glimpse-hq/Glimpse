@@ -79,6 +79,7 @@ impl TranscriptionStatus {
 
 pub struct StorageManager {
     connection: Arc<Mutex<Connection>>,
+    library_root: PathBuf,
 }
 
 #[derive(Debug, Clone)]
@@ -130,8 +131,14 @@ impl StorageManager {
         Self::configure_connection(&connection)?;
         Self::apply_migrations(&connection)?;
 
+        let library_root = db_path
+            .parent()
+            .map(|parent| parent.join("library"))
+            .unwrap_or_else(|| PathBuf::from("library"));
+
         Ok(Self {
             connection: Arc::new(Mutex::new(connection)),
+            library_root,
         })
     }
 
@@ -372,6 +379,82 @@ impl StorageManager {
             let records = stmt
                 .query_map(
                     params![TranscriptionStatus::Success.as_str(), limit as i64],
+                    Self::record_from_row,
+                )?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            records
+        };
+
+        Self::resolve_audio_availability(&mut records);
+        Ok(records)
+    }
+
+    pub fn get_recent_transcriptions_page(
+        &self,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<TranscriptionRecord>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut records = {
+            let conn = self.connection.lock();
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions
+                 WHERE status = ?1 AND text <> ''
+                 ORDER BY timestamp DESC, id DESC
+                 LIMIT ?2 OFFSET ?3",
+            )?;
+
+            let records = stmt
+                .query_map(
+                    params![
+                        TranscriptionStatus::Success.as_str(),
+                        limit as i64,
+                        offset as i64
+                    ],
+                    Self::record_from_row,
+                )?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            records
+        };
+
+        Self::resolve_audio_availability(&mut records);
+        Ok(records)
+    }
+
+    pub fn search_transcriptions(
+        &self,
+        needle: &str,
+        limit: usize,
+    ) -> Result<Vec<TranscriptionRecord>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let escaped = needle
+            .replace('\\', "\\\\")
+            .replace('%', "\\%")
+            .replace('_', "\\_");
+        let pattern = format!("%{escaped}%");
+        let mut records = {
+            let conn = self.connection.lock();
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions
+                 WHERE status = ?1 AND text <> ''
+                   AND (text LIKE ?2 ESCAPE '\\' OR raw_text LIKE ?2 ESCAPE '\\')
+                 ORDER BY timestamp DESC
+                 LIMIT ?3",
+            )?;
+
+            let records = stmt
+                .query_map(
+                    params![TranscriptionStatus::Success.as_str(), pattern, limit as i64],
                     Self::record_from_row,
                 )?
                 .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -856,7 +939,7 @@ impl StorageManager {
 
     pub fn get_library_item(&self, id: &str) -> Result<Option<LibraryItem>> {
         let conn = self.connection.lock();
-        crate::library::repo::get_library_item(&conn, id)
+        crate::library::repo::get_library_item(&conn, &self.library_root, id)
     }
 
     pub fn get_library_items_page(
@@ -866,12 +949,18 @@ impl StorageManager {
         offset: usize,
     ) -> Result<(Vec<LibraryItem>, bool)> {
         let conn = self.connection.lock();
-        crate::library::repo::get_library_items_page(&conn, filter, limit, offset)
+        crate::library::repo::get_library_items_page(
+            &conn,
+            &self.library_root,
+            filter,
+            limit,
+            offset,
+        )
     }
 
     pub fn get_recoverable_library_items(&self) -> Result<Vec<LibraryItem>> {
         let conn = self.connection.lock();
-        crate::library::repo::get_recoverable_library_items(&conn)
+        crate::library::repo::get_recoverable_library_items(&conn, &self.library_root)
     }
 
     pub fn update_library_item(
@@ -880,12 +969,12 @@ impl StorageManager {
         patch: LibraryItemPatch,
     ) -> Result<Option<LibraryItem>> {
         let mut conn = self.connection.lock();
-        crate::library::repo::update_library_item(&mut conn, id, patch)
+        crate::library::repo::update_library_item(&mut conn, &self.library_root, id, patch)
     }
 
     pub fn delete_library_item(&self, id: &str) -> Result<Option<String>> {
         let conn = self.connection.lock();
-        crate::library::repo::delete_library_item(&conn, id)
+        crate::library::repo::delete_library_item(&conn, &self.library_root, id)
     }
 
     pub fn get_library_tags(&self) -> Result<Vec<String>> {

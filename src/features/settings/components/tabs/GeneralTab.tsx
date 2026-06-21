@@ -726,7 +726,7 @@ const GeneralTab = ({
                         {aiFeaturesRequireLicense
                           ? t({
                               id: "settings.general.edit_mode.license_prefix",
-                              message: "Activate Glimpse Personal in",
+                              message: "Activate your Glimpse license in",
                             })
                           : t({
                               id: "settings.general.edit_mode.configure_prefix",
@@ -822,7 +822,7 @@ const GeneralTab = ({
                             {aiFeaturesRequireLicense
                               ? t({
                                   id: "settings.general.edit_mode.help_license_requirement",
-                                  message: "Requires Glimpse Personal.",
+                                  message: "Requires a Glimpse license.",
                                 })
                               : t({
                                   id: "settings.general.edit_mode.help_requirement",

@@ -64,7 +64,7 @@ export default function HomeTodayHeader({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={fadeTransition}
-          className="ui-text-display font-normal ui-color-primary tracking-tight"
+          className="font-satoshi ui-text-display font-normal ui-color-primary tracking-tight"
         >
           {greetingText}
         </motion.h1>

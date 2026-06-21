@@ -33,8 +33,6 @@ const WARM_ENTRY_IDLE_MS = 5 * 1000;
 const EXPANDED_TEXT_TOP_FADE =
   "linear-gradient(to bottom, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.38) 74%, transparent 100%)";
 
-const EMPTY_SPECTRUM = new Uint8Array(256);
-
 const ICONS = {
   warning: [
     [0, 0, 1, 0, 0],
@@ -45,7 +43,6 @@ const ICONS = {
   ],
 };
 
-// Transition timing — fast-start smooth-end (Apple-style spring)
 const EXPAND_TRANSITION = [
   "width 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)",
   "height 0.42s cubic-bezier(0.2, 0.82, 0.18, 1)",
@@ -247,7 +244,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     );
   }, [expandedTextSegments]);
 
-  // Primary canvas (small pill dots)
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<GridInfo>({
@@ -259,7 +255,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   });
   const heightsRef = useRef<number[]>([]);
 
-  // Background canvas (expanded pill dots)
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
   const bgContainerRef = useRef<HTMLDivElement>(null);
   const bgGridRef = useRef<GridInfo>({
@@ -271,7 +266,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   });
   const bgHeightsRef = useRef<number[]>([]);
 
-  // Animation & audio state
   const isExpandedRef = useRef(isExpanded);
   const animationRef = useRef<number | null>(null);
   const loaderTimeRef = useRef<number>(0);
@@ -690,11 +684,11 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       switch (pillStatus) {
         case "listening": {
           const now = performance.now();
-          const audioData =
-            now - lastSpectrumAtRef.current > 250
-              ? EMPTY_SPECTRUM
-              : spectrumBinsRef.current;
-          drawAudioFrameRef.current(audioData);
+          if (now - lastSpectrumAtRef.current > 250) {
+            drawBaseDotsRef.current();
+          } else {
+            drawAudioFrameRef.current(spectrumBinsRef.current);
+          }
           break;
         }
         case "processing":
@@ -1001,7 +995,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
             >
               <div aria-hidden="true" className="pill-cleanup-field" />
 
-              {/* Expanded content area — positioned above background dots */}
               <div
                 className="pill-expanded-content relative z-10"
                 style={{
@@ -1147,7 +1140,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 </div>
               </div>
 
-              {/* Background canvas — full expanded size, fades in at low opacity */}
               <div
                 className="absolute inset-0 pointer-events-none flex items-center justify-center z-[1]"
                 style={{
@@ -1172,7 +1164,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 </div>
               </div>
 
-              {/* Primary canvas — small pill dots, fades out when expanded */}
               <div
                 className="absolute inset-0 pointer-events-none flex items-center justify-center z-[2]"
                 style={{

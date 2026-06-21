@@ -368,7 +368,7 @@ pub async fn start_local_api(
     state: tauri::State<'_, crate::AppState>,
     args: StartLocalApiArgs,
 ) -> Result<LocalApiStatus, String> {
-    crate::license::require_license_gate(&state.settings_store, "the API server")?;
+    crate::license::require_active_license(&state.settings_store, "the API server")?;
     let controller: Arc<LocalApiController> = Arc::clone(&state.local_api);
     controller.start(app, args).await
 }
@@ -394,11 +394,12 @@ pub fn start_from_settings(app: &AppHandle<AppRuntime>, settings: &crate::settin
     }
 
     let state = app.state::<crate::AppState>();
-    if !crate::license::license_gate_active(&state.settings_store) {
+    if !crate::license::active_license_gate(&state.settings_store) {
         state.local_api.push_log(
             app,
             "warn",
-            "API server start-on-launch skipped; Glimpse Personal is required.".to_string(),
+            "API server start-on-launch skipped; an active Glimpse license is required."
+                .to_string(),
         );
         return;
     }

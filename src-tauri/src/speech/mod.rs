@@ -18,6 +18,7 @@ pub use catalog::{list_models, SpeechModel};
 
 pub const WHISPER_CHUNK_SECONDS: u32 = 28;
 pub const WHISPER_CHUNK_OVERLAP_SECONDS: u32 = 2;
+pub const WHISPER_LEADING_PAD_SECONDS: f32 = 0.2;
 pub const PARAKEET_CHUNK_SECONDS: u32 = 180;
 pub const PARAKEET_CHUNK_OVERLAP_SECONDS: u32 = 3;
 pub const VAD_MIN_SPEECH_PERCENT_FILE: f32 = 2.0;
@@ -84,7 +85,7 @@ pub fn warm(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
             }
         };
         let transcriber = app_handle.state::<AppState>().local_transcriber();
-        if let Err(err) = transcriber.preload_and_warm(&ready) {
+        if let Err(err) = transcriber.preload_and_warm_if_needed(&ready) {
             tracing::error!("[speech] warm failed: {err}");
         }
     });

@@ -1,4 +1,5 @@
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use anyhow::{anyhow, Context, Result};
 use tauri::{async_runtime, AppHandle, Emitter, Manager};
@@ -97,6 +98,7 @@ struct ProcessTranscriptInput<'a> {
     log_context: Option<&'a str>,
     cancel_token: Option<&'a CancellationToken>,
     keep_pill_expanded: bool,
+    audio_duration_seconds: f32,
 }
 
 struct CompletionInput {
@@ -108,6 +110,8 @@ struct CompletionInput {
     llm_cleaned: bool,
     metadata: storage::TranscriptionMetadata,
     mode: &'static str,
+    transcription_duration_seconds: f32,
+    audio_source: &'static str,
     temporary: bool,
     timestamp_override: Option<chrono::DateTime<chrono::Local>>,
 }
@@ -141,6 +145,8 @@ pub(crate) fn queue_transcription(
     let recording_for_task = recording;
 
     async_runtime::spawn(async move {
+        let transcription_started_at = Instant::now();
+        let audio_duration_seconds = compute_audio_duration_seconds(&saved_for_task);
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
 
@@ -216,6 +222,8 @@ pub(crate) fn queue_transcription(
                         "Edit mode requires a selected language model. Choose one in Settings -> Models."
                             .to_string(),
                         "edit_mode",
+                        audio_duration_seconds,
+                        "microphone",
                         saved_for_task.path.display().to_string(),
                         saved_for_task.pending_path.as_deref(),
                         true,
@@ -238,6 +246,7 @@ pub(crate) fn queue_transcription(
                         log_context: None,
                         cancel_token: Some(&cancel_token),
                         keep_pill_expanded: false,
+                        audio_duration_seconds,
                     },
                 )
                 .await
@@ -293,6 +302,10 @@ pub(crate) fn queue_transcription(
                         llm_cleaned: processed.llm_cleaned,
                         metadata,
                         mode: transcription_mode_label(&settings),
+                        transcription_duration_seconds: transcription_started_at
+                            .elapsed()
+                            .as_secs_f32(),
+                        audio_source: "microphone",
                         temporary,
                         timestamp_override: None,
                     },
@@ -314,7 +327,9 @@ pub(crate) fn queue_transcription(
                 emit_transcription_error_inner(
                     &app_handle,
                     format!("Transcription failed: {err}"),
-                    transcription_mode_label(&settings),
+                    "transcription",
+                    audio_duration_seconds,
+                    "microphone",
                     saved_for_task.path.display().to_string(),
                     saved_for_task.pending_path.as_deref(),
                     true,
@@ -345,19 +360,22 @@ async fn transcribe_completed_recording_locally(
     let is_whisper = matches!(ready_model.engine, model_manager::LocalModelEngine::Whisper);
 
     match async_runtime::spawn_blocking(move || {
-        let (chunk_seconds, overlap_seconds, strip_hallucinated_thank_you) = if is_whisper {
-            (
-                speech::WHISPER_CHUNK_SECONDS,
-                speech::WHISPER_CHUNK_OVERLAP_SECONDS,
-                true,
-            )
-        } else {
-            (
-                speech::PARAKEET_CHUNK_SECONDS,
-                speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
-                false,
-            )
-        };
+        let (chunk_seconds, overlap_seconds, leading_pad_seconds, strip_hallucinated_thank_you) =
+            if is_whisper {
+                (
+                    speech::WHISPER_CHUNK_SECONDS,
+                    speech::WHISPER_CHUNK_OVERLAP_SECONDS,
+                    speech::WHISPER_LEADING_PAD_SECONDS,
+                    true,
+                )
+            } else {
+                (
+                    speech::PARAKEET_CHUNK_SECONDS,
+                    speech::PARAKEET_CHUNK_OVERLAP_SECONDS,
+                    0.0,
+                    false,
+                )
+            };
         transcribe_local_chunked(
             &transcriber,
             &ready_model,
@@ -368,6 +386,7 @@ async fn transcribe_completed_recording_locally(
                 language: Some(&language),
                 chunk_seconds: chunk_seconds as f32,
                 overlap_seconds: overlap_seconds as f32,
+                leading_pad_seconds,
                 cancel_token: cancel_token.as_ref(),
                 strip_hallucinated_thank_you,
             },
@@ -458,8 +477,8 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                 mode: None,
                 action: Some("view_recovered_transcriptions".to_string()),
                 action_label: Some("View History".to_string()),
-                secondary_action: None,
-                secondary_action_label: None,
+                secondary_action: Some("copy_last_transcription".to_string()),
+                secondary_action_label: Some("Copy".to_string()),
             },
         );
     });
@@ -476,6 +495,8 @@ async fn transcribe_recovered_recording(
     recording: CompletedRecording,
     settings: &UserSettings,
 ) -> Result<RecoveredTranscriptionOutcome> {
+    let transcription_started_at = Instant::now();
+    let audio_duration_seconds = compute_audio_duration_seconds(saved);
     let http = app.state::<AppState>().http();
     let active_mode = mode_context::resolve_active_personality(settings);
     let model_id = speech::selected_model(settings);
@@ -500,7 +521,9 @@ async fn transcribe_recovered_recording(
             emit_transcription_error_inner(
                 app,
                 format!("Transcription failed: {err}"),
-                transcription_mode_label(settings),
+                "transcription",
+                audio_duration_seconds,
+                "microphone",
                 saved.path.display().to_string(),
                 saved.pending_path.as_deref(),
                 false,
@@ -529,6 +552,7 @@ async fn transcribe_recovered_recording(
             log_context: Some("recovery"),
             cancel_token: None,
             keep_pill_expanded: false,
+            audio_duration_seconds,
         },
     )
     .await
@@ -562,6 +586,8 @@ async fn transcribe_recovered_recording(
             llm_cleaned: processed.llm_cleaned,
             metadata,
             mode: transcription_mode_label(settings),
+            transcription_duration_seconds: transcription_started_at.elapsed().as_secs_f32(),
+            audio_source: "microphone",
             temporary: false,
             timestamp_override: Some(saved.started_at),
         },
@@ -614,6 +640,7 @@ async fn process_transcript_text(
         log_context,
         cancel_token,
         keep_pill_expanded,
+        audio_duration_seconds,
     } = input;
 
     let is_edit_mode = pending_selected_text.is_some();
@@ -647,7 +674,9 @@ async fn process_transcript_text(
                     if let Some(context) = log_context {
                         tracing::error!("LLM edit failed ({context}): {message}");
                     } else {
-                        tracing::error!("LLM edit failed, keeping original selected text: {message}");
+                        tracing::error!(
+                            "LLM edit failed, keeping original selected text: {message}"
+                        );
                     }
                     llm_cleanup::note_preflight_failure();
                     maybe_warn_llm_unavailable(app, true);
@@ -743,10 +772,16 @@ async fn process_transcript_text(
                     );
                 }
             }
-            Ok(Some((Err(err), _, _))) => {
-                emit_auto_paste_error(app, format!("Auto paste failed: {err}"))
-            }
-            Err(err) => emit_auto_paste_error(app, format!("Auto paste task error: {err}")),
+            Ok(Some((Err(err), _, _))) => emit_auto_paste_error(
+                app,
+                format!("Auto paste failed: {err}"),
+                audio_duration_seconds,
+            ),
+            Err(err) => emit_auto_paste_error(
+                app,
+                format!("Auto paste task error: {err}"),
+                audio_duration_seconds,
+            ),
         }
     }
 
@@ -781,6 +816,8 @@ pub(crate) fn retry_transcription_async(
     });
 
     async_runtime::spawn(async move {
+        let transcription_started_at = Instant::now();
+        let audio_duration_seconds = compute_audio_duration_seconds(&saved_for_task);
         struct RetryTokenGuard {
             app: AppHandle<AppRuntime>,
             id: String,
@@ -942,7 +979,9 @@ pub(crate) fn retry_transcription_async(
                     Some(&metadata.speech_model),
                     llm_cleaned,
                     metadata.audio_duration_seconds,
+                    transcription_started_at.elapsed().as_secs_f32(),
                     metadata.word_count,
+                    "microphone",
                 );
                 app_handle
                     .state::<AppState>()
@@ -966,7 +1005,9 @@ pub(crate) fn retry_transcription_async(
                 emit_transcription_error_inner(
                     &app_handle,
                     format!("Transcription failed: {err}"),
-                    transcription_mode_label(&settings),
+                    "transcription",
+                    audio_duration_seconds,
+                    "microphone",
                     saved_for_task.path.display().to_string(),
                     None,
                     true,
@@ -991,6 +1032,8 @@ fn emit_transcription_complete_with_cleanup(
         llm_cleaned,
         metadata,
         mode,
+        transcription_duration_seconds,
+        audio_source,
         temporary,
         timestamp_override,
     } = input;
@@ -1001,7 +1044,9 @@ fn emit_transcription_complete_with_cleanup(
         Some(&metadata.speech_model),
         llm_cleaned,
         metadata.audio_duration_seconds,
+        transcription_duration_seconds,
         metadata.word_count,
+        audio_source,
     );
     app.state::<AppState>().record_transcription_completed();
 
@@ -1139,8 +1184,21 @@ fn is_remote_fallback_unavailable(err: &anyhow::Error) -> bool {
     remote_speech::is_fallback_unavailable_message(&err.to_string())
 }
 
-fn emit_auto_paste_error(app: &AppHandle<AppRuntime>, message: String) {
-    analytics::track_transcription_failed(app, "auto_paste", "paste_error");
+fn emit_auto_paste_error(
+    app: &AppHandle<AppRuntime>,
+    message: String,
+    audio_duration_seconds: f32,
+) {
+    let settings = app.state::<AppState>().current_settings();
+    analytics::track_transcription_failed(
+        app,
+        "auto_paste",
+        transcription_mode_label(&settings),
+        &resolve_speech_model_label(&settings),
+        "paste_error",
+        Some(audio_duration_seconds),
+        "microphone",
+    );
 
     toast::emit_toast(
         app,
@@ -1164,20 +1222,26 @@ fn emit_transcription_error_inner(
     app: &AppHandle<AppRuntime>,
     message: String,
     stage: &str,
+    audio_duration_seconds: f32,
+    audio_source: &str,
     audio_path: String,
     pending_path: Option<&Path>,
     reset_state: bool,
     temporary: bool,
     show_toast: bool,
 ) {
-    let reason = if message.contains("No speech") || message.contains("empty") {
-        "no_speech"
-    } else if message.contains("Model") || message.contains("model") {
-        "model_error"
-    } else {
-        "api_error"
-    };
-    analytics::track_transcription_failed(app, stage, reason);
+    let reason = analytics::classify_failure_reason(&message);
+    let state = app.state::<AppState>();
+    let settings = state.current_settings();
+    analytics::track_transcription_failed(
+        app,
+        stage,
+        transcription_mode_label(&settings),
+        &resolve_speech_model_label(&settings),
+        reason,
+        Some(audio_duration_seconds),
+        audio_source,
+    );
 
     crate::emit_event(
         app,
@@ -1188,12 +1252,10 @@ fn emit_transcription_error_inner(
         },
     );
 
-    let state = app.state::<AppState>();
-    let settings = state.current_settings();
-
     let toast_message = format_transcription_error(&message);
     let metadata = storage::TranscriptionMetadata {
         speech_model: resolve_speech_model_label(&settings),
+        audio_duration_seconds,
         ..Default::default()
     };
 
@@ -1447,6 +1509,7 @@ struct LocalChunkingConfig<'a> {
     language: Option<&'a str>,
     chunk_seconds: f32,
     overlap_seconds: f32,
+    leading_pad_seconds: f32,
     cancel_token: Option<&'a CancellationToken>,
     strip_hallucinated_thank_you: bool,
 }
@@ -1463,6 +1526,7 @@ fn transcribe_local_chunked(
         language,
         chunk_seconds,
         overlap_seconds,
+        leading_pad_seconds,
         cancel_token,
         strip_hallucinated_thank_you,
     } = config;
@@ -1481,6 +1545,18 @@ fn transcribe_local_chunked(
             words: None,
         });
     }
+
+    let pad_samples = ((sample_rate as f32) * leading_pad_seconds).round() as usize;
+    let padded_storage: Vec<i16>;
+    let samples: &[i16] = if pad_samples > 0 {
+        let mut padded = Vec::with_capacity(pad_samples + samples.len());
+        padded.resize(pad_samples, 0);
+        padded.extend_from_slice(samples);
+        padded_storage = padded;
+        &padded_storage
+    } else {
+        samples
+    };
 
     let chunk_samples = ((sample_rate.max(1) as f32) * chunk_seconds).round() as usize;
     let chunk_samples = chunk_samples.max(1);
@@ -1513,8 +1589,13 @@ fn transcribe_local_chunked(
         };
         if chunk_speech_percent >= min_chunk_threshold {
             let chunk_text = if strip_hallucinated_thank_you {
-                let result = transcriber
-                    .transcribe_with_segments(model, chunk, sample_rate, dictionary, language)?;
+                let result = transcriber.transcribe_with_segments(
+                    model,
+                    chunk,
+                    sample_rate,
+                    dictionary,
+                    language,
+                )?;
                 if model_label.is_none() {
                     model_label = result.speech_model.clone();
                 }
@@ -1737,6 +1818,7 @@ pub(crate) fn finalize_streaming_transcription(
     let app_handle = app.clone();
 
     tauri::async_runtime::spawn(async move {
+        let transcription_started_at = Instant::now();
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
         let auto_paste = transcription_api::auto_paste_enabled();
@@ -1772,6 +1854,7 @@ pub(crate) fn finalize_streaming_transcription(
                 log_context: Some("streaming"),
                 cancel_token: Some(&cancel_token),
                 keep_pill_expanded: true,
+                audio_duration_seconds: duration_seconds,
             },
         )
         .await
@@ -1830,6 +1913,8 @@ pub(crate) fn finalize_streaming_transcription(
                 llm_cleaned: processed.llm_cleaned,
                 metadata,
                 mode: "local_streaming",
+                transcription_duration_seconds: transcription_started_at.elapsed().as_secs_f32(),
+                audio_source: "microphone",
                 temporary,
                 timestamp_override: None,
             },

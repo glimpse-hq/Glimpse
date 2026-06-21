@@ -420,7 +420,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
       />
 
       <div className="grid w-full min-w-0 grid-cols-1 gap-0 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        {/* Dictionary Column */}
         <div className="min-w-0 pb-6 md:pr-6 md:pb-0 lg:pr-8">
           <div className="min-w-0">
             <p className="ui-text-title-strong ui-color-primary text-balance">
@@ -635,7 +634,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
           </div>
         </div>
 
-        {/* Replacements Column */}
         <div className="min-w-0 border-t border-border-primary pt-6 md:border-t-0 md:border-l md:pl-6 md:pt-0 lg:pl-8">
           <div className="min-w-0">
             <p className="ui-text-title-strong ui-color-primary text-balance">

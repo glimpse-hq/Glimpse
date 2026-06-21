@@ -28,6 +28,9 @@ type AccountViewProps = {
 
 const TRIAL_TOTAL_DAYS = 14;
 
+const portalLinkClassName =
+  "inline-flex shrink-0 items-center gap-1 ui-text-meta ui-color-muted transition-colors hover:ui-color-secondary";
+
 const AccountView = ({
   licenseState,
   licenseLoading,
@@ -135,88 +138,93 @@ const AccountView = ({
           onOpenCheckout={onOpenCheckout}
         />
 
-        {isActive ? (
-          <>
-            <div className="flex w-full max-w-[400px] items-center justify-between gap-2">
-              <CustomerPortalLink source="settings_account" />
-              {confirmDeactivate ? (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={handleCancelDeactivate}
-                    disabled={deactivating}
-                    className="inline-flex h-7 min-w-[52px] items-center justify-center rounded-md px-2 ui-text-button-sm ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary disabled:opacity-50"
-                  >
-                    {t({
-                      id: "settings.account.action.deactivate_cancel",
-                      message: "Cancel",
-                    })}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDeactivateClick}
-                    disabled={deactivating}
-                    className="inline-flex h-7 min-w-[72px] items-center justify-center gap-1 rounded-md px-2 ui-text-button-sm ui-color-error transition-colors hover:bg-surface-elevated disabled:opacity-50"
-                  >
-                    {deactivating ? (
-                      <Loader2 size={11} className="animate-spin" />
-                    ) : (
-                      <LogOut size={11} />
-                    )}
-                    {t({
-                      id: "settings.account.action.deactivate_confirm_short",
-                      message: "Deactivate",
-                    })}
-                  </button>
-                </div>
-              ) : (
+        <div className="flex w-full max-w-[400px] items-center justify-between gap-3">
+          {isActive ? (
+            <CustomerPortalLink
+              source="settings_account"
+              className={portalLinkClassName}
+            />
+          ) : (
+            <p
+              className="min-w-0 truncate ui-text-meta"
+              style={{
+                color: isTrialing
+                  ? "var(--color-cloud)"
+                  : "var(--color-text-muted)",
+              }}
+            >
+              {trialStatusText}
+            </p>
+          )}
+
+          {isActive ? (
+            confirmDeactivate ? (
+              <div className="flex shrink-0 items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleCancelDeactivate}
+                  disabled={deactivating}
+                  className="inline-flex h-7 min-w-[52px] items-center justify-center rounded-md px-2 ui-text-button-sm ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary disabled:opacity-50"
+                >
+                  {t({
+                    id: "settings.account.action.deactivate_cancel",
+                    message: "Cancel",
+                  })}
+                </button>
                 <button
                   type="button"
                   onClick={handleDeactivateClick}
                   disabled={deactivating}
-                  className="inline-flex h-7 min-w-[148px] items-center justify-center gap-1.5 rounded-md px-2.5 ui-text-button-sm ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary disabled:opacity-50"
+                  className="inline-flex h-7 min-w-[72px] items-center justify-center gap-1 rounded-md px-2 ui-text-button-sm ui-color-error transition-colors hover:bg-surface-elevated disabled:opacity-50"
                 >
                   {deactivating ? (
-                    <Loader2 size={12} className="animate-spin" />
+                    <Loader2 size={11} className="animate-spin" />
                   ) : (
-                    <LogOut size={12} />
+                    <LogOut size={11} />
                   )}
                   {t({
-                    id: "settings.account.action.deactivate",
-                    message: "Deactivate this device",
+                    id: "settings.account.action.deactivate_confirm_short",
+                    message: "Deactivate",
                   })}
                 </button>
-              )}
-            </div>
-
-            {deactivationError ? (
-              <p className="w-full max-w-[400px] ui-text-meta text-error">
-                {deactivationError}
-              </p>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <div className="flex w-full max-w-[400px] items-center justify-between gap-3">
-              <p
-                className="ui-text-meta"
-                style={{
-                  color: isTrialing
-                    ? "var(--color-cloud)"
-                    : "var(--color-text-muted)",
-                }}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDeactivateClick}
+                disabled={deactivating}
+                className="inline-flex h-7 shrink-0 items-center justify-center gap-1.5 rounded-md px-2.5 ui-text-button-sm ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary disabled:opacity-50"
               >
-                {trialStatusText}
-              </p>
-            </div>
+                {deactivating ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <LogOut size={12} />
+                )}
+                {t({
+                  id: "settings.account.action.deactivate",
+                  message: "Deactivate this device",
+                })}
+              </button>
+            )
+          ) : (
+            <CustomerPortalLink
+              source="settings_account"
+              className={portalLinkClassName}
+            />
+          )}
+        </div>
 
-            {openError ? (
-              <p className="w-full max-w-[400px] ui-text-meta text-error">
-                {openError}
-              </p>
-            ) : null}
-          </>
-        )}
+        {deactivationError ? (
+          <p className="w-full max-w-[400px] ui-text-meta text-error">
+            {deactivationError}
+          </p>
+        ) : null}
+
+        {openError ? (
+          <p className="w-full max-w-[400px] ui-text-meta text-error">
+            {openError}
+          </p>
+        ) : null}
       </div>
 
       {!isActive && (

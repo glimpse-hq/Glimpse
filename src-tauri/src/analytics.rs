@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use serde_json::json;
 use tauri::Manager;
 
-use crate::{AppRuntime, AppState};
+use crate::{settings::UserSettings, AppRuntime, AppState};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const POSTHOG_API_KEY: Option<&str> = option_env!("POSTHOG_API_KEY");
@@ -87,14 +87,20 @@ fn build_event(
 fn capture_event(app: &tauri::AppHandle<AppRuntime>, event_name: &str, props: serde_json::Value) {
     if let Some(event) = build_event(app, event_name, props, true) {
         tauri::async_runtime::spawn(async move {
-            let _ = posthog_rs::capture(event).await;
+            let retry = event.clone();
+            if matches!(
+                posthog_rs::capture(event).await,
+                Err(posthog_rs::Error::NotInitialized)
+            ) {
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                let _ = posthog_rs::capture(retry).await;
+            }
         });
     }
 }
 
-/// Best-effort blocking capture for use during app exit.
-/// SAFETY: Must be called from a synchronous context (e.g. Tauri window event handler).
-/// Calling from within an async Tokio task will panic.
+/// Blocking capture for app-exit only. Must run on a sync thread - `block_on`
+/// panics inside an async Tokio task.
 fn capture_event_blocking(
     app: &tauri::AppHandle<AppRuntime>,
     event_name: &str,
@@ -132,7 +138,7 @@ pub fn track_app_installed(app: &tauri::AppHandle<AppRuntime>) {
 }
 
 /// Records that a transcription succeeded: local vs remote, the model, whether
-/// LLM cleanup ran, plus the audio length and word count as plain numbers.
+/// LLM cleanup ran, audio source, audio and processing duration, and word count.
 /// The transcribed text itself is never included.
 pub fn track_transcription_completed(
     app: &tauri::AppHandle<AppRuntime>,
@@ -140,7 +146,9 @@ pub fn track_transcription_completed(
     model: Option<&str>,
     llm_cleaned: bool,
     audio_duration_seconds: f32,
+    transcription_duration_seconds: f32,
     word_count: u32,
+    audio_source: &str,
 ) {
     capture_event(
         app,
@@ -150,23 +158,253 @@ pub fn track_transcription_completed(
             "model": model.unwrap_or("unknown"),
             "llm_cleaned": llm_cleaned,
             "audio_duration_seconds": audio_duration_seconds,
+            "transcription_duration_seconds": transcription_duration_seconds,
             "word_count": word_count,
+            "audio_source": audio_source,
         }),
     );
 }
 
-/// Records that a transcription failed: which step and a short reason code only.
-pub fn track_transcription_failed(app: &tauri::AppHandle<AppRuntime>, stage: &str, reason: &str) {
+/// Records that a transcription failed: stage, mode, speech model, bounded
+/// reason, audio source, and audio duration.
+pub fn track_transcription_failed(
+    app: &tauri::AppHandle<AppRuntime>,
+    stage: &str,
+    mode: &str,
+    model: &str,
+    reason: &str,
+    audio_duration_seconds: Option<f32>,
+    audio_source: &str,
+) {
     capture_event(
         app,
         "transcription_failed",
-        json!({ "stage": stage, "reason": reason }),
+        json!({
+            "stage": stage,
+            "mode": mode,
+            "model": model,
+            "reason": reason,
+            "audio_duration_seconds": audio_duration_seconds,
+            "audio_source": audio_source,
+        }),
+    );
+}
+
+/// Records a bounded onboarding screen identifier without form contents.
+#[tauri::command]
+pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: String) {
+    let step = match step.as_str() {
+        "welcome" | "import" | "model" | "model_downloading" | "permissions" | "done" => {
+            step.as_str()
+        }
+        _ => "unknown",
+    };
+    capture_event(&app, "onboarding_step_viewed", json!({ "step": step }));
+}
+
+/// Records selected product-setting toggles after settings persist.
+pub fn track_setting_changed(
+    app: &tauri::AppHandle<AppRuntime>,
+    setting: &str,
+    from_value: bool,
+    to_value: bool,
+) {
+    capture_event(
+        app,
+        "settings_changed",
+        json!({
+            "setting": setting,
+            "from_value": from_value,
+            "to_value": to_value,
+        }),
+    );
+}
+
+/// Compares persisted settings and records changes to product-feature toggles.
+pub fn track_settings_changes(
+    app: &tauri::AppHandle<AppRuntime>,
+    previous: &UserSettings,
+    next: &UserSettings,
+) {
+    for (setting, from_value, to_value) in [
+        ("llm_enabled", previous.llm_enabled, next.llm_enabled),
+        (
+            "cleanup_enabled",
+            previous.cleanup_enabled,
+            next.cleanup_enabled,
+        ),
+        (
+            "edit_mode_enabled",
+            previous.edit_mode_enabled,
+            next.edit_mode_enabled,
+        ),
+        (
+            "remote_speech_enabled",
+            previous.remote_speech_enabled,
+            next.remote_speech_enabled,
+        ),
+        (
+            "auto_dictionary_enabled",
+            previous.auto_dictionary_enabled,
+            next.auto_dictionary_enabled,
+        ),
+    ] {
+        if from_value != to_value {
+            track_setting_changed(app, setting, from_value, to_value);
+        }
+    }
+}
+
+/// Records the recording phase, a bounded failure reason, and whether the
+/// default or a selected microphone was requested. Never records its name.
+pub fn track_recording_failed(
+    app: &tauri::AppHandle<AppRuntime>,
+    stage: &str,
+    reason: &str,
+    input: &str,
+) {
+    capture_event(
+        app,
+        "recording_failed",
+        json!({ "stage": stage, "reason": reason, "input": input }),
+    );
+}
+
+/// Records when remote speech falls back to a local model, including the
+/// bounded provider failure reason and whether fallback was available.
+pub fn track_transcription_fallback(
+    app: &tauri::AppHandle<AppRuntime>,
+    remote_model: &str,
+    local_model: &str,
+    reason: &str,
+    outcome: &str,
+) {
+    capture_event(
+        app,
+        "transcription_fallback",
+        json!({
+            "remote_model": remote_model,
+            "local_model": local_model,
+            "reason": reason,
+            "outcome": outcome,
+        }),
     );
 }
 
 /// Records the name of a speech model you downloaded.
 pub fn track_model_downloaded(app: &tauri::AppHandle<AppRuntime>, model: &str) {
     capture_event(app, "model_downloaded", json!({ "model": model }));
+}
+
+/// Records a model download/install phase and bounded failure reason.
+pub fn track_model_download_failed(
+    app: &tauri::AppHandle<AppRuntime>,
+    model: &str,
+    stage: &str,
+    reason: &str,
+) {
+    capture_event(
+        app,
+        "model_download_failed",
+        json!({ "model": model, "stage": stage, "reason": reason }),
+    );
+}
+
+/// Records a manual or automatic update phase and bounded failure reason.
+pub fn track_update_failed(
+    app: &tauri::AppHandle<AppRuntime>,
+    source: &str,
+    stage: &str,
+    version: Option<&str>,
+    reason: &str,
+) {
+    capture_event(
+        app,
+        "update_failed",
+        json!({
+            "source": source,
+            "stage": stage,
+            "version": version.unwrap_or("unknown"),
+            "reason": reason,
+        }),
+    );
+}
+
+/// Records a frontend failure using only bounded fields and a local hash. The
+/// exception message and stack never cross the command boundary.
+#[tauri::command]
+pub fn report_frontend_crash(
+    app: tauri::AppHandle<AppRuntime>,
+    window_label: String,
+    source: String,
+    error_kind: String,
+    fingerprint: String,
+) {
+    let window_label = match window_label.as_str() {
+        "main" | "toast" | "settings" => window_label.as_str(),
+        _ => "unknown",
+    };
+    let source = match source.as_str() {
+        "render" | "window_error" | "unhandled_rejection" => source.as_str(),
+        _ => "unknown",
+    };
+    let error_kind = match error_kind.as_str() {
+        "Error" | "TypeError" | "RangeError" | "ReferenceError" | "SyntaxError" => {
+            error_kind.as_str()
+        }
+        _ => "unknown",
+    };
+    let fingerprint = if fingerprint.len() <= 16
+        && fingerprint
+            .chars()
+            .all(|character| character.is_ascii_hexdigit())
+    {
+        fingerprint.as_str()
+    } else {
+        "unknown"
+    };
+    capture_event(
+        &app,
+        "frontend_crashed",
+        json!({
+            "window": window_label,
+            "source": source,
+            "error_kind": error_kind,
+            "fingerprint": fingerprint,
+        }),
+    );
+}
+
+/// Maps a raw error message to a bounded, non-identifying reason code. Rules are
+/// checked in order, so earlier (more specific) categories win.
+pub fn classify_failure_reason(message: &str) -> &'static str {
+    const RULES: &[(&str, &[&str])] = &[
+        ("cancelled", &["cancel"]),
+        (
+            "permission",
+            &["permission", "not allowed", "access denied"],
+        ),
+        (
+            "unauthorized",
+            &["unauthorized", "authentication", "api key"],
+        ),
+        ("rate_limited", &["rate limit", "too many requests"]),
+        ("quota_exceeded", &["quota", "billing"]),
+        ("timeout", &["timeout", "timed out"]),
+        ("network", &["network", "connect", "dns"]),
+        ("not_found", &["not found", "no such file"]),
+        ("no_speech", &["no speech", "empty"]),
+        ("model_error", &["model"]),
+        ("decode", &["decode", "ffmpeg"]),
+        ("verification", &["checksum", "verify"]),
+        ("storage", &["disk", "write", "save", "storage"]),
+        ("task_failed", &["task", "join"]),
+    ];
+    let message = message.to_ascii_lowercase();
+    RULES
+        .iter()
+        .find(|(_, needles)| needles.iter().any(|needle| message.contains(needle)))
+        .map_or("unknown", |(reason, _)| *reason)
 }
 
 /// Records that you finished the first-run setup.
@@ -190,8 +428,8 @@ pub fn track_app_exited(
     );
 }
 
-/// On a crash, leaves a small marker with only the version and the code location
-/// (file:line) — never the crash message, which could echo your text.
+/// On a crash, leaves a small marker with only the version, code location
+/// (file:line), and a bounded crash category - never the crash message.
 pub fn install_crash_handler(marker_path: PathBuf) {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -199,9 +437,35 @@ pub fn install_crash_handler(marker_path: PathBuf) {
             .location()
             .map(|l| format!("{}:{}", l.file(), l.line()))
             .unwrap_or_else(|| "unknown".to_string());
-        let _ = std::fs::write(&marker_path, format!("{APP_VERSION}\n{location}"));
+        let message = info
+            .payload()
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str));
+        let crash_type = classify_panic(message);
+        let _ = std::fs::write(
+            &marker_path,
+            format!("{APP_VERSION}\n{location}\n{crash_type}"),
+        );
         previous(info);
     }));
+}
+
+fn classify_panic(message: Option<&str>) -> &'static str {
+    let Some(message) = message else {
+        return "non_string_panic";
+    };
+    const RULES: &[(&str, &[&str])] = &[
+        ("out_of_memory", &["memory allocation", "out of memory"]),
+        ("assertion", &["assertion"]),
+        ("unwrap_or_expect", &["unwrap()", "expect("]),
+        ("bounds_check", &["index out of bounds"]),
+    ];
+    let message = message.to_ascii_lowercase();
+    RULES
+        .iter()
+        .find(|(_, needles)| needles.iter().any(|needle| message.contains(needle)))
+        .map_or("string_panic", |(reason, _)| *reason)
 }
 
 /// If the last run left a crash marker, records it now and clears the marker.
@@ -214,9 +478,14 @@ pub fn report_pending_crash(app: &tauri::AppHandle<AppRuntime>, marker_path: &Pa
     let mut lines = contents.lines();
     let crashed_version = lines.next().unwrap_or("unknown");
     let location = lines.next().unwrap_or("unknown");
+    let crash_type = lines.next().unwrap_or("unknown");
     capture_event(
         app,
         "app_crashed",
-        json!({ "crashed_version": crashed_version, "location": location }),
+        json!({
+            "crashed_version": crashed_version,
+            "location": location,
+            "crash_type": crash_type,
+        }),
     );
 }

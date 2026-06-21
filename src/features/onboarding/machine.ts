@@ -14,10 +14,9 @@ export type OnboardingContext = {
   importableApps: DetectedApp[];
   localModelChoice: string;
   modelPriority: OnboardingModelPriority | null;
+  autoLaunch: boolean;
   showLocalConfirm: boolean;
   smartShortcut: string;
-  captureActive: boolean;
-  capturePreview: string;
   completionError: string | null;
   isCompleting: boolean;
   showFAQModal: boolean;
@@ -32,10 +31,8 @@ export type OnboardingEvent =
   | { type: "SET_IMPORTABLE"; apps: DetectedApp[] }
   | { type: "SELECT_MODEL"; key: string }
   | { type: "SELECT_PRIORITY"; priority: OnboardingModelPriority }
+  | { type: "SET_AUTO_LAUNCH"; value: boolean }
   | { type: "SET_SHORTCUT"; shortcut: string }
-  | { type: "CAPTURE_START" }
-  | { type: "CAPTURE_END"; shortcut?: string }
-  | { type: "SET_CAPTURE_PREVIEW"; preview: string }
   | { type: "SHOW_LOCAL_CONFIRM"; show: boolean }
   | { type: "COMPLETING" }
   | { type: "COMPLETE_SUCCESS" }
@@ -46,13 +43,13 @@ function getSteps(
   platform: OnboardingPlatform = getOnboardingPlatform(),
   hasImport: boolean = false,
 ): OnboardingStep[] {
-  const steps: OnboardingStep[] = ["welcome"];
+  const steps: OnboardingStep[] = [];
 
   if (hasImport) {
     steps.push("import");
   }
 
-  steps.push("setup");
+  steps.push("model");
 
   if (
     platform.requiresMicrophonePermission ||
@@ -61,7 +58,6 @@ function getSteps(
     steps.push("permissions");
   }
 
-  steps.push("license");
   return steps;
 }
 
@@ -77,6 +73,20 @@ export const onboardingMachine = setup({
     context: {} as OnboardingContext,
     events: {} as OnboardingEvent,
   },
+  actions: {
+    forward: assign({
+      transitionDirection: 1 as const,
+      hasStepTransitioned: true,
+      showLocalConfirm: false,
+      completionError: null,
+    }),
+    backward: assign({
+      transitionDirection: -1 as const,
+      hasStepTransitioned: true,
+      showLocalConfirm: false,
+      completionError: null,
+    }),
+  },
 }).createMachine({
   id: "onboarding",
   initial: "welcome",
@@ -85,11 +95,10 @@ export const onboardingMachine = setup({
     selectedMode: "local",
     importableApps: [],
     localModelChoice: "",
-    modelPriority: null,
+    modelPriority: "balanced",
+    autoLaunch: false,
     showLocalConfirm: false,
-    smartShortcut: "Control+Space",
-    captureActive: false,
-    capturePreview: "",
+    smartShortcut: "Alt+Space",
     completionError: null,
     isCompleting: false,
     showFAQModal: false,
@@ -112,22 +121,11 @@ export const onboardingMachine = setup({
         localModelChoice: "",
       }),
     },
+    SET_AUTO_LAUNCH: {
+      actions: assign({ autoLaunch: ({ event }) => event.value }),
+    },
     SET_SHORTCUT: {
       actions: assign({ smartShortcut: ({ event }) => event.shortcut }),
-    },
-    CAPTURE_START: {
-      actions: assign({ captureActive: true, capturePreview: "" }),
-    },
-    CAPTURE_END: {
-      actions: assign({
-        captureActive: false,
-        capturePreview: "",
-        smartShortcut: ({ context, event }) =>
-          event.shortcut ?? context.smartShortcut,
-      }),
-    },
-    SET_CAPTURE_PREVIEW: {
-      actions: assign({ capturePreview: ({ event }) => event.preview }),
     },
     SHOW_LOCAL_CONFIRM: {
       actions: assign({ showLocalConfirm: ({ event }) => event.show }),
@@ -152,140 +150,48 @@ export const onboardingMachine = setup({
     welcome: {
       on: {
         NEXT: [
-          {
-            target: "import",
-            guard: hasImportStep,
-            actions: assign({
-              transitionDirection: 1,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
-          },
-          {
-            target: "setup",
-            actions: assign({
-              transitionDirection: 1,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
-          },
+          { target: "import", guard: hasImportStep, actions: "forward" },
+          { target: "model", actions: "forward" },
         ],
       },
     },
     import: {
       on: {
-        NEXT: {
-          target: "setup",
-          actions: assign({
-            transitionDirection: 1,
-            hasStepTransitioned: true,
-            showLocalConfirm: false,
-            completionError: null,
-          }),
-        },
-        BACK: {
-          target: "welcome",
-          actions: assign({
-            transitionDirection: -1 as const,
-            hasStepTransitioned: true,
-            showLocalConfirm: false,
-            completionError: null,
-          }),
-        },
+        NEXT: { target: "model", actions: "forward" },
+        BACK: { target: "welcome", actions: "backward" },
       },
     },
-    setup: {
+    model: {
       on: {
         NEXT: [
           {
             target: "permissions",
             guard: requiresPermissionsStep,
-            actions: assign({
-              transitionDirection: 1,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
+            actions: "forward",
           },
-          {
-            target: "license",
-            actions: assign({
-              transitionDirection: 1,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
-          },
+          { target: "done", actions: "forward" },
         ],
         BACK: [
-          {
-            target: "import",
-            guard: hasImportStep,
-            actions: assign({
-              transitionDirection: -1 as const,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
-          },
-          {
-            target: "welcome",
-            actions: assign({
-              transitionDirection: -1 as const,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
-          },
+          { target: "import", guard: hasImportStep, actions: "backward" },
+          { target: "welcome", actions: "backward" },
         ],
       },
     },
     permissions: {
       on: {
-        NEXT: {
-          target: "license",
-          actions: assign({
-            transitionDirection: 1,
-            hasStepTransitioned: true,
-            showLocalConfirm: false,
-            completionError: null,
-          }),
-        },
-        BACK: {
-          target: "setup",
-          actions: assign({
-            transitionDirection: -1 as const,
-            hasStepTransitioned: true,
-            showLocalConfirm: false,
-            completionError: null,
-          }),
-        },
+        NEXT: { target: "done", actions: "forward" },
+        BACK: { target: "model", actions: "backward" },
       },
     },
-    license: {
+    done: {
       on: {
         BACK: [
           {
             target: "permissions",
             guard: requiresPermissionsStep,
-            actions: assign({
-              transitionDirection: -1 as const,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
+            actions: "backward",
           },
-          {
-            target: "setup",
-            actions: assign({
-              transitionDirection: -1 as const,
-              hasStepTransitioned: true,
-              showLocalConfirm: false,
-              completionError: null,
-            }),
-          },
+          { target: "model", actions: "backward" },
         ],
       },
     },

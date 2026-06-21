@@ -62,6 +62,7 @@ pub struct ImportResult {
     pub shortcut: Option<String>,
     pub language_applied: bool,
     pub auto_launch_applied: bool,
+    pub auto_launch: Option<bool>,
     pub model_key: Option<String>,
     pub model_unrecognized: bool,
     pub transcripts_added: usize,
@@ -76,6 +77,7 @@ pub fn apply_import(
 ) -> Result<ImportResult, String> {
     let bundle = parse_app(id, home)?;
     let mut settings = state.current_settings_unmasked();
+    let previous_settings = settings.clone();
     let previous_auto_launch_enabled = settings.auto_launch_enabled;
     let mut result = ImportResult::default();
 
@@ -139,6 +141,7 @@ pub fn apply_import(
             settings.auto_launch_enabled = auto_launch;
             settings.start_in_background = auto_launch && settings.start_in_background;
             result.auto_launch_applied = true;
+            result.auto_launch = Some(auto_launch);
         }
     }
 
@@ -177,6 +180,7 @@ pub fn apply_import(
             return Err(err.to_string());
         }
     };
+    crate::analytics::track_settings_changes(app, &previous_settings, &next);
     state.emit_settings_changed(app, &next);
 
     // Write transcripts last so a settings/launch failure can't leave them committed.

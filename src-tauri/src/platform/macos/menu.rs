@@ -22,7 +22,6 @@ pub fn build_app_menu(
 ) -> tauri::Result<Menu<AppRuntime>> {
     let app_name = app.package_info().name.clone();
 
-    // Glimpse (big bold menu thing)
     let mut app_submenu = SubmenuBuilder::new(app, &app_name)
         .item(&MenuItemBuilder::with_id(MENU_ID_CHECK_UPDATES, "Check for Updates...").build(app)?)
         .separator();

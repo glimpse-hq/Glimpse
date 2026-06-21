@@ -1,5 +1,6 @@
 import { useLingui } from "@lingui/react/macro";
 import React, { useEffect, useState, useRef } from "react";
+import { useCopyToClipboard } from "../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -73,12 +74,11 @@ const ToastOverlay: React.FC = () => {
   const { t } = useLingui();
   const [toast, setToast] = useState<ToastState | null>(null);
   const [isRetrying, setIsRetrying] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy, reset: resetCopied } = useCopyToClipboard(1500);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dismissAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const copyResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastRef = useRef<ToastState | null>(null);
 
   useEffect(() => {
@@ -120,12 +120,8 @@ const ToastOverlay: React.FC = () => {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (copyResetTimerRef.current) {
-      clearTimeout(copyResetTimerRef.current);
-      copyResetTimerRef.current = null;
-    }
     setToast(null);
-    setCopied(false);
+    resetCopied();
     closeAll();
   };
 
@@ -165,7 +161,7 @@ const ToastOverlay: React.FC = () => {
     }
   };
 
-  const handleCopy = async (e: React.MouseEvent) => {
+  const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!toast) return;
@@ -177,19 +173,7 @@ const ToastOverlay: React.FC = () => {
       .filter(Boolean)
       .join("\n");
 
-    try {
-      await navigator.clipboard.writeText(copyText);
-      setCopied(true);
-      if (copyResetTimerRef.current) {
-        clearTimeout(copyResetTimerRef.current);
-      }
-      copyResetTimerRef.current = setTimeout(() => {
-        copyResetTimerRef.current = null;
-        setCopied(false);
-      }, 1500);
-    } catch (err) {
-      console.error("Failed to copy toast:", err);
-    }
+    copy(copyText);
   };
 
   const handleToastAction = async (action: string) => {
@@ -201,7 +185,9 @@ const ToastOverlay: React.FC = () => {
           ? { suggestion: toast.retryId }
           : undefined;
       await invoke(action, args);
-      dismissWithCleanup();
+      // copy_last_transcription replaces this toast with its own "Copied" toast,
+      // so dismissing here would race and hide that confirmation.
+      if (action !== "copy_last_transcription") dismissWithCleanup();
     } catch (err) {
       console.error("Action failed:", err);
     }
@@ -227,14 +213,10 @@ const ToastOverlay: React.FC = () => {
       }
       setToast({ ...ev.payload, isLeaving: false });
       setIsRetrying(false);
-      setCopied(false);
-      if (copyResetTimerRef.current) {
-        clearTimeout(copyResetTimerRef.current);
-        copyResetTimerRef.current = null;
-      }
+      resetCopied();
 
       const durations: Record<ToastType, number> = {
-        error: 0,
+        error: 18000,
         info: 3000,
         success: 2000,
         warning: 5000,
@@ -259,12 +241,8 @@ const ToastOverlay: React.FC = () => {
         dismissAnimationTimerRef.current = null;
       }
       if (toastRef.current) {
-        if (copyResetTimerRef.current) {
-          clearTimeout(copyResetTimerRef.current);
-          copyResetTimerRef.current = null;
-        }
         setToast(null);
-        setCopied(false);
+        resetCopied();
         try {
           await invoke("toast_dismissed");
         } catch {
@@ -279,7 +257,6 @@ const ToastOverlay: React.FC = () => {
       unsub2.then((u) => u());
       unsub3.then((u) => u());
       if (timerRef.current) clearTimeout(timerRef.current);
-      if (copyResetTimerRef.current) clearTimeout(copyResetTimerRef.current);
     };
   }, []);
 
@@ -288,6 +265,7 @@ const ToastOverlay: React.FC = () => {
   const colors = COLORS[toast.type];
   const showRetry = toast.retryId && toast.mode === "cloud";
   const showCopy = toast.type === "error";
+  const copySecondary = toast.secondaryAction === "copy_last_transcription";
 
   const handleBackgroundClick = () => {
     dismissWithCleanup();
@@ -410,7 +388,9 @@ const ToastOverlay: React.FC = () => {
             )}
             {((toast.action && toast.actionLabel) ||
               (toast.secondaryAction && toast.secondaryActionLabel)) && (
-              <div className="mt-2 flex items-end justify-between gap-6">
+              <div
+                className={`mt-2 flex items-center gap-4 ${copySecondary ? "" : "justify-between"}`}
+              >
                 {toast.action && toast.actionLabel && (
                   <button
                     type="button"
@@ -424,7 +404,9 @@ const ToastOverlay: React.FC = () => {
                     {toast.actionLabel} →
                   </button>
                 )}
-                <span aria-hidden="true" className="flex-1" />
+                {!copySecondary && (
+                  <span aria-hidden="true" className="flex-1" />
+                )}
                 {toast.secondaryAction && toast.secondaryActionLabel && (
                   <button
                     type="button"
@@ -433,8 +415,9 @@ const ToastOverlay: React.FC = () => {
                       e.stopPropagation();
                       void handleToastAction(toast.secondaryAction!);
                     }}
-                    className="ui-text-body-sm ui-color-error-soft ui-hover-error-strong transition-colors font-medium"
+                    className={`ui-text-body-sm transition-colors font-medium ${copySecondary ? "inline-flex items-center gap-1 ui-color-info-strong ui-hover-on-solid" : "ui-color-error-soft ui-hover-error-strong"}`}
                   >
+                    {copySecondary && <Copy size={12} aria-hidden="true" />}
                     {toast.secondaryActionLabel}
                   </button>
                 )}

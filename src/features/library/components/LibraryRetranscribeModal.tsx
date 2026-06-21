@@ -134,7 +134,11 @@ const LibraryRetranscribeModal = ({
         <div className="flex flex-col gap-5 px-5 py-5">
           {modelOptions.length === 0 && (
             <div className="flex items-start gap-2 ui-text-body-sm ui-color-warning-strong">
-              <Warning size={15} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <Warning
+                size={15}
+                className="mt-0.5 shrink-0"
+                aria-hidden="true"
+              />
               <span>
                 {t({
                   id: "library.retranscribe.no_models",

@@ -1,6 +1,72 @@
+import type { ReactNode } from "react";
 import { motion, type Variants, type Easing } from "framer-motion";
 
 export { GlimpseLogo } from "../../../shared/ui/GlimpseLogo";
+
+export type StepMotionProps = {
+  custom: 1 | -1;
+  variants: Variants;
+  animate: string;
+  exit: string;
+  transition: { duration: number; ease: Easing };
+};
+
+export function OnboardingStep({
+  stepKey,
+  motionProps,
+  initial = "enter",
+  widthClass = "max-w-md",
+  align = "top",
+  footer,
+  children,
+}: {
+  stepKey: string;
+  motionProps: StepMotionProps;
+  initial?: string | false;
+  widthClass?: string;
+  align?: "top" | "center";
+  footer?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      key={stepKey}
+      {...motionProps}
+      initial={initial}
+      className={`flex min-h-full w-full ${widthClass} flex-col items-center text-center ${
+        align === "center" ? "justify-center" : "justify-start pt-10"
+      }`}
+    >
+      {children}
+      {footer ? (
+        <div className="mt-9 flex w-full flex-col items-center gap-2.5">
+          {footer}
+        </div>
+      ) : null}
+    </motion.div>
+  );
+}
+
+export function OnboardingHeader({
+  title,
+  subtitle,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+}) {
+  return (
+    <div className="mb-8 flex max-w-md flex-col items-center text-center">
+      <h2 className="ui-text-title-lg font-semibold text-content-primary text-balance">
+        {title}
+      </h2>
+      {subtitle ? (
+        <p className="mt-2 ui-text-body-lg text-content-muted text-pretty">
+          {subtitle}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 export const StepIndicator = ({
   currentStep,
@@ -13,7 +79,7 @@ export const StepIndicator = ({
     {Array.from({ length: total }).map((_, i) => (
       <motion.div
         key={i}
-        className="h-1.5 rounded-full bg-amber-400"
+        className="h-1.5 rounded-full bg-cloud"
         animate={{
           width: i === currentStep ? 20 : 6,
           opacity: i <= currentStep ? 1 : 0.25,
@@ -24,38 +90,5 @@ export const StepIndicator = ({
   </div>
 );
 
-type ApplePermissionIconProps = {
-  size?: number;
-  className?: string;
-};
-
-export const AppleAccessibilityIcon = ({
-  size = 32,
-  className,
-}: ApplePermissionIconProps) => (
-  <svg
-    aria-hidden="true"
-    viewBox="0 0 24 24"
-    width={size}
-    height={size}
-    className={className}
-    fill="none"
-  >
-    <path
-      d="M12 5.6a2.1 2.1 0 1 0 0-4.2 2.1 2.1 0 0 0 0 4.2Z"
-      fill="currentColor"
-    />
-    <path
-      d="M4.35 7.2a.9.9 0 0 1 1.02-.75 42.5 42.5 0 0 0 13.26 0 .9.9 0 1 1 .27 1.78c-1.9.29-3.9.47-5.9.52v3.12l3.1 7.52a.9.9 0 1 1-1.67.68L12 14.16l-2.43 5.91a.9.9 0 0 1-1.67-.68l3.1-7.52V8.75a44.34 44.34 0 0 1-5.9-.52.9.9 0 0 1-.75-1.03Z"
-      fill="currentColor"
-    />
-  </svg>
-);
-
-export type StepMotionProps = {
-  custom: 1 | -1;
-  variants: Variants;
-  animate: string;
-  exit: string;
-  transition: { duration: number; ease: Easing };
-};
+export const PRIMARY_BUTTON_CLASS =
+  "flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-content-primary px-6 py-2.5 ui-text-body-lg font-semibold text-surface-secondary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";

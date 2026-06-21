@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 
 use anyhow::{anyhow, Result};
 use chrono::Utc;
@@ -173,6 +174,7 @@ fn start_library_transcription_internal(
     let token = state.register_library_transcription(id.clone());
     let app_handle = app.clone();
     let item_for_task = item.clone();
+    let transcription_started_at = Instant::now();
     async_runtime::spawn(async move {
         let id_for_release = id.clone();
         let token_handle = token.clone();
@@ -204,6 +206,20 @@ fn start_library_transcription_internal(
                 }
 
                 if count_words(&final_transcript) == 0 {
+                    let speech_model = result
+                        .speech_model
+                        .as_deref()
+                        .filter(|model| !model.trim().is_empty())
+                        .unwrap_or(&item.speech_model);
+                    crate::analytics::track_transcription_failed(
+                        &app_handle,
+                        "transcription",
+                        library_transcription_mode(speech_model),
+                        speech_model,
+                        "no_speech",
+                        Some(item.duration_seconds),
+                        "uploaded_file",
+                    );
                     let _ = storage.update_library_item(
                         &id,
                         LibraryItemPatch {
@@ -222,6 +238,21 @@ fn start_library_transcription_internal(
                         },
                     );
                 } else {
+                    let speech_model = result
+                        .speech_model
+                        .as_deref()
+                        .filter(|model| !model.trim().is_empty())
+                        .unwrap_or(&item.speech_model);
+                    crate::analytics::track_transcription_completed(
+                        &app_handle,
+                        library_transcription_mode(speech_model),
+                        Some(speech_model),
+                        false,
+                        item.duration_seconds,
+                        transcription_started_at.elapsed().as_secs_f32(),
+                        count_words(&final_transcript),
+                        "uploaded_file",
+                    );
                     let _ = storage.update_library_item(
                         &id,
                         LibraryItemPatch {
@@ -244,6 +275,17 @@ fn start_library_transcription_internal(
             Ok(Err(err)) => {
                 let cancelled = is_cancelled_error(&err);
                 let message = err.to_string();
+                if !cancelled {
+                    crate::analytics::track_transcription_failed(
+                        &app_handle,
+                        "transcription",
+                        library_transcription_mode(&item.speech_model),
+                        &item.speech_model,
+                        crate::analytics::classify_failure_reason(&message),
+                        Some(item.duration_seconds),
+                        "uploaded_file",
+                    );
+                }
                 let status = if cancelled {
                     LibraryItemStatus::Cancelled
                 } else {
@@ -269,6 +311,15 @@ fn start_library_transcription_internal(
             }
             Err(err) => {
                 let message = format!("Library transcription task failed: {err}");
+                crate::analytics::track_transcription_failed(
+                    &app_handle,
+                    "transcription",
+                    library_transcription_mode(&item.speech_model),
+                    &item.speech_model,
+                    "task_failed",
+                    Some(item.duration_seconds),
+                    "uploaded_file",
+                );
                 let _ = storage.update_library_item(
                     &id,
                     LibraryItemPatch {
@@ -334,6 +385,14 @@ fn handle_library_job_error(
         },
     );
     release_library_slot(app, state, id);
+}
+
+fn library_transcription_mode(model: &str) -> &'static str {
+    if remote_speech::is_remote_model(model) {
+        "remote"
+    } else {
+        "local"
+    }
 }
 
 pub(crate) fn schedule_library_job(
