@@ -541,8 +541,8 @@ impl PillController {
         crate::speech::warm(app, &settings);
 
         let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        // Enter Listening before the device opens for fast visual feedback.
         self.transition_to(app, PillStatus::Listening);
-        self.arm_capture_after_settle(app, generation);
 
         let pending_dir = crate::recordings_root(app)
             .ok()
@@ -552,6 +552,7 @@ impl PillController {
             .start(settings.microphone_device.clone(), pending_dir)
         {
             Ok(started) => {
+                self.arm_capture_after_settle(app, generation);
                 self.start_audio_spectrum_emitter(app);
                 self.pause_media_if_playing(app);
                 self.start_streaming_session_if_supported(app, &settings);
@@ -575,6 +576,9 @@ impl PillController {
                     microphone_input_kind(&settings),
                 );
                 self.reset_recording_state();
+                self.set_hold_key_down(false);
+                // Drop out of Listening so transition_to_error isn't suppressed.
+                self.transition_to(app, PillStatus::Idle);
                 self.transition_to_error(app, &format!("Unable to start recording: {err}"));
                 false
             }

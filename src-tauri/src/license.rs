@@ -485,8 +485,11 @@ fn validate_polar_license(
     license: &PolarLicenseResponse,
     expected_activation_id: Option<&str>,
 ) -> Result<(), String> {
-    if license.organization_id.as_deref() != Some(polar_organization_id()) {
-        return Err("Polar returned a license for a different organization.".to_string());
+    // Only reject a present mismatch; activate responses may omit organization_id.
+    if let Some(org) = license.organization_id.as_deref() {
+        if org != polar_organization_id() {
+            return Err("Polar returned a license for a different organization.".to_string());
+        }
     }
 
     if license.status != "granted" {

@@ -99,18 +99,24 @@ export function ModelStep({
     },
   ];
 
+  const realStatus = recommendedModel
+    ? modelStatusByKey[recommendedModel.key]
+    : undefined;
   const status: ModelStatus | undefined = recommendedModel
     ? {
         key: recommendedModel.key,
-        installed: displayState.status === "complete",
-        ane_installed: false,
-        bytes_on_disk: 0,
-        missing_files: [],
-        directory: "",
+        installed:
+          Boolean(realStatus?.installed) || displayState.status === "complete",
+        ane_installed: Boolean(realStatus?.ane_installed),
+        bytes_on_disk: realStatus?.bytes_on_disk ?? 0,
+        missing_files: realStatus?.missing_files ?? [],
+        directory: realStatus?.directory ?? "",
       }
     : undefined;
   const progress =
-    displayState.status === "downloading" ? displayState : undefined;
+    displayState.status !== "idle" && displayState.status !== "complete"
+      ? displayState
+      : undefined;
   const displayModel =
     recommendedModel?.ane_size_mb != null
       ? {
@@ -301,9 +307,13 @@ function ConfirmModelDownload({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="onboarding-model-confirm-title"
       >
         <DownloadSimple size={22} className="mx-auto mb-3 text-cloud" />
-        <p className="ui-text-body-lg font-semibold text-content-primary">
+        <p
+          id="onboarding-model-confirm-title"
+          className="ui-text-body-lg font-semibold text-content-primary"
+        >
           {t({
             id: "onboarding.model.confirm.title",
             message: "Download your model?",

@@ -54,12 +54,7 @@ fn list(identifier: &str, args: &[String], json: bool) -> Result<()> {
     let limit = usize_flag(args, "--limit", 20)?;
     let offset = usize_flag(args, "--offset", 0)?;
     let storage = open_storage(identifier)?;
-    let records: Vec<TranscriptionRecord> = storage
-        .get_recent_transcriptions(limit.saturating_add(offset))?
-        .into_iter()
-        .skip(offset)
-        .take(limit)
-        .collect();
+    let records = storage.get_recent_transcriptions_page(limit, offset)?;
     emit_records(&records, json);
     Ok(())
 }
@@ -74,14 +69,8 @@ fn search(identifier: &str, args: &[String], json: bool) -> Result<()> {
     if query.trim().is_empty() {
         bail!("history search requires a query");
     }
-    let needle = query.to_lowercase();
     let storage = open_storage(identifier)?;
-    let records: Vec<TranscriptionRecord> = storage
-        .get_all()?
-        .into_iter()
-        .filter(|record| matches(record, &needle))
-        .take(limit)
-        .collect();
+    let records = storage.search_transcriptions(query.trim(), limit)?;
     emit_records(&records, json);
     Ok(())
 }
@@ -120,14 +109,6 @@ fn stats(identifier: &str, json: bool) -> Result<()> {
         println!("Dictations: {}", stats.dictations);
     }
     Ok(())
-}
-
-fn matches(record: &TranscriptionRecord, needle: &str) -> bool {
-    record.text.to_lowercase().contains(needle)
-        || record
-            .raw_text
-            .as_deref()
-            .is_some_and(|raw| raw.to_lowercase().contains(needle))
 }
 
 fn emit_records(records: &[TranscriptionRecord], json: bool) {

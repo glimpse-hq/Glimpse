@@ -186,6 +186,8 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                 let version = update.version.clone();
                 match update.download_and_install(|_, _| {}, || {}).await {
                     Ok(()) => {
+                        // Marker-write failures repeat every poll; report once per install.
+                        let mut restart_marker_failure_reported = false;
                         if should_restart_for_auto_update(&app, &state) {
                             if write_marker(&app) {
                                 state.lock().clear();
@@ -201,6 +203,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                                 Some(&version),
                                 "storage",
                             );
+                            restart_marker_failure_reported = true;
                         } else {
                             info!("auto-update: installed, waiting for restart conditions");
                         }
@@ -220,13 +223,16 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                                     return;
                                 }
                                 warn!("auto-update: installed, but deferred marker write failed");
-                                crate::analytics::track_update_failed(
-                                    &app,
-                                    "automatic",
-                                    "restart_marker",
-                                    Some(&version),
-                                    "storage",
-                                );
+                                if !restart_marker_failure_reported {
+                                    crate::analytics::track_update_failed(
+                                        &app,
+                                        "automatic",
+                                        "restart_marker",
+                                        Some(&version),
+                                        "storage",
+                                    );
+                                    restart_marker_failure_reported = true;
+                                }
                             }
                         }
                         continue;

@@ -720,6 +720,9 @@ export default function OnboardingScreen({
               if (result.shortcut) {
                 send({ type: "SET_SHORTCUT", shortcut: result.shortcut });
               }
+              if (result.autoLaunch !== null) {
+                send({ type: "SET_AUTO_LAUNCH", value: result.autoLaunch });
+              }
               goNext();
             }}
             onNext={goNext}

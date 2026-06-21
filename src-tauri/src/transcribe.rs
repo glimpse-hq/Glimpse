@@ -477,8 +477,8 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                 mode: None,
                 action: Some("view_recovered_transcriptions".to_string()),
                 action_label: Some("View History".to_string()),
-                secondary_action: None,
-                secondary_action_label: None,
+                secondary_action: Some("copy_last_transcription".to_string()),
+                secondary_action_label: Some("Copy".to_string()),
             },
         );
     });

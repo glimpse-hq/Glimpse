@@ -62,6 +62,7 @@ pub struct ImportResult {
     pub shortcut: Option<String>,
     pub language_applied: bool,
     pub auto_launch_applied: bool,
+    pub auto_launch: Option<bool>,
     pub model_key: Option<String>,
     pub model_unrecognized: bool,
     pub transcripts_added: usize,
@@ -140,6 +141,7 @@ pub fn apply_import(
             settings.auto_launch_enabled = auto_launch;
             settings.start_in_background = auto_launch && settings.start_in_background;
             result.auto_launch_applied = true;
+            result.auto_launch = Some(auto_launch);
         }
     }
 

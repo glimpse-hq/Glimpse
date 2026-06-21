@@ -37,6 +37,7 @@ export interface ImportResult {
   shortcut: string | null;
   languageApplied: boolean;
   autoLaunchApplied: boolean;
+  autoLaunch: boolean | null;
   modelKey: string | null;
   modelUnrecognized: boolean;
   transcriptsAdded: number;

@@ -170,9 +170,7 @@ export function ReadyStep({
           </span>
           <span
             className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${
-              autoLaunch
-                ? "bg-emerald-500"
-                : "bg-surface-overlay ring-1 ring-inset ring-border-hover"
+              autoLaunch ? "bg-emerald-500" : "bg-surface-hover"
             }`}
           >
             <motion.span

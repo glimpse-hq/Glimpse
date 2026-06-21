@@ -65,6 +65,7 @@ export function LicenseModal({
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-label={t({ id: "onboarding.license.dialog_aria", message: "License" })}
       >
         <button
           type="button"

@@ -419,11 +419,11 @@ pub fn run() {
                         Ok(false) => {}
                         Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
                     }
+
+                    // Start after the refresh so the license gate reflects current state.
+                    let settings = state.current_settings();
+                    local_api::start_from_settings(&h, &settings);
                 });
-            }
-            {
-                let settings = handle.state::<AppState>().current_settings();
-                local_api::start_from_settings(handle, &settings);
             }
             integrations::start_control_server(handle.clone());
             library::commands::recover_interrupted_library_items(handle);
@@ -585,6 +585,7 @@ pub fn run() {
             complete_onboarding,
             cancel_recording,
             view_recovered_transcriptions,
+            copy_last_transcription,
             reset_onboarding,
             toast::debug_show_toast,
             analytics::report_frontend_crash,
@@ -1708,6 +1709,22 @@ pub(crate) fn recordings_root(app: &AppHandle<AppRuntime>) -> GlimpseResult<Path
 #[tauri::command]
 fn view_recovered_transcriptions(app: AppHandle<AppRuntime>) -> Result<(), String> {
     tray::open_settings_history(&app).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn copy_last_transcription(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<AppState>,
+) -> Result<(), String> {
+    let recent = state
+        .storage()
+        .get_recent_transcriptions(1)
+        .map_err(|err| format!("Failed to load transcriptions: {err}"))?;
+    let Some(record) = recent.into_iter().next() else {
+        return Err("No transcription to copy".to_string());
+    };
+    recent_transcriptions::copy_transcription_to_clipboard(&app, &record.id);
+    Ok(())
 }
 
 pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {

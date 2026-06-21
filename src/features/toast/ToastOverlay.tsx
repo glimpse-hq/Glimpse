@@ -185,7 +185,9 @@ const ToastOverlay: React.FC = () => {
           ? { suggestion: toast.retryId }
           : undefined;
       await invoke(action, args);
-      dismissWithCleanup();
+      // copy_last_transcription replaces this toast with its own "Copied" toast,
+      // so dismissing here would race and hide that confirmation.
+      if (action !== "copy_last_transcription") dismissWithCleanup();
     } catch (err) {
       console.error("Action failed:", err);
     }
@@ -214,7 +216,7 @@ const ToastOverlay: React.FC = () => {
       resetCopied();
 
       const durations: Record<ToastType, number> = {
-        error: 0,
+        error: 18000,
         info: 3000,
         success: 2000,
         warning: 5000,
@@ -263,6 +265,7 @@ const ToastOverlay: React.FC = () => {
   const colors = COLORS[toast.type];
   const showRetry = toast.retryId && toast.mode === "cloud";
   const showCopy = toast.type === "error";
+  const copySecondary = toast.secondaryAction === "copy_last_transcription";
 
   const handleBackgroundClick = () => {
     dismissWithCleanup();
@@ -385,7 +388,9 @@ const ToastOverlay: React.FC = () => {
             )}
             {((toast.action && toast.actionLabel) ||
               (toast.secondaryAction && toast.secondaryActionLabel)) && (
-              <div className="mt-2 flex items-end justify-between gap-6">
+              <div
+                className={`mt-2 flex items-center gap-4 ${copySecondary ? "" : "justify-between"}`}
+              >
                 {toast.action && toast.actionLabel && (
                   <button
                     type="button"
@@ -399,7 +404,9 @@ const ToastOverlay: React.FC = () => {
                     {toast.actionLabel} →
                   </button>
                 )}
-                <span aria-hidden="true" className="flex-1" />
+                {!copySecondary && (
+                  <span aria-hidden="true" className="flex-1" />
+                )}
                 {toast.secondaryAction && toast.secondaryActionLabel && (
                   <button
                     type="button"
@@ -408,8 +415,9 @@ const ToastOverlay: React.FC = () => {
                       e.stopPropagation();
                       void handleToastAction(toast.secondaryAction!);
                     }}
-                    className="ui-text-body-sm ui-color-error-soft ui-hover-error-strong transition-colors font-medium"
+                    className={`ui-text-body-sm transition-colors font-medium ${copySecondary ? "inline-flex items-center gap-1 ui-color-info-strong ui-hover-on-solid" : "ui-color-error-soft ui-hover-error-strong"}`}
                   >
+                    {copySecondary && <Copy size={12} aria-hidden="true" />}
                     {toast.secondaryActionLabel}
                   </button>
                 )}

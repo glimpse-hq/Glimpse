@@ -76,6 +76,7 @@ jobs:
       - name: check Rust
         env:
           DEVELOPER_DIR: /Applications/Xcode_16.3.app/Contents/Developer
+          # Disable i8mm matmul intrinsics; they fail to build with the CI Xcode toolchain.
           CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
         run: cargo check --manifest-path src-tauri/Cargo.toml

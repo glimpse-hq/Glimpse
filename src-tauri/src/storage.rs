@@ -389,6 +389,74 @@ impl StorageManager {
         Ok(records)
     }
 
+    pub fn get_recent_transcriptions_page(
+        &self,
+        limit: usize,
+        offset: usize,
+    ) -> Result<Vec<TranscriptionRecord>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let mut records = {
+            let conn = self.connection.lock();
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions
+                 WHERE status = ?1 AND text <> ''
+                 ORDER BY timestamp DESC
+                 LIMIT ?2 OFFSET ?3",
+            )?;
+
+            let records = stmt
+                .query_map(
+                    params![
+                        TranscriptionStatus::Success.as_str(),
+                        limit as i64,
+                        offset as i64
+                    ],
+                    Self::record_from_row,
+                )?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            records
+        };
+
+        Self::resolve_audio_availability(&mut records);
+        Ok(records)
+    }
+
+    pub fn search_transcriptions(
+        &self,
+        needle: &str,
+        limit: usize,
+    ) -> Result<Vec<TranscriptionRecord>> {
+        if limit == 0 {
+            return Ok(Vec::new());
+        }
+
+        let pattern = format!("%{needle}%");
+        let mut records = {
+            let conn = self.connection.lock();
+            let mut stmt = conn.prepare(
+                "SELECT id, timestamp, text, raw_text, audio_path, status, error_message, llm_cleaned,
+                        speech_model, llm_model, word_count, audio_duration_seconds, synced, mode_id, mode_name
+                 FROM transcriptions
+                 WHERE text LIKE ?1 OR raw_text LIKE ?1
+                 ORDER BY timestamp DESC
+                 LIMIT ?2",
+            )?;
+
+            let records = stmt
+                .query_map(params![pattern, limit as i64], Self::record_from_row)?
+                .collect::<rusqlite::Result<Vec<_>>>()?;
+            records
+        };
+
+        Self::resolve_audio_availability(&mut records);
+        Ok(records)
+    }
+
     pub fn lifetime_stats(&self) -> Result<LifetimeStats> {
         let conn = self.connection.lock();
         let stats = conn
