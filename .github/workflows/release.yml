@@ -20,7 +20,7 @@ jobs:
       prerelease: ${{ steps.release-type.outputs.prerelease }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: determine release type
         id: release-type
@@ -101,7 +101,7 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: verify Xcode
         if: matrix.os == 'macos'
