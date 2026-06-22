@@ -1,33 +1,67 @@
 //! `glimpse api start|stop|status` - control the local OpenAI-compatible API.
 
 use anyhow::{bail, Result};
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 
-use super::{client, coded, output, wants_help};
+use super::{client, coded, has_flag, output, str_flag, wants_help};
 
 const USAGE: &str = "\
 glimpse api <subcommand>
 
 Subcommands:
-  status          Report whether the local API is running
-  start           Start the local API server (requires the app)
-  stop            Stop the local API server
+  status                       Report whether the local API is running
+  start [options]              Start the local API server (requires the app)
+  stop                         Stop the local API server
+
+Start options (override saved settings for this run):
+  --host <host>                Bind host
+  --port <port>                Bind port
+  --model <id>                 Speech model
+  --api-key <key>              Require this API key
+  --cors / --no-cors           Allow or disallow browser clients
 
 Flags:
-  --json          Machine-readable output";
+  --json                       Machine-readable output";
 
 pub(crate) fn run(args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
         println!("{USAGE}");
         return Ok(());
     }
-    let (sub, _rest) = args.split_first().expect("non-empty checked above");
+    let (sub, rest) = args.split_first().expect("non-empty checked above");
     match sub.as_str() {
         "status" => status(json),
-        "start" => emit(client::request_data("api.start", json!({}))?, json),
+        "start" => emit(client::request_data("api.start", start_payload(rest)?)?, json),
         "stop" => emit(client::request_data("api.stop", json!({}))?, json),
         other => bail!("Unknown api subcommand: {other}\n\n{USAGE}"),
     }
+}
+
+/// Collect the optional `api start` overrides into a payload. Absent flags are
+/// omitted so the app falls back to the saved settings for each one.
+fn start_payload(args: &[String]) -> Result<Value> {
+    let mut payload = Map::new();
+    if let Some(host) = str_flag(args, "--host")? {
+        payload.insert("host".to_string(), json!(host));
+    }
+    if let Some(port) = str_flag(args, "--port")? {
+        let port: u16 = port
+            .parse()
+            .map_err(|_| anyhow::anyhow!("--port must be a number between 0 and 65535"))?;
+        payload.insert("port".to_string(), json!(port));
+    }
+    if let Some(model) = str_flag(args, "--model")? {
+        payload.insert("model".to_string(), json!(model));
+    }
+    if let Some(key) = str_flag(args, "--api-key")? {
+        payload.insert("api_key".to_string(), json!(key));
+    }
+    if has_flag(args, "--cors") {
+        payload.insert("cors".to_string(), json!(true));
+    } else if has_flag(args, "--no-cors") {
+        payload.insert("cors".to_string(), json!(false));
+    }
+    Ok(Value::Object(payload))
 }
 
 fn status(json: bool) -> Result<()> {

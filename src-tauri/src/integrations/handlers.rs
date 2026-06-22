@@ -19,7 +19,7 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "open" => open(app, &request.args),
         "status" => status(app),
         "library.import" => library_import(app, &request.args),
-        "api.start" => api_start(app),
+        "api.start" => api_start(app, &request.args),
         "api.stop" => api_stop(app),
         "api.status" => api_status(app),
         "transcribe" => transcribe(app, &request.args),
@@ -199,20 +199,39 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
     }))
 }
 
-fn api_start(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+fn api_start(app: &AppHandle<AppRuntime>, overrides: &Value) -> Result<Value, String> {
     let state = app.state::<AppState>();
     crate::license::require_active_license(&state.settings_store, "the API server")?;
     let settings = state.current_settings_unmasked();
+    // Each field falls back to the saved setting when the caller omits it.
     let args = crate::local_api::StartLocalApiArgs {
-        host: settings.local_api_host.clone(),
-        port: settings.local_api_port,
-        model: settings.local_api_model.clone(),
-        api_key: settings.local_api_key.clone(),
-        cors: settings.local_api_cors,
+        host: overrides
+            .get("host")
+            .and_then(Value::as_str)
+            .map(crate::settings::canonicalize_local_api_host)
+            .unwrap_or_else(|| settings.local_api_host.clone()),
+        port: overrides
+            .get("port")
+            .and_then(Value::as_u64)
+            .map(|port| port as u16)
+            .unwrap_or(settings.local_api_port),
+        model: overrides
+            .get("model")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .unwrap_or_else(|| settings.local_api_model.clone()),
+        api_key: overrides
+            .get("api_key")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .unwrap_or_else(|| settings.local_api_key.clone()),
+        cors: overrides
+            .get("cors")
+            .and_then(Value::as_bool)
+            .unwrap_or(settings.local_api_cors),
     };
     let controller = std::sync::Arc::clone(&state.local_api);
-    let app_for_task = app.clone();
-    let status = tauri::async_runtime::block_on(controller.start(app_for_task, args))?;
+    let status = tauri::async_runtime::block_on(controller.start(app.clone(), args))?;
     Ok(api_status_json(&status))
 }
 
