@@ -36,7 +36,7 @@ fn get_or_derive_key(hardware_uuid: &str) -> [u8; 32] {
 
 #[cfg(target_os = "macos")]
 pub fn get_hardware_uuid() -> Option<String> {
-    let output = Command::new("ioreg")
+    let output = Command::new("/usr/sbin/ioreg")
         .args(["-rd1", "-c", "IOPlatformExpertDevice"])
         .output()
         .ok()?;
