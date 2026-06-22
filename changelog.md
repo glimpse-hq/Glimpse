@@ -1,3 +1,10 @@
+1.0.0
+
+### Fixes
+
+- Fixed the CLI not being able to use different media formats.
+---
+
 0.9.9
 
 ### Features

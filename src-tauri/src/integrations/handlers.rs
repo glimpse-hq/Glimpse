@@ -257,9 +257,7 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
 
     let ready = crate::speech::install::ensure_model_ready(app, &model_id)
         .map_err(|err| format!("Failed to load model {model_id}: {err}"))?;
-    let (samples, sample_rate) =
-        crate::transcribe::load_audio_for_transcription(&std::path::PathBuf::from(&path))
-            .map_err(|err| format!("Failed to decode audio: {err}"))?;
+    let (samples, sample_rate) = decode_audio(&path)?;
     let dictionary = crate::dictionary::dictionary_entries_for_model(&ready, &settings);
 
     let success = state
@@ -301,6 +299,35 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         "word_count": text.split_whitespace().count(),
         "duration_seconds": duration_seconds,
     }))
+}
+
+static NEXT_DECODE_TEMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn decode_audio(path: &str) -> Result<(Vec<i16>, u32), String> {
+    let source = std::path::PathBuf::from(path);
+    let ext = source
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if ext == "wav" {
+        return crate::transcribe::load_audio_for_transcription(&source)
+            .map_err(|err| format!("Failed to decode audio: {err}"));
+    }
+
+    let temp = std::env::temp_dir().join(format!(
+        "glimpse-transcribe-{}-{}.wav",
+        std::process::id(),
+        NEXT_DECODE_TEMP.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    let result = crate::library::convert_to_wav(&source, &temp, &ext, None, None, None)
+        .map_err(|err| format!("Failed to decode audio: {err}"))
+        .and_then(|()| {
+            crate::transcribe::load_audio_for_transcription(&temp)
+                .map_err(|err| format!("Failed to decode audio: {err}"))
+        });
+    let _ = std::fs::remove_file(&temp);
+    result
 }
 
 fn active_model(settings: &crate::settings::UserSettings) -> String {

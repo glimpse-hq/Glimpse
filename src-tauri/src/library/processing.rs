@@ -446,7 +446,7 @@ fn downmix_interleaved_to_mono_i16(samples: &[i16], channels: usize, output: &mu
     }
 }
 
-fn convert_to_wav(
+pub(crate) fn convert_to_wav(
     input: &Path,
     output: &Path,
     ext: &str,
