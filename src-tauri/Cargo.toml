@@ -45,7 +45,8 @@ rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "multipart", "stream", "rustls", "blocking"] }
 posthog-rs = "0.13"
 arboard = "3"
-glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.5.0", features = ["whisper", "nvidia", "api", "cli", "remote"] }
+# TODO: move back to stable at some point when its all done :)
+glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", rev = "8a5eac1ef10a3dafe6edd29f762334830faa847e", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.3", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"

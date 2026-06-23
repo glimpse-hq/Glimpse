@@ -846,6 +846,7 @@ pub fn api_model_infos() -> Vec<glimpse_speech::api::ApiModelInfo> {
         .iter()
         .map(|manifest| glimpse_speech::api::ApiModelInfo {
             id: manifest.id.to_string(),
+            object: "model",
             label: manifest.label.to_string(),
             description: manifest.description.to_string(),
             tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
