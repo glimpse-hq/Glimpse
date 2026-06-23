@@ -95,15 +95,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     notes: "Use through an OpenAI-compatible gateway or proxy.",
   },
   {
-    id: "huggingface",
-    label: "Hugging Face Inference Endpoint",
-    endpoint: "",
-    defaultModel: "openai/whisper-large-v3-turbo",
-    apiKeyRequired: true,
-    compatibility: "openai-compatible-self-hosted",
-    supportsModelDiscovery: true,
-  },
-  {
     id: "vllm",
     label: "vLLM",
     endpoint: "http://localhost:8000/v1",

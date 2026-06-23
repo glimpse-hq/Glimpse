@@ -36,9 +36,10 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             llm_cleanup_enabled,
             speech_model,
             show_timestamps,
+            detect_speakers,
             kind,
             speakers
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22)",
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
         params![
             item.id,
             item.name,
@@ -60,6 +61,7 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             if item.llm_cleanup_enabled { 1 } else { 0 },
             item.speech_model,
             if item.show_timestamps { 1 } else { 0 },
+            if item.detect_speakers { 1 } else { 0 },
             item.kind,
             speakers,
         ],
@@ -87,7 +89,7 @@ pub(crate) fn get_library_items_page(
     let sql = format!(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
-                tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
+                tags, llm_cleanup_enabled, speech_model, show_timestamps, detect_speakers, kind, speakers
          FROM library_items
          {}
          ORDER BY created_at DESC
@@ -121,7 +123,7 @@ pub(crate) fn get_recoverable_library_items(
     let mut stmt = conn.prepare(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
-                tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
+                tags, llm_cleanup_enabled, speech_model, show_timestamps, detect_speakers, kind, speakers
          FROM library_items
          WHERE status IN ('pending', 'importing', 'transcribing', 'cancelling')
          ORDER BY created_at ASC",
@@ -175,6 +177,9 @@ pub(crate) fn update_library_item(
     if let Some(show_timestamps) = patch.show_timestamps {
         item.show_timestamps = show_timestamps;
     }
+    if let Some(detect_speakers) = patch.detect_speakers {
+        item.detect_speakers = detect_speakers;
+    }
     if let Some(duration_seconds) = patch.duration_seconds {
         item.duration_seconds = duration_seconds;
     }
@@ -223,7 +228,7 @@ fn get_library_item_by_id(conn: &Connection, root: &Path, id: &str) -> Result<Op
     conn.query_row(
         "SELECT id, name, audio_path, source_path, store_original, status, progress, error_message, transcript, segments, words,
                 duration_seconds, file_size_bytes, original_format, created_at, transcribed_at,
-                tags, llm_cleanup_enabled, speech_model, show_timestamps, kind, speakers
+                tags, llm_cleanup_enabled, speech_model, show_timestamps, detect_speakers, kind, speakers
          FROM library_items WHERE id = ?1",
         params![id],
         |row| library_item_from_row(root, row),
@@ -261,8 +266,9 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             speech_model = ?18,
             show_timestamps = ?19,
             kind = ?20,
-            speakers = ?21
-         WHERE id = ?22",
+            speakers = ?21,
+            detect_speakers = ?22
+         WHERE id = ?23",
         params![
             item.name,
             item.audio_path,
@@ -285,6 +291,7 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             if item.show_timestamps { 1 } else { 0 },
             item.kind,
             speakers,
+            if item.detect_speakers { 1 } else { 0 },
             item.id,
         ],
     )?;
@@ -341,6 +348,10 @@ fn library_item_from_row(root: &Path, row: &Row<'_>) -> rusqlite::Result<Library
         llm_cleanup_enabled: row.get::<_, i64>("llm_cleanup_enabled")? == 1,
         speech_model: row.get("speech_model")?,
         show_timestamps: row.get::<_, i64>("show_timestamps")? == 1,
+        detect_speakers: row
+            .get::<_, i64>("detect_speakers")
+            .map(|value| value == 1)
+            .unwrap_or(false),
         kind: row
             .get::<_, Option<String>>("kind")
             .ok()

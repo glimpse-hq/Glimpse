@@ -188,6 +188,10 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
             .get("show_timestamps")
             .and_then(Value::as_bool)
             .unwrap_or(false),
+        detect_speakers: args
+            .get("detect_speakers")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
     };
 
     let item = crate::library::commands::create_library_item(path, options, app.clone(), state)?;

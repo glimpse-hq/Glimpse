@@ -61,6 +61,10 @@ import type {
   TranscriptSegment,
 } from "../../../types";
 
+const getMediaNode = (sound: Howl): HTMLAudioElement | null =>
+  (sound as unknown as { _sounds?: Array<{ _node?: HTMLAudioElement }> })
+    ._sounds?.[0]?._node ?? null;
+
 const SPEAKER_COLORS = [
   "#7aa2f7",
   "#9ece6a",
@@ -221,7 +225,10 @@ const LibraryDetail = ({
     item.status.type === "complete" &&
     (item.transcript ?? "").trim().length > 0;
   const canShowTimestamps = !!item.segments && item.segments.length > 0;
-  const speakers = item.speakers ?? [];
+  const speakers = (item.speakers ?? []).map((speaker, index) => ({
+    ...speaker,
+    color: speaker.color ?? SPEAKER_COLORS[index % SPEAKER_COLORS.length],
+  }));
   const isBusy =
     item.status.type === "transcribing" ||
     item.status.type === "cancelling" ||
@@ -286,7 +293,8 @@ const LibraryDetail = ({
     const tick = () => {
       const sound = howlRef.current;
       if (sound) {
-        const playing = sound.playing();
+        const node = getMediaNode(sound);
+        const playing = node ? !node.paused && !node.ended : sound.playing();
         if (playing !== isPlayingRef.current) {
           isPlayingRef.current = playing;
           setIsPlaying(playing);
@@ -1900,7 +1908,7 @@ const LibraryDetail = ({
                                 setSpeakerNameDraft("");
                               }
                             }}
-                            className="flex-1 min-w-0 bg-transparent border-b border-[var(--color-border-primary)] px-0.5 py-0 ui-text-meta text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
+                            className="flex-1 min-w-0 bg-transparent border-b border-[var(--color-border-primary)] px-0.5 py-0 ui-text-meta font-medium text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
                             autoFocus
                           />
                         ) : (
@@ -1914,9 +1922,14 @@ const LibraryDetail = ({
                               id: "library.detail.speaker.rename",
                               message: "Click to rename",
                             })}
-                            className="flex-1 min-w-0 text-left ui-text-meta font-medium text-content-secondary hover:text-content-primary truncate transition-colors"
+                            className="flex-1 min-w-0 flex items-center gap-1.5 text-left ui-text-meta font-medium text-content-secondary hover:text-content-primary transition-colors border-b border-transparent px-0.5 py-0"
                           >
-                            {speaker.name}
+                            <span className="truncate">{speaker.name}</span>
+                            <Pencil
+                              size={10}
+                              className="shrink-0 text-content-disabled opacity-0 group-hover/speaker:opacity-100 transition-opacity"
+                              aria-hidden="true"
+                            />
                           </button>
                         )}
                         <button
@@ -2386,6 +2399,7 @@ const LibraryDetail = ({
                   speech_model: options.model_key,
                   llm_cleanup_enabled: false,
                   show_timestamps: options.show_timestamps,
+                  detect_speakers: options.detect_speakers,
                 });
                 await onRetry();
                 setShowRetranscribe(false);

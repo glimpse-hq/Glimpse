@@ -3,11 +3,13 @@
 ### Features
 - You can now install Glimpse with Homebrew: `brew install --cask glimpse-hq/tap/glimpse`. This sets up the app and the `glimpse` command together. Updates still come through Glimpse itself.
 - Added OpenRouter as a first class cloud speech provider, with its transcription models listed automatically.
+- Library transcriptions can now detect speakers automatically when you use a provider that supports it (like Mistral). Turn on Detect speakers when importing or retranscribing and the transcript gets labeled by who's talking.
 
 ### Improvements
 - Serving models via API to other model providers is smoother.
 - The API now automatically adds url prefixes if you forget.
 - The CLI commands have been overhauled to be cleaner and show you all options.
+- Many UI elements have been tweaked to be cleaner.
 
 ### Fixes
 
@@ -16,6 +18,7 @@
 - Fixed remote speech model lists not loading from some self-hosted servers.
 - Fixed Perplexity not working as a language model provider.
 - The Custom speech provider no longer defaults to an OpenAI model that may not exist on your endpoint.
+- The library will now correctly react to OS level pauses.
 
 ---
 

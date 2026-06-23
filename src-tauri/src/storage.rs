@@ -796,6 +796,7 @@ impl StorageManager {
                 llm_cleanup_enabled INTEGER NOT NULL DEFAULT 0,
                 speech_model TEXT NOT NULL,
                 show_timestamps INTEGER NOT NULL DEFAULT 0,
+                detect_speakers INTEGER NOT NULL DEFAULT 0,
                 kind TEXT NOT NULL DEFAULT 'import',
                 speakers TEXT
             );
@@ -887,6 +888,12 @@ impl StorageManager {
             "library_items",
             "speakers",
             "ALTER TABLE library_items ADD COLUMN speakers TEXT",
+        )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "detect_speakers",
+            "ALTER TABLE library_items ADD COLUMN detect_speakers INTEGER NOT NULL DEFAULT 0",
         )?;
 
         let stats_seeded: bool = conn.query_row(

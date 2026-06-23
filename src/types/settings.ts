@@ -49,7 +49,6 @@ export type RemoteSpeechProvider =
   | "openrouter"
   | "deepgram"
   | "elevenlabs"
-  | "huggingface"
   | "vllm"
   | "localai"
   | "whisper-cpp"

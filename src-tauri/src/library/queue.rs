@@ -16,8 +16,8 @@ use crate::{
 };
 
 use super::processing::{
-    compute_total_chunks, convert_library_item, convert_segments_to_ms, read_wav_info,
-    stream_wav_chunks,
+    compute_total_chunks, convert_library_item, convert_segments_to_ms, diarize_segments,
+    read_wav_info, stream_wav_chunks,
 };
 use super::types::{
     cancelled_error, is_cancelled_error, is_ffmpeg_error_message, LibraryCompletePayload,
@@ -261,6 +261,7 @@ fn start_library_transcription_internal(
                             segments: result.segments.take(),
                             words: result.words.take(),
                             speech_model: result.speech_model.take(),
+                            speakers: Some(result.speakers.take().unwrap_or_default()),
                             transcribed_at: Some(Utc::now().to_rfc3339()),
                             ..Default::default()
                         },
@@ -459,24 +460,35 @@ fn transcribe_library_item(
             &settings,
             &audio_path,
             &settings.local_model,
-            true,
+            remote_speech::TranscribeOptions {
+                timestamps: true,
+                diarization: item.detect_speakers,
+            },
             || token.is_cancelled(),
         ));
         match attempt {
             remote_speech::RemoteAttempt::Success(success) => {
+                let result = success.transcription;
                 report_progress(
                     app,
                     state.storage(),
                     &item.id,
                     LibraryProgressUpdate::with_chunk_counts(1.0, 1, 1),
                 );
-                let segments = success.segments.as_deref().map(convert_segments_to_ms);
-                let words = success.words.as_deref().map(convert_segments_to_ms);
+                let (segments, speakers) = match success.diarized_segments.as_deref() {
+                    Some(segs) => {
+                        let (converted, speakers) = diarize_segments(segs);
+                        (Some(converted), speakers)
+                    }
+                    None => (result.segments.as_deref().map(convert_segments_to_ms), None),
+                };
+                let words = result.words.as_deref().map(convert_segments_to_ms);
                 return Ok(LibraryTranscriptionResult {
-                    transcript: success.transcript,
+                    transcript: result.transcript,
                     segments,
                     words,
-                    speech_model: success.speech_model,
+                    speech_model: result.speech_model,
+                    speakers,
                 });
             }
             remote_speech::RemoteAttempt::Cancelled => {
@@ -660,6 +672,7 @@ fn transcribe_library_item(
             },
             words: (!merged_words.is_empty()).then_some(merged_words),
             speech_model: None,
+            speakers: None,
         });
     }
 
@@ -673,6 +686,7 @@ fn transcribe_library_item(
                 segments: None,
                 words: None,
                 speech_model: None,
+                speakers: None,
             });
         }
 
@@ -692,6 +706,7 @@ fn transcribe_library_item(
             segments: result.segments.as_deref().map(convert_segments_to_ms),
             words: result.words.as_deref().map(convert_segments_to_ms),
             speech_model: None,
+            speakers: None,
         });
     }
 
@@ -812,6 +827,7 @@ fn transcribe_library_item(
         },
         words: (!merged_words.is_empty()).then_some(merged_words),
         speech_model: None,
+        speakers: None,
     })
 }
 

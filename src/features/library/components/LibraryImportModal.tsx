@@ -9,6 +9,7 @@ import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import {
   hasModelCapability,
+  MODEL_CAPABILITY_DIARIZATION,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../shared/lib/modelCapabilities";
 import {
@@ -55,6 +56,7 @@ const LibraryImportModal = ({
     defaultModelKey || "",
   );
   const [showTimestamps, setShowTimestamps] = useState(true);
+  const [detectSpeakers, setDetectSpeakers] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   const modelOptions: DropdownOption<string>[] = models.map((model) => ({
@@ -79,12 +81,22 @@ const LibraryImportModal = ({
   const timestampsSupported =
     Boolean(selectedModel?.remote) ||
     hasModelCapability(selectedModel, MODEL_CAPABILITY_TIMESTAMPS);
+  const diarizationSupported = hasModelCapability(
+    selectedModel,
+    MODEL_CAPABILITY_DIARIZATION,
+  );
 
   useEffect(() => {
     if (!timestampsSupported) {
       setShowTimestamps(false);
     }
   }, [timestampsSupported]);
+
+  useEffect(() => {
+    if (!diarizationSupported) {
+      setDetectSpeakers(false);
+    }
+  }, [diarizationSupported]);
 
   useEffect(() => {
     if (importPaths.length > 1) {
@@ -172,6 +184,7 @@ const LibraryImportModal = ({
         model_key: selectedModelKey,
         llm_cleanup_enabled: false,
         show_timestamps: showTimestamps,
+        detect_speakers: detectSpeakers,
       };
       await onConfirm(importPaths, options);
     } finally {
@@ -363,6 +376,34 @@ const LibraryImportModal = ({
               size="md"
             />
           </div>
+
+          {diarizationSupported && (
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <div className="ui-text-body-sm text-content-primary">
+                  {t({
+                    id: "library.import.detect_speakers",
+                    message: "Detect speakers",
+                  })}
+                </div>
+                <div className="ui-text-meta text-content-disabled">
+                  {t({
+                    id: "library.import.detect_speakers.description",
+                    message: "Label segments by speaker automatically",
+                  })}
+                </div>
+              </div>
+              <ToggleSwitch
+                enabled={detectSpeakers}
+                onToggle={() => setDetectSpeakers(!detectSpeakers)}
+                ariaLabel={t({
+                  id: "library.import.detect_speakers.aria",
+                  message: "Detect speakers",
+                })}
+                size="md"
+              />
+            </div>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 px-5 pb-4">
