@@ -93,6 +93,7 @@ export type LocalApiStatus = {
 
 export type CliInstallStatus = {
   installed: boolean;
+  managedByApp: boolean;
   sourceAvailable: boolean;
   installPath: string | null;
   sourcePath: string | null;

@@ -90,6 +90,7 @@ const AboutTab = ({
     0;
   const cliUnavailable = cliInstallStatus?.sourceAvailable === false;
   const cliInstalled = cliInstallStatus?.installed ?? false;
+  const cliManagedByApp = cliInstallStatus?.managedByApp ?? false;
   const cliInstallLocked = !activeLicense && !cliInstalled;
   const cliInstallPath =
     cliInstallStatus?.installPath ?? "~/.local/bin/glimpse";
@@ -103,20 +104,25 @@ const AboutTab = ({
           id: "settings.about.cli.locked_info",
           message: "Command line install requires a full active license.",
         })
-      : cliInstalled
+      : cliInstalled && !cliManagedByApp
         ? t({
-            id: "settings.about.cli.installed_info",
-            message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
+            id: "settings.about.cli.externally_managed_info",
+            message: `The glimpse command is installed at ${cliInstallPath} and managed outside Glimpse. Use its package manager to update or remove it.`,
           })
-        : cliInstallStatus && !cliInstallStatus.pathInShell
+        : cliInstalled
           ? t({
-              id: "settings.about.cli.path_missing_info",
-              message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
+              id: "settings.about.cli.installed_info",
+              message: `The glimpse command is installed at ${cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI.`,
             })
-          : t({
-              id: "settings.about.cli.default_info",
-              message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
-            });
+          : cliInstallStatus && !cliInstallStatus.pathInShell
+            ? t({
+                id: "settings.about.cli.path_missing_info",
+                message: `Installs ${cliInstallStatus.command} to ${cliInstallPath}. That folder is not currently on your shell PATH, so you may need to call it by full path or update your shell profile.`,
+              })
+            : t({
+                id: "settings.about.cli.default_info",
+                message: `Installs the ${cliInstallStatus?.command ?? "glimpse"} command for Terminal, scripts, and automation tools. Use it when you want to call Glimpse programmatically without opening the app UI.`,
+              });
   const cliSubtitle = cliUnavailable
     ? t({
         id: "settings.about.cli.unavailable_subtitle",
@@ -470,9 +476,14 @@ const AboutTab = ({
                   </div>
                   <button
                     type="button"
-                    onClick={cliInstalled ? onRemoveCli : onInstallCli}
+                    onClick={
+                      cliInstalled && cliManagedByApp
+                        ? onRemoveCli
+                        : onInstallCli
+                    }
                     disabled={
                       cliInstallBusy ||
+                      (cliInstalled && !cliManagedByApp) ||
                       (!cliInstalled && (cliUnavailable || !activeLicense))
                     }
                     className="inline-flex h-6 min-w-[4.75rem] shrink-0 items-center justify-center gap-1 px-1 ui-text-button-sm ui-color-secondary transition-colors hover:text-content-primary disabled:pointer-events-none disabled:opacity-60"
@@ -481,15 +492,20 @@ const AboutTab = ({
                       <Loader2 size={10} className="animate-spin" />
                     )}
                     <span>
-                      {cliInstalled
+                      {cliInstalled && cliManagedByApp
                         ? t({
                             id: "settings.about.uninstall_cli",
                             message: "Uninstall",
                           })
-                        : t({
-                            id: "settings.about.install_cli",
-                            message: "Install CLI",
-                          })}
+                        : cliInstalled
+                          ? t({
+                              id: "settings.about.cli.installed_action",
+                              message: "Installed",
+                            })
+                          : t({
+                              id: "settings.about.install_cli",
+                              message: "Install CLI",
+                            })}
                     </span>
                   </button>
                 </div>

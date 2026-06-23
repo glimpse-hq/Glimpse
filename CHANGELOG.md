@@ -1,5 +1,8 @@
 1.0.0
 
+### Features
+- You can now install Glimpse with Homebrew: `brew install --cask glimpse-hq/tap/glimpse`. This sets up the app and the `glimpse` command together. Updates still come through Glimpse itself.
+
 ### Improvements
 - Serving models via API to other model providers is smoother.
 - The API now automatically adds url prefixes if you forget.

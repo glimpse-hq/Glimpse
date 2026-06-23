@@ -14,6 +14,16 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.support.info"
+#~ msgstr "Attaching the log file helps debug serious issues. Logs contain technical events only, never transcripts, audio, or keys. File paths in them may include your computer's username."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.support.info_aria"
+#~ msgstr "More information about support logs"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -436,11 +446,6 @@ msgstr "Assign new speaker"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker.unassigned"
 msgstr "Assign"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.support.info"
-msgstr "Attaching the log file helps debug serious issues. Logs contain technical events only, never transcripts, audio, or keys. File paths in them may include your computer's username."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1769,6 +1774,11 @@ msgid "settings.about.install_cli"
 msgstr "Install CLI"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.cli.installed_action"
+msgstr "Installed"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed"
 msgstr "Installed"
@@ -1881,6 +1891,11 @@ msgid "home.drag_import.eyebrow"
 msgstr "Library Import"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.dialog_aria"
+msgstr "License"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.license_active_title"
 msgstr "License active"
@@ -1914,6 +1929,16 @@ msgstr "Listen on LAN"
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.status.listening"
 msgstr "Listening..."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.capability.streaming"
+msgstr "Live streaming"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.capability.streaming"
+msgstr "Live streaming"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -2136,11 +2161,6 @@ msgstr "More information about Edit Mode"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.info_aria"
 msgstr "More information about shortcut options"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.support.info_aria"
-msgstr "More information about support logs"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3428,6 +3448,11 @@ msgstr "That microphone is already in use."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.cli.externally_managed_info"
+msgstr "The glimpse command is installed at {cliInstallPath} and managed outside Glimpse. Use its package manager to update or remove it."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_info"
 msgstr "The glimpse command is installed at {cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI."
 
@@ -3820,6 +3845,16 @@ msgstr "Where does my data go?"
 #: src/features/onboarding/steps/LicenseModal.tsx
 msgid "onboarding.license.why_paid"
 msgstr "Why is there paid stuff?"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.capability.timestamps"
+msgstr "Word-level timestamps"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.capability.timestamps"
+msgstr "Word-level timestamps"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

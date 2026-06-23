@@ -1,0 +1,104 @@
+name: Update Homebrew cask
+
+on:
+  release:
+    types: [published, released, unpublished, deleted, edited]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: homebrew-cask
+  cancel-in-progress: false
+
+jobs:
+  update-cask:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Resolve current latest release
+        id: latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Use gh's built-in --jq: it parses the API response before querying, so a
+          # stray control character in the release notes can't break parsing the way
+          # piping the raw body to external `jq` does.
+          if ! tag=$(gh api "repos/${{ github.repository }}/releases/latest" --jq '.tag_name' 2>/dev/null); then
+            echo "No published non-prerelease release exists; leaving cask untouched."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version=${tag#v}
+          # Reject any tag that is not a plain version, so a crafted tag like
+          # v$(...) can never reach a later run: block as shell source.
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Unexpected release tag '$tag'; refusing to sync." >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "Latest release: $version"
+
+      - name: Download DMG and compute sha256
+        id: sha
+        if: steps.latest.outputs.skip == 'false'
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          url="https://github.com/${REPO}/releases/download/v${VERSION}/Glimpse_${VERSION}_universal.dmg"
+          # The asset can lag the event by a few seconds; retry before giving up.
+          if ! curl --retry 9 --retry-all-errors --retry-delay 15 -fsSL -o glimpse.dmg.tmp "$url"; then
+            rm -f glimpse.dmg.tmp
+            echo "DMG never appeared at $url" >&2
+            exit 1
+          fi
+          mv glimpse.dmg.tmp glimpse.dmg
+          echo "sha=$(sha256sum glimpse.dmg | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout source repo
+        if: steps.latest.outputs.skip == 'false'
+        uses: actions/checkout@v7
+        with:
+          # Read the cask from main, not the triggering release's tag.
+          ref: main
+          path: repo
+
+      - name: Checkout tap
+        if: steps.latest.outputs.skip == 'false'
+        uses: actions/checkout@v7
+        with:
+          repository: glimpse-hq/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
+
+      - name: Rewrite and push cask if changed
+        if: steps.latest.outputs.skip == 'false'
+        env:
+          VERSION: ${{ steps.latest.outputs.version }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          set -euo pipefail
+          version="$VERSION"
+          sha="$SHA"
+          cask="tap/Casks/glimpse.rb"
+          # The repo cask is the source of truth; copy it, then pin version and sha.
+          cp repo/packaging/homebrew/Casks/glimpse.rb "$cask"
+          sed -i -E "s/^  version \".*\"/  version \"${version}\"/" "$cask"
+          sed -i -E "s/^  sha256 \".*\"/  sha256 \"${sha}\"/" "$cask"
+          grep -qF "version \"${version}\"" "$cask" || { echo "version not pinned"; exit 1; }
+          grep -qF "sha256 \"${sha}\"" "$cask" || { echo "sha not pinned"; exit 1; }
+          cd tap
+          if git diff --quiet; then
+            echo "Cask already at ${version}; nothing to do."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/glimpse.rb
+          git commit -m "glimpse ${version}"
+          git push
+          echo "Cask synced to ${version}."

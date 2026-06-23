@@ -14,6 +14,7 @@ const WINDOWS_CLI_SHIM_ENV: &str = "GLIMPSE_CLI_SHIM";
 #[serde(rename_all = "camelCase")]
 pub struct CliInstallStatus {
     pub installed: bool,
+    pub managed_by_app: bool,
     pub source_available: bool,
     pub install_path: Option<String>,
     pub source_path: Option<String>,
@@ -83,22 +84,75 @@ fn remove_cli_link() -> Result<(), String> {
 
 fn cli_install_status() -> CliInstallStatus {
     let source = cli_source_binary().ok();
-    let install_path = default_install_path().ok();
-    let installed = install_path
+    let default_path = default_install_path().ok();
+    let managed_by_app = default_path
         .as_ref()
         .is_some_and(|destination| cli_link_owned_by_glimpse(destination, source.as_deref()));
-    let path_in_shell = install_path
-        .as_ref()
-        .and_then(|path| path.parent())
-        .is_some_and(path_contains_dir);
+    let external_path = if managed_by_app {
+        None
+    } else {
+        source.as_deref().and_then(find_cli_command)
+    };
+    let installed_path = if managed_by_app {
+        default_path.clone()
+    } else {
+        external_path
+    };
+    let path_in_shell = installed_path.is_some()
+        || default_path
+            .as_ref()
+            .and_then(|path| path.parent())
+            .is_some_and(path_contains_dir);
 
     CliInstallStatus {
-        installed,
+        installed: installed_path.is_some(),
+        managed_by_app,
         source_available: source.is_some(),
-        install_path: install_path.map(display_path),
+        install_path: installed_path.or(default_path).map(display_path),
         source_path: source.map(display_path),
         command: "glimpse".to_string(),
         path_in_shell,
+    }
+}
+
+fn find_cli_command(source: &Path) -> Option<PathBuf> {
+    // First `glimpse` on PATH wins, like the shell: a foreign one earlier in
+    // PATH shadows ours, so don't skip it to claim a Glimpse link deeper down.
+    cli_search_dirs()
+        .into_iter()
+        .flat_map(cli_command_candidates)
+        .find(|candidate| candidate.exists())
+        .filter(|candidate| {
+            paths_equivalent(candidate, source)
+                || cli_link_owned_by_glimpse(candidate, Some(source))
+        })
+}
+
+fn cli_search_dirs() -> Vec<PathBuf> {
+    let mut dirs: Vec<PathBuf> = env::var_os("PATH")
+        .map(|path| env::split_paths(&path).collect())
+        .unwrap_or_default();
+
+    #[cfg(target_os = "macos")]
+    for dir in ["/opt/homebrew/bin", "/usr/local/bin"] {
+        let dir = PathBuf::from(dir);
+        if !dirs.iter().any(|existing| paths_equivalent(existing, &dir)) {
+            dirs.push(dir);
+        }
+    }
+
+    dirs
+}
+
+fn cli_command_candidates(dir: PathBuf) -> Vec<PathBuf> {
+    #[cfg(unix)]
+    {
+        vec![dir.join("glimpse")]
+    }
+
+    #[cfg(windows)]
+    {
+        vec![dir.join("glimpse.cmd"), dir.join("glimpse.exe")]
     }
 }
 

@@ -8,7 +8,7 @@
     alt="Glimpse"
   />
   <p>
-    <a href="https://tryglimpse.cc/#download">Download</a> ·
+    <a href="https://tryglimpse.cc/download">Download</a> ·
     <a href="https://tryglimpse.cc/">Website</a> ·
     <a href="https://tryglimpse.cc/#pricing">Pricing</a> ·
     <a href="https://tryglimpse.cc/privacy">Privacy</a>
