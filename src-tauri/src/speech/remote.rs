@@ -31,11 +31,11 @@ pub(crate) fn resolved_endpoint(settings: &UserSettings) -> String {
 
 pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
     match provider.trim().to_ascii_lowercase().as_str() {
-        "openai" | "custom" => Some("gpt-4o-mini-transcribe"),
+        "openai" => Some("gpt-4o-mini-transcribe"),
         "groq" => Some("whisper-large-v3-turbo"),
         "mistral" => Some("voxtral-mini-latest"),
         "fireworks" => Some("whisper-v3"),
-        "openrouter" | "litellm" => Some("openai/gpt-4o-mini-transcribe"),
+        "openrouter" => Some("openai/whisper-1"),
         "deepgram" => Some("nova-3"),
         "elevenlabs" => Some("scribe_v1"),
         "huggingface" | "vllm" => Some("openai/whisper-large-v3-turbo"),
@@ -322,10 +322,7 @@ mod tests {
             resolve_model("mistral", "  ").as_deref(),
             Some("voxtral-mini-latest")
         );
-        assert_eq!(
-            resolve_model("custom", "auto").as_deref(),
-            Some("gpt-4o-mini-transcribe")
-        );
+        assert_eq!(resolve_model("custom", "auto"), None);
     }
 
     #[test]

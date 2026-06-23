@@ -46,7 +46,7 @@ reqwest = { version = "0.13", default-features = false, features = ["json", "mul
 posthog-rs = "0.13"
 arboard = "3"
 # TODO: move back to stable at some point when its all done :)
-glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", rev = "1fc4cb3b1e2b21514dc5e4a08c8355e53111b800", features = ["whisper", "nvidia", "api", "cli", "remote"] }
+glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", rev = "59bf1efc2b7db7c6cdc74f30194b66ed33c6752a", features = ["whisper", "nvidia", "api", "cli", "remote"] }
 uuid = { version = "1.23.3", features = ["v4"] }
 aes-gcm = "0.10"
 pbkdf2 = "0.13"

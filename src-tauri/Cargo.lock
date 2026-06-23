@@ -2375,10 +2375,11 @@ dependencies = [
 [[package]]
 name = "glimpse-speech"
 version = "1.5.0"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=1fc4cb3b1e2b21514dc5e4a08c8355e53111b800#1fc4cb3b1e2b21514dc5e4a08c8355e53111b800"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?rev=59bf1efc2b7db7c6cdc74f30194b66ed33c6752a#59bf1efc2b7db7c6cdc74f30194b66ed33c6752a"
 dependencies = [
  "anyhow",
  "axum",
+ "base64 0.13.1",
  "clap",
  "directories",
  "flacenc",

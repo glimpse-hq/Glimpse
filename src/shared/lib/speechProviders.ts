@@ -69,7 +69,7 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     id: "openrouter",
     label: "OpenRouter",
     endpoint: "https://openrouter.ai/api/v1",
-    defaultModel: "openai/gpt-4o-mini-transcribe",
+    defaultModel: "openai/whisper-1",
     apiKeyRequired: true,
     compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
@@ -124,7 +124,7 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
   {
     id: "whisper-cpp",
     label: "whisper.cpp",
-    endpoint: "http://127.0.0.1:2022/v1",
+    endpoint: "http://127.0.0.1:8080/v1",
     defaultModel: "whisper-1",
     apiKeyRequired: false,
     compatibility: "openai-compatible-self-hosted",
@@ -143,7 +143,7 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     id: "litellm",
     label: "LiteLLM Proxy",
     endpoint: "http://localhost:4000/v1",
-    defaultModel: "openai/gpt-4o-mini-transcribe",
+    defaultModel: "auto",
     apiKeyRequired: false,
     compatibility: "openai-compatible-proxy",
     supportsModelDiscovery: true,
@@ -190,11 +190,7 @@ export function resolvedSpeechModel(
 ): string | undefined {
   const trimmed = model.trim();
   if (!trimmed || trimmed.toLowerCase() === "auto") {
-    const preset = getSpeechProviderPreset(provider);
-    if (provider === "custom") {
-      return "gpt-4o-mini-transcribe";
-    }
-    const defaultModel = preset?.defaultModel;
+    const defaultModel = getSpeechProviderPreset(provider)?.defaultModel;
     if (!defaultModel || defaultModel.toLowerCase() === "auto") {
       return undefined;
     }
