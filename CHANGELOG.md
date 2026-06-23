@@ -3,6 +3,8 @@
 ### Fixes
 
 - Fixed the CLI not being able to use different media formats.
+- The models screen now shows which cloud provider and model is active, instead of leaving the name blank.
+
 ---
 
 0.9.9

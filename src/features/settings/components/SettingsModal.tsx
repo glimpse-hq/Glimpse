@@ -329,6 +329,7 @@ const SettingsModal = ({
                         localModel={form.localModel}
                         remoteSpeechEnabled={form.remoteSpeechEnabled}
                         remoteSpeechProvider={form.remoteSpeechProvider}
+                        remoteSpeechModel={form.remoteSpeechModel}
                         setLocalModel={form.setLocalModel}
                         handleDownload={form.handleDownload}
                         handleDelete={form.handleDelete}

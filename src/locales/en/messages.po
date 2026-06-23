@@ -1606,7 +1606,7 @@ msgstr "Glimpse"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud_active"
-msgstr "Glimpse is using {provider} to transcribe. Your active local model will be used as a fallback."
+msgstr "Glimpse is using {providerName} to transcribe. Your active local model will be used as a fallback."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

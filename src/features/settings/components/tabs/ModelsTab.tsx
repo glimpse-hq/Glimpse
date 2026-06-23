@@ -24,7 +24,10 @@ import {
   MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../../shared/lib/modelCapabilities";
-import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
+import {
+  getSpeechProviderPreset,
+  resolvedSpeechModel,
+} from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import type {
   DownloadEvent,
@@ -41,6 +44,7 @@ type ModelsTabProps = {
   localModel: string;
   remoteSpeechEnabled: boolean;
   remoteSpeechProvider: RemoteSpeechProvider;
+  remoteSpeechModel: string;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
@@ -204,6 +208,7 @@ const ModelsTab = ({
   localModel,
   remoteSpeechEnabled,
   remoteSpeechProvider,
+  remoteSpeechModel,
   setLocalModel,
   handleDownload,
   handleDelete,
@@ -219,12 +224,19 @@ const ModelsTab = ({
     modelStatus,
   );
 
-  const providerName =
+  const providerLabel =
     getSpeechProviderPreset(remoteSpeechProvider)?.label ??
     t({
       id: "settings.models.cloud_active.provider_fallback",
       message: "your speech provider",
     });
+  const activeModel = resolvedSpeechModel(
+    remoteSpeechProvider,
+    remoteSpeechModel,
+  );
+  const providerName = activeModel
+    ? `${providerLabel} · ${activeModel}`
+    : providerLabel;
 
   const installedModels = sortInstalledModels(
     modelCatalog.filter((m) => modelStatus[m.key]?.installed),
