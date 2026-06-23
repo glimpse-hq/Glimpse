@@ -7,20 +7,30 @@ use serde_json::json;
 use super::{client, output, positionals, wants_help};
 use crate::settings::SettingsStore;
 
-const USAGE: &str = "\
-glimpse dictionary <subcommand>
-
-Subcommands:
-  list                 List custom dictionary words
-  add <word>…          Add words (requires the app; launches it if needed)
-  remove <word>…       Remove words
-
-Flags:
-  --json               Machine-readable output";
+fn help() {
+    super::print_command_help(
+        "Manage custom dictionary words.",
+        "glimpse dictionary <subcommand> [options]",
+        &[
+            (
+                "SUBCOMMANDS",
+                &[
+                    ("list", "List custom words."),
+                    (
+                        "add <word>...",
+                        "Add words. Requires the app; launches it if needed.",
+                    ),
+                    ("remove <word>...", "Remove words."),
+                ],
+            ),
+            ("OPTIONS", &[("--json", "Output machine-readable JSON.")]),
+        ],
+    );
+}
 
 pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
     let (sub, rest) = args.split_first().expect("non-empty checked above");
@@ -28,7 +38,7 @@ pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "list" => list(identifier, json),
         "add" => mutate("dictionary.add", rest, json),
         "remove" => mutate("dictionary.remove", rest, json),
-        other => bail!("Unknown dictionary subcommand: {other}\n\n{USAGE}"),
+        other => bail!("Unknown dictionary subcommand: {other}. Run 'glimpse dictionary --help'."),
     }
 }
 

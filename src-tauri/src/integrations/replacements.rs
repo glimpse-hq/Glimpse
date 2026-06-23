@@ -7,20 +7,27 @@ use serde_json::json;
 use super::{client, output, str_flag, wants_help};
 use crate::settings::SettingsStore;
 
-const USAGE: &str = "\
-glimpse replacements <subcommand>
-
-Subcommands:
-  list                       List text replacements (from → to)
-  add --from <a> --to <b>    Add or update a replacement
-  remove --from <a>          Remove a replacement
-
-Flags:
-  --json                     Machine-readable output";
+fn help() {
+    super::print_command_help(
+        "Manage text replacements.",
+        "glimpse replacements <subcommand> [options]",
+        &[
+            (
+                "SUBCOMMANDS",
+                &[
+                    ("list", "List replacements."),
+                    ("add --from <a> --to <b>", "Add or update a replacement."),
+                    ("remove --from <a>", "Remove a replacement."),
+                ],
+            ),
+            ("OPTIONS", &[("--json", "Output machine-readable JSON.")]),
+        ],
+    );
+}
 
 pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
     let (sub, rest) = args.split_first().expect("non-empty checked above");
@@ -28,7 +35,9 @@ pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "list" => list(identifier, json),
         "add" => add(rest, json),
         "remove" => remove(rest, json),
-        other => bail!("Unknown replacements subcommand: {other}\n\n{USAGE}"),
+        other => {
+            bail!("Unknown replacements subcommand: {other}. Run 'glimpse replacements --help'.")
+        }
     }
 }
 

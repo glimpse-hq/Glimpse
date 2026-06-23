@@ -9,27 +9,43 @@ use super::{client, output, positionals, wants_help};
 use crate::settings::{self, SettingsStore, UserSettings};
 use crate::speech::catalog;
 
-const USAGE: &str = "\
-glimpse model <subcommand>
-
-Subcommands:
-  list [--installed-only]   List speech models (active marked with *)
-  set <model-id>            Switch to a local model (requires the app)
-  set remote                Enable remote speech
-
-Flags:
-  --json                    Machine-readable output";
+fn help() {
+    super::print_command_help(
+        "Choose the active speech model.",
+        "glimpse model <subcommand> [options]",
+        &[
+            (
+                "SUBCOMMANDS",
+                &[
+                    ("list", "List speech models. The active one is marked."),
+                    (
+                        "set <model-id>",
+                        "Switch to a local model. Requires the app.",
+                    ),
+                    ("set remote", "Enable remote speech."),
+                ],
+            ),
+            (
+                "OPTIONS",
+                &[
+                    ("--installed-only", "List only installed models (list)."),
+                    ("--json", "Output machine-readable JSON."),
+                ],
+            ),
+        ],
+    );
+}
 
 pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
     let (sub, rest) = args.split_first().expect("non-empty checked above");
     match sub.as_str() {
         "list" => list(identifier, rest, json),
         "set" => set(rest, json),
-        other => bail!("Unknown model subcommand: {other}\n\n{USAGE}"),
+        other => bail!("Unknown model subcommand: {other}. Run 'glimpse model --help'."),
     }
 }
 

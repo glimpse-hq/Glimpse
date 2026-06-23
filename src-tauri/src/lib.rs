@@ -284,14 +284,18 @@ pub fn run_cli() -> Result<()> {
         .skip(1)
         .map(|arg| arg.to_string_lossy().into_owned())
         .collect();
-    if let Some(verb) = args.first() {
-        if integrations::is_integration_command(verb) {
-            let context = app_context();
-            return integrations::dispatch(&context.config().identifier, &args);
-        }
+    if let Some(integration_args) = normalized_integration_args(&args) {
+        let context = app_context();
+        return integrations::dispatch(&context.config().identifier, &integration_args);
     }
 
     if cli_help_requested(std::env::args_os().skip(1)) {
+        // Top-level `--help`/`-h`/`help` renders one unified listing here; a
+        // subcommand's own help (e.g. `models --help`) is left to glimpse-speech.
+        if is_top_level_help(&args) {
+            integrations::print_help();
+            return Ok(());
+        }
         return glimpse_speech::cli::run_blocking();
     }
 
@@ -321,6 +325,39 @@ pub fn run_cli() -> Result<()> {
     glimpse_speech::cli::run_blocking()
 }
 
+fn normalized_integration_args(args: &[String]) -> Option<Vec<String>> {
+    let mut index = 0;
+    let mut json = false;
+
+    while let Some(arg) = args.get(index) {
+        match arg.as_str() {
+            "--json" => {
+                json = true;
+                index += 1;
+            }
+            "--cache-dir" => {
+                args.get(index + 1)?;
+                index += 2;
+            }
+            value if value.starts_with("--cache-dir=") => index += 1,
+            _ => break,
+        }
+    }
+
+    let verb = args.get(index)?;
+    if !integrations::is_integration_command(verb) {
+        return None;
+    }
+
+    let mut normalized = Vec::with_capacity(args.len());
+    normalized.push(verb.clone());
+    normalized.extend_from_slice(&args[index + 1..]);
+    if json && !normalized.iter().any(|arg| arg == "--json") {
+        normalized.push("--json".to_string());
+    }
+    Some(normalized)
+}
+
 fn app_context() -> tauri::Context<AppRuntime> {
     tauri::generate_context!()
 }
@@ -339,6 +376,10 @@ fn cli_help_requested(args: impl IntoIterator<Item = std::ffi::OsString>) -> boo
     }
 
     false
+}
+
+fn is_top_level_help(args: &[String]) -> bool {
+    matches!(args, [arg] if matches!(arg.as_str(), "-h" | "--help" | "help"))
 }
 
 pub fn run() {
@@ -638,7 +679,7 @@ pub fn run() {
 
 #[cfg(test)]
 mod cli_tests {
-    use super::cli_help_requested;
+    use super::{cli_help_requested, is_top_level_help, normalized_integration_args};
     use std::ffi::OsString;
 
     fn args(values: &[&str]) -> Vec<OsString> {
@@ -656,6 +697,30 @@ mod cli_tests {
     fn cli_commands_and_positional_help_names_require_a_license() {
         assert!(!cli_help_requested(args(&["models", "list"])));
         assert!(!cli_help_requested(args(&["transcribe", "--", "--help",])));
+    }
+
+    #[test]
+    fn top_level_help_excludes_subcommand_help() {
+        assert!(is_top_level_help(&["--help".into()]));
+        assert!(is_top_level_help(&["-h".into()]));
+        assert!(is_top_level_help(&["help".into()]));
+        assert!(!is_top_level_help(&["help".into(), "models".into()]));
+        assert!(!is_top_level_help(&["models".into(), "--help".into()]));
+    }
+
+    #[test]
+    fn integration_commands_accept_leading_global_options() {
+        assert_eq!(
+            normalized_integration_args(&[
+                "--cache-dir".into(),
+                "/tmp/models".into(),
+                "--json".into(),
+                "history".into(),
+                "list".into(),
+            ]),
+            Some(vec!["history".into(), "list".into(), "--json".into()])
+        );
+        assert!(normalized_integration_args(&["--cache-dir".into(), "status".into(),]).is_none());
     }
 }
 

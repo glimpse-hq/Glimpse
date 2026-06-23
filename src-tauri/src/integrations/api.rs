@@ -5,35 +5,49 @@ use serde_json::{json, Map, Value};
 
 use super::{client, coded, has_flag, output, str_flag, wants_help};
 
-const USAGE: &str = "\
-glimpse api <subcommand>
-
-Subcommands:
-  status                       Report whether the local API is running
-  start [options]              Start the local API server (requires the app)
-  stop                         Stop the local API server
-
-Start options (override saved settings for this run):
-  --host <host>                Bind host
-  --port <port>                Bind port
-  --model <id>                 Speech model
-  --api-key <key>              Require this API key
-  --cors / --no-cors           Allow or disallow browser clients
-
-Flags:
-  --json                       Machine-readable output";
+fn help() {
+    super::print_command_help(
+        "Control the local API server.",
+        "glimpse api <subcommand> [options]",
+        &[
+            (
+                "SUBCOMMANDS",
+                &[
+                    ("status", "Report whether the server is running."),
+                    ("start", "Start the server. Requires the app."),
+                    ("stop", "Stop the server."),
+                ],
+            ),
+            (
+                "OPTIONS",
+                &[
+                    ("--host <host>", "Bind host (start)."),
+                    ("--port <port>", "Bind port (start)."),
+                    ("--model <id>", "Speech model (start)."),
+                    ("--api-key <key>", "Require this API key (start)."),
+                    ("--cors", "Allow browser clients (start)."),
+                    ("--no-cors", "Disallow browser clients (start)."),
+                    ("--json", "Output machine-readable JSON."),
+                ],
+            ),
+        ],
+    );
+}
 
 pub(crate) fn run(args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
     let (sub, rest) = args.split_first().expect("non-empty checked above");
     match sub.as_str() {
         "status" => status(json),
-        "start" => emit(client::request_data("api.start", start_payload(rest)?)?, json),
+        "start" => emit(
+            client::request_data("api.start", start_payload(rest)?)?,
+            json,
+        ),
         "stop" => emit(client::request_data("api.stop", json!({}))?, json),
-        other => bail!("Unknown api subcommand: {other}\n\n{USAGE}"),
+        other => bail!("Unknown api subcommand: {other}. Run 'glimpse api --help'."),
     }
 }
 

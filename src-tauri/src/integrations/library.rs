@@ -13,24 +13,50 @@ use crate::library::{
     build_export_content, ExportFormat, LibraryFilter, LibraryItem, LibraryItemStatus,
 };
 
-const USAGE: &str = "\
-glimpse library <subcommand>
-
-Subcommands:
-  import <file>… [--store-original] [--model <id>] [--open] [--wait]
-  status <id>…
-  list [--limit N] [--status complete|transcribing|error|…]
-  export <id> --to txt|md|srt|vtt --output <path>
-
-Flags:
-  --json          Machine-readable output";
-
 const WAIT_TIMEOUT: Duration = Duration::from_secs(3600);
 const WAIT_POLL: Duration = Duration::from_secs(1);
 
+fn help() {
+    super::print_command_help(
+        "Import and transcribe audio and video files.",
+        "glimpse library <subcommand> [options]",
+        &[
+            (
+                "SUBCOMMANDS",
+                &[
+                    ("import <file>...", "Import and transcribe files."),
+                    ("status <id>...", "Show import status."),
+                    ("list", "List library items."),
+                    ("export <id>", "Export a transcript to a file."),
+                ],
+            ),
+            (
+                "OPTIONS",
+                &[
+                    (
+                        "--store-original",
+                        "Keep a copy of the source file (import).",
+                    ),
+                    ("--model <id>", "Speech model to use (import)."),
+                    ("--open", "Open the library when done (import)."),
+                    ("--wait", "Wait for transcription to finish (import)."),
+                    (
+                        "--to <format>",
+                        "Export format: txt, md, srt, vtt (export).",
+                    ),
+                    ("--output <path>", "Export destination (export)."),
+                    ("--limit <n>", "Maximum results (list)."),
+                    ("--status <state>", "Filter by status (list)."),
+                    ("--json", "Output machine-readable JSON."),
+                ],
+            ),
+        ],
+    );
+}
+
 pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
     let (sub, rest) = args.split_first().expect("non-empty checked above");
@@ -39,7 +65,7 @@ pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "status" => status(identifier, rest, json),
         "list" => list(identifier, rest, json),
         "export" => export(identifier, rest, json),
-        other => bail!("Unknown library subcommand: {other}\n\n{USAGE}"),
+        other => bail!("Unknown library subcommand: {other}. Run 'glimpse library --help'."),
     }
 }
 

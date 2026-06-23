@@ -31,25 +31,39 @@ const VALUE_FLAGS: &[&str] = &[
     "--suffix",
 ];
 
-const USAGE: &str = "\
-glimpse transcribe <file>… [options]
-
-Options:
-  --output <path>       Write transcript to this file (single file)
-  --output-dir <dir>    Write <dir>/<basename><suffix> for each input
-  --suffix <ext>        Output extension when inferring paths (default .txt)
-  --stdout              Print transcript to stdout instead of writing a file
-  --language <code>     Override language
-  --model <id>          Override speech model
-  --cleanup             Force LLM cleanup
-  --no-cleanup          Skip LLM cleanup
-  --json                Machine-readable output
-
-With no options, delegates to the glimpse-speech transcriber.";
+fn help() {
+    super::print_command_help(
+        "Transcribe a file to text. With no options, delegates to the speech engine.",
+        "glimpse transcribe <file>... [options]",
+        &[(
+            "OPTIONS",
+            &[
+                ("--output <path>", "Write the transcript to this file."),
+                (
+                    "--output-dir <dir>",
+                    "Write one file per input into this directory.",
+                ),
+                (
+                    "--suffix <ext>",
+                    "Output extension when inferring paths (default .txt).",
+                ),
+                (
+                    "--stdout",
+                    "Print the transcript instead of writing a file.",
+                ),
+                ("--language <code>", "Override the language."),
+                ("--model <id>", "Override the speech model."),
+                ("--cleanup", "Force LLM cleanup."),
+                ("--no-cleanup", "Skip LLM cleanup."),
+                ("--json", "Output machine-readable JSON."),
+            ],
+        )],
+    );
+}
 
 pub(crate) fn run(_identifier: &str, args: &[String], json: bool) -> Result<()> {
     if wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
 

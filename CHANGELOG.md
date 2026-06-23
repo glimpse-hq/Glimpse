@@ -1,5 +1,10 @@
 1.0.0
 
+### Improvements
+- Serving models via API to other model providers is smoother.
+- The API now automatically adds url prefixes if you forget.
+- The CLI commands have been overhauled to be cleaner and show you all options.
+
 ### Fixes
 
 - Fixed the CLI not being able to use different media formats.
