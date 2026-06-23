@@ -125,6 +125,7 @@ impl LocalApiController {
         let _starting_guard = StartingGuard { inner: &self.inner };
         let model_cache_dir =
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
+        let api_models_dir = model_cache_dir.clone();
         let service = Arc::new(SpeechService::new(SpeechConfig {
             model_cache_dir,
             resolver: crate::model_manager::local_resolver(),
@@ -200,6 +201,9 @@ impl LocalApiController {
                     cors: args.cors,
                     transcription_provider: None,
                     local_models: crate::model_manager::api_model_infos(),
+                    local_model_source: Some(Arc::new(move || {
+                        crate::model_manager::installed_api_model_infos(&api_models_dir)
+                    })),
                 },
                 async {
                     let _ = shutdown_rx.await;
