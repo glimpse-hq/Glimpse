@@ -766,9 +766,7 @@ fn expired_trial_started_at() -> DateTime<Utc> {
 }
 
 fn parse_trial_record(record: &str, install_id: &str) -> Option<DateTime<Utc>> {
-    let Some((started_at_raw, seal)) = record.rsplit_once('|') else {
-        return None;
-    };
+    let (started_at_raw, seal) = record.rsplit_once('|')?;
     if trial_record_seal(started_at_raw, install_id) != seal {
         return None;
     }

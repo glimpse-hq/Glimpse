@@ -32,6 +32,7 @@ pub fn selected_model(settings: &UserSettings) -> String {
     }
 }
 
+#[allow(clippy::too_many_arguments)] // request context plus three generic callbacks
 pub async fn transcribe<T, Fut>(
     app: &AppHandle<AppRuntime>,
     client: &Client,

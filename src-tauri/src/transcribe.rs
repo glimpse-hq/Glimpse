@@ -169,7 +169,7 @@ pub(crate) fn queue_transcription(
             &saved_for_task.path,
             &settings.local_model,
             false,
-            || is_cancelled(),
+            &is_cancelled,
             |success| success,
             move || {
                 transcribe_completed_recording_locally(
@@ -1218,6 +1218,7 @@ fn emit_auto_paste_error(
     );
 }
 
+#[allow(clippy::too_many_arguments)] // private aggregator for the error-emit call sites
 fn emit_transcription_error_inner(
     app: &AppHandle<AppRuntime>,
     message: String,

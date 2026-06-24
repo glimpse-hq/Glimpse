@@ -2,7 +2,7 @@ use std::{
     f32::consts::PI,
     fs,
     io::Cursor,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -428,7 +428,7 @@ impl RecorderCore {
             .default_input_config()
             .context("No supported input configuration found")?;
         let format = config.sample_format();
-        let stream_config: cpal::StreamConfig = config.clone().into();
+        let stream_config: cpal::StreamConfig = config.into();
         let sample_rate = stream_config.sample_rate;
         let channels = stream_config.channels;
 
@@ -915,13 +915,13 @@ pub fn recover_pending_recordings(base_dir: PathBuf) -> Vec<(RecordingSaved, Com
         }
     }
 
-    recovered.sort_by(|a, b| b.0.started_at.cmp(&a.0.started_at));
+    recovered.sort_by_key(|item| std::cmp::Reverse(item.0.started_at));
     recovered
 }
 
 fn recover_one_partial(
-    base_dir: &PathBuf,
-    path: &PathBuf,
+    base_dir: &Path,
+    path: &Path,
 ) -> Result<Option<(RecordingSaved, CompletedRecording)>> {
     let reader =
         hound::WavReader::open(path).map_err(|err| anyhow!("Unable to read partial WAV: {err}"))?;
@@ -952,15 +952,15 @@ fn recover_one_partial(
         channels: processed.channels,
         started_at,
         ended_at,
-        pending_path: Some(path.clone()),
+        pending_path: Some(path.to_path_buf()),
         speech_percentage: processed.speech_percentage,
     };
 
-    let saved = persist_recording(base_dir.clone(), &recording)?;
+    let saved = persist_recording(base_dir.to_path_buf(), &recording)?;
     Ok(Some((saved, recording)))
 }
 
-fn started_at_from_partial_name(path: &PathBuf) -> Option<DateTime<Local>> {
+fn started_at_from_partial_name(path: &Path) -> Option<DateTime<Local>> {
     let name = path.file_name()?.to_str()?;
     let millis: i64 = name.split('-').next()?.parse().ok()?;
     match Local.timestamp_millis_opt(millis) {
@@ -1149,7 +1149,7 @@ impl GainProfile {
     fn from_samples(samples: &[f32], frame_size: usize) -> Option<Self> {
         let mut frame_rms: Vec<f32> = samples
             .chunks(frame_size)
-            .map(|chunk| calculate_rms(chunk))
+            .map(calculate_rms)
             .collect();
         if frame_rms.is_empty() {
             return None;

@@ -140,6 +140,7 @@ pub fn track_app_installed(app: &tauri::AppHandle<AppRuntime>) {
 /// Records that a transcription succeeded: local vs remote, the model, whether
 /// LLM cleanup ran, audio source, audio and processing duration, and word count.
 /// The transcribed text itself is never included.
+#[allow(clippy::too_many_arguments)] // distinct analytics payload fields, not a struct
 pub fn track_transcription_completed(
     app: &tauri::AppHandle<AppRuntime>,
     mode: &str,

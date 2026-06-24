@@ -481,11 +481,10 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
 
                 downloaded = downloaded.saturating_add(chunk_length as u64);
                 let progress = total.and_then(|value| {
-                    if value == 0 {
-                        None
-                    } else {
-                        Some(((downloaded.saturating_mul(100)) / value).min(100) as u8)
-                    }
+                    downloaded
+                        .saturating_mul(100)
+                        .checked_div(value)
+                        .map(|pct| pct.min(100) as u8)
                 });
 
                 let _ = progress_app.emit(

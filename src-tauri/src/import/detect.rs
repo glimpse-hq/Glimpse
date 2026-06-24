@@ -12,7 +12,9 @@ pub struct DetectedApp {
     pub name: String,
 }
 
-fn all_ids() -> Vec<(&'static str, &'static str, fn(&Path) -> bool)> {
+type DetectFn = fn(&Path) -> bool;
+
+fn all_ids() -> Vec<(&'static str, &'static str, DetectFn)> {
     vec![
         (
             aqua::ID,
