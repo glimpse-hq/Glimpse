@@ -393,7 +393,13 @@ pub fn run() {
     let builder = builder.device_event_filter(tauri::DeviceEventFilter::Always);
 
     #[cfg(any(target_os = "macos", target_os = "windows"))]
-    let builder = builder.plugin(tauri_plugin_single_instance::init(|_, _, _| {}));
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+        if let Err(err) = tray::toggle_settings_window(app) {
+            tracing::error!("Failed to focus window on second instance: {err}");
+        }
+
+        handle_deep_link_urls(app, argv.into_iter().skip(1));
+    }));
 
     let builder = builder
         .plugin(tauri_plugin_dialog::init())

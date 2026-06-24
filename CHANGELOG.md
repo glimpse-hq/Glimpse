@@ -14,6 +14,7 @@
 - The API now automatically adds url prefixes if you forget.
 - The CLI commands have been overhauled to be cleaner and show you all options.
 - Many UI elements have been tweaked to be cleaner.
+- Glimpse can now be auto refocused by searching it up in windows, instead of having to use the tray.
 
 ### Fixes
 
