@@ -25,9 +25,9 @@ const STAMP_HOLD_MS = 650;
 const PAUSE_AFTER_STAMP_MS = 420;
 const PAUSE_AFTER_NAME_MS = 520;
 const PAUSE_AFTER_EMAIL_MS = 380;
-const DETAILS_TYPE_MS = 1100;
+const DETAILS_HOLD_MS = 700;
 const PAUSE_BEFORE_COVERAGE_MS = 480;
-const REVEAL_FLOOR_MS = 6800;
+const REVEAL_FLOOR_MS = 6400;
 
 export function useCardActivationSequence(
   activating: boolean,
@@ -176,7 +176,7 @@ export function useCardActivationSequence(
     cursor += PAUSE_AFTER_EMAIL_MS + 420;
 
     schedule(() => setStage("details"), cursor);
-    cursor += DETAILS_TYPE_MS + PAUSE_BEFORE_COVERAGE_MS;
+    cursor += DETAILS_HOLD_MS + PAUSE_BEFORE_COVERAGE_MS;
 
     schedule(() => setStage("coverage"), cursor);
 

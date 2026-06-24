@@ -14,9 +14,10 @@ export function tierInfo(tier: PurchaseTier): TierInfo {
     return {
       id: "commercial",
       label: "Commercial",
-      price: "From $19.99/seat",
+      price: "$48/seat/year",
       pickerPrice: "per seat",
-      blurb: "For work. One seat per person. Volume discounts.",
+      blurb:
+        "For paid work. One seat per person on one work device, billed yearly. Volume discounts for teams.",
     };
   }
   return {
@@ -24,6 +25,6 @@ export function tierInfo(tier: PurchaseTier): TierInfo {
     label: "Personal",
     price: "$24.99",
     pickerPrice: "$24.99",
-    blurb: "For you. Up to 5 devices.",
+    blurb: "For yourself. A one-time purchase, on up to 5 of your own devices.",
   };
 }

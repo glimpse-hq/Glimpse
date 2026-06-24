@@ -112,7 +112,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
       answer: t({
         id: "faq.free.answer",
         message:
-          "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a one-time Personal or Commercial license in Settings → Account.",
+          "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a Personal license (a one-time purchase) or a Commercial license (billed yearly) in Settings → Account.",
       }),
     },
     {

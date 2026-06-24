@@ -16,6 +16,8 @@ import {
   CardDottedRule,
   CardHeadlineBlock,
   CardHeaderRow,
+  CARD_DETAILS_HEIGHT_SLIM,
+  CARD_HEADLINE_HEIGHT_EXPANDED,
   formatCardDate,
   getCardShellStyle,
   getMemberCardHeight,
@@ -31,7 +33,6 @@ import {
 } from "./memberCardShared";
 import {
   REVEAL_NAME_SPEED_MS,
-  REVEAL_VALUE_SPEED_MS,
   useCardActivationSequence,
 } from "./useCardActivationSequence";
 
@@ -46,6 +47,7 @@ type MemberCardProps = {
   openingTarget?: PurchaseTier | null;
   checkoutDisabled?: boolean;
   onOpenCheckout?: (tier: PurchaseTier) => void;
+  onRevealComplete?: () => void;
 };
 
 const revealEase = [0.22, 1, 0.36, 1] as const;
@@ -66,6 +68,7 @@ const MemberCardInner = ({
   openingTarget = null,
   checkoutDisabled = false,
   onOpenCheckout,
+  onRevealComplete,
 }: MemberCardProps) => {
   const { t } = useLingui();
   const palette = useMemberCardPalette();
@@ -100,16 +103,15 @@ const MemberCardInner = ({
   const editionColors = EDITION_STAMP_COLORS[edition];
   const name = customerName?.trim() || null;
   const displayTitle = name || email;
-  const memberSince = formatCardDate(memberSinceISO);
+  const memberSinceValue = formatCardDate(memberSinceISO) ?? PLACEHOLDER;
   const dictationStatsQuery = useDictationStats();
   const wordsSpoken = dictationStatsQuery.data?.totalWords ?? null;
   const wordsSpokenValue =
     wordsSpoken !== null ? wordsSpoken.toLocaleString() : PLACEHOLDER;
-  const licenseReady = Boolean(
-    active && displayKey && (name || email || memberSinceISO || memberSince),
-  );
+  const licenseReady = Boolean(active && displayKey && (name || email));
 
   const cardHeight = getMemberCardHeight();
+  const expandedHeadline = !active;
   const tierDisabled = checkoutDisabled || openingTarget !== null;
 
   const {
@@ -132,6 +134,22 @@ const MemberCardInner = ({
     licenseLoading,
     activationAttempt,
   );
+
+  const revealCompletedRef = useRef(false);
+  useEffect(() => {
+    if (!active) {
+      revealCompletedRef.current = false;
+      return;
+    }
+    if (
+      stage === "done" &&
+      isUserActivationReveal &&
+      !revealCompletedRef.current
+    ) {
+      revealCompletedRef.current = true;
+      onRevealComplete?.();
+    }
+  }, [active, stage, isUserActivationReveal, onRevealComplete]);
 
   const licenseResolved = !licenseLoading || licenseState !== null;
   const showDraftChrome =
@@ -202,8 +220,6 @@ const MemberCardInner = ({
   const previewStampColors = previewTier
     ? TIER_COLORS[previewTier]
     : TIER_COLORS.personal;
-
-  const memberSinceValue = memberSince ?? PLACEHOLDER;
 
   return (
     <article
@@ -278,6 +294,7 @@ const MemberCardInner = ({
         />
 
         <CardHeadlineBlock
+          height={expandedHeadline ? CARD_HEADLINE_HEIGHT_EXPANDED : undefined}
           title={
             showName && displayTitle ? (
               typingReveal ? (
@@ -285,7 +302,7 @@ const MemberCardInner = ({
                   key={`reveal-name-${displayKey}`}
                   text={displayTitle}
                   as="h2"
-                  className="truncate font-bold tracking-[-0.02em]"
+                  className="font-bold tracking-[-0.02em] break-words"
                   style={{
                     ...titleStyle,
                     ...(displayTitle === email
@@ -296,7 +313,7 @@ const MemberCardInner = ({
                 />
               ) : (
                 <h2
-                  className="truncate font-bold tracking-[-0.02em]"
+                  className="font-bold tracking-[-0.02em] break-words"
                   style={{
                     ...titleStyle,
                     ...(displayTitle === email
@@ -309,7 +326,7 @@ const MemberCardInner = ({
               )
             ) : cinematic ? (
               <motion.h2
-                className="truncate font-bold tracking-[-0.02em]"
+                className="font-bold tracking-[-0.02em] break-words"
                 style={{
                   ...titleStyle,
                   color: palette.textDisabled,
@@ -323,21 +340,21 @@ const MemberCardInner = ({
               </motion.h2>
             ) : active ? (
               <h2
-                className="truncate font-bold tracking-[-0.02em]"
+                className="font-bold tracking-[-0.02em] break-words"
                 style={{ ...titleStyle, color: palette.textDisabled }}
               >
                 {PLACEHOLDER}
               </h2>
             ) : previewInfo ? (
               <h2
-                className="truncate font-bold tracking-[-0.02em]"
+                className="font-bold tracking-[-0.02em] break-words"
                 style={titleStyle}
               >
                 {previewInfo.label}
               </h2>
             ) : (
               <h2
-                className="truncate font-bold tracking-[-0.02em]"
+                className="font-bold tracking-[-0.02em] break-words"
                 style={titleStyle}
               >
                 {idlePrompt}
@@ -351,19 +368,19 @@ const MemberCardInner = ({
                   key={`reveal-email-${displayKey}`}
                   text={email}
                   as="p"
-                  className="truncate"
+                  className="break-words"
                   style={subtitleStyle}
                   speedMs={22}
                 />
               ) : (
-                <p className="truncate" style={subtitleStyle}>
+                <p className="break-words" style={subtitleStyle}>
                   {email}
                 </p>
               )
             ) : cinematic ? (
               <span aria-hidden="true">&nbsp;</span>
             ) : previewInfo ? (
-              <p className="truncate" style={subtitleStyle}>
+              <p className="break-words" style={subtitleStyle}>
                 {previewInfo.blurb}
               </p>
             ) : (
@@ -372,26 +389,30 @@ const MemberCardInner = ({
           }
         />
 
-        <CardDetailsGrid>
-          <TypedDetail
-            label={t({
-              id: "member_card.label_member_since",
-              message: "Member since",
-            })}
-            value={showDetails ? memberSinceValue : PLACEHOLDER}
-            muted={!showDetails}
-            animateValue={typingReveal && showDetails && stage === "details"}
-          />
-          <TypedDetail
-            label={t({
-              id: "member_card.label_words_spoken",
-              message: "Words spoken",
-            })}
-            value={showDetails ? wordsSpokenValue : PLACEHOLDER}
-            muted={!showDetails}
-            animateValue={typingReveal && showDetails && stage === "details"}
-            delayMs={280}
-          />
+        <CardDetailsGrid
+          height={expandedHeadline ? CARD_DETAILS_HEIGHT_SLIM : undefined}
+        >
+          {active ? (
+            <>
+              <StatDetail
+                label={t({
+                  id: "member_card.label_member_since",
+                  message: "Member since",
+                })}
+                value={memberSinceValue}
+                show={showDetails}
+              />
+              <StatDetail
+                label={t({
+                  id: "member_card.label_words_spoken",
+                  message: "Words spoken",
+                })}
+                value={wordsSpokenValue}
+                show={showDetails}
+                delaySec={0.12}
+              />
+            </>
+          ) : null}
 
           <div className="relative col-span-2 shrink-0 pt-1">
             <CardDottedRule />
@@ -537,23 +558,30 @@ const SlamTierStamp = ({
   );
 };
 
-const TypedDetail = ({
+const StatDetail = ({
   label,
   value,
-  muted = false,
-  animateValue = false,
-  delayMs = 0,
+  show,
+  delaySec = 0,
 }: {
   label: string;
   value: string;
-  muted?: boolean;
-  animateValue?: boolean;
-  delayMs?: number;
+  show: boolean;
+  delaySec?: number;
 }) => {
   const palette = useMemberCardPalette();
 
   return (
-    <div className="min-w-0">
+    <motion.div
+      className="min-w-0"
+      initial={false}
+      animate={{ opacity: show ? 1 : 0, y: show ? 0 : 4 }}
+      transition={{
+        duration: 0.5,
+        ease: revealEase,
+        delay: show ? delaySec : 0,
+      }}
+    >
       <dt
         className="font-mono uppercase tracking-[0.16em]"
         style={{
@@ -565,24 +593,16 @@ const TypedDetail = ({
         {label}
       </dt>
       <dd
-        className="mt-1 truncate font-mono"
+        className="mt-1 break-words font-mono"
         style={{
           fontSize: "13px",
           fontWeight: 500,
-          color: muted ? palette.textDisabled : palette.textPrimary,
+          color: palette.textPrimary,
         }}
       >
-        {animateValue ? (
-          <TypewriterText
-            text={value}
-            speedMs={REVEAL_VALUE_SPEED_MS}
-            delayMs={delayMs}
-          />
-        ) : (
-          value
-        )}
+        {value}
       </dd>
-    </div>
+    </motion.div>
   );
 };
 
