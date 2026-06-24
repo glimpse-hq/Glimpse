@@ -5,6 +5,10 @@
 - Added OpenRouter as a first class cloud speech provider, with its transcription models listed automatically.
 - Library transcriptions can now detect speakers automatically when you use a provider that supports it (like Mistral). Turn on Detect speakers when importing or retranscribing and the transcript gets labeled by who's talking.
 
+### Changes
+
+- Enabled 3rd party STT models now show in the models screen. This replaces the warning.
+
 ### Improvements
 - Serving models via API to other model providers is smoother.
 - The API now automatically adds url prefixes if you forget.

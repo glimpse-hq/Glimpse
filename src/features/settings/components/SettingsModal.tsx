@@ -334,6 +334,9 @@ const SettingsModal = ({
                         handleDownload={form.handleDownload}
                         handleDelete={form.handleDelete}
                         handleCancelDownload={form.handleCancelDownload}
+                        onOpenProvidersTab={() =>
+                          form.setActiveTab("providers")
+                        }
                       />
                     )}
 

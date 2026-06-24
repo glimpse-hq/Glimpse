@@ -14,16 +14,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-#~ msgid "settings.about.support.info"
-#~ msgstr "Attaching the log file helps debug serious issues. Logs contain technical events only, never transcripts, audio, or keys. File paths in them may include your computer's username."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-#~ msgid "settings.about.support.info_aria"
-#~ msgstr "More information about support logs"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.optional_hint"
 msgstr "(if required)"
@@ -132,6 +122,11 @@ msgstr "{coverageBase} · {activeDevices} of {deviceLimit} devices active"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "{minutes, plural, one {# minute spoken today} other {# minutes spoken today}}"
 msgstr "{minutes, plural, one {# minute spoken today} other {# minutes spoken today}}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CloudModelCard.tsx
+msgid "models.cloud_card.aria"
+msgstr "{providerLabel} cloud model"
 
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "{seconds, plural, one {# second spoken today} other {# seconds spoken today}}"
@@ -260,6 +255,11 @@ msgstr "Active"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.active"
+msgstr "Active"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.active"
 msgstr "Active"
 
 #. js-lingui-explicit-id
@@ -798,6 +798,11 @@ msgstr "Cloud (API Key)"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.cloud.aria"
 msgstr "Cloud processing (Coming soon)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/CloudModelCard.tsx
+msgid "models.cloud_card.transcribing"
+msgstr "Cloud transcription"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1494,6 +1499,11 @@ msgid "updates.whats_new.load_failed"
 msgstr "Failed to load changelog"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.fallback"
+msgstr "Fallback"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.faq.title"
 msgstr "FAQ"
@@ -1627,11 +1637,6 @@ msgstr "GitHub may be temporarily unavailable. Check your connection and try aga
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.version_label"
 msgstr "Glimpse"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud_active"
-msgstr "Glimpse is using {providerName} to transcribe. Your active local model will be used as a fallback."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
