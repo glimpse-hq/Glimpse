@@ -129,6 +129,7 @@ fn find_cli_command(source: &Path) -> Option<PathBuf> {
 }
 
 fn cli_search_dirs() -> Vec<PathBuf> {
+    #[cfg_attr(not(target_os = "macos"), allow(unused_mut))]
     let mut dirs: Vec<PathBuf> = env::var_os("PATH")
         .map(|path| env::split_paths(&path).collect())
         .unwrap_or_default();

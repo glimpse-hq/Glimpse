@@ -1452,7 +1452,7 @@ fn line_is_list_marker(line: &str) -> bool {
         .is_some_and(|prefix| !prefix.is_empty() && prefix.chars().all(|ch| ch.is_ascii_digit()))
 }
 
-pub(crate) fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
+pub(crate) fn load_audio_for_transcription(path: &Path) -> Result<(Vec<i16>, u32)> {
     let ext = path
         .extension()
         .and_then(|value| value.to_str())
@@ -1466,7 +1466,7 @@ pub(crate) fn load_audio_for_transcription(path: &PathBuf) -> Result<(Vec<i16>, 
     decode_wav(path)
 }
 
-fn decode_wav(path: &PathBuf) -> Result<(Vec<i16>, u32)> {
+fn decode_wav(path: &Path) -> Result<(Vec<i16>, u32)> {
     let file = std::fs::File::open(path)
         .with_context(|| format!("Failed to open WAV file at {}", path.display()))?;
     let mut reader = hound::WavReader::new(file).map_err(|err| anyhow!("WAV read error: {err}"))?;

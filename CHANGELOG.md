@@ -15,6 +15,7 @@
 - The CLI commands have been overhauled to be cleaner and show you all options.
 - Many UI elements have been tweaked to be cleaner.
 - Glimpse can now be auto refocused by searching it up in windows, instead of having to use the tray.
+- (Nvidia) Long imported files now fill in their transcript and timestamps as they process, instead of only showing up once the whole file is done.
 
 ### Fixes
 
@@ -24,6 +25,7 @@
 - Fixed Perplexity not working as a language model provider.
 - The Custom speech provider no longer defaults to an OpenAI model that may not exist on your endpoint.
 - The library will now correctly react to OS level pauses.
+- On Windows, license activation links now work when Glimpse is already running, instead of being ignored.
 
 ---
 
