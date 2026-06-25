@@ -60,20 +60,16 @@ Configure AI writing in **Settings → Providers**. Speech models live in **Sett
 
 ## Integrations
 
-Official integrations require a [license](#pricing):
-
-- **[Raycast](https://github.com/glimpse-hq/Glimpse-raycast).** Search dictations, transcribe files, switch models, and more, without leaving Raycast.
+- **[Raycast](https://github.com/glimpse-hq/Glimpse-raycast)** *(coming soon)*. Search dictations, transcribe files, switch models, and more, without leaving Raycast. Requires a [license](#pricing).
 
 Want to build your own? See the [CLI guide](https://github.com/glimpse-hq/Glimpse/wiki/CLI).
 
 ## Pricing
 
-Glimpse licenses are a one-time purchase, not a subscription.
-
-| Edition        | Price              | For                              |
-| -------------- | ------------------ | -------------------------------- |
-| **Personal**   | $24.99             | You, on up to 5 personal devices |
-| **Commercial** | from $19.99 / seat | Work use, one person per seat    |
+| Edition        | Price               | For                                       |
+| -------------- | ------------------- | ----------------------------------------- |
+| **Personal**   | $24.99 one-time     | You, on up to 5 personal devices          |
+| **Commercial** | $48 / seat / year   | Work use, one seat per person, one device |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
@@ -81,22 +77,22 @@ Start with the 14-day trial, then buy or paste a license key in **Settings → A
 
 Transcription stays on-device by default.
 
-Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps prioritize development:
+Glimpse sends anonymous usage telemetry via [PostHog EU](https://posthog.com/) to help prioritize development. It's tied to a random install ID, not your identity, and stored in the EU.
 
-- **Collected:** anonymous app-health and usage signals only, version and platform, launches and uptime, durations and counts, country location, and bounded error/crash categories. A crash (`app_crashed`) also includes a code location, such as a source file and line or a module and offset, so we can find where it happened. [See the full list →](https://github.com/glimpse-hq/Glimpse/wiki/Analytics)
-- **Never sent in telemetry:** transcripts, audio, API keys, prompts, raw error messages or stacks, your document file paths or names, microphone names, provider endpoints, your stored IP address, or anything personally identifiable.
+- **Collected:** app version and platform, launches and uptime, durations and counts, country, and bounded error/crash categories. A crash also records a code location (source file and line, or module and offset) so we can find the bug.
+- **Never sent:** transcripts, audio, API keys, prompts, raw error text or stacks, file paths or names, microphone names, provider endpoints, your IP, or anything personally identifiable.
 
-Fuller crash detail, including raw panic text and a native minidump, is written only to a local `crash.log` and dump file on your device. Those files are never uploaded; telemetry references the dump by file name only.
+Opt out anytime in **Settings → App**; opting out sends one final ping, then nothing, ever.
 
-Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. Opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
+Enabling an external speech or LLM provider sends audio or text directly to that provider. Your API keys stay local.
 
-If you enable an external speech provider, recorded audio is sent directly to that provider. If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to it. Your API keys stay stored locally.
+For the full picture, see the [analytics wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) or [`analytics.rs`](src-tauri/src/analytics.rs).
 
 ## License
 
-**Source code** is licensed under [AGPL-3.0](LICENSE). If you distribute Glimpse or run it as a network service, you must make your modified source available under AGPL-3.0.
+The source code is licensed under [AGPL-3.0](LICENSE). If you distribute Glimpse or run it as a network service, you must make your modified source available under AGPL-3.0.
 
-**Official app builds** include free core dictation. Advanced features (Library, AI writing, Edit Mode, Personalization, Local API, CLI) require a Glimpse license after the trial.
+**Trademarks.** The Glimpse name and logo are not part of the AGPL-3.0 license. Forks and redistributions must use a different name and icon.
 
 ## Contributing
 
@@ -112,9 +108,10 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 - [whisper-rs](https://codeberg.org/tazz4843/whisper-rs) (Unlicense, Rust bindings for Whisper)
 - [parakeet-rs](https://github.com/altunenes/parakeet-rs) (MIT OR Apache-2.0, ONNX Runtime bindings for Parakeet)
 
-**Bundled speech models** (downloaded in-app from Hugging Face):
+**Speech models** are downloaded in-app from Hugging Face; the live list lives in **Settings → Models**. By family:
 
-- Whisper GGML (MIT): Tiny, Base, Small, Medium, Large V3, and Large V3 Turbo, in multiple quantizations (full, Q8_0, Q5), via [`ggerganov/whisper.cpp`](https://huggingface.co/ggerganov/whisper.cpp)
-- Distil-Whisper GGML (MIT, English-only): Small, Medium, and Large V3.5 (Q8_0), via [Pomni's allquants conversions](https://huggingface.co/Pomni) of [`distil-whisper`](https://huggingface.co/distil-whisper)
-- Parakeet TDT 0.6B v3 ONNX (CC-BY-4.0, all builds except Intel macOS): Int8 variant via [`istupakov/parakeet-tdt-0.6b-v3-onnx`](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx)
-- Nemotron Streaming 0.6B ONNX (NVIDIA Open Model License, all builds except Intel macOS): English and multilingual 3.5 variants, via [`altunenes/parakeet-rs`](https://huggingface.co/altunenes/parakeet-rs)
+- **Whisper GGML** (MIT), via [`ggerganov/whisper.cpp`](https://huggingface.co/ggerganov/whisper.cpp)
+- **Distil-Whisper GGML** (MIT, English-only), via [Pomni's conversions](https://huggingface.co/Pomni) of [`distil-whisper`](https://huggingface.co/distil-whisper)
+- **Parakeet TDT ONNX** (CC-BY-4.0), via [`istupakov`](https://huggingface.co/istupakov/parakeet-tdt-0.6b-v3-onnx)
+- **Parakeet Unified ONNX** (CC-BY-4.0, English-only), via [`bobNight`](https://huggingface.co/bobNight/parakeet-unified-en-0.6b-onnx)
+- **Nemotron Streaming ONNX** (NVIDIA Open Model License), via [`altunenes/parakeet-rs`](https://huggingface.co/altunenes/parakeet-rs)
