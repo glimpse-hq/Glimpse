@@ -169,7 +169,7 @@ pub struct LibraryItemPatch {
     pub detect_speakers: Option<bool>,
     pub duration_seconds: Option<f32>,
     pub kind: Option<String>,
-    pub speakers: Option<Vec<Speaker>>,
+    pub speakers: Option<Option<Vec<Speaker>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

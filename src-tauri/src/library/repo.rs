@@ -187,7 +187,7 @@ pub(crate) fn update_library_item(
         item.kind = kind;
     }
     if let Some(speakers) = patch.speakers {
-        item.speakers = Some(speakers);
+        item.speakers = speakers;
     }
 
     update_library_item_full(&tx, &item)?;

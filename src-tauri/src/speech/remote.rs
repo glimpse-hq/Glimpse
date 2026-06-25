@@ -39,7 +39,7 @@ pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
         "deepgram" => Some("nova-3"),
         "elevenlabs" => Some("scribe_v1"),
         "vllm" => Some("openai/whisper-large-v3-turbo"),
-        "localai" | "whisper-cpp" | "llamaedge" => Some("whisper-1"),
+        "localai" | "whisper-cpp" | "llamaedge" | "litellm" => Some("whisper-1"),
         _ => None,
     }
 }

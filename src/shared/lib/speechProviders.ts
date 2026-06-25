@@ -134,7 +134,7 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     id: "litellm",
     label: "LiteLLM Proxy",
     endpoint: "http://localhost:4000/v1",
-    defaultModel: "auto",
+    defaultModel: "whisper-1",
     apiKeyRequired: false,
     compatibility: "openai-compatible-proxy",
     supportsModelDiscovery: true,
