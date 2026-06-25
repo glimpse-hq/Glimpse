@@ -66,6 +66,7 @@ jobs:
           # Read the cask from main, not the triggering release's tag.
           ref: main
           path: repo
+          persist-credentials: false
 
       - name: Checkout tap
         if: steps.latest.outputs.skip == 'false'

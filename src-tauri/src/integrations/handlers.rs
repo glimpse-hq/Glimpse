@@ -217,7 +217,7 @@ fn api_start(app: &AppHandle<AppRuntime>, overrides: &Value) -> Result<Value, St
         port: overrides
             .get("port")
             .and_then(Value::as_u64)
-            .map(|port| port as u16)
+            .and_then(|port| u16::try_from(port).ok())
             .unwrap_or(settings.local_api_port),
         model: overrides
             .get("model")

@@ -353,7 +353,7 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
 
     if window.is_minimized().unwrap_or(false) {
-        let _ = window.unminimize();
+        window.unminimize()?;
     }
     window.show()?;
     window.set_focus()?;

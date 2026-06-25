@@ -225,10 +225,14 @@ const LibraryDetail = ({
     item.status.type === "complete" &&
     (item.transcript ?? "").trim().length > 0;
   const canShowTimestamps = !!item.segments && item.segments.length > 0;
-  const speakers = (item.speakers ?? []).map((speaker, index) => ({
-    ...speaker,
-    color: speaker.color ?? SPEAKER_COLORS[index % SPEAKER_COLORS.length],
-  }));
+  const speakers = useMemo(
+    () =>
+      (item.speakers ?? []).map((speaker, index) => ({
+        ...speaker,
+        color: speaker.color ?? SPEAKER_COLORS[index % SPEAKER_COLORS.length],
+      })),
+    [item.speakers],
+  );
   const isBusy =
     item.status.type === "transcribing" ||
     item.status.type === "cancelling" ||

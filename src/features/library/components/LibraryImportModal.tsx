@@ -184,7 +184,7 @@ const LibraryImportModal = ({
         model_key: selectedModelKey,
         llm_cleanup_enabled: false,
         show_timestamps: showTimestamps,
-        detect_speakers: detectSpeakers,
+        detect_speakers: diarizationSupported ? detectSpeakers : false,
       };
       await onConfirm(importPaths, options);
     } finally {

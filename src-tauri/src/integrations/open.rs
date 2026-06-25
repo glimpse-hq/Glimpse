@@ -22,6 +22,7 @@ fn help() {
                 "OPTIONS",
                 &[
                     ("--tab <name>", "Settings tab: general, models, history."),
+                    ("--id <id>", "Item to open within the target view."),
                     ("--json", "Output machine-readable JSON."),
                 ],
             ),

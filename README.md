@@ -83,8 +83,10 @@ Transcription stays on-device by default.
 
 Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps prioritize development:
 
-- **Collected:** anonymous app-health and usage signals only, version and platform, launches and uptime, durations and counts, country location, and bounded error/crash categories. [See the full list →](https://github.com/glimpse-hq/Glimpse/wiki/Analytics)
-- **Never collected:** transcripts, audio, API keys, prompts, raw error messages or stacks, file paths or names, microphone names, provider endpoints, your stored IP address, or anything personally identifiable.
+- **Collected:** anonymous app-health and usage signals only, version and platform, launches and uptime, durations and counts, country location, and bounded error/crash categories. A crash (`app_crashed`) also includes a code location, such as a source file and line or a module and offset, so we can find where it happened. [See the full list →](https://github.com/glimpse-hq/Glimpse/wiki/Analytics)
+- **Never sent in telemetry:** transcripts, audio, API keys, prompts, raw error messages or stacks, your document file paths or names, microphone names, provider endpoints, your stored IP address, or anything personally identifiable.
+
+Fuller crash detail, including raw panic text and a native minidump, is written only to a local `crash.log` and dump file on your device. Those files are never uploaded; telemetry references the dump by file name only.
 
 Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. Opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
 

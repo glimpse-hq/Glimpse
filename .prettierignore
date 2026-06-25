@@ -1,4 +1,5 @@
 .claude/
+CHANGELOG.md
 dist/
 node_modules/
 src/locales/**/*.js

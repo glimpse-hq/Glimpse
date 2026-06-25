@@ -261,7 +261,7 @@ fn start_library_transcription_internal(
                             segments: result.segments.take(),
                             words: result.words.take(),
                             speech_model: result.speech_model.take(),
-                            speakers: Some(result.speakers.take().unwrap_or_default()),
+                            speakers: result.speakers.take(),
                             transcribed_at: Some(Utc::now().to_rfc3339()),
                             ..Default::default()
                         },

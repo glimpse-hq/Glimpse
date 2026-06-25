@@ -20,19 +20,23 @@ const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const EXCEPTION_CONTINUE_SEARCH: i32 = 0;
 const DUMP_FILE_NAME: &str = "crash.dmp";
 
+type ExceptionFilter = unsafe extern "system" fn(*const EXCEPTION_POINTERS) -> i32;
+
 struct CrashPaths {
     log_dir: PathBuf,
     marker: PathBuf,
 }
 
 static PATHS: OnceLock<CrashPaths> = OnceLock::new();
+static PREV_FILTER: OnceLock<Option<ExceptionFilter>> = OnceLock::new();
 
 pub fn install(log_dir: PathBuf, marker: PathBuf) {
     if PATHS.set(CrashPaths { log_dir, marker }).is_err() {
         return;
     }
     unsafe {
-        SetUnhandledExceptionFilter(Some(handler));
+        let prev = SetUnhandledExceptionFilter(Some(handler));
+        let _ = PREV_FILTER.set(prev);
     }
 }
 
@@ -52,17 +56,27 @@ unsafe extern "system" fn handler(info: *const EXCEPTION_POINTERS) -> i32 {
     } else {
         ((*record).ExceptionCode.0 as u32, (*record).ExceptionAddress)
     };
-    let module = faulting_module(address).unwrap_or_else(|| "unknown".to_string());
+    // Group on a module-relative offset, not the absolute (ASLR-randomized) address.
+    let (module, location) = match faulting_module(address) {
+        Some((name, base)) => {
+            let offset = (address as usize).saturating_sub(base);
+            (name.clone(), format!("{name}+{offset:#x}"))
+        }
+        None => ("unknown".to_string(), "unknown".to_string()),
+    };
 
     // First three lines match the panic marker; analytics folds in the rest.
     let marker_body = format!(
-        "{APP_VERSION}\n{module}+{:#x}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\n",
-        address as usize,
+        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\n",
         if dump_written { DUMP_FILE_NAME } else { "none" },
     );
     let _ = std::fs::write(&paths.marker, marker_body);
 
-    EXCEPTION_CONTINUE_SEARCH
+    // Chain to whatever filter we replaced so an existing reporter still runs.
+    match PREV_FILTER.get().copied().flatten() {
+        Some(prev) => prev(info),
+        None => EXCEPTION_CONTINUE_SEARCH,
+    }
 }
 
 // Best-effort, in-process. MS suggests a separate process/thread (loader-lock
@@ -91,7 +105,9 @@ unsafe fn write_minidump(paths: &CrashPaths, info: *const EXCEPTION_POINTERS) ->
     .is_ok()
 }
 
-unsafe fn faulting_module(address: *mut core::ffi::c_void) -> Option<String> {
+// Returns the faulting module's file name and its base address, so the caller
+// can record an ASLR-independent module-relative offset.
+unsafe fn faulting_module(address: *mut core::ffi::c_void) -> Option<(String, usize)> {
     if address.is_null() {
         return None;
     }
@@ -109,5 +125,6 @@ unsafe fn faulting_module(address: *mut core::ffi::c_void) -> Option<String> {
         return None;
     }
     let path = String::from_utf16_lossy(&buffer[..len as usize]);
-    Some(path.rsplit(['\\', '/']).next().unwrap_or(&path).to_string())
+    let name = path.rsplit(['\\', '/']).next().unwrap_or(&path).to_string();
+    Some((name, module.0 as usize))
 }
