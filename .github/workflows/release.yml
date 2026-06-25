@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
 
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
 
     outputs:
       release-id: ${{ steps.create-release.outputs.result }}
@@ -267,7 +267,7 @@ jobs:
       - create-release
       - publish-tauri
 
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
 
     steps:
       - name: publish combined updater JSON

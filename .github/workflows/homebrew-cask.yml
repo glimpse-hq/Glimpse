@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   update-cask:
-    runs-on: blacksmith-2vcpu-ubuntu-2404
+    runs-on: ubuntu-latest
     steps:
       - name: Resolve current latest release
         id: latest

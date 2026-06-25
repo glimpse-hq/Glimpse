@@ -1,6 +1,3 @@
-# Post-merge native build on Blacksmith: macOS + Windows cargo check/test.
-# PRs are gated by ci.yml on GitHub-hosted Ubuntu runners.
-
 name: Platform
 
 on:
@@ -20,10 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: blacksmith-6vcpu-macos-15
+          - platform: macos-15
             os: macos
             cargo-cache-dir: src-tauri/target
-          - platform: blacksmith-4vcpu-windows-2025
+          - platform: windows-2025
             os: windows
             cargo-cache-dir: C:\t
 
