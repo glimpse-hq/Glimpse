@@ -31,15 +31,15 @@ pub(crate) fn resolved_endpoint(settings: &UserSettings) -> String {
 
 pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
     match provider.trim().to_ascii_lowercase().as_str() {
-        "openai" | "custom" => Some("gpt-4o-mini-transcribe"),
+        "openai" => Some("gpt-4o-mini-transcribe"),
         "groq" => Some("whisper-large-v3-turbo"),
         "mistral" => Some("voxtral-mini-latest"),
         "fireworks" => Some("whisper-v3"),
-        "openrouter" | "litellm" => Some("openai/gpt-4o-mini-transcribe"),
+        "openrouter" => Some("openai/whisper-1"),
         "deepgram" => Some("nova-3"),
         "elevenlabs" => Some("scribe_v1"),
-        "huggingface" | "vllm" => Some("openai/whisper-large-v3-turbo"),
-        "localai" | "whisper-cpp" | "llamaedge" => Some("whisper-1"),
+        "vllm" => Some("openai/whisper-large-v3-turbo"),
+        "localai" | "whisper-cpp" | "llamaedge" | "litellm" => Some("whisper-1"),
         _ => None,
     }
 }
@@ -47,14 +47,7 @@ pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
 pub(crate) fn provider_requires_api_key(provider: &str) -> bool {
     matches!(
         provider.trim().to_ascii_lowercase().as_str(),
-        "openai"
-            | "groq"
-            | "mistral"
-            | "fireworks"
-            | "openrouter"
-            | "deepgram"
-            | "elevenlabs"
-            | "huggingface"
+        "openai" | "groq" | "mistral" | "fireworks" | "openrouter" | "deepgram" | "elevenlabs"
     )
 }
 
@@ -73,12 +66,18 @@ pub(crate) fn resolved_model_name(settings: &UserSettings) -> Option<String> {
     )
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct TranscribeOptions {
+    pub timestamps: bool,
+    pub diarization: bool,
+}
+
 pub(crate) async fn transcribe_file(
     client: &Client,
     wav_path: &Path,
     settings: &UserSettings,
-    wants_timestamps: bool,
-) -> Result<TranscriptionSuccess, RemoteError> {
+    options: TranscribeOptions,
+) -> Result<RemoteTranscriptionSuccess, RemoteError> {
     let model = resolved_model_name(settings).unwrap_or_default();
     let language = settings.language.trim();
     let dictionary: Vec<String> = settings
@@ -93,33 +92,42 @@ pub(crate) async fn transcribe_file(
         Some(model.clone()),
     );
     let engine = RemoteEngine::new(client.clone(), config);
-    let response = engine
-        .transcribe_file(
-            wav_path,
-            RemoteRequestParams {
-                model: &model,
-                language: (!language.is_empty()).then_some(language),
-                dictionary: &dictionary,
-                prompt: None,
-                timestamps: wants_timestamps,
-                timestamp_granularity: wants_timestamps.then_some(TimestampGranularity::Segment),
-            },
-        )
-        .await?;
+    let params = RemoteRequestParams {
+        model: &model,
+        language: (!language.is_empty()).then_some(language),
+        dictionary: &dictionary,
+        prompt: None,
+        timestamps: options.timestamps,
+        timestamp_granularity: options.timestamps.then_some(TimestampGranularity::Segment),
+    };
+    let (response, diarized_segments) = if options.diarization {
+        let response = engine.transcribe_file_diarized(wav_path, params).await?;
+        (response.transcription, response.segments)
+    } else {
+        (engine.transcribe_file(wav_path, params).await?, None)
+    };
 
-    Ok(TranscriptionSuccess {
-        transcript: normalize_transcript(&response.text),
-        speech_model: Some(speech_model_storage_label(
-            settings,
-            Some(response.model_id.as_str()),
-        )),
-        segments: response.segments,
-        words: response.words,
+    Ok(RemoteTranscriptionSuccess {
+        transcription: TranscriptionSuccess {
+            transcript: normalize_transcript(&response.text),
+            speech_model: Some(speech_model_storage_label(
+                settings,
+                Some(response.model_id.as_str()),
+            )),
+            segments: response.segments,
+            words: response.words,
+        },
+        diarized_segments,
     })
 }
 
+pub(crate) struct RemoteTranscriptionSuccess {
+    pub transcription: TranscriptionSuccess,
+    pub diarized_segments: Option<Vec<glimpse_speech::remote::DiarizedSegment>>,
+}
+
 pub(crate) enum RemoteAttempt {
-    Success(TranscriptionSuccess),
+    Success(RemoteTranscriptionSuccess),
     Cancelled,
     Fallback,
     Unavailable(String),
@@ -131,10 +139,10 @@ pub(crate) async fn attempt_remote(
     settings: &UserSettings,
     wav_path: &Path,
     local_fallback_model: &str,
-    wants_timestamps: bool,
+    options: TranscribeOptions,
     is_cancelled: impl Fn() -> bool,
 ) -> RemoteAttempt {
-    match transcribe_file(client, wav_path, settings, wants_timestamps).await {
+    match transcribe_file(client, wav_path, settings, options).await {
         Ok(result) => RemoteAttempt::Success(result),
         Err(_) if is_cancelled() => RemoteAttempt::Cancelled,
         Err(error) => {
@@ -322,10 +330,7 @@ mod tests {
             resolve_model("mistral", "  ").as_deref(),
             Some("voxtral-mini-latest")
         );
-        assert_eq!(
-            resolve_model("custom", "auto").as_deref(),
-            Some("gpt-4o-mini-transcribe")
-        );
+        assert_eq!(resolve_model("custom", "auto"), None);
     }
 
     #[test]

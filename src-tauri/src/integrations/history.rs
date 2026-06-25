@@ -7,22 +7,36 @@ use serde_json::json;
 use super::{open_storage, output, positionals, usize_flag, wants_help};
 use crate::storage::{TranscriptionRecord, TranscriptionStatus};
 
-const USAGE: &str = "\
-glimpse history <subcommand>
-
-Subcommands:
-  last                         Most recent successful dictation
-  list [--limit N] [--offset N]   Recent dictations (default limit 20)
-  search <query>… [--limit N]  Substring search over text
-  get <id>                     Single dictation by id
-  stats                        Lifetime totals
-
-Flags:
-  --json                       Machine-readable output";
+fn help() {
+    super::print_command_help(
+        "Read dictation history. Runs without the app.",
+        "glimpse history <subcommand> [options]",
+        &[
+            (
+                "SUBCOMMANDS",
+                &[
+                    ("last", "Show the most recent dictation."),
+                    ("list", "List recent dictations."),
+                    ("search <query>", "Search dictation text."),
+                    ("get <id>", "Show a single dictation."),
+                    ("stats", "Show lifetime totals."),
+                ],
+            ),
+            (
+                "OPTIONS",
+                &[
+                    ("--limit <n>", "Maximum results (list, search)."),
+                    ("--offset <n>", "Skip results (list)."),
+                    ("--json", "Output machine-readable JSON."),
+                ],
+            ),
+        ],
+    );
+}
 
 pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
     if args.is_empty() || wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
     let (sub, rest) = args.split_first().expect("non-empty checked above");
@@ -32,7 +46,7 @@ pub(crate) fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "search" => search(identifier, rest, json),
         "get" => get(identifier, rest, json),
         "stats" => stats(identifier, json),
-        other => bail!("Unknown history subcommand: {other}\n\n{USAGE}"),
+        other => bail!("Unknown history subcommand: {other}. Run 'glimpse history --help'."),
     }
 }
 

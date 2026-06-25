@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { Download, Square, Trash as Trash2 } from "@phosphor-icons/react";
-import DotMatrix from "../../../shared/ui/DotMatrix";
+import ModelCardShell, { WAVE_COLS, waveDots } from "./ModelCardShell";
 import ActivityDots from "../../../shared/ui/ActivityDots";
 import {
   deriveModelStats,
@@ -10,47 +10,12 @@ import {
 } from "../../../shared/lib/modelStats";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../../types";
 
-const CARD_WIDTH = 300;
-const WAVE_ROWS = 13;
-const WAVE_COLS = 44;
-const WAVE_CENTER = (WAVE_ROWS - 1) / 2;
-
-const FEATHER_MASK =
-  "radial-gradient(closest-side, #000 0%, #000 52%, transparent 100%)";
-
-const BLUR_LAYERS = [
-  { blur: 1, mask: "radial-gradient(closest-side, transparent 50%, #000 92%)" },
-  {
-    blur: 2.5,
-    mask: "radial-gradient(closest-side, transparent 68%, #000 100%)",
-  },
-  {
-    blur: 5,
-    mask: "radial-gradient(closest-side, transparent 84%, #000 108%)",
-  },
-];
-
-const waveDots = (seedSource: string): number[] => {
-  let h = 2166136261;
-  for (let i = 0; i < seedSource.length; i++) {
-    h ^= seedSource.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const active: number[] = [];
-  for (let col = 0; col < WAVE_COLS; col++) {
-    h = Math.imul(h ^ (col + 1), 16777619);
-    const amp = (h >>> 8) % (WAVE_CENTER + 1);
-    for (let d = -amp; d <= amp; d++) {
-      active.push((WAVE_CENTER + d) * WAVE_COLS + col);
-    }
-  }
-  return active;
-};
-
 type ModelStatCardProps = {
   model: ModelInfo;
   status?: ModelStatus;
   progress?: DownloadEvent;
+  width?: number;
+  compact?: boolean;
   onDownload: () => void;
   onDelete: () => void;
   onCancel: () => void;
@@ -60,6 +25,8 @@ const ModelStatCard = ({
   model,
   status,
   progress,
+  width,
+  compact = false,
   onDownload,
   onDelete,
   onCancel,
@@ -70,7 +37,7 @@ const ModelStatCard = ({
   const facts = [stats.languagesLabel];
   facts.push(formatModelSize(model.size_mb));
   const quant = formatQuantLabel(model.variant);
-  if (quant) facts.push(quant);
+  if (quant && !compact) facts.push(quant);
 
   const installed = status?.installed;
   const isDownloading = progress?.status === "downloading";
@@ -102,60 +69,18 @@ const ModelStatCard = ({
     : "var(--model-wave-glow-soft-whisper)";
 
   return (
-    <article
-      className="relative overflow-hidden bg-surface-surface text-left"
-      style={{
-        width: `${CARD_WIDTH}px`,
-        borderRadius: "18px",
-        border: "1px solid var(--color-border-secondary, rgba(0,0,0,0.08))",
-        boxShadow:
-          "0 1px 2px rgba(0,0,0,0.05), 0 16px 40px -20px rgba(0,0,0,0.45)",
-      }}
-      aria-label={t({
+    <ModelCardShell
+      accent={accent}
+      glowStrong={glowStrong}
+      glowSoft={glowSoft}
+      dots={dots}
+      animated={isDownloading}
+      width={width}
+      ariaLabel={t({
         id: "models.card.aria",
         message: `${model.label} model`,
       })}
     >
-      <div
-        className="relative flex items-center justify-center overflow-hidden"
-        style={{
-          height: "92px",
-          background: `radial-gradient(120% 140% at 50% -20%, ${glowStrong}, transparent 70%), linear-gradient(180deg, ${glowSoft}, transparent)`,
-        }}
-      >
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            WebkitMaskImage: FEATHER_MASK,
-            maskImage: FEATHER_MASK,
-          }}
-        >
-          <DotMatrix
-            rows={WAVE_ROWS}
-            cols={WAVE_COLS}
-            activeDots={dots}
-            dotSize={3}
-            gap={5}
-            color={accent}
-            animated={isDownloading}
-          />
-        </div>
-
-        {BLUR_LAYERS.map((layer) => (
-          <div
-            key={layer.blur}
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0"
-            style={{
-              backdropFilter: `blur(${layer.blur}px)`,
-              WebkitBackdropFilter: `blur(${layer.blur}px)`,
-              WebkitMaskImage: layer.mask,
-              maskImage: layer.mask,
-            }}
-          />
-        ))}
-      </div>
-
       <div className="px-5 pb-4 pt-3.5">
         <h3
           className="ui-color-primary"
@@ -239,7 +164,7 @@ const ModelStatCard = ({
           ) : null}
         </div>
       </div>
-    </article>
+    </ModelCardShell>
   );
 };
 

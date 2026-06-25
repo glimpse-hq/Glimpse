@@ -132,6 +132,8 @@ pub struct LibraryItem {
     pub llm_cleanup_enabled: bool,
     pub speech_model: String,
     pub show_timestamps: bool,
+    #[serde(default)]
+    pub detect_speakers: bool,
     #[serde(default = "default_item_kind")]
     pub kind: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -164,9 +166,10 @@ pub struct LibraryItemPatch {
     pub speech_model: Option<String>,
     pub transcribed_at: Option<String>,
     pub show_timestamps: Option<bool>,
+    pub detect_speakers: Option<bool>,
     pub duration_seconds: Option<f32>,
     pub kind: Option<String>,
-    pub speakers: Option<Vec<Speaker>>,
+    pub speakers: Option<Option<Vec<Speaker>>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -175,6 +178,8 @@ pub struct LibraryImportOptions {
     pub model_key: String,
     pub llm_cleanup_enabled: bool,
     pub show_timestamps: bool,
+    #[serde(default)]
+    pub detect_speakers: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -229,6 +234,7 @@ pub(crate) struct LibraryTranscriptionResult {
     pub segments: Option<Vec<TranscriptSegment>>,
     pub words: Option<Vec<TranscriptSegment>>,
     pub speech_model: Option<String>,
+    pub speakers: Option<Vec<Speaker>>,
 }
 
 #[derive(Debug, Clone, Serialize)]

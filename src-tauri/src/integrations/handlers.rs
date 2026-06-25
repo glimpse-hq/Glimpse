@@ -19,7 +19,7 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "open" => open(app, &request.args),
         "status" => status(app),
         "library.import" => library_import(app, &request.args),
-        "api.start" => api_start(app),
+        "api.start" => api_start(app, &request.args),
         "api.stop" => api_stop(app),
         "api.status" => api_status(app),
         "transcribe" => transcribe(app, &request.args),
@@ -188,6 +188,10 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
             .get("show_timestamps")
             .and_then(Value::as_bool)
             .unwrap_or(false),
+        detect_speakers: args
+            .get("detect_speakers")
+            .and_then(Value::as_bool)
+            .unwrap_or(false),
     };
 
     let item = crate::library::commands::create_library_item(path, options, app.clone(), state)?;
@@ -199,20 +203,39 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
     }))
 }
 
-fn api_start(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+fn api_start(app: &AppHandle<AppRuntime>, overrides: &Value) -> Result<Value, String> {
     let state = app.state::<AppState>();
     crate::license::require_active_license(&state.settings_store, "the API server")?;
     let settings = state.current_settings_unmasked();
+    // Each field falls back to the saved setting when the caller omits it.
     let args = crate::local_api::StartLocalApiArgs {
-        host: settings.local_api_host.clone(),
-        port: settings.local_api_port,
-        model: settings.local_api_model.clone(),
-        api_key: settings.local_api_key.clone(),
-        cors: settings.local_api_cors,
+        host: overrides
+            .get("host")
+            .and_then(Value::as_str)
+            .map(crate::settings::canonicalize_local_api_host)
+            .unwrap_or_else(|| settings.local_api_host.clone()),
+        port: overrides
+            .get("port")
+            .and_then(Value::as_u64)
+            .and_then(|port| u16::try_from(port).ok())
+            .unwrap_or(settings.local_api_port),
+        model: overrides
+            .get("model")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .unwrap_or_else(|| settings.local_api_model.clone()),
+        api_key: overrides
+            .get("api_key")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .unwrap_or_else(|| settings.local_api_key.clone()),
+        cors: overrides
+            .get("cors")
+            .and_then(Value::as_bool)
+            .unwrap_or(settings.local_api_cors),
     };
     let controller = std::sync::Arc::clone(&state.local_api);
-    let app_for_task = app.clone();
-    let status = tauri::async_runtime::block_on(controller.start(app_for_task, args))?;
+    let status = tauri::async_runtime::block_on(controller.start(app.clone(), args))?;
     Ok(api_status_json(&status))
 }
 
@@ -257,9 +280,7 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
 
     let ready = crate::speech::install::ensure_model_ready(app, &model_id)
         .map_err(|err| format!("Failed to load model {model_id}: {err}"))?;
-    let (samples, sample_rate) =
-        crate::transcribe::load_audio_for_transcription(&std::path::PathBuf::from(&path))
-            .map_err(|err| format!("Failed to decode audio: {err}"))?;
+    let (samples, sample_rate) = decode_audio(&path)?;
     let dictionary = crate::dictionary::dictionary_entries_for_model(&ready, &settings);
 
     let success = state
@@ -301,6 +322,35 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         "word_count": text.split_whitespace().count(),
         "duration_seconds": duration_seconds,
     }))
+}
+
+static NEXT_DECODE_TEMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn decode_audio(path: &str) -> Result<(Vec<i16>, u32), String> {
+    let source = std::path::PathBuf::from(path);
+    let ext = source
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    if ext == "wav" {
+        return crate::transcribe::load_audio_for_transcription(&source)
+            .map_err(|err| format!("Failed to decode audio: {err}"));
+    }
+
+    let temp = std::env::temp_dir().join(format!(
+        "glimpse-transcribe-{}-{}.wav",
+        std::process::id(),
+        NEXT_DECODE_TEMP.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    ));
+    let result = crate::library::convert_to_wav(&source, &temp, &ext, None, None, None)
+        .map_err(|err| format!("Failed to decode audio: {err}"))
+        .and_then(|()| {
+            crate::transcribe::load_audio_for_transcription(&temp)
+                .map_err(|err| format!("Failed to decode audio: {err}"))
+        });
+    let _ = std::fs::remove_file(&temp);
+    result
 }
 
 fn active_model(settings: &crate::settings::UserSettings) -> String {

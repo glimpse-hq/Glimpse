@@ -5,21 +5,34 @@ use serde_json::json;
 
 use super::{client, output, positionals, str_flag, wants_help};
 
-const USAGE: &str = "\
-glimpse open [target] [options]
-
-Targets:
-  (none) | settings   Open the Glimpse window
-  history             Open the history view
-  models              Open the models view
-
-Options:
-  --tab <name>        Settings tab (general|models|history)
-  --json              Machine-readable output";
+fn help() {
+    super::print_command_help(
+        "Open the Glimpse app.",
+        "glimpse open [target] [options]",
+        &[
+            (
+                "ARGUMENTS",
+                &[
+                    ("settings", "Open the main window (default)."),
+                    ("history", "Open the history view."),
+                    ("models", "Open the models view."),
+                ],
+            ),
+            (
+                "OPTIONS",
+                &[
+                    ("--tab <name>", "Settings tab: general, models, history."),
+                    ("--id <id>", "Item to open within the target view."),
+                    ("--json", "Output machine-readable JSON."),
+                ],
+            ),
+        ],
+    );
+}
 
 pub(crate) fn run(args: &[String], json: bool) -> Result<()> {
     if wants_help(args) {
-        println!("{USAGE}");
+        help();
         return Ok(());
     }
 

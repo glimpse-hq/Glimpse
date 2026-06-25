@@ -27,7 +27,7 @@ const EDITION_INFO: Record<LicenseEdition, EditionInfo> = {
   commercial: {
     id: "commercial",
     label: "Commercial",
-    blurb: "For work. One person per seat.",
+    blurb: "For work. One person per seat, billed yearly.",
   },
   founder: {
     id: "founder",

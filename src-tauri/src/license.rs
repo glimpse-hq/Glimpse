@@ -332,8 +332,7 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
             .as_ref()
             .and_then(|grant| grant.limit_activations)
             .unwrap_or(5),
-        // TODO: At somepoint return tally of how many devices are activiated
-        // // But this is probably going to be apart of a larger cloud thing as it needs a worker to do this.
+        // TODO: return a tally of activated devices once the cloud worker exists.
         activations_count: None,
         edition,
         status,
@@ -767,9 +766,7 @@ fn expired_trial_started_at() -> DateTime<Utc> {
 }
 
 fn parse_trial_record(record: &str, install_id: &str) -> Option<DateTime<Utc>> {
-    let Some((started_at_raw, seal)) = record.rsplit_once('|') else {
-        return None;
-    };
+    let (started_at_raw, seal) = record.rsplit_once('|')?;
     if trial_record_seal(started_at_raw, install_id) != seal {
         return None;
     }

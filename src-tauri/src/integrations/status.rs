@@ -3,9 +3,21 @@
 use anyhow::Result;
 use serde_json::{json, Value};
 
-use super::{client, coded, output};
+use super::{client, coded, output, wants_help};
 
-pub(crate) fn run(json: bool) -> Result<()> {
+fn help() {
+    super::print_command_help(
+        "Show whether Glimpse is running.",
+        "glimpse status [options]",
+        &[("OPTIONS", &[("--json", "Output machine-readable JSON.")])],
+    );
+}
+
+pub(crate) fn run(args: &[String], json: bool) -> Result<()> {
+    if wants_help(args) {
+        help();
+        return Ok(());
+    }
     match client::try_request("status", json!({}))? {
         Some(response) if response.ok => {
             if json {

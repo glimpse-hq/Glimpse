@@ -1,21 +1,19 @@
 <div align="center">
   <h1>Glimpse</h1>
-  <p>On-device voice dictation. Open-source, local-first, private by default.</p>
+  <p>On-device voice dictation. Open-source, private by default.</p>
   <img
-    src="https://github.com/user-attachments/assets/c34a35a5-e2c9-469f-87c4-4c0d20c8082d"
+    src="./assets/readme/icon.png"
     width="256"
     height="256"
     alt="Glimpse"
   />
   <p>
-    <a href="https://github.com/glimpse-hq/Glimpse/releases/latest">Download</a> ·
+    <a href="https://tryglimpse.cc/download">Download</a> ·
     <a href="https://tryglimpse.cc/">Website</a> ·
-    <a href="#pricing">Pricing</a> ·
-    <a href="#roadmap">Roadmap</a> ·
+    <a href="https://tryglimpse.cc/#pricing">Pricing</a> ·
     <a href="https://tryglimpse.cc/privacy">Privacy</a>
   </p>
   <p>
-    <img src="https://img.shields.io/badge/Beta-FF8C42?style=for-the-badge&labelColor=2b2b2b" alt="Beta" />
     <img src="https://img.shields.io/badge/macOS%2014%2B-1d1d1f?style=for-the-badge&logo=apple&logoColor=white" alt="macOS 14+" />
     <img src="https://img.shields.io/badge/Windows%2010%2B-0078D6?style=for-the-badge&logo=windows11&logoColor=white" alt="Windows 10+" />
   </p>
@@ -23,9 +21,7 @@
 
 ---
 
-Glimpse is an open-source, local-first voice dictation app for macOS and Windows.
-
-Core dictation is free with no word limits and can run entirely on your device. Cloud speech and AI writing are optional and use providers you configure yourself.
+Core dictation is free, runs on-device, and has no word limits. A license adds everything else, such as AI features, media transcription, and automations.
 
 ## Screenshots
 
@@ -49,9 +45,9 @@ Core dictation is free with no word limits and can run entirely on your device. 
 - **Replacements.** Say "my address," get 221B Baker Street.
 - **History and search.** Find anything you've dictated.
 
-**Glimpse Personal**
+**With a license**
 
-Included in a 14-day trial, then a one-time [license](#pricing):
+Free during the 14-day trial, then any [license](#pricing):
 
 - **Library.** Drop in audio or video, scrub the synced transcript, assign speakers, export to `.txt`, `.md`, `.srt`, or `.vtt`.
 - **AI Cleanup.** Polish dictated text with your own LLM.
@@ -62,9 +58,17 @@ Included in a 14-day trial, then a one-time [license](#pricing):
 
 Configure AI writing in **Settings → Providers**. Speech models live in **Settings → Models**.
 
+## Integrations
+
+Official integrations require a [license](#pricing):
+
+- **[Raycast](https://github.com/glimpse-hq/Glimpse-raycast).** Search dictations, transcribe files, switch models, and more, without leaving Raycast.
+
+Want to build your own? See the [CLI guide](https://github.com/glimpse-hq/Glimpse/wiki/CLI).
+
 ## Pricing
 
-Glimpse Personal is a one-time purchase, not a subscription. Core dictation stays free.
+Glimpse licenses are a one-time purchase, not a subscription.
 
 | Edition        | Price              | For                              |
 | -------------- | ------------------ | -------------------------------- |
@@ -73,21 +77,18 @@ Glimpse Personal is a one-time purchase, not a subscription. Core dictation stay
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
-## Roadmap
-
-- Meeting mode
-- Automatic speaker diarization
-
 ## Privacy
 
-Transcription stays on-device by default. Glimpse does not collect your transcriptions, audio, prompts, or API keys.
+Transcription stays on-device by default.
 
 Anonymous usage telemetry, via [PostHog EU](https://posthog.com/), helps prioritize development:
 
-- **Collected:** anonymous app-health and usage signals only, version and platform, launches and uptime, durations and counts, country location, and bounded error/crash categories. [See the full list →](https://github.com/glimpse-hq/Glimpse/wiki/Analytics)
-- **Never collected:** transcripts, audio, API keys, prompts, raw error messages or stacks, file paths or names, microphone names, provider endpoints, your stored IP address, or anything personally identifiable.
+- **Collected:** anonymous app-health and usage signals only, version and platform, launches and uptime, durations and counts, country location, and bounded error/crash categories. A crash (`app_crashed`) also includes a code location, such as a source file and line or a module and offset, so we can find where it happened. [See the full list →](https://github.com/glimpse-hq/Glimpse/wiki/Analytics)
+- **Never sent in telemetry:** transcripts, audio, API keys, prompts, raw error messages or stacks, your document file paths or names, microphone names, provider endpoints, your stored IP address, or anything personally identifiable.
 
-Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App** - opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
+Fuller crash detail, including raw panic text and a native minidump, is written only to a local `crash.log` and dump file on your device. Those files are never uploaded; telemetry references the dump by file name only.
+
+Telemetry is tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**. Opting out sends one final ping recording the opt-out, then nothing else, ever. See [`analytics.rs`](src-tauri/src/analytics.rs) and the [wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) for the full picture.
 
 If you enable an external speech provider, recorded audio is sent directly to that provider. If you enable an external LLM provider, text for Cleanup, Edit Mode, and Personalization is sent directly to it. Your API keys stay stored locally.
 
@@ -95,7 +96,7 @@ If you enable an external speech provider, recorded audio is sent directly to th
 
 **Source code** is licensed under [AGPL-3.0](LICENSE). If you distribute Glimpse or run it as a network service, you must make your modified source available under AGPL-3.0.
 
-**Official app builds** include free core dictation. Advanced features (Library, AI writing, Edit Mode, Personalization, Local API, CLI) require Glimpse Personal after the trial.
+**Official app builds** include free core dictation. Advanced features (Library, AI writing, Edit Mode, Personalization, Local API, CLI) require a Glimpse license after the trial.
 
 ## Contributing
 

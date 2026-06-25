@@ -1,7 +1,7 @@
 {
   "name": "glimpse",
   "private": true,
-  "version": "0.9.9",
+  "version": "1.0.0",
   "type": "module",
   "packageManager": "bun@1.3.14",
   "scripts": {
@@ -21,13 +21,13 @@
     "@lingui/core": "^6.4.0",
     "@lingui/react": "^6.4.0",
     "@phosphor-icons/react": "^2.1.10",
-    "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-query": "^5.101.1",
     "@tauri-apps/api": "2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-opener": "^2.5.4",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@xstate/react": "^6.1.0",
-    "framer-motion": "^12.40.0",
+    "framer-motion": "^12.41.0",
     "howler": "^2.2.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -39,7 +39,7 @@
     "remark-gfm": "^4.0.1",
     "remark-github": "^12.0.0",
     "tauri-plugin-macos-permissions-api": "^2.3.0",
-    "xstate": "^5.32.1"
+    "xstate": "^5.32.2"
   },
   "devDependencies": {
     "@babel/core": "8.0.1",
@@ -53,14 +53,14 @@
     "@tauri-apps/cli": "^2.11.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
-    "@typescript/native-preview": "^7.0.0-dev.20260621.1",
-    "@vitejs/plugin-react": "^6.0.2",
+    "@typescript/native-preview": "7.0.0-dev.20260624.1",
+    "@vitejs/plugin-react": "^6.0.3",
     "eslint": "^10.5.0",
     "eslint-plugin-boundaries": "^6.0.2",
     "prettier": "3.8.4",
     "tailwindcss": "^4.3.1",
     "typescript": "~6.0.3",
-    "typescript-eslint": "^8.61.1",
-    "vite": "^8.0.16"
+    "typescript-eslint": "^8.62.0",
+    "vite": "^8.1.0"
   }
 }

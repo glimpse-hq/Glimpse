@@ -22,23 +22,114 @@ pub(crate) use server::start as start_control_server;
 
 use anyhow::{bail, Result};
 
-/// Domain verbs owned by this layer. `models` and `serve` stay with
-/// glimpse-speech and are intentionally absent; `transcribe` is shared and
-/// delegates back to glimpse-speech when no Glimpse-specific flags are present.
-const OWNED_COMMANDS: &[&str] = &[
-    "history",
-    "dictionary",
-    "replacements",
-    "model",
-    "library",
-    "open",
-    "status",
-    "api",
-    "transcribe",
+struct CliCommand {
+    name: &'static str,
+    help: &'static str,
+    /// `true`: handled by this layer. `false`: handled by glimpse-speech.
+    owned: bool,
+}
+
+const COMMANDS: &[CliCommand] = &[
+    CliCommand {
+        name: "transcribe",
+        help: "Transcribe a file to text.",
+        owned: true,
+    },
+    CliCommand {
+        name: "library",
+        help: "Import and transcribe files in the background.",
+        owned: true,
+    },
+    CliCommand {
+        name: "history",
+        help: "Read dictation history.",
+        owned: true,
+    },
+    CliCommand {
+        name: "dictionary",
+        help: "Manage custom dictionary words.",
+        owned: true,
+    },
+    CliCommand {
+        name: "replacements",
+        help: "Manage text replacements.",
+        owned: true,
+    },
+    CliCommand {
+        name: "model",
+        help: "Choose the active speech model.",
+        owned: true,
+    },
+    CliCommand {
+        name: "models",
+        help: "Install or remove speech models.",
+        owned: false,
+    },
+    CliCommand {
+        name: "status",
+        help: "Show whether Glimpse is running.",
+        owned: true,
+    },
+    CliCommand {
+        name: "open",
+        help: "Open the Glimpse app.",
+        owned: true,
+    },
+    CliCommand {
+        name: "api",
+        help: "Start, stop, or check the local API server.",
+        owned: true,
+    },
+    CliCommand {
+        name: "serve",
+        help: "Run a standalone transcription server.",
+        owned: false,
+    },
 ];
 
 pub fn is_integration_command(verb: &str) -> bool {
-    OWNED_COMMANDS.contains(&verb)
+    COMMANDS.iter().any(|c| c.name == verb && c.owned)
+}
+
+pub(crate) type HelpSection<'a> = (&'a str, &'a [(&'a str, &'a str)]);
+
+pub(crate) fn print_command_help(overview: &str, usage: &str, sections: &[HelpSection]) {
+    let width = sections
+        .iter()
+        .flat_map(|(_, rows)| rows.iter())
+        .map(|(label, _)| label.len())
+        .max()
+        .unwrap_or(0);
+    println!("OVERVIEW: {overview}\n");
+    println!("USAGE: {usage}");
+    for (title, rows) in sections {
+        println!("\n{title}:");
+        for (label, desc) in rows.iter() {
+            println!("  {label:<width$}  {desc}");
+        }
+    }
+}
+
+/// Renders the whole CLI's `--help`, so commands from both this layer and
+/// glimpse-speech appear in one list instead of two.
+pub fn print_help() {
+    let subcommands: Vec<(&str, &str)> = COMMANDS.iter().map(|c| (c.name, c.help)).collect();
+    print_command_help(
+        "Local dictation and transcription from the terminal.",
+        "glimpse <command> [options]",
+        &[
+            (
+                "OPTIONS",
+                &[
+                    ("--cache-dir <path>", "Override the model cache directory."),
+                    ("--json", "Output machine-readable JSON."),
+                    ("-h, --help", "Show help information."),
+                ],
+            ),
+            ("SUBCOMMANDS", subcommands.as_slice()),
+        ],
+    );
+    println!("\n  See 'glimpse <command> --help' for command details.");
 }
 
 /// Front door for every integration command. `args` includes the leading verb.
@@ -75,7 +166,7 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "model" => model::run(identifier, rest, json),
         "library" => library::run(identifier, rest, json),
         "open" => open::run(rest, json),
-        "status" => status::run(json),
+        "status" => status::run(rest, json),
         "api" => api::run(rest, json),
         "transcribe" => transcribe::run(identifier, rest, json),
         other => bail!("Unknown command: {other}"),

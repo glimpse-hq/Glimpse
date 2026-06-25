@@ -32,6 +32,7 @@ pub fn selected_model(settings: &UserSettings) -> String {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn transcribe<T, Fut>(
     app: &AppHandle<AppRuntime>,
     client: &Client,
@@ -57,12 +58,15 @@ where
         settings,
         wav_path,
         local_fallback_model,
-        wants_timestamps,
+        remote::TranscribeOptions {
+            timestamps: wants_timestamps,
+            diarization: false,
+        },
         is_cancelled,
     )
     .await
     {
-        remote::RemoteAttempt::Success(success) => Ok(map_remote(success)),
+        remote::RemoteAttempt::Success(success) => Ok(map_remote(success.transcription)),
         remote::RemoteAttempt::Fallback => local().await,
         remote::RemoteAttempt::Cancelled => Err(anyhow!("Transcription cancelled")),
         remote::RemoteAttempt::Unavailable(message) => Err(anyhow!(message)),

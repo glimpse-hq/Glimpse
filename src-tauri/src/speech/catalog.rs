@@ -16,6 +16,7 @@ use crate::AppRuntime;
 pub const MODEL_CAPABILITY_DICTIONARY: &str = "dictionary";
 pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
 pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
+pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 
 pub fn is_legacy_category(category: &str) -> bool {
@@ -844,12 +845,14 @@ fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
 pub fn api_model_infos() -> Vec<glimpse_speech::api::ApiModelInfo> {
     MODEL_MANIFESTS
         .iter()
-        .map(|manifest| glimpse_speech::api::ApiModelInfo {
-            id: manifest.id.to_string(),
-            label: manifest.label.to_string(),
-            description: manifest.description.to_string(),
-            tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
-            capabilities: capability_strings(manifest.capabilities),
+        .map(|manifest| {
+            glimpse_speech::api::ApiModelInfo::new(
+                manifest.id.to_string(),
+                manifest.label.to_string(),
+                manifest.description.to_string(),
+                manifest.tags.iter().map(|tag| tag.to_string()).collect(),
+                capability_strings(manifest.capabilities),
+            )
         })
         .collect()
 }
@@ -927,10 +930,16 @@ fn remote_entry(settings: &UserSettings) -> SpeechModel {
         engine_id: "remote".to_string(),
         variant: String::new(),
         tags: vec!["Remote".to_string()],
-        capabilities: vec![
-            MODEL_CAPABILITY_TIMESTAMPS.to_string(),
-            MODEL_CAPABILITY_DICTIONARY.to_string(),
-        ],
+        capabilities: {
+            let mut caps = vec![
+                MODEL_CAPABILITY_TIMESTAMPS.to_string(),
+                MODEL_CAPABILITY_DICTIONARY.to_string(),
+            ];
+            if glimpse_speech::remote::supports_diarization(&remote::resolved_endpoint(settings)) {
+                caps.push(MODEL_CAPABILITY_DIARIZATION.to_string());
+            }
+            caps
+        },
         supported_languages: Vec::new(),
         remote: true,
         installed: true,
@@ -970,7 +979,6 @@ fn provider_display(provider: &str) -> String {
         "litellm" => "LiteLLM".to_string(),
         "deepgram" => "Deepgram".to_string(),
         "elevenlabs" => "ElevenLabs".to_string(),
-        "huggingface" => "Hugging Face".to_string(),
         "vllm" => "vLLM".to_string(),
         "localai" => "LocalAI".to_string(),
         "whisper-cpp" => "whisper.cpp".to_string(),

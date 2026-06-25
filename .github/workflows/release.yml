@@ -234,6 +234,9 @@ jobs:
         if: matrix.os == 'windows'
         uses: tauri-apps/tauri-action@v0
         env:
+          # Build whisper.cpp/ggml for a portable AVX2 baseline, not the build host
+          GGML_NATIVE: "OFF"
+          GGML_AVX2: "ON"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}

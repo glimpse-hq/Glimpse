@@ -187,6 +187,9 @@
   --model-wave-glow-soft-whisper: var(--color-local-10);
   --model-wave-glow-strong-nvidia: rgba(167, 232, 160, 0.2);
   --model-wave-glow-soft-nvidia: rgba(167, 232, 160, 0.1);
+  --model-wave-cloud: var(--color-cloud);
+  --model-wave-glow-strong-cloud: var(--color-cloud-20);
+  --model-wave-glow-soft-cloud: var(--color-cloud-10);
 
   --color-support-help: var(--color-warning-strong);
   --color-support-info: #8f95fb;
@@ -324,6 +327,9 @@
   --model-wave-glow-soft-whisper: rgba(26, 23, 22, 0.03);
   --model-wave-glow-strong-nvidia: rgba(26, 23, 22, 0.06);
   --model-wave-glow-soft-nvidia: rgba(26, 23, 22, 0.03);
+  --model-wave-cloud: var(--color-cloud);
+  --model-wave-glow-strong-cloud: var(--color-cloud-20);
+  --model-wave-glow-soft-cloud: var(--color-cloud-10);
 
   --color-support-help: var(--color-text-muted);
   --color-support-info: var(--color-text-muted);

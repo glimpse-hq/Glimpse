@@ -1,3 +1,35 @@
+1.0.0
+
+### Features
+- You can now install Glimpse with Homebrew: `brew install --cask glimpse-hq/tap/glimpse`. This sets up the app and the `glimpse` command together. Updates still come through Glimpse itself.
+- Added OpenRouter as a first class cloud speech provider, with its transcription models listed automatically.
+- Library transcriptions can now detect speakers automatically when you use a provider that supports it (like Mistral). Turn on Detect speakers when importing or retranscribing and the transcript gets labeled by who's talking.
+
+### Changes
+
+- Enabled 3rd party STT models now show in the models screen. This replaces the warning.
+
+### Improvements
+- Serving models via API to other model providers is smoother.
+- The API now automatically adds url prefixes if you forget.
+- The CLI commands have been overhauled to be cleaner and show you all options.
+- Many UI elements have been tweaked to be cleaner.
+- Glimpse can now be auto refocused by searching it up in windows, instead of having to use the tray.
+- (Nvidia) Long imported files now fill in their transcript and timestamps as they process, instead of only showing up once the whole file is done.
+
+### Fixes
+
+- Fixed the CLI not being able to use different media formats.
+- The models screen now shows which cloud provider and model is active, instead of leaving the name blank.
+- Fixed remote speech model lists not loading from some self-hosted servers.
+- Fixed Perplexity not working as a language model provider.
+- The Custom speech provider no longer defaults to an OpenAI model that may not exist on your endpoint.
+- The library will now correctly react to OS level pauses.
+- On Windows, license activation links now work when Glimpse is already running, instead of being ignored.
+- Fixed a startup crash for some modern CPUs on Windows.
+
+---
+
 0.9.9
 
 ### Features

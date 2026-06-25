@@ -123,6 +123,11 @@ msgstr "{coverageBase} · {activeDevices} of {deviceLimit} devices active"
 msgid "{minutes, plural, one {# minute spoken today} other {# minutes spoken today}}"
 msgstr "{minutes, plural, one {# minute spoken today} other {# minutes spoken today}}"
 
+#. js-lingui-explicit-id
+#: src/features/settings/components/CloudModelCard.tsx
+msgid "models.cloud_card.aria"
+msgstr "{providerLabel} cloud model"
+
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "{seconds, plural, one {# second spoken today} other {# seconds spoken today}}"
 msgstr "{seconds, plural, one {# second spoken today} other {# seconds spoken today}}"
@@ -250,6 +255,11 @@ msgstr "Active"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.active"
+msgstr "Active"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.active"
 msgstr "Active"
 
 #. js-lingui-explicit-id
@@ -436,11 +446,6 @@ msgstr "Assign new speaker"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker.unassigned"
 msgstr "Assign"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.support.info"
-msgstr "Attaching the log file helps debug serious issues. Logs contain technical events only, never transcripts, audio, or keys. File paths in them may include your computer's username."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -795,6 +800,11 @@ msgid "settings.general.cloud.aria"
 msgstr "Cloud processing (Coming soon)"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/CloudModelCard.tsx
+msgid "models.cloud_card.transcribing"
+msgstr "Cloud transcription"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "Collapse sidebar"
@@ -943,7 +953,7 @@ msgstr "Core"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer"
-msgstr "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a one-time Personal or Commercial license in Settings → Account."
+msgstr "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, AI Cleanup, Edit Mode, personalization with an LLM, the local API server, and the CLI are part of Glimpse Personal. You get a 14-day trial first; after that, activate a Personal license (a one-time purchase) or a Commercial license (billed yearly) in Settings → Account."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1208,6 +1218,26 @@ msgid "settings.app.auto_delete.body"
 msgstr "Deleting transcripts also removes their saved audio."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.detect_speakers"
+msgstr "Detect speakers"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.detect_speakers.aria"
+msgstr "Detect speakers"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.detect_speakers"
+msgstr "Detect speakers"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.detect_speakers.aria"
+msgstr "Detect speakers"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/SettingsModal.tsx
 msgid "settings.modal.section.developer"
 msgstr "Developer"
@@ -1469,6 +1499,11 @@ msgid "updates.whats_new.load_failed"
 msgstr "Failed to load changelog"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.fallback"
+msgstr "Fallback"
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.faq.title"
 msgstr "FAQ"
@@ -1602,11 +1637,6 @@ msgstr "GitHub may be temporarily unavailable. Check your connection and try aga
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.version_label"
 msgstr "Glimpse"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud_active"
-msgstr "Glimpse is using {provider} to transcribe. Your active local model will be used as a fallback."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -1769,6 +1799,11 @@ msgid "settings.about.install_cli"
 msgstr "Install CLI"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.cli.installed_action"
+msgstr "Installed"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed"
 msgstr "Installed"
@@ -1814,6 +1849,16 @@ msgstr "kept warm in memory for fast responses"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.shortcut"
 msgstr "Keyboard shortcut"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.detect_speakers.description"
+msgstr "Label segments by speaker automatically"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.detect_speakers.description"
+msgstr "Label segments by speaker automatically"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1881,6 +1926,11 @@ msgid "home.drag_import.eyebrow"
 msgstr "Library Import"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+msgid "onboarding.license.dialog_aria"
+msgstr "License"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.license_active_title"
 msgstr "License active"
@@ -1914,6 +1964,16 @@ msgstr "Listen on LAN"
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.status.listening"
 msgstr "Listening..."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.capability.streaming"
+msgstr "Live streaming"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.capability.streaming"
+msgstr "Live streaming"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -2136,11 +2196,6 @@ msgstr "More information about Edit Mode"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.info_aria"
 msgstr "More information about shortcut options"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.support.info_aria"
-msgstr "More information about support logs"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2740,6 +2795,10 @@ msgstr "Remove shortcut"
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.rename"
 msgstr "Rename"
+
+#: src/features/settings/components/AccountView.tsx
+msgid "Renews {renewsAt}"
+msgstr "Renews {renewsAt}"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -3428,6 +3487,11 @@ msgstr "That microphone is already in use."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.cli.externally_managed_info"
+msgstr "The glimpse command is installed at {cliInstallPath} and managed outside Glimpse. Use its package manager to update or remove it."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_info"
 msgstr "The glimpse command is installed at {cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI."
 
@@ -3820,6 +3884,16 @@ msgstr "Where does my data go?"
 #: src/features/onboarding/steps/LicenseModal.tsx
 msgid "onboarding.license.why_paid"
 msgstr "Why is there paid stuff?"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.capability.timestamps"
+msgstr "Word-level timestamps"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.capability.timestamps"
+msgstr "Word-level timestamps"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx

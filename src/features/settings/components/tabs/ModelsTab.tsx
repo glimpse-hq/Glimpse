@@ -6,11 +6,11 @@ import {
   CaretRight as ChevronRight,
   Check,
   Clock,
-  Cloud,
   Trash as Trash2,
   Waveform,
 } from "@phosphor-icons/react";
 import ModelStatCard from "../ModelStatCard";
+import CloudModelCard from "../CloudModelCard";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
 import {
@@ -24,7 +24,10 @@ import {
   MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../../shared/lib/modelCapabilities";
-import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
+import {
+  getSpeechProviderPreset,
+  resolvedSpeechModel,
+} from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
 import type {
   DownloadEvent,
@@ -33,6 +36,7 @@ import type {
   RemoteSpeechProvider,
 } from "../../../../types";
 
+const SIDE_BY_SIDE_WIDTH = 280;
 type ModelsTabProps = {
   variants: Variants;
   modelCatalog: ModelInfo[];
@@ -41,10 +45,12 @@ type ModelsTabProps = {
   localModel: string;
   remoteSpeechEnabled: boolean;
   remoteSpeechProvider: RemoteSpeechProvider;
+  remoteSpeechModel: string;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
   handleCancelDownload: (modelKey: string) => void;
+  onOpenProvidersTab: () => void;
 };
 
 const pickInstalledModel = (
@@ -204,10 +210,12 @@ const ModelsTab = ({
   localModel,
   remoteSpeechEnabled,
   remoteSpeechProvider,
+  remoteSpeechModel,
   setLocalModel,
   handleDownload,
   handleDelete,
   handleCancelDownload,
+  onOpenProvidersTab,
 }: ModelsTabProps) => {
   const { t } = useLingui();
   const [browsing, setBrowsing] = useState(false);
@@ -219,16 +227,34 @@ const ModelsTab = ({
     modelStatus,
   );
 
-  const providerName =
+  const providerLabel =
     getSpeechProviderPreset(remoteSpeechProvider)?.label ??
     t({
       id: "settings.models.cloud_active.provider_fallback",
       message: "your speech provider",
     });
+  const activeModel = resolvedSpeechModel(
+    remoteSpeechProvider,
+    remoteSpeechModel,
+  );
 
   const installedModels = sortInstalledModels(
     modelCatalog.filter((m) => modelStatus[m.key]?.installed),
   );
+
+  const renderLocalCard = (width?: number, compact?: boolean) =>
+    installedModel ? (
+      <ModelStatCard
+        model={installedModel}
+        status={modelStatus[installedModel.key]}
+        progress={downloadState[installedModel.key]}
+        width={width}
+        compact={compact}
+        onDownload={() => handleDownload(installedModel.key)}
+        onDelete={() => handleDelete(installedModel.key)}
+        onCancel={() => handleCancelDownload(installedModel.key)}
+      />
+    ) : null;
 
   return (
     <motion.div
@@ -265,34 +291,48 @@ const ModelsTab = ({
         </>
       ) : (
         <div className="flex h-full min-h-0 flex-col gap-5">
-          {remoteSpeechEnabled && (
-            <div className="flex shrink-0 items-center gap-2 rounded-lg border border-cloud-20 bg-cloud-5 px-3 py-1.5">
-              <Cloud
-                size={14}
-                weight="fill"
-                className="shrink-0 ui-color-cloud opacity-80"
-                aria-hidden="true"
-              />
-              <p className="ui-text-label ui-color-warning-subtle">
-                {t({
-                  id: "settings.models.cloud_active",
-                  message: `Glimpse is using ${providerName} to transcribe. Your active local model will be used as a fallback.`,
-                })}
-              </p>
-            </div>
-          )}
-
-          {installedModel && (
-            <div className="flex shrink-0 justify-center">
-              <ModelStatCard
-                model={installedModel}
-                status={modelStatus[installedModel.key]}
-                progress={downloadState[installedModel.key]}
-                onDownload={() => handleDownload(installedModel.key)}
-                onDelete={() => handleDelete(installedModel.key)}
-                onCancel={() => handleCancelDownload(installedModel.key)}
-              />
-            </div>
+          {remoteSpeechEnabled ? (
+            installedModel ? (
+              <div className="flex shrink-0 items-start justify-center gap-4">
+                <div className="flex flex-col items-center gap-2">
+                  <CloudModelCard
+                    width={SIDE_BY_SIDE_WIDTH}
+                    providerLabel={providerLabel}
+                    modelLabel={activeModel ?? null}
+                    onClick={onOpenProvidersTab}
+                  />
+                  <span className="ui-text-meta ui-color-cloud">
+                    {t({
+                      id: "settings.models.card.active",
+                      message: "Active",
+                    })}
+                  </span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  {renderLocalCard(SIDE_BY_SIDE_WIDTH, true)}
+                  <span className="ui-text-meta ui-color-muted">
+                    {t({
+                      id: "settings.models.card.fallback",
+                      message: "Fallback",
+                    })}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex shrink-0 justify-center">
+                <CloudModelCard
+                  providerLabel={providerLabel}
+                  modelLabel={activeModel ?? null}
+                  onClick={onOpenProvidersTab}
+                />
+              </div>
+            )
+          ) : (
+            installedModel && (
+              <div className="flex shrink-0 justify-center">
+                {renderLocalCard()}
+              </div>
+            )
           )}
 
           <div className="flex min-h-0 flex-1 flex-col gap-2">

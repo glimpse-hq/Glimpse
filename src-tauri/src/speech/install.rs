@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::AppRuntime;
 use anyhow::{anyhow, Context, Result};
@@ -158,6 +158,13 @@ pub(crate) fn check_model_installed_at(models_dir: &std::path::Path, model: &str
         .and_then(|spec| manager.status(&spec).ok())
         .map(|status| status.installed)
         .unwrap_or(false)
+}
+
+pub fn installed_api_model_infos(models_dir: &Path) -> Vec<glimpse_speech::api::ApiModelInfo> {
+    api_model_infos()
+        .into_iter()
+        .filter(|info| check_model_installed_at(models_dir, &info.id))
+        .collect()
 }
 
 pub fn model_cache_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {

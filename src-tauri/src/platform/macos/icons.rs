@@ -34,8 +34,7 @@ fn is_blacklisted_app(name: &str) -> bool {
     let suffix_tokens = ["installer", "uninstaller", "updater", "agent"];
     lowered
         .split(|ch: char| !ch.is_ascii_alphanumeric())
-        .filter(|token| !token.is_empty())
-        .next_back()
+        .rfind(|token| !token.is_empty())
         .is_some_and(|token| suffix_tokens.contains(&token))
 }
 
@@ -231,7 +230,7 @@ pub fn list_installed_apps(app: &AppHandle<AppRuntime>) -> Result<Vec<InstalledA
         );
     }
 
-    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps.sort_by_key(|app| app.name.to_lowercase());
     if let Some(cache_dir) = icon_cache_dir {
         warm_icon_cache_in_background(pending_icon_warmup, cache_dir);
     }

@@ -41,6 +41,7 @@ export type LibraryItem = {
   llm_cleanup_enabled: boolean;
   speech_model: string;
   show_timestamps: boolean;
+  detect_speakers: boolean;
   kind: LibraryItemKind;
   speakers?: Speaker[] | null;
 };
@@ -67,6 +68,7 @@ export type LibraryItemPatch = {
   speech_model?: string | null;
   transcribed_at?: string | null;
   show_timestamps?: boolean | null;
+  detect_speakers?: boolean | null;
   duration_seconds?: number | null;
   kind?: LibraryItemKind | null;
   speakers?: Speaker[] | null;
@@ -77,6 +79,7 @@ export type LibraryImportOptions = {
   model_key: string;
   llm_cleanup_enabled: boolean;
   show_timestamps: boolean;
+  detect_speakers: boolean;
 };
 
 export type ExportFormat = "txt" | "md" | "srt" | "vtt";

@@ -52,6 +52,11 @@ const AccountView = ({
 
   const isActive = licenseState?.status === "active";
   const isTrialing = !isActive && (licenseState?.trialActive ?? false);
+  const renewsAt =
+    isActive && licenseState?.expiresAt
+      ? formatDate(licenseState.expiresAt)
+      : null;
+  const renewsText = renewsAt ? t`Renews ${renewsAt}` : null;
 
   useEffect(() => {
     return () => {
@@ -140,10 +145,17 @@ const AccountView = ({
 
         <div className="flex w-full max-w-[400px] items-center justify-between gap-3">
           {isActive ? (
-            <CustomerPortalLink
-              source="settings_account"
-              className={portalLinkClassName}
-            />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              {renewsText ? (
+                <p className="truncate ui-text-meta ui-color-muted">
+                  {renewsText}
+                </p>
+              ) : null}
+              <CustomerPortalLink
+                source="settings_account"
+                className={portalLinkClassName}
+              />
+            </div>
           ) : (
             <p
               className="min-w-0 truncate ui-text-meta"

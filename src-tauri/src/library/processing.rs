@@ -22,7 +22,7 @@ use crate::{model_manager, storage::StorageManager, AppRuntime, AppState};
 
 use super::types::{
     cancelled_error, is_cancelled_error, ExportFormat, LibraryImportOptions,
-    LibraryImportProgressPayload, LibraryItem, LibraryItemPatch, LibraryItemStatus,
+    LibraryImportProgressPayload, LibraryItem, LibraryItemPatch, LibraryItemStatus, Speaker,
     TranscriptSegment, EVENT_LIBRARY_IMPORT_PROGRESS, SUPPORTED_AUDIO_FORMATS,
     SUPPORTED_VIDEO_FORMATS, TARGET_SAMPLE_RATE,
 };
@@ -70,6 +70,7 @@ pub(crate) fn create_item_from_path(
     } else {
         options.show_timestamps && model_supports_timestamps(&options.model_key)
     };
+    let detect_speakers = remote_selection && options.detect_speakers;
 
     let item = LibraryItem {
         id,
@@ -90,6 +91,7 @@ pub(crate) fn create_item_from_path(
         llm_cleanup_enabled: false,
         speech_model: options.model_key.clone(),
         show_timestamps,
+        detect_speakers,
         kind: crate::library::default_item_kind(),
         speakers: None,
     };
@@ -446,7 +448,7 @@ fn downmix_interleaved_to_mono_i16(samples: &[i16], channels: usize, output: &mu
     }
 }
 
-fn convert_to_wav(
+pub(crate) fn convert_to_wav(
     input: &Path,
     output: &Path,
     ext: &str,
@@ -1166,6 +1168,54 @@ pub(crate) fn convert_segments_to_ms(
             speaker_id: None,
         })
         .collect()
+}
+
+pub(crate) fn diarize_segments(
+    segments: &[glimpse_speech::remote::DiarizedSegment],
+) -> (Vec<TranscriptSegment>, Option<Vec<Speaker>>) {
+    let mut labels: Vec<String> = Vec::new();
+    for segment in segments {
+        if let Some(label) = segment.speaker.as_deref().map(str::trim) {
+            if !label.is_empty() && !labels.iter().any(|seen| seen == label) {
+                labels.push(label.to_string());
+            }
+        }
+    }
+
+    let speakers: Vec<Speaker> = labels
+        .iter()
+        .enumerate()
+        .map(|(index, _)| Speaker {
+            id: format!("speaker_{}", index + 1),
+            name: format!("Speaker {}", index + 1),
+            color: None,
+        })
+        .collect();
+
+    let converted = segments
+        .iter()
+        .map(|segment| {
+            let speaker_id = segment
+                .speaker
+                .as_deref()
+                .map(str::trim)
+                .filter(|label| !label.is_empty())
+                .and_then(|label| {
+                    labels
+                        .iter()
+                        .position(|seen| seen == label)
+                        .map(|index| speakers[index].id.clone())
+                });
+            TranscriptSegment {
+                start_ms: (segment.start * 1000.0).max(0.0) as u64,
+                end_ms: (segment.end * 1000.0).max(0.0) as u64,
+                text: segment.text.trim().to_string(),
+                speaker_id,
+            }
+        })
+        .collect();
+
+    (converted, (!speakers.is_empty()).then_some(speakers))
 }
 
 pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> Result<String> {

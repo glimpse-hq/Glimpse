@@ -352,6 +352,9 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
 
+    if window.is_minimized().unwrap_or(false) {
+        window.unminimize()?;
+    }
     window.show()?;
     window.set_focus()?;
 

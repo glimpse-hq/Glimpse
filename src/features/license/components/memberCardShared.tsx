@@ -135,10 +135,10 @@ export const CARD_STAMP_SLOT_WIDTH = 132;
 export const CARD_STAMP_SLOT_HEIGHT = 38;
 export const CARD_HEADER_HEIGHT = CARD_STAMP_SLOT_HEIGHT;
 export const CARD_HEADLINE_HEIGHT = 58;
+export const CARD_HEADLINE_HEIGHT_EXPANDED = 102;
 export const CARD_HEADLINE_OVERLAP = 12;
 export const CARD_DETAILS_HEIGHT = 88;
-export const CARD_TITLE_ROW_HEIGHT = 36;
-export const CARD_SUBTITLE_ROW_HEIGHT = 18;
+export const CARD_DETAILS_HEIGHT_SLIM = 44;
 export const CARD_HEADLINE_GAP = 4;
 export const CARD_STRIPE_DENSITY = 0.26;
 export const CARD_STRIPE_GAP = 10;
@@ -796,37 +796,35 @@ export const CardHeaderRow = ({
 export const CardHeadlineBlock = ({
   title,
   subtitle,
+  height = CARD_HEADLINE_HEIGHT,
 }: {
   title: ReactNode;
   subtitle: ReactNode;
+  height?: number;
 }) => (
   <div
-    className="flex min-w-0 shrink-0 flex-col"
+    className="flex min-w-0 shrink-0 flex-col overflow-hidden"
     style={{
       marginTop: `-${CARD_HEADLINE_OVERLAP}px`,
       gap: `${CARD_HEADLINE_GAP}px`,
-      height: `${CARD_HEADLINE_HEIGHT}px`,
+      height: `${height}px`,
     }}
   >
-    <div
-      className="min-w-0 overflow-hidden"
-      style={{ height: `${CARD_TITLE_ROW_HEIGHT}px` }}
-    >
-      {title}
-    </div>
-    <div
-      className="min-w-0 overflow-hidden"
-      style={{ height: `${CARD_SUBTITLE_ROW_HEIGHT}px` }}
-    >
-      {subtitle}
-    </div>
+    <div className="min-w-0">{title}</div>
+    <div className="min-w-0">{subtitle}</div>
   </div>
 );
 
-export const CardDetailsGrid = ({ children }: { children: ReactNode }) => (
+export const CardDetailsGrid = ({
+  children,
+  height = CARD_DETAILS_HEIGHT,
+}: {
+  children: ReactNode;
+  height?: number;
+}) => (
   <dl
     className="mt-2 shrink-0 grid grid-cols-2 gap-x-6 gap-y-2"
-    style={{ height: `${CARD_DETAILS_HEIGHT}px` }}
+    style={{ height: `${height}px` }}
   >
     {children}
   </dl>
