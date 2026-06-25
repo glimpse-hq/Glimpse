@@ -845,13 +845,14 @@ fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
 pub fn api_model_infos() -> Vec<glimpse_speech::api::ApiModelInfo> {
     MODEL_MANIFESTS
         .iter()
-        .map(|manifest| glimpse_speech::api::ApiModelInfo {
-            id: manifest.id.to_string(),
-            object: "model",
-            label: manifest.label.to_string(),
-            description: manifest.description.to_string(),
-            tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
-            capabilities: capability_strings(manifest.capabilities),
+        .map(|manifest| {
+            glimpse_speech::api::ApiModelInfo::new(
+                manifest.id.to_string(),
+                manifest.label.to_string(),
+                manifest.description.to_string(),
+                manifest.tags.iter().map(|tag| tag.to_string()).collect(),
+                capability_strings(manifest.capabilities),
+            )
         })
         .collect()
 }
