@@ -424,8 +424,6 @@ pub(crate) fn release_library_slot(
     start_next_library_job(app, state);
 }
 
-/// Shared inputs for the local (on-device) transcription paths, bundled so the
-/// per-engine helpers don't each take a long argument list.
 struct LocalRun<'a> {
     app: &'a AppHandle<AppRuntime>,
     state: &'a AppState,
@@ -437,7 +435,6 @@ struct LocalRun<'a> {
     sample_rate: u32,
 }
 
-/// Chunk geometry in samples, derived once per chunked run.
 struct ChunkPlan {
     chunk_size: usize,
     overlap: usize,
@@ -461,7 +458,6 @@ fn offset_ms(start_idx: usize, sample_rate: u32) -> u64 {
     (start_idx as f64 / sample_rate as f64 * 1000.0) as u64
 }
 
-/// True when a chunk holds too little speech to be worth transcribing.
 fn chunk_below_speech_gate(chunk: &[i16], sample_rate: u32) -> bool {
     speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive)
         < VAD_MIN_SPEECH_PERCENT_CHUNK
@@ -527,8 +523,7 @@ fn transcribe_library_item(
     }
 }
 
-/// Try the configured remote provider. `Ok(Some)` is a finished transcription,
-/// `Ok(None)` means fall back to a local model, `Err` is cancel/unavailable.
+// Ok(Some) = done, Ok(None) = fall back to local, Err = cancel/unavailable.
 fn transcribe_remote(
     app: &AppHandle<AppRuntime>,
     state: &AppState,
@@ -581,7 +576,6 @@ fn transcribe_remote(
     }
 }
 
-/// Short non-whisper files: decode once and transcribe in a single pass.
 fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscriptionResult> {
     let (samples, sample_rate) = transcribe::load_audio_for_transcription(audio_path)?;
     let speech_percent =
@@ -616,8 +610,6 @@ fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscr
     })
 }
 
-/// Whisper: short overlapping chunks, filtered against per-chunk VAD speech
-/// regions, streaming partial transcript and segments as it goes.
 fn transcribe_whisper_chunked(
     run: &LocalRun,
     audio_path: &Path,
@@ -785,7 +777,6 @@ fn transcribe_whisper_chunked(
     })
 }
 
-/// Long non-whisper files: large chunks with time-based de-duplication.
 fn transcribe_parakeet_chunked(
     run: &LocalRun,
     audio_path: &Path,

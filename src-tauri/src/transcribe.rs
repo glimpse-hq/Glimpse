@@ -1218,7 +1218,7 @@ fn emit_auto_paste_error(
     );
 }
 
-#[allow(clippy::too_many_arguments)] // private aggregator for the error-emit call sites
+#[allow(clippy::too_many_arguments)]
 fn emit_transcription_error_inner(
     app: &AppHandle<AppRuntime>,
     message: String,

@@ -142,7 +142,7 @@ impl StorageManager {
         })
     }
 
-    #[allow(clippy::too_many_arguments)] // record fields plus optional id/timestamp overrides
+    #[allow(clippy::too_many_arguments)]
     pub fn save_transcription(
         &self,
         text: String,

@@ -438,8 +438,16 @@ pub fn run() {
                 .app_data_dir()
                 .ok()
                 .map(|dir| dir.join("last_crash.txt"));
+            let crash_log = handle.path().app_log_dir().ok().map(|dir| {
+                let _ = std::fs::create_dir_all(&dir);
+                dir.join("crash.log")
+            });
             if let Some(path) = crash_marker.clone() {
-                analytics::install_crash_handler(path);
+                analytics::install_crash_handler(path.clone(), crash_log);
+                #[cfg(target_os = "windows")]
+                if let Ok(log_dir) = handle.path().app_log_dir() {
+                    platform::windows::crash::install(log_dir, path);
+                }
             }
             let settings_store = Arc::new(SettingsStore::new(handle)?);
             let mut settings = settings_store.load().unwrap_or_default();

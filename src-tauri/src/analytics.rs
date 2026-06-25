@@ -140,7 +140,7 @@ pub fn track_app_installed(app: &tauri::AppHandle<AppRuntime>) {
 /// Records that a transcription succeeded: local vs remote, the model, whether
 /// LLM cleanup ran, audio source, audio and processing duration, and word count.
 /// The transcribed text itself is never included.
-#[allow(clippy::too_many_arguments)] // distinct analytics payload fields, not a struct
+#[allow(clippy::too_many_arguments)]
 pub fn track_transcription_completed(
     app: &tauri::AppHandle<AppRuntime>,
     mode: &str,
@@ -429,9 +429,7 @@ pub fn track_app_exited(
     );
 }
 
-/// On a crash, leaves a small marker with only the version, code location
-/// (file:line), and a bounded crash category - never the crash message.
-pub fn install_crash_handler(marker_path: PathBuf) {
+pub fn install_crash_handler(marker_path: PathBuf, crash_log_path: Option<PathBuf>) {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
         let location = info
@@ -443,13 +441,45 @@ pub fn install_crash_handler(marker_path: PathBuf) {
             .downcast_ref::<&str>()
             .copied()
             .or_else(|| info.payload().downcast_ref::<String>().map(String::as_str));
-        let crash_type = classify_panic(message);
-        let _ = std::fs::write(
+        let when = chrono::Local::now().to_rfc3339();
+        write_panic_artifacts(
             &marker_path,
-            format!("{APP_VERSION}\n{location}\n{crash_type}"),
+            crash_log_path.as_deref(),
+            &location,
+            message,
+            &when,
         );
         previous(info);
     }));
+}
+
+fn write_panic_artifacts(
+    marker_path: &Path,
+    crash_log_path: Option<&Path>,
+    location: &str,
+    message: Option<&str>,
+    when: &str,
+) {
+    let crash_type = classify_panic(message);
+    let _ = std::fs::write(
+        marker_path,
+        format!("{APP_VERSION}\n{location}\n{crash_type}"),
+    );
+    if let Some(path) = crash_log_path {
+        let detail: String = message
+            .unwrap_or("<non-string panic payload>")
+            .chars()
+            .take(2000)
+            .collect();
+        let _ = std::fs::write(
+            path,
+            format!(
+                "Glimpse {APP_VERSION} crashed\n\
+                 # Stays on your device. May contain text you typed or file paths; review before sharing.\n\
+                 time: {when}\nlocation: {location}\ntype: {crash_type}\nmessage: {detail}\n"
+            ),
+        );
+    }
 }
 
 fn classify_panic(message: Option<&str>) -> &'static str {
@@ -469,24 +499,99 @@ fn classify_panic(message: Option<&str>) -> &'static str {
         .map_or("string_panic", |(reason, _)| *reason)
 }
 
-/// If the last run left a crash marker, records it now and clears the marker.
 pub fn report_pending_crash(app: &tauri::AppHandle<AppRuntime>, marker_path: &Path) {
     let Ok(contents) = std::fs::read_to_string(marker_path) else {
         return;
     };
     let _ = std::fs::remove_file(marker_path);
+    capture_event(app, "app_crashed", parse_crash_marker(&contents));
+}
 
+// First three lines are version/location/type; native handlers append
+// key=value lines that fold into the payload.
+fn parse_crash_marker(contents: &str) -> serde_json::Value {
     let mut lines = contents.lines();
     let crashed_version = lines.next().unwrap_or("unknown");
     let location = lines.next().unwrap_or("unknown");
     let crash_type = lines.next().unwrap_or("unknown");
-    capture_event(
-        app,
-        "app_crashed",
-        json!({
-            "crashed_version": crashed_version,
-            "location": location,
-            "crash_type": crash_type,
-        }),
-    );
+    let mut payload = serde_json::Map::new();
+    payload.insert("crashed_version".into(), json!(crashed_version));
+    payload.insert("location".into(), json!(location));
+    payload.insert("crash_type".into(), json!(crash_type));
+    for line in lines {
+        if let Some((key, value)) = line.split_once('=') {
+            payload.insert(key.trim().to_string(), json!(value.trim()));
+        }
+    }
+    serde_json::Value::Object(payload)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_panic_marker_into_base_fields() {
+        let parsed = parse_crash_marker("1.2.3\nsrc/lib.rs:42\nunwrap_or_expect");
+        assert_eq!(parsed["crashed_version"], "1.2.3");
+        assert_eq!(parsed["location"], "src/lib.rs:42");
+        assert_eq!(parsed["crash_type"], "unwrap_or_expect");
+        assert!(parsed.get("faulting_module").is_none());
+    }
+
+    #[test]
+    fn parses_native_marker_with_extra_fields() {
+        // Exactly what platform::windows::crash emits.
+        let marker = "1.0.0\nnvcuda.dll+0x7ffd1234\nnative\nexception_code=0xc0000005\nfaulting_module=nvcuda.dll\nminidump=crash.dmp\n";
+        let parsed = parse_crash_marker(marker);
+        assert_eq!(parsed["crash_type"], "native");
+        assert_eq!(parsed["location"], "nvcuda.dll+0x7ffd1234");
+        assert_eq!(parsed["exception_code"], "0xc0000005");
+        assert_eq!(parsed["faulting_module"], "nvcuda.dll");
+        assert_eq!(parsed["minidump"], "crash.dmp");
+    }
+
+    #[test]
+    fn parses_truncated_marker_without_panicking() {
+        let parsed = parse_crash_marker("1.0.0");
+        assert_eq!(parsed["crashed_version"], "1.0.0");
+        assert_eq!(parsed["location"], "unknown");
+        assert_eq!(parsed["crash_type"], "unknown");
+    }
+
+    #[test]
+    fn writes_marker_and_crash_log_then_parses_back() {
+        let dir = std::env::temp_dir().join(format!("glimpse-crash-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create temp dir");
+        let marker = dir.join("last_crash.txt");
+        let log = dir.join("crash.log");
+
+        write_panic_artifacts(
+            &marker,
+            Some(&log),
+            "src/foo.rs:10",
+            Some("boom: index out of bounds"),
+            "2026-06-24T00:00:00+00:00",
+        );
+
+        let marker_text = std::fs::read_to_string(&marker).expect("read marker");
+        let mut lines = marker_text.lines();
+        assert_eq!(lines.next().unwrap(), APP_VERSION);
+        assert_eq!(lines.next().unwrap(), "src/foo.rs:10");
+        assert_eq!(lines.next().unwrap(), "bounds_check");
+
+        // Marker stays anonymized; the local log keeps the message.
+        assert!(!marker_text.contains("boom"));
+        let log_text = std::fs::read_to_string(&log).expect("read crash log");
+        assert!(log_text.contains("location: src/foo.rs:10"));
+        assert!(log_text.contains("type: bounds_check"));
+        assert!(log_text.contains("message: boom: index out of bounds"));
+        assert!(log_text.contains("review before sharing"));
+
+        let parsed = parse_crash_marker(&marker_text);
+        assert_eq!(parsed["crash_type"], "bounds_check");
+        assert_eq!(parsed["location"], "src/foo.rs:10");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 }

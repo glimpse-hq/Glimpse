@@ -26,6 +26,7 @@
 - The Custom speech provider no longer defaults to an OpenAI model that may not exist on your endpoint.
 - The library will now correctly react to OS level pauses.
 - On Windows, license activation links now work when Glimpse is already running, instead of being ignored.
+- Fixed a startup crash for some modern CPUs on Windows.
 
 ---
 
