@@ -60,16 +60,16 @@ Configure AI writing in **Settings → Providers**. Speech models live in **Sett
 
 ## Integrations
 
-- **[Raycast](https://github.com/glimpse-hq/Glimpse-raycast)** *(coming soon)*. Search dictations, transcribe files, switch models, and more, without leaving Raycast. Requires a [license](#pricing).
+- **[Raycast](https://github.com/glimpse-hq/Glimpse-raycast)** _(coming soon)_. Search dictations, transcribe files, switch models, and more, without leaving Raycast. Requires a [license](#pricing).
 
 Want to build your own? See the [CLI guide](https://github.com/glimpse-hq/Glimpse/wiki/CLI).
 
 ## Pricing
 
-| Edition        | Price               | For                                       |
-| -------------- | ------------------- | ----------------------------------------- |
-| **Personal**   | $24.99 one-time     | You, on up to 5 personal devices          |
-| **Commercial** | $48 / seat / year   | Work use, one seat per person, one device |
+| Edition        | Price             | For                                       |
+| -------------- | ----------------- | ----------------------------------------- |
+| **Personal**   | $24.99 one-time   | You, on up to 5 personal devices          |
+| **Commercial** | $48 / seat / year | Work use, one seat per person, one device |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 

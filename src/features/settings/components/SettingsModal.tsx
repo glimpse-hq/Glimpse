@@ -482,13 +482,7 @@ const SettingsErrorBanner = ({
 }: {
   error: string | null;
   sourceTab:
-    | "general"
-    | "models"
-    | "providers"
-    | "local-api"
-    | "about"
-    | "app"
-    | null;
+    "general" | "models" | "providers" | "local-api" | "about" | "app" | null;
   onOpenTab: (
     tab: "general" | "models" | "providers" | "local-api" | "about" | "app",
   ) => void;

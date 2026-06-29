@@ -1,10 +1,7 @@
 export type LicenseStatus = "trial" | "active" | "expired" | "invalid";
 
 export type LicenseEdition =
-  | "personal"
-  | "commercial"
-  | "founder"
-  | "contributor";
+  "personal" | "commercial" | "founder" | "contributor";
 
 export type LicenseState = {
   status: LicenseStatus;

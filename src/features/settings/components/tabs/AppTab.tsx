@@ -199,8 +199,7 @@ const AppTab = ({
   };
   const handleDuckScrubStart = (
     event:
-      | React.MouseEvent<HTMLSpanElement>
-      | React.TouchEvent<HTMLSpanElement>,
+      React.MouseEvent<HTMLSpanElement> | React.TouchEvent<HTMLSpanElement>,
   ) => {
     event.preventDefault();
     const startX =

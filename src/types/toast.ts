@@ -1,10 +1,5 @@
 export type ToastType =
-  | "error"
-  | "info"
-  | "success"
-  | "warning"
-  | "update"
-  | "celebration";
+  "error" | "info" | "success" | "warning" | "update" | "celebration";
 
 export type ToastPayload = {
   type: ToastType;

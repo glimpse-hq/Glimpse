@@ -3,6 +3,7 @@
 // notes in plain English exactly what it records.
 
 use std::path::{Path, PathBuf};
+use std::sync::{OnceLock, RwLock};
 
 use serde_json::json;
 use tauri::Manager;
@@ -12,6 +13,22 @@ use crate::{settings::UserSettings, AppRuntime, AppState};
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const POSTHOG_API_KEY: Option<&str> = option_env!("POSTHOG_API_KEY");
 const POSTHOG_HOST: Option<&str> = option_env!("POSTHOG_HOST");
+static CRASH_PHASE: OnceLock<RwLock<&'static str>> = OnceLock::new();
+
+pub fn set_crash_phase(phase: &'static str) {
+    let lock = CRASH_PHASE.get_or_init(|| RwLock::new("startup"));
+    if let Ok(mut current) = lock.write() {
+        *current = phase;
+    }
+}
+
+pub(crate) fn crash_phase() -> &'static str {
+    CRASH_PHASE
+        .get_or_init(|| RwLock::new("startup"))
+        .read()
+        .map(|phase| *phase)
+        .unwrap_or("unknown")
+}
 
 /// Starts analytics and records your app version, OS, and (once) install date.
 pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
@@ -25,9 +42,22 @@ pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
         return;
     }
 
+    let error_tracking = match posthog_rs::ErrorTrackingOptionsBuilder::default()
+        .capture_panics(false)
+        .capture_stacktrace(false)
+        .build()
+    {
+        Ok(options) => options,
+        Err(err) => {
+            tracing::error!("Failed to build PostHog error tracking options: {err}");
+            return;
+        }
+    };
+
     let options = match posthog_rs::ClientOptionsBuilder::default()
         .api_key(api_key.to_string())
         .host(host)
+        .error_tracking(error_tracking)
         .build()
     {
         Ok(opts) => opts,
@@ -114,6 +144,76 @@ fn capture_exception(
     let _ = event.insert_prop("$exception_level", "error");
     let _ = event.insert_prop("$exception_fingerprint", fingerprint);
     posthog_rs::capture(event);
+}
+
+fn crash_context(
+    app: &tauri::AppHandle<AppRuntime>,
+    marker_payload: &serde_json::Value,
+) -> serde_json::Value {
+    let settings = app.state::<AppState>().current_settings();
+    let selected_model = crate::speech::selected_model(&settings);
+    let selected_model_kind = if crate::remote_speech::is_remote_model(&selected_model) {
+        "remote"
+    } else {
+        "local"
+    };
+    let local_manifest = crate::model_manager::definition(&settings.local_model);
+    let marker_phase = marker_payload
+        .get("crash_phase")
+        .and_then(|value| value.as_str())
+        .map(str::to_string)
+        .unwrap_or_else(|| crash_phase().to_string());
+
+    json!({
+        "crash_report_schema": 2,
+        "crash_phase": marker_phase,
+        "os": std::env::consts::OS,
+        "arch": std::env::consts::ARCH,
+        "cpu_features": cpu_features(),
+        "speech_model_kind": selected_model_kind,
+        "speech_model": selected_model,
+        "local_model": settings.local_model,
+        "local_model_engine": local_manifest.map(|manifest| format!("{:?}", manifest.engine)),
+        "local_model_family": local_manifest.map(|manifest| manifest.family),
+        "remote_speech_provider": if settings.remote_speech_enabled {
+            Some(settings.remote_speech_provider.trim())
+        } else {
+            None
+        },
+        "remote_speech_enabled": settings.remote_speech_enabled,
+        "llm_enabled": settings.llm_enabled,
+    })
+}
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+fn cpu_features() -> Vec<&'static str> {
+    let mut features = Vec::new();
+    if std::arch::is_x86_feature_detected!("sse4.2") {
+        features.push("sse4.2");
+    }
+    if std::arch::is_x86_feature_detected!("avx") {
+        features.push("avx");
+    }
+    if std::arch::is_x86_feature_detected!("avx2") {
+        features.push("avx2");
+    }
+    if std::arch::is_x86_feature_detected!("fma") {
+        features.push("fma");
+    }
+    if std::arch::is_x86_feature_detected!("avx512f") {
+        features.push("avx512f");
+    }
+    features
+}
+
+#[cfg(target_arch = "aarch64")]
+fn cpu_features() -> Vec<&'static str> {
+    vec!["neon"]
+}
+
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64", target_arch = "aarch64")))]
+fn cpu_features() -> Vec<&'static str> {
+    Vec::new()
 }
 
 /// Records, only on the opt-out click, that this install opted out.
@@ -361,6 +461,7 @@ pub fn report_frontend_crash(
     } else {
         "unknown"
     };
+    let diagnostics_marker = json!({ "crash_phase": "frontend" });
     capture_exception(
         &app,
         error_kind,
@@ -373,6 +474,7 @@ pub fn report_frontend_crash(
             "source": source,
             "error_kind": error_kind,
             "fingerprint": fingerprint,
+            "diagnostics": crash_context(&app, &diagnostics_marker),
         }),
     );
 }
@@ -470,7 +572,10 @@ fn write_panic_artifacts(
     let crash_type = classify_panic(message);
     let _ = std::fs::write(
         marker_path,
-        format!("{APP_VERSION}\n{location}\n{crash_type}"),
+        format!(
+            "{APP_VERSION}\n{location}\n{crash_type}\ncrash_phase={}\n",
+            crash_phase()
+        ),
     );
     if let Some(path) = crash_log_path {
         let detail: String = message
@@ -512,8 +617,15 @@ pub fn report_pending_crash(app: &tauri::AppHandle<AppRuntime>, marker_path: &Pa
     };
     let _ = std::fs::remove_file(marker_path);
     let payload = parse_crash_marker(&contents);
-    let crash_type = payload["crash_type"].as_str().unwrap_or("unknown").to_string();
-    let location = payload["location"].as_str().unwrap_or("unknown").to_string();
+    let crash_type = payload["crash_type"]
+        .as_str()
+        .unwrap_or("unknown")
+        .to_string();
+    let location = payload["location"]
+        .as_str()
+        .unwrap_or("unknown")
+        .to_string();
+    let location_key = sanitized_crash_location(&location, &crash_type);
     let (mechanism, fingerprint) = if crash_type == "native" {
         // Offsets are ASLR-randomized, so group on module + exception code.
         (
@@ -525,17 +637,72 @@ pub fn report_pending_crash(app: &tauri::AppHandle<AppRuntime>, marker_path: &Pa
             ),
         )
     } else {
-        ("rust_panic", format!("{crash_type}:{location}"))
+        ("rust_panic", format!("{crash_type}:{location_key}"))
     };
+    let diagnostics = crash_context(app, &payload);
+    let extra = merge_json_objects(
+        payload,
+        json!({
+            "location": location_key,
+            "location_hash": stable_hash(&location),
+            "raw_location_kind": if location == location_key { "unchanged" } else { "sanitized" },
+            "diagnostics": diagnostics,
+        }),
+    );
     capture_exception(
         app,
         &crash_type,
-        &location,
+        &location_key,
         mechanism,
         &fingerprint,
-        Some(crash_frame(&location, &crash_type)),
-        payload,
+        Some(crash_frame(&location_key, &crash_type)),
+        extra,
     );
+}
+
+fn merge_json_objects(mut base: serde_json::Value, extra: serde_json::Value) -> serde_json::Value {
+    let Some(base_object) = base.as_object_mut() else {
+        return extra;
+    };
+    if let Some(extra_object) = extra.as_object() {
+        for (key, value) in extra_object {
+            base_object.insert(key.clone(), value.clone());
+        }
+    }
+    base
+}
+
+fn sanitized_crash_location(location: &str, crash_type: &str) -> String {
+    if crash_type == "native" {
+        return location.to_string();
+    }
+    let Some((path, line)) = location.rsplit_once(':') else {
+        return path_tail(location);
+    };
+    if line.parse::<u32>().is_ok() {
+        format!("{}:{line}", path_tail(path))
+    } else {
+        path_tail(location)
+    }
+}
+
+fn path_tail(path: &str) -> String {
+    path.rsplit(['/', '\\'])
+        .next()
+        .filter(|value| !value.is_empty())
+        .unwrap_or("unknown")
+        .to_string()
+}
+
+fn stable_hash(value: &str) -> String {
+    const FNV_OFFSET: u64 = 0xcbf29ce484222325;
+    const FNV_PRIME: u64 = 0x100000001b3;
+    let mut hash = FNV_OFFSET;
+    for byte in value.as_bytes() {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    format!("{hash:016x}")
 }
 
 fn crash_frame(location: &str, crash_type: &str) -> serde_json::Value {
@@ -594,10 +761,12 @@ mod tests {
 
     #[test]
     fn parses_panic_marker_into_base_fields() {
-        let parsed = parse_crash_marker("1.2.3\nsrc/lib.rs:42\nunwrap_or_expect");
+        let parsed =
+            parse_crash_marker("1.2.3\nsrc/lib.rs:42\nunwrap_or_expect\ncrash_phase=setup\n");
         assert_eq!(parsed["crashed_version"], "1.2.3");
         assert_eq!(parsed["location"], "src/lib.rs:42");
         assert_eq!(parsed["crash_type"], "unwrap_or_expect");
+        assert_eq!(parsed["crash_phase"], "setup");
         assert!(parsed.get("faulting_module").is_none());
     }
 
@@ -655,5 +824,21 @@ mod tests {
         assert_eq!(parsed["location"], "src/foo.rs:10");
 
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn sanitizes_crash_locations_without_losing_grouping_line() {
+        assert_eq!(
+            sanitized_crash_location("/Users/alice/private/src/foo.rs:42", "bounds_check"),
+            "foo.rs:42"
+        );
+        assert_eq!(
+            sanitized_crash_location("C:\\Users\\Alice\\AppData\\main.rs:7", "string_panic"),
+            "main.rs:7"
+        );
+        assert_eq!(
+            sanitized_crash_location("nvcuda.dll+0x1234", "native"),
+            "nvcuda.dll+0x1234"
+        );
     }
 }

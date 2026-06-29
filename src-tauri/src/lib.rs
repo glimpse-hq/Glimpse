@@ -428,11 +428,14 @@ pub fn run() {
 
     builder
         .setup(|app| {
+            analytics::set_crash_phase("setup_start");
             #[cfg(target_os = "macos")]
             app.set_activation_policy(ActivationPolicy::Accessory);
 
             let handle = app.handle();
+            analytics::set_crash_phase("logging");
             init_logging(handle);
+            analytics::set_crash_phase("crash_handler");
             let crash_marker = handle
                 .path()
                 .app_data_dir()
@@ -449,6 +452,7 @@ pub fn run() {
                     platform::windows::crash::install(log_dir, path);
                 }
             }
+            analytics::set_crash_phase("settings_load");
             let settings_store = Arc::new(SettingsStore::new(handle)?);
             let mut settings = settings_store.load().unwrap_or_default();
             if model_manager::definition(&settings.local_model).is_none() {
@@ -458,6 +462,7 @@ pub fn run() {
                 }
             }
 
+            analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             {
                 let h = handle.clone();
@@ -480,6 +485,7 @@ pub fn run() {
                     local_api::start_from_settings(&h, &settings);
                 });
             }
+            analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
             library::commands::recover_interrupted_library_items(handle);
             register_deep_link_handlers(app);
@@ -533,6 +539,7 @@ pub fn run() {
                 platform::settings_window::init(&settings_window);
             }
 
+            analytics::set_crash_phase("tray_shortcuts");
             if let Ok(tray) = tray::build_tray(handle) {
                 handle.state::<AppState>().store_tray(tray);
             }
@@ -548,6 +555,7 @@ pub fn run() {
 
             update_checker::check_post_auto_update(handle);
 
+            analytics::set_crash_phase("background_tasks");
             let update_handle = handle.clone();
             let update_state = handle.state::<AppState>().update_state().clone();
             update_checker::start_background_checker(update_handle, update_state);
@@ -559,6 +567,7 @@ pub fn run() {
             {
                 let h = handle.clone();
                 tauri::async_runtime::spawn(async move {
+                    analytics::set_crash_phase("analytics_init");
                     analytics::init(&h).await;
                     if let Some(path) = crash_marker {
                         analytics::report_pending_crash(&h, &path);
@@ -567,11 +576,14 @@ pub fn run() {
                         analytics::track_app_installed(&h);
                     }
                     analytics::track_app_started(&h);
+                    analytics::set_crash_phase("running");
                 });
             }
 
+            analytics::set_crash_phase("recording_recovery");
             transcribe::recover_interrupted_recordings(handle);
 
+            analytics::set_crash_phase("running");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
