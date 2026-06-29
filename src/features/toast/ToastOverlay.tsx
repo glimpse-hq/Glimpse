@@ -111,7 +111,11 @@ const ToastOverlay: React.FC = () => {
       } catch {
         /* ignore */
       }
-      await getCurrentWindow().hide();
+      try {
+        await getCurrentWindow().hide();
+      } catch {
+        return;
+      }
     }, 120);
   };
 
@@ -248,7 +252,11 @@ const ToastOverlay: React.FC = () => {
         } catch {
           /* ignore */
         }
-        await getCurrentWindow().hide();
+        try {
+          await getCurrentWindow().hide();
+        } catch {
+          return;
+        }
       }
     });
 

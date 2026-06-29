@@ -1,4 +1,9 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 import * as modelsApi from "./models-api";
 import { formatTranscriptionSpeechModel } from "../../shared/lib/speechProviders";
@@ -9,6 +14,7 @@ export const modelKeys = {
   catalog: () => [...modelKeys.all, "catalog"] as const,
   status: (model: string) => [...modelKeys.all, "status", model] as const,
   speech: () => [...modelKeys.all, "speech"] as const,
+  cli: () => [...modelKeys.all, "cli"] as const,
 };
 
 export function useModelCatalog(enabled: boolean = true) {
@@ -76,4 +82,41 @@ export function useModelStatuses(
     isLoading: queries.some((query) => query.isLoading),
     isFetching: queries.some((query) => query.isFetching),
   };
+}
+
+export function useCliInstallStatus(enabled: boolean = true) {
+  return useQuery({
+    queryKey: modelKeys.cli(),
+    queryFn: modelsApi.getCliInstallStatus,
+    enabled,
+    staleTime: 0,
+  });
+}
+
+export function useInstallCli() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: modelsApi.installCli,
+    onSuccess: (status) => queryClient.setQueryData(modelKeys.cli(), status),
+  });
+}
+
+export function useRemoveCli() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: modelsApi.removeCli,
+    onSuccess: (status) => queryClient.setQueryData(modelKeys.cli(), status),
+  });
+}
+
+export function useFetchLlmModels() {
+  return useMutation({
+    mutationFn: modelsApi.fetchLlmModels,
+  });
+}
+
+export function useFetchRemoteSpeechModels() {
+  return useMutation({
+    mutationFn: modelsApi.fetchRemoteSpeechModels,
+  });
 }

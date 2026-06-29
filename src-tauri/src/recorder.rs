@@ -1147,10 +1147,7 @@ struct GainProfile {
 
 impl GainProfile {
     fn from_samples(samples: &[f32], frame_size: usize) -> Option<Self> {
-        let mut frame_rms: Vec<f32> = samples
-            .chunks(frame_size)
-            .map(calculate_rms)
-            .collect();
+        let mut frame_rms: Vec<f32> = samples.chunks(frame_size).map(calculate_rms).collect();
         if frame_rms.is_empty() {
             return None;
         }

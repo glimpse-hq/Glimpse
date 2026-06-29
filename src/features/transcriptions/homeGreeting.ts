@@ -3,8 +3,7 @@ import { useEffect, useState } from "react";
 export type TimeOfDayPeriod = "morning" | "afternoon" | "evening";
 
 export type HomeGreetingVariant =
-  | { kind: "time" }
-  | { kind: "occasion"; id: HomeOccasionId };
+  { kind: "time" } | { kind: "occasion"; id: HomeOccasionId };
 
 export type HomeOccasionId = "leap_day";
 
@@ -131,9 +130,10 @@ export function pickStableForCurrentPeriod<T>(
 export function getHomeGreetingVariant(
   now: Date = new Date(),
 ): HomeGreetingVariant {
-  const occasions = getHomeOccasions(now).map(
-    (id): HomeGreetingVariant => ({ kind: "occasion", id }),
-  );
+  const occasions = getHomeOccasions(now).map((id): HomeGreetingVariant => ({
+    kind: "occasion",
+    id,
+  }));
   const pool: HomeGreetingVariant[] = [{ kind: "time" }, ...occasions];
   return pool[stableIndex(pool.length, now, 0)] ?? pool[0];
 }

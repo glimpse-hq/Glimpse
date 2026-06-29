@@ -1,3 +1,12 @@
+1.0.1
+
+### Improvements
+
+- Improved UI stability.
+- Improved crash reporting so startup and frontend issues are easier to diagnose.
+
+---
+
 1.0.0
 
 ### Features

@@ -433,8 +433,7 @@ const LibraryDetail = ({
   const handleRateScrubStart = useCallback(
     (
       event:
-        | React.MouseEvent<HTMLSpanElement>
-        | React.TouchEvent<HTMLSpanElement>,
+        React.MouseEvent<HTMLSpanElement> | React.TouchEvent<HTMLSpanElement>,
     ) => {
       event.preventDefault();
       const startX =

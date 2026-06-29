@@ -46,27 +46,23 @@ export function useModelDownloadEvents({
         if (!cancelled) {
           handler(eventPayload.payload);
         }
-      }).then((unlisten) => {
-        if (cancelled) {
-          unlisten();
-        } else {
-          unlisteners.push(unlisten);
-        }
-      });
+      })
+        .then((unlisten) => {
+          if (cancelled) {
+            unlisten();
+          } else {
+            unlisteners.push(unlisten);
+          }
+        })
+        .catch((error) => {
+          console.error(`Failed to subscribe to ${event}`, error);
+        });
     };
 
-    if (onProgress) {
-      register<DownloadProgressPayload>("download:progress", handleProgress);
-    }
-    if (onComplete) {
-      register<{ model: string }>("download:complete", handleComplete);
-    }
-    if (onError) {
-      register<{ model: string; error: string }>("download:error", handleError);
-    }
-    if (onCancelled) {
-      register<{ model: string }>("download:cancelled", handleCancelled);
-    }
+    register<DownloadProgressPayload>("download:progress", handleProgress);
+    register<{ model: string }>("download:complete", handleComplete);
+    register<{ model: string; error: string }>("download:error", handleError);
+    register<{ model: string }>("download:cancelled", handleCancelled);
 
     return () => {
       cancelled = true;

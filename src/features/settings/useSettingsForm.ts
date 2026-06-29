@@ -37,7 +37,24 @@ import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
 import * as modelsApi from "./models-api";
-import { modelKeys, useModelCatalog, useModelStatuses } from "./models-queries";
+import {
+  applyModelDiscoveryFailure,
+  applyModelDiscoverySuccess,
+  beginModelDiscovery,
+  EMPTY_MODEL_DISCOVERY_STATE,
+  resetModelDiscovery,
+  type ModelDiscoveryState,
+} from "./modelDiscovery";
+import {
+  modelKeys,
+  useFetchLlmModels,
+  useFetchRemoteSpeechModels,
+  useCliInstallStatus,
+  useInstallCli,
+  useModelCatalog,
+  useModelStatuses,
+  useRemoveCli,
+} from "./models-queries";
 import type {
   TranscriptionMode,
   TextSizeMode,
@@ -51,7 +68,6 @@ import type {
   AutoDeleteTarget,
   MediaAction,
   AppLocaleSetting,
-  CliInstallStatus,
   LocalApiLogEntry,
   LocalApiStatus,
   ModelStatus,
@@ -258,10 +274,42 @@ export function useSettingsForm({
   const [llmEndpoint, setLlmEndpointRaw] = useState("");
   const [llmApiKey, setLlmApiKeyRaw] = useState("");
   const [llmModel, setLlmModel] = useState("");
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [availableSpeechModels, setAvailableSpeechModels] = useState<string[]>(
+  const [modelDiscovery, setModelDiscoveryState] =
+    useState<ModelDiscoveryState>(EMPTY_MODEL_DISCOVERY_STATE);
+  const [speechModelDiscovery, setSpeechModelDiscoveryState] =
+    useState<ModelDiscoveryState>(EMPTY_MODEL_DISCOVERY_STATE);
+  const modelDiscoveryRef = useRef(EMPTY_MODEL_DISCOVERY_STATE);
+  const speechModelDiscoveryRef = useRef(EMPTY_MODEL_DISCOVERY_STATE);
+  const setModelDiscovery = useCallback(
+    (updater: (state: ModelDiscoveryState) => ModelDiscoveryState) => {
+      const next = updater(modelDiscoveryRef.current);
+      modelDiscoveryRef.current = next;
+      setModelDiscoveryState(next);
+      return next;
+    },
     [],
   );
+  const beginModelDiscoveryRequest = useCallback(() => {
+    const next = beginModelDiscovery(modelDiscoveryRef.current);
+    modelDiscoveryRef.current = next.state;
+    setModelDiscoveryState(next.state);
+    return next.requestSeq;
+  }, []);
+  const setSpeechModelDiscovery = useCallback(
+    (updater: (state: ModelDiscoveryState) => ModelDiscoveryState) => {
+      const next = updater(speechModelDiscoveryRef.current);
+      speechModelDiscoveryRef.current = next;
+      setSpeechModelDiscoveryState(next);
+      return next;
+    },
+    [],
+  );
+  const beginSpeechModelDiscoveryRequest = useCallback(() => {
+    const next = beginModelDiscovery(speechModelDiscoveryRef.current);
+    speechModelDiscoveryRef.current = next.state;
+    setSpeechModelDiscoveryState(next.state);
+    return next.requestSeq;
+  }, []);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaAction, setMediaAction] = useState<MediaAction>("off");
@@ -283,9 +331,6 @@ export function useSettingsForm({
     null,
   );
   const [localApiBusy, setLocalApiBusy] = useState(false);
-  const [cliInstallStatus, setCliInstallStatus] =
-    useState<CliInstallStatus | null>(null);
-  const [cliInstallBusy, setCliInstallBusy] = useState(false);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
@@ -314,8 +359,30 @@ export function useSettingsForm({
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
+  const cliInstallQuery = useCliInstallStatus(isOpen);
+  const installCliMutation = useInstallCli();
+  const removeCliMutation = useRemoveCli();
+  const { mutateAsync: installCliAsync } = installCliMutation;
+  const { mutateAsync: removeCliAsync } = removeCliMutation;
+  const fetchLlmModelsMutation = useFetchLlmModels();
+  const fetchRemoteSpeechModelsMutation = useFetchRemoteSpeechModels();
+  const { mutateAsync: fetchLlmModelsAsync } = fetchLlmModelsMutation;
+  const { mutateAsync: fetchRemoteSpeechModelsAsync } =
+    fetchRemoteSpeechModelsMutation;
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
+  const availableModels = modelDiscovery.models;
+  const availableSpeechModels = speechModelDiscovery.models;
+  const cliInstallStatus = cliInstallQuery.data ?? null;
+  const cliInstallBusy =
+    installCliMutation.isPending || removeCliMutation.isPending;
+
+  const cliInstallError = cliInstallQuery.error;
+  useEffect(() => {
+    if (cliInstallError) {
+      console.error("Failed to load CLI install status:", cliInstallError);
+    }
+  }, [cliInstallError]);
   const modelKeysForStatus = useMemo(
     () => modelCatalog.map((model) => model.key),
     [modelCatalog],
@@ -435,34 +502,53 @@ export function useSettingsForm({
     emit("ui:theme_changed", { mode }).catch(() => {});
   }, []);
 
-  const setLlmProvider = useCallback((value: LlmProvider) => {
-    setLlmProviderRaw(value);
-    setAvailableModels([]);
-  }, []);
-  const setLlmEndpoint = useCallback((value: string) => {
-    setLlmEndpointRaw(value);
-    setAvailableModels([]);
-  }, []);
-  const setLlmApiKey = useCallback((value: string) => {
-    setLlmApiKeyRaw(value);
-    setAvailableModels([]);
-  }, []);
-  const setRemoteSpeechProvider = useCallback((value: RemoteSpeechProvider) => {
-    setRemoteSpeechProviderRaw(value);
-    setAvailableSpeechModels([]);
-    setRemoteSpeechModel("auto");
-  }, []);
-  const setRemoteSpeechEndpoint = useCallback((value: string) => {
-    setRemoteSpeechEndpointRaw(value);
-    setAvailableSpeechModels([]);
-    setRemoteSpeechModel("auto");
-  }, []);
+  const setLlmProvider = useCallback(
+    (value: LlmProvider) => {
+      setModelDiscovery(resetModelDiscovery);
+      setLlmModel("");
+      setLlmProviderRaw(value);
+    },
+    [setModelDiscovery],
+  );
+  const setLlmEndpoint = useCallback(
+    (value: string) => {
+      setModelDiscovery(resetModelDiscovery);
+      setLlmModel("");
+      setLlmEndpointRaw(value);
+    },
+    [setModelDiscovery],
+  );
+  const setLlmApiKey = useCallback(
+    (value: string) => {
+      setModelDiscovery(resetModelDiscovery);
+      setLlmModel("");
+      setLlmApiKeyRaw(value);
+    },
+    [setModelDiscovery],
+  );
+  const setRemoteSpeechProvider = useCallback(
+    (value: RemoteSpeechProvider) => {
+      setSpeechModelDiscovery(resetModelDiscovery);
+      setRemoteSpeechProviderRaw(value);
+      setRemoteSpeechModel("auto");
+    },
+    [setSpeechModelDiscovery],
+  );
+  const setRemoteSpeechEndpoint = useCallback(
+    (value: string) => {
+      setSpeechModelDiscovery(resetModelDiscovery);
+      setRemoteSpeechEndpointRaw(value);
+      setRemoteSpeechModel("auto");
+    },
+    [setSpeechModelDiscovery],
+  );
   const setRemoteSpeechApiKeyRawAndClearModels = useCallback(
     (value: string) => {
+      setSpeechModelDiscovery(resetModelDiscovery);
       setRemoteSpeechApiKey(value);
-      setAvailableSpeechModels([]);
+      setRemoteSpeechModel("auto");
     },
-    [],
+    [setSpeechModelDiscovery],
   );
 
   const hydrateFromSettings = useCallback(
@@ -1047,12 +1133,6 @@ export function useSettingsForm({
         if (!cancelled) setLocalApiStatus(status);
       })
       .catch((err) => console.error("Failed to load local API status:", err));
-    modelsApi
-      .getCliInstallStatus()
-      .then((status) => {
-        if (!cancelled) setCliInstallStatus(status);
-      })
-      .catch((err) => console.error("Failed to load CLI install status:", err));
 
     listen<LocalApiLogEntry>("local-api:log", (event) => {
       if (cancelled) return;
@@ -1064,17 +1144,21 @@ export function useSettingsForm({
           logs: [...previousLogs, event.payload].slice(-200),
         };
       });
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenLog = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenLog = fn;
+      })
+      .catch(() => {});
 
     listen<LocalApiStatus>("local-api:status", (event) => {
       if (!cancelled) setLocalApiStatus(event.payload);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenStatus = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenStatus = fn;
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -1343,47 +1427,71 @@ export function useSettingsForm({
   );
 
   const fetchAvailableModels = useCallback(async () => {
+    const requestSeq = beginModelDiscoveryRequest();
     try {
-      const models = await invoke<string[]>("fetch_llm_models", {
+      const models = await fetchLlmModelsAsync({
         endpoint: resolvedLlmEndpoint(llmProvider, llmEndpoint),
         apiKey: llmApiKey,
       });
-      setAvailableModels(models);
+      const previous = modelDiscoveryRef.current;
+      const next = setModelDiscovery((state) =>
+        applyModelDiscoverySuccess(state, requestSeq, models),
+      );
+      if (next === previous) return;
       if (errorSourceTab === "providers") clearSettingsError();
     } catch (err) {
-      setAvailableModels([]);
+      const previous = modelDiscoveryRef.current;
+      const next = setModelDiscovery((state) =>
+        applyModelDiscoveryFailure(state, requestSeq),
+      );
+      if (next === previous) return;
       showSettingsError(`Failed to load writing models: ${err}`, "providers");
     }
   }, [
     clearSettingsError,
     errorSourceTab,
+    beginModelDiscoveryRequest,
+    fetchLlmModelsAsync,
     llmApiKey,
     llmEndpoint,
     llmProvider,
+    setModelDiscovery,
     showSettingsError,
   ]);
 
   const fetchAvailableSpeechModels = useCallback(async () => {
+    const requestSeq = beginSpeechModelDiscoveryRequest();
     try {
-      const models = await invoke<string[]>("fetch_remote_speech_models", {
+      const models = await fetchRemoteSpeechModelsAsync({
         endpoint: resolvedSpeechEndpoint(
           remoteSpeechProvider,
           remoteSpeechEndpoint,
         ),
         apiKey: remoteSpeechApiKey,
       });
-      setAvailableSpeechModels(models);
+      const previous = speechModelDiscoveryRef.current;
+      const next = setSpeechModelDiscovery((state) =>
+        applyModelDiscoverySuccess(state, requestSeq, models),
+      );
+      if (next === previous) return;
       if (errorSourceTab === "providers") clearSettingsError();
     } catch (err) {
-      setAvailableSpeechModels([]);
+      const previous = speechModelDiscoveryRef.current;
+      const next = setSpeechModelDiscovery((state) =>
+        applyModelDiscoveryFailure(state, requestSeq),
+      );
+      if (next === previous) return;
       showSettingsError(`Failed to load speech models: ${err}`, "providers");
     }
   }, [
     clearSettingsError,
     errorSourceTab,
+    beginSpeechModelDiscoveryRequest,
+    fetchRemoteSpeechModelsAsync,
     remoteSpeechApiKey,
     remoteSpeechEndpoint,
     remoteSpeechProvider,
+    setSpeechModelDiscovery,
     showSettingsError,
   ]);
 
@@ -1616,30 +1724,22 @@ export function useSettingsForm({
   }, [showSettingsError]);
 
   const handleInstallCli = useCallback(async () => {
-    setCliInstallBusy(true);
     try {
-      const status = await modelsApi.installCli();
-      setCliInstallStatus(status);
+      await installCliAsync();
     } catch (err) {
       console.error(err);
       showSettingsError(String(err), "local-api");
-    } finally {
-      setCliInstallBusy(false);
     }
-  }, [showSettingsError]);
+  }, [installCliAsync, showSettingsError]);
 
   const handleRemoveCli = useCallback(async () => {
-    setCliInstallBusy(true);
     try {
-      const status = await modelsApi.removeCli();
-      setCliInstallStatus(status);
+      await removeCliAsync();
     } catch (err) {
       console.error(err);
       showSettingsError(String(err), "local-api");
-    } finally {
-      setCliInstallBusy(false);
     }
-  }, [showSettingsError]);
+  }, [removeCliAsync, showSettingsError]);
 
   const formatBytes = useCallback((bytes: number) => {
     if (bytes === 0) return "0 B";

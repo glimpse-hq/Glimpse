@@ -41,6 +41,20 @@ export async function clearLocalApiLogs(): Promise<LocalApiStatus> {
   return invoke<LocalApiStatus>("clear_local_api_logs");
 }
 
+export async function fetchLlmModels(args: {
+  endpoint: string;
+  apiKey: string;
+}): Promise<string[]> {
+  return invoke<string[]>("fetch_llm_models", args);
+}
+
+export async function fetchRemoteSpeechModels(args: {
+  endpoint: string;
+  apiKey: string;
+}): Promise<string[]> {
+  return invoke<string[]>("fetch_remote_speech_models", args);
+}
+
 export async function getCliInstallStatus(): Promise<CliInstallStatus> {
   return invoke<CliInstallStatus>("get_cli_install_status");
 }

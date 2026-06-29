@@ -67,8 +67,9 @@ unsafe extern "system" fn handler(info: *const EXCEPTION_POINTERS) -> i32 {
 
     // First three lines match the panic marker; analytics folds in the rest.
     let marker_body = format!(
-        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\n",
+        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\ncrash_phase={}\n",
         if dump_written { DUMP_FILE_NAME } else { "none" },
+        crate::analytics::crash_phase(),
     );
     let _ = std::fs::write(&paths.marker, marker_body);
 

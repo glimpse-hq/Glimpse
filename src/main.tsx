@@ -13,6 +13,7 @@ import {
 
 type CrashSource = "render" | "window_error" | "unhandled_rejection";
 
+const MAX_REASON_CHARS = 256;
 const reportedCrashes = new Set<string>();
 
 const errorKind = (error: unknown): string => {
@@ -28,11 +29,21 @@ const errorKind = (error: unknown): string => {
     : "unknown";
 };
 
+const describeReason = (reason: unknown): string => {
+  if (typeof reason === "string") return reason.slice(0, MAX_REASON_CHARS);
+  if (reason !== null && typeof reason === "object") {
+    const name = reason.constructor?.name ?? "Object";
+    const keys = Object.keys(reason).sort().slice(0, 5).join(",");
+    return keys ? `${name}:{${keys}}` : name;
+  }
+  return String(reason).slice(0, MAX_REASON_CHARS);
+};
+
 const crashFingerprint = (error: unknown, componentStack = ""): string => {
   const input =
     error instanceof Error
       ? `${error.name}\n${error.stack ?? ""}\n${componentStack}`
-      : `unknown\n${componentStack}`;
+      : `nonerror\n${describeReason(error)}\n${componentStack}`;
   let hash = 0x811c9dc5;
   for (let index = 0; index < input.length; index += 1) {
     hash ^= input.charCodeAt(index);
@@ -73,17 +84,42 @@ class CrashBoundary extends React.Component<
   }
 
   render() {
-    return this.state.crashed ? null : this.props.children;
+    if (!this.state.crashed) return this.props.children;
+
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: 24,
+          background: "#f7f5f0",
+          color: "#181713",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          textAlign: "center",
+        }}
+      >
+        <div>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
+            Glimpse hit an error
+          </h1>
+          <p style={{ margin: "8px 0 0", fontSize: 14 }}>
+            Please restart the app.
+          </p>
+        </div>
+      </main>
+    );
   }
 }
 
 window.addEventListener("error", (event) => {
-  if (event.error instanceof Error) {
+  if (event.error !== undefined && event.error !== null) {
     reportFrontendCrash("window_error", event.error);
   }
 });
 window.addEventListener("unhandledrejection", (event) => {
-  if (event.reason instanceof Error) {
+  if (event.reason !== undefined && event.reason !== null) {
     reportFrontendCrash("unhandled_rejection", event.reason);
   }
 });

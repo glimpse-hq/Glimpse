@@ -109,10 +109,11 @@ pub fn encrypt(plaintext: &str, hardware_uuid: &str) -> Result<String, String> {
 
     let mut nonce_bytes = [0u8; NONCE_SIZE];
     rand::rng().fill_bytes(&mut nonce_bytes);
-    let nonce = Nonce::from_slice(&nonce_bytes);
+    let nonce = Nonce::try_from(nonce_bytes.as_slice())
+        .map_err(|_| "Failed to create nonce".to_string())?;
 
     let ciphertext = cipher
-        .encrypt(nonce, plaintext.as_bytes())
+        .encrypt(&nonce, plaintext.as_bytes())
         .map_err(|e| format!("Encryption failed: {}", e))?;
 
     let mut combined = nonce_bytes.to_vec();
@@ -139,11 +140,12 @@ pub fn decrypt(encrypted: &str, hardware_uuid: &str) -> Result<String, String> {
         return Err("Ciphertext too short".to_string());
     }
 
-    let nonce = Nonce::from_slice(&combined[..NONCE_SIZE]);
+    let nonce = Nonce::try_from(&combined[..NONCE_SIZE])
+        .map_err(|_| "Invalid nonce in ciphertext".to_string())?;
     let ciphertext = &combined[NONCE_SIZE..];
 
     let plaintext = cipher
-        .decrypt(nonce, ciphertext)
+        .decrypt(&nonce, ciphertext)
         .map_err(|_| "Decryption failed - different hardware or corrupted data".to_string())?;
 
     String::from_utf8(plaintext).map_err(|e| format!("Invalid UTF-8 in decrypted data: {}", e))
