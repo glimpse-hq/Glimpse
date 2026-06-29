@@ -22,6 +22,7 @@ export default function AneCompileOverlay() {
         });
         if (cancelled) unlisten();
       } catch {
+        return;
       }
     })();
     return () => {

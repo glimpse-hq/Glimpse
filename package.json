@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "bun ./node_modules/vite/bin/vite.js",
     "build": "bun ./node_modules/typescript/lib/tsc.js && bun ./node_modules/vite/bin/vite.js build",
+    "test:frontend": "bun --no-install test tests/frontend",
     "typecheck:native": "bun ./node_modules/@typescript/native-preview/bin/tsgo.js --project tsconfig.json",
     "lingui:extract": "lingui extract",
     "lingui:compile": "lingui compile",

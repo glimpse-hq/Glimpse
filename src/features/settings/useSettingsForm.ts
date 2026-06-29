@@ -38,6 +38,14 @@ import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
 import * as modelsApi from "./models-api";
 import {
+  applyModelDiscoveryFailure,
+  applyModelDiscoverySuccess,
+  beginModelDiscovery,
+  EMPTY_MODEL_DISCOVERY_STATE,
+  resetModelDiscovery,
+  type ModelDiscoveryState,
+} from "./modelDiscovery";
+import {
   modelKeys,
   useFetchLlmModels,
   useFetchRemoteSpeechModels,
@@ -266,10 +274,42 @@ export function useSettingsForm({
   const [llmEndpoint, setLlmEndpointRaw] = useState("");
   const [llmApiKey, setLlmApiKeyRaw] = useState("");
   const [llmModel, setLlmModel] = useState("");
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [availableSpeechModels, setAvailableSpeechModels] = useState<string[]>(
+  const [modelDiscovery, setModelDiscoveryState] =
+    useState<ModelDiscoveryState>(EMPTY_MODEL_DISCOVERY_STATE);
+  const [speechModelDiscovery, setSpeechModelDiscoveryState] =
+    useState<ModelDiscoveryState>(EMPTY_MODEL_DISCOVERY_STATE);
+  const modelDiscoveryRef = useRef(EMPTY_MODEL_DISCOVERY_STATE);
+  const speechModelDiscoveryRef = useRef(EMPTY_MODEL_DISCOVERY_STATE);
+  const setModelDiscovery = useCallback(
+    (updater: (state: ModelDiscoveryState) => ModelDiscoveryState) => {
+      const next = updater(modelDiscoveryRef.current);
+      modelDiscoveryRef.current = next;
+      setModelDiscoveryState(next);
+      return next;
+    },
     [],
   );
+  const beginModelDiscoveryRequest = useCallback(() => {
+    const next = beginModelDiscovery(modelDiscoveryRef.current);
+    modelDiscoveryRef.current = next.state;
+    setModelDiscoveryState(next.state);
+    return next.requestSeq;
+  }, []);
+  const setSpeechModelDiscovery = useCallback(
+    (updater: (state: ModelDiscoveryState) => ModelDiscoveryState) => {
+      const next = updater(speechModelDiscoveryRef.current);
+      speechModelDiscoveryRef.current = next;
+      setSpeechModelDiscoveryState(next);
+      return next;
+    },
+    [],
+  );
+  const beginSpeechModelDiscoveryRequest = useCallback(() => {
+    const next = beginModelDiscovery(speechModelDiscoveryRef.current);
+    speechModelDiscoveryRef.current = next.state;
+    setSpeechModelDiscoveryState(next.state);
+    return next.requestSeq;
+  }, []);
   const [editModeEnabled, setEditModeEnabled] = useState(false);
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaAction, setMediaAction] = useState<MediaAction>("off");
@@ -308,8 +348,6 @@ export function useSettingsForm({
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve(true));
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const modelFetchSeqRef = useRef(0);
-  const speechModelFetchSeqRef = useRef(0);
   const downloadResetTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(
     new Set(),
   );
@@ -333,6 +371,8 @@ export function useSettingsForm({
     fetchRemoteSpeechModelsMutation;
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
+  const availableModels = modelDiscovery.models;
+  const availableSpeechModels = speechModelDiscovery.models;
   const cliInstallStatus = cliInstallQuery.data ?? null;
   const cliInstallBusy =
     installCliMutation.isPending || removeCliMutation.isPending;
@@ -462,40 +502,49 @@ export function useSettingsForm({
     emit("ui:theme_changed", { mode }).catch(() => {});
   }, []);
 
-  const setLlmProvider = useCallback((value: LlmProvider) => {
-    modelFetchSeqRef.current += 1;
-    setLlmProviderRaw(value);
-    setAvailableModels([]);
-  }, []);
-  const setLlmEndpoint = useCallback((value: string) => {
-    modelFetchSeqRef.current += 1;
-    setLlmEndpointRaw(value);
-    setAvailableModels([]);
-  }, []);
-  const setLlmApiKey = useCallback((value: string) => {
-    modelFetchSeqRef.current += 1;
-    setLlmApiKeyRaw(value);
-    setAvailableModels([]);
-  }, []);
-  const setRemoteSpeechProvider = useCallback((value: RemoteSpeechProvider) => {
-    speechModelFetchSeqRef.current += 1;
-    setRemoteSpeechProviderRaw(value);
-    setAvailableSpeechModels([]);
-    setRemoteSpeechModel("auto");
-  }, []);
-  const setRemoteSpeechEndpoint = useCallback((value: string) => {
-    speechModelFetchSeqRef.current += 1;
-    setRemoteSpeechEndpointRaw(value);
-    setAvailableSpeechModels([]);
-    setRemoteSpeechModel("auto");
-  }, []);
+  const setLlmProvider = useCallback(
+    (value: LlmProvider) => {
+      setModelDiscovery(resetModelDiscovery);
+      setLlmProviderRaw(value);
+    },
+    [setModelDiscovery],
+  );
+  const setLlmEndpoint = useCallback(
+    (value: string) => {
+      setModelDiscovery(resetModelDiscovery);
+      setLlmEndpointRaw(value);
+    },
+    [setModelDiscovery],
+  );
+  const setLlmApiKey = useCallback(
+    (value: string) => {
+      setModelDiscovery(resetModelDiscovery);
+      setLlmApiKeyRaw(value);
+    },
+    [setModelDiscovery],
+  );
+  const setRemoteSpeechProvider = useCallback(
+    (value: RemoteSpeechProvider) => {
+      setSpeechModelDiscovery(resetModelDiscovery);
+      setRemoteSpeechProviderRaw(value);
+      setRemoteSpeechModel("auto");
+    },
+    [setSpeechModelDiscovery],
+  );
+  const setRemoteSpeechEndpoint = useCallback(
+    (value: string) => {
+      setSpeechModelDiscovery(resetModelDiscovery);
+      setRemoteSpeechEndpointRaw(value);
+      setRemoteSpeechModel("auto");
+    },
+    [setSpeechModelDiscovery],
+  );
   const setRemoteSpeechApiKeyRawAndClearModels = useCallback(
     (value: string) => {
-      speechModelFetchSeqRef.current += 1;
+      setSpeechModelDiscovery(resetModelDiscovery);
       setRemoteSpeechApiKey(value);
-      setAvailableSpeechModels([]);
     },
-    [],
+    [setSpeechModelDiscovery],
   );
 
   const hydrateFromSettings = useCallback(
@@ -1374,32 +1423,40 @@ export function useSettingsForm({
   );
 
   const fetchAvailableModels = useCallback(async () => {
-    const fetchSeq = ++modelFetchSeqRef.current;
+    const requestSeq = beginModelDiscoveryRequest();
     try {
       const models = await fetchLlmModelsAsync({
         endpoint: resolvedLlmEndpoint(llmProvider, llmEndpoint),
         apiKey: llmApiKey,
       });
-      if (fetchSeq !== modelFetchSeqRef.current) return;
-      setAvailableModels(models);
+      const previous = modelDiscoveryRef.current;
+      const next = setModelDiscovery((state) =>
+        applyModelDiscoverySuccess(state, requestSeq, models),
+      );
+      if (next === previous) return;
       if (errorSourceTab === "providers") clearSettingsError();
     } catch (err) {
-      if (fetchSeq !== modelFetchSeqRef.current) return;
-      setAvailableModels([]);
+      const previous = modelDiscoveryRef.current;
+      const next = setModelDiscovery((state) =>
+        applyModelDiscoveryFailure(state, requestSeq),
+      );
+      if (next === previous) return;
       showSettingsError(`Failed to load writing models: ${err}`, "providers");
     }
   }, [
     clearSettingsError,
     errorSourceTab,
+    beginModelDiscoveryRequest,
     fetchLlmModelsAsync,
     llmApiKey,
     llmEndpoint,
     llmProvider,
+    setModelDiscovery,
     showSettingsError,
   ]);
 
   const fetchAvailableSpeechModels = useCallback(async () => {
-    const fetchSeq = ++speechModelFetchSeqRef.current;
+    const requestSeq = beginSpeechModelDiscoveryRequest();
     try {
       const models = await fetchRemoteSpeechModelsAsync({
         endpoint: resolvedSpeechEndpoint(
@@ -1408,21 +1465,29 @@ export function useSettingsForm({
         ),
         apiKey: remoteSpeechApiKey,
       });
-      if (fetchSeq !== speechModelFetchSeqRef.current) return;
-      setAvailableSpeechModels(models);
+      const previous = speechModelDiscoveryRef.current;
+      const next = setSpeechModelDiscovery((state) =>
+        applyModelDiscoverySuccess(state, requestSeq, models),
+      );
+      if (next === previous) return;
       if (errorSourceTab === "providers") clearSettingsError();
     } catch (err) {
-      if (fetchSeq !== speechModelFetchSeqRef.current) return;
-      setAvailableSpeechModels([]);
+      const previous = speechModelDiscoveryRef.current;
+      const next = setSpeechModelDiscovery((state) =>
+        applyModelDiscoveryFailure(state, requestSeq),
+      );
+      if (next === previous) return;
       showSettingsError(`Failed to load speech models: ${err}`, "providers");
     }
   }, [
     clearSettingsError,
     errorSourceTab,
+    beginSpeechModelDiscoveryRequest,
     fetchRemoteSpeechModelsAsync,
     remoteSpeechApiKey,
     remoteSpeechEndpoint,
     remoteSpeechProvider,
+    setSpeechModelDiscovery,
     showSettingsError,
   ]);
 
