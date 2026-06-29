@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Glimpse"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -4365,9 +4365,9 @@ dependencies = [
 
 [[package]]
 name = "posthog-rs"
-version = "0.13.3"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2136b5250589588b5b514cd64b286bfb8630f2223e4f56ab1fa3858f1600ab38"
+checksum = "a00308c626c1e38b2984094a0ac73c081529b14f04d26a025ac719aa5de27eb1"
 dependencies = [
  "backtrace",
  "chrono",

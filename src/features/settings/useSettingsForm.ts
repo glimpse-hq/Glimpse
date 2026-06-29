@@ -37,7 +37,16 @@ import { useShortcutCapture } from "../../shared/hooks/useShortcutCapture";
 import { i18n } from "../../i18n";
 import { useAppInfo, useInputDevices, useSettings } from "./queries";
 import * as modelsApi from "./models-api";
-import { modelKeys, useModelCatalog, useModelStatuses } from "./models-queries";
+import {
+  modelKeys,
+  useFetchLlmModels,
+  useFetchRemoteSpeechModels,
+  useCliInstallStatus,
+  useInstallCli,
+  useModelCatalog,
+  useModelStatuses,
+  useRemoveCli,
+} from "./models-queries";
 import type {
   TranscriptionMode,
   TextSizeMode,
@@ -51,7 +60,6 @@ import type {
   AutoDeleteTarget,
   MediaAction,
   AppLocaleSetting,
-  CliInstallStatus,
   LocalApiLogEntry,
   LocalApiStatus,
   ModelStatus,
@@ -283,9 +291,6 @@ export function useSettingsForm({
     null,
   );
   const [localApiBusy, setLocalApiBusy] = useState(false);
-  const [cliInstallStatus, setCliInstallStatus] =
-    useState<CliInstallStatus | null>(null);
-  const [cliInstallBusy, setCliInstallBusy] = useState(false);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
@@ -303,6 +308,8 @@ export function useSettingsForm({
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve(true));
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modelFetchSeqRef = useRef(0);
+  const speechModelFetchSeqRef = useRef(0);
   const downloadResetTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(
     new Set(),
   );
@@ -314,8 +321,28 @@ export function useSettingsForm({
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
+  const cliInstallQuery = useCliInstallStatus(isOpen);
+  const installCliMutation = useInstallCli();
+  const removeCliMutation = useRemoveCli();
+  const { mutateAsync: installCliAsync } = installCliMutation;
+  const { mutateAsync: removeCliAsync } = removeCliMutation;
+  const fetchLlmModelsMutation = useFetchLlmModels();
+  const fetchRemoteSpeechModelsMutation = useFetchRemoteSpeechModels();
+  const { mutateAsync: fetchLlmModelsAsync } = fetchLlmModelsMutation;
+  const { mutateAsync: fetchRemoteSpeechModelsAsync } =
+    fetchRemoteSpeechModelsMutation;
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
+  const cliInstallStatus = cliInstallQuery.data ?? null;
+  const cliInstallBusy =
+    installCliMutation.isPending || removeCliMutation.isPending;
+
+  const cliInstallError = cliInstallQuery.error;
+  useEffect(() => {
+    if (cliInstallError) {
+      console.error("Failed to load CLI install status:", cliInstallError);
+    }
+  }, [cliInstallError]);
   const modelKeysForStatus = useMemo(
     () => modelCatalog.map((model) => model.key),
     [modelCatalog],
@@ -436,29 +463,35 @@ export function useSettingsForm({
   }, []);
 
   const setLlmProvider = useCallback((value: LlmProvider) => {
+    modelFetchSeqRef.current += 1;
     setLlmProviderRaw(value);
     setAvailableModels([]);
   }, []);
   const setLlmEndpoint = useCallback((value: string) => {
+    modelFetchSeqRef.current += 1;
     setLlmEndpointRaw(value);
     setAvailableModels([]);
   }, []);
   const setLlmApiKey = useCallback((value: string) => {
+    modelFetchSeqRef.current += 1;
     setLlmApiKeyRaw(value);
     setAvailableModels([]);
   }, []);
   const setRemoteSpeechProvider = useCallback((value: RemoteSpeechProvider) => {
+    speechModelFetchSeqRef.current += 1;
     setRemoteSpeechProviderRaw(value);
     setAvailableSpeechModels([]);
     setRemoteSpeechModel("auto");
   }, []);
   const setRemoteSpeechEndpoint = useCallback((value: string) => {
+    speechModelFetchSeqRef.current += 1;
     setRemoteSpeechEndpointRaw(value);
     setAvailableSpeechModels([]);
     setRemoteSpeechModel("auto");
   }, []);
   const setRemoteSpeechApiKeyRawAndClearModels = useCallback(
     (value: string) => {
+      speechModelFetchSeqRef.current += 1;
       setRemoteSpeechApiKey(value);
       setAvailableSpeechModels([]);
     },
@@ -1047,12 +1080,6 @@ export function useSettingsForm({
         if (!cancelled) setLocalApiStatus(status);
       })
       .catch((err) => console.error("Failed to load local API status:", err));
-    modelsApi
-      .getCliInstallStatus()
-      .then((status) => {
-        if (!cancelled) setCliInstallStatus(status);
-      })
-      .catch((err) => console.error("Failed to load CLI install status:", err));
 
     listen<LocalApiLogEntry>("local-api:log", (event) => {
       if (cancelled) return;
@@ -1064,17 +1091,21 @@ export function useSettingsForm({
           logs: [...previousLogs, event.payload].slice(-200),
         };
       });
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenLog = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenLog = fn;
+      })
+      .catch(() => {});
 
     listen<LocalApiStatus>("local-api:status", (event) => {
       if (!cancelled) setLocalApiStatus(event.payload);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenStatus = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenStatus = fn;
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -1343,20 +1374,24 @@ export function useSettingsForm({
   );
 
   const fetchAvailableModels = useCallback(async () => {
+    const fetchSeq = ++modelFetchSeqRef.current;
     try {
-      const models = await invoke<string[]>("fetch_llm_models", {
+      const models = await fetchLlmModelsAsync({
         endpoint: resolvedLlmEndpoint(llmProvider, llmEndpoint),
         apiKey: llmApiKey,
       });
+      if (fetchSeq !== modelFetchSeqRef.current) return;
       setAvailableModels(models);
       if (errorSourceTab === "providers") clearSettingsError();
     } catch (err) {
+      if (fetchSeq !== modelFetchSeqRef.current) return;
       setAvailableModels([]);
       showSettingsError(`Failed to load writing models: ${err}`, "providers");
     }
   }, [
     clearSettingsError,
     errorSourceTab,
+    fetchLlmModelsAsync,
     llmApiKey,
     llmEndpoint,
     llmProvider,
@@ -1364,23 +1399,27 @@ export function useSettingsForm({
   ]);
 
   const fetchAvailableSpeechModels = useCallback(async () => {
+    const fetchSeq = ++speechModelFetchSeqRef.current;
     try {
-      const models = await invoke<string[]>("fetch_remote_speech_models", {
+      const models = await fetchRemoteSpeechModelsAsync({
         endpoint: resolvedSpeechEndpoint(
           remoteSpeechProvider,
           remoteSpeechEndpoint,
         ),
         apiKey: remoteSpeechApiKey,
       });
+      if (fetchSeq !== speechModelFetchSeqRef.current) return;
       setAvailableSpeechModels(models);
       if (errorSourceTab === "providers") clearSettingsError();
     } catch (err) {
+      if (fetchSeq !== speechModelFetchSeqRef.current) return;
       setAvailableSpeechModels([]);
       showSettingsError(`Failed to load speech models: ${err}`, "providers");
     }
   }, [
     clearSettingsError,
     errorSourceTab,
+    fetchRemoteSpeechModelsAsync,
     remoteSpeechApiKey,
     remoteSpeechEndpoint,
     remoteSpeechProvider,
@@ -1616,30 +1655,22 @@ export function useSettingsForm({
   }, [showSettingsError]);
 
   const handleInstallCli = useCallback(async () => {
-    setCliInstallBusy(true);
     try {
-      const status = await modelsApi.installCli();
-      setCliInstallStatus(status);
+      await installCliAsync();
     } catch (err) {
       console.error(err);
       showSettingsError(String(err), "local-api");
-    } finally {
-      setCliInstallBusy(false);
     }
-  }, [showSettingsError]);
+  }, [installCliAsync, showSettingsError]);
 
   const handleRemoveCli = useCallback(async () => {
-    setCliInstallBusy(true);
     try {
-      const status = await modelsApi.removeCli();
-      setCliInstallStatus(status);
+      await removeCliAsync();
     } catch (err) {
       console.error(err);
       showSettingsError(String(err), "local-api");
-    } finally {
-      setCliInstallBusy(false);
     }
-  }, [showSettingsError]);
+  }, [removeCliAsync, showSettingsError]);
 
   const formatBytes = useCallback((bytes: number) => {
     if (bytes === 0) return "0 B";

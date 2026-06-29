@@ -257,7 +257,7 @@ const AboutTab = ({
             <button
               type="button"
               onClick={() => {
-                void invoke("reveal_logs");
+                void invoke("reveal_logs").catch(() => {});
               }}
               className={SUPPORT_ACTION_CLASS}
             >

@@ -243,10 +243,11 @@ fn start_library_transcription_internal(
                         .as_deref()
                         .filter(|model| !model.trim().is_empty())
                         .unwrap_or(&item.speech_model);
+                    let model_label = crate::model_manager::model_label(speech_model);
                     crate::analytics::track_transcription_completed(
                         &app_handle,
                         library_transcription_mode(speech_model),
-                        Some(speech_model),
+                        Some(&model_label),
                         false,
                         item.duration_seconds,
                         transcription_started_at.elapsed().as_secs_f32(),

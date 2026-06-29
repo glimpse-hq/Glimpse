@@ -55,7 +55,7 @@ pub async fn init(app: &tauri::AppHandle<AppRuntime>) {
         "$set_once",
         json!({ "install_date": chrono::Utc::now().to_rfc3339() }),
     );
-    let _ = posthog_rs::capture(identify).await;
+    posthog_rs::capture(identify);
 }
 
 fn build_event(
@@ -86,44 +86,41 @@ fn build_event(
 
 fn capture_event(app: &tauri::AppHandle<AppRuntime>, event_name: &str, props: serde_json::Value) {
     if let Some(event) = build_event(app, event_name, props, true) {
-        tauri::async_runtime::spawn(async move {
-            let retry = event.clone();
-            if matches!(
-                posthog_rs::capture(event).await,
-                Err(posthog_rs::Error::NotInitialized)
-            ) {
-                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-                let _ = posthog_rs::capture(retry).await;
-            }
-        });
+        posthog_rs::capture(event);
     }
 }
 
-/// Blocking capture for app-exit only. Must run on a sync thread - `block_on`
-/// panics inside an async Tokio task.
-fn capture_event_blocking(
+fn capture_exception(
     app: &tauri::AppHandle<AppRuntime>,
-    event_name: &str,
-    props: serde_json::Value,
+    exception_type: &str,
+    value: &str,
+    mechanism: &str,
+    fingerprint: &str,
+    frame: Option<serde_json::Value>,
+    extra: serde_json::Value,
 ) {
-    if let Some(event) = build_event(app, event_name, props, true) {
-        let _ = tauri::async_runtime::block_on(async {
-            tokio::time::timeout(
-                std::time::Duration::from_secs(2),
-                posthog_rs::capture(event),
-            )
-            .await
-        });
+    let Some(mut event) = build_event(app, "$exception", extra, true) else {
+        return;
+    };
+    let mut item = json!({
+        "type": exception_type,
+        "value": value,
+        "mechanism": { "type": mechanism, "handled": false, "synthetic": false },
+    });
+    if let Some(frame) = frame {
+        item["stacktrace"] = json!({ "type": "raw", "frames": [frame] });
     }
+    let _ = event.insert_prop("$exception_list", json!([item]));
+    let _ = event.insert_prop("$exception_level", "error");
+    let _ = event.insert_prop("$exception_fingerprint", fingerprint);
+    posthog_rs::capture(event);
 }
 
 /// Records, only on the opt-out click, that this install opted out.
 /// Final event sent; bypasses the enabled check since the setting is already off.
 pub fn track_analytics_opt_out(app: &tauri::AppHandle<AppRuntime>) {
     if let Some(event) = build_event(app, "analytics_opt_out", json!({}), false) {
-        tauri::async_runtime::spawn(async move {
-            let _ = posthog_rs::capture(event).await;
-        });
+        posthog_rs::capture(event);
     }
 }
 
@@ -364,9 +361,13 @@ pub fn report_frontend_crash(
     } else {
         "unknown"
     };
-    capture_event(
+    capture_exception(
         &app,
-        "frontend_crashed",
+        error_kind,
+        source,
+        &format!("frontend_{source}"),
+        fingerprint,
+        None,
         json!({
             "window": window_label,
             "source": source,
@@ -413,20 +414,26 @@ pub fn track_onboarding_completed(app: &tauri::AppHandle<AppRuntime>) {
     capture_event(app, "onboarding_completed", json!({}));
 }
 
-/// Records, as you quit, how long the app ran and how many transcriptions it did.
+/// Flushes PostHog's global worker on app exit; `capture` only enqueues.
 pub fn track_app_exited(
     app: &tauri::AppHandle<AppRuntime>,
     uptime_seconds: f64,
     transcription_count: u32,
 ) {
-    capture_event_blocking(
+    if let Some(event) = build_event(
         app,
         "app_exited",
         json!({
             "uptime_seconds": uptime_seconds,
             "transcription_count": transcription_count,
         }),
-    );
+        true,
+    ) {
+        posthog_rs::capture(event);
+    }
+    let _ = tauri::async_runtime::block_on(async {
+        tokio::time::timeout(std::time::Duration::from_secs(2), posthog_rs::shutdown()).await
+    });
 }
 
 pub fn install_crash_handler(marker_path: PathBuf, crash_log_path: Option<PathBuf>) {
@@ -504,7 +511,62 @@ pub fn report_pending_crash(app: &tauri::AppHandle<AppRuntime>, marker_path: &Pa
         return;
     };
     let _ = std::fs::remove_file(marker_path);
-    capture_event(app, "app_crashed", parse_crash_marker(&contents));
+    let payload = parse_crash_marker(&contents);
+    let crash_type = payload["crash_type"].as_str().unwrap_or("unknown").to_string();
+    let location = payload["location"].as_str().unwrap_or("unknown").to_string();
+    let (mechanism, fingerprint) = if crash_type == "native" {
+        // Offsets are ASLR-randomized, so group on module + exception code.
+        (
+            "native_crash",
+            format!(
+                "native:{}:{}",
+                payload["faulting_module"].as_str().unwrap_or("unknown"),
+                payload["exception_code"].as_str().unwrap_or("unknown"),
+            ),
+        )
+    } else {
+        ("rust_panic", format!("{crash_type}:{location}"))
+    };
+    capture_exception(
+        app,
+        &crash_type,
+        &location,
+        mechanism,
+        &fingerprint,
+        Some(crash_frame(&location, &crash_type)),
+        payload,
+    );
+}
+
+fn crash_frame(location: &str, crash_type: &str) -> serde_json::Value {
+    if crash_type == "native" {
+        return json!({
+            "filename": location,
+            "function": "<native>",
+            "lang": "native",
+            "platform": "native",
+            "in_app": true,
+            "synthetic": true,
+            "resolved": false,
+        });
+    }
+    let (filename, line_no) = location
+        .rsplit_once(':')
+        .and_then(|(file, line)| line.parse::<u32>().ok().map(|n| (file, Some(n))))
+        .unwrap_or((location, None));
+    let mut frame = json!({
+        "filename": filename,
+        "function": crash_type,
+        "lang": "rust",
+        "platform": "rust",
+        "in_app": true,
+        "synthetic": true,
+        "resolved": true,
+    });
+    if let Some(line_no) = line_no {
+        frame["lineno"] = json!(line_no);
+    }
+    frame
 }
 
 // First three lines are version/location/type; native handlers append

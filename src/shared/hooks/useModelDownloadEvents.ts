@@ -46,13 +46,15 @@ export function useModelDownloadEvents({
         if (!cancelled) {
           handler(eventPayload.payload);
         }
-      }).then((unlisten) => {
-        if (cancelled) {
-          unlisten();
-        } else {
-          unlisteners.push(unlisten);
-        }
-      });
+      })
+        .then((unlisten) => {
+          if (cancelled) {
+            unlisten();
+          } else {
+            unlisteners.push(unlisten);
+          }
+        })
+        .catch(() => {});
     };
 
     if (onProgress) {

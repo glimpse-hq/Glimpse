@@ -28,11 +28,24 @@ const errorKind = (error: unknown): string => {
     : "unknown";
 };
 
+const describeReason = (reason: unknown): string => {
+  if (typeof reason === "string") return reason;
+  if (reason !== null && typeof reason === "object") {
+    const name = reason.constructor?.name ?? "Object";
+    try {
+      return `${name}:${JSON.stringify(reason)}`;
+    } catch {
+      return name;
+    }
+  }
+  return String(reason);
+};
+
 const crashFingerprint = (error: unknown, componentStack = ""): string => {
   const input =
     error instanceof Error
       ? `${error.name}\n${error.stack ?? ""}\n${componentStack}`
-      : `unknown\n${componentStack}`;
+      : `nonerror\n${describeReason(error)}\n${componentStack}`;
   let hash = 0x811c9dc5;
   for (let index = 0; index < input.length; index += 1) {
     hash ^= input.charCodeAt(index);
@@ -78,12 +91,12 @@ class CrashBoundary extends React.Component<
 }
 
 window.addEventListener("error", (event) => {
-  if (event.error instanceof Error) {
+  if (event.error !== undefined && event.error !== null) {
     reportFrontendCrash("window_error", event.error);
   }
 });
 window.addEventListener("unhandledrejection", (event) => {
-  if (event.reason instanceof Error) {
+  if (event.reason !== undefined && event.reason !== null) {
     reportFrontendCrash("unhandled_rejection", event.reason);
   }
 });

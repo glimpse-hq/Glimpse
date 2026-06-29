@@ -13,11 +13,16 @@ export default function AneCompileOverlay() {
     let cancelled = false;
     let unlisten: UnlistenFn | undefined;
     (async () => {
-      unlisten = await listen<AneCompileEvent>("ane:compile", (event) => {
-        if (cancelled) return;
-        setLabel(event.payload.status === "start" ? event.payload.label : null);
-      });
-      if (cancelled) unlisten();
+      try {
+        unlisten = await listen<AneCompileEvent>("ane:compile", (event) => {
+          if (cancelled) return;
+          setLabel(
+            event.payload?.status === "start" ? event.payload.label : null,
+          );
+        });
+        if (cancelled) unlisten();
+      } catch {
+      }
     })();
     return () => {
       cancelled = true;

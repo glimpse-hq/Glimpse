@@ -35,13 +35,15 @@ function QuerySyncBridge() {
         if (!cancelled) {
           handler(eventPayload.payload);
         }
-      }).then((fn) => {
-        if (cancelled) {
-          fn();
-        } else {
-          unlisteners.push(fn);
-        }
-      });
+      })
+        .then((fn) => {
+          if (cancelled) {
+            fn();
+          } else {
+            unlisteners.push(fn);
+          }
+        })
+        .catch(() => {});
     };
 
     register<StoredSettings>("settings:changed", (settings) => {

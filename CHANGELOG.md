@@ -1,3 +1,11 @@
+1.0.1
+
+### Improvements
+
+- Improved UI stability
+
+---
+
 1.0.0
 
 ### Features

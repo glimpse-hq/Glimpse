@@ -219,10 +219,12 @@ const Home = () => {
 
     listen<LocalApiStatus>("local-api:status", (event) => {
       if (!cancelled) updateLocalApiStatus(event.payload);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenStatus = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenStatus = fn;
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
@@ -282,25 +284,31 @@ const Home = () => {
     listen<{ paths?: string[] }>("tauri://drag-enter", (event) => {
       if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) setDragActive(true);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenDragEnter = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenDragEnter = fn;
+      })
+      .catch(() => {});
 
     listen<{ paths?: string[] }>("tauri://drag-over", (event) => {
       if (!licenseGateActiveRef.current) return;
       if (event.payload?.paths?.length) setDragActive(true);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenDragOver = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenDragOver = fn;
+      })
+      .catch(() => {});
 
     listen("tauri://drag-leave", () => {
       setDragActive(false);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenDragLeave = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenDragLeave = fn;
+      })
+      .catch(() => {});
 
     listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
       setDragActive(false);
@@ -309,10 +317,12 @@ const Home = () => {
         setPendingImportPaths(Array.from(new Set(event.payload.paths)));
         setActiveView("library");
       }
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenDragDrop = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenDragDrop = fn;
+      })
+      .catch(() => {});
 
     listen<string[]>("library:open_import", (event) => {
       if (!licenseGateActiveRef.current) return;
@@ -320,22 +330,26 @@ const Home = () => {
         setPendingImportPaths(Array.from(new Set(event.payload)));
         setActiveView("library");
       }
-    }).then((fn) => {
-      if (cancelled) {
-        fn();
-      } else {
-        unlistenOpenImport = fn;
-        emit("library:renderer_ready").catch(() => {});
-      }
-    });
+    })
+      .then((fn) => {
+        if (cancelled) {
+          fn();
+        } else {
+          unlistenOpenImport = fn;
+          emit("library:renderer_ready").catch(() => {});
+        }
+      })
+      .catch(() => {});
 
     listen("license:checkout-returned", () => {
       setSettingsTab("account");
       setIsSettingsOpen(true);
-    }).then((fn) => {
-      if (cancelled) fn();
-      else unlistenLicenseReturn = fn;
-    });
+    })
+      .then((fn) => {
+        if (cancelled) fn();
+        else unlistenLicenseReturn = fn;
+      })
+      .catch(() => {});
 
     return () => {
       cancelled = true;
