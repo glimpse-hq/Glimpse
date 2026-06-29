@@ -2,7 +2,8 @@
 
 ### Improvements
 
-- Improved UI stability
+- Improved UI stability.
+- Improved crash reporting so startup and frontend issues are easier to diagnose.
 
 ---
 

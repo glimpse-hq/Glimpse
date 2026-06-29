@@ -3,7 +3,7 @@
 // notes in plain English exactly what it records.
 
 use std::path::{Path, PathBuf};
-use std::sync::{OnceLock, RwLock};
+use std::sync::atomic::{AtomicU8, Ordering};
 
 use serde_json::json;
 use tauri::Manager;
@@ -13,20 +13,46 @@ use crate::{settings::UserSettings, AppRuntime, AppState};
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const POSTHOG_API_KEY: Option<&str> = option_env!("POSTHOG_API_KEY");
 const POSTHOG_HOST: Option<&str> = option_env!("POSTHOG_HOST");
-static CRASH_PHASE: OnceLock<RwLock<&'static str>> = OnceLock::new();
+const CRASH_PHASES: [&str; 12] = [
+    "startup",
+    "setup_start",
+    "logging",
+    "crash_handler",
+    "settings_load",
+    "app_state",
+    "services",
+    "tray_shortcuts",
+    "background_tasks",
+    "analytics_init",
+    "recording_recovery",
+    "running",
+];
+static CRASH_PHASE: AtomicU8 = AtomicU8::new(0);
 
 pub fn set_crash_phase(phase: &'static str) {
-    let lock = CRASH_PHASE.get_or_init(|| RwLock::new("startup"));
-    if let Ok(mut current) = lock.write() {
-        *current = phase;
+    let Some(next) = CRASH_PHASES
+        .iter()
+        .position(|candidate| *candidate == phase)
+    else {
+        return;
+    };
+    let next = next as u8;
+    let mut current = CRASH_PHASE.load(Ordering::Relaxed);
+    while next > current {
+        match CRASH_PHASE.compare_exchange_weak(current, next, Ordering::Relaxed, Ordering::Relaxed)
+        {
+            Ok(_) => return,
+            Err(updated) => current = updated,
+        }
     }
 }
 
 pub(crate) fn crash_phase() -> &'static str {
     CRASH_PHASE
-        .get_or_init(|| RwLock::new("startup"))
-        .read()
-        .map(|phase| *phase)
+        .load(Ordering::Relaxed)
+        .try_into()
+        .ok()
+        .and_then(|index: usize| CRASH_PHASES.get(index).copied())
         .unwrap_or("unknown")
 }
 
@@ -644,7 +670,7 @@ pub fn report_pending_crash(app: &tauri::AppHandle<AppRuntime>, marker_path: &Pa
         payload,
         json!({
             "location": location_key,
-            "location_hash": stable_hash(&location),
+            "location_hash": stable_hash(&location_key),
             "raw_location_kind": if location == location_key { "unchanged" } else { "sanitized" },
             "diagnostics": diagnostics,
         }),

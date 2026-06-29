@@ -13,6 +13,7 @@ import {
 
 type CrashSource = "render" | "window_error" | "unhandled_rejection";
 
+const MAX_REASON_CHARS = 256;
 const reportedCrashes = new Set<string>();
 
 const errorKind = (error: unknown): string => {
@@ -29,16 +30,13 @@ const errorKind = (error: unknown): string => {
 };
 
 const describeReason = (reason: unknown): string => {
-  if (typeof reason === "string") return reason;
+  if (typeof reason === "string") return reason.slice(0, MAX_REASON_CHARS);
   if (reason !== null && typeof reason === "object") {
     const name = reason.constructor?.name ?? "Object";
-    try {
-      return `${name}:${JSON.stringify(reason)}`;
-    } catch {
-      return name;
-    }
+    const keys = Object.keys(reason).sort().slice(0, 5).join(",");
+    return keys ? `${name}:{${keys}}` : name;
   }
-  return String(reason);
+  return String(reason).slice(0, MAX_REASON_CHARS);
 };
 
 const crashFingerprint = (error: unknown, componentStack = ""): string => {
@@ -86,7 +84,32 @@ class CrashBoundary extends React.Component<
   }
 
   render() {
-    return this.state.crashed ? null : this.props.children;
+    if (!this.state.crashed) return this.props.children;
+
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: 24,
+          background: "#f7f5f0",
+          color: "#181713",
+          fontFamily:
+            '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          textAlign: "center",
+        }}
+      >
+        <div>
+          <h1 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
+            Glimpse hit an error
+          </h1>
+          <p style={{ margin: "8px 0 0", fontSize: 14 }}>
+            Please restart the app.
+          </p>
+        </div>
+      </main>
+    );
   }
 }
 

@@ -505,6 +505,7 @@ export function useSettingsForm({
   const setLlmProvider = useCallback(
     (value: LlmProvider) => {
       setModelDiscovery(resetModelDiscovery);
+      setLlmModel("");
       setLlmProviderRaw(value);
     },
     [setModelDiscovery],
@@ -512,6 +513,7 @@ export function useSettingsForm({
   const setLlmEndpoint = useCallback(
     (value: string) => {
       setModelDiscovery(resetModelDiscovery);
+      setLlmModel("");
       setLlmEndpointRaw(value);
     },
     [setModelDiscovery],
@@ -519,6 +521,7 @@ export function useSettingsForm({
   const setLlmApiKey = useCallback(
     (value: string) => {
       setModelDiscovery(resetModelDiscovery);
+      setLlmModel("");
       setLlmApiKeyRaw(value);
     },
     [setModelDiscovery],
@@ -543,6 +546,7 @@ export function useSettingsForm({
     (value: string) => {
       setSpeechModelDiscovery(resetModelDiscovery);
       setRemoteSpeechApiKey(value);
+      setRemoteSpeechModel("auto");
     },
     [setSpeechModelDiscovery],
   );

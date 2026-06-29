@@ -882,10 +882,11 @@ fn transcribe_parakeet_chunked(
                 for (index, word) in converted.into_iter().enumerate() {
                     let start_ms = word.start_ms + offset;
                     let end_ms = word.end_ms + offset;
-                    match exact_skip {
-                        Some(skip) if index < skip => continue,
-                        None if end_ms <= chunk_word_floor => continue,
-                        _ => {}
+                    if matches!(exact_skip, Some(skip) if index < skip) {
+                        continue;
+                    }
+                    if end_ms <= chunk_word_floor {
+                        continue;
                     }
                     last_word_end_ms = last_word_end_ms.max(end_ms);
                     merged_words.push(TranscriptSegment {
