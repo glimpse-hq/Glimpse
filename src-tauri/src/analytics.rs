@@ -602,7 +602,8 @@ pub fn report_frontend_crash(
 }
 
 /// Maps a raw error message to a bounded, non-identifying reason code. Rules are
-/// checked in order, so earlier (more specific) categories win.
+/// checked in order, so earlier (more specific) categories win. Needles mirror
+/// the messages cpal, whisper-rs, parakeet-rs and glimpse-speech actually emit.
 pub fn classify_failure_reason(message: &str) -> &'static str {
     const RULES: &[(&str, &[&str])] = &[
         ("cancelled", &["cancel"]),
@@ -614,17 +615,78 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
             "unauthorized",
             &["unauthorized", "authentication", "api key"],
         ),
+        ("already_recording", &["already in progress"]),
+        ("device_busy", &["devicebusy", "temporarily busy"]),
+        (
+            "device_unavailable",
+            &[
+                "devicenotavailable",
+                "devicechanged",
+                "no default input device",
+                "device not found",
+                "disconnected",
+            ],
+        ),
+        (
+            "unsupported_audio_config",
+            &[
+                "unsupportedconfig",
+                "unsupportedoperation",
+                "invalidinput",
+                "input configuration",
+                "sample format",
+            ],
+        ),
+        (
+            "audio_backend",
+            &[
+                "backenderror",
+                "hostunavailable",
+                "resourceexhausted",
+                "streaminvalidated",
+                "coreaudio",
+                "wasapi",
+            ],
+        ),
         ("rate_limited", &["rate limit", "too many requests"]),
         ("quota_exceeded", &["quota", "billing"]),
         ("timeout", &["timeout", "timed out"]),
         ("network", &["network", "connect", "dns"]),
+        ("model_missing", &["not fully installed", "is missing"]),
+        (
+            "model_load",
+            &[
+                "did not load",
+                "whisper context",
+                "state pointer",
+                "load model",
+                "load system language model",
+            ],
+        ),
+        ("out_of_memory", &["out of memory", "alloc"]),
+        (
+            "inference",
+            &[
+                "encoder",
+                "decoder",
+                "evaluate model",
+                "generic whisper error",
+                "spectrogram",
+                "null pointer",
+                "onnx runtime",
+            ],
+        ),
         ("not_found", &["not found", "no such file"]),
-        ("no_speech", &["no speech", "empty"]),
-        ("model_error", &["model"]),
-        ("decode", &["decode", "ffmpeg"]),
+        (
+            "no_speech",
+            &["no speech", "empty", "no samples", "no audio"],
+        ),
+        ("decode", &["decode", "ffmpeg", "wav", "audio processing"]),
         ("verification", &["checksum", "verify"]),
         ("storage", &["disk", "write", "save", "storage"]),
         ("task_failed", &["task", "join"]),
+        ("lock_poisoned", &["poisoned"]),
+        ("model_error", &["model"]),
     ];
     let message = message.to_ascii_lowercase();
     RULES

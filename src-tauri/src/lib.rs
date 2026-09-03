@@ -1887,7 +1887,7 @@ pub(crate) fn persist_recording_async(
             analytics::track_recording_failed(
                 &app,
                 "persist",
-                analytics::classify_failure_reason(&err.to_string()),
+                analytics::classify_error(&err),
                 input,
             );
             emit_error(
@@ -1966,18 +1966,13 @@ pub(crate) fn persist_recording_async(
                 analytics::track_recording_failed(
                     &app,
                     "persist",
-                    analytics::classify_failure_reason(&err.to_string()),
+                    analytics::classify_error(&err),
                     input,
                 );
                 emit_error(&app, format!("Unable to save recording: {err}"));
             }
             Err(err) => {
-                analytics::track_recording_failed(
-                    &app,
-                    "persist",
-                    analytics::classify_failure_reason(&err.to_string()),
-                    input,
-                );
+                analytics::track_recording_failed(&app, "persist", "task_failed", input);
                 emit_error(&app, format!("Recording task failed: {err}"));
             }
         }

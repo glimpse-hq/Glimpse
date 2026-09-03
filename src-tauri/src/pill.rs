@@ -555,7 +555,7 @@ impl PillController {
                 crate::analytics::track_recording_failed(
                     app,
                     "start",
-                    crate::analytics::classify_failure_reason(&err.to_string()),
+                    crate::analytics::classify_error(&err),
                     microphone_input_kind(&settings),
                 );
                 self.reset_recording_state();

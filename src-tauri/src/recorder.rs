@@ -425,7 +425,7 @@ impl RecorderCore {
         };
         let config = device
             .default_input_config()
-            .context("No supported input configuration found")?;
+            .map_err(|err| cpal_error("No supported input configuration found", &err))?;
         let format = config.sample_format();
         let stream_config: cpal::StreamConfig = config.into();
         let sample_rate = stream_config.sample_rate;
@@ -441,36 +441,39 @@ impl RecorderCore {
         let armed = &self.armed;
         let stream = match format {
             SampleFormat::F32 => {
-                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::F64 => {
-                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I8 => {
-                build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I16 => {
-                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I24 => {
-                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I32 => {
-                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::U8 => {
-                build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::U16 => {
-                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::U32 => {
-                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum, armed)
             }
             other => return Err(anyhow!("Unsupported sample format: {other}")),
-        };
+        }
+        .map_err(|err| cpal_error("Failed to open input stream", &err))?;
 
-        stream.play()?;
+        stream
+            .play()
+            .map_err(|err| cpal_error("Failed to start input stream", &err))?;
 
         *self.live_buffer.lock() = Some(LiveBufferState {
             buffer: Arc::clone(&buffer),
@@ -1341,6 +1344,12 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
         output.push(sample as f32);
     }
     output
+}
+
+// cpal's Display shows only the backend message when one is present, so the
+// kind (DeviceBusy, PermissionDenied, ...) has to be spelled out here.
+fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
+    anyhow!("{what} ({:?}): {err}", err.kind())
 }
 
 fn build_mic_stream<T>(
