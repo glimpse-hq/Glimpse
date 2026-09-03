@@ -1,8 +1,8 @@
 1.1.4
 
-### Fixes
+### Improvements
 
-- When a recording or transcription fails, the anonymous failure report now says which kind of problem it was (microphone busy or disconnected, model failed to load, and so on) instead of "unknown". Only a category is sent, never the error text.
+- Failed recordings and transcriptions now report which kind of problem it was (microphone busy or disconnected, model failed to load, and so on) instead of "unknown", so edge cases can be found and fixed. Only a category is sent, never the error text.
 
 ---
 

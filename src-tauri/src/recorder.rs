@@ -1346,8 +1346,7 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     output
 }
 
-// cpal's Display shows only the backend message when one is present, so the
-// kind (DeviceBusy, PermissionDenied, ...) has to be spelled out here.
+// cpal's Display drops the kind when a backend message is present.
 fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
     anyhow!("{what} ({:?}): {err}", err.kind())
 }

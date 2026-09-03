@@ -602,8 +602,7 @@ pub fn report_frontend_crash(
 }
 
 /// Maps a raw error message to a bounded, non-identifying reason code. Rules are
-/// checked in order, so earlier (more specific) categories win. Needles mirror
-/// the messages cpal, whisper-rs, parakeet-rs and glimpse-speech actually emit.
+/// checked in order, so earlier (more specific) categories win.
 pub fn classify_failure_reason(message: &str) -> &'static str {
     const RULES: &[(&str, &[&str])] = &[
         ("cancelled", &["cancel"]),
