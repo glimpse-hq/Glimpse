@@ -7,7 +7,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
-import { looksLikeDiscountCode } from "../../license/licenseKeyShape";
+import { classifyActivationInput } from "../../license/licenseKeyShape";
 import type { LicenseState } from "../../license/api";
 import type { PurchaseTier } from "../../license/purchaseConfig";
 
@@ -22,6 +22,7 @@ type AccountViewProps = {
   openError: string | null;
   activationError: string | null;
   deactivationError: string | null;
+  checkoutReturned: boolean;
   onOpenCheckout: (tier: PurchaseTier) => void;
   onActivateLicense: (key: string) => void;
   onDeactivateLicense: () => void;
@@ -41,6 +42,7 @@ const AccountView = ({
   openError,
   activationError,
   deactivationError,
+  checkoutReturned,
   onOpenCheckout,
   onActivateLicense,
   onDeactivateLicense,
@@ -77,14 +79,27 @@ const AccountView = ({
     onActivateLicense(trimmedKey);
   };
 
-  const activationErrorText =
-    activationError && looksLikeDiscountCode(attemptedKey)
-      ? t({
+  const activationErrorText = (() => {
+    if (!activationError) return null;
+    switch (classifyActivationInput(attemptedKey)) {
+      case "order_id":
+        return t`That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_.`;
+      case "masked_key":
+        return t`That is the shortened key. Copy the full one from your Polar purchases page.`;
+      case "discount_code":
+        return t({
           id: "settings.account.activate.discount_code_error",
           message:
             "That looks like a discount code. Enter it at checkout, then paste the license key from your receipt.",
-        })
-      : activationError;
+        });
+      default:
+        return activationError;
+    }
+  })();
+
+  const activationHintText = checkoutReturned
+    ? t`Polar emailed your license key. Paste it here, or paste the whole email.`
+    : null;
 
   const handleDeactivateClick = () => {
     if (confirmDeactivate) {
@@ -264,6 +279,7 @@ const AccountView = ({
             className="mt-3 flex items-center gap-2 border-b border-border-secondary transition-colors focus-within:border-content-primary"
           >
             <input
+              autoFocus={checkoutReturned}
               value={licenseKey}
               onChange={(event) => setLicenseKey(event.target.value)}
               placeholder={t({
@@ -291,8 +307,10 @@ const AccountView = ({
               {!activating && <ArrowRight size={12} aria-hidden="true" />}
             </button>
           </form>
-          <p className="mt-2 min-h-10 ui-text-meta text-error text-pretty">
-            {activationErrorText}
+          <p
+            className={`mt-2 min-h-10 ui-text-meta text-pretty ${activationErrorText ? "text-error" : "ui-color-muted"}`}
+          >
+            {activationErrorText ?? activationHintText}
           </p>
         </section>
       )}

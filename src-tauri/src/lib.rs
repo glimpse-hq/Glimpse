@@ -688,6 +688,7 @@ pub fn run() {
             analytics::track_onboarding_step_viewed,
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
+            analytics::track_gate_blocked,
             fetch_llm_models,
             apple_llm_availability,
             fetch_remote_speech_models,
@@ -1429,17 +1430,20 @@ async fn activate_license(
     state: tauri::State<'_, AppState>,
     args: license::ActivateLicenseArgs,
 ) -> Result<license::LicenseState, String> {
+    let input_shape = analytics::activation_input_shape(&args.key);
+    let trial_day = license::trial_day(&state.settings_store).ok();
     match license::activate_license(state.http(), &state.settings_store, args).await {
         Ok(license_state) => {
             note_license_state(&app, &state, &license_state);
             analytics::track_license_activated(
                 &app,
                 license_state.edition.map(|edition| edition.as_str()),
+                trial_day,
             );
             Ok(license_state)
         }
         Err(err) => {
-            analytics::track_license_activation_failed(&app, &err);
+            analytics::track_license_activation_failed(&app, &err, input_shape);
             Err(err)
         }
     }

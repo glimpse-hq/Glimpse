@@ -125,6 +125,9 @@ const StaticGlimpseLogo = ({
   );
 };
 
+const gatedFeatureName = (view: "brain" | "library") =>
+  view === "brain" ? "personalization" : "library";
+
 const Home = () => {
   const { t } = useLingui();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -209,9 +212,14 @@ const Home = () => {
   }, [licenseGateActive, licenseState]);
 
   const openAccountSettings = useCallback(
-    (source: PurchaseSource = "settings_account") => {
+    (source: PurchaseSource = "settings_account", lockedFeature?: string) => {
       if (source !== "settings_account") {
         void invoke("track_paywall_clicked", { source }).catch(() => {});
+      }
+      if (lockedFeature) {
+        void invoke("track_gate_blocked", { feature: lockedFeature }).catch(
+          () => {},
+        );
       }
       setAccountSource(source);
       setSettingsTab("account");
@@ -230,7 +238,7 @@ const Home = () => {
       const view = pendingGatedViewRef.current;
       pendingGatedViewRef.current = null;
       if (licenseGateActive) setActiveView(view);
-      else openAccountSettings("sidebar_lock");
+      else openAccountSettings("sidebar_lock", gatedFeatureName(view));
     }
     if (
       !licenseGateActive &&
@@ -349,7 +357,7 @@ const Home = () => {
         } else if (licenseGateActiveRef.current) {
           setActiveView(view);
         } else {
-          openAccountSettings("sidebar_lock");
+          openAccountSettings("sidebar_lock", gatedFeatureName(view));
         }
       }).then((fn) => {
         if (cancelled) fn();
@@ -436,6 +444,7 @@ const Home = () => {
       .catch(() => {});
 
     listen("license:checkout-returned", () => {
+      setAccountSource("checkout_return");
       setSettingsTab("account");
       setIsSettingsOpen(true);
     })
@@ -606,7 +615,7 @@ const Home = () => {
                           lockedHint={lockedHint}
                           onClick={() =>
                             locked
-                              ? openAccountSettings("sidebar_lock")
+                              ? openAccountSettings("sidebar_lock", paneDef.id)
                               : setSettingsTab(paneDef.id)
                           }
                         />
@@ -650,7 +659,7 @@ const Home = () => {
                   onClick={() =>
                     licenseGateActive
                       ? setActiveView("brain")
-                      : openAccountSettings("sidebar_lock")
+                      : openAccountSettings("sidebar_lock", "personalization")
                   }
                 />
                 <SidebarItem
@@ -666,7 +675,7 @@ const Home = () => {
                   onClick={() =>
                     licenseGateActive
                       ? setActiveView("library")
-                      : openAccountSettings("sidebar_lock")
+                      : openAccountSettings("sidebar_lock", "library")
                   }
                 />
               </>

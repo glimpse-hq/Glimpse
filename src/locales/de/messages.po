@@ -3319,6 +3319,10 @@ msgstr "Personalisierung"
 msgid "library.modal.play_audio"
 msgstr "Audio wiedergeben"
 
+#: src/features/settings/components/AccountView.tsx
+msgid "Polar emailed your license key. Paste it here, or paste the whole email."
+msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
@@ -4355,6 +4359,14 @@ msgstr "Vielen Dank für deine Unterstützung von Glimpse"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.duplicate"
 msgstr "Diese Domain wurde bereits hinzugefügt."
+
+#: src/features/settings/components/AccountView.tsx
+msgid "That is the shortened key. Copy the full one from your Polar purchases page."
+msgstr ""
+
+#: src/features/settings/components/AccountView.tsx
+msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

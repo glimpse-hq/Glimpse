@@ -322,6 +322,27 @@ pub fn track_dictation_discarded(app: &tauri::AppHandle<AppRuntime>, reason: &st
     capture_event(app, "dictation_discarded", json!({ "reason": reason }));
 }
 
+/// Same as above with the audio length as a bucket, to tell accidental taps
+/// from speech the model returned nothing for.
+pub fn track_dictation_discarded_with_length(
+    app: &tauri::AppHandle<AppRuntime>,
+    reason: &str,
+    audio_seconds: Option<f32>,
+) {
+    let audio_length = match audio_seconds {
+        None => "unknown",
+        Some(s) if s < 1.0 => "under_1s",
+        Some(s) if s < 3.0 => "1_to_3s",
+        Some(s) if s < 10.0 => "3_to_10s",
+        Some(_) => "over_10s",
+    };
+    capture_event(
+        app,
+        "dictation_discarded",
+        json!({ "reason": reason, "audio_length": audio_length }),
+    );
+}
+
 /// Records a bounded onboarding screen identifier without form contents.
 #[tauri::command]
 pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: String) {
@@ -364,24 +385,68 @@ pub fn track_trial_expired(app: &tauri::AppHandle<AppRuntime>) {
     capture_event(app, "trial_expired", json!({}));
 }
 
-/// Records that a license was activated, and which edition it granted.
-/// The key itself is never recorded.
-pub fn track_license_activated(app: &tauri::AppHandle<AppRuntime>, edition: Option<&str>) {
+/// Records that a license was activated, which edition it granted, and on
+/// which day of the trial. The key itself is never recorded.
+pub fn track_license_activated(
+    app: &tauri::AppHandle<AppRuntime>,
+    edition: Option<&str>,
+    trial_day: Option<i64>,
+) {
     capture_event(
         app,
         "license_activated",
-        json!({ "edition": edition.unwrap_or("unknown") }),
+        json!({ "edition": edition.unwrap_or("unknown"), "trial_day": trial_day }),
     );
 }
 
-/// Records that an activation attempt failed, as a bounded reason.
-/// The key that was typed is never recorded.
-pub fn track_license_activation_failed(app: &tauri::AppHandle<AppRuntime>, message: &str) {
+/// Records that an activation attempt failed, as a bounded reason plus what
+/// the typed text looked like. The text itself is never recorded.
+pub fn track_license_activation_failed(
+    app: &tauri::AppHandle<AppRuntime>,
+    message: &str,
+    input_shape: &'static str,
+) {
     capture_event(
         app,
         "license_activation_failed",
-        json!({ "reason": classify_activation_failure(message) }),
+        json!({ "reason": classify_activation_failure(message), "input_shape": input_shape }),
     );
+}
+
+/// Classifies activation input by shape only: a key, a Polar order id (a bare
+/// UUID), the masked key from the portal, a discount code, or something else.
+pub fn activation_input_shape(raw: &str) -> &'static str {
+    let trimmed = raw.trim();
+    if crate::license::find_license_key(trimmed).is_some() {
+        return "key";
+    }
+    let is_uuid = trimmed.len() == 36
+        && trimmed.split('-').map(str::len).eq([8, 4, 4, 4, 12])
+        && trimmed.chars().all(|c| c == '-' || c.is_ascii_hexdigit());
+    if is_uuid {
+        "order_id"
+    } else if trimmed.contains('*') {
+        "masked_key"
+    } else if trimmed.len() <= 24 && trimmed.matches('-').count() < 2 {
+        "discount_code"
+    } else {
+        "unknown"
+    }
+}
+
+/// Records that the checkout deep link brought the user back into the app.
+pub fn track_checkout_returned(app: &tauri::AppHandle<AppRuntime>) {
+    capture_event(app, "checkout_returned", json!({}));
+}
+
+/// Records which locked feature an unlicensed user ran into.
+#[tauri::command]
+pub fn track_gate_blocked(app: tauri::AppHandle<AppRuntime>, feature: String) {
+    let feature = match feature.as_str() {
+        "personalization" | "library" | "cleanup" | "providers" | "api" => feature.as_str(),
+        _ => "other",
+    };
+    capture_event(&app, "gate_blocked", json!({ "feature": feature }));
 }
 
 /// Maps an activation error onto a fixed set, so a typed key can never

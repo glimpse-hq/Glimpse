@@ -2,6 +2,8 @@
 
 ### Improvements
 
+- After buying, the Account screen now says where your license key is and focuses the field. You can paste the whole email from Polar, and pasting the order number instead of the key now tells you which one to copy.
+- A few more anonymous categories are reported when analytics is on: how long a discarded empty recording was, which locked feature was clicked after the trial, and on which trial day a license was activated. Never audio, text or keys.
 - Failed recordings and transcriptions now report which kind of problem it was (microphone busy or disconnected, model failed to load, and so on) instead of "unknown", so edge cases can be found and fixed. Only a category is sent, never the error text.
 
 ---
