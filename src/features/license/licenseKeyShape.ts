@@ -21,9 +21,9 @@ export function classifyActivationInput(value: string): ActivationInputShape {
   return "unknown";
 }
 
+// One short uppercase token like LAUNCH20 or SAVE-10, never a sentence.
 export function looksLikeDiscountCode(value: string): boolean {
   const trimmed = value.trim();
-  if (trimmed.length === 0) return false;
-  const hyphens = trimmed.split("-").length - 1;
-  return trimmed.length <= 24 && hyphens < 2;
+  if (!/^[A-Z0-9_-]{3,24}$/.test(trimmed)) return false;
+  return trimmed.split("-").length - 1 < 2;
 }

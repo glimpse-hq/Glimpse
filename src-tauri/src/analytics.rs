@@ -427,7 +427,12 @@ pub fn activation_input_shape(raw: &str) -> &'static str {
         "order_id"
     } else if trimmed.contains('*') {
         "masked_key"
-    } else if trimmed.len() <= 24 && trimmed.matches('-').count() < 2 {
+    } else if (3..=24).contains(&trimmed.len())
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_' || c == '-')
+        && trimmed.matches('-').count() < 2
+    {
         "discount_code"
     } else {
         "unknown"
