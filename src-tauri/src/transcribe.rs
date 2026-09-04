@@ -1069,6 +1069,14 @@ fn emit_transcription_complete_with_cleanup(
         match save_result {
             Ok(record) => {
                 discard_pending_recording(pending_path.as_deref());
+                if let Ok(stats) = app.state::<AppState>().storage().lifetime_stats() {
+                    let added = u64::from(count_words(&final_transcript));
+                    crate::toast::show_word_milestone(
+                        app,
+                        stats.words.saturating_sub(added),
+                        stats.words,
+                    );
+                }
                 (Some(record), true)
             }
             Err(err) => {

@@ -169,18 +169,43 @@ pub fn debug_show_toast(
     );
 }
 
-#[allow(dead_code)]
-#[tauri::command]
-pub fn show_celebration_toast(app: AppHandle<AppRuntime>) {
+/// Lifetime word counts that earn a celebration toast.
+pub const WORD_MILESTONES: [u64; 4] = [1_000, 10_000, 100_000, 1_000_000];
+
+/// Celebrates the highest milestone crossed between `before` and `after` lifetime words.
+pub fn show_word_milestone(app: &AppHandle<AppRuntime>, before: u64, after: u64) {
+    let Some(milestone) = WORD_MILESTONES
+        .iter()
+        .rev()
+        .find(|m| before < **m && **m <= after)
+    else {
+        return;
+    };
+    let settings = app.state::<AppState>().current_settings();
+    let strings = crate::native_i18n::MenuStrings::resolve(&settings);
     emit_toast(
-        &app,
+        app,
         Payload {
             toast_type: "celebration".to_string(),
-            title: Some("Upgrade Complete!".to_string()),
-            message: "Welcome to Glimpse Cloud!".to_string(),
+            message: strings.format(
+                "native.toast.milestone",
+                &[("count", &format_thousands(*milestone))],
+            ),
             auto_dismiss: Some(true),
             duration: Some(6000),
             ..Default::default()
         },
     );
+}
+
+fn format_thousands(value: u64) -> String {
+    let digits = value.to_string();
+    let mut out = String::with_capacity(digits.len() + digits.len() / 3);
+    for (i, ch) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i) % 3 == 0 {
+            out.push(',');
+        }
+        out.push(ch);
+    }
+    out
 }

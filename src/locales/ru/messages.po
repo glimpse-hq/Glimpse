@@ -174,6 +174,10 @@ msgstr ""
 #~ msgstr "Умное сочетание клавиш"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -317,6 +321,11 @@ msgstr "{0} слов продиктовано — ни одного не нап�
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Около # слова на диктовку сегодня} other {Около # слов на диктовку сегодня}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.milestone"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
