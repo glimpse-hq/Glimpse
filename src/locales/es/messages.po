@@ -174,10 +174,6 @@ msgstr ""
 #~ msgstr "Atajo inteligente"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -2739,6 +2735,11 @@ msgstr "Acceso al micrófono para grabar tu voz y acceso a Accesibilidad para in
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Se denegó el acceso al micrófono."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_removed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

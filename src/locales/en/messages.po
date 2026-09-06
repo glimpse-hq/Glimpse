@@ -174,10 +174,6 @@ msgstr ""
 #~ msgstr "Smart shortcut"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -2739,6 +2735,11 @@ msgstr "Microphone access to record your voice, and Accessibility access to inse
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Microphone access was denied."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_removed"
+msgstr "Microphone disconnected. Recording stopped and saved to Library."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

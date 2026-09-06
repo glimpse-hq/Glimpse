@@ -122,6 +122,7 @@ pub(crate) struct StreamingTranscriptionInput {
     pub(crate) pending_path: Option<PathBuf>,
     pub(crate) settings: UserSettings,
     pub(crate) temporary: bool,
+    pub(crate) auto_paste: bool,
     pub(crate) cancel_token: CancellationToken,
 }
 
@@ -131,6 +132,7 @@ pub(crate) fn queue_transcription(
     recording: CompletedRecording,
     settings: UserSettings,
     temporary: bool,
+    auto_paste: bool,
     cancel_token: CancellationToken,
 ) {
     let state = app.state::<AppState>();
@@ -149,7 +151,7 @@ pub(crate) fn queue_transcription(
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
 
-        let auto_paste = transcription_api::auto_paste_enabled();
+        let auto_paste = auto_paste && transcription_api::auto_paste_enabled();
 
         tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
         accessibility_context::log_active_context();
@@ -1813,6 +1815,7 @@ pub(crate) fn finalize_streaming_transcription(
         pending_path,
         settings,
         temporary,
+        auto_paste,
         cancel_token,
     } = input;
 
@@ -1825,7 +1828,7 @@ pub(crate) fn finalize_streaming_transcription(
         let transcription_started_at = Instant::now();
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
-        let auto_paste = transcription_api::auto_paste_enabled();
+        let auto_paste = auto_paste && transcription_api::auto_paste_enabled();
         let active_mode = mode_context::resolve_active_personality(&settings);
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
 

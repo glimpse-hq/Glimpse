@@ -694,6 +694,31 @@ impl PillController {
     }
 
     fn stop_and_process(&self, app: &AppHandle<AppRuntime>) {
+        self.stop_and_process_inner(app, true);
+    }
+
+    /// Ends the recording when the microphone it opened is unplugged. The
+    /// transcript is cut short, so it goes to Library without pasting.
+    #[cfg(target_os = "macos")]
+    pub fn stop_if_input_device_removed(&self, app: &AppHandle<AppRuntime>) {
+        if self.status() != PillStatus::Listening
+            || !self.is_recording()
+            || self.recorder.active_device_present() != Some(false)
+        {
+            return;
+        }
+        tracing::warn!("[Pill] Input device removed mid-recording");
+        self.clear_hold_state();
+        toast::show(
+            app,
+            "warning",
+            None,
+            &toast::native(app, "native.toast.mic_removed"),
+        );
+        self.stop_and_process_inner(app, false);
+    }
+
+    fn stop_and_process_inner(&self, app: &AppHandle<AppRuntime>, auto_paste: bool) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
         let settings = self
@@ -749,6 +774,7 @@ impl PillController {
                                 recording,
                                 settings_for_transcription,
                                 recording_options.temporary,
+                                auto_paste,
                                 cancel_token,
                             );
                             return;
@@ -780,6 +806,7 @@ impl PillController {
                                 pending_path: saved.pending_path,
                                 settings: settings_for_transcription,
                                 temporary: recording_options.temporary,
+                                auto_paste,
                                 cancel_token,
                             },
                         );
@@ -828,6 +855,7 @@ impl PillController {
                             recording,
                             settings_for_transcription,
                             recording_options.temporary,
+                            auto_paste,
                             cancel_token,
                         );
                     }

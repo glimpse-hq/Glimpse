@@ -174,10 +174,6 @@ msgstr ""
 #~ msgstr "Raccourci intelligent"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -2739,6 +2735,11 @@ msgstr "L'accès au microphone est nécessaire pour enregistrer votre voix, et l
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "L'accès au microphone a été refusé."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_removed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

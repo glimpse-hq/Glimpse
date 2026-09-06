@@ -174,10 +174,6 @@ msgstr ""
 #~ msgstr "स्मार्ट शॉर्टकट"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -2739,6 +2735,11 @@ msgstr "आपकी आवाज़ रिकॉर्ड करने के �
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "माइक्रोफ़ोन का एक्सेस अस्वीकृत कर दिया गया।"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_removed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

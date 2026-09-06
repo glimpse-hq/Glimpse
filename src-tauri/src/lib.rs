@@ -1878,6 +1878,7 @@ pub(crate) fn persist_recording_async(
     recording: CompletedRecording,
     settings: settings::UserSettings,
     temporary: bool,
+    auto_paste: bool,
     cancel_token: CancellationToken,
 ) {
     let input = if settings.microphone_device.is_some() {
@@ -1964,6 +1965,7 @@ pub(crate) fn persist_recording_async(
                 recording,
                 settings,
                 temporary,
+                auto_paste,
                 cancel_token,
             ),
             Ok(Err(err)) => {

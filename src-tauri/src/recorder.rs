@@ -84,6 +84,7 @@ pub struct RecorderManager {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
 
 type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
@@ -213,9 +214,11 @@ impl Default for RecorderManager {
         let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
         let live_buffer = Arc::new(Mutex::new(None));
         let armed = Arc::new(AtomicBool::new(false));
+        let active_device = Arc::new(Mutex::new(None));
         let spectrum_for_thread = Arc::clone(&spectrum);
         let live_buffer_for_thread = Arc::clone(&live_buffer);
         let armed_for_thread = Arc::clone(&armed);
+        let active_device_for_thread = Arc::clone(&active_device);
 
         std::thread::Builder::new()
             .name("glimpse-recorder".into())
@@ -224,6 +227,7 @@ impl Default for RecorderManager {
                     spectrum_for_thread,
                     live_buffer_for_thread,
                     armed_for_thread,
+                    active_device_for_thread,
                 );
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
@@ -251,6 +255,7 @@ impl Default for RecorderManager {
             spectrum,
             live_buffer,
             armed,
+            active_device,
         }
     }
 }
@@ -262,6 +267,14 @@ impl RecorderManager {
 
     pub fn arm(&self) {
         self.armed.store(true, Ordering::Relaxed);
+    }
+
+    /// Whether the device the active recording opened is still attached.
+    /// `None` when nothing is recording or the device has no stable id.
+    #[cfg(target_os = "macos")]
+    pub fn active_device_present(&self) -> Option<bool> {
+        let id = self.active_device.lock().clone()?;
+        Some(cpal::default_host().device_by_id(&id).is_some())
     }
 
     pub fn spectrum_snapshot(&self) -> Option<Vec<f32>> {
@@ -374,6 +387,7 @@ struct RecorderCore {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
 
 impl RecorderCore {
@@ -381,12 +395,14 @@ impl RecorderCore {
         spectrum: Arc<Mutex<AudioSpectrumState>>,
         live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
         armed: Arc<AtomicBool>,
+        active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
     ) -> Self {
         Self {
             active: None,
             spectrum,
             live_buffer,
             armed,
+            active_device,
         }
     }
 
@@ -480,6 +496,7 @@ impl RecorderCore {
             sample_rate,
             channels,
         });
+        *self.active_device.lock() = device.id().ok();
 
         let started_at = Local::now();
         let pending = pending_dir.and_then(|dir| {
@@ -511,6 +528,7 @@ impl RecorderCore {
         discard_pending: bool,
     ) -> Result<Option<CompletedRecording>> {
         *self.live_buffer.lock() = None;
+        *self.active_device.lock() = None;
         self.spectrum.lock().reset();
         match self.active.take() {
             Some(mut active) => {

@@ -174,10 +174,6 @@ msgstr ""
 #~ msgstr "Slimme sneltoets"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -2739,6 +2735,11 @@ msgstr "Microfoontoegang om je stem op te nemen, en Toegankelijkheidstoegang om 
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Toegang tot de microfoon is geweigerd."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_removed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

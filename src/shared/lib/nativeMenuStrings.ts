@@ -69,6 +69,10 @@ export const NATIVE_MENU_STRINGS = [
   }),
   msg({ id: "native.toast.cancelled", message: "Transcription cancelled" }),
   msg({
+    id: "native.toast.mic_removed",
+    message: "Microphone disconnected. Recording stopped and saved to Library.",
+  }),
+  msg({
     id: "native.toast.milestone",
     message: "{count} words dictated with Glimpse!",
   }),
