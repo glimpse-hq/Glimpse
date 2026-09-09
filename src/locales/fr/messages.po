@@ -321,7 +321,7 @@ msgstr "{avg, plural, one {Environ # mot par dictée aujourd'hui} other {Environ
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.milestone"
-msgstr ""
+msgstr "{count} mots dictés avec Glimpse !"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -920,7 +920,7 @@ msgstr "Annuler le téléchargement"
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.cancel_shortcut_aria"
-msgstr ""
+msgstr "Annuler le changement de raccourci"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -931,7 +931,7 @@ msgstr "Annulé"
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.edit_shortcut_aria"
-msgstr ""
+msgstr "Modifier le raccourci"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2206,7 +2206,7 @@ msgstr "GLIMPSE_…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
-msgstr ""
+msgstr "Vous pouvez parler."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeGreeting.ts
@@ -2266,7 +2266,7 @@ msgstr "Maintenir"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_empty_body"
-msgstr ""
+msgstr "Maintenez un peu plus longtemps, puis réessayez."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2276,7 +2276,7 @@ msgstr "Maintenir pour supprimer"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.hold"
-msgstr ""
+msgstr "Maintenir pour dicter"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2463,7 +2463,7 @@ msgstr "Conserver une copie dans le dossier de la bibliothèque"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
-msgstr ""
+msgstr "Continuez à maintenir, puis relâchez lorsque vous avez terminé."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2593,7 +2593,7 @@ msgstr "Écoute en cours…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.listening"
-msgstr ""
+msgstr "Écoute en cours…"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2739,7 +2739,7 @@ msgstr "L'accès au microphone a été refusé."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_removed"
-msgstr ""
+msgstr "Microphone déconnecté. L'enregistrement a été arrêté et sauvegardé dans l'historique."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3112,7 +3112,7 @@ msgstr "Aucun site web ajouté"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_empty"
-msgstr ""
+msgstr "Aucun mot n'a été capté."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3332,7 +3332,7 @@ msgstr "Lire l'audio"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint"
-msgstr ""
+msgstr "Polar vous a envoyé votre clé de licence par e-mail. Collez-la ici, ou collez l'e-mail entier."
 
 #: src/features/settings/components/AccountView.tsx
 #~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
@@ -3387,17 +3387,17 @@ msgstr "Appuyez sur Entrée pour enregistrer · Échap pour annuler"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.v5"
-msgstr ""
+msgstr "Appuyez sur le raccourci ci-dessus, ou maintenez le bouton ci-dessous."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.capture"
-msgstr ""
+msgstr "Appuyez sur le raccourci souhaité."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.subtitle.v5"
-msgstr ""
+msgstr "Appuyez sur ce raccourci et lisez la ligne ci-dessous."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -4033,7 +4033,7 @@ msgstr "Partager"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.shortcut.v2"
-msgstr ""
+msgstr "Raccourci"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4163,7 +4163,7 @@ msgstr "Parole"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.model.v2"
-msgstr ""
+msgstr "Modèle vocal"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4378,7 +4378,7 @@ msgstr "Ce domaine est déjà ajouté"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error"
-msgstr ""
+msgstr "Il s'agit de la clé abrégée. Copiez la version complète depuis votre page d'achats Polar."
 
 #: src/features/settings/components/AccountView.tsx
 #~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
@@ -4387,7 +4387,7 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error"
-msgstr ""
+msgstr "Il s'agit de votre numéro de commande. La clé de licence se trouve dans le même e-mail de Polar et commence par GLIMPSE_."
 
 #: src/features/settings/components/AccountView.tsx
 #~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
@@ -4567,7 +4567,7 @@ msgstr "Total"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.transcribing"
-msgstr ""
+msgstr "Transcription en cours..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
