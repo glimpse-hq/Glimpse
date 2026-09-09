@@ -4,11 +4,7 @@ const LICENSE_KEY = new RegExp(`[a-z]+_${UUID}`, "i");
 const BARE_UUID = new RegExp(`^${UUID}$`, "i");
 
 export type ActivationInputShape =
-  | "key"
-  | "order_id"
-  | "masked_key"
-  | "discount_code"
-  | "unknown";
+  "key" | "order_id" | "masked_key" | "discount_code" | "unknown";
 
 // The backend pulls the key out of whatever was pasted, so this only has to
 // explain a failure in terms of what the text looks like.
