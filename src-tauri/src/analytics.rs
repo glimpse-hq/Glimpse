@@ -3,7 +3,7 @@
 // notes in plain English exactly what it records.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use serde_json::json;
 use tauri::Manager;
@@ -252,9 +252,27 @@ pub fn track_analytics_opt_out(app: &tauri::AppHandle<AppRuntime>) {
     }
 }
 
-/// Records that you opened the app (fires on every launch).
+/// Records that you opened the app (fires on every launch). Also refreshes
+/// your profile with license status, the selected speech model, and lifetime
+/// dictation counts so usage can be compared across those groups.
 pub fn track_app_started(app: &tauri::AppHandle<AppRuntime>) {
-    capture_event(app, "app_started", json!({}));
+    let Some(mut event) = build_event(app, "app_started", json!({}), true) else {
+        return;
+    };
+    let state = app.state::<AppState>();
+    let license = state.license_snapshot();
+    let stats = state.storage().lifetime_stats().ok();
+    let _ = event.insert_prop(
+        "$set",
+        json!({
+            "license_status": license.as_ref().map(|l| l.status),
+            "license_edition": license.as_ref().and_then(|l| l.edition),
+            "speech_model": crate::speech::selected_model(&state.current_settings()),
+            "lifetime_words": stats.as_ref().map(|s| s.words),
+            "lifetime_dictations": stats.as_ref().map(|s| s.dictations),
+        }),
+    );
+    posthog_rs::capture(event);
 }
 
 /// Records the very first time you ever run the app, once per install.
@@ -316,15 +334,10 @@ pub fn track_transcription_failed(
     );
 }
 
-/// Records a dictation the app threw away before it reached you, as a bounded
-/// reason code. Never records audio, timings, or transcript content.
-pub fn track_dictation_discarded(app: &tauri::AppHandle<AppRuntime>, reason: &str) {
-    capture_event(app, "dictation_discarded", json!({ "reason": reason }));
-}
-
-/// Same as above with the audio length as a bucket, to tell accidental taps
-/// from speech the model returned nothing for.
-pub fn track_dictation_discarded_with_length(
+/// Records a dictation the app threw away before it reached you: a bounded
+/// reason code, the audio length as a bucket, and the speech model. Never
+/// records audio or transcript content.
+pub fn track_dictation_discarded(
     app: &tauri::AppHandle<AppRuntime>,
     reason: &str,
     audio_seconds: Option<f32>,
@@ -336,11 +349,59 @@ pub fn track_dictation_discarded_with_length(
         Some(s) if s < 10.0 => "3_to_10s",
         Some(_) => "over_10s",
     };
+    let model = crate::speech::selected_model(&app.state::<AppState>().current_settings());
     capture_event(
         app,
         "dictation_discarded",
-        json!({ "reason": reason, "audio_length": audio_length }),
+        json!({ "reason": reason, "audio_length": audio_length, "model": model }),
     );
+}
+
+const KEY_FIRST_DICTATION_REPORTED: &str = "analytics_first_dictation_reported";
+// Keeps the store read off the keypress path after the first check.
+static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
+
+/// Records the very first time you press a dictation shortcut, once per
+/// install, with a bounded outcome: recording started, the microphone was
+/// blocked, or the device failed to open.
+pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
+    if FIRST_DICTATION_REPORTED.swap(true, Ordering::Relaxed) {
+        return;
+    }
+    let store = &app.state::<AppState>().settings_store;
+    let already = store
+        .read_app_value::<String>(KEY_FIRST_DICTATION_REPORTED, String::new())
+        .map(|v| !v.is_empty())
+        .unwrap_or(true);
+    if already
+        || store
+            .write_app_value(KEY_FIRST_DICTATION_REPORTED, &"1".to_string())
+            .is_err()
+    {
+        return;
+    }
+    capture_event(
+        app,
+        "first_dictation_attempted",
+        json!({ "outcome": outcome }),
+    );
+}
+
+/// Records that a bounded feature was used, never what it was used with.
+pub fn track_feature_used(app: &tauri::AppHandle<AppRuntime>, feature: &str) {
+    let feature = match feature {
+        "dictionary" | "replacements" | "personalities" | "import" | "library" | "local_api" => {
+            feature
+        }
+        _ => "other",
+    };
+    capture_event(app, "feature_used", json!({ "feature": feature }));
+}
+
+/// Frontend entry for `track_feature_used`.
+#[tauri::command]
+pub fn track_feature_used_command(app: tauri::AppHandle<AppRuntime>, feature: String) {
+    track_feature_used(&app, &feature);
 }
 
 /// Records a bounded onboarding screen identifier without form contents.
@@ -783,7 +844,8 @@ pub fn canonical_shortcut(shortcut: &str) -> String {
 }
 
 /// Records that you finished the first-run setup, which dictation shortcut
-/// you ended up on, and whether you completed the practice dictation.
+/// you ended up on, whether you completed the practice dictation, and whether
+/// the microphone and accessibility permissions were granted at that point.
 pub fn track_onboarding_completed(
     app: &tauri::AppHandle<AppRuntime>,
     smart_shortcut: &str,
@@ -795,6 +857,8 @@ pub fn track_onboarding_completed(
         json!({
             "smart_shortcut": smart_shortcut,
             "first_dictation": first_dictation,
+            "mic_granted": crate::permissions::check_microphone_permission(),
+            "accessibility_granted": crate::permissions::check_accessibility_permission(),
         }),
     );
 }

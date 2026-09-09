@@ -137,6 +137,12 @@ const Home = () => {
     useState<PurchaseSource>("settings_account");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>("home");
+  useEffect(() => {
+    if (activeView !== "library") return;
+    void invoke("track_feature_used_command", { feature: "library" }).catch(
+      () => {},
+    );
+  }, [activeView]);
   const licenseGateActive = useLicenseGate();
   const { data: licenseState } = useLicenseState();
   const activeLicense = licenseState?.status === "active";

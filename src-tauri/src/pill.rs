@@ -503,6 +503,7 @@ impl PillController {
         options: hotkeys::ShortcutOptions,
     ) -> bool {
         if !check_mic_permission(app) {
+            crate::analytics::track_first_dictation_attempted(app, "mic_blocked");
             return false;
         }
 
@@ -530,6 +531,7 @@ impl PillController {
             .start(settings.microphone_device.clone(), pending_dir)
         {
             Ok(started) => {
+                crate::analytics::track_first_dictation_attempted(app, "started");
                 // The gate above trusts a cached grant; re-check now that the
                 // keypress is served, so a revoked grant is caught next press.
                 #[cfg(target_os = "macos")]
@@ -552,6 +554,7 @@ impl PillController {
                 true
             }
             Err(err) => {
+                crate::analytics::track_first_dictation_attempted(app, "start_failed");
                 crate::analytics::track_recording_failed(
                     app,
                     "start",
@@ -754,7 +757,11 @@ impl PillController {
                             (recording.ended_at - recording.started_at).num_milliseconds();
 
                         if duration_ms < MIN_RECORDING_DURATION_MS {
-                            crate::analytics::track_dictation_discarded(&app_handle, "too_short");
+                            crate::analytics::track_dictation_discarded(
+                                &app_handle,
+                                "too_short",
+                                Some(duration_ms as f32 / 1000.0),
+                            );
                             discard_pending_recording(&recording);
                             collapse_expanded_pill(&app_handle);
                             app_handle
@@ -841,7 +848,11 @@ impl PillController {
                         let duration_ms =
                             (recording.ended_at - recording.started_at).num_milliseconds();
                         if duration_ms < MIN_RECORDING_DURATION_MS {
-                            crate::analytics::track_dictation_discarded(&app_handle, "too_short");
+                            crate::analytics::track_dictation_discarded(
+                                &app_handle,
+                                "too_short",
+                                Some(duration_ms as f32 / 1000.0),
+                            );
                             discard_pending_recording(&recording);
                             app_handle
                                 .state::<AppState>()

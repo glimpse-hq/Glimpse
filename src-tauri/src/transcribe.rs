@@ -1156,7 +1156,7 @@ fn handle_empty_transcription(
         .ok()
         .filter(|(_, rate)| *rate > 0)
         .map(|(samples, rate)| samples.len() as f32 / rate as f32);
-    analytics::track_dictation_discarded_with_length(app, "empty_transcript", audio_seconds);
+    analytics::track_dictation_discarded(app, "empty_transcript", audio_seconds);
 
     crate::emit_event(
         app,
