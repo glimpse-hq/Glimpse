@@ -1193,7 +1193,7 @@ fn place_on_monitor(window: &WebviewWindow<AppRuntime>, monitor: &tauri::Monitor
     let screen = monitor.size();
     let mon_pos = monitor.position();
     let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
-    let bottom_padding_physical = (85.0 * scale_factor) as i32;
+    let bottom_padding_physical = (69.0 * scale_factor) as i32;
     let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
     let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
 }

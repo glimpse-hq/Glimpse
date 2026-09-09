@@ -668,6 +668,7 @@ pub fn run() {
             cli_install::remove_cli,
             audio::list_input_devices,
             toast::toast_dismissed,
+            toast::resize_toast_window,
             open_accessibility_settings,
             check_accessibility_permission,
             check_microphone_permission,

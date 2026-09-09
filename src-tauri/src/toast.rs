@@ -3,6 +3,9 @@ use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Monitor, WebviewWindow};
 
 pub const WINDOW_LABEL: &str = "toast";
+/// Size from tauri.conf.json; the frontend shrinks the window to fit the card.
+const WINDOW_WIDTH: f64 = 420.0;
+const WINDOW_HEIGHT: f64 = 200.0;
 pub const EVENT_SHOW: &str = "toast:show";
 pub const EVENT_HIDE: &str = "toast:hide";
 
@@ -30,7 +33,8 @@ pub struct Payload {
 
 pub fn emit_toast(app: &AppHandle<AppRuntime>, payload: Payload) {
     if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
-        position_toast_window(app, &toast_window);
+        let _ = toast_window.set_size(tauri::LogicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
+        position_toast_window(app, &toast_window, WINDOW_WIDTH, WINDOW_HEIGHT);
         crate::platform::toast::show(app, &toast_window);
     }
     let _ = app.emit(EVENT_SHOW, payload);
@@ -85,25 +89,40 @@ pub fn hide(app: &AppHandle<AppRuntime>) {
     }
 }
 
-fn position_toast_window(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime>) {
+/// Size is passed in because `set_size` applies asynchronously on macOS.
+fn position_toast_window(
+    app: &AppHandle<AppRuntime>,
+    toast_window: &WebviewWindow<AppRuntime>,
+    width: f64,
+    height: f64,
+) {
     let state = app.state::<AppState>();
     let is_expanded = state.pill().is_expanded();
     let pill_is_visible = state.pill().status() != pill::PillStatus::Idle;
-    let base_margin = if is_expanded { 380.0 } else { 300.0 };
+    let base_margin = if is_expanded { 180.0 } else { 100.0 };
 
     let Some(monitor) = target_toast_monitor(app, toast_window, pill_is_visible) else {
         return;
     };
 
     let scale_factor = monitor.scale_factor();
-    let toast_width = (420.0 * scale_factor) as i32;
+    let window_width = (width * scale_factor) as i32;
+    let window_height = (height * scale_factor) as i32;
     let bottom_margin = (base_margin * scale_factor) as i32;
 
     let screen = monitor.size();
     let mon_pos = monitor.position();
-    let x = mon_pos.x + (screen.width as i32 - toast_width) / 2;
-    let y = mon_pos.y + screen.height as i32 - bottom_margin;
+    let x = mon_pos.x + (screen.width as i32 - window_width) / 2;
+    let y = mon_pos.y + screen.height as i32 - bottom_margin - window_height;
     let _ = toast_window.set_position(tauri::PhysicalPosition::new(x, y));
+}
+
+#[tauri::command]
+pub fn resize_toast_window(width: f64, height: f64, app: AppHandle<AppRuntime>) {
+    if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
+        let _ = toast_window.set_size(tauri::LogicalSize::new(width, height));
+        position_toast_window(&app, &toast_window, width, height);
+    }
 }
 
 fn target_toast_monitor(
