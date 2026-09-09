@@ -29,8 +29,14 @@ const NewsMenu = () => {
     if (lastSeen === null && items.length > 0) markSeen(items[0].id);
   }, [lastSeen, items, markSeen]);
 
+  const preloaded = useRef<HTMLImageElement | null>(null);
   useEffect(() => {
-    if (items[0]?.image) new Image().src = items[0].image;
+    const src = items[0]?.image;
+    if (!src) return;
+    const image = new Image();
+    image.src = src;
+    void image.decode().catch(() => {});
+    preloaded.current = image;
   }, [items]);
 
   const seenIndex = items.findIndex((item) => item.id === lastSeen);
@@ -106,7 +112,7 @@ const NewsMenu = () => {
                     <img
                       src={lead.image}
                       alt=""
-                      decoding="async"
+                      decoding="sync"
                       className="w-full aspect-[3/1] object-cover"
                     />
                   )}

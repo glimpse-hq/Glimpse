@@ -9,6 +9,10 @@
 - Failed recordings and transcriptions now report what kind of problem it was, so edge cases can be found and fixed. Only a category is sent, never the error text.
 - Some small design refinements to the pill and toasts.
 
+### Fixes
+
+- The image in the news menu no longer flickers in a frame after the rest of the menu.
+
 ---
 
 1.1.3
