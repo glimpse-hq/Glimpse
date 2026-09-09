@@ -321,7 +321,7 @@ msgstr "{avg, plural, one {आज प्रति डिक्टेशन ल�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.milestone"
-msgstr ""
+msgstr "{count} शब्द Glimpse के साथ डिक्टेट किए गए!"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -920,7 +920,7 @@ msgstr "डाउनलोड रद्द करें"
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.cancel_shortcut_aria"
-msgstr ""
+msgstr "शॉर्टकट बदलाव रद्द करें"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -931,7 +931,7 @@ msgstr "रद्द किया गया"
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.edit_shortcut_aria"
-msgstr ""
+msgstr "शॉर्टकट बदलें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2206,7 +2206,7 @@ msgstr "GLIMPSE_…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.speak"
-msgstr ""
+msgstr "आगे बढ़ें और बोलें।"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeGreeting.ts
@@ -2266,7 +2266,7 @@ msgstr "दबाए रखें"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_empty_body"
-msgstr ""
+msgstr "थोड़ा और देर तक दबाए रखें, फिर दोबारा कोशिश करें।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2276,7 +2276,7 @@ msgstr "दबाकर रखें और मिटाएँ"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.hold"
-msgstr ""
+msgstr "डिक्टेट करने के लिए दबाकर रखें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2463,7 +2463,7 @@ msgstr "लाइब्रेरी फ़ोल्डर के अंदर �
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
-msgstr ""
+msgstr "दबाकर रखें, और काम पूरा होने पर छोड़ दें।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2593,7 +2593,7 @@ msgstr "सुन रहा है..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.listening"
-msgstr ""
+msgstr "सुन रहा है…"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2739,7 +2739,7 @@ msgstr "माइक्रोफ़ोन का एक्सेस अस्व
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.mic_removed"
-msgstr ""
+msgstr "माइक्रोफ़ोन डिस्कनेक्ट हो गया। रिकॉर्डिंग रोकी गई और इतिहास में सहेजी गई।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3112,7 +3112,7 @@ msgstr "कोई वेबसाइट नहीं जोड़ी गई"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_empty"
-msgstr ""
+msgstr "कोई शब्द कैप्चर नहीं हुआ।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3332,7 +3332,7 @@ msgstr "ऑडियो चलाएँ"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint"
-msgstr ""
+msgstr "Polar ने आपके लाइसेंस कुंजी को ई‑मेल किया है। उसे यहाँ पेस्ट करें, या पूरा ई‑मेल पेस्ट कर दें।"
 
 #: src/features/settings/components/AccountView.tsx
 #~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
@@ -3387,17 +3387,17 @@ msgstr "सहेजने के लिए Enter दबाएँ · रद्�
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.v5"
-msgstr ""
+msgstr "ऊपर दिए गए शॉर्टकट को दबाएँ, या नीचे दिए गए बटन को दबाकर रखें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.capture"
-msgstr ""
+msgstr "जो शॉर्टकट आप चाहते हैं, उसे दबाएँ।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.subtitle.v5"
-msgstr ""
+msgstr "यह शॉर्टकट दबाएँ और नीचे दी गई पंक्ति पढ़ें।"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -4033,7 +4033,7 @@ msgstr "शेयर करें"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.shortcut.v2"
-msgstr ""
+msgstr "शॉर्टकट"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4163,7 +4163,7 @@ msgstr "स्पीच"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.model.v2"
-msgstr ""
+msgstr "वाक् मॉडल"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4378,7 +4378,7 @@ msgstr "यह डोमेन पहले से जोड़ा जा चु
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error"
-msgstr ""
+msgstr "यह संक्षिप्त कुंजी है। पूरी कुंजी अपनी Polar खरीद पेज से कॉपी करें।"
 
 #: src/features/settings/components/AccountView.tsx
 #~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
@@ -4387,7 +4387,7 @@ msgstr ""
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error"
-msgstr ""
+msgstr "यह आपका ऑर्डर नंबर है। लाइसेंस कुंजी उसी Polar ई‑मेल में है और GLIMPSE_ से शुरू होती है।"
 
 #: src/features/settings/components/AccountView.tsx
 #~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
@@ -4567,7 +4567,7 @@ msgstr "कुल"
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.transcribing"
-msgstr ""
+msgstr "ट्रांसक्राइब कर रहा है..."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
