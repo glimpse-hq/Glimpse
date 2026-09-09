@@ -283,7 +283,7 @@ fn start_library_transcription_internal(
                         "transcription",
                         library_transcription_mode(&item.speech_model),
                         &item.speech_model,
-                        crate::analytics::classify_failure_reason(&message),
+                        crate::analytics::classify_error(&err),
                         Some(item.duration_seconds),
                         "uploaded_file",
                     );

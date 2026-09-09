@@ -291,6 +291,7 @@ impl LocalApiController {
             }
         };
         if counted {
+            crate::analytics::track_feature_used(app, "local_api");
             self.emit_status(app);
         }
     }

@@ -4,7 +4,8 @@ export type PurchaseSource =
   | "settings_account"
   | "sidebar_lock"
   | "trial_toast"
-  | "home_pill";
+  | "home_pill"
+  | "checkout_return";
 
 export type TierInfo = {
   id: PurchaseTier;

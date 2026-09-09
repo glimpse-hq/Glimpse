@@ -122,6 +122,7 @@ pub(crate) struct StreamingTranscriptionInput {
     pub(crate) pending_path: Option<PathBuf>,
     pub(crate) settings: UserSettings,
     pub(crate) temporary: bool,
+    pub(crate) auto_paste: bool,
     pub(crate) cancel_token: CancellationToken,
 }
 
@@ -131,6 +132,7 @@ pub(crate) fn queue_transcription(
     recording: CompletedRecording,
     settings: UserSettings,
     temporary: bool,
+    auto_paste: bool,
     cancel_token: CancellationToken,
 ) {
     let state = app.state::<AppState>();
@@ -149,7 +151,7 @@ pub(crate) fn queue_transcription(
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
 
-        let auto_paste = transcription_api::auto_paste_enabled();
+        let auto_paste = auto_paste && transcription_api::auto_paste_enabled();
 
         tracing::info!("[transcription] mode={:?}", settings.transcription_mode,);
         accessibility_context::log_active_context();
@@ -1069,6 +1071,14 @@ fn emit_transcription_complete_with_cleanup(
         match save_result {
             Ok(record) => {
                 discard_pending_recording(pending_path.as_deref());
+                if let Ok(stats) = app.state::<AppState>().storage().lifetime_stats() {
+                    let added = u64::from(count_words(&final_transcript));
+                    crate::toast::show_word_milestone(
+                        app,
+                        stats.words.saturating_sub(added),
+                        stats.words,
+                    );
+                }
                 (Some(record), true)
             }
             Err(err) => {
@@ -1142,7 +1152,11 @@ fn handle_empty_transcription(
     audio_path: &Path,
     pending_path: Option<&Path>,
 ) {
-    analytics::track_dictation_discarded(app, "empty_transcript");
+    let audio_seconds = load_audio_for_transcription(audio_path)
+        .ok()
+        .filter(|(_, rate)| *rate > 0)
+        .map(|(samples, rate)| samples.len() as f32 / rate as f32);
+    analytics::track_dictation_discarded(app, "empty_transcript", audio_seconds);
 
     crate::emit_event(
         app,
@@ -1801,6 +1815,7 @@ pub(crate) fn finalize_streaming_transcription(
         pending_path,
         settings,
         temporary,
+        auto_paste,
         cancel_token,
     } = input;
 
@@ -1813,7 +1828,7 @@ pub(crate) fn finalize_streaming_transcription(
         let transcription_started_at = Instant::now();
         let cancel_for_check = cancel_token.clone();
         let is_cancelled = move || cancel_for_check.is_cancelled();
-        let auto_paste = transcription_api::auto_paste_enabled();
+        let auto_paste = auto_paste && transcription_api::auto_paste_enabled();
         let active_mode = mode_context::resolve_active_personality(&settings);
         let raw_transcript = transcription_api::normalize_transcript(&raw_transcript);
 

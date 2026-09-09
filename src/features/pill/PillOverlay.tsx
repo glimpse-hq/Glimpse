@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useCallback, useMemo } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import { usePillState } from "./usePillState";
-import type { PillStatus } from "../../types";
+import type { PillStatus, PillTone } from "../../types";
 
 /* ───────────────────────── Constants ───────────────────────── */
 
@@ -16,15 +16,22 @@ interface GridInfo {
   offsetY: number;
 }
 
-const PILL_WIDTH = 97;
-const PILL_HEIGHT = 27;
+const PILL_WIDTH = 92;
+const PILL_HEIGHT = 26;
 const DOT_SPACING = 3;
 const DOT_RADIUS = {
   base: 0.9,
   icon: 1.2,
   wave: 1.0,
-  loader: 1.0,
+  pop: 1.4,
 };
+const PROCESSING_POP_SHARPNESS = 14;
+const PROCESSING_POP_PEAK = 0.7;
+const PROCESSING_TEMPO = 0.0016;
+const CLEANUP_SEED_OFFSET = 37.3;
+const CLEANUP_FADE_IN_MS = 900;
+const WAVE_HANDOFF_MS = 360;
+const POP_ONSET_MS = 700;
 
 const EXPANDED_WIDTH = 260;
 const EXPANDED_HEIGHT = 90;
@@ -35,8 +42,12 @@ const WAVE_ONSET_MS = 220;
 const PREROLL_DOT_LEVEL = 0.45;
 
 const smoothstep = (t: number): number => t * t * (3 - 2 * t);
+const dotNoise = (c: number, r: number, seed: number): number => {
+  const v = Math.sin(c * 12.9898 + r * 78.233 + seed) * 43758.5453;
+  return v - Math.floor(v);
+};
 const EXPANDED_TEXT_TOP_FADE =
-  "linear-gradient(to bottom, rgba(0, 0, 0, 0.96) 0%, rgba(0, 0, 0, 0.82) 38%, rgba(0, 0, 0, 0.38) 74%, transparent 100%)";
+  "linear-gradient(to bottom, rgba(var(--ui-pill-shell-rgb), 0.96) 0%, rgba(var(--ui-pill-shell-rgb), 0.82) 38%, rgba(var(--ui-pill-shell-rgb), 0.38) 74%, transparent 100%)";
 
 const ICONS = {
   warning: [
@@ -60,12 +71,14 @@ interface PillColorPalette {
   base: string;
   highlight: string;
   error: string;
+  cleanup: string;
 }
 
 const FALLBACK_PILL_COLOR_PALETTE: PillColorPalette = {
-  base: "40, 40, 40",
+  base: "46, 46, 52",
   highlight: "255, 255, 255",
   error: "239, 68, 68",
+  cleanup: "251, 191, 36",
 };
 
 const readCssVar = (name: string, fallback: string): string => {
@@ -85,6 +98,10 @@ const resolvePillColorPalette = (): PillColorPalette => ({
   error: readCssVar(
     "--ui-pill-dot-error-rgb",
     FALLBACK_PILL_COLOR_PALETTE.error,
+  ),
+  cleanup: readCssVar(
+    "--ui-pill-cleanup-rgb",
+    FALLBACK_PILL_COLOR_PALETTE.cleanup,
   ),
 });
 
@@ -159,6 +176,26 @@ function renderToCanvas(
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   render(ctx, w, h, grid, palette);
+}
+
+function drawWaveDot(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  maskAlpha: number,
+  distFromCenterY: number,
+  activeRadiusPixels: number,
+  highlight: string,
+): void {
+  const waveEdgeDist = 1 - distFromCenterY / (activeRadiusPixels + 0.1);
+  const brightness = 0.5 + waveEdgeDist * 0.5;
+  ctx.beginPath();
+  ctx.fillStyle = `rgba(${highlight}, ${brightness * maskAlpha})`;
+  ctx.shadowBlur = brightness > 0.8 ? 4 : 0;
+  ctx.shadowColor =
+    brightness > 0.8 ? `rgba(${highlight}, 0.4)` : "transparent";
+  ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 /* ───────────────────────── Component ───────────────────────── */
@@ -272,6 +309,9 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
   const bgHeightsRef = useRef<number[]>([]);
 
   const isExpandedRef = useRef(isExpanded);
+  const pillToneRef = useRef<PillTone>(pillTone);
+  const processingSeedRef = useRef(0);
+  const cleanupStartedAtRef = useRef(0);
   const animationRef = useRef<number | null>(null);
   const loaderTimeRef = useRef<number>(0);
   const colorPaletteRef = useRef<PillColorPalette>(FALLBACK_PILL_COLOR_PALETTE);
@@ -306,7 +346,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
     colorPaletteRef.current = resolvePillColorPalette();
   }, []);
 
-  /* ── Draw: Processing (breathing wave) ── */
+  /* ── Draw: Processing (scattered dot pops) ── */
 
   const drawProcessingFrame = useCallback(
     (time: number) => {
@@ -318,11 +358,64 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
           { cols, rows, spacing, offsetX, offsetY },
           palette,
         ) => {
-          const speed = 0.0015;
-          const waveLength = cols * 0.4;
-          const breathe = 0.5 + 0.5 * Math.sin(time * 0.001);
+          const t = time * PROCESSING_TEMPO;
+          const seed = processingSeedRef.current;
+          const waveFade = 1 - smoothstep(Math.min(1, time / WAVE_HANDOFF_MS));
+          const popGain = smoothstep(Math.min(1, time / POP_ONSET_MS));
+          const heights = (isExpandedRef.current ? bgHeightsRef : heightsRef)
+            .current;
+          const cleanupGain =
+            pillToneRef.current === "cleanup"
+              ? smoothstep(
+                  Math.min(
+                    1,
+                    (performance.now() - cleanupStartedAtRef.current) /
+                      CLEANUP_FADE_IN_MS,
+                  ),
+                )
+              : 0;
+
+          const popAt = (c: number, r: number, layerSeed: number): number => {
+            const cluster = dotNoise(
+              Math.floor(c / 3),
+              Math.floor(r / 2),
+              layerSeed,
+            );
+            const phase =
+              (cluster * 0.75 + dotNoise(c, r, layerSeed) * 0.25) * Math.PI * 2;
+            const tempo = 0.5 + cluster * 0.7;
+            const pulse = Math.max(0, Math.sin(t * tempo + phase));
+            return Math.pow(pulse, PROCESSING_POP_SHARPNESS);
+          };
+
+          const drawPop = (
+            cx: number,
+            cy: number,
+            maskAlpha: number,
+            pop: number,
+            color: string,
+          ) => {
+            if (pop < 0.02) return;
+            const radius =
+              DOT_RADIUS.base + (DOT_RADIUS.pop - DOT_RADIUS.base) * pop;
+            const brightness = Math.min(1, pop * 2.5) * PROCESSING_POP_PEAK;
+            ctx.beginPath();
+            ctx.fillStyle = `rgba(${color}, ${brightness * maskAlpha})`;
+            if (pop > 0.3) {
+              ctx.shadowBlur = 3;
+              ctx.shadowColor = `rgba(${color}, ${brightness * 0.4})`;
+            } else {
+              ctx.shadowBlur = 0;
+              ctx.shadowColor = "transparent";
+            }
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+          };
 
           for (let c = 0; c < cols; c++) {
+            const activeRadiusPixels =
+              (heights[c] || 0) * waveFade * (height * 0.45);
+
             for (let r = 0; r < rows; r++) {
               const cx = offsetX + c * spacing + spacing / 2;
               const cy = offsetY + r * spacing + spacing / 2;
@@ -330,36 +423,52 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
               if (maskAlpha <= 0.05) continue;
 
               const distFromCenterY = Math.abs(cy - height / 2);
-              const wavePhase = c / waveLength - time * speed;
-              const wave = Math.sin(wavePhase * Math.PI * 2) * 0.5 + 0.5;
-
-              const maxRadius = height * 0.4 * (0.6 + 0.4 * breathe);
-              const activeRadius = wave * maxRadius;
-              const isActive = distFromCenterY < activeRadius;
+              if (
+                activeRadiusPixels > 0.5 &&
+                distFromCenterY < activeRadiusPixels
+              ) {
+                drawWaveDot(
+                  ctx,
+                  cx,
+                  cy,
+                  maskAlpha,
+                  distFromCenterY,
+                  activeRadiusPixels,
+                  palette.highlight,
+                );
+                continue;
+              }
 
               ctx.beginPath();
-              if (isActive) {
-                const edgeFactor = 1 - distFromCenterY / (activeRadius + 0.5);
-                const brightness =
-                  Math.pow(edgeFactor, 1.5) * (0.7 + 0.3 * wave);
-                ctx.fillStyle = `rgba(${palette.highlight}, ${brightness * maskAlpha})`;
-                if (brightness > 0.7) {
-                  ctx.shadowBlur = 3;
-                  ctx.shadowColor = `rgba(${palette.highlight}, 0.3)`;
-                }
-                ctx.arc(cx, cy, DOT_RADIUS.loader, 0, Math.PI * 2);
-              } else {
-                ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha * 0.4})`;
-                ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
-              }
+              ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha})`;
+              ctx.shadowBlur = 0;
+              ctx.shadowColor = "transparent";
+              ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
               ctx.fill();
 
-              if (isActive) {
-                ctx.shadowBlur = 0;
-                ctx.shadowColor = "transparent";
+              drawPop(
+                cx,
+                cy,
+                maskAlpha,
+                popAt(c, r, seed) * popGain,
+                palette.highlight,
+              );
+              if (cleanupGain > 0) {
+                drawPop(
+                  cx,
+                  cy,
+                  maskAlpha,
+                  popAt(c, r, seed + CLEANUP_SEED_OFFSET) *
+                    popGain *
+                    cleanupGain,
+                  palette.cleanup,
+                );
               }
             }
           }
+
+          ctx.shadowBlur = 0;
+          ctx.shadowColor = "transparent";
         },
       );
     },
@@ -536,25 +645,24 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                   activeRadiusPixels > 0.5 &&
                   distFromCenterY < activeRadiusPixels;
 
-                ctx.beginPath();
                 if (isWaveActive) {
-                  const waveEdgeDist =
-                    1 - distFromCenterY / (activeRadiusPixels + 0.1);
-                  const brightness = 0.5 + waveEdgeDist * 0.5;
-                  ctx.fillStyle = `rgba(${palette.highlight}, ${brightness * maskAlpha})`;
-                  ctx.shadowBlur = brightness > 0.8 ? 4 : 0;
-                  ctx.shadowColor =
-                    brightness > 0.8
-                      ? `rgba(${palette.highlight}, 0.4)`
-                      : "transparent";
-                  ctx.arc(cx, cy, DOT_RADIUS.wave, 0, Math.PI * 2);
+                  drawWaveDot(
+                    ctx,
+                    cx,
+                    cy,
+                    maskAlpha,
+                    distFromCenterY,
+                    activeRadiusPixels,
+                    palette.highlight,
+                  );
                 } else {
+                  ctx.beginPath();
                   ctx.fillStyle = `rgba(${palette.base}, ${maskAlpha * dotLevel})`;
                   ctx.shadowBlur = 0;
                   ctx.shadowColor = "transparent";
                   ctx.arc(cx, cy, DOT_RADIUS.base, 0, Math.PI * 2);
+                  ctx.fill();
                 }
-                ctx.fill();
               }
             }
           },
@@ -687,6 +795,10 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       heightsRef.current.fill(0);
     }
 
+    if (pillStatus === "processing") {
+      processingSeedRef.current = Math.random() * 1000;
+    }
+
     loaderTimeRef.current = 0;
     let animationStartTime: number | null = null;
 
@@ -734,6 +846,13 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       drawStaticIconRef.current(ICONS.warning, errorColor, errorColor);
     }
   }, [pillStatus, isErrorFlashing, stopAllAnimations]);
+
+  useEffect(() => {
+    if (pillTone === "cleanup" && pillToneRef.current !== "cleanup") {
+      cleanupStartedAtRef.current = performance.now();
+    }
+    pillToneRef.current = pillTone;
+  }, [pillTone]);
 
   useEffect(() => {
     isExpandedRef.current = isExpanded;
@@ -936,11 +1055,11 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
       <div className="sr-only" role="status" aria-live="polite">
         {getStatusMessage(pillStatus)}
       </div>
-      <div className="relative flex flex-col items-center pb-2">
+      <div className="relative flex flex-col items-center pb-6">
         <AnimatePresence>
           {pillStatus !== "idle" && (
             <motion.div
-              className={`relative overflow-hidden border flex flex-col ${pillTone === "cleanup" ? "pill-shell-cleanup" : ""} ${isErrorFlashing ? "animate-shake" : ""}`}
+              className={`relative overflow-hidden border flex flex-col ${isErrorFlashing ? "animate-shake" : ""}`}
               initial={pillInitial}
               animate={{
                 opacity: isHovered ? HOVER_OPACITY_FLOOR : 1,
@@ -1012,8 +1131,6 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 transformOrigin: "bottom center",
               }}
             >
-              <div aria-hidden="true" className="pill-cleanup-field" />
-
               <div
                 className="pill-expanded-content relative z-10"
                 style={{

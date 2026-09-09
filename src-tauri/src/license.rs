@@ -268,6 +268,7 @@ pub fn is_license_deep_link(raw_url: &str) -> bool {
 }
 
 pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    crate::analytics::track_checkout_returned(app);
     tray::toggle_settings_window(app)
         .map_err(|err| format!("Failed to open settings for license deep link: {err}"))?;
     app.emit(EVENT_LICENSE_CHECKOUT_RETURNED, ())
@@ -819,12 +820,30 @@ fn cache_is_fresh(now: DateTime<Utc>, last_validated_at: &str, expires_at: Optio
     true
 }
 
+/// Finds a Polar key (brand prefix plus UUID, GLIMPSE_XXXXXXXX-XXXX-...) inside any text.
+pub(crate) fn find_license_key(text: &str) -> Option<&str> {
+    static KEY: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+        regex::Regex::new(
+            r"(?i)[a-z]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        )
+        .expect("license key regex")
+    });
+    KEY.find(text).map(|m| m.as_str())
+}
+
+/// Accepts a bare key or any text containing one, such as a pasted receipt.
 fn normalize_license_key(key: &str) -> Result<String, String> {
-    let normalized = key.trim().to_string();
-    if normalized.is_empty() {
+    let trimmed = key.trim();
+    if trimmed.is_empty() {
         return Err("Enter your Glimpse activation code.".to_string());
     }
-    Ok(normalized)
+    Ok(find_license_key(trimmed).unwrap_or(trimmed).to_string())
+}
+
+/// 1-based day of the trial, counting past its end (day 15 and up means expired).
+pub fn trial_day(store: &SettingsStore) -> Result<i64, String> {
+    let started_at = load_trial_started_at(store)?;
+    Ok((Utc::now() - started_at).num_days().max(0) + 1)
 }
 
 fn polar_organization_id() -> &'static str {

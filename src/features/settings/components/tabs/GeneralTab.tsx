@@ -1,5 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
+import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -512,9 +513,16 @@ const GeneralTab = ({
                   })}{" "}
               <button
                 type="button"
-                onClick={
-                  cleanupNeedsLicense ? onOpenAccountTab : onOpenProvidersTab
-                }
+                onClick={() => {
+                  if (cleanupNeedsLicense) {
+                    void invoke("track_gate_blocked", {
+                      feature: "cleanup",
+                    }).catch(() => {});
+                    onOpenAccountTab();
+                  } else {
+                    onOpenProvidersTab();
+                  }
+                }}
                 className="ui-color-primary underline underline-offset-2 decoration-[var(--color-border-secondary)] hover:decoration-[var(--color-text-primary)] transition-colors"
               >
                 {cleanupNeedsLicense

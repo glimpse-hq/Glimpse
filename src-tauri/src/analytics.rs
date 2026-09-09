@@ -3,7 +3,7 @@
 // notes in plain English exactly what it records.
 
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
 use serde_json::json;
 use tauri::Manager;
@@ -252,9 +252,27 @@ pub fn track_analytics_opt_out(app: &tauri::AppHandle<AppRuntime>) {
     }
 }
 
-/// Records that you opened the app (fires on every launch).
+/// Records that you opened the app (fires on every launch). Also refreshes
+/// your profile with license status, the selected speech model, and lifetime
+/// dictation counts so usage can be compared across those groups.
 pub fn track_app_started(app: &tauri::AppHandle<AppRuntime>) {
-    capture_event(app, "app_started", json!({}));
+    let Some(mut event) = build_event(app, "app_started", json!({}), true) else {
+        return;
+    };
+    let state = app.state::<AppState>();
+    let license = state.license_snapshot();
+    let stats = state.storage().lifetime_stats().ok();
+    let _ = event.insert_prop(
+        "$set",
+        json!({
+            "license_status": license.as_ref().map(|l| l.status),
+            "license_edition": license.as_ref().and_then(|l| l.edition),
+            "speech_model": crate::speech::selected_model(&state.current_settings()),
+            "lifetime_words": stats.as_ref().map(|s| s.words),
+            "lifetime_dictations": stats.as_ref().map(|s| s.dictations),
+        }),
+    );
+    posthog_rs::capture(event);
 }
 
 /// Records the very first time you ever run the app, once per install.
@@ -316,10 +334,80 @@ pub fn track_transcription_failed(
     );
 }
 
-/// Records a dictation the app threw away before it reached you, as a bounded
-/// reason code. Never records audio, timings, or transcript content.
-pub fn track_dictation_discarded(app: &tauri::AppHandle<AppRuntime>, reason: &str) {
-    capture_event(app, "dictation_discarded", json!({ "reason": reason }));
+/// Records a dictation the app threw away before it reached you: a bounded
+/// reason code, the audio length as a bucket, and the speech model. Never
+/// records audio or transcript content.
+pub fn track_dictation_discarded(
+    app: &tauri::AppHandle<AppRuntime>,
+    reason: &str,
+    audio_seconds: Option<f32>,
+) {
+    let audio_length = match audio_seconds {
+        None => "unknown",
+        Some(s) if s < 1.0 => "under_1s",
+        Some(s) if s < 3.0 => "1_to_3s",
+        Some(s) if s < 10.0 => "3_to_10s",
+        Some(_) => "over_10s",
+    };
+    let model = crate::speech::selected_model(&app.state::<AppState>().current_settings());
+    capture_event(
+        app,
+        "dictation_discarded",
+        json!({ "reason": reason, "audio_length": audio_length, "model": model }),
+    );
+}
+
+const KEY_FIRST_DICTATION_REPORTED: &str = "analytics_first_dictation_reported";
+// Keeps the store read off the keypress path after the first check.
+static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
+
+/// Records the very first time you press a dictation shortcut, once per
+/// install, with a bounded outcome: recording started, the microphone was
+/// blocked, or the device failed to open.
+pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
+    if FIRST_DICTATION_REPORTED.load(Ordering::Relaxed) {
+        return;
+    }
+    // Build first so an opted-out attempt never burns the marker.
+    let Some(event) = build_event(
+        app,
+        "first_dictation_attempted",
+        json!({ "outcome": outcome }),
+        true,
+    ) else {
+        return;
+    };
+    let store = &app.state::<AppState>().settings_store;
+    let already = store
+        .read_app_value::<String>(KEY_FIRST_DICTATION_REPORTED, String::new())
+        .map(|v| !v.is_empty())
+        .unwrap_or(true);
+    FIRST_DICTATION_REPORTED.store(true, Ordering::Relaxed);
+    if already
+        || store
+            .write_app_value(KEY_FIRST_DICTATION_REPORTED, &"1".to_string())
+            .is_err()
+    {
+        return;
+    }
+    posthog_rs::capture(event);
+}
+
+/// Records that a bounded feature was used, never what it was used with.
+pub fn track_feature_used(app: &tauri::AppHandle<AppRuntime>, feature: &str) {
+    let feature = match feature {
+        "dictionary" | "replacements" | "personalities" | "import" | "library" | "local_api" => {
+            feature
+        }
+        _ => "other",
+    };
+    capture_event(app, "feature_used", json!({ "feature": feature }));
+}
+
+/// Frontend entry for `track_feature_used`.
+#[tauri::command]
+pub fn track_feature_used_command(app: tauri::AppHandle<AppRuntime>, feature: String) {
+    track_feature_used(&app, &feature);
 }
 
 /// Records a bounded onboarding screen identifier without form contents.
@@ -364,24 +452,73 @@ pub fn track_trial_expired(app: &tauri::AppHandle<AppRuntime>) {
     capture_event(app, "trial_expired", json!({}));
 }
 
-/// Records that a license was activated, and which edition it granted.
-/// The key itself is never recorded.
-pub fn track_license_activated(app: &tauri::AppHandle<AppRuntime>, edition: Option<&str>) {
+/// Records that a license was activated, which edition it granted, and on
+/// which day of the trial. The key itself is never recorded.
+pub fn track_license_activated(
+    app: &tauri::AppHandle<AppRuntime>,
+    edition: Option<&str>,
+    trial_day: Option<i64>,
+) {
     capture_event(
         app,
         "license_activated",
-        json!({ "edition": edition.unwrap_or("unknown") }),
+        json!({ "edition": edition.unwrap_or("unknown"), "trial_day": trial_day }),
     );
 }
 
-/// Records that an activation attempt failed, as a bounded reason.
-/// The key that was typed is never recorded.
-pub fn track_license_activation_failed(app: &tauri::AppHandle<AppRuntime>, message: &str) {
+/// Records that an activation attempt failed, as a bounded reason plus what
+/// the typed text looked like. The text itself is never recorded.
+pub fn track_license_activation_failed(
+    app: &tauri::AppHandle<AppRuntime>,
+    message: &str,
+    input_shape: &'static str,
+) {
     capture_event(
         app,
         "license_activation_failed",
-        json!({ "reason": classify_activation_failure(message) }),
+        json!({ "reason": classify_activation_failure(message), "input_shape": input_shape }),
     );
+}
+
+/// Classifies activation input by shape only: a key, a Polar order id (a bare
+/// UUID), the masked key from the portal, a discount code, or something else.
+pub fn activation_input_shape(raw: &str) -> &'static str {
+    let trimmed = raw.trim();
+    if crate::license::find_license_key(trimmed).is_some() {
+        return "key";
+    }
+    let is_uuid = trimmed.len() == 36
+        && trimmed.split('-').map(str::len).eq([8, 4, 4, 4, 12])
+        && trimmed.chars().all(|c| c == '-' || c.is_ascii_hexdigit());
+    if is_uuid {
+        "order_id"
+    } else if trimmed.contains('*') {
+        "masked_key"
+    } else if (3..=24).contains(&trimmed.len())
+        && trimmed
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_' || c == '-')
+        && trimmed.matches('-').count() < 2
+    {
+        "discount_code"
+    } else {
+        "unknown"
+    }
+}
+
+/// Records that the checkout deep link brought the user back into the app.
+pub fn track_checkout_returned(app: &tauri::AppHandle<AppRuntime>) {
+    capture_event(app, "checkout_returned", json!({}));
+}
+
+/// Records which locked feature an unlicensed user ran into.
+#[tauri::command]
+pub fn track_gate_blocked(app: tauri::AppHandle<AppRuntime>, feature: String) {
+    let feature = match feature.as_str() {
+        "personalization" | "library" | "cleanup" | "providers" | "api" => feature.as_str(),
+        _ => "other",
+    };
+    capture_event(&app, "gate_blocked", json!({ "feature": feature }));
 }
 
 /// Maps an activation error onto a fixed set, so a typed key can never
@@ -614,17 +751,78 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
             "unauthorized",
             &["unauthorized", "authentication", "api key"],
         ),
+        ("already_recording", &["already in progress"]),
+        ("device_busy", &["devicebusy", "temporarily busy"]),
+        (
+            "device_unavailable",
+            &[
+                "devicenotavailable",
+                "devicechanged",
+                "no default input device",
+                "device not found",
+                "disconnected",
+            ],
+        ),
+        (
+            "unsupported_audio_config",
+            &[
+                "unsupportedconfig",
+                "unsupportedoperation",
+                "invalidinput",
+                "input configuration",
+                "sample format",
+            ],
+        ),
+        (
+            "audio_backend",
+            &[
+                "backenderror",
+                "hostunavailable",
+                "resourceexhausted",
+                "streaminvalidated",
+                "coreaudio",
+                "wasapi",
+            ],
+        ),
         ("rate_limited", &["rate limit", "too many requests"]),
         ("quota_exceeded", &["quota", "billing"]),
         ("timeout", &["timeout", "timed out"]),
         ("network", &["network", "connect", "dns"]),
+        ("model_missing", &["not fully installed", "is missing"]),
+        (
+            "model_load",
+            &[
+                "did not load",
+                "whisper context",
+                "state pointer",
+                "load model",
+                "load system language model",
+            ],
+        ),
+        ("out_of_memory", &["out of memory", "alloc"]),
+        (
+            "inference",
+            &[
+                "encoder",
+                "decoder",
+                "evaluate model",
+                "generic whisper error",
+                "spectrogram",
+                "null pointer",
+                "onnx runtime",
+            ],
+        ),
         ("not_found", &["not found", "no such file"]),
-        ("no_speech", &["no speech", "empty"]),
-        ("model_error", &["model"]),
-        ("decode", &["decode", "ffmpeg"]),
+        (
+            "no_speech",
+            &["no speech", "empty", "no samples", "no audio"],
+        ),
+        ("decode", &["decode", "ffmpeg", "wav", "audio processing"]),
         ("verification", &["checksum", "verify"]),
         ("storage", &["disk", "write", "save", "storage"]),
         ("task_failed", &["task", "join"]),
+        ("lock_poisoned", &["poisoned"]),
+        ("model_error", &["model"]),
     ];
     let message = message.to_ascii_lowercase();
     RULES
@@ -652,7 +850,8 @@ pub fn canonical_shortcut(shortcut: &str) -> String {
 }
 
 /// Records that you finished the first-run setup, which dictation shortcut
-/// you ended up on, and whether you completed the practice dictation.
+/// you ended up on, whether you completed the practice dictation, and whether
+/// the microphone and accessibility permissions were granted at that point.
 pub fn track_onboarding_completed(
     app: &tauri::AppHandle<AppRuntime>,
     smart_shortcut: &str,
@@ -664,6 +863,8 @@ pub fn track_onboarding_completed(
         json!({
             "smart_shortcut": smart_shortcut,
             "first_dictation": first_dictation,
+            "mic_granted": crate::permissions::check_microphone_permission(),
+            "accessibility_granted": crate::permissions::check_accessibility_permission(),
         }),
     );
 }

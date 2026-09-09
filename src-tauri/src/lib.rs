@@ -668,6 +668,7 @@ pub fn run() {
             cli_install::remove_cli,
             audio::list_input_devices,
             toast::toast_dismissed,
+            toast::resize_toast_window,
             open_accessibility_settings,
             check_accessibility_permission,
             check_microphone_permission,
@@ -688,6 +689,8 @@ pub fn run() {
             analytics::track_onboarding_step_viewed,
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
+            analytics::track_gate_blocked,
+            analytics::track_feature_used_command,
             fetch_llm_models,
             apple_llm_availability,
             fetch_remote_speech_models,
@@ -1429,17 +1432,20 @@ async fn activate_license(
     state: tauri::State<'_, AppState>,
     args: license::ActivateLicenseArgs,
 ) -> Result<license::LicenseState, String> {
+    let input_shape = analytics::activation_input_shape(&args.key);
+    let trial_day = license::trial_day(&state.settings_store).ok();
     match license::activate_license(state.http(), &state.settings_store, args).await {
         Ok(license_state) => {
             note_license_state(&app, &state, &license_state);
             analytics::track_license_activated(
                 &app,
                 license_state.edition.map(|edition| edition.as_str()),
+                trial_day,
             );
             Ok(license_state)
         }
         Err(err) => {
-            analytics::track_license_activation_failed(&app, &err);
+            analytics::track_license_activation_failed(&app, &err, input_shape);
             Err(err)
         }
     }
@@ -1874,6 +1880,7 @@ pub(crate) fn persist_recording_async(
     recording: CompletedRecording,
     settings: settings::UserSettings,
     temporary: bool,
+    auto_paste: bool,
     cancel_token: CancellationToken,
 ) {
     let input = if settings.microphone_device.is_some() {
@@ -1887,7 +1894,7 @@ pub(crate) fn persist_recording_async(
             analytics::track_recording_failed(
                 &app,
                 "persist",
-                analytics::classify_failure_reason(&err.to_string()),
+                analytics::classify_error(&err),
                 input,
             );
             emit_error(
@@ -1925,7 +1932,11 @@ pub(crate) fn persist_recording_async(
                 None,
             ),
         };
-        analytics::track_dictation_discarded(&app, code);
+        analytics::track_dictation_discarded(
+            &app,
+            code,
+            Some((recording.ended_at - recording.started_at).num_milliseconds() as f32 / 1000.0),
+        );
         tracing::error!("Recording rejected: {reason}");
         if let Some(notice) = notice {
             toast::show(&app, "warning", None, &toast::native(&app, notice));
@@ -1960,24 +1971,20 @@ pub(crate) fn persist_recording_async(
                 recording,
                 settings,
                 temporary,
+                auto_paste,
                 cancel_token,
             ),
             Ok(Err(err)) => {
                 analytics::track_recording_failed(
                     &app,
                     "persist",
-                    analytics::classify_failure_reason(&err.to_string()),
+                    analytics::classify_error(&err),
                     input,
                 );
                 emit_error(&app, format!("Unable to save recording: {err}"));
             }
             Err(err) => {
-                analytics::track_recording_failed(
-                    &app,
-                    "persist",
-                    analytics::classify_failure_reason(&err.to_string()),
-                    input,
-                );
+                analytics::track_recording_failed(&app, "persist", "task_failed", input);
                 emit_error(&app, format!("Recording task failed: {err}"));
             }
         }

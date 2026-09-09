@@ -84,6 +84,7 @@ pub struct RecorderManager {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
 
 type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
@@ -213,9 +214,11 @@ impl Default for RecorderManager {
         let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
         let live_buffer = Arc::new(Mutex::new(None));
         let armed = Arc::new(AtomicBool::new(false));
+        let active_device = Arc::new(Mutex::new(None));
         let spectrum_for_thread = Arc::clone(&spectrum);
         let live_buffer_for_thread = Arc::clone(&live_buffer);
         let armed_for_thread = Arc::clone(&armed);
+        let active_device_for_thread = Arc::clone(&active_device);
 
         std::thread::Builder::new()
             .name("glimpse-recorder".into())
@@ -224,6 +227,7 @@ impl Default for RecorderManager {
                     spectrum_for_thread,
                     live_buffer_for_thread,
                     armed_for_thread,
+                    active_device_for_thread,
                 );
                 while let Ok(cmd) = rx.recv() {
                     match cmd {
@@ -251,6 +255,7 @@ impl Default for RecorderManager {
             spectrum,
             live_buffer,
             armed,
+            active_device,
         }
     }
 }
@@ -262,6 +267,14 @@ impl RecorderManager {
 
     pub fn arm(&self) {
         self.armed.store(true, Ordering::Relaxed);
+    }
+
+    /// Whether the device the active recording opened is still attached.
+    /// `None` when nothing is recording or the device has no stable id.
+    #[cfg(target_os = "macos")]
+    pub fn active_device_present(&self) -> Option<bool> {
+        let id = self.active_device.lock().clone()?;
+        Some(cpal::default_host().device_by_id(&id).is_some())
     }
 
     pub fn spectrum_snapshot(&self) -> Option<Vec<f32>> {
@@ -374,6 +387,7 @@ struct RecorderCore {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
 
 impl RecorderCore {
@@ -381,12 +395,14 @@ impl RecorderCore {
         spectrum: Arc<Mutex<AudioSpectrumState>>,
         live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
         armed: Arc<AtomicBool>,
+        active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
     ) -> Self {
         Self {
             active: None,
             spectrum,
             live_buffer,
             armed,
+            active_device,
         }
     }
 
@@ -425,7 +441,7 @@ impl RecorderCore {
         };
         let config = device
             .default_input_config()
-            .context("No supported input configuration found")?;
+            .map_err(|err| cpal_error("No supported input configuration found", &err))?;
         let format = config.sample_format();
         let stream_config: cpal::StreamConfig = config.into();
         let sample_rate = stream_config.sample_rate;
@@ -441,36 +457,41 @@ impl RecorderCore {
         let armed = &self.armed;
         let stream = match format {
             SampleFormat::F32 => {
-                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::F64 => {
-                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I8 => {
-                build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I16 => {
-                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I24 => {
-                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::I32 => {
-                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::U8 => {
-                build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::U16 => {
-                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum, armed)
             }
             SampleFormat::U32 => {
-                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum, armed)?
+                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum, armed)
             }
             other => return Err(anyhow!("Unsupported sample format: {other}")),
-        };
+        }
+        .map_err(|err| cpal_error("Failed to open input stream", &err))?;
 
-        stream.play()?;
+        *self.active_device.lock() = device.id().ok();
+        stream.play().map_err(|err| {
+            *self.active_device.lock() = None;
+            cpal_error("Failed to start input stream", &err)
+        })?;
 
         *self.live_buffer.lock() = Some(LiveBufferState {
             buffer: Arc::clone(&buffer),
@@ -508,6 +529,7 @@ impl RecorderCore {
         discard_pending: bool,
     ) -> Result<Option<CompletedRecording>> {
         *self.live_buffer.lock() = None;
+        *self.active_device.lock() = None;
         self.spectrum.lock().reset();
         match self.active.take() {
             Some(mut active) => {
@@ -1341,6 +1363,11 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
         output.push(sample as f32);
     }
     output
+}
+
+// cpal's Display drops the kind when a backend message is present.
+fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
+    anyhow!("{what} ({:?}): {err}", err.kind())
 }
 
 fn build_mic_stream<T>(

@@ -503,6 +503,7 @@ impl PillController {
         options: hotkeys::ShortcutOptions,
     ) -> bool {
         if !check_mic_permission(app) {
+            crate::analytics::track_first_dictation_attempted(app, "mic_blocked");
             return false;
         }
 
@@ -530,6 +531,7 @@ impl PillController {
             .start(settings.microphone_device.clone(), pending_dir)
         {
             Ok(started) => {
+                crate::analytics::track_first_dictation_attempted(app, "started");
                 // The gate above trusts a cached grant; re-check now that the
                 // keypress is served, so a revoked grant is caught next press.
                 #[cfg(target_os = "macos")]
@@ -552,10 +554,11 @@ impl PillController {
                 true
             }
             Err(err) => {
+                crate::analytics::track_first_dictation_attempted(app, "start_failed");
                 crate::analytics::track_recording_failed(
                     app,
                     "start",
-                    crate::analytics::classify_failure_reason(&err.to_string()),
+                    crate::analytics::classify_error(&err),
                     microphone_input_kind(&settings),
                 );
                 self.reset_recording_state();
@@ -694,6 +697,31 @@ impl PillController {
     }
 
     fn stop_and_process(&self, app: &AppHandle<AppRuntime>) {
+        self.stop_and_process_inner(app, true);
+    }
+
+    /// Ends the recording when the microphone it opened is unplugged. The
+    /// transcript is cut short, so it goes to History without pasting.
+    #[cfg(target_os = "macos")]
+    pub fn stop_if_input_device_removed(&self, app: &AppHandle<AppRuntime>) {
+        if self.status() != PillStatus::Listening
+            || !self.is_recording()
+            || self.recorder.active_device_present() != Some(false)
+        {
+            return;
+        }
+        tracing::warn!("[Pill] Input device removed mid-recording");
+        self.clear_hold_state();
+        toast::show(
+            app,
+            "warning",
+            None,
+            &toast::native(app, "native.toast.mic_removed"),
+        );
+        self.stop_and_process_inner(app, false);
+    }
+
+    fn stop_and_process_inner(&self, app: &AppHandle<AppRuntime>, auto_paste: bool) {
         self.stop_audio_spectrum_emitter();
         *self.recording_mode.lock() = None;
         let settings = self
@@ -702,9 +730,14 @@ impl PillController {
             .take()
             .unwrap_or_else(|| app.state::<AppState>().current_settings());
         let recording_options = *self.recording_options.lock();
-        self.capture_selected_text_if_enabled(app, &settings);
-
         let state = app.state::<AppState>();
+        if auto_paste {
+            self.capture_selected_text_if_enabled(app, &settings);
+        } else {
+            // No paste means no edit mode; keep the raw transcript.
+            state.set_pending_selected_text(None);
+        }
+
         let has_streaming = state.has_streaming_session();
         // Create the cancellation token up front, before the worker spawns, so a
         // rapid cancel can't slip in before the token exists and leak a paste.
@@ -729,7 +762,11 @@ impl PillController {
                             (recording.ended_at - recording.started_at).num_milliseconds();
 
                         if duration_ms < MIN_RECORDING_DURATION_MS {
-                            crate::analytics::track_dictation_discarded(&app_handle, "too_short");
+                            crate::analytics::track_dictation_discarded(
+                                &app_handle,
+                                "too_short",
+                                Some(duration_ms as f32 / 1000.0),
+                            );
                             discard_pending_recording(&recording);
                             collapse_expanded_pill(&app_handle);
                             app_handle
@@ -749,6 +786,7 @@ impl PillController {
                                 recording,
                                 settings_for_transcription,
                                 recording_options.temporary,
+                                auto_paste,
                                 cancel_token,
                             );
                             return;
@@ -780,6 +818,7 @@ impl PillController {
                                 pending_path: saved.pending_path,
                                 settings: settings_for_transcription,
                                 temporary: recording_options.temporary,
+                                auto_paste,
                                 cancel_token,
                             },
                         );
@@ -814,7 +853,11 @@ impl PillController {
                         let duration_ms =
                             (recording.ended_at - recording.started_at).num_milliseconds();
                         if duration_ms < MIN_RECORDING_DURATION_MS {
-                            crate::analytics::track_dictation_discarded(&app_handle, "too_short");
+                            crate::analytics::track_dictation_discarded(
+                                &app_handle,
+                                "too_short",
+                                Some(duration_ms as f32 / 1000.0),
+                            );
                             discard_pending_recording(&recording);
                             app_handle
                                 .state::<AppState>()
@@ -828,6 +871,7 @@ impl PillController {
                             recording,
                             settings_for_transcription,
                             recording_options.temporary,
+                            auto_paste,
                             cancel_token,
                         );
                     }
@@ -1165,7 +1209,7 @@ fn place_on_monitor(window: &WebviewWindow<AppRuntime>, monitor: &tauri::Monitor
     let screen = monitor.size();
     let mon_pos = monitor.position();
     let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
-    let bottom_padding_physical = (85.0 * scale_factor) as i32;
+    let bottom_padding_physical = (69.0 * scale_factor) as i32;
     let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
     let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
 }

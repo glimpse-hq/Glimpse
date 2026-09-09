@@ -78,8 +78,8 @@ Transcription stays on-device by default. Enabling an external speech or LLM pro
 
 The app sends anonymous usage telemetry to [PostHog EU](https://posthog.com/) to help prioritize development. It's tied to a random install ID, not your identity, and stored in the EU.
 
-- **Collected:** app version and platform, launches and uptime, durations and counts, country, and bounded error/crash categories. A crash also records a code location (source file and line, or module and offset) so we can find the bug.
-- **Never sent:** transcripts, audio, API keys, prompts, raw error text or stacks, file paths or names, microphone names, provider endpoints, your IP address, or anything personally identifiable.
+- **Collected:** app version and platform, launches and uptime, durations and counts, which built-in features you use, whether microphone and accessibility permissions are granted, country, and bounded error/crash categories. A crash also records a code location (source file and line, or module and offset) so we can find the bug.
+- **Never sent:** transcripts, audio, API keys, prompts, raw error text or stacks, full file paths, microphone names, provider endpoints, your IP address, or anything personally identifiable.
 
 Opt out anytime in **Settings → App**. Opting out sends one final ping, then nothing, ever.
 

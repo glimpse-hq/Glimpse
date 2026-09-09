@@ -65,7 +65,7 @@ fn dictionary_add(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
     require_license(&state)?;
     let mut words = state.current_settings_unmasked().dictionary;
     words.extend(additions);
-    let saved = crate::dictionary::set_dictionary(words, state)?;
+    let saved = crate::dictionary::set_dictionary(words, app.clone(), state)?;
     Ok(json!({ "words": saved }))
 }
 
@@ -80,7 +80,7 @@ fn dictionary_remove(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value,
         .into_iter()
         .filter(|word| !lowered.contains(&word.to_lowercase()))
         .collect();
-    let saved = crate::dictionary::set_dictionary(words, state)?;
+    let saved = crate::dictionary::set_dictionary(words, app.clone(), state)?;
     Ok(json!({ "words": saved }))
 }
 
@@ -92,7 +92,7 @@ fn replacements_add(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, 
     let mut replacements = state.current_settings_unmasked().replacements;
     replacements.retain(|r| !r.from.eq_ignore_ascii_case(&from));
     replacements.push(Replacement { from, to });
-    let saved = crate::dictionary::set_replacements(replacements, state)?;
+    let saved = crate::dictionary::set_replacements(replacements, app.clone(), state)?;
     Ok(json!({ "replacements": saved }))
 }
 
@@ -106,7 +106,7 @@ fn replacements_remove(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Valu
         .into_iter()
         .filter(|r| !r.from.eq_ignore_ascii_case(&from))
         .collect();
-    let saved = crate::dictionary::set_replacements(replacements, state)?;
+    let saved = crate::dictionary::set_replacements(replacements, app.clone(), state)?;
     Ok(json!({ "replacements": saved }))
 }
 
