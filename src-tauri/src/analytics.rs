@@ -365,16 +365,24 @@ static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
 /// install, with a bounded outcome: recording started, the microphone was
 /// blocked, or the device failed to open.
 pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
-    let state = app.state::<AppState>();
-    // Checked before the marker so an opted-out first attempt doesn't burn it.
-    if !state.analytics_state().0 || FIRST_DICTATION_REPORTED.swap(true, Ordering::Relaxed) {
+    if FIRST_DICTATION_REPORTED.load(Ordering::Relaxed) {
         return;
     }
-    let store = &state.settings_store;
+    // Build first so an opted-out attempt never burns the marker.
+    let Some(event) = build_event(
+        app,
+        "first_dictation_attempted",
+        json!({ "outcome": outcome }),
+        true,
+    ) else {
+        return;
+    };
+    let store = &app.state::<AppState>().settings_store;
     let already = store
         .read_app_value::<String>(KEY_FIRST_DICTATION_REPORTED, String::new())
         .map(|v| !v.is_empty())
         .unwrap_or(true);
+    FIRST_DICTATION_REPORTED.store(true, Ordering::Relaxed);
     if already
         || store
             .write_app_value(KEY_FIRST_DICTATION_REPORTED, &"1".to_string())
@@ -382,11 +390,7 @@ pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outco
     {
         return;
     }
-    capture_event(
-        app,
-        "first_dictation_attempted",
-        json!({ "outcome": outcome }),
-    );
+    posthog_rs::capture(event);
 }
 
 /// Records that a bounded feature was used, never what it was used with.
