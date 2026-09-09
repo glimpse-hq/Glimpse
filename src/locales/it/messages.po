@@ -319,6 +319,11 @@ msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Circa # parola per dettatura oggi} other {Circa # parole per dettatura oggi}}"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.milestone"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.coverage_with_devices"
 msgstr "{coverageBase} · {activeDevices} di {deviceLimit} dispositivi attivi"
@@ -2732,6 +2737,11 @@ msgid "settings.general.microphone_test.permission_error"
 msgstr "Accesso al microfono negato."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.mic_removed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.unsupported"
 msgstr "Il test del microfono non è disponibile in questa finestra."
@@ -3318,6 +3328,15 @@ msgstr "Personalizzazione"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.play_audio"
 msgstr "Riproduci audio"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint"
+msgstr ""
+
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
+#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4355,6 +4374,24 @@ msgstr "Grazie per supportare Glimpse"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.website.duplicate"
 msgstr "Questo dominio è già stato aggiunto"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.masked_key_error"
+msgstr ""
+
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.order_id_error"
+msgstr ""
+
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
+#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

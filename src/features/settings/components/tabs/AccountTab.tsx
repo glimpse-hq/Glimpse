@@ -95,6 +95,7 @@ const AccountTab = ({
               ? String(deactivateLicense.error)
               : null
         }
+        checkoutReturned={source === "checkout_return"}
         onOpenCheckout={openCheckout}
         onActivateLicense={(key) => activateLicense.mutate(key)}
         onDeactivateLicense={() => deactivateLicense.mutate()}

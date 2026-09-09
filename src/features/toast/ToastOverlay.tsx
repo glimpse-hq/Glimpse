@@ -12,6 +12,10 @@ interface ToastState extends ToastPayload {
   isLeaving: boolean;
 }
 
+const WINDOW_INSET_X = 8;
+const WINDOW_INSET_TOP = 16;
+const WINDOW_INSET_BOTTOM = 24;
+
 const COLORS: Record<ToastType, { border: string; dot: string }> = {
   error: { border: "border-red-500/40", dot: "bg-red-500" },
   info: { border: "border-blue-500/30", dot: "bg-blue-400" },
@@ -80,9 +84,26 @@ const ToastOverlay: React.FC = () => {
     null,
   );
   const toastRef = useRef<ToastState | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     toastRef.current = toast;
+  }, [toast]);
+
+  // Fit the window to the card so the empty area stays click-through.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const observer = new ResizeObserver(() => {
+      invoke("resize_toast_window", {
+        width: Math.ceil(card.offsetWidth + WINDOW_INSET_X * 2),
+        height: Math.ceil(
+          card.offsetHeight + WINDOW_INSET_TOP + WINDOW_INSET_BOTTOM,
+        ),
+      }).catch(() => {});
+    });
+    observer.observe(card);
+    return () => observer.disconnect();
   }, [toast]);
 
   const closeAll = async () => {
@@ -301,6 +322,7 @@ const ToastOverlay: React.FC = () => {
         `}
         onClick={(e) => e.stopPropagation()}
         role="alert"
+        ref={cardRef}
       >
         {toast.type === "celebration" && <TwinklingGrid variant="cloud" />}
         {toast.type === "update" && <TwinklingGrid variant="accent" />}

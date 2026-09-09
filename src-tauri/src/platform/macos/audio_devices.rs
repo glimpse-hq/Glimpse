@@ -35,6 +35,9 @@ fn run_input_device_watcher(app: AppHandle<AppRuntime>) -> Result<(), String> {
         AudioPropertyListener::new(kAudioHardwarePropertyDefaultInputDevice, sender)?;
 
     while receiver.recv().is_ok() {
+        app.state::<AppState>()
+            .pill()
+            .stop_if_input_device_removed(&app);
         refresh_native_menus(&app);
         let _ = app.emit_to(SETTINGS_WINDOW_LABEL, EVENT_INPUT_DEVICES_CHANGED, ());
     }

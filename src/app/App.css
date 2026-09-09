@@ -135,15 +135,16 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.14), inset 0 -2px 0 rgba(0, 0, 0, 0.38),
     0 1px 0 rgba(0, 0, 0, 0.28);
   --ui-shadow-modal-deep: 0 20px 60px rgba(0, 0, 0, 0.45);
-  --ui-pill-dot-base-rgb: 40, 40, 40;
+  --ui-pill-dot-base-rgb: 46, 46, 52;
   --ui-pill-dot-highlight-rgb: 255, 255, 255;
   --ui-pill-dot-error-rgb: 239, 68, 68;
   --ui-pill-cleanup-rgb: 251, 191, 36;
-  --ui-pill-cleanup-field-opacity: 0.68;
-  --ui-pill-shell-bg: var(--color-bg-primary);
-  --ui-pill-shell-border: var(--color-border-primary);
+  --ui-pill-shell-rgb: 10, 10, 12;
+  --ui-pill-shell-bg: rgb(var(--ui-pill-shell-rgb));
+  --ui-pill-shell-border: rgba(255, 255, 255, 0.08);
   --ui-pill-shell-shadow:
-    0 0 10px rgba(0, 0, 0, 0.36), inset 0 -2px 5px rgba(0, 0, 0, 0.5);
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   --color-success: #10b981;
   --color-error: #ef4444;
@@ -310,10 +311,7 @@
   --ui-action-card-rest-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
   --ui-action-card-hover-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
 
-  --ui-pill-shell-bg: var(--color-bg-primary);
-  --ui-pill-shell-border: var(--color-border-secondary);
   --ui-pill-cleanup-rgb: 180, 83, 9;
-  --ui-pill-cleanup-field-opacity: 0.44;
 
   --color-section-marker: var(--color-text-secondary);
   --color-section-marker-alt: var(--color-text-secondary);
@@ -1465,36 +1463,6 @@ body {
 
 .animate-toast-out {
   animation: toast-out 0.15s ease-in forwards;
-}
-
-.pill-cleanup-field {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  border-radius: inherit;
-  opacity: 0;
-  background:
-    radial-gradient(
-        circle at center,
-        rgba(var(--ui-pill-cleanup-rgb), 0.18) 0 0.75px,
-        transparent 0.85px
-      )
-      0 0 / 3px 3px,
-    linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(var(--ui-pill-cleanup-rgb), 0.12) 42%,
-      rgba(var(--ui-pill-cleanup-rgb), 0.24) 50%,
-      rgba(var(--ui-pill-cleanup-rgb), 0.12) 58%,
-      transparent 100%
-    );
-  mix-blend-mode: screen;
-  transition: opacity 320ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.pill-shell-cleanup .pill-cleanup-field {
-  opacity: var(--ui-pill-cleanup-field-opacity);
 }
 
 @keyframes twinkle {
