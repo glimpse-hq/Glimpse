@@ -7,6 +7,7 @@ import {
   Check,
   Clock,
   Cloud,
+  CloudSlash,
   Trash as Trash2,
   Waveform,
 } from "@phosphor-icons/react";
@@ -253,6 +254,21 @@ const CloudModelRow = ({
   );
 };
 
+const DisableCloudButton = ({ onClick }: { onClick: () => void }) => {
+  const { t } = useLingui();
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 ui-text-button-sm ui-color-secondary transition-colors hover:bg-surface-elevated hover:text-content-primary"
+    >
+      <CloudSlash size={13} aria-hidden="true" />
+      {t({ id: "settings.models.cloud.disable", message: "Disable cloud" })}
+    </button>
+  );
+};
+
 const ModelsTab = ({
   variants,
   modelCatalog,
@@ -363,20 +379,13 @@ const ModelsTab = ({
                     modelLabel={activeModel ?? null}
                     onClick={onOpenProvidersTab}
                   />
-                  <button
-                    type="button"
+                  <DisableCloudButton
                     onClick={() => setRemoteSpeechEnabled(false)}
-                    className="ui-text-meta ui-color-cloud transition-colors hover:text-content-primary"
-                  >
-                    {t({
-                      id: "settings.models.cloud.disable",
-                      message: "Disable cloud",
-                    })}
-                  </button>
+                  />
                 </div>
                 <div className="flex flex-col items-center gap-2">
                   {renderLocalCard(SIDE_BY_SIDE_WIDTH, true)}
-                  <span className="ui-text-meta ui-color-muted">
+                  <span className="flex h-7 items-center ui-text-meta ui-color-muted">
                     {t({
                       id: "settings.models.card.fallback",
                       message: "Fallback",
@@ -391,16 +400,9 @@ const ModelsTab = ({
                   modelLabel={activeModel ?? null}
                   onClick={onOpenProvidersTab}
                 />
-                <button
-                  type="button"
+                <DisableCloudButton
                   onClick={() => setRemoteSpeechEnabled(false)}
-                  className="ui-text-meta ui-color-cloud transition-colors hover:text-content-primary"
-                >
-                  {t({
-                    id: "settings.models.cloud.disable",
-                    message: "Disable cloud",
-                  })}
-                </button>
+                />
               </div>
             )
           ) : (
