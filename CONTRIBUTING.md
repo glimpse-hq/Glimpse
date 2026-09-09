@@ -40,7 +40,7 @@ Found a bug? [Open an issue](https://github.com/glimpse-hq/Glimpse/issues/new) a
 
 For UI bugs, a screenshot or screen recording goes a long way.
 
-For security or privacy issues, email [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) instead of opening a public issue.
+For security or privacy issues, follow [SECURITY.md](./SECURITY.md) instead of opening a public issue.
 
 ---
 
