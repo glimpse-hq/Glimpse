@@ -690,6 +690,7 @@ pub fn run() {
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
             analytics::track_gate_blocked,
+            analytics::track_feature_used_command,
             fetch_llm_models,
             apple_llm_availability,
             fetch_remote_speech_models,
@@ -1931,7 +1932,11 @@ pub(crate) fn persist_recording_async(
                 None,
             ),
         };
-        analytics::track_dictation_discarded(&app, code);
+        analytics::track_dictation_discarded(
+            &app,
+            code,
+            Some((recording.ended_at - recording.started_at).num_milliseconds() as f32 / 1000.0),
+        );
         tracing::error!("Recording rejected: {reason}");
         if let Some(notice) = notice {
             toast::show(&app, "warning", None, &toast::native(&app, notice));

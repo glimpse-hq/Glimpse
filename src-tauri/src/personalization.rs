@@ -122,6 +122,9 @@ pub fn set_personalities(
     state: tauri::State<AppState>,
 ) -> Result<Vec<Personality>, String> {
     let cleaned = sanitize_personalities(&personalities);
+    if !cleaned.is_empty() {
+        crate::analytics::track_feature_used(&app, "personalities");
+    }
     let mut settings = state.current_settings();
     settings.personalities = cleaned.clone();
     let saved = state

@@ -117,9 +117,13 @@ fn apply_case_pattern(matched: &str, replacement: &str) -> String {
 #[tauri::command]
 pub fn set_dictionary(
     entries: Vec<String>,
+    app: tauri::AppHandle<crate::AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<Vec<String>, String> {
     let cleaned = sanitize_dictionary_entries(&entries);
+    if !cleaned.is_empty() {
+        crate::analytics::track_feature_used(&app, "dictionary");
+    }
     let mut settings = state.current_settings();
     settings.dictionary = cleaned.clone();
     settings.auto_dictionary_ignored =
@@ -150,9 +154,13 @@ pub fn get_replacements(state: tauri::State<AppState>) -> Result<Vec<Replacement
 #[tauri::command]
 pub fn set_replacements(
     replacements: Vec<Replacement>,
+    app: tauri::AppHandle<crate::AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<Vec<Replacement>, String> {
     let cleaned = sanitize_replacements(&replacements);
+    if !cleaned.is_empty() {
+        crate::analytics::track_feature_used(&app, "replacements");
+    }
     let mut settings = state.current_settings();
     settings.replacements = cleaned.clone();
     state

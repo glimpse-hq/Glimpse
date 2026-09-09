@@ -2,11 +2,12 @@
 
 ### Improvements
 
-- After buying, the Account screen now says where your license key is and focuses the field. You can paste the whole email from Polar, and pasting the order number instead of the key now tells you which one to copy.
-- A small celebration appears the first time your dictated words pass 1,000, 10,000, 100,000 and 1,000,000.
-- A few more anonymous categories are reported when analytics is on: how long a discarded empty recording was, which locked feature was clicked after the trial, and on which trial day a license was activated. Never audio, text or keys.
-- If your microphone is unplugged or disconnects while you are dictating, Glimpse now stops the recording right away and saves what it heard to Library instead of pasting a cut-off sentence.
-- Failed recordings and transcriptions now report which kind of problem it was (microphone busy or disconnected, model failed to load, and so on) instead of "unknown", so edge cases can be found and fixed. Only a category is sent, never the error text.
+- After buying, the Account screen now says where your license key is, and activation is more forgiving about what you paste.
+- A small celebration appears the first time your dictated words pass certain milestones.
+- A few more anonymous categories are reported when analytics is on. Never audio, text or keys. The full list is on the [Analytics wiki page](https://github.com/glimpse-hq/Glimpse/wiki/Analytics).
+- If your microphone disconnects while you are dictating, Glimpse stops the recording and saves what it heard to Library.
+- Failed recordings and transcriptions now report what kind of problem it was, so edge cases can be found and fixed. Only a category is sent, never the error text.
+- Some small design refinements to the pill and toasts.
 
 ---
 

@@ -83,5 +83,7 @@ pub fn apply_import(
 ) -> Result<ImportResult, String> {
     let home = home_dir(&app)?;
     let selections = selections.unwrap_or_default();
-    run_apply(&app, &state, &id, &home, &selections)
+    let result = run_apply(&app, &state, &id, &home, &selections)?;
+    crate::analytics::track_feature_used(&app, "import");
+    Ok(result)
 }
