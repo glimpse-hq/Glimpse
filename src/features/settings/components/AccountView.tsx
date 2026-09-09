@@ -83,9 +83,17 @@ const AccountView = ({
     if (!activationError) return null;
     switch (classifyActivationInput(attemptedKey)) {
       case "order_id":
-        return t`That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_.`;
+        return t({
+          id: "settings.account.activate.order_id_error",
+          message:
+            "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_.",
+        });
       case "masked_key":
-        return t`That is the shortened key. Copy the full one from your Polar purchases page.`;
+        return t({
+          id: "settings.account.activate.masked_key_error",
+          message:
+            "That is the shortened key. Copy the full one from your Polar purchases page.",
+        });
       case "discount_code":
         return t({
           id: "settings.account.activate.discount_code_error",
@@ -98,7 +106,11 @@ const AccountView = ({
   })();
 
   const activationHintText = checkoutReturned
-    ? t`Polar emailed your license key. Paste it here, or paste the whole email.`
+    ? t({
+        id: "settings.account.activate.checkout_return_hint",
+        message:
+          "Polar emailed your license key. Paste it here, or paste the whole email.",
+      })
     : null;
 
   const handleDeactivateClick = () => {

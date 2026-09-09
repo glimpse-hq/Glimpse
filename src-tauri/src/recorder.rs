@@ -487,16 +487,17 @@ impl RecorderCore {
         }
         .map_err(|err| cpal_error("Failed to open input stream", &err))?;
 
-        stream
-            .play()
-            .map_err(|err| cpal_error("Failed to start input stream", &err))?;
+        *self.active_device.lock() = device.id().ok();
+        stream.play().map_err(|err| {
+            *self.active_device.lock() = None;
+            cpal_error("Failed to start input stream", &err)
+        })?;
 
         *self.live_buffer.lock() = Some(LiveBufferState {
             buffer: Arc::clone(&buffer),
             sample_rate,
             channels,
         });
-        *self.active_device.lock() = device.id().ok();
 
         let started_at = Local::now();
         let pending = pending_dir.and_then(|dir| {

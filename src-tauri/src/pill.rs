@@ -701,7 +701,7 @@ impl PillController {
     }
 
     /// Ends the recording when the microphone it opened is unplugged. The
-    /// transcript is cut short, so it goes to Library without pasting.
+    /// transcript is cut short, so it goes to History without pasting.
     #[cfg(target_os = "macos")]
     pub fn stop_if_input_device_removed(&self, app: &AppHandle<AppRuntime>) {
         if self.status() != PillStatus::Listening
@@ -730,9 +730,14 @@ impl PillController {
             .take()
             .unwrap_or_else(|| app.state::<AppState>().current_settings());
         let recording_options = *self.recording_options.lock();
-        self.capture_selected_text_if_enabled(app, &settings);
-
         let state = app.state::<AppState>();
+        if auto_paste {
+            self.capture_selected_text_if_enabled(app, &settings);
+        } else {
+            // No paste means no edit mode; keep the raw transcript.
+            state.set_pending_selected_text(None);
+        }
+
         let has_streaming = state.has_streaming_session();
         // Create the cancellation token up front, before the worker spawns, so a
         // rapid cancel can't slip in before the token exists and leak a paste.

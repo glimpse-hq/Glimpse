@@ -70,7 +70,7 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.toast.cancelled", message: "Transcription cancelled" }),
   msg({
     id: "native.toast.mic_removed",
-    message: "Microphone disconnected. Recording stopped and saved to Library.",
+    message: "Microphone disconnected. Recording stopped and saved to History.",
   }),
   msg({
     id: "native.toast.milestone",

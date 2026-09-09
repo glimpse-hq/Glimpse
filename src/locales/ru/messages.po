@@ -3329,9 +3329,14 @@ msgstr "Персонализация"
 msgid "library.modal.play_audio"
 msgstr "Воспроизвести аудио"
 
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "Polar emailed your license key. Paste it here, or paste the whole email."
+msgid "settings.account.activate.checkout_return_hint"
 msgstr ""
+
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
+#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4370,13 +4375,23 @@ msgstr "Спасибо за поддержку Glimpse"
 msgid "personalization.modal.website.duplicate"
 msgstr "Этот домен уже добавлен"
 
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "That is the shortened key. Copy the full one from your Polar purchases page."
+msgid "settings.account.activate.masked_key_error"
 msgstr ""
 
 #: src/features/settings/components/AccountView.tsx
-msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
+#~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.order_id_error"
 msgstr ""
+
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
+#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
