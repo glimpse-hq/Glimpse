@@ -365,10 +365,12 @@ static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
 /// install, with a bounded outcome: recording started, the microphone was
 /// blocked, or the device failed to open.
 pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
-    if FIRST_DICTATION_REPORTED.swap(true, Ordering::Relaxed) {
+    let state = app.state::<AppState>();
+    // Checked before the marker so an opted-out first attempt doesn't burn it.
+    if !state.analytics_state().0 || FIRST_DICTATION_REPORTED.swap(true, Ordering::Relaxed) {
         return;
     }
-    let store = &app.state::<AppState>().settings_store;
+    let store = &state.settings_store;
     let already = store
         .read_app_value::<String>(KEY_FIRST_DICTATION_REPORTED, String::new())
         .map(|v| !v.is_empty())

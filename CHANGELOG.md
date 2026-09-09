@@ -5,7 +5,7 @@
 - After buying, the Account screen now says where your license key is, and activation is more forgiving about what you paste.
 - A small celebration appears the first time your dictated words pass certain milestones.
 - A few more anonymous categories are reported when analytics is on. Never audio, text or keys. The full list is on the [Analytics wiki page](https://github.com/glimpse-hq/Glimpse/wiki/Analytics).
-- If your microphone disconnects while you are dictating, Glimpse stops the recording and saves what it heard to Library.
+- If your microphone disconnects while you are dictating, Glimpse stops the recording and saves what it heard to History.
 - Failed recordings and transcriptions now report what kind of problem it was, so edge cases can be found and fixed. Only a category is sent, never the error text.
 - Some small design refinements to the pill and toasts.
 
