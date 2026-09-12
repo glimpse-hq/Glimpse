@@ -1211,6 +1211,11 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "Audio wordt geconverteerd… {0}%"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.copied"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copied"
 msgstr "Gekopieerd"
@@ -1279,6 +1284,11 @@ msgstr "Basis-URL kopiëren"
 #: src/features/settings/components/SettingsScreen.tsx
 msgid "settings.error.copy"
 msgstr "Kopieerfout"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.copy"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1777,6 +1787,11 @@ msgstr "Downloaden"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.confirm.download"
 msgstr "Downloaden"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -4049,6 +4064,11 @@ msgstr "Kortst"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.show_all"
 msgstr "Toon alles"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx

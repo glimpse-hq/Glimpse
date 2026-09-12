@@ -5,6 +5,11 @@
 - Fixed shortcuts using Ctrl and Alt together on Windows.
 - Fixed Windows shortcuts getting stuck after locking the screen or responding to a permission prompt.
 
+
+### Improvements
+
+- When a model errors while downloading, the error can now be expanded and copied.
+
 ---
 
 1.1.4
