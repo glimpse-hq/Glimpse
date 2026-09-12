@@ -7,6 +7,7 @@ import {
   Clock,
   Funnel,
   Check,
+  Copy,
   Download,
   Info,
   Square,
@@ -28,6 +29,7 @@ import {
 } from "../lib/modelCapabilities";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import DotMatrix from "./DotMatrix";
 import type { DownloadEvent, ModelInfo } from "../../types";
 
@@ -446,6 +448,8 @@ function ModelRow({
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
   const showError = progress?.status === "error";
+  const errorMessage =
+    progress?.status === "error" ? progress.message : undefined;
   const isCancelled = progress?.status === "cancelled";
   const isBusy = isDownloading || showError || isCancelled;
   const percent = Math.round(progress?.percent ?? 0);
@@ -611,20 +615,8 @@ function ModelRow({
                     }
                   </p>
                 ) : null}
-                {showError && (
-                  <p className="flex w-full items-center justify-end gap-1 ui-text-micro text-error">
-                    <AlertCircle size={9} className="shrink-0" />
-                    <span className="truncate">
-                      {
-                        (
-                          progress as Extract<
-                            DownloadEvent,
-                            { status: "error" }
-                          >
-                        ).message
-                      }
-                    </span>
-                  </p>
+                {showError && errorMessage && (
+                  <DownloadErrorPopover message={errorMessage} />
                 )}
                 {isCancelled && (
                   <p className="text-right ui-text-micro text-content-disabled">
@@ -777,6 +769,77 @@ function AneCheckbox({
                   "Adds a Core ML encoder that runs on the Apple Neural Engine for faster, more power-efficient transcription. The first load takes longer while macOS optimizes it for your chip.",
               })}
             </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function DownloadErrorPopover({ message }: { message: string }) {
+  const { t } = useLingui();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { copied, copy, reset } = useCopyToClipboard(1500);
+  useClickOutside(
+    ref,
+    () => {
+      setOpen(false);
+      reset();
+    },
+    open,
+  );
+
+  const copyLabel = copied
+    ? t({ id: "model_picker.error.copied", message: "Copied" })
+    : t({ id: "model_picker.error.copy", message: "Copy error message" });
+
+  return (
+    <div className="relative flex w-full justify-end" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        title={t({
+          id: "model_picker.error.show",
+          message: "Show error details",
+        })}
+        className="flex min-w-0 max-w-full items-center gap-1 rounded-sm ui-text-micro text-error transition-opacity hover:opacity-80"
+      >
+        <AlertCircle size={9} className="shrink-0" aria-hidden="true" />
+        <span className="truncate">{message}</span>
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="dialog"
+            aria-label={t({
+              id: "model_picker.error.title",
+              message: "Download failed",
+            })}
+            initial={{ opacity: 0, scale: 0.98, y: -2 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -2 }}
+            transition={{ duration: 0.12 }}
+            className="ui-surface-menu absolute right-0 top-full z-30 mt-1 flex w-64 items-start gap-1.5 py-1.5 pl-2.5 pr-1.5"
+          >
+            <p className="min-w-0 flex-1 select-text break-words font-mono ui-text-micro leading-snug text-content-secondary">
+              {message}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copy(message)}
+              title={copyLabel}
+              aria-label={copyLabel}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+            >
+              {copied ? (
+                <Check size={11} aria-hidden="true" />
+              ) : (
+                <Copy size={11} aria-hidden="true" />
+              )}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
