@@ -1,3 +1,12 @@
+1.1.5
+
+### Fixes
+
+- Fixed shortcuts using Ctrl and Alt together on Windows.
+- Fixed Windows shortcuts getting stuck after locking the screen or responding to a permission prompt.
+
+---
+
 1.1.4
 
 ### Improvements
