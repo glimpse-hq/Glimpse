@@ -14,11 +14,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.card.active"
-#~ msgstr "Aktiv"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #~ msgid "onboarding.first_dictation.eyebrow"
 #~ msgstr ""
@@ -172,6 +167,46 @@ msgstr ""
 #: src/features/onboarding/steps/ReadyStep.tsx
 #~ msgid "onboarding.done.recap.shortcut"
 #~ msgstr "Intelligente Kurzbefehle"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud"
+#~ msgstr "Cloud"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.unconfigured"
+#~ msgstr "Fügen Sie zuerst in Anbieter einen Endpunkt und ein Modell hinzu"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.installed.active"
+#~ msgstr "Aktiv"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.disable"
+#~ msgstr "Cloud deaktivieren"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.use"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsNav.tsx
+#~ msgid "settings.nav.locked_hint"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsNav.tsx
+#~ msgid "settings.nav.aria"
+#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -516,7 +551,7 @@ msgstr "Aktiv"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.installed.active"
+msgid "settings.models.card.active"
 msgstr "Aktiv"
 
 #. js-lingui-explicit-id
@@ -533,11 +568,6 @@ msgstr "Hinzufügen"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites.placeholder"
 msgstr "Füge eine Website wie gmail.com hinzu"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud.unconfigured"
-msgstr "Fügen Sie zuerst in Anbieter einen Endpunkt und ein Modell hinzu"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1107,11 +1137,6 @@ msgstr "Mitteilung schließen"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "Fenster schließen"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud"
-msgstr "Cloud"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -1752,11 +1777,6 @@ msgstr "Das Wörterbuch funktioniert nur mit Modellen, die Wörterbuchunterstüt
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "Deaktivieren"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud.disable"
-msgstr "Cloud deaktivieren"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3160,6 +3180,11 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "Nicht installiert"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.not_set_up"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.timestamps_unsupported"
 msgstr "Von diesem Modell nicht unterstützt"
@@ -3203,6 +3228,11 @@ msgstr "aus"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.off"
 msgstr "Aus"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.off"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4772,6 +4802,11 @@ msgstr "Verwenden"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.installed.use"
 msgstr "Verwenden"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.cloud.toggle"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

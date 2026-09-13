@@ -10,6 +10,9 @@
 ### Improvements
 
 - When a model errors while downloading, the error can now be expanded and copied.
+- The Models screen now shows cloud and local side by side, with a switch to turn cloud on or off.
+- Collapsed sidebar icons show their name on hover.
+- Many UI elements have been improved and refined.
 
 ---
 

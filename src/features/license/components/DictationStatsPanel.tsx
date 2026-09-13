@@ -44,20 +44,21 @@ const DictationStatsPanel = () => {
   const [mode, setMode] = useState<ActivityMode>("daily");
   const [hovered, setHovered] = useState<Hovered | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [tooltipLeft, setTooltipLeft] = useState(0);
 
+  // Centre the tooltip over the hovered cell and clamp it to the viewport.
+  // Written straight to the element so it lands in the same frame as the
+  // hover, with no second render at a stale position.
   useLayoutEffect(() => {
     const element = tooltipRef.current;
     if (!hovered || !element) return;
-    const width = element.offsetWidth;
-    const gap = 9;
     const margin = 8;
-    const right = hovered.x + gap;
-    setTooltipLeft(
-      right + width > window.innerWidth - margin
-        ? Math.max(margin, hovered.x - gap - width)
-        : right,
+    const width = element.offsetWidth;
+    const left = Math.min(
+      Math.max(margin, hovered.x - width / 2),
+      window.innerWidth - margin - width,
     );
+    element.style.left = `${left}px`;
+    element.style.top = `${hovered.y - 6}px`;
   }, [hovered]);
   const [sharing, setSharing] = useState(false);
 
@@ -347,7 +348,6 @@ const DictationStatsPanel = () => {
           <div
             ref={tooltipRef}
             className="settings-typescale ui-surface-menu pointer-events-none fixed z-tooltip -translate-y-full px-2.5 py-1.5"
-            style={{ left: tooltipLeft, top: hovered.y - 7 }}
           >
             <div className="ui-text-micro ui-color-primary whitespace-nowrap">
               {hovered.target.kind === "day"
