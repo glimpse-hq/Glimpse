@@ -98,6 +98,7 @@ const LANGUAGE_NAMES: &[(&str, &str)] = &[
     ("my", "Myanmar"),
     ("bo", "Tibetan"),
     ("tl", "Tagalog"),
+    ("fil", "Filipino"),
     ("mg", "Malagasy"),
     ("as", "Assamese"),
     ("tt", "Tatar"),

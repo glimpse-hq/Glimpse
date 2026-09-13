@@ -239,44 +239,14 @@ msgstr ""
 #~ msgstr "Ajoute un encodeur Core ML qui s'exécute sur l'Apple Neural Engine pour une transcription plus rapide et plus économe en énergie. Le premier chargement est plus long le temps que macOS l'optimise pour votre puce."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelCapabilityIcon.tsx
-#~ msgid "model_capability.dictionary"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 #~ msgid "model_picker.filter.aria"
 #~ msgstr "Filtrer les modèles par catégorie"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelCapabilityIcon.tsx
-#~ msgid "model_capability.live_text"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 #~ msgid "model_picker.no_results"
 #~ msgstr "Aucun modèle ne correspond à votre recherche."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelCapabilityIcon.tsx
-#~ msgid "model_capability.dictionary_detail"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelCapabilityIcon.tsx
-#~ msgid "model_capability.timestamps_detail"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelCapabilityIcon.tsx
-#~ msgid "model_capability.live_text_detail"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelCapabilityIcon.tsx
-#~ msgid "model_capability.timestamps"
-#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1576,6 +1546,11 @@ msgid "personalization.modal.custom_instructions"
 msgstr "Instructions personnalisées"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.dictionary"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.capability.dictionary"
 msgstr "Mots personnalisés"
@@ -2716,6 +2691,11 @@ msgid "onboarding.first_dictation.listening"
 msgstr "Écoute en cours…"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.live_text"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.aria"
 msgstr "Clé API LLM"
@@ -3615,6 +3595,11 @@ msgid "updates.ready_to_install"
 msgstr "Prêt à installer"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.dictionary_detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recovered_one"
 msgstr "Enregistrement récupéré"
@@ -4071,6 +4056,11 @@ msgid "settings.about.data.include_timestamps_hint"
 msgstr "Heures de début et de fin des segments"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.timestamps_detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.select_model"
 msgstr "Sélectionner un modèle"
@@ -4476,6 +4466,11 @@ msgid "settings.general.microphone_test.test"
 msgstr "Test"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.live_text_detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements"
 msgstr "Remplacements de texte"
@@ -4613,6 +4608,11 @@ msgstr "Jusqu'au {date}"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.saved"
 msgstr "Temps gagné"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.timestamps"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

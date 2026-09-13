@@ -53,6 +53,7 @@ type ModelsTabProps = {
   remoteSpeechProvider: RemoteSpeechProvider;
   remoteSpeechEndpoint: string;
   remoteSpeechModel: string;
+  remoteSpeechApiKey: string;
   setLocalModel: (value: string) => void;
   handleDownload: (modelKey: string, ane?: boolean) => void;
   handleDelete: (modelKey: string) => void;
@@ -255,6 +256,7 @@ const ModelsTab = ({
   remoteSpeechProvider,
   remoteSpeechEndpoint,
   remoteSpeechModel,
+  remoteSpeechApiKey,
   setLocalModel,
   handleDownload,
   handleDelete,
@@ -291,6 +293,7 @@ const ModelsTab = ({
     provider: remoteSpeechProvider,
     endpoint: remoteSpeechEndpoint,
     model: remoteSpeechModel,
+    apiKey: remoteSpeechApiKey,
   });
   const cloudMode: CloudMode = remoteSpeechEnabled
     ? "on"
@@ -368,7 +371,7 @@ const ModelsTab = ({
               </div>
             </div>
           ) : (
-            (remoteSpeechEnabled || cloudConfigured) && (
+            cloudMode !== "unconfigured" && (
               <div className="flex shrink-0 justify-center">
                 <CloudHeroCard
                   mode={cloudMode}

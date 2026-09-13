@@ -373,7 +373,8 @@ pub async fn download_model(
                         model: model.clone(),
                     },
                 );
-                let status = manager.status(&spec).map_err(|err| err.to_string())?;
+                let installed = installed_spec(&model, &manager).map_err(|err| err.to_string())?;
+                let status = manager.status(&installed).map_err(|err| err.to_string())?;
                 return Ok(map_status(status, &manager));
             }
             let reason = crate::analytics::classify_failure_reason(&err.to_string());
