@@ -61,7 +61,7 @@ jobs:
         if: matrix.os == 'windows'
         uses: humbletim/install-vulkan-sdk@30ba978f977e81b72d091fc8888feb1fb26f9aff # v1.2
         with:
-          version: 1.4.309.0
+          version: 1.4.357.0
           cache: true
 
       - name: install Rust stable
