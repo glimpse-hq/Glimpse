@@ -85,7 +85,7 @@ jobs:
       - name: cache Rust
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
-          key: platform-${{ matrix.platform }}
+          key: platform-${{ matrix.platform }}-vulkan-1.4.357.0
           workspaces: src-tauri -> target
           cache-directories: ${{ matrix.cargo-cache-dir }}
           cache-on-failure: true
