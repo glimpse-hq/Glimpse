@@ -133,12 +133,25 @@ jobs:
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
           "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
 
+      - name: cache Vulkan SDK installer
+        if: matrix.os == 'windows'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/VulkanSDK-Installer.exe
+          key: vulkan-sdk-installer-1.4.357.0
+
       - name: install Vulkan SDK
         if: matrix.os == 'windows'
-        uses: humbletim/install-vulkan-sdk@30ba978f977e81b72d091fc8888feb1fb26f9aff # v1.2
-        with:
-          version: 1.4.357.0
-          cache: true
+        shell: pwsh
+        run: |
+          $version = "1.4.357.0"
+          $installer = Join-Path $env:RUNNER_TEMP "VulkanSDK-Installer.exe"
+          if (-not (Test-Path $installer)) {
+            curl.exe -L -o $installer "https://sdk.lunarg.com/sdk/download/$version/windows/vulkansdk-windows-X64-$version.exe"
+          }
+          & $installer --accept-licenses --default-answer --confirm-command install
+          "VULKAN_SDK=C:\VulkanSDK\$version" >> $env:GITHUB_ENV
+          "C:\VulkanSDK\$version\Bin" >> $env:GITHUB_PATH
 
       - name: cache bun
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
