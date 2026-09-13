@@ -762,7 +762,7 @@ msgstr "Aspetto"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
-msgstr ""
+msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1000,12 +1000,12 @@ msgstr "Annullato"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.capabilities"
-msgstr ""
+msgstr "Funzionalità"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.category"
-msgstr ""
+msgstr "Categoria"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1116,7 +1116,7 @@ msgstr "Cleanup richiede un modello di scrittura. Configurane uno in"
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
 msgid "filter_menu.clear"
-msgstr ""
+msgstr "Cancella"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1293,7 +1293,7 @@ msgstr "Conversione audio in corso... {0}%"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copied"
-msgstr ""
+msgstr "Copiato"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1368,7 +1368,7 @@ msgstr "Errore di copia"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
-msgstr ""
+msgstr "Copia messaggio di errore"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1548,7 +1548,7 @@ msgstr "Istruzioni personalizzate"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary"
-msgstr ""
+msgstr "Parole personalizzate"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1871,7 +1871,7 @@ msgstr "Scarica"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
-msgstr ""
+msgstr "Download non riuscito"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2166,7 +2166,7 @@ msgstr "Filtra libreria per stato"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.aria_v2"
-msgstr ""
+msgstr "Filtra modelli"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2693,7 +2693,7 @@ msgstr "In ascolto…"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
-msgstr ""
+msgstr "Live Text"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3112,7 +3112,7 @@ msgstr "Nessun modello trovato. Puoi aggiungerne uno in seguito nelle Impostazio
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.no_matches"
-msgstr ""
+msgstr "Nessun modello corrisponde."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3237,7 +3237,7 @@ msgstr "Non installato"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.not_set_up"
-msgstr ""
+msgstr "Non configurato"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3287,7 +3287,7 @@ msgstr "Disattivato"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.off"
-msgstr ""
+msgstr "Disattivato"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3597,7 +3597,7 @@ msgstr "Pronto per l'installazione"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
-msgstr ""
+msgstr "Riconosce le parole dal tuo dizionario."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3928,7 +3928,7 @@ msgstr "riesegui la procedura guidata di configurazione"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.detail"
-msgstr ""
+msgstr "Esegue l'encoder sul Neural Engine. Più veloce e consuma meno energia. Il primo caricamento richiede più tempo mentre macOS lo ottimizza."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4058,7 +4058,7 @@ msgstr "Orari di inizio e fine del segmento"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps_detail"
-msgstr ""
+msgstr "Temporizzazione dei segmenti ed esportazione dei sottotitoli in Libreria."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4168,7 +4168,7 @@ msgstr "Mostra tutte"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
-msgstr ""
+msgstr "Mostra dettagli errore"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -4468,7 +4468,7 @@ msgstr "Test"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
-msgstr ""
+msgstr "Il testo appare nel riquadro mentre parli."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4612,7 +4612,7 @@ msgstr "Tempo risparmiato"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps"
-msgstr ""
+msgstr "Timestamp"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4886,7 +4886,7 @@ msgstr "Usa"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.toggle"
-msgstr ""
+msgstr "Usa trascrizione cloud"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

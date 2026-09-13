@@ -762,7 +762,7 @@ msgstr "Erscheinungsbild"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
-msgstr ""
+msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1000,12 +1000,12 @@ msgstr "Abgebrochen"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.capabilities"
-msgstr ""
+msgstr "Funktionen"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.category"
-msgstr ""
+msgstr "Kategorie"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1116,7 +1116,7 @@ msgstr "Cleanup benötigt ein Schreibmodell. Richten Sie eines ein in"
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
 msgid "filter_menu.clear"
-msgstr ""
+msgstr "Löschen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1293,7 +1293,7 @@ msgstr "Audio wird konvertiert … {0}%"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copied"
-msgstr ""
+msgstr "Kopiert"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1368,7 +1368,7 @@ msgstr "Kopierfehler"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
-msgstr ""
+msgstr "Fehlermeldung kopieren"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1548,7 +1548,7 @@ msgstr "Eigene Anweisungen"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary"
-msgstr ""
+msgstr "Eigene Wörter"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1871,7 +1871,7 @@ msgstr "Laden"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
-msgstr ""
+msgstr "Download fehlgeschlagen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2166,7 +2166,7 @@ msgstr "Bibliothek nach Status filtern"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.aria_v2"
-msgstr ""
+msgstr "Modelle filtern"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2693,7 +2693,7 @@ msgstr "Wir hören zu …"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
-msgstr ""
+msgstr "Live-Text"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3112,7 +3112,7 @@ msgstr "Keine Modelle gefunden. Sie können später in den Einstellungen eines h
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.no_matches"
-msgstr ""
+msgstr "Keine passenden Modelle."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3237,7 +3237,7 @@ msgstr "Nicht installiert"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.not_set_up"
-msgstr ""
+msgstr "Nicht eingerichtet"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3287,7 +3287,7 @@ msgstr "Aus"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.off"
-msgstr ""
+msgstr "Aus"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3597,7 +3597,7 @@ msgstr "Bereit zur Installation"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
-msgstr ""
+msgstr "Erkennt Wörter aus Ihrem Wörterbuch."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3928,7 +3928,7 @@ msgstr "Einrichtungsassistent erneut ausführen"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.detail"
-msgstr ""
+msgstr "Führt den Encoder auf der Neural Engine aus. Schneller und mit geringerem Energieverbrauch. Der erste Ladevorgang dauert länger, während macOS es optimiert."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4058,7 +4058,7 @@ msgstr "Segmentstart- und -endzeiten"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps_detail"
-msgstr ""
+msgstr "Segmenttiming und Untertitel-Export in der Mediathek."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4168,7 +4168,7 @@ msgstr "Alle einblenden"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
-msgstr ""
+msgstr "Fehlerdetails anzeigen"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -4468,7 +4468,7 @@ msgstr "Test"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
-msgstr ""
+msgstr "Text wird während des Sprechens in der Blase angezeigt."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4612,7 +4612,7 @@ msgstr "Gesparte Zeit"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps"
-msgstr ""
+msgstr "Zeitstempel"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4886,7 +4886,7 @@ msgstr "Verwenden"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.toggle"
-msgstr ""
+msgstr "Cloud-Transkription verwenden"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
