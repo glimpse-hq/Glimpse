@@ -64,6 +64,7 @@ const SPECTRUM_BINS: usize = SPECTRUM_SIZE / 2;
 const SPECTRUM_SMOOTHING: f32 = 0.8;
 const SPECTRUM_MIN_DB: f32 = -100.0;
 const SPECTRUM_MAX_DB: f32 = -30.0;
+const SPECTRUM_FLOOR_RISE: f32 = 0.0005;
 
 /// A polling thread that stops on request; the join happens off the caller's thread.
 struct BackgroundEmitter {
@@ -106,6 +107,7 @@ fn start_spectrum_emitter(
             .collect();
         let mut buffer = vec![Complex { re: 0.0, im: 0.0 }; SPECTRUM_SIZE];
         let mut smoothed = vec![0.0f32; SPECTRUM_BINS];
+        let mut floor = vec![1.0f32; SPECTRUM_BINS];
         let mut bins = vec![0u8; SPECTRUM_BINS];
 
         while !stop_signal.load(Ordering::Relaxed) {
@@ -121,8 +123,16 @@ fn start_spectrum_emitter(
                     let db = 20.0 * magnitude.max(1e-10).log10();
                     let normalized = ((db - SPECTRUM_MIN_DB) / (SPECTRUM_MAX_DB - SPECTRUM_MIN_DB))
                         .clamp(0.0, 1.0);
+                    // Track the quiet level per bin so steady mic hiss reads as silence.
+                    if normalized < floor[idx] {
+                        floor[idx] = normalized;
+                    } else {
+                        floor[idx] += (normalized - floor[idx]) * SPECTRUM_FLOOR_RISE;
+                    }
+                    let above_floor =
+                        ((normalized - floor[idx]) / (1.0 - floor[idx]).max(0.05)).clamp(0.0, 1.0);
                     smoothed[idx] = smoothed[idx] * SPECTRUM_SMOOTHING
-                        + normalized * (1.0 - SPECTRUM_SMOOTHING);
+                        + above_floor * (1.0 - SPECTRUM_SMOOTHING);
                     bins[idx] = (smoothed[idx] * 255.0).round().clamp(0.0, 255.0) as u8;
                 }
 

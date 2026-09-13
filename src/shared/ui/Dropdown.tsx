@@ -386,7 +386,7 @@ export function Dropdown<T extends string | number>({
             )}
 
             <div
-              className="overflow-y-scroll min-h-[40px] py-1.5 pl-1.5 pr-0 flex flex-col gap-1"
+              className="dropdown-list min-h-[40px] px-1 py-1 flex flex-col"
               role="listbox"
             >
               {filteredOptions.length > 0 ? (
@@ -396,10 +396,10 @@ export function Dropdown<T extends string | number>({
                       key={`header-${idx}-${option.value}`}
                       role="presentation"
                       className={classNames(
-                        "mt-1 first:mt-0",
+                        "mx-1 border-t border-border-secondary first:border-t-0 first:mt-0 first:pt-1",
                         option.prominentHeader
-                          ? "px-2.5 pt-2 pb-1.5 ui-text-label-strong ui-color-secondary"
-                          : "px-2.5 py-1.5 ui-text-uppercase-meta font-semibold ui-color-disabled",
+                          ? "mt-1 px-2 pb-1 pt-2 ui-text-label-strong ui-color-secondary"
+                          : "mt-1 px-2 pb-1 pt-2 ui-text-uppercase-micro ui-color-muted",
                       )}
                     >
                       {option.label}
@@ -421,12 +421,12 @@ export function Dropdown<T extends string | number>({
                         closeDropdown();
                       }}
                       className={classNames(
-                        "w-full text-left rounded-md px-2.5 py-2 transition-colors duration-100 flex items-center justify-between group",
+                        "w-full text-left rounded-md px-2 py-1.5 transition-colors duration-100 flex items-center justify-between group",
                         option.locked
                           ? "text-content-disabled cursor-default"
                           : value === option.value
-                            ? "bg-[var(--color-interactive-10)] text-[var(--color-interactive)]"
-                            : "text-content-secondary hover:bg-surface-elevated hover:text-content-primary",
+                            ? "text-content-primary hover:bg-[var(--surface-interactive)]"
+                            : "text-content-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary",
                         optionClassName,
                       )}
                     >
@@ -450,7 +450,7 @@ export function Dropdown<T extends string | number>({
                           <span
                             className={`ui-text-meta truncate ${
                               value === option.value
-                                ? "text-[var(--color-interactive)] opacity-75"
+                                ? "ui-color-muted"
                                 : "ui-color-disabled group-hover:text-content-muted"
                             }`}
                           >

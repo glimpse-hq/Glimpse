@@ -2,6 +2,9 @@ import { useMemo } from "react";
 import { useLingui } from "@lingui/react/macro";
 import { CaretRight, Cloud } from "@phosphor-icons/react";
 import ModelCardShell, { waveDots } from "./ModelCardShell";
+import { useFitText } from "../../../shared/hooks/useFitText";
+
+const TITLE_SIZE = "1.1875rem";
 
 type CloudModelCardProps = {
   providerLabel: string;
@@ -17,6 +20,7 @@ const CloudModelCard = ({
   onClick,
 }: CloudModelCardProps) => {
   const { t } = useLingui();
+  const titleRef = useFitText<HTMLHeadingElement>(providerLabel, TITLE_SIZE);
   const dots = useMemo(
     () => waveDots(`${providerLabel}:${modelLabel ?? ""}`),
     [providerLabel, modelLabel],
@@ -45,12 +49,9 @@ const CloudModelCard = ({
               aria-hidden="true"
             />
             <h3
+              ref={titleRef}
               className="ui-color-primary min-w-0 truncate"
-              style={{
-                fontSize: "1.1875rem",
-                fontWeight: 650,
-                letterSpacing: "-0.015em",
-              }}
+              style={{ fontWeight: 650, letterSpacing: "-0.015em" }}
             >
               {providerLabel}
             </h3>

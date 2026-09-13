@@ -23,7 +23,7 @@ import {
   CaretRight as ChevronRight,
   Copy,
   DotsThreeVertical,
-  Funnel,
+  FunnelSimple,
   Pause,
   PencilSimple as Pencil,
   Play,
@@ -1521,7 +1521,7 @@ const LibraryDetail = ({
                     : "text-content-disabled hover:text-content-primary"
                 }`}
               >
-                <Funnel size={13} weight={speakerFilter ? "fill" : "regular"} />
+                <FunnelSimple size={14} aria-hidden="true" />
               </button>
               <AnimatePresence>
                 {filterMenuOpen && (

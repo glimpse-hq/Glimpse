@@ -302,7 +302,7 @@ const AccountView = ({
                 id: "settings.account.activate.input_aria",
                 message: "Activation code",
               })}
-              className="min-w-0 flex-1 bg-transparent px-0.5 py-2 font-mono ui-text-body-sm ui-color-primary placeholder-content-disabled outline-none"
+              className="min-w-0 flex-1 bg-transparent px-0.5 py-1.5 font-mono ui-text-body-sm leading-normal ui-color-primary placeholder-content-disabled outline-none"
             />
             <button
               type="submit"

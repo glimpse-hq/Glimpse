@@ -8,6 +8,7 @@ import ModelStatCard from "../../settings/components/ModelStatCard";
 import {
   isBuiltInModel,
   formatModelSize,
+  modelSizeMb,
 } from "../../../shared/lib/modelStats";
 import {
   hasModelCapability,
@@ -21,10 +22,6 @@ import {
   PRIMARY_BUTTON_CLASS,
   type StepMotionProps,
 } from "./shared";
-
-// The Core ML encoder is a separate download, so fold it into the shown size.
-const totalSizeMb = (model: ModelInfo) =>
-  model.size_mb + (model.ane_size_mb ?? 0);
 
 interface ModelStepProps {
   stepMotionProps: StepMotionProps;
@@ -177,7 +174,7 @@ export function ModelStep({
                       id: "onboarding.model.option.no_download",
                       message: "No download",
                     })
-                  : formatModelSize(totalSizeMb(option))}
+                  : formatModelSize(modelSizeMb(option, true))}
               </span>
             </button>
           );
@@ -212,8 +209,9 @@ export function ModelStep({
       ) : (
         <>
           <ModelStatCard
-            model={{ ...selectedModel, size_mb: totalSizeMb(selectedModel) }}
+            model={selectedModel}
             status={status}
+            withAne
             progress={progress}
             onDownload={() => onDownload(selectedModel.key)}
             onDelete={() => onDelete(selectedModel.key)}
