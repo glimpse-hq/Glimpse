@@ -40,6 +40,7 @@ export type ActivityGridProps = {
   busiest: number;
   mode: ActivityMode;
   monthFormatter: Intl.DateTimeFormat;
+  /** x is the hovered cell's horizontal centre, y its top edge, in viewport px. */
   onHover?: (target: ActivityTarget | null, x: number, y: number) => void;
 };
 
@@ -148,10 +149,11 @@ const ActivityGrid = ({
                       strokeWidth={focused === cell.key ? 1 : 0}
                       onMouseEnter={(event) => {
                         setFocused(cell.key);
+                        const box = event.currentTarget.getBoundingClientRect();
                         onHover?.(
                           { kind: "day", cell },
-                          event.clientX,
-                          event.clientY,
+                          box.left + box.width / 2,
+                          box.top,
                         );
                       }}
                     />
@@ -172,10 +174,11 @@ const ActivityGrid = ({
                   style={{ animationDelay: `${columnIndex * SWEEP_STEP_MS}ms` }}
                   onMouseEnter={(event) => {
                     setFocused(week.key);
+                    const box = event.currentTarget.getBoundingClientRect();
                     onHover?.(
                       { kind: "week", week },
-                      event.clientX,
-                      event.clientY,
+                      box.left + box.width / 2,
+                      box.top,
                     );
                   }}
                 >

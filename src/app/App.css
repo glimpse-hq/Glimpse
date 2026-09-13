@@ -1593,6 +1593,61 @@ body {
     transform 240ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.sidebar-tip {
+  --tip-bg: var(--color-bg-elevated);
+  --tip-border: var(--color-border-primary);
+  position: absolute;
+  left: calc(100% + 0.625rem);
+  top: 50%;
+  z-index: 50;
+  padding-block: 0.3rem;
+  background: var(--tip-bg);
+  box-shadow:
+    0 0 0 1px var(--tip-border),
+    var(--shadow-md, 0 6px 16px rgba(0, 0, 0, 0.18));
+  opacity: 0;
+  transform: translate(-0.375rem, -50%) scale(0.96);
+  transform-origin: left center;
+  transition:
+    opacity 100ms ease-out,
+    transform 100ms ease-out;
+}
+
+/* Stem: a rotated square sharing the tip's fill and hairline, so it reads as
+   one shape growing out of the item rather than a box floating beside it. */
+.sidebar-tip::before {
+  content: "";
+  position: absolute;
+  left: -0.25rem;
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--tip-bg);
+  border-left: 1px solid var(--tip-border);
+  border-bottom: 1px solid var(--tip-border);
+  transform: translateY(-50%) rotate(45deg);
+  border-bottom-left-radius: 2px;
+}
+
+.group:hover > .sidebar-tip,
+.group:focus-visible > .sidebar-tip {
+  opacity: 1;
+  transform: translate(0, -50%) scale(1);
+  transition-delay: 120ms;
+}
+
+/* Already showing a tip: the next one is instant. */
+[data-tips-warm] .group:hover > .sidebar-tip {
+  transition-delay: 0ms;
+  transition-duration: 50ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-tip {
+    transition: none;
+  }
+}
+
 @keyframes nav-swap {
   from {
     opacity: 0;

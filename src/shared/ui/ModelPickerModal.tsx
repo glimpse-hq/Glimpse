@@ -63,7 +63,7 @@ const groupModels = (catalog: ModelInfo[]): ModelGroup[] => {
     variants.sort((a, b) => variantRank(a.variant) - variantRank(b.variant));
     const englishOnly = deriveModelStats(variants[0]).englishOnly;
     const category = variants[0].category;
-    const label = variants[0].label.replace(/\s*\([^)]*\)\s*/g, "").trim();
+    const label = variants[0].label.trim();
     const haystack = [
       label,
       category,
@@ -438,7 +438,8 @@ function ModelRow({
 }) {
   const { t } = useLingui();
   const [aneUserChoice, setAneUserChoice] = useState<boolean | null>(null);
-  const aneChecked = aneUserChoice ?? !installed;
+  const switchableAne = selected.ane_total_size_mb != null;
+  const aneChecked = aneUserChoice ?? (aneInstalled || !installed);
   const isStreaming = hasModelCapability(selected, MODEL_CAPABILITY_STREAMING);
   const hasTimestamps = hasModelCapability(
     selected,
@@ -455,18 +456,24 @@ function ModelRow({
   const percent = Math.round(progress?.percent ?? 0);
   const showQuants = group.variants.length > 1 && !isBusy;
   const aneAvailable = selected.ane_size_mb != null;
-  const aneOn = aneAvailable && (aneInstalled || aneChecked);
-  const encoderDownloadPending =
-    installed && aneAvailable && aneChecked && !aneInstalled;
+  const aneOn =
+    aneAvailable && (switchableAne ? aneChecked : aneInstalled || aneChecked);
+  const packageDownloadPending =
+    installed &&
+    aneAvailable &&
+    (switchableAne ? aneOn !== aneInstalled : aneChecked && !aneInstalled);
   const showAne = aneAvailable && !isBusy;
-  const displaySize =
-    selected.size_mb + (aneOn ? (selected.ane_size_mb ?? 0) : 0);
-  const downloadLabel = installed
-    ? t({
-        id: "model_picker.ane.download",
-        message: "Download Neural Engine encoder",
-      })
-    : t({ id: "model_picker.download", message: "Download" });
+  const displaySize = aneOn
+    ? (selected.ane_total_size_mb ??
+      selected.size_mb + (selected.ane_size_mb ?? 0))
+    : selected.size_mb;
+  const downloadLabel =
+    installed && !switchableAne
+      ? t({
+          id: "model_picker.ane.download",
+          message: "Download Neural Engine encoder",
+        })
+      : t({ id: "model_picker.download", message: "Download" });
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
@@ -475,12 +482,12 @@ function ModelRow({
         onClick={
           !installed && selected.downloadable
             ? () => onDownload(aneOn)
-            : encoderDownloadPending
-              ? () => onDownload(true)
+            : packageDownloadPending
+              ? () => onDownload(aneOn)
               : onUse
         }
         title={
-          encoderDownloadPending
+          packageDownloadPending
             ? downloadLabel
             : installed && !active
               ? t({ id: "model_picker.use", message: "Use" })
@@ -585,7 +592,7 @@ function ModelRow({
         {showAne && (
           <AneCheckbox
             checked={aneOn}
-            installed={aneInstalled}
+            installed={aneInstalled && !switchableAne}
             onToggle={() => setAneUserChoice(!aneChecked)}
           />
         )}
@@ -642,10 +649,10 @@ function ModelRow({
           <div className="flex items-center gap-1">
             <span className="flex h-6 w-6 items-center justify-center">
               {((!installed && selected.downloadable) ||
-                (showAne && aneChecked && !aneInstalled)) && (
+                (showAne && packageDownloadPending)) && (
                 <button
                   type="button"
-                  onClick={() => onDownload(installed || aneOn)}
+                  onClick={() => onDownload(aneOn)}
                   className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
                   title={downloadLabel}
                   aria-label={downloadLabel}
