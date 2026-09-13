@@ -28,8 +28,8 @@ impl LocalTranscriber {
     pub fn new(model_cache_dir: std::path::PathBuf) -> Self {
         Self {
             service: SpeechService::new(SpeechConfig {
+                resolver: crate::model_manager::local_resolver(model_cache_dir.clone()),
                 model_cache_dir,
-                resolver: crate::model_manager::local_resolver(),
             }),
             last_used: Mutex::new(None),
             idle_wait: Condvar::new(),
@@ -290,5 +290,90 @@ impl StreamingGuard<'_> {
         let transcript = self.transcriber.service.streaming_finalize();
         self.transcriber.service.streaming_reset();
         transcript
+    }
+}
+
+#[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
+mod parakeet_ane_tests {
+    use super::*;
+
+    #[test]
+    #[ignore = "requires PARAKEET_ANE_TEST_CACHE, PARAKEET_ANE_TEST_ORIGIN and PARAKEET_ANE_TEST_RECORDINGS"]
+    fn installs_and_transcribes_recordings_with_timestamps() -> anyhow::Result<()> {
+        let cache = std::path::PathBuf::from(std::env::var("PARAKEET_ANE_TEST_CACHE")?);
+        let origin = std::env::var("PARAKEET_ANE_TEST_ORIGIN")?;
+        let recordings: serde_json::Value = serde_json::from_slice(&std::fs::read(
+            std::env::var("PARAKEET_ANE_TEST_RECORDINGS")?,
+        )?)?;
+        let mut spec = crate::speech::catalog::install_spec("parakeet_tdt_v3_gguf", true).unwrap();
+        for file in &mut spec.files {
+            let filename = file.url.rsplit('/').next().unwrap();
+            file.url = format!("{origin}/{filename}");
+        }
+        let manager = glimpse_speech::models::ModelInstallManager::new(cache.clone());
+        let runtime = tokio::runtime::Runtime::new()?;
+        let status = runtime.block_on(manager.install(&spec, Default::default()))?;
+        assert!(status.installed);
+        let resolved = manager.resolve(&spec)?;
+        let model = ReadyModel {
+            key: resolved.id,
+            path: resolved.path,
+            engine: resolved.engine,
+        };
+        let transcriber = LocalTranscriber::new(cache);
+        transcriber.preload_and_warm(&model)?;
+        for recording in recordings.as_array().unwrap() {
+            let samples = glimpse_speech::audio::read_audio_samples(std::path::Path::new(
+                recording["path"].as_str().unwrap(),
+            ))
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+            let duration = samples.len() as f32 / 16_000.0;
+            let pcm: Vec<i16> = samples
+                .iter()
+                .map(|s| (s.clamp(-1.0, 1.0) * 32767.0) as i16)
+                .collect();
+            let result =
+                transcriber.transcribe_with_segments(&model, &pcm, 16_000, &[], Some("en"))?;
+            assert!(!result.transcript.trim().is_empty());
+            assert_eq!(
+                result.speech_model.as_deref(),
+                Some("Parakeet TDT 0.6B V3 (GGUF)")
+            );
+            let words = result.words.as_ref().expect("word timestamps");
+            assert!(!words.is_empty());
+            let mut previous_start = 0.0;
+            for word in words {
+                assert!(word.start.is_finite() && word.end.is_finite());
+                assert!(word.start >= previous_start && word.end >= word.start);
+                assert!(
+                    word.end <= duration + 0.001,
+                    "timestamp {}..{} exceeds audio {}",
+                    word.start,
+                    word.end,
+                    duration
+                );
+                previous_start = word.start;
+            }
+            println!(
+                "Parakeet ANE: {:.2}s recording, {} timed words",
+                duration,
+                words.len()
+            );
+        }
+        transcriber.unload();
+        transcriber.preload_and_warm(&model)?;
+        transcriber.unload();
+        let encoder = manager
+            .model_dir("parakeet_tdt_v3_gguf")
+            .join(&spec.files[1].path);
+        let moved = encoder.with_extension("held");
+        std::fs::rename(&encoder, &moved)?;
+        let missing = manager.resolve(&spec);
+        std::fs::rename(&moved, &encoder)?;
+        assert!(
+            missing.is_err(),
+            "missing encoder must not silently use ggml"
+        );
+        Ok(())
     }
 }

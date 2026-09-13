@@ -84,6 +84,7 @@ pub struct RecorderManager {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    #[cfg(target_os = "macos")]
     active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
 
@@ -214,10 +215,12 @@ impl Default for RecorderManager {
         let spectrum = Arc::new(Mutex::new(AudioSpectrumState::new()));
         let live_buffer = Arc::new(Mutex::new(None));
         let armed = Arc::new(AtomicBool::new(false));
+        #[cfg(target_os = "macos")]
         let active_device = Arc::new(Mutex::new(None));
         let spectrum_for_thread = Arc::clone(&spectrum);
         let live_buffer_for_thread = Arc::clone(&live_buffer);
         let armed_for_thread = Arc::clone(&armed);
+        #[cfg(target_os = "macos")]
         let active_device_for_thread = Arc::clone(&active_device);
 
         std::thread::Builder::new()
@@ -227,6 +230,7 @@ impl Default for RecorderManager {
                     spectrum_for_thread,
                     live_buffer_for_thread,
                     armed_for_thread,
+                    #[cfg(target_os = "macos")]
                     active_device_for_thread,
                 );
                 while let Ok(cmd) = rx.recv() {
@@ -255,6 +259,7 @@ impl Default for RecorderManager {
             spectrum,
             live_buffer,
             armed,
+            #[cfg(target_os = "macos")]
             active_device,
         }
     }
@@ -387,6 +392,7 @@ struct RecorderCore {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    #[cfg(target_os = "macos")]
     active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
 
@@ -395,13 +401,14 @@ impl RecorderCore {
         spectrum: Arc<Mutex<AudioSpectrumState>>,
         live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
         armed: Arc<AtomicBool>,
-        active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
+        #[cfg(target_os = "macos")] active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
     ) -> Self {
         Self {
             active: None,
             spectrum,
             live_buffer,
             armed,
+            #[cfg(target_os = "macos")]
             active_device,
         }
     }
@@ -487,9 +494,15 @@ impl RecorderCore {
         }
         .map_err(|err| cpal_error("Failed to open input stream", &err))?;
 
-        *self.active_device.lock() = device.id().ok();
+        #[cfg(target_os = "macos")]
+        {
+            *self.active_device.lock() = device.id().ok();
+        }
         stream.play().map_err(|err| {
-            *self.active_device.lock() = None;
+            #[cfg(target_os = "macos")]
+            {
+                *self.active_device.lock() = None;
+            }
             cpal_error("Failed to start input stream", &err)
         })?;
 
@@ -529,7 +542,10 @@ impl RecorderCore {
         discard_pending: bool,
     ) -> Result<Option<CompletedRecording>> {
         *self.live_buffer.lock() = None;
-        *self.active_device.lock() = None;
+        #[cfg(target_os = "macos")]
+        {
+            *self.active_device.lock() = None;
+        }
         self.spectrum.lock().reset();
         match self.active.take() {
             Some(mut active) => {
