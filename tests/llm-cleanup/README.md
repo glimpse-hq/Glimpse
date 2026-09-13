@@ -29,11 +29,11 @@ does not establish language support.
 
 On Apple's model in macOS 26.6.2, before → after expected final outputs:
 
-| Set | Cases | Before | After |
-| --- | ---: | ---: | ---: |
-| Regression | 76 | 48 | 55 |
-| Initial prompt holdout | 42 | 26 | 31 |
-| Final frozen confirmation | 20 | 10 | 14 |
+| Set                       | Cases | Before | After |
+| ------------------------- | ----: | -----: | ----: |
+| Regression                |    76 |     48 |    55 |
+| Initial prompt holdout    |    42 |     26 |    31 |
+| Final frozen confirmation |    20 |     10 |    14 |
 
 These numbers include output filtering and source fallback, not just model edits.
 Raw model matches on the final confirmation improved from 9 to 13. The initial
