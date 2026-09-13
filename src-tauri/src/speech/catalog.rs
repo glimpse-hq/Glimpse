@@ -4,12 +4,11 @@ use tauri::AppHandle;
 
 use crate::AppRuntime;
 use crate::model_language_table::{
-    SupportedLanguageInfo, english_supported_languages, whisper_supported_languages,
+    SupportedLanguageInfo, english_supported_languages, parakeet_v3_supported_languages,
+    qwen3_asr_supported_languages, whisper_supported_languages,
 };
 #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-use crate::model_language_table::{
-    nemotron_35_supported_languages, nemotron_supported_languages, parakeet_v3_supported_languages,
-};
+use crate::model_language_table::{nemotron_35_supported_languages, nemotron_supported_languages};
 use crate::settings::UserSettings;
 use crate::speech::{install, remote};
 
@@ -48,6 +47,7 @@ pub struct ModelInfo {
     pub capabilities: Vec<String>,
     pub supported_languages: Vec<SupportedLanguageInfo>,
     pub ane_size_mb: Option<f32>,
+    pub ane_total_size_mb: Option<f32>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -192,6 +192,65 @@ const NEMOTRON_35_STREAMING_FILES: &[CatalogFile] = &[
     },
 ];
 
+const PARAKEET_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
+    url: "https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf/resolve/main/parakeet-tdt-0.6b-v3-Q8_0.gguf",
+    path: "parakeet-tdt-0.6b-v3-Q8_0.gguf",
+    size_bytes: Some(739_508_576),
+    sha256: Some("5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7"),
+}];
+
+const PARAKEET_DECODER_FILE: CatalogFile = CatalogFile {
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-decoder.gguf",
+    path: "parakeet-tdt-0.6b-v3-Q8_0-decoder.gguf",
+    size_bytes: Some(19_479_904),
+    sha256: Some("dfcf670a00df8d49474fddea707bcfc77339789f65dde115aeb79570fc813744"),
+};
+
+const QWEN3_ASR_0_6B_FILES: &[CatalogFile] = &[CatalogFile {
+    url: "https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf/resolve/main/Qwen3-ASR-0.6B-Q8_0.gguf",
+    path: "Qwen3-ASR-0.6B-Q8_0.gguf",
+    size_bytes: Some(850_423_456),
+    sha256: Some("f081b2d5e23bd669d92cc331d722a8a0681943b8e6f34b48996fd5c319b5acd8"),
+}];
+
+/// Core ML encoder companions for transcribe.cpp models, unpacked next to the
+/// GGUF as `<gguf stem>-encoder.mlmodelc` (the name the engine looks for).
+struct TranscribeAneEncoder {
+    // Some models replace the full GGUF with smaller files when using ANE.
+    replacement_files: Option<&'static [CatalogFile]>,
+    model: &'static str,
+    dir_name: &'static str,
+    url: &'static str,
+    size_bytes: u64,
+    sha256: &'static str,
+}
+
+// `ditto -c -k --keepParent --norsrc --noextattr <dir> <dir>.zip` of the
+// companion produced by scripts/convert-qwen3-asr-gguf-to-coreml.py from the
+// GGUF above (transcribe.cpp, docs/models/qwen3-asr.md).
+const ANE_QWEN3_ASR_0_6B_ZIP_BYTES: u64 = 340_299_234;
+const ANE_QWEN3_ASR_0_6B_ZIP_SHA256: &str =
+    "cfd2e37a30d0da1b685da0f96e82f05ef6fc208136c85efa5368ddd2ee18ad5d";
+
+const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
+    TranscribeAneEncoder {
+        model: "parakeet_tdt_v3_gguf",
+        replacement_files: Some(&[PARAKEET_DECODER_FILE]),
+        dir_name: "parakeet-tdt-0.6b-v3-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-encoder.mlmodelc.zip",
+        size_bytes: 1_093_276_956,
+        sha256: "7d90a75d6c9bad2f082782545adbea0df430703dc84f90404e1fe322552a563d",
+    },
+    TranscribeAneEncoder {
+        model: "qwen3_asr_0_6b_q8",
+        replacement_files: None,
+        dir_name: "Qwen3-ASR-0.6B-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Qwen3-ASR-0.6B-coreml/resolve/main/Qwen3-ASR-0.6B-Q8_0-encoder.mlmodelc.zip",
+        size_bytes: ANE_QWEN3_ASR_0_6B_ZIP_BYTES,
+        sha256: ANE_QWEN3_ASR_0_6B_ZIP_SHA256,
+    },
+];
+
 macro_rules! whisper_files {
     ($path:literal, $size_bytes:literal, $sha256:expr_2021) => {
         &[CatalogFile {
@@ -217,7 +276,7 @@ macro_rules! distil_whisper_files {
     };
 }
 
-const ANE_SUPPORTED: bool = cfg!(all(target_os = "macos", target_arch = "aarch64"));
+pub(super) const ANE_SUPPORTED: bool = cfg!(all(target_os = "macos", target_arch = "aarch64"));
 
 struct AneEncoder {
     family: &'static str,
@@ -225,10 +284,13 @@ struct AneEncoder {
     sha256: &'static str,
 }
 
-impl AneEncoder {
-    fn dir_name(&self) -> String {
-        format!("ggml-{}-encoder.mlmodelc", self.family)
-    }
+/// A downloadable Core ML encoder for one catalog entry: the zip to fetch and
+/// the directory it unpacks to inside the model directory.
+struct AneCompanion {
+    dir_name: String,
+    url: String,
+    size_bytes: u64,
+    sha256: &'static str,
 }
 
 const ANE_ENCODERS: &[AneEncoder] = &[
@@ -275,21 +337,52 @@ fn strip_quant_suffix(stem: &str) -> &str {
     stem
 }
 
-fn ane_encoder(manifest: &LocalModelManifest) -> Option<&'static AneEncoder> {
-    if !ANE_SUPPORTED || manifest.engine != LocalModelEngine::Whisper {
+fn ane_companion(manifest: &LocalModelManifest) -> Option<AneCompanion> {
+    if !ANE_SUPPORTED {
         return None;
     }
-    let [file] = manifest.files else {
-        return None;
-    };
-    let family = strip_quant_suffix(file.path.strip_prefix("ggml-")?.strip_suffix(".bin")?);
-    ANE_ENCODERS.iter().find(|encoder| encoder.family == family)
+    match manifest.engine {
+        LocalModelEngine::Whisper => {
+            let [file] = manifest.files else {
+                return None;
+            };
+            let family = strip_quant_suffix(file.path.strip_prefix("ggml-")?.strip_suffix(".bin")?);
+            let encoder = ANE_ENCODERS
+                .iter()
+                .find(|encoder| encoder.family == family)?;
+            let dir_name = format!("ggml-{family}-encoder.mlmodelc");
+            Some(AneCompanion {
+                url: format!(
+                    "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{dir_name}.zip"
+                ),
+                dir_name,
+                size_bytes: encoder.size_bytes,
+                sha256: encoder.sha256,
+            })
+        }
+        LocalModelEngine::Transcribe => TRANSCRIBE_ANE_ENCODERS
+            .iter()
+            .find(|encoder| encoder.model == manifest.id)
+            .map(|encoder| AneCompanion {
+                dir_name: encoder.dir_name.to_string(),
+                url: encoder.url.to_string(),
+                size_bytes: encoder.size_bytes,
+                sha256: encoder.sha256,
+            }),
+        _ => None,
+    }
 }
 
 pub fn ane_encoder_dir(model: &str) -> Option<String> {
     definition(model)
-        .and_then(ane_encoder)
-        .map(AneEncoder::dir_name)
+        .and_then(ane_companion)
+        .map(|companion| companion.dir_name)
+}
+
+/// True when the model's Core ML encoder is only staged by whisper.cpp at
+/// first load (a separate compile step the app reports on).
+pub fn ane_needs_compile_step(model: &str) -> bool {
+    definition(model).is_some_and(|manifest| manifest.engine == LocalModelEngine::Whisper)
 }
 
 const WHISPER_DESCRIPTION: &str =
@@ -299,6 +392,18 @@ const DISTIL_WHISPER_DESCRIPTION: &str =
 const WHISPER_CAPABILITIES: &[&str] = &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS];
 
 const MODEL_MANIFESTS: &[LocalModelManifest] = &[
+    LocalModelManifest {
+        id: "parakeet_tdt_v3_gguf",
+        family: "parakeet-tdt-0.6b-v3",
+        label: "Parakeet TDT 0.6B V3 (GGUF)",
+        description: "Multilingual Parakeet TDT V3 on CPU or GPU, with optional Neural Engine acceleration on Apple Silicon.",
+        tags: &["Multilingual", "Fast"],
+        category: "experimental",
+        engine: LocalModelEngine::Transcribe,
+        variant: "Q8_0",
+        files: PARAKEET_GGUF_FILES,
+        capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
+    },
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     LocalModelManifest {
         id: "apple_speech",
@@ -340,6 +445,18 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         variant: "Int8",
         files: PARAKEET_TDT_INT8_FILES,
         capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
+    },
+    LocalModelManifest {
+        id: "qwen3_asr_0_6b_q8",
+        family: "qwen3-asr-0.6b",
+        label: "Qwen3-ASR 0.6B",
+        description: "Multilingual Qwen3-ASR with optional Neural Engine acceleration on Apple Silicon.",
+        tags: &["Multilingual", "Fast"],
+        category: "experimental",
+        engine: LocalModelEngine::Transcribe,
+        variant: "Q8_0",
+        files: QWEN3_ASR_0_6B_FILES,
+        capabilities: &[MODEL_CAPABILITY_DICTIONARY],
     },
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     LocalModelManifest {
@@ -697,16 +814,34 @@ pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
     MODEL_MANIFESTS.iter().find(|manifest| manifest.id == key)
 }
 
+fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {
+    if !ANE_SUPPORTED {
+        return None;
+    }
+    TRANSCRIBE_ANE_ENCODERS
+        .iter()
+        .find(|encoder| encoder.model == model)
+        .and_then(|encoder| encoder.replacement_files)
+}
+
+pub fn ane_replaces_model_files(model: &str) -> bool {
+    ane_replacement_files(model).is_some()
+}
+
 pub fn install_spec(model: &str, ane: bool) -> Option<InstallSpec> {
     let manifest = definition(model)?;
-    let storage = match manifest.files {
+    let model_files = if ane {
+        ane_replacement_files(model).unwrap_or(manifest.files)
+    } else {
+        manifest.files
+    };
+    let storage = match model_files {
         [single] => ModelStorage::File {
             artifact: single.path.to_string(),
         },
         _ => ModelStorage::Directory,
     };
-    let mut files: Vec<RemoteFile> = manifest
-        .files
+    let mut files: Vec<RemoteFile> = model_files
         .iter()
         .map(|file| RemoteFile {
             url: file.url.to_string(),
@@ -716,15 +851,12 @@ pub fn install_spec(model: &str, ane: bool) -> Option<InstallSpec> {
             extract: false,
         })
         .collect();
-    if ane && let Some(encoder) = ane_encoder(manifest) {
-        let dir_name = encoder.dir_name();
+    if ane && let Some(companion) = ane_companion(manifest) {
         files.push(RemoteFile {
-            url: format!(
-                "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{dir_name}.zip"
-            ),
-            path: dir_name,
-            size_bytes: Some(encoder.size_bytes),
-            sha256: Some(encoder.sha256.to_string()),
+            url: companion.url,
+            path: companion.dir_name,
+            size_bytes: Some(companion.size_bytes),
+            sha256: Some(companion.sha256.to_string()),
             extract: true,
         });
     }
@@ -804,6 +936,10 @@ fn supported_languages(manifest: &LocalModelManifest) -> Vec<SupportedLanguageIn
             }
         }
         LocalModelEngine::Apple => apple_supported_languages(),
+        LocalModelEngine::Transcribe if manifest.id == "parakeet_tdt_v3_gguf" => {
+            parakeet_v3_supported_languages()
+        }
+        LocalModelEngine::Transcribe => qwen3_asr_supported_languages(),
     }
 }
 
@@ -847,6 +983,7 @@ fn engine_id(engine: &LocalModelEngine) -> &'static str {
         LocalModelEngine::Nemotron | LocalModelEngine::Parakeet => "nvidia",
         LocalModelEngine::Whisper => "whisper",
         LocalModelEngine::Apple => "apple",
+        LocalModelEngine::Transcribe => "transcribe",
     }
 }
 
@@ -858,6 +995,7 @@ fn model_layout(manifest: &LocalModelManifest) -> ModelLayout {
             ModelLayout::ParakeetUnified
         }
         LocalModelEngine::Parakeet => ModelLayout::ParakeetTdt,
+        LocalModelEngine::Transcribe => ModelLayout::Transcribe,
     }
 }
 
@@ -866,6 +1004,7 @@ fn capability_strings(capabilities: &[&str]) -> Vec<String> {
 }
 
 fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
+    let companion = ane_companion(manifest);
     ModelInfo {
         key: manifest.id.to_string(),
         label: manifest.label.to_string(),
@@ -884,7 +1023,15 @@ fn manifest_to_model_info(manifest: &LocalModelManifest) -> ModelInfo {
         tags: manifest.tags.iter().map(|tag| tag.to_string()).collect(),
         capabilities: capability_strings(manifest.capabilities),
         supported_languages: supported_languages(manifest),
-        ane_size_mb: ane_encoder(manifest).map(|encoder| encoder.size_bytes as f32 / 1_000_000.0),
+        ane_size_mb: companion
+            .as_ref()
+            .map(|c| c.size_bytes as f32 / 1_000_000.0),
+        ane_total_size_mb: companion.and_then(|c| {
+            ane_replacement_files(manifest.id).map(|files| {
+                (c.size_bytes + files.iter().map(|f| f.size_bytes.unwrap_or(0)).sum::<u64>()) as f32
+                    / 1_000_000.0
+            })
+        }),
     }
 }
 
@@ -1042,6 +1189,28 @@ fn provider_display(provider: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parakeet_gguf_has_platform_appropriate_packages() {
+        let full = install_spec("parakeet_tdt_v3_gguf", false).unwrap();
+        let ane = install_spec("parakeet_tdt_v3_gguf", true).unwrap();
+        assert_eq!(full.files.len(), 1);
+        assert_eq!(full.engine, LocalModelEngine::Transcribe);
+        let info = manifest_to_model_info(definition("parakeet_tdt_v3_gguf").unwrap());
+        assert_eq!(info.supported_languages.len(), 25);
+        assert_eq!(info.capabilities, [MODEL_CAPABILITY_TIMESTAMPS]);
+        assert!(info.size_mb < 740.0);
+        if ANE_SUPPORTED {
+            assert_eq!(ane.files.len(), 2);
+            assert!(ane.files[0].path.ends_with("-decoder.gguf"));
+            assert!(ane.files[1].extract);
+            assert!(info.ane_total_size_mb.unwrap() < 1113.0);
+        } else {
+            assert_eq!(ane.files[0].path, full.files[0].path);
+            assert_eq!(ane.files.len(), 1);
+            assert!(info.ane_total_size_mb.is_none());
+        }
+    }
 
     #[test]
     fn legacy_models_are_not_downloadable() {
