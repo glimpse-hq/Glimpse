@@ -4,6 +4,7 @@
 
 - Fixed shortcuts using Ctrl and Alt together on Windows.
 - Fixed Windows shortcuts getting stuck after locking the screen or responding to a permission prompt.
+- Hovering over the Windows system tray icon now shows Glimpse's name.
 
 
 ### Improvements

@@ -309,7 +309,8 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
     let builder = match app.default_window_icon() {
         Some(icon) => builder.icon(icon.clone()),
         None => builder,
-    };
+    }
+    .tooltip(app.package_info().name.clone());
 
     builder
         .menu(&menu)
