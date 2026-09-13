@@ -127,8 +127,8 @@ impl LocalApiController {
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
         let api_models_dir = model_cache_dir.clone();
         let service = Arc::new(SpeechService::new(SpeechConfig {
+            resolver: crate::model_manager::local_resolver(model_cache_dir.clone()),
             model_cache_dir,
-            resolver: crate::model_manager::local_resolver(),
         }));
         if let Some(warm_id) = warm_model.as_deref() {
             let warm = Arc::clone(&service);

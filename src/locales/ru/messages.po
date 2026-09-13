@@ -14,11 +14,6 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.card.active"
-#~ msgstr "Активна"
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #~ msgid "onboarding.first_dictation.eyebrow"
 #~ msgstr ""
@@ -172,6 +167,96 @@ msgstr ""
 #: src/features/onboarding/steps/ReadyStep.tsx
 #~ msgid "onboarding.done.recap.shortcut"
 #~ msgstr "Умное сочетание клавиш"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud"
+#~ msgstr "Облако"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.unconfigured"
+#~ msgstr "Сначала добавьте конечную точку и модель в разделе «Провайдеры»"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.installed.active"
+#~ msgstr "Активна"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.disable"
+#~ msgstr "Отключить облако"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.use"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsNav.tsx
+#~ msgid "settings.nav.locked_hint"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SettingsNav.tsx
+#~ msgid "settings.nav.aria"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.streaming"
+#~ msgstr "Прямая трансляция"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.streaming"
+#~ msgstr "Прямая трансляция"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.timestamps"
+#~ msgstr "Временны́е метки на уровне слов"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.timestamps"
+#~ msgstr "Временны́е метки на уровне слов"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info_aria"
+#~ msgstr "О кодировщике Apple Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info"
+#~ msgstr "Добавляет энкодер Core ML, работающий на Apple Neural Engine, для более быстрой и энергоэффективной транскрипции. При первой загрузке потребуется больше времени, пока macOS оптимизирует его для вашего чипа."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.aria"
+#~ msgstr "Фильтровать модели по категории"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.no_results"
+#~ msgstr "Нет моделей, соответствующих запросу."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.all"
+#~ msgstr "Все модели"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.clear"
+#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -465,11 +550,6 @@ msgid "settings.modal.tab.about"
 msgstr "О программе"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.ane.info_aria"
-msgstr "О кодировщике Apple Neural Engine"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.accessibility"
 msgstr "Специальные возможности"
@@ -516,7 +596,7 @@ msgstr "Активный"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.installed.active"
+msgid "settings.models.card.active"
 msgstr "Активна"
 
 #. js-lingui-explicit-id
@@ -533,11 +613,6 @@ msgstr "Добавить"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites.placeholder"
 msgstr "Добавьте сайт, например gmail.com"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud.unconfigured"
-msgstr "Сначала добавьте конечную точку и модель в разделе «Провайдеры»"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -595,11 +670,6 @@ msgid "dictionary.no_entries.description"
 msgstr "Добавьте слова, фразы или имена, которых нет в словаре по умолчанию."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.ane.info"
-msgstr "Добавляет энкодер Core ML, работающий на Apple Neural Engine, для более быстрой и энергоэффективной транскрипции. При первой загрузке потребуется больше времени, пока macOS оптимизирует его для вашего чипа."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after"
 msgstr "после"
@@ -608,11 +678,6 @@ msgstr "после"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.all"
 msgstr "Все"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.filter.all"
-msgstr "Все модели"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -693,6 +758,11 @@ msgstr "Приложение"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.appearance"
 msgstr "Внешний вид"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -928,6 +998,16 @@ msgid "model_picker.cancelled"
 msgstr "Отменено"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.filter.capabilities"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.filter.category"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.edit_shortcut_aria"
@@ -1034,6 +1114,11 @@ msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
 msgstr "Для функции «Очистка» требуется языковая модель. Настройте её в"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FilterMenu.tsx
+msgid "filter_menu.clear"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.clear"
 msgstr "Очистить"
@@ -1107,11 +1192,6 @@ msgstr "Закрыть уведомление"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "Закрыть окно"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud"
-msgstr "Облако"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -1211,6 +1291,11 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "Конвертация аудио... {0}%"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.copied"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copied"
 msgstr "Скопировано"
@@ -1279,6 +1364,11 @@ msgstr "Копировать базовый URL"
 #: src/features/settings/components/SettingsScreen.tsx
 msgid "settings.error.copy"
 msgstr "Ошибка копирования"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.copy"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1454,6 +1544,11 @@ msgstr "Пользовательский"
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.custom_instructions"
 msgstr "Пользовательские инструкции"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.dictionary"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1744,11 +1839,6 @@ msgid "personalization.mode.disable"
 msgstr "Отключить"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.cloud.disable"
-msgstr "Отключить облако"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.disable_mode"
 msgstr "Отключить режим"
@@ -1777,6 +1867,11 @@ msgstr "Загрузить"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.confirm.download"
 msgstr "Загрузить"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2070,8 +2165,8 @@ msgstr "Фильтровать библиотеку по статусу"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.filter.aria"
-msgstr "Фильтровать модели по категории"
+msgid "model_picker.filter.aria_v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2596,14 +2691,9 @@ msgid "onboarding.first_dictation.listening"
 msgstr "Слушаю…"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.capability.streaming"
-msgstr "Прямая трансляция"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.capability.streaming"
-msgstr "Прямая трансляция"
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.live_text"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3021,8 +3111,8 @@ msgstr "Модели не найдены. Вы можете добавить и�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.no_results"
-msgstr "Нет моделей, соответствующих запросу."
+msgid "model_picker.no_matches"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3145,6 +3235,11 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "Не установлено"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.not_set_up"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.timestamps_unsupported"
 msgstr "Не поддерживается этой моделью"
@@ -3188,6 +3283,11 @@ msgstr "выкл."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.off"
 msgstr "Выкл."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.card.off"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3493,6 +3593,11 @@ msgstr "Готово"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.ready_to_install"
 msgstr "Готово к установке"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.dictionary_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3821,6 +3926,11 @@ msgid "settings.about.restart_onboarding_description"
 msgstr "запустить мастер настройки повторно"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.save"
 msgstr "Сохранить"
@@ -3946,6 +4056,11 @@ msgid "settings.about.data.include_timestamps_hint"
 msgstr "Время начала и окончания сегмента"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.timestamps_detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.select_model"
 msgstr "Выбрать модель"
@@ -4049,6 +4164,11 @@ msgstr "Кратчайший"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.show_all"
 msgstr "Показать все"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.error.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -4346,6 +4466,11 @@ msgid "settings.general.microphone_test.test"
 msgstr "Тест"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.live_text_detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements"
 msgstr "Замены текста"
@@ -4483,6 +4608,11 @@ msgstr "До {date}"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.saved"
 msgstr "Сэкономлено времени"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+msgid "model_capability.timestamps"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4754,6 +4884,11 @@ msgid "settings.models.installed.use"
 msgstr "Использовать"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.cloud.toggle"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_subtitle"
 msgstr "Использовать Glimpse из Терминала или скриптов"
@@ -4908,16 +5043,6 @@ msgstr "Мои данные в безопасности?"
 #: src/features/onboarding/steps/LicenseModal.tsx
 msgid "onboarding.license.why_paid"
 msgstr "Почему здесь есть платные функции?"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.capability.timestamps"
-msgstr "Временны́е метки на уровне слов"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.capability.timestamps"
-msgstr "Временны́е метки на уровне слов"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx

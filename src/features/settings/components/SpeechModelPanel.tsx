@@ -6,6 +6,7 @@ import {
   supportsSpeechProviderModelDiscovery,
 } from "../../../shared/lib/speechProviders";
 import { Dropdown } from "../../../shared/ui/Dropdown";
+import ApiKeyField from "../../../shared/ui/ApiKeyField";
 import type { RemoteSpeechProvider } from "../../../types";
 
 type SpeechModelPanelProps = {
@@ -162,10 +163,9 @@ const SpeechModelPanel = ({
             </span>
           )}
         </span>
-        <input
-          type="password"
+        <ApiKeyField
           value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
+          onChange={setApiKey}
           placeholder={
             providerPreset?.apiKeyRequired
               ? t({
@@ -177,11 +177,10 @@ const SpeechModelPanel = ({
                   message: "Optional",
                 })
           }
-          aria-label={t({
+          ariaLabel={t({
             id: "settings.speech_model.api_key.aria",
             message: "Remote speech API key",
           })}
-          className="mt-2 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
         />
       </div>
 

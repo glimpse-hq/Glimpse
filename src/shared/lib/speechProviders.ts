@@ -1,4 +1,4 @@
-import type { RemoteSpeechProvider } from "../../types";
+import type { RemoteSpeechProvider, StoredSettings } from "../../types";
 
 export type { RemoteSpeechProvider };
 
@@ -195,13 +195,16 @@ export function isRemoteSpeechConfigured(args: {
   provider: RemoteSpeechProvider;
   endpoint: string;
   model: string;
+  apiKey: string;
 }): boolean {
   if (!args.enabled) {
     return false;
   }
+  const preset = getSpeechProviderPreset(args.provider);
   return (
     resolvedSpeechEndpoint(args.provider, args.endpoint).length > 0 &&
-    resolvedSpeechModel(args.provider, args.model) !== undefined
+    resolvedSpeechModel(args.provider, args.model) !== undefined &&
+    (!preset?.apiKeyRequired || args.apiKey.trim() !== "")
   );
 }
 
@@ -272,4 +275,23 @@ export function isRemoteTranscriptionSpeechModel(stored: string): boolean {
     trimmed.startsWith(REMOTE_SPEECH_MODEL_PREFIX) ||
     /^remote\s*\(/i.test(trimmed)
   );
+}
+
+export function isRemoteSpeechInUse(
+  settings: Pick<
+    StoredSettings,
+    | "remote_speech_enabled"
+    | "remote_speech_provider"
+    | "remote_speech_endpoint"
+    | "remote_speech_model"
+    | "remote_speech_api_key"
+  >,
+): boolean {
+  return isRemoteSpeechConfigured({
+    enabled: settings.remote_speech_enabled,
+    provider: settings.remote_speech_provider,
+    endpoint: settings.remote_speech_endpoint,
+    model: settings.remote_speech_model,
+    apiKey: settings.remote_speech_api_key,
+  });
 }

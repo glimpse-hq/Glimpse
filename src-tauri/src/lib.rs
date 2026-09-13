@@ -1126,16 +1126,18 @@ impl AppState {
         self.pending_selected_text.lock().take()
     }
 
-    pub fn create_download_token(&self, model: &str) -> CancellationToken {
+    pub fn create_download_token(&self, model: &str) -> Result<CancellationToken, String> {
+        let mut downloads = self.download_tokens.lock();
+        if downloads.contains_key(model) {
+            return Err("This model already has a download in progress".to_string());
+        }
         let token = CancellationToken::new();
-        self.download_tokens
-            .lock()
-            .insert(model.to_string(), token.clone());
-        token
+        downloads.insert(model.to_string(), token.clone());
+        Ok(token)
     }
 
     pub fn cancel_download(&self, model: &str) -> bool {
-        match self.download_tokens.lock().remove(model) {
+        match self.download_tokens.lock().get(model) {
             Some(token) => {
                 token.cancel();
                 true

@@ -1,4 +1,5 @@
 import { Lock, type Icon as PhosphorIcon } from "@phosphor-icons/react";
+import SidebarTip from "./SidebarTip";
 
 export interface SidebarItemProps {
   icon: PhosphorIcon;
@@ -23,7 +24,7 @@ const SidebarItem = ({
     onClick={onClick}
     title={locked ? lockedHint : undefined}
     data-active={active ? "true" : "false"}
-    className={`ui-nav-item group h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
+    className={`ui-nav-item group relative h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
       collapsed ? "gap-0" : "gap-3"
     } ${locked ? "opacity-45 hover:opacity-75" : ""}`}
   >
@@ -41,6 +42,7 @@ const SidebarItem = ({
     {locked && !collapsed ? (
       <Lock size={12} className="ml-auto shrink-0" aria-hidden="true" />
     ) : null}
+    <SidebarTip label={label} show={collapsed} />
   </button>
 );
 

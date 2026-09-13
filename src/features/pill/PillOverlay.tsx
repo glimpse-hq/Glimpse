@@ -39,6 +39,7 @@ const EXPANDED_BORDER_RADIUS = 24;
 const WARM_ENTRY_IDLE_MS = 5 * 1000;
 const DOT_SETTLE_MS = 120;
 const WAVE_ONSET_MS = 220;
+const WAVE_ATTACK = 0.35;
 const PREROLL_DOT_LEVEL = 0.45;
 
 const smoothstep = (t: number): number => t * t * (3 - 2 * t);
@@ -616,7 +617,7 @@ const PillOverlay: React.FC<PillOverlayProps> = ({
                 if (leftIdx >= 0 && leftIdx < cols) {
                   if (val > heights.current[leftIdx]) {
                     heights.current[leftIdx] +=
-                      (val - heights.current[leftIdx]) * 0.5;
+                      (val - heights.current[leftIdx]) * WAVE_ATTACK;
                   } else {
                     heights.current[leftIdx] +=
                       (val - heights.current[leftIdx]) * (1 - decay);

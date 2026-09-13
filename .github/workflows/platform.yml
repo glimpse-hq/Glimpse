@@ -57,12 +57,31 @@ jobs:
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
           "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
 
+      - name: cache Vulkan SDK installer
+        if: matrix.os == 'windows'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ${{ runner.temp }}/VulkanSDK-Installer.exe
+          key: vulkan-sdk-installer-1.4.357.0
+
       - name: install Vulkan SDK
         if: matrix.os == 'windows'
-        uses: humbletim/install-vulkan-sdk@30ba978f977e81b72d091fc8888feb1fb26f9aff # v1.2
-        with:
-          version: 1.4.309.0
-          cache: true
+        shell: pwsh
+        run: |
+          $version = "1.4.357.0"
+          $sha256 = "81f474711e9042f4cd22b31b2f7a8870db2e428b21586fb43dd80150be97310d"
+          $installer = Join-Path $env:RUNNER_TEMP "VulkanSDK-Installer.exe"
+          if (-not (Test-Path $installer)) {
+            curl.exe -L -o $installer "https://sdk.lunarg.com/sdk/download/$version/windows/vulkansdk-windows-X64-$version.exe"
+          }
+          $actual = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne $sha256) {
+            Remove-Item $installer
+            throw "Vulkan SDK installer hash mismatch: $actual"
+          }
+          & $installer --accept-licenses --default-answer --confirm-command install
+          "VULKAN_SDK=C:\VulkanSDK\$version" >> $env:GITHUB_ENV
+          "C:\VulkanSDK\$version\Bin" >> $env:GITHUB_PATH
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
@@ -72,7 +91,7 @@ jobs:
       - name: cache Rust
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
-          key: platform-${{ matrix.platform }}
+          key: platform-${{ matrix.platform }}-vulkan-1.4.357.0
           workspaces: src-tauri -> target
           cache-directories: ${{ matrix.cargo-cache-dir }}
           cache-on-failure: true
