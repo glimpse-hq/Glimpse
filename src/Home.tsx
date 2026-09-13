@@ -54,6 +54,8 @@ import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
+import { isRemoteSpeechInUse } from "./shared/lib/speechProviders";
+import { isCloudLlmInUse, isLlmInUse } from "./shared/lib/llmProviders";
 
 const importSettingsScreen = () =>
   import("./features/settings/components/SettingsScreen");
@@ -173,8 +175,12 @@ const Home = () => {
 
   const transcriptionMode: TranscriptionMode =
     settings?.transcription_mode ?? "local";
-  const remoteSpeechEnabled = settings?.remote_speech_enabled ?? false;
   const llmEnabled = settings?.llm_enabled ?? false;
+  const remoteSpeechInUse = settings ? isRemoteSpeechInUse(settings) : false;
+  const cloudLlmInUse = settings ? isCloudLlmInUse(settings) : false;
+  const localLlmInUse = settings
+    ? isLlmInUse(settings) && !cloudLlmInUse
+    : false;
   const appVersion = appInfoData?.version ?? "-";
   const updateAvailable = updateStatus?.available ?? false;
 
@@ -594,8 +600,8 @@ const Home = () => {
           >
             <div className="flex w-[20px] shrink-0 items-center justify-center">
               <StaticGlimpseLogo
-                cloudActive={remoteSpeechEnabled || llmEnabled}
-                localActive={!remoteSpeechEnabled}
+                cloudActive={remoteSpeechInUse || cloudLlmInUse}
+                localActive={!remoteSpeechInUse || localLlmInUse}
               />
             </div>
             <span

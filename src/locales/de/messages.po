@@ -209,6 +209,86 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.streaming"
+#~ msgstr "Live-Stream"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.streaming"
+#~ msgstr "Live-Stream"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.timestamps"
+#~ msgstr "Zeitstempel auf Wortebene"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.timestamps"
+#~ msgstr "Zeitstempel auf Wortebene"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info_aria"
+#~ msgstr "Infos zum Apple Neural Engine-Encoder"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info"
+#~ msgstr "Fügt einen Core-ML-Encoder hinzu, der auf der Apple Neural Engine läuft und so für schnellere, energieeffizientere Transkription sorgt. Das erste Laden dauert länger, während macOS ihn für deinen Chip optimiert."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.dictionary"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.aria"
+#~ msgstr "Modelle nach Kategorie filtern"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.live_text"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.no_results"
+#~ msgstr "Keine Modelle entsprechen Ihrer Suche."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.dictionary_detail"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.timestamps_detail"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.live_text_detail"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.timestamps"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.all"
+#~ msgstr "Alle Modelle"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.clear"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -500,11 +580,6 @@ msgid "settings.modal.tab.about"
 msgstr "Info"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.ane.info_aria"
-msgstr "Infos zum Apple Neural Engine-Encoder"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.accessibility"
 msgstr "Bedienungshilfen"
@@ -625,11 +700,6 @@ msgid "dictionary.no_entries.description"
 msgstr "Wörter, Ausdrücke oder Namen hinzufügen, die nicht im Standardwörterbuch enthalten sind."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.ane.info"
-msgstr "Fügt einen Core-ML-Encoder hinzu, der auf der Apple Neural Engine läuft und so für schnellere, energieeffizientere Transkription sorgt. Das erste Laden dauert länger, während macOS ihn für deinen Chip optimiert."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after"
 msgstr "nach"
@@ -638,11 +708,6 @@ msgstr "nach"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.all"
 msgstr "Alle"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.filter.all"
-msgstr "Alle Modelle"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -723,6 +788,11 @@ msgstr "App"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.appearance"
 msgstr "Erscheinungsbild"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -958,6 +1028,16 @@ msgid "model_picker.cancelled"
 msgstr "Abgebrochen"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.filter.capabilities"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.filter.category"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.edit_shortcut_aria"
@@ -1062,6 +1142,11 @@ msgstr "Cleanup benötigt eine Lizenz. Aktivieren Sie sie in"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
 msgstr "Cleanup benötigt ein Schreibmodell. Richten Sie eines ein in"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FilterMenu.tsx
+msgid "filter_menu.clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2105,8 +2190,8 @@ msgstr "Bibliothek nach Status filtern"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.filter.aria"
-msgstr "Modelle nach Kategorie filtern"
+msgid "model_picker.filter.aria_v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2631,16 +2716,6 @@ msgid "onboarding.first_dictation.listening"
 msgstr "Wir hören zu …"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.capability.streaming"
-msgstr "Live-Stream"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.capability.streaming"
-msgstr "Live-Stream"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.aria"
 msgstr "LLM-API-Schlüssel"
@@ -3056,8 +3131,8 @@ msgstr "Keine Modelle gefunden. Sie können später in den Einstellungen eines h
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.no_results"
-msgstr "Keine Modelle entsprechen Ihrer Suche."
+msgid "model_picker.no_matches"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3864,6 +3939,11 @@ msgstr "Wird ausgeführt"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_description"
 msgstr "Einrichtungsassistent erneut ausführen"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4963,16 +5043,6 @@ msgstr "Sind meine Daten privat?"
 #: src/features/onboarding/steps/LicenseModal.tsx
 msgid "onboarding.license.why_paid"
 msgstr "Warum gibt es kostenpflichtige Funktionen?"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.capability.timestamps"
-msgstr "Zeitstempel auf Wortebene"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.capability.timestamps"
-msgstr "Zeitstempel auf Wortebene"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx

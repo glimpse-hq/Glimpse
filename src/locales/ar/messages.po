@@ -209,6 +209,86 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.streaming"
+#~ msgstr "البث المباشر"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.streaming"
+#~ msgstr "البث المباشر"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.timestamps"
+#~ msgstr "طوابع زمنية على مستوى الكلمة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.timestamps"
+#~ msgstr "طوابع زمنية على مستوى الكلمة"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info_aria"
+#~ msgstr "حول مشفِّر Apple Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info"
+#~ msgstr "يُضيف مشفِّر Core ML يعمل على Apple Neural Engine لتحويل أسرع وأكثر كفاءةً في استهلاك الطاقة. يستغرق التحميل الأول وقتاً أطول بينما يُحسِّنه macOS لمعالجك."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.dictionary"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.aria"
+#~ msgstr "تصفية النماذج حسب الفئة"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.live_text"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.no_results"
+#~ msgstr "لا توجد نماذج تطابق بحثك."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.dictionary_detail"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.timestamps_detail"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.live_text_detail"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelCapabilityIcon.tsx
+#~ msgid "model_capability.timestamps"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.all"
+#~ msgstr "جميع النماذج"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.clear"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -500,11 +580,6 @@ msgid "settings.modal.tab.about"
 msgstr "حول"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.ane.info_aria"
-msgstr "حول مشفِّر Apple Neural Engine"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.accessibility"
 msgstr "إمكانية الوصول"
@@ -625,11 +700,6 @@ msgid "dictionary.no_entries.description"
 msgstr "أضف كلمات أو عبارات أو أسماء غير موجودة في القاموس الافتراضي."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.ane.info"
-msgstr "يُضيف مشفِّر Core ML يعمل على Apple Neural Engine لتحويل أسرع وأكثر كفاءةً في استهلاك الطاقة. يستغرق التحميل الأول وقتاً أطول بينما يُحسِّنه macOS لمعالجك."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after"
 msgstr "بعد"
@@ -638,11 +708,6 @@ msgstr "بعد"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.all"
 msgstr "الكل"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.filter.all"
-msgstr "جميع النماذج"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -723,6 +788,11 @@ msgstr "التطبيق"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.appearance"
 msgstr "المظهر"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -958,6 +1028,16 @@ msgid "model_picker.cancelled"
 msgstr "ملغى"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.filter.capabilities"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.filter.category"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.first_dictation.edit_shortcut_aria"
@@ -1062,6 +1142,11 @@ msgstr "تتطلب «التنظيف» ترخيصًا. فعّله في"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.provider_prefix"
 msgstr "تتطلب «التنظيف» نموذج كتابة. أعدّ واحدًا في"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FilterMenu.tsx
+msgid "filter_menu.clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2105,8 +2190,8 @@ msgstr "تصفية المكتبة حسب الحالة"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.filter.aria"
-msgstr "تصفية النماذج حسب الفئة"
+msgid "model_picker.filter.aria_v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2631,16 +2716,6 @@ msgid "onboarding.first_dictation.listening"
 msgstr "جارٍ الاستماع…"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.capability.streaming"
-msgstr "البث المباشر"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.capability.streaming"
-msgstr "البث المباشر"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.api_key.aria"
 msgstr "مفتاح LLM API"
@@ -3056,8 +3131,8 @@ msgstr "لم يتم العثور على نماذج. يمكنك إضافة نمو
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.no_results"
-msgstr "لا توجد نماذج تطابق بحثك."
+msgid "model_picker.no_matches"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3864,6 +3939,11 @@ msgstr "قيد التشغيل"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.restart_onboarding_description"
 msgstr "إعادة تشغيل معالج الإعداد"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.ane.detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4963,16 +5043,6 @@ msgstr "هل بياناتي خاصة؟"
 #: src/features/onboarding/steps/LicenseModal.tsx
 msgid "onboarding.license.why_paid"
 msgstr "لماذا توجد ميزات مدفوعة؟"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.capability.timestamps"
-msgstr "طوابع زمنية على مستوى الكلمة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.capability.timestamps"
-msgstr "طوابع زمنية على مستوى الكلمة"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx

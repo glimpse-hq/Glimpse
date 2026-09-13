@@ -173,6 +173,7 @@ const applyInitialTextScale = () => {
   );
 };
 
+document.documentElement.dataset.platform = detectAppPlatform();
 applyInitialTextScale();
 
 // Catalogs load on demand, so the first one has to land before the first

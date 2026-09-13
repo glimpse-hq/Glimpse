@@ -5,11 +5,10 @@ import {
   CaretLeft as ChevronLeft,
   CaretRight as ChevronRight,
   Check,
-  Clock,
   Trash as Trash2,
-  Waveform,
 } from "@phosphor-icons/react";
 import ModelStatCard from "../ModelStatCard";
+import ModelCapabilityIcon from "../../../../shared/ui/ModelCapabilityIcon";
 import CloudModelCard from "../CloudModelCard";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
@@ -19,10 +18,12 @@ import {
   formatModelSize,
   isBuiltInModel,
   formatQuantLabel,
+  modelSizeMb,
   sortInstalledModels,
 } from "../../../../shared/lib/modelStats";
 import {
   hasModelCapability,
+  MODEL_CAPABILITY_DICTIONARY,
   MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../../shared/lib/modelCapabilities";
@@ -79,6 +80,7 @@ const InstalledModelRow = ({
   const { t } = useLingui();
   const stats = deriveModelStats(model);
 
+  const hasDictionary = hasModelCapability(model, MODEL_CAPABILITY_DICTIONARY);
   const isStreaming = hasModelCapability(model, MODEL_CAPABILITY_STREAMING);
   const hasTimestamps = hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS);
 
@@ -94,9 +96,7 @@ const InstalledModelRow = ({
   facts.push(
     builtIn
       ? t({ id: "settings.models.installed.built_in", message: "Built in" })
-      : formatModelSize(
-          model.size_mb + (aneInstalled ? (model.ane_size_mb ?? 0) : 0),
-        ),
+      : formatModelSize(modelSizeMb(model, aneInstalled)),
   );
   const quant = formatQuantLabel(model.variant);
   if (quant) facts.push(quant);
@@ -118,27 +118,14 @@ const InstalledModelRow = ({
               {t({ id: "settings.models.installed.legacy", message: "Legacy" })}
             </span>
           )}
+          {hasDictionary && (
+            <ModelCapabilityIcon capability={MODEL_CAPABILITY_DICTIONARY} />
+          )}
           {isStreaming && (
-            <span
-              className="inline-flex shrink-0 text-content-muted"
-              title={t({
-                id: "settings.models.capability.streaming",
-                message: "Live streaming",
-              })}
-            >
-              <Waveform size={13} aria-hidden="true" />
-            </span>
+            <ModelCapabilityIcon capability={MODEL_CAPABILITY_STREAMING} />
           )}
           {hasTimestamps && (
-            <span
-              className="inline-flex shrink-0 text-content-muted"
-              title={t({
-                id: "settings.models.capability.timestamps",
-                message: "Word-level timestamps",
-              })}
-            >
-              <Clock size={13} aria-hidden="true" />
-            </span>
+            <ModelCapabilityIcon capability={MODEL_CAPABILITY_TIMESTAMPS} />
           )}
         </span>
         <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
@@ -336,7 +323,7 @@ const ModelsTab = ({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="flex h-full flex-col"
+      className="flex min-h-0 flex-1 flex-col"
     >
       {browsing ? (
         <>

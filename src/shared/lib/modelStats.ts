@@ -15,6 +15,14 @@ export const isBuiltInModel = (model: { engine_id: string }): boolean =>
 export const formatModelSize = (mb: number): string =>
   mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${Math.round(mb)} MB`;
 
+export const modelSizeMb = (
+  model: Pick<ModelInfo, "size_mb" | "ane_size_mb" | "ane_total_size_mb">,
+  withAne: boolean,
+): number =>
+  withAne && model.ane_size_mb != null
+    ? (model.ane_total_size_mb ?? model.size_mb + model.ane_size_mb)
+    : model.size_mb;
+
 export const sortInstalledModels = (models: ModelInfo[]): ModelInfo[] =>
   [...models].sort((a, b) => {
     const legacyDelta = Number(!a.downloadable) - Number(!b.downloadable);
