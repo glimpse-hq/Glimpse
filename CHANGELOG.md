@@ -7,6 +7,16 @@ Glimpse now supports transcribe.cpp, a local transcription engine. This adds sup
 - **Parakeet TDT 0.6B V3 (GGUF)** An alternative to the existing Parakeet model, also available on Windows and Intel Macs. In our M2 Pro benchmark, transcription was over 4× faster with Neural Engine acceleration, excluding model loading time.
 - **Qwen3-ASR 0.6B** Supports 30 languages and your custom dictionary, with optional Neural Engine acceleration on Apple Silicon.
 
+### Removed Models
+
+The following models no longer show up for download.
+
+- Whisper Tiny, Base and Medium
+- Distil-Whisper Small and Medium
+- Q5 and full-precision variants of Whisper Small and Large V3 Turbo
+
+Small is the smallest recommended Whisper, and Large V3 Turbo replaces Medium at the same size. Q8 is near-lossless at half the size of full precision, so the quantization picker now only appears for Large V3. Intel Macs default to Whisper Small Q8.
+
 ### Fixes
 
 - Fixed Neural Engine acceleration not taking effect after downloading it for an already-loaded model.

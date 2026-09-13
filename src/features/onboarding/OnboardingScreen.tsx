@@ -39,12 +39,12 @@ import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
 
-const ONBOARDING_MODEL_KEYS = [
-  "whisper_large_v3_turbo_q8",
-  "parakeet_tdt_int8",
+const ONBOARDING_MODEL_SLOTS = [
+  ["whisper_large_v3_turbo_q8"],
+  ["parakeet_tdt_int8", "parakeet_tdt_v3_gguf"],
 ] as const;
 
-const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q5";
+const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
 
 const onboardingPermissionKeys = {
   all: ["onboarding", "permissions"] as const,
@@ -62,7 +62,9 @@ const pickOnboardingModels = (models: ModelInfo[]) => {
     available.find((model) => model.key === key) ?? null;
 
   return [
-    ...ONBOARDING_MODEL_KEYS.map(byKey),
+    ...ONBOARDING_MODEL_SLOTS.map(
+      (keys) => keys.map(byKey).find(Boolean) ?? null,
+    ),
     available.find(isBuiltInModel) ?? byKey(ONBOARDING_COMPACT_MODEL_KEY),
   ].filter((model): model is ModelInfo => Boolean(model));
 };

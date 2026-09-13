@@ -503,7 +503,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Small",
         description: "Small & fast with dictionary support.",
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
@@ -536,7 +536,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Distil-Whisper Medium",
         description: DISTIL_WHISPER_DESCRIPTION,
         tags: &["English", "Fast"],
-        category: "experimental",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: distil_whisper_files!(
@@ -553,7 +553,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Distil-Whisper Small",
         description: DISTIL_WHISPER_DESCRIPTION,
         tags: &["English", "Fast", "Compute Friendly"],
-        category: "experimental",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: distil_whisper_files!(
@@ -570,7 +570,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Tiny",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
@@ -586,7 +586,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Tiny",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
@@ -602,7 +602,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Tiny",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
         files: whisper_files!(
@@ -618,7 +618,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Base",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
@@ -634,7 +634,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Base",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
@@ -650,7 +650,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Base",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
         files: whisper_files!(
@@ -682,7 +682,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Small",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
         files: whisper_files!(
@@ -698,7 +698,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Medium",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_0",
         files: whisper_files!(
@@ -714,7 +714,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Medium",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
@@ -730,7 +730,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Medium",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
         files: whisper_files!(
@@ -778,7 +778,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Large V3 Turbo",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Q5_0",
         files: whisper_files!(
@@ -794,7 +794,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Whisper Large V3 Turbo",
         description: WHISPER_DESCRIPTION,
         tags: &["Multilingual", "Dictionary"],
-        category: "standard",
+        category: "legacy",
         engine: LocalModelEngine::Whisper,
         variant: "Full",
         files: whisper_files!(
@@ -1237,9 +1237,9 @@ mod tests {
 
     #[test]
     fn active_models_remain_downloadable() {
-        let manifest = definition("whisper_tiny").expect("fixture model");
+        let manifest = definition("whisper_large_v3_turbo_q8").expect("fixture model");
         assert!(is_downloadable(manifest));
-        assert!(model_is_downloadable("whisper_tiny"));
+        assert!(model_is_downloadable("whisper_large_v3_turbo_q8"));
     }
 
     #[test]

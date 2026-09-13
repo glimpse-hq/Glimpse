@@ -368,7 +368,7 @@ const ModelsTab = ({
               </div>
             </div>
           ) : (
-            remoteSpeechEnabled && (
+            (remoteSpeechEnabled || cloudConfigured) && (
               <div className="flex shrink-0 justify-center">
                 <CloudHeroCard
                   mode={cloudMode}
