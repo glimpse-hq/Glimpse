@@ -762,7 +762,7 @@ msgstr "Внешний вид"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
-msgstr ""
+msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1000,12 +1000,12 @@ msgstr "Отменено"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.capabilities"
-msgstr ""
+msgstr "Возможности"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.category"
-msgstr ""
+msgstr "Категория"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1116,7 +1116,7 @@ msgstr "Для функции «Очистка» требуется языков
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
 msgid "filter_menu.clear"
-msgstr ""
+msgstr "Очистить"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1293,7 +1293,7 @@ msgstr "Конвертация аудио... {0}%"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copied"
-msgstr ""
+msgstr "Скопировано"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1368,7 +1368,7 @@ msgstr "Ошибка копирования"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
-msgstr ""
+msgstr "Скопировать сообщение об ошибке"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1548,7 +1548,7 @@ msgstr "Пользовательские инструкции"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary"
-msgstr ""
+msgstr "Пользовательские слова"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1871,7 +1871,7 @@ msgstr "Загрузить"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
-msgstr ""
+msgstr "Ошибка загрузки"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2166,7 +2166,7 @@ msgstr "Фильтровать библиотеку по статусу"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.aria_v2"
-msgstr ""
+msgstr "Фильтровать модели"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2693,7 +2693,7 @@ msgstr "Слушаю…"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
-msgstr ""
+msgstr "Живой текст"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3112,7 +3112,7 @@ msgstr "Модели не найдены. Вы можете добавить и�
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.no_matches"
-msgstr ""
+msgstr "Модели не найдены."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3237,7 +3237,7 @@ msgstr "Не установлено"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.not_set_up"
-msgstr ""
+msgstr "Не настроено"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3287,7 +3287,7 @@ msgstr "Выкл."
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.off"
-msgstr ""
+msgstr "Выкл."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3597,7 +3597,7 @@ msgstr "Готово к установке"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
-msgstr ""
+msgstr "Распознаёт слова из вашего словаря."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3928,7 +3928,7 @@ msgstr "запустить мастер настройки повторно"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.detail"
-msgstr ""
+msgstr "Запускает кодировщик на Neural Engine. Работает быстрее и потребляет меньше энергии. Первая загрузка занимает больше времени, пока macOS выполняет оптимизацию."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4058,7 +4058,7 @@ msgstr "Время начала и окончания сегмента"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps_detail"
-msgstr ""
+msgstr "Разметка сегментов и экспорт субтитров в Медиатеке."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4168,7 +4168,7 @@ msgstr "Показать все"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
-msgstr ""
+msgstr "Показать подробности ошибки"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -4468,7 +4468,7 @@ msgstr "Тест"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
-msgstr ""
+msgstr "Текст появляется в строке по мере того, как вы говорите."
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4612,7 +4612,7 @@ msgstr "Сэкономлено времени"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps"
-msgstr ""
+msgstr "Временны́е метки"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4886,7 +4886,7 @@ msgstr "Использовать"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.toggle"
-msgstr ""
+msgstr "Использовать облачную транскрипцию"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

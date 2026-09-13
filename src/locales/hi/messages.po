@@ -762,7 +762,7 @@ msgstr "रूप"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
-msgstr ""
+msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1000,12 +1000,12 @@ msgstr "रद्द किया गया"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.capabilities"
-msgstr ""
+msgstr "क्षमताएँ"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.category"
-msgstr ""
+msgstr "श्रेणी"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1116,7 +1116,7 @@ msgstr "Cleanup के लिए राइटिंग मॉडल ज़रू
 #. js-lingui-explicit-id
 #: src/shared/ui/FilterMenu.tsx
 msgid "filter_menu.clear"
-msgstr ""
+msgstr "साफ़ करें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1293,7 +1293,7 @@ msgstr "ऑडियो कनवर्ट किया जा रहा है.
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copied"
-msgstr ""
+msgstr "कॉपी किया गया"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1368,7 +1368,7 @@ msgstr "कॉपी त्रुटि"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
-msgstr ""
+msgstr "त्रुटि संदेश कॉपी करें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1548,7 +1548,7 @@ msgstr "कस्टम निर्देश"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary"
-msgstr ""
+msgstr "कस्टम शब्द"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1871,7 +1871,7 @@ msgstr "डाउनलोड करें"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.title"
-msgstr ""
+msgstr "डाउनलोड विफल"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2166,7 +2166,7 @@ msgstr "स्थिति के अनुसार लाइब्रेरी
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.aria_v2"
-msgstr ""
+msgstr "मॉडल फ़िल्टर करें"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2693,7 +2693,7 @@ msgstr "सुन रहा है…"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
-msgstr ""
+msgstr "लाइव टेक्स्ट"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3112,7 +3112,7 @@ msgstr "कोई मॉडल नहीं मिला। आप बाद म
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.no_matches"
-msgstr ""
+msgstr "कोई मॉडल मेल नहीं खाते।"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3237,7 +3237,7 @@ msgstr "इंस्टॉल नहीं है"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.not_set_up"
-msgstr ""
+msgstr "सेट नहीं किया गया"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3287,7 +3287,7 @@ msgstr "बंद"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.off"
-msgstr ""
+msgstr "बंद"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3597,7 +3597,7 @@ msgstr "इंस्टॉल करने के लिए तैयार"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
-msgstr ""
+msgstr "आपके शब्दकोश के शब्द पहचानता है।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3928,7 +3928,7 @@ msgstr "सेटअप विज़ार्ड फिर से चलाए�
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.detail"
-msgstr ""
+msgstr "Neural Engine पर एन्कोडर चलाता है। तेज़ है और कम ऊर्जा का उपयोग करता है। macOS के इसे अनुकूलित करने के दौरान पहली बार लोड होने में अधिक समय लगता है।"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4058,7 +4058,7 @@ msgstr "सेगमेंट के शुरू और अंत के सम
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps_detail"
-msgstr ""
+msgstr "लाइब्रेरी में सेगमेंट टाइमिंग और उपशीर्षक निर्यात।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4168,7 +4168,7 @@ msgstr "सब दिखाएँ"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
-msgstr ""
+msgstr "त्रुटि विवरण दिखाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -4468,7 +4468,7 @@ msgstr "परीक्षण"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
-msgstr ""
+msgstr "आप बोलते समय टेक्स्ट पिल में दिखाई देता है।"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -4612,7 +4612,7 @@ msgstr "बचा हुआ समय"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps"
-msgstr ""
+msgstr "टाइमस्टैम्प"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4886,7 +4886,7 @@ msgstr "उपयोग करें"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.toggle"
-msgstr ""
+msgstr "क्लाउड ट्रांसक्रिप्शन का उपयोग करें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
