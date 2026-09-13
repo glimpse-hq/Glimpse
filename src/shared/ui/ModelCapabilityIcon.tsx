@@ -1,4 +1,5 @@
-import { useLingui } from "@lingui/react/macro";
+import { msg } from "@lingui/core/macro";
+import { i18n } from "../../i18n";
 import { BookOpenText, Clock, Waveform } from "@phosphor-icons/react";
 import HoverTip from "./HoverTip";
 import {
@@ -24,54 +25,41 @@ export const CAPABILITY_ICONS = {
   [MODEL_CAPABILITY_TIMESTAMPS]: Clock,
 } as const;
 
-export const capabilityCopy = (
-  t: ReturnType<typeof useLingui>["t"],
-  capability: ModelCapability,
-) => {
-  switch (capability) {
-    case MODEL_CAPABILITY_DICTIONARY:
-      return {
-        label: t({
-          id: "model_capability.dictionary",
-          message: "Custom words",
-        }),
-        detail: t({
-          id: "model_capability.dictionary_detail",
-          message: "Recognizes words from your dictionary.",
-        }),
-      };
-    case MODEL_CAPABILITY_STREAMING:
-      return {
-        label: t({
-          id: "model_capability.live_text",
-          message: "Live text",
-        }),
-        detail: t({
-          id: "model_capability.live_text_detail",
-          message: "Text appears in the pill as you speak.",
-        }),
-      };
-    case MODEL_CAPABILITY_TIMESTAMPS:
-      return {
-        label: t({
-          id: "model_capability.timestamps",
-          message: "Timestamps",
-        }),
-        detail: t({
-          id: "model_capability.timestamps_detail",
-          message: "Segment times and subtitle export in Library.",
-        }),
-      };
-  }
-};
+const CAPABILITY_COPY = {
+  [MODEL_CAPABILITY_DICTIONARY]: {
+    label: msg({ id: "model_capability.dictionary", message: "Custom words" }),
+    detail: msg({
+      id: "model_capability.dictionary_detail",
+      message: "Recognizes words from your dictionary.",
+    }),
+  },
+  [MODEL_CAPABILITY_STREAMING]: {
+    label: msg({ id: "model_capability.live_text", message: "Live text" }),
+    detail: msg({
+      id: "model_capability.live_text_detail",
+      message: "Text appears in the pill as you speak.",
+    }),
+  },
+  [MODEL_CAPABILITY_TIMESTAMPS]: {
+    label: msg({ id: "model_capability.timestamps", message: "Timestamps" }),
+    detail: msg({
+      id: "model_capability.timestamps_detail",
+      message: "Segment times and subtitle export in Library.",
+    }),
+  },
+} as const;
+
+export const capabilityCopy = (capability: ModelCapability) => ({
+  label: i18n._(CAPABILITY_COPY[capability].label),
+  detail: i18n._(CAPABILITY_COPY[capability].detail),
+});
 
 const ModelCapabilityIcon = ({
   capability,
 }: {
   capability: ModelCapability;
 }) => {
-  const { t } = useLingui();
-  const copy = capabilityCopy(t, capability);
+  const copy = capabilityCopy(capability);
   const Icon = CAPABILITY_ICONS[capability];
 
   return (

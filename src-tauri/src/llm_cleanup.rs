@@ -765,6 +765,10 @@ fn cleanup_result_looks_safe(source: &str, candidate: &str, has_style_guidance: 
         return false;
     }
 
+    if starts_with_result_label(candidate) && !starts_with_result_label(source) {
+        return false;
+    }
+
     let source_words = word_count(source);
     if source_words < 4 {
         return true;
@@ -836,10 +840,14 @@ fn edit_result_looks_safe(source: &str, candidate: &str) -> bool {
         return verdict;
     }
 
-    let lowered = candidate.to_ascii_lowercase();
-    !lowered.starts_with("edited text:")
-        && !lowered.starts_with("revised text:")
-        && !lowered.starts_with("cleaned transcript:")
+    !starts_with_result_label(candidate)
+}
+
+fn starts_with_result_label(text: &str) -> bool {
+    let lowered = text.trim_start().to_ascii_lowercase();
+    ["edited text:", "revised text:", "cleaned transcript:"]
+        .iter()
+        .any(|label| lowered.starts_with(label))
 }
 
 fn significant_tokens(text: &str) -> HashSet<String> {

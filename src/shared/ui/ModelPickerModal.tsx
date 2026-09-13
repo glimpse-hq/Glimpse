@@ -275,7 +275,7 @@ export function ModelPickerPanel({
                   const selected = capabilityFilter.includes(capability);
                   return {
                     key: capability,
-                    label: capabilityCopy(t, capability).label,
+                    label: capabilityCopy(capability).label,
                     selected,
                     icon: (
                       <Icon

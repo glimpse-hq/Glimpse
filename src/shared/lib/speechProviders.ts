@@ -195,13 +195,16 @@ export function isRemoteSpeechConfigured(args: {
   provider: RemoteSpeechProvider;
   endpoint: string;
   model: string;
+  apiKey: string;
 }): boolean {
   if (!args.enabled) {
     return false;
   }
+  const preset = getSpeechProviderPreset(args.provider);
   return (
     resolvedSpeechEndpoint(args.provider, args.endpoint).length > 0 &&
-    resolvedSpeechModel(args.provider, args.model) !== undefined
+    resolvedSpeechModel(args.provider, args.model) !== undefined &&
+    (!preset?.apiKeyRequired || args.apiKey.trim() !== "")
   );
 }
 
@@ -284,14 +287,11 @@ export function isRemoteSpeechInUse(
     | "remote_speech_api_key"
   >,
 ): boolean {
-  const preset = getSpeechProviderPreset(settings.remote_speech_provider);
-  return (
-    isRemoteSpeechConfigured({
-      enabled: settings.remote_speech_enabled,
-      provider: settings.remote_speech_provider,
-      endpoint: settings.remote_speech_endpoint,
-      model: settings.remote_speech_model,
-    }) &&
-    (!preset?.apiKeyRequired || settings.remote_speech_api_key.trim() !== "")
-  );
+  return isRemoteSpeechConfigured({
+    enabled: settings.remote_speech_enabled,
+    provider: settings.remote_speech_provider,
+    endpoint: settings.remote_speech_endpoint,
+    model: settings.remote_speech_model,
+    apiKey: settings.remote_speech_api_key,
+  });
 }

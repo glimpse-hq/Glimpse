@@ -276,6 +276,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     provider: settings?.remote_speech_provider ?? "custom",
     endpoint: settings?.remote_speech_endpoint ?? "",
     model: settings?.remote_speech_model ?? "",
+    apiKey: settings?.remote_speech_api_key ?? "",
   });
   const supportsDictionary = hasModelCapability(
     currentModel,

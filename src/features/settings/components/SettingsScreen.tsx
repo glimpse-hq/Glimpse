@@ -167,6 +167,7 @@ const SettingsScreen = ({
                 remoteSpeechProvider={form.remoteSpeechProvider}
                 remoteSpeechEndpoint={form.remoteSpeechEndpoint}
                 remoteSpeechModel={form.remoteSpeechModel}
+                remoteSpeechApiKey={form.remoteSpeechApiKey}
                 setLocalModel={form.setLocalModel}
                 handleDownload={form.handleDownload}
                 handleDelete={form.handleDelete}
