@@ -1,4 +1,4 @@
-import type { LlmProvider } from "../../types";
+import type { LlmProvider, StoredSettings } from "../../types";
 
 export type { LlmProvider };
 
@@ -179,4 +179,32 @@ export function formatTranscriptionLlmModel(stored: string): string | null {
   }
 
   return trimmed;
+}
+
+const LOCAL_HOST_PATTERN =
+  /^(https?:\/\/)?(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\])(?=[:/]|$)/i;
+
+type LlmSettings = Pick<
+  StoredSettings,
+  "llm_enabled" | "llm_provider" | "llm_endpoint" | "llm_api_key" | "llm_model"
+>;
+
+export function isLlmInUse(settings: LlmSettings): boolean {
+  if (!settings.llm_enabled) return false;
+  const preset = getProviderPreset(settings.llm_provider);
+  if (!preset) return false;
+  if (preset.onDevice) return true;
+  return (
+    resolvedLlmEndpoint(settings.llm_provider, settings.llm_endpoint) !== "" &&
+    (!preset.apiKeyRequired || settings.llm_api_key.trim() !== "") &&
+    settings.llm_model.trim() !== ""
+  );
+}
+
+export function isCloudLlmInUse(settings: LlmSettings): boolean {
+  if (!isLlmInUse(settings)) return false;
+  if (getProviderPreset(settings.llm_provider)?.onDevice) return false;
+  return !LOCAL_HOST_PATTERN.test(
+    resolvedLlmEndpoint(settings.llm_provider, settings.llm_endpoint),
+  );
 }

@@ -159,7 +159,7 @@ const LocalApiTab = ({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="flex h-full flex-col gap-6"
+      className="flex min-h-0 flex-1 flex-col gap-6"
     >
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">

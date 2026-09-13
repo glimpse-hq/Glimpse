@@ -15,6 +15,7 @@ export type ModelInfo = {
     name: string;
   }[];
   ane_size_mb: number | null;
+  ane_total_size_mb: number | null;
 };
 
 export type SpeechModel = {

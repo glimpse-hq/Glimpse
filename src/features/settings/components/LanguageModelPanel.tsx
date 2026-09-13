@@ -8,6 +8,7 @@ import {
 } from "../../../shared/lib/llmProviders";
 import type { LlmProvider } from "../../../types";
 import { Dropdown } from "../../../shared/ui/Dropdown";
+import ApiKeyField from "../../../shared/ui/ApiKeyField";
 import { detectAppPlatform } from "../../../platform/service";
 
 type AppleLlmAvailability =
@@ -232,10 +233,9 @@ const LanguageModelPanel = ({
               </span>
             )}
           </span>
-          <input
-            type="password"
+          <ApiKeyField
             value={llmApiKey}
-            onChange={(e) => setLlmApiKey(e.target.value)}
+            onChange={setLlmApiKey}
             placeholder={
               providerPreset?.apiKeyRequired
                 ? t({
@@ -247,11 +247,10 @@ const LanguageModelPanel = ({
                     message: "Optional",
                   })
             }
-            aria-label={t({
+            ariaLabel={t({
               id: "settings.language_model.api_key.aria",
               message: "LLM API Key",
             })}
-            className="mt-2 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
           />
         </div>
       )}

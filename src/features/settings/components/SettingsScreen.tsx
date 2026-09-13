@@ -107,7 +107,7 @@ const SettingsScreen = ({
       )}
 
       <div
-        className="flex-1 min-h-0 px-8 pt-2 pb-6 settings-scroll overflow-y-scroll"
+        className="flex flex-1 min-h-0 flex-col px-8 pt-2 pb-6 settings-scroll overflow-y-scroll"
         style={{ scrollbarGutter: "stable" }}
       >
         {form.loading ? null : (
@@ -167,6 +167,7 @@ const SettingsScreen = ({
                 remoteSpeechProvider={form.remoteSpeechProvider}
                 remoteSpeechEndpoint={form.remoteSpeechEndpoint}
                 remoteSpeechModel={form.remoteSpeechModel}
+                remoteSpeechApiKey={form.remoteSpeechApiKey}
                 setLocalModel={form.setLocalModel}
                 handleDownload={form.handleDownload}
                 handleDelete={form.handleDelete}

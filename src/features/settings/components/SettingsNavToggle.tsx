@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { GearSix, type Icon as PhosphorIcon } from "@phosphor-icons/react";
+import SidebarTip from "../../../shared/ui/SidebarTip";
 
 const EXPO_OUT = [0.16, 1, 0.3, 1] as const;
 
@@ -25,7 +26,7 @@ const SettingsNavToggle = ({
     onClick={onClick}
     data-active={open ? "true" : "false"}
     aria-label={open ? closeLabel : openLabel}
-    className={`ui-nav-item group h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
+    className={`ui-nav-item group relative h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
       collapsed ? "gap-0" : "gap-3"
     }`}
   >
@@ -70,6 +71,7 @@ const SettingsNavToggle = ({
         </motion.span>
       </AnimatePresence>
     </span>
+    <SidebarTip label={open ? closeLabel : openLabel} show={collapsed} />
   </button>
 );
 

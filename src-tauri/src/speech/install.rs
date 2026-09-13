@@ -148,8 +148,58 @@ fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
 
 const MODELS_ROOT: &str = "models";
 
-pub fn local_resolver() -> glimpse_speech::service::ModelResolver {
-    std::sync::Arc::new(|model| super::catalog::install_spec(model, false))
+pub fn local_resolver(models_dir: PathBuf) -> glimpse_speech::service::ModelResolver {
+    let manager = speech_models::ModelInstallManager::new(models_dir);
+    std::sync::Arc::new(move |model| installed_spec(model, &manager).ok())
+}
+
+fn installed_spec(
+    model: &str,
+    manager: &speech_models::ModelInstallManager,
+) -> Result<speech_models::InstallSpec> {
+    let base = spec_for(model, false)?;
+    if super::catalog::ane_replaces_model_files(model) {
+        let ane = spec_for(model, true)?;
+        if manager.status(&ane)?.installed || !manager.status(&base)?.installed {
+            return Ok(ane);
+        }
+    }
+    Ok(base)
+}
+
+fn finish_model_install(
+    manager: &speech_models::ModelInstallManager,
+    spec: &speech_models::InstallSpec,
+    ane: bool,
+) -> Result<speech_models::ModelStatus> {
+    let verified = manager.verify(spec)?;
+    if !verified.installed {
+        anyhow::bail!("Replacement model is incomplete");
+    }
+    if super::catalog::ane_replaces_model_files(&spec.id) {
+        let other = spec_for(&spec.id, !ane)?;
+        let dir = manager.model_dir(&spec.id);
+        for file in other.files {
+            if spec.files.iter().any(|keep| keep.path == file.path) {
+                continue;
+            }
+            let path = dir.join(&file.path);
+            if path.exists() {
+                if file.extract {
+                    crate::platform::remove_dir_all_compat(&path)?;
+                } else {
+                    std::fs::remove_file(&path)?;
+                }
+            }
+            if file.extract {
+                let manifest = path.with_file_name(format!(".{}.manifest.json", file.path));
+                if manifest.exists() {
+                    std::fs::remove_file(manifest)?;
+                }
+            }
+        }
+    }
+    manager.status(spec)
 }
 
 fn spec_for(model: &str, ane: bool) -> Result<speech_models::InstallSpec> {
@@ -159,7 +209,7 @@ fn spec_for(model: &str, ane: bool) -> Result<speech_models::InstallSpec> {
 /// Headless installed-check against a models directory, without an `AppHandle`.
 pub(crate) fn check_model_installed_at(models_dir: &std::path::Path, model: &str) -> bool {
     let manager = speech_models::ModelInstallManager::new(models_dir.to_path_buf());
-    spec_for(model, false)
+    installed_spec(model, &manager)
         .ok()
         .and_then(|spec| manager.status(&spec).ok())
         .map(|status| status.installed)
@@ -230,7 +280,7 @@ pub fn check_model_status<R: Runtime>(
     model: String,
 ) -> Result<ModelStatus, String> {
     let manager = model_manager(&app).map_err(|err| err.to_string())?;
-    let spec = spec_for(&model, false).map_err(|err| err.to_string())?;
+    let spec = installed_spec(&model, &manager).map_err(|err| err.to_string())?;
     let status = manager.status(&spec).map_err(|err| err.to_string())?;
     Ok(map_status(status, &manager))
 }
@@ -277,9 +327,17 @@ pub async fn download_model(
     ensure_models_root(&app)
         .map_err(|err| track_download_error(&app, &model, "install", err.to_string()))?;
     let ane_pending = ane
+        && super::catalog::ane_needs_compile_step(&model)
         && super::catalog::ane_encoder_dir(&model).is_some()
         && !ane_installed_for(&model, &manager);
-    let cancel_token = state.create_download_token(&model);
+    let cancel_token = state.create_download_token(&model)?;
+    struct DownloadGuard<'a>(&'a crate::AppState, String);
+    impl Drop for DownloadGuard<'_> {
+        fn drop(&mut self) {
+            self.0.clear_download_token(&self.1);
+        }
+    }
+    let _download_guard = DownloadGuard(&state, model.clone());
     let progress_app = app.clone();
     let progress = |event: speech_models::ModelDownloadProgress| {
         let _ = progress_app.emit(
@@ -305,8 +363,6 @@ pub async fn download_model(
         )
         .await;
 
-    state.clear_download_token(&model);
-
     let status = match result {
         Ok(status) => status,
         Err(err) => {
@@ -317,7 +373,8 @@ pub async fn download_model(
                         model: model.clone(),
                     },
                 );
-                let status = manager.status(&spec).map_err(|err| err.to_string())?;
+                let installed = installed_spec(&model, &manager).map_err(|err| err.to_string())?;
+                let status = manager.status(&installed).map_err(|err| err.to_string())?;
                 return Ok(map_status(status, &manager));
             }
             let reason = crate::analytics::classify_failure_reason(&err.to_string());
@@ -336,6 +393,27 @@ pub async fn download_model(
             );
             return Err(err.to_string());
         }
+    };
+
+    // Release the loaded engine before replacing package files or adding an
+    // encoder, so warm-up reloads the selected package and companion.
+    let status = if super::catalog::ane_replaces_model_files(&model) || ane {
+        let handle = app.clone();
+        let spec = spec.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Some(state) = handle.try_state::<crate::AppState>() {
+                let transcriber = state.local_transcriber();
+                if transcriber.loaded_model_id().as_deref() == Some(spec.id.as_str()) {
+                    transcriber.unload();
+                }
+            }
+            finish_model_install(&model_manager(&handle)?, &spec, ane)
+        })
+        .await
+        .map_err(|err| err.to_string())?
+        .map_err(|err: anyhow::Error| err.to_string())?
+    } else {
+        status
     };
 
     let _ = app.emit(
@@ -456,7 +534,7 @@ pub fn cancel_download(
 
 pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result<ReadyModel> {
     let manager = model_manager(app)?;
-    let spec = spec_for(model, false)?;
+    let spec = installed_spec(model, &manager)?;
     let resolved = manager.resolve(&spec)?;
     Ok(ReadyModel {
         key: resolved.id,
@@ -489,4 +567,55 @@ pub fn ensure_local_fallback_model<R: Runtime>(
     Err(anyhow::anyhow!(
         "No local transcription model is installed for fallback"
     ))
+}
+
+#[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
+mod parakeet_package_tests {
+    use super::*;
+
+    #[test]
+    #[ignore = "requires PARAKEET_ANE_TEST_CACHE and PARAKEET_ANE_TEST_ORIGIN"]
+    fn switches_parakeet_packages_without_losing_working_download() -> Result<()> {
+        let cache = PathBuf::from(std::env::var("PARAKEET_ANE_TEST_CACHE")?).join("switching");
+        let origin = std::env::var("PARAKEET_ANE_TEST_ORIGIN")?;
+        let manager = speech_models::ModelInstallManager::new(cache.clone());
+        let model = "parakeet_tdt_v3_gguf";
+        let fixture_spec = |ane| -> Result<speech_models::InstallSpec> {
+            let mut spec = spec_for(model, ane)?;
+            for file in &mut spec.files {
+                file.url = format!("{origin}/{}", file.url.rsplit('/').next().unwrap());
+            }
+            Ok(spec)
+        };
+        let full = fixture_spec(false)?;
+        let ane = fixture_spec(true)?;
+        let runtime = tokio::runtime::Runtime::new()?;
+        let resolver = local_resolver(cache);
+        for use_ane in [false, true, false, true] {
+            let spec = if use_ane { &ane } else { &full };
+            runtime.block_on(manager.install(spec, Default::default()))?;
+            assert!(finish_model_install(&manager, spec, use_ane)?.installed);
+            let resolved = manager.resolve(&resolver(model).unwrap())?;
+            assert_eq!(
+                resolved.path,
+                manager.model_dir(model).join(&spec.files[0].path)
+            );
+            let obsolete = if use_ane { &full } else { &ane };
+            for file in &obsolete.files {
+                assert!(!manager.model_dir(model).join(&file.path).exists());
+            }
+            assert_eq!(ane_installed_for(model, &manager), use_ane);
+
+            let mut broken = obsolete.clone();
+            broken.files[0].sha256 = Some("0".repeat(64));
+            assert!(
+                runtime
+                    .block_on(manager.install(&broken, Default::default()))
+                    .is_err()
+            );
+            assert!(manager.resolve(&resolver(model).unwrap()).is_ok());
+            assert!(manager.verify(spec)?.installed);
+        }
+        Ok(())
+    }
 }

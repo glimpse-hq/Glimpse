@@ -237,7 +237,7 @@ const MemberCardInner = ({
 
   const titleStyle = {
     fontFamily: CARD_TITLE_FONT,
-    fontSize: "1.625rem",
+    fontSize: "26px",
     lineHeight: 1.35,
     margin: 0,
     color:
@@ -351,7 +351,7 @@ const MemberCardInner = ({
                   style={{
                     ...titleStyle,
                     ...(displayTitle === email
-                      ? { fontSize: "1.25rem", lineHeight: 1.15 }
+                      ? { fontSize: "20px", lineHeight: 1.15 }
                       : {}),
                   }}
                   speedMs={REVEAL_NAME_SPEED_MS}
@@ -362,7 +362,7 @@ const MemberCardInner = ({
                   style={{
                     ...titleStyle,
                     ...(displayTitle === email
-                      ? { fontSize: "1.25rem", lineHeight: 1.15 }
+                      ? { fontSize: "20px", lineHeight: 1.15 }
                       : {}),
                   }}
                 >

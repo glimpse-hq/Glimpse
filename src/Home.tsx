@@ -25,6 +25,7 @@ import {
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import WindowControls from "./shared/ui/WindowControls";
 import SidebarItem from "./shared/ui/SidebarItem";
+import SidebarTip from "./shared/ui/SidebarTip";
 import SettingsNavToggle from "./features/settings/components/SettingsNavToggle";
 import {
   SETTINGS_PANE_GROUPS,
@@ -53,6 +54,8 @@ import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings, useAppInfo } from "./features/settings/queries";
 import { useUpdateStatus } from "./features/updates/queries";
 import type { TranscriptionMode } from "./types";
+import { isRemoteSpeechInUse } from "./shared/lib/speechProviders";
+import { isCloudLlmInUse, isLlmInUse } from "./shared/lib/llmProviders";
 
 const importSettingsScreen = () =>
   import("./features/settings/components/SettingsScreen");
@@ -172,8 +175,12 @@ const Home = () => {
 
   const transcriptionMode: TranscriptionMode =
     settings?.transcription_mode ?? "local";
-  const remoteSpeechEnabled = settings?.remote_speech_enabled ?? false;
   const llmEnabled = settings?.llm_enabled ?? false;
+  const remoteSpeechInUse = settings ? isRemoteSpeechInUse(settings) : false;
+  const cloudLlmInUse = settings ? isCloudLlmInUse(settings) : false;
+  const localLlmInUse = settings
+    ? isLlmInUse(settings) && !cloudLlmInUse
+    : false;
   const appVersion = appInfoData?.version ?? "-";
   const updateAvailable = updateStatus?.available ?? false;
 
@@ -197,6 +204,29 @@ const Home = () => {
     setIsSettingsOpen(false);
     setSettingsTab("account");
     setAccountSource("settings_account");
+  }, []);
+
+  // While any sidebar tip is showing (or was within the last moment), the
+  // next item's tip appears with no delay so sweeping down the rail feels instant.
+  const [tipsWarm, setTipsWarm] = useState(false);
+  const tipsWarmTimer = useRef<number | null>(null);
+  const handleSidebarPointerOver = useCallback((event: React.PointerEvent) => {
+    if (!(event.target as Element).closest(".group")) return;
+    if (tipsWarmTimer.current !== null) {
+      window.clearTimeout(tipsWarmTimer.current);
+      tipsWarmTimer.current = null;
+    }
+    setTipsWarm(true);
+  }, []);
+  const handleSidebarPointerOut = useCallback((event: React.PointerEvent) => {
+    const from = (event.target as Element).closest(".group");
+    if (!from) return;
+    const to = event.relatedTarget as Element | null;
+    if (to && from.contains(to)) return;
+    tipsWarmTimer.current = window.setTimeout(() => {
+      setTipsWarm(false);
+      tipsWarmTimer.current = null;
+    }, 350);
   }, []);
 
   const toggleSidebarCollapsed = useCallback(() => {
@@ -549,6 +579,9 @@ const Home = () => {
       <WindowControls />
       <aside
         data-app-sidebar
+        data-tips-warm={tipsWarm ? "" : undefined}
+        onPointerOver={handleSidebarPointerOver}
+        onPointerOut={handleSidebarPointerOut}
         style={
           {
             width: sidebarWidth,
@@ -567,8 +600,8 @@ const Home = () => {
           >
             <div className="flex w-[20px] shrink-0 items-center justify-center">
               <StaticGlimpseLogo
-                cloudActive={remoteSpeechEnabled || llmEnabled}
-                localActive={!remoteSpeechEnabled}
+                cloudActive={remoteSpeechInUse || cloudLlmInUse}
+                localActive={!remoteSpeechInUse || localLlmInUse}
               />
             </div>
             <span
@@ -701,10 +734,11 @@ const Home = () => {
             </div>
           ) : null}
 
-          <div className="space-y-1 border-t border-border-primary p-2">
+          <div className="mx-3 h-px bg-border-primary" />
+          <div className="space-y-1 p-2">
             <button
               onClick={toggleSidebarCollapsed}
-              className={`ui-nav-item group h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
+              className={`ui-nav-item group relative h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
                 isSidebarCollapsed ? "gap-0" : "gap-3"
               }`}
               aria-label={
@@ -736,13 +770,20 @@ const Home = () => {
               >
                 {t({ id: "home.sidebar.collapse_label", message: "Collapse" })}
               </span>
+              <SidebarTip
+                label={t({
+                  id: "home.sidebar.expand",
+                  message: "Expand sidebar",
+                })}
+                show={isSidebarCollapsed}
+              />
             </button>
 
             <div className="relative" ref={supportMenuRef}>
               <button
                 onClick={() => setShowSupportPopup(!showSupportPopup)}
                 data-active={showSupportPopup ? "true" : "false"}
-                className={`ui-nav-item group h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
+                className={`ui-nav-item group relative h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
                   isSidebarCollapsed ? "gap-0" : "gap-3"
                 }`}
                 aria-expanded={showSupportPopup}
@@ -767,6 +808,10 @@ const Home = () => {
                     message: "Support",
                   })}
                 </span>
+                <SidebarTip
+                  label={t({ id: "home.support.label", message: "Support" })}
+                  show={isSidebarCollapsed && !showSupportPopup}
+                />
               </button>
 
               <AnimatePresence>

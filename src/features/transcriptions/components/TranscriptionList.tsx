@@ -7,12 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  MagnifyingGlass as Search,
-  X,
-  ArrowsDownUp as ArrowDownUp,
-  Check,
-} from "@phosphor-icons/react";
+import { MagnifyingGlass as Search, X } from "@phosphor-icons/react";
 import { Virtuoso } from "react-virtuoso";
 import {
   useTranscriptionList,
@@ -26,6 +21,7 @@ import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import FilterMenu from "../../../shared/ui/FilterMenu";
 import type { TranscriptionRecord } from "../../../types";
 import {
   parseTranscriptionSearch,
@@ -63,14 +59,11 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const { i18n, t } = useLingui();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const [filterOpen, setFilterOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const filterRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const shiftHeld = useShiftHeld(isActive);
 
-  useClickOutside(filterRef, () => setFilterOpen(false), filterOpen);
   useClickOutside(
     searchRef,
     () => {
@@ -378,7 +371,6 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                   if (e.key === "Escape") {
                     setSearchQuery("");
                     setSearchOpen(false);
-                    setFilterOpen(false);
                   }
                 }}
                 placeholder={t({
@@ -406,101 +398,48 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                   <X size={12} aria-hidden="true" />
                 </button>
               )}
-              <div className="relative shrink-0" ref={filterRef}>
-                <button
-                  type="button"
-                  onClick={() => setFilterOpen((open) => !open)}
-                  aria-haspopup="menu"
-                  aria-expanded={filterOpen}
-                  aria-label={t({
-                    id: "transcriptions.list.filter.aria",
-                    message: "Sort and filter transcriptions",
-                  })}
-                  className="ui-button-ghost h-7 w-7"
-                >
-                  <ArrowDownUp size={13} aria-hidden="true" />
-                </button>
-                <AnimatePresence>
-                  {filterOpen && (
-                    <motion.div
-                      role="menu"
-                      initial={{ opacity: 0, scale: 0.98, y: -2 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.98, y: -2 }}
-                      transition={{ duration: 0.12 }}
-                      className="ui-surface-menu absolute right-0 top-full mt-1.5 z-30 min-w-[170px] py-1"
-                    >
-                      <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
-                        {t({
-                          id: "transcriptions.filter.sort",
-                          message: "Sort",
-                        })}
-                      </div>
-                      {sortOptions.map((opt) => {
-                        const selected = opt.value === parsed.sort;
-                        return (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={selected}
-                            onClick={() =>
-                              setSearchQuery((q) => withSortToken(q, opt.value))
-                            }
-                            className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
-                              selected
-                                ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
-                                : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                            }`}
-                          >
-                            <span>{opt.label}</span>
-                            <span className="w-3 flex items-center justify-center shrink-0">
-                              {selected && (
-                                <Check size={12} aria-hidden="true" />
-                              )}
-                            </span>
-                          </button>
-                        );
-                      })}
-                      <div className="my-1 mx-3 border-t border-border-secondary" />
-                      <div className="px-3 pt-1 pb-1 ui-text-uppercase-micro ui-color-muted">
-                        {t({
-                          id: "transcriptions.filter.when",
-                          message: "When",
-                        })}
-                      </div>
-                      {timeOptions.map((opt) => {
-                        const selected = opt.value === activeTimePreset;
-                        return (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            role="menuitemradio"
-                            aria-checked={selected}
-                            onClick={() =>
-                              setSearchQuery((q) =>
-                                withTimePreset(q, opt.value),
-                              )
-                            }
-                            className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
-                              selected
-                                ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
-                                : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                            }`}
-                          >
-                            <span>{opt.label}</span>
-                            <span className="w-3 flex items-center justify-center shrink-0">
-                              {selected && (
-                                <Check size={12} aria-hidden="true" />
-                              )}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+              <FilterMenu
+                ariaLabel={t({
+                  id: "transcriptions.list.filter.aria",
+                  message: "Sort and filter transcriptions",
+                })}
+                active={parsed.sort !== "recent" || activeTimePreset !== "any"}
+                onClear={() =>
+                  setSearchQuery((q) =>
+                    withTimePreset(withSortToken(q, "recent"), "any"),
+                  )
+                }
+                sections={[
+                  {
+                    key: "sort",
+                    title: t({
+                      id: "transcriptions.filter.sort",
+                      message: "Sort",
+                    }),
+                    items: sortOptions.map((opt) => ({
+                      key: opt.value,
+                      label: opt.label,
+                      selected: opt.value === parsed.sort,
+                      onSelect: () =>
+                        setSearchQuery((q) => withSortToken(q, opt.value)),
+                    })),
+                  },
+                  {
+                    key: "when",
+                    title: t({
+                      id: "transcriptions.filter.when",
+                      message: "When",
+                    }),
+                    items: timeOptions.map((opt) => ({
+                      key: opt.value,
+                      label: opt.label,
+                      selected: opt.value === activeTimePreset,
+                      onSelect: () =>
+                        setSearchQuery((q) => withTimePreset(q, opt.value)),
+                    })),
+                  },
+                ]}
+              />
             </motion.div>
           ) : (
             <motion.button

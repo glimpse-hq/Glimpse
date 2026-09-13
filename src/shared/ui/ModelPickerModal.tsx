@@ -4,14 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   WarningCircle as AlertCircle,
   MagnifyingGlass as Search,
-  Clock,
-  Funnel,
   Check,
+  Copy,
   Download,
-  Info,
   Square,
   Trash as Trash2,
-  Waveform,
   X,
 } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
@@ -19,16 +16,27 @@ import {
   deriveModelStats,
   formatModelSize,
   isBuiltInModel,
+  modelSizeMb,
   variantLabel,
 } from "../lib/modelStats";
 import {
   hasModelCapability,
+  MODEL_CAPABILITY_DICTIONARY,
   MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../lib/modelCapabilities";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import DotMatrix from "./DotMatrix";
+import FilterMenu from "./FilterMenu";
+import HoverTip from "./HoverTip";
+import ModelCapabilityIcon, {
+  CAPABILITY_ICONS,
+  MODEL_CAPABILITY_ORDER,
+  capabilityCopy,
+  type ModelCapability,
+} from "./ModelCapabilityIcon";
 import type { DownloadEvent, ModelInfo } from "../../types";
 
 const CATEGORY_ORDER = ["standard", "experimental", "legacy"] as const;
@@ -61,7 +69,7 @@ const groupModels = (catalog: ModelInfo[]): ModelGroup[] => {
     variants.sort((a, b) => variantRank(a.variant) - variantRank(b.variant));
     const englishOnly = deriveModelStats(variants[0]).englishOnly;
     const category = variants[0].category;
-    const label = variants[0].label.replace(/\s*\([^)]*\)\s*/g, "").trim();
+    const label = variants[0].label.trim();
     const haystack = [
       label,
       category,
@@ -96,7 +104,6 @@ type ModelPickerData = {
 
 type ModelPickerPanelProps = ModelPickerData & {
   className?: string;
-  fadeColor?: string;
 };
 
 export function ModelPickerPanel({
@@ -110,16 +117,15 @@ export function ModelPickerPanel({
   onDelete,
   onCancel,
   className,
-  fadeColor = "var(--color-bg-tertiary)",
 }: ModelPickerPanelProps) {
   const { t } = useLingui();
   const [modelSearch, setModelSearch] = useState("");
   const [quantByGroup, setQuantByGroup] = useState<Record<string, string>>({});
-  const [filterOpen, setFilterOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [capabilityFilter, setCapabilityFilter] = useState<ModelCapability[]>(
+    [],
+  );
   const shiftHeld = useShiftHeld();
-  useClickOutside(filterRef, () => setFilterOpen(false), filterOpen);
 
   const categoryLabel = (category: string) => {
     switch (category) {
@@ -154,9 +160,25 @@ export function ModelPickerPanel({
     const query = modelSearch.trim().toLowerCase();
     return groups.filter((group) => {
       if (categoryFilter && group.category !== categoryFilter) return false;
+      if (
+        !capabilityFilter.every((capability) =>
+          group.variants.some((variant) =>
+            hasModelCapability(variant, capability),
+          ),
+        )
+      )
+        return false;
       return query ? group.haystack.includes(query) : true;
     });
-  }, [groups, modelSearch, categoryFilter]);
+  }, [groups, modelSearch, categoryFilter, capabilityFilter]);
+
+  const filterActive = categoryFilter !== null || capabilityFilter.length > 0;
+  const toggleCapability = (capability: ModelCapability) =>
+    setCapabilityFilter((prev) =>
+      prev.includes(capability)
+        ? prev.filter((entry) => entry !== capability)
+        : [...prev, capability],
+    );
 
   const sections = useMemo(
     () =>
@@ -213,91 +235,73 @@ export function ModelPickerPanel({
             className="min-w-0 flex-1 bg-transparent ui-text-body-sm ui-color-primary placeholder-content-muted outline-none"
           />
 
-          {availableCategories.length > 1 && (
-            <div className="relative shrink-0" ref={filterRef}>
-              <button
-                type="button"
-                onClick={() => setFilterOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={filterOpen}
-                aria-label={t({
-                  id: "model_picker.filter.aria",
-                  message: "Filter models by category",
-                })}
-                className={`ui-button-ghost h-6 w-6 ${
-                  categoryFilter ? "text-content-primary" : ""
-                }`}
-              >
-                <Funnel
-                  size={13}
-                  weight={categoryFilter ? "fill" : "regular"}
-                  aria-hidden="true"
-                />
-              </button>
-              <AnimatePresence>
-                {filterOpen && (
-                  <motion.div
-                    role="menu"
-                    initial={{ opacity: 0, scale: 0.98, y: -2 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.98, y: -2 }}
-                    transition={{ duration: 0.12 }}
-                    className="ui-surface-menu absolute right-0 top-full z-30 mt-1.5 min-w-[160px] py-1"
-                  >
-                    {[
-                      {
-                        value: "all",
-                        label: t({
-                          id: "model_picker.filter.all",
-                          message: "All models",
-                        }),
-                      },
-                      ...availableCategories.map((category) => ({
-                        value: category as string,
-                        label: categoryLabel(category),
-                      })),
-                    ].map((opt) => {
-                      const selected = opt.value === (categoryFilter ?? "all");
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={selected}
-                          onClick={() => {
-                            setCategoryFilter(
-                              opt.value === "all" ? null : opt.value,
-                            );
-                            setFilterOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between gap-3 px-3 py-1 ui-text-body-sm transition-colors ${
-                            selected
-                              ? "ui-color-primary bg-[var(--surface-interactive-strong)]"
-                              : "ui-color-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                          }`}
-                        >
-                          <span>{opt.label}</span>
-                          <span className="flex w-3 items-center justify-center shrink-0">
-                            {selected && <Check size={12} aria-hidden="true" />}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+          <FilterMenu
+            ariaLabel={t({
+              id: "model_picker.filter.aria_v2",
+              message: "Filter models",
+            })}
+            active={filterActive}
+            triggerClassName="h-6 w-6"
+            onClear={() => {
+              setCategoryFilter(null);
+              setCapabilityFilter([]);
+            }}
+            sections={[
+              {
+                key: "category",
+                title: t({
+                  id: "model_picker.filter.category",
+                  message: "Category",
+                }),
+                items: availableCategories.map((category) => ({
+                  key: category,
+                  label: categoryLabel(category),
+                  selected: category === categoryFilter,
+                  onSelect: () =>
+                    setCategoryFilter(
+                      category === categoryFilter ? null : category,
+                    ),
+                })),
+              },
+              {
+                key: "capabilities",
+                title: t({
+                  id: "model_picker.filter.capabilities",
+                  message: "Capabilities",
+                }),
+                multiple: true,
+                items: MODEL_CAPABILITY_ORDER.map((capability) => {
+                  const Icon = CAPABILITY_ICONS[capability];
+                  const selected = capabilityFilter.includes(capability);
+                  return {
+                    key: capability,
+                    label: capabilityCopy(capability).label,
+                    selected,
+                    icon: (
+                      <Icon
+                        size={13}
+                        className={`shrink-0 ${
+                          selected ? "text-local" : "text-content-muted"
+                        }`}
+                        aria-hidden="true"
+                      />
+                    ),
+                    onSelect: () => toggleCapability(capability),
+                  };
+                }),
+              },
+            ]}
+          />
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1">
+      <div className="min-h-0 flex-1 model-list-fade">
         <div className="h-full overflow-y-auto py-3 pl-2 pr-3">
           {filteredGroups.length === 0 ? (
             <p className="py-10 text-center ui-text-body-sm text-content-muted">
               {t({
-                id: "model_picker.no_results",
-                message: "No models match your search.",
+                id: "model_picker.no_matches",
+                message: "No models match.",
               })}
             </p>
           ) : (
@@ -319,20 +323,6 @@ export function ModelPickerPanel({
             </div>
           )}
         </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 right-3 top-0 h-5"
-          style={{
-            background: `linear-gradient(to bottom, ${fadeColor}, transparent)`,
-          }}
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 right-3 bottom-0 h-5"
-          style={{
-            background: `linear-gradient(to top, ${fadeColor}, transparent)`,
-          }}
-        />
       </div>
     </div>
   );
@@ -392,11 +382,7 @@ export default function ModelPickerModal({
               </button>
             </div>
 
-            <ModelPickerPanel
-              {...data}
-              className="flex-1 px-3 pt-3"
-              fadeColor="var(--color-bg-tertiary)"
-            />
+            <ModelPickerPanel {...data} className="flex-1 px-3 pt-3" />
           </motion.div>
         </motion.div>
       )}
@@ -436,7 +422,12 @@ function ModelRow({
 }) {
   const { t } = useLingui();
   const [aneUserChoice, setAneUserChoice] = useState<boolean | null>(null);
-  const aneChecked = aneUserChoice ?? !installed;
+  const switchableAne = selected.ane_total_size_mb != null;
+  const aneChecked = aneUserChoice ?? (aneInstalled || !installed);
+  const hasDictionary = hasModelCapability(
+    selected,
+    MODEL_CAPABILITY_DICTIONARY,
+  );
   const isStreaming = hasModelCapability(selected, MODEL_CAPABILITY_STREAMING);
   const hasTimestamps = hasModelCapability(
     selected,
@@ -446,23 +437,28 @@ function ModelRow({
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
   const showError = progress?.status === "error";
+  const errorMessage =
+    progress?.status === "error" ? progress.message : undefined;
   const isCancelled = progress?.status === "cancelled";
   const isBusy = isDownloading || showError || isCancelled;
   const percent = Math.round(progress?.percent ?? 0);
   const showQuants = group.variants.length > 1 && !isBusy;
   const aneAvailable = selected.ane_size_mb != null;
-  const aneOn = aneAvailable && (aneInstalled || aneChecked);
-  const encoderDownloadPending =
-    installed && aneAvailable && aneChecked && !aneInstalled;
+  const aneOn =
+    aneAvailable && (switchableAne ? aneChecked : aneInstalled || aneChecked);
+  const packageDownloadPending =
+    installed &&
+    aneAvailable &&
+    (switchableAne ? aneOn !== aneInstalled : aneChecked && !aneInstalled);
   const showAne = aneAvailable && !isBusy;
-  const displaySize =
-    selected.size_mb + (aneOn ? (selected.ane_size_mb ?? 0) : 0);
-  const downloadLabel = installed
-    ? t({
-        id: "model_picker.ane.download",
-        message: "Download Neural Engine encoder",
-      })
-    : t({ id: "model_picker.download", message: "Download" });
+  const displaySize = modelSizeMb(selected, aneOn);
+  const downloadLabel =
+    installed && !switchableAne
+      ? t({
+          id: "model_picker.ane.download",
+          message: "Download Neural Engine encoder",
+        })
+      : t({ id: "model_picker.download", message: "Download" });
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
@@ -471,12 +467,12 @@ function ModelRow({
         onClick={
           !installed && selected.downloadable
             ? () => onDownload(aneOn)
-            : encoderDownloadPending
-              ? () => onDownload(true)
+            : packageDownloadPending
+              ? () => onDownload(aneOn)
               : onUse
         }
         title={
-          encoderDownloadPending
+          packageDownloadPending
             ? downloadLabel
             : installed && !active
               ? t({ id: "model_picker.use", message: "Use" })
@@ -503,27 +499,14 @@ function ModelRow({
                 {t({ id: "model_picker.active", message: "Active" })}
               </span>
             )}
+            {hasDictionary && (
+              <ModelCapabilityIcon capability={MODEL_CAPABILITY_DICTIONARY} />
+            )}
             {isStreaming && (
-              <span
-                className="inline-flex shrink-0 text-content-muted"
-                title={t({
-                  id: "model_picker.capability.streaming",
-                  message: "Live streaming",
-                })}
-              >
-                <Waveform size={13} aria-hidden="true" />
-              </span>
+              <ModelCapabilityIcon capability={MODEL_CAPABILITY_STREAMING} />
             )}
             {hasTimestamps && (
-              <span
-                className="inline-flex shrink-0 text-content-muted"
-                title={t({
-                  id: "model_picker.capability.timestamps",
-                  message: "Word-level timestamps",
-                })}
-              >
-                <Clock size={13} aria-hidden="true" />
-              </span>
+              <ModelCapabilityIcon capability={MODEL_CAPABILITY_TIMESTAMPS} />
             )}
           </span>
           <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
@@ -581,7 +564,7 @@ function ModelRow({
         {showAne && (
           <AneCheckbox
             checked={aneOn}
-            installed={aneInstalled}
+            installed={aneInstalled && !switchableAne}
             onToggle={() => setAneUserChoice(!aneChecked)}
           />
         )}
@@ -611,20 +594,8 @@ function ModelRow({
                     }
                   </p>
                 ) : null}
-                {showError && (
-                  <p className="flex w-full items-center justify-end gap-1 ui-text-micro text-error">
-                    <AlertCircle size={9} className="shrink-0" />
-                    <span className="truncate">
-                      {
-                        (
-                          progress as Extract<
-                            DownloadEvent,
-                            { status: "error" }
-                          >
-                        ).message
-                      }
-                    </span>
-                  </p>
+                {showError && errorMessage && (
+                  <DownloadErrorPopover message={errorMessage} />
                 )}
                 {isCancelled && (
                   <p className="text-right ui-text-micro text-content-disabled">
@@ -650,10 +621,10 @@ function ModelRow({
           <div className="flex items-center gap-1">
             <span className="flex h-6 w-6 items-center justify-center">
               {((!installed && selected.downloadable) ||
-                (showAne && aneChecked && !aneInstalled)) && (
+                (showAne && packageDownloadPending)) && (
                 <button
                   type="button"
-                  onClick={() => onDownload(installed || aneOn)}
+                  onClick={() => onDownload(aneOn)}
                   className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
                   title={downloadLabel}
                   aria-label={downloadLabel}
@@ -699,19 +670,27 @@ function AneCheckbox({
   onToggle: () => void;
 }) {
   const { t } = useLingui();
-  const [infoOpen, setInfoOpen] = useState(false);
-  const infoRef = useRef<HTMLDivElement>(null);
-  useClickOutside(infoRef, () => setInfoOpen(false), infoOpen);
 
   return (
-    <div className="relative flex items-center gap-1" ref={infoRef}>
+    <HoverTip
+      label={t({
+        id: "model_picker.ane.title",
+        message: "Apple Neural Engine",
+      })}
+      detail={t({
+        id: "model_picker.ane.detail",
+        message:
+          "Runs the encoder on the Neural Engine. Faster and uses less power. First load takes longer while macOS optimizes it.",
+      })}
+      className="flex items-center"
+    >
       <button
         type="button"
         role="checkbox"
         aria-checked={checked}
         disabled={installed}
         onClick={onToggle}
-        title={
+        aria-label={
           installed
             ? t({
                 id: "model_picker.ane.installed",
@@ -746,37 +725,74 @@ function AneCheckbox({
           ANE
         </span>
       </button>
+    </HoverTip>
+  );
+}
 
+function DownloadErrorPopover({ message }: { message: string }) {
+  const { t } = useLingui();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { copied, copy, reset } = useCopyToClipboard(1500);
+  useClickOutside(
+    ref,
+    () => {
+      setOpen(false);
+      reset();
+    },
+    open,
+  );
+
+  const copyLabel = copied
+    ? t({ id: "model_picker.error.copied", message: "Copied" })
+    : t({ id: "model_picker.error.copy", message: "Copy error message" });
+
+  return (
+    <div className="relative flex w-full justify-end" ref={ref}>
       <button
         type="button"
-        onClick={() => setInfoOpen((open) => !open)}
-        aria-expanded={infoOpen}
-        aria-label={t({
-          id: "model_picker.ane.info_aria",
-          message: "About the Apple Neural Engine encoder",
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        title={t({
+          id: "model_picker.error.show",
+          message: "Show error details",
         })}
-        className="flex h-5 w-5 items-center justify-center rounded-md text-content-disabled transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+        className="flex min-w-0 max-w-full items-center gap-1 rounded-sm ui-text-micro text-error transition-opacity hover:opacity-80"
       >
-        <Info size={12} aria-hidden="true" />
+        <AlertCircle size={9} className="shrink-0" aria-hidden="true" />
+        <span className="truncate">{message}</span>
       </button>
 
       <AnimatePresence>
-        {infoOpen && (
+        {open && (
           <motion.div
-            role="tooltip"
+            role="dialog"
+            aria-label={t({
+              id: "model_picker.error.title",
+              message: "Download failed",
+            })}
             initial={{ opacity: 0, scale: 0.98, y: -2 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -2 }}
             transition={{ duration: 0.12 }}
-            className="ui-surface-menu absolute right-0 top-full z-30 mt-1.5 w-60 px-3 py-2"
+            className="ui-surface-menu absolute right-0 top-full z-30 mt-1 flex w-64 items-start gap-1.5 py-1.5 pl-2.5 pr-1.5"
           >
-            <p className="ui-text-meta text-content-secondary">
-              {t({
-                id: "model_picker.ane.info",
-                message:
-                  "Adds a Core ML encoder that runs on the Apple Neural Engine for faster, more power-efficient transcription. The first load takes longer while macOS optimizes it for your chip.",
-              })}
+            <p className="min-w-0 flex-1 select-text break-words font-mono ui-text-micro leading-snug text-content-secondary">
+              {message}
             </p>
+            <button
+              type="button"
+              onClick={() => void copy(message)}
+              title={copyLabel}
+              aria-label={copyLabel}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+            >
+              {copied ? (
+                <Check size={11} aria-hidden="true" />
+              ) : (
+                <Copy size={11} aria-hidden="true" />
+              )}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
