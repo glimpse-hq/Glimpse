@@ -145,9 +145,15 @@ jobs:
         shell: pwsh
         run: |
           $version = "1.4.357.0"
+          $sha256 = "81f474711e9042f4cd22b31b2f7a8870db2e428b21586fb43dd80150be97310d"
           $installer = Join-Path $env:RUNNER_TEMP "VulkanSDK-Installer.exe"
           if (-not (Test-Path $installer)) {
             curl.exe -L -o $installer "https://sdk.lunarg.com/sdk/download/$version/windows/vulkansdk-windows-X64-$version.exe"
+          }
+          $actual = (Get-FileHash $installer -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne $sha256) {
+            Remove-Item $installer
+            throw "Vulkan SDK installer hash mismatch: $actual"
           }
           & $installer --accept-licenses --default-answer --confirm-command install
           "VULKAN_SDK=C:\VulkanSDK\$version" >> $env:GITHUB_ENV
