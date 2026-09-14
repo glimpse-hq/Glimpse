@@ -55,8 +55,7 @@ const SpeechModelPanel = ({
         <p className="mt-0.5 ui-text-meta ui-color-muted">
           {t({
             id: "settings.speech_model.subtitle",
-            message:
-              "Connection details for cloud transcription. Select it in Models.",
+            message: "Connection details for cloud transcription.",
           })}
         </p>
       </div>

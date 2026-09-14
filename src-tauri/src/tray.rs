@@ -402,13 +402,15 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
         .settings_close_handler_registered
         .swap(true, Ordering::SeqCst);
     if !already_registered {
-        #[cfg(target_os = "macos")]
         let app_handle = app.clone();
         let window_clone = window.clone();
         window.on_window_event(move |event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window_clone.hide();
+                tauri::Manager::state::<crate::AppState>(&app_handle)
+                    .pill()
+                    .stop_microphone_test(&app_handle);
                 #[cfg(target_os = "macos")]
                 let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
             }

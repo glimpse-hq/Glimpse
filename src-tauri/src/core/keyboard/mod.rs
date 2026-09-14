@@ -724,11 +724,26 @@ pub(crate) fn empty_blocking_hotkeys() -> BlockingHotkeys {
     blocking_hotkeys(Vec::new())
 }
 
-pub(crate) fn should_block_event(blocking_hotkeys: &BlockingHotkeys, event: &KeyEvent) -> bool {
+// `swallowed` holds the modifiers whose key-down was blocked. Only the modifier that
+// completes a modifier-only shortcut is blocked, so an earlier one (Ctrl in Ctrl+Alt)
+// still reaches other apps and Ctrl+C keeps working while Glimpse runs.
+pub(crate) fn should_block_event(
+    blocking_hotkeys: &BlockingHotkeys,
+    swallowed: Modifiers,
+    event: &KeyEvent,
+) -> bool {
     if let Some(changed_modifier) = event.changed_modifier {
+        // A swallowed modifier stays swallowed through its auto-repeats and release, or
+        // the OS would see a key-down whose key-up never arrives.
+        if swallowed.contains(changed_modifier) {
+            return true;
+        }
+        if !event.is_key_down || event.repeat {
+            return false;
+        }
         return blocking_hotkeys
             .iter()
-            .any(|hotkey| hotkey.key.is_none() && hotkey.modifiers.contains(changed_modifier));
+            .any(|hotkey| hotkey.key.is_none() && hotkey.modifiers.matches(event.modifiers));
     }
 
     event.key.is_some_and(|_| {
@@ -786,6 +801,7 @@ mod tests {
 
         assert!(should_block_event(
             &hotkeys,
+            Modifiers::empty(),
             &KeyEvent {
                 modifiers: Modifiers::OPT_RIGHT,
                 key: None,
@@ -796,6 +812,7 @@ mod tests {
         ));
         assert!(should_block_event(
             &hotkeys,
+            Modifiers::OPT_RIGHT,
             &KeyEvent {
                 modifiers: Modifiers::empty(),
                 key: None,
