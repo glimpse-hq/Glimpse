@@ -1,4 +1,3 @@
-#[cfg(target_os = "macos")]
 use crate::permissions;
 use crate::{
     AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL, assistive,
