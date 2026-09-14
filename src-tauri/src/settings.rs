@@ -329,7 +329,7 @@ fn default_personalities() -> Vec<Personality> {
         Personality {
             id: "messaging".to_string(),
             name: "Messaging".to_string(),
-            enabled: true,
+            enabled: false,
             apps: default_apps_for("messaging"),
             websites: vec!["slack.com".to_string()],
             instructions: vec![],
@@ -337,7 +337,7 @@ fn default_personalities() -> Vec<Personality> {
         Personality {
             id: "email".to_string(),
             name: "Email".to_string(),
-            enabled: true,
+            enabled: false,
             apps: default_apps_for("email"),
             websites: vec![
                 "mail.google.com".to_string(),
@@ -349,7 +349,7 @@ fn default_personalities() -> Vec<Personality> {
         Personality {
             id: "notes".to_string(),
             name: "Notes".to_string(),
-            enabled: true,
+            enabled: false,
             apps: default_apps_for("notes"),
             websites: vec![
                 "notion.so".to_string(),
@@ -362,7 +362,7 @@ fn default_personalities() -> Vec<Personality> {
         Personality {
             id: "coding".to_string(),
             name: "Coding".to_string(),
-            enabled: true,
+            enabled: false,
             apps: default_apps_for("coding"),
             websites: vec![
                 "github.com".to_string(),
