@@ -951,7 +951,7 @@ msgstr "Закрыть окно"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
-msgstr ""
+msgstr "Облако"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3082,7 +3082,7 @@ msgstr "Открывать при входе в систему"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.action"
-msgstr ""
+msgstr "Открыть «Основные»"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -3092,7 +3092,7 @@ msgstr "Открыть GitHub"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.action"
-msgstr ""
+msgstr "Открыть «Модели»"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4380,12 +4380,12 @@ msgstr "Метки времени"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.body"
-msgstr ""
+msgstr "Чтобы улучшить диктовку с помощью этой модели, нажмите значок кисти на ярлыке в разделе «Основные»."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
-msgstr ""
+msgstr "Чтобы использовать этого провайдера для транскрибирования, включите его в разделе «Модели»."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

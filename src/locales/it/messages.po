@@ -951,7 +951,7 @@ msgstr "Chiudi finestra"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
-msgstr ""
+msgstr "Cloud"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3082,7 +3082,7 @@ msgstr "Apri all'accesso"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.action"
-msgstr ""
+msgstr "Apri Generali"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -3092,7 +3092,7 @@ msgstr "Apri GitHub"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.action"
-msgstr ""
+msgstr "Apri Modelli"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4380,12 +4380,12 @@ msgstr "Timestamp"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.body"
-msgstr ""
+msgstr "Per correggere la dettatura con questo modello, tocca il pennello su un collegamento in Generali."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
-msgstr ""
+msgstr "Per trascrivere con questo provider, attivalo in Modelli."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

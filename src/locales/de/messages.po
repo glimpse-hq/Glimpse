@@ -951,7 +951,7 @@ msgstr "Fenster schließen"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
-msgstr ""
+msgstr "Cloud"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3082,7 +3082,7 @@ msgstr "Beim Anmelden öffnen"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.action"
-msgstr ""
+msgstr "Allgemein öffnen"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -3092,7 +3092,7 @@ msgstr "GitHub öffnen"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.action"
-msgstr ""
+msgstr "Modelle öffnen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4380,12 +4380,12 @@ msgstr "Zeitstempel"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.body"
-msgstr ""
+msgstr "Um Diktate mit diesem Modell zu bereinigen, tippe in „Allgemein“ auf den Pinsel bei einer Kurzbefehlsaktion."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
-msgstr ""
+msgstr "Um mit diesem Anbieter zu transkribieren, aktiviere ihn in „Modelle“. "
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
