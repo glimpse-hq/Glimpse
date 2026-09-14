@@ -3,6 +3,11 @@ import { motion, type Variants } from "framer-motion";
 import LanguageModelPanel from "../LanguageModelPanel";
 import SpeechModelPanel from "../SpeechModelPanel";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
+import ProviderGuide, {
+  CleanupShortcutIllustration,
+  CloudCardIllustration,
+} from "../ProviderGuide";
+import { getSpeechProviderPreset } from "../../../../shared/lib/speechProviders";
 import type { LlmProvider, RemoteSpeechProvider } from "../../../../types";
 
 type ProvidersTabProps = {
@@ -27,6 +32,8 @@ type ProvidersTabProps = {
   setRemoteSpeechModel: (value: string) => void;
   availableSpeechModels: string[];
   fetchAvailableSpeechModels: () => void;
+  onOpenModelsTab: () => void;
+  onOpenGeneralTab: () => void;
 };
 
 const ProvidersTab = ({
@@ -51,8 +58,15 @@ const ProvidersTab = ({
   setRemoteSpeechModel,
   availableSpeechModels,
   fetchAvailableSpeechModels,
+  onOpenModelsTab,
+  onOpenGeneralTab,
 }: ProvidersTabProps) => {
   const { t } = useLingui();
+  const speechPreset = getSpeechProviderPreset(remoteSpeechProvider);
+  const speechProviderLabel =
+    speechPreset && speechPreset.id !== "custom"
+      ? speechPreset.label
+      : t({ id: "settings.providers.guide.speech.provider", message: "Cloud" });
 
   return (
     <motion.div
@@ -64,7 +78,7 @@ const ProvidersTab = ({
       className="space-y-5"
     >
       <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
-        <div className="grid row-span-5 [grid-template-rows:subgrid]">
+        <div className="grid row-span-6 [grid-template-rows:subgrid]">
           <SectionLabel>
             {t({
               id: "settings.providers.speech_label",
@@ -83,9 +97,24 @@ const ProvidersTab = ({
             availableModels={availableSpeechModels}
             fetchAvailableModels={fetchAvailableSpeechModels}
           />
+          <ProviderGuide
+            body={t({
+              id: "settings.providers.guide.speech.body",
+              message:
+                "To transcribe with this provider, switch it on in Models.",
+            })}
+            actionLabel={t({
+              id: "settings.providers.guide.speech.action",
+              message: "Open Models",
+            })}
+            onAction={onOpenModelsTab}
+            illustration={
+              <CloudCardIllustration providerLabel={speechProviderLabel} />
+            }
+          />
         </div>
 
-        <div className="grid row-span-5 [grid-template-rows:subgrid]">
+        <div className="grid row-span-6 [grid-template-rows:subgrid]">
           <SectionLabel>
             {t({
               id: "settings.providers.language_label",
@@ -103,6 +132,19 @@ const ProvidersTab = ({
             setLlmModel={setLlmModel}
             availableModels={availableModels}
             fetchAvailableModels={fetchAvailableModels}
+          />
+          <ProviderGuide
+            body={t({
+              id: "settings.providers.guide.language.body",
+              message:
+                "To clean up dictation with this model, tap the brush on a shortcut in General.",
+            })}
+            actionLabel={t({
+              id: "settings.providers.guide.language.action",
+              message: "Open General",
+            })}
+            onAction={onOpenGeneralTab}
+            illustration={<CleanupShortcutIllustration />}
           />
         </div>
       </div>

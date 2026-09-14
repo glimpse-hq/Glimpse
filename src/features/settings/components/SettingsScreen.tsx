@@ -200,6 +200,8 @@ const SettingsScreen = ({
                 setRemoteSpeechModel={form.setRemoteSpeechModel}
                 availableSpeechModels={form.availableSpeechModels}
                 fetchAvailableSpeechModels={form.fetchAvailableSpeechModels}
+                onOpenModelsTab={() => onPaneChange("models")}
+                onOpenGeneralTab={() => onPaneChange("general")}
               />
             )}
 

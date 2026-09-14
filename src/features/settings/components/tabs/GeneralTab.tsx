@@ -15,6 +15,7 @@ import {
   Square,
   X,
 } from "@phosphor-icons/react";
+import HoverTip from "../../../../shared/ui/HoverTip";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
@@ -28,7 +29,6 @@ type CaptureMode = { mode: ShortcutMode; index: number } | null;
 type InvalidShortcutDrafts = Partial<
   Record<ShortcutMode, Record<number, string>>
 >;
-type HelpTooltipId = "shortcuts";
 type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
 type MicrophoneTestLevels = {
   left: number;
@@ -101,9 +101,6 @@ const GeneralTab = ({
   onOpenProvidersTab,
 }: GeneralTabProps) => {
   const { t } = useLingui();
-  const [openHelpTooltip, setOpenHelpTooltip] = useState<HelpTooltipId | null>(
-    null,
-  );
   const [expandedShortcut, setExpandedShortcut] = useState<ShortcutMode | null>(
     null,
   );
@@ -133,18 +130,6 @@ const GeneralTab = ({
     id: "settings.general.system_default",
     message: "System Default",
   });
-
-  const showHelpTooltip = (tooltip: HelpTooltipId) => {
-    setOpenHelpTooltip(tooltip);
-  };
-
-  const hideHelpTooltip = (tooltip: HelpTooltipId) => {
-    setOpenHelpTooltip((current) => (current === tooltip ? null : current));
-  };
-
-  const toggleHelpTooltip = (tooltip: HelpTooltipId) => {
-    setOpenHelpTooltip((current) => (current === tooltip ? null : tooltip));
-  };
 
   const isMicrophoneTestActive =
     microphoneTestStatus === "starting" || microphoneTestStatus === "listening";
@@ -316,74 +301,7 @@ const GeneralTab = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <SectionLabel
-            trailing={
-              <div
-                className="relative"
-                onMouseEnter={() => showHelpTooltip("shortcuts")}
-                onMouseLeave={() => hideHelpTooltip("shortcuts")}
-              >
-                <button
-                  type="button"
-                  className="flex h-4 w-4 items-center justify-center text-content-disabled transition-colors hover:text-content-muted"
-                  aria-label={t({
-                    id: "settings.general.shortcuts.info_aria",
-                    message: "More information about shortcut options",
-                  })}
-                  aria-expanded={openHelpTooltip === "shortcuts"}
-                  aria-controls="shortcuts-help-tooltip"
-                  onFocus={() => showHelpTooltip("shortcuts")}
-                  onBlur={() => hideHelpTooltip("shortcuts")}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      hideHelpTooltip("shortcuts");
-                    }
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      toggleHelpTooltip("shortcuts");
-                    }
-                  }}
-                >
-                  <Info size={10} aria-hidden="true" />
-                </button>
-                <div
-                  id="shortcuts-help-tooltip"
-                  role="tooltip"
-                  className={`absolute left-0 top-full mt-1.5 z-tooltip ${
-                    openHelpTooltip === "shortcuts" ? "block" : "hidden"
-                  }`}
-                >
-                  <div className="w-64 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-2 ui-text-micro ui-color-secondary shadow-lg leading-snug">
-                    <p>
-                      <Ghost
-                        size={10}
-                        className="mr-1 inline-block align-[-1px]"
-                        aria-hidden="true"
-                      />
-                      {t({
-                        id: "settings.general.shortcuts.help_temporary",
-                        message:
-                          "Makes a shortcut temporary. It will not save audio, transcript, or history.",
-                      })}
-                    </p>
-                    <p className="mt-1">
-                      <BrushCleaning
-                        size={10}
-                        className="mr-1 inline-block align-[-1px]"
-                        aria-hidden="true"
-                      />
-                      {t({
-                        id: "settings.general.shortcuts.help_writing",
-                        message:
-                          "Uses the writing model for that shortcut only. It tidies what you dictate, and rewrites selected text when you speak an instruction.",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            }
-          >
+          <SectionLabel>
             {t({
               id: "settings.general.shortcuts",
               message: "Shortcuts",
@@ -882,9 +800,19 @@ const ShortcutBindingsList = ({
     id: "settings.general.shortcuts.temporary",
     message: "Temporary",
   });
+  const temporaryDetail = t({
+    id: "settings.general.shortcuts.help_temporary",
+    message:
+      "Makes a shortcut temporary. It will not save audio, transcript, or history.",
+  });
   const cleanupLabel = t({
     id: "settings.general.shortcuts.cleanup",
     message: "Cleanup",
+  });
+  const cleanupDetail = t({
+    id: "settings.general.shortcuts.help_writing",
+    message:
+      "Uses the writing model for that shortcut only. It tidies what you dictate, and rewrites selected text when you speak an instruction.",
   });
   const visibleBindings =
     bindings.length > 0
@@ -942,6 +870,7 @@ const ShortcutBindingsList = ({
 
         <ShortcutIconToggle
           label={temporaryLabel}
+          detail={temporaryDetail}
           tone="local"
           active={primaryBinding.temporary}
           disabled={false}
@@ -955,6 +884,7 @@ const ShortcutBindingsList = ({
         </ShortcutIconToggle>
         <ShortcutIconToggle
           label={cleanupLabel}
+          detail={cleanupDetail}
           tone="cloud"
           active={primaryBinding.cleanup_enabled}
           disabled={cleanupDisabled}
@@ -1086,6 +1016,7 @@ const ShortcutBindingsList = ({
 
                     <ShortcutIconToggle
                       label={temporaryLabel}
+                      detail={temporaryDetail}
                       tone="local"
                       active={binding.temporary}
                       disabled={false}
@@ -1099,6 +1030,7 @@ const ShortcutBindingsList = ({
                     </ShortcutIconToggle>
                     <ShortcutIconToggle
                       label={cleanupLabel}
+                      detail={cleanupDetail}
                       tone="cloud"
                       active={binding.cleanup_enabled}
                       disabled={cleanupDisabled}
@@ -1144,6 +1076,7 @@ const ShortcutBindingsList = ({
 
 const ShortcutIconToggle = ({
   label,
+  detail,
   tone,
   active,
   disabled,
@@ -1151,6 +1084,7 @@ const ShortcutIconToggle = ({
   children,
 }: {
   label: string;
+  detail: string;
   tone: "local" | "cloud";
   active: boolean;
   disabled: boolean;
@@ -1163,21 +1097,22 @@ const ShortcutIconToggle = ({
       : "text-[var(--color-cloud)] bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={active}
-      title={label}
-      className={`box-border flex h-5 w-5 shrink-0 items-center justify-center rounded-md border leading-none transition-colors [&_svg]:block [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-40 ${
-        active
-          ? activeClass
-          : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
-      }`}
-    >
-      {children}
-    </button>
+    <HoverTip label={label} detail={detail} className="inline-flex shrink-0">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        aria-pressed={active}
+        className={`box-border flex h-5 w-5 shrink-0 items-center justify-center rounded-md border leading-none transition-colors [&_svg]:block [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-40 ${
+          active
+            ? activeClass
+            : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
+        }`}
+      >
+        {children}
+      </button>
+    </HoverTip>
   );
 };
 
