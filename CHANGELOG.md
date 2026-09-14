@@ -4,6 +4,7 @@
 
 - Testing the microphone in Settings no longer lowers other apps' volume or causes crackling from the speakers.
 - Long dictations are gentler on the audio system, which reduces the chance of glitches while recording.
+- Shortcuts made of modifiers only, like Ctrl+Alt, no longer capture the first key for other apps, so Ctrl+C and Ctrl+V keep working everywhere while Glimpse runs.
 - Personalization modes start turned off on new installs. Turn on the ones you want in Personalization.
 
 ### Improvements
