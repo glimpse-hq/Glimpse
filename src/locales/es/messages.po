@@ -949,6 +949,11 @@ msgid "native.menu.close_window"
 msgstr "Cerrar ventana"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.provider"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.cloud"
 msgstr "Nube (clave API)"
@@ -2685,11 +2690,6 @@ msgstr "Más información sobre las herramientas de línea de comandos"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.info_aria"
-msgstr "Más información sobre las opciones de atajo"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info_aria"
 msgstr "Más información sobre las insignias de compatibilidad de idioma de transcripción"
 
@@ -3075,9 +3075,19 @@ msgid "onboarding.done.auto_launch"
 msgstr "Abrir al iniciar sesión"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.action"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "Abrir GitHub"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4300,6 +4310,16 @@ msgstr "El mismo atajo funciona en cualquier app donde puedas escribir."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "Tema"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.body"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (progress * 100).toFixed(0)

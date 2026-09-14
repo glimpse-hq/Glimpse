@@ -949,6 +949,11 @@ msgid "native.menu.close_window"
 msgstr "विंडो बंद करें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.provider"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.cloud"
 msgstr "क्लाउड (API कुंजी)"
@@ -2685,11 +2690,6 @@ msgstr "कमांड लाइन टूल्स के बारे मे�
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.info_aria"
-msgstr "शॉर्टकट विकल्पों के बारे में अधिक जानकारी"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info_aria"
 msgstr "ट्रांसक्रिप्शन भाषा सहायता बैज के बारे में अधिक जानकारी"
 
@@ -3075,9 +3075,19 @@ msgid "onboarding.done.auto_launch"
 msgstr "लॉगिन पर खोलें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.action"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "GitHub खोलें"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4300,6 +4310,16 @@ msgstr "जहाँ भी आप टाइप कर सकते हैं, �
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "थीम"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.body"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (progress * 100).toFixed(0)

@@ -5,6 +5,11 @@
 - Testing the microphone in Settings no longer lowers other apps' volume or causes crackling from the speakers.
 - Long dictations are gentler on the audio system, which reduces the chance of glitches while recording.
 
+### Improvements
+
+- The Providers screen now shows where each provider gets turned on, with a shortcut to that screen.
+- Hovering the ghost and brush icons on a shortcut explains what Temporary and Cleanup do.
+
 1.1.5
 
 ### New Models

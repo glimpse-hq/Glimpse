@@ -30,7 +30,7 @@
     "@tauri-apps/plugin-opener": "^2.5.5",
     "@tauri-apps/plugin-process": "^2.3.1",
     "@xstate/react": "^6.1.0",
-    "framer-motion": "^13.2.0",
+    "framer-motion": "^13.3.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",

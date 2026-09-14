@@ -949,6 +949,11 @@ msgid "native.menu.close_window"
 msgstr "Chiudi finestra"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.provider"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.cloud"
 msgstr "Cloud (chiave API)"
@@ -2685,11 +2690,6 @@ msgstr "Ulteriori informazioni sugli strumenti da riga di comando"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.info_aria"
-msgstr "Ulteriori informazioni sulle opzioni di scelta rapida"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info_aria"
 msgstr "Ulteriori informazioni sui badge di supporto della lingua di trascrizione"
 
@@ -3075,9 +3075,19 @@ msgid "onboarding.done.auto_launch"
 msgstr "Apri all'accesso"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.action"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "Apri GitHub"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4300,6 +4310,16 @@ msgstr "La stessa scorciatoia funziona in qualsiasi app in cui puoi digitare."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "Tema"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.body"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (progress * 100).toFixed(0)

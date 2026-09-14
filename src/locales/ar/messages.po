@@ -949,6 +949,11 @@ msgid "native.menu.close_window"
 msgstr "إغلاق النافذة"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.provider"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.cloud"
 msgstr "السحابة (مفتاح API)"
@@ -2685,11 +2690,6 @@ msgstr "مزيد من المعلومات حول أدوات سطر الأوامر
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.info_aria"
-msgstr "مزيد من المعلومات حول خيارات الاختصار"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info_aria"
 msgstr "مزيد من المعلومات حول شارات دعم لغة النسخ"
 
@@ -3075,9 +3075,19 @@ msgid "onboarding.done.auto_launch"
 msgstr "الفتح عند تسجيل الدخول"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.action"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "فتح GitHub"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4300,6 +4310,16 @@ msgstr "يعمل الاختصار نفسه في أي تطبيق يمكنك ال�
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "المظهر"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.body"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (progress * 100).toFixed(0)
