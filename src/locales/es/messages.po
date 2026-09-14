@@ -951,7 +951,7 @@ msgstr "Cerrar ventana"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
-msgstr ""
+msgstr "Nube"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3082,7 +3082,7 @@ msgstr "Abrir al iniciar sesión"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.action"
-msgstr ""
+msgstr "Abrir General"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -3092,7 +3092,7 @@ msgstr "Abrir GitHub"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.action"
-msgstr ""
+msgstr "Abrir Modelos"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4380,12 +4380,12 @@ msgstr "Marcas de tiempo"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.body"
-msgstr ""
+msgstr "Para depurar el dictado con este modelo, toca el pincel en un atajo en General."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
-msgstr ""
+msgstr "Para transcribir con este proveedor, actívalo en Modelos."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx

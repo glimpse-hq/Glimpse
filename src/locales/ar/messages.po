@@ -951,7 +951,7 @@ msgstr "إغلاق النافذة"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.provider"
-msgstr ""
+msgstr "السحابة"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3082,7 +3082,7 @@ msgstr "الفتح عند تسجيل الدخول"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.action"
-msgstr ""
+msgstr "فتح عام"
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -3092,7 +3092,7 @@ msgstr "فتح GitHub"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.action"
-msgstr ""
+msgstr "فتح النماذج"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4380,12 +4380,12 @@ msgstr "الطوابع الزمنية"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.language.body"
-msgstr ""
+msgstr "لتنظيف الإملاء باستخدام هذا النموذج، اضغط على الفرشاة في اختصار ضمن عام."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.body"
-msgstr ""
+msgstr "للنسخ باستخدام هذا الموفّر، قم بتشغيله في النماذج."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
