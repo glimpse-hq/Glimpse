@@ -41,7 +41,7 @@ export const CloudCardIllustration = ({
       <Cloud size={11} weight="fill" className="shrink-0 ui-color-cloud" />
       <span className="truncate">{providerLabel}</span>
     </span>
-    <span className="pointer-events-none shrink-0">
+    <span inert className="shrink-0">
       <ToggleSwitch size="xs" enabled onToggle={() => {}} ariaLabel="" />
     </span>
   </div>

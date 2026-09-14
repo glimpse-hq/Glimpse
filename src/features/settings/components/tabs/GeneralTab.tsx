@@ -669,15 +669,17 @@ const useMicrophoneTest = (microphoneDevice: string | null) => {
       );
       // The backend ended the test: dictation started or the window closed.
       const unlistenStopped = await listen("microphone-test:stopped", reset);
-      unlistenRef.current = () => {
+      const unlisten = () => {
         unlistenLevel();
         unlistenStopped();
       };
 
+      // A newer run owns the shared ref by now; only drop this run's listeners.
       if (runIdRef.current !== runId) {
-        releaseResources();
+        unlisten();
         return;
       }
+      unlistenRef.current = unlisten;
 
       // The backend reports the device it opened, which is the default input
       // when the selected one is gone.
@@ -695,13 +697,7 @@ const useMicrophoneTest = (microphoneDevice: string | null) => {
       setStatus("error");
       setError(t(formatMicrophoneTestError(err)));
     }
-  }, [
-    clearMeterState,
-    microphoneDevice,
-    releaseResources,
-    reset,
-    t,
-  ]);
+  }, [clearMeterState, microphoneDevice, releaseResources, reset, t]);
 
   useEffect(
     () => () => {

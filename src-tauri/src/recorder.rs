@@ -170,16 +170,27 @@ impl CaptureDrain {
         })
     }
 
-    /// Call after the stream is dropped so the final drain sees every sample.
-    fn finish(mut self) {
+    fn stop(&mut self) {
         self.stop_flag.store(true, Ordering::Relaxed);
         if let Some(handle) = self.handle.take() {
             let _ = handle.join();
         }
+    }
+
+    /// Call after the stream is dropped so the final drain sees every sample.
+    fn finish(mut self) {
+        self.stop();
         let dropped = self.ring.dropped();
         if dropped > 0 {
             tracing::warn!("Capture ring overflowed, dropped {dropped} samples");
         }
+    }
+}
+
+// A failed stream start drops the drain without calling `finish`.
+impl Drop for CaptureDrain {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 
