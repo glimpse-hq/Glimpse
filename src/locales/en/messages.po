@@ -15,251 +15,6 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.eyebrow"
-#~ msgstr "One quick practice"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.practice_label"
-#~ msgstr "Practice field"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.edit_shortcut"
-#~ msgstr "Edit"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.hint"
-#~ msgstr "Tip: tap to toggle, or hold and release to dictate."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.goal"
-#~ msgstr "Your goal"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.say_this"
-#~ msgstr "Say this"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.success_title"
-#~ msgstr "That’s it"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.body"
-#~ msgstr "Press your shortcut. Your words will appear below."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.license_active"
-#~ msgstr "Every feature is unlocked."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.complete"
-#~ msgstr "First dictation complete"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.license_active_title"
-#~ msgstr "License active"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.more_options"
-#~ msgstr "More options available in Settings."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.title"
-#~ msgstr "Press your shortcut, then say this"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.success_body"
-#~ msgstr "Use the same shortcut wherever you type."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.speak"
-#~ msgstr "and read the line below out loud."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.hold"
-#~ msgstr "Hold"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting"
-#~ msgstr "Waiting for your first dictation."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.cta_downloading"
-#~ msgstr "Downloading model..."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.dictate_to_continue"
-#~ msgstr "Dictate to continue"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle"
-#~ msgstr "Hold your shortcut and read the line below out loud."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v2"
-#~ msgstr "Waiting for you to speak."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.failed_body"
-#~ msgstr "Check that the right microphone is selected, then try again."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v3"
-#~ msgstr "Hold the button and speak."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.v3"
-#~ msgstr "Hold the button below and read the line out loud. Your shortcut works too."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.failed"
-#~ msgstr "That one did not come through."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.hold_keys"
-#~ msgstr "Hold"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v4"
-#~ msgstr "Hold the keys above, or the button below."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.v4"
-#~ msgstr "Hold this shortcut and read the line below."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.model"
-#~ msgstr "Model"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.shortcut_capture"
-#~ msgstr "Press a shortcut"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.shortcut"
-#~ msgstr "Smart shortcut"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud"
-#~ msgstr "Cloud"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.unconfigured"
-#~ msgstr "Add an endpoint and model in Providers first"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.title"
-#~ msgstr "Cloud transcription"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.installed.active"
-#~ msgstr "Active"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.disable"
-#~ msgstr "Disable cloud"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.use"
-#~ msgstr "Use cloud"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsNav.tsx
-#~ msgid "settings.nav.locked_hint"
-#~ msgstr "Needs a Glimpse license. Opens Account."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsNav.tsx
-#~ msgid "settings.nav.aria"
-#~ msgstr "Settings sections"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.capability.streaming"
-#~ msgstr "Live streaming"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.capability.streaming"
-#~ msgstr "Live streaming"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.capability.timestamps"
-#~ msgstr "Word-level timestamps"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.capability.timestamps"
-#~ msgstr "Word-level timestamps"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.ane.info_aria"
-#~ msgstr "About the Apple Neural Engine encoder"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.ane.info"
-#~ msgstr "Adds a Core ML encoder that runs on the Apple Neural Engine for faster, more power-efficient transcription. The first load takes longer while macOS optimizes it for your chip."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.aria"
-#~ msgstr "Filter models by category"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.no_results"
-#~ msgstr "No models match your search."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.all"
-#~ msgstr "All models"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.clear"
-#~ msgstr "Clear"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
 
@@ -2832,11 +2587,6 @@ msgid "native.toast.mic_removed"
 msgstr "Microphone disconnected. Recording stopped and saved to History."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.microphone_test.unsupported"
-msgstr "Microphone testing isn't available in this window."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.mic_unavailable"
 msgstr "Microphone unavailable ({error})"
@@ -3083,11 +2833,6 @@ msgstr "No logs yet."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.no_matches"
 msgstr "No matches found"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.microphone_test.not_found_error"
-msgstr "No microphone was found."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3433,10 +3178,6 @@ msgstr "Play audio"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint"
 msgstr "Polar emailed your license key. Paste it here, or paste the whole email."
-
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
-#~ msgstr "Polar emailed your license key. Paste it here, or paste the whole email."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4505,18 +4246,10 @@ msgstr "That domain is already added"
 msgid "settings.account.activate.masked_key_error"
 msgstr "That is the shortened key. Copy the full one from your Polar purchases page."
 
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
-#~ msgstr "That is the shortened key. Copy the full one from your Polar purchases page."
-
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error"
 msgstr "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
-
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
-#~ msgstr "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

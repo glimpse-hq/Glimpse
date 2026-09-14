@@ -15,251 +15,6 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.eyebrow"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.practice_label"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.edit_shortcut"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.hint"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.goal"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.say_this"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.success_title"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.body"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.license_active"
-#~ msgstr "جميع الميزات مفعَّلة."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.complete"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.license_active_title"
-#~ msgstr "الترخيص نشط"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.more_options"
-#~ msgstr "تتوفر خيارات إضافية في الإعدادات."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.title"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.success_body"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.speak"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.hold"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.cta_downloading"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.dictate_to_continue"
-#~ msgstr "تكلّم للمتابعة"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle"
-#~ msgstr "اضغط مع الاستمرار على الاختصار واقرأ السطر أدناه بصوت عالٍ."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v2"
-#~ msgstr "في انتظار أن تتكلّم."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.failed_body"
-#~ msgstr "تحقّق من اختيار الميكروفون الصحيح، ثم حاول مرة أخرى."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v3"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.v3"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.failed"
-#~ msgstr "لم يصلنا ذلك."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.hold_keys"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v4"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.v4"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.model"
-#~ msgstr "النموذج"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.shortcut_capture"
-#~ msgstr "اضغط اختصارًا"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.shortcut"
-#~ msgstr "اختصار ذكي"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud"
-#~ msgstr "السحابة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.unconfigured"
-#~ msgstr "أضف نقطة نهاية ونموذجًا في «الموفرون» أولًا"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.title"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.installed.active"
-#~ msgstr "نشط"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.disable"
-#~ msgstr "تعطيل السحابة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.use"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsNav.tsx
-#~ msgid "settings.nav.locked_hint"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsNav.tsx
-#~ msgid "settings.nav.aria"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.capability.streaming"
-#~ msgstr "البث المباشر"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.capability.streaming"
-#~ msgstr "البث المباشر"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.capability.timestamps"
-#~ msgstr "طوابع زمنية على مستوى الكلمة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.capability.timestamps"
-#~ msgstr "طوابع زمنية على مستوى الكلمة"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.ane.info_aria"
-#~ msgstr "حول مشفِّر Apple Neural Engine"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.ane.info"
-#~ msgstr "يُضيف مشفِّر Core ML يعمل على Apple Neural Engine لتحويل أسرع وأكثر كفاءةً في استهلاك الطاقة. يستغرق التحميل الأول وقتاً أطول بينما يُحسِّنه macOS لمعالجك."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.aria"
-#~ msgstr "تصفية النماذج حسب الفئة"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.no_results"
-#~ msgstr "لا توجد نماذج تطابق بحثك."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.all"
-#~ msgstr "جميع النماذج"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.clear"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
 
@@ -2832,11 +2587,6 @@ msgid "native.toast.mic_removed"
 msgstr "انقطع الاتصال بالميكروفون. تم إيقاف التسجيل وحفظه في السجل."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.microphone_test.unsupported"
-msgstr "اختبار الميكروفون غير متاح في هذه النافذة."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.mic_unavailable"
 msgstr "الميكروفون غير متاح ({error})"
@@ -3083,11 +2833,6 @@ msgstr "لا توجد سجلات بعد."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.no_matches"
 msgstr "لا توجد نتائج مطابقة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.microphone_test.not_found_error"
-msgstr "لم يُعثر على ميكروفون."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3433,10 +3178,6 @@ msgstr "تشغيل الصوت"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint"
 msgstr "أرسلت Polar مفتاح الترخيص إلى بريدك الإلكتروني. الصقه هنا، أو الصق الرسالة بأكملها."
-
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
-#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4505,18 +4246,10 @@ msgstr "هذا النطاق مضاف مسبقاً"
 msgid "settings.account.activate.masked_key_error"
 msgstr "هذا هو المفتاح المختصر. انسخ المفتاح الكامل من صفحة مشترياتك في Polar."
 
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
-#~ msgstr ""
-
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error"
 msgstr "هذا هو رقم طلبك. مفتاح الترخيص موجود في الرسالة ذاتها من Polar ويبدأ بـ GLIMPSE_."
-
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
-#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

@@ -15,251 +15,6 @@ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.eyebrow"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.practice_label"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.edit_shortcut"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.hint"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.goal"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.say_this"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.success_title"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.body"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.license_active"
-#~ msgstr "Alle Funktionen sind freigeschaltet."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.complete"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.license_active_title"
-#~ msgstr "Lizenz aktiv"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.more_options"
-#~ msgstr "Weitere Optionen in den Einstellungen verfügbar."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.title"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.success_body"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.speak"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.hold"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.cta_downloading"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.dictate_to_continue"
-#~ msgstr "Zum Fortfahren diktieren"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle"
-#~ msgstr "Halte deine Tastenkombination gedrückt und lies die Zeile unten laut vor."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v2"
-#~ msgstr "Warte auf deine Stimme."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.failed_body"
-#~ msgstr "Stell sicher, dass das richtige Mikrofon ausgewählt ist, und versuche es dann erneut."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v3"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.v3"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.failed"
-#~ msgstr "Diesmal kam nichts an."
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.hold_keys"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.waiting.v4"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-#~ msgid "onboarding.first_dictation.subtitle.v4"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.model"
-#~ msgstr "Modell"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.shortcut_capture"
-#~ msgstr "Kurzbefehl drücken"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ReadyStep.tsx
-#~ msgid "onboarding.done.recap.shortcut"
-#~ msgstr "Intelligente Kurzbefehle"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud"
-#~ msgstr "Cloud"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.unconfigured"
-#~ msgstr "Fügen Sie zuerst in Anbieter einen Endpunkt und ein Modell hinzu"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.title"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.installed.active"
-#~ msgstr "Aktiv"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.disable"
-#~ msgstr "Cloud deaktivieren"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.cloud.use"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsNav.tsx
-#~ msgid "settings.nav.locked_hint"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SettingsNav.tsx
-#~ msgid "settings.nav.aria"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.capability.streaming"
-#~ msgstr "Live-Stream"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.capability.streaming"
-#~ msgstr "Live-Stream"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.capability.timestamps"
-#~ msgstr "Zeitstempel auf Wortebene"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-#~ msgid "settings.models.capability.timestamps"
-#~ msgstr "Zeitstempel auf Wortebene"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.ane.info_aria"
-#~ msgstr "Infos zum Apple Neural Engine-Encoder"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.ane.info"
-#~ msgstr "Fügt einen Core-ML-Encoder hinzu, der auf der Apple Neural Engine läuft und so für schnellere, energieeffizientere Transkription sorgt. Das erste Laden dauert länger, während macOS ihn für deinen Chip optimiert."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.aria"
-#~ msgstr "Modelle nach Kategorie filtern"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.no_results"
-#~ msgstr "Keine Modelle entsprechen Ihrer Suche."
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.all"
-#~ msgstr "Alle Modelle"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-#~ msgid "model_picker.filter.clear"
-#~ msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
 
@@ -2832,11 +2587,6 @@ msgid "native.toast.mic_removed"
 msgstr "Mikrofon getrennt. Aufnahme wurde beendet und im Verlauf gespeichert."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.microphone_test.unsupported"
-msgstr "Mikrofontest ist in diesem Fenster nicht verfügbar."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.mic_unavailable"
 msgstr "Mikrofon nicht verfügbar ({error})"
@@ -3083,11 +2833,6 @@ msgstr "Noch keine Protokolle."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.no_matches"
 msgstr "Keine Treffer gefunden"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.microphone_test.not_found_error"
-msgstr "Kein Mikrofon gefunden."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3433,10 +3178,6 @@ msgstr "Audio wiedergeben"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint"
 msgstr "Polar hat dir deinen Lizenzschlüssel gemailt. Füge ihn hier ein oder füge die gesamte E‑Mail ein."
-
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "Polar emailed your license key. Paste it here, or paste the whole email."
-#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4505,18 +4246,10 @@ msgstr "Diese Domain wurde bereits hinzugefügt."
 msgid "settings.account.activate.masked_key_error"
 msgstr "Das ist der gekürzte Schlüssel. Kopiere den vollständigen von deiner Polar‑Kaufseite."
 
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "That is the shortened key. Copy the full one from your Polar purchases page."
-#~ msgstr ""
-
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error"
 msgstr "Das ist deine Bestellnummer. Der Lizenzschlüssel steht in derselben E‑Mail von Polar und beginnt mit GLIMPSE_."
-
-#: src/features/settings/components/AccountView.tsx
-#~ msgid "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
-#~ msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

@@ -1,3 +1,10 @@
+1.1.6
+
+### Fixes
+
+- Testing the microphone in Settings no longer lowers other apps' volume or causes crackling from the speakers.
+- Long dictations are gentler on the audio system, which reduces the chance of glitches while recording.
+
 1.1.5
 
 ### New Models

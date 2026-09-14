@@ -1,6 +1,7 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -590,7 +591,6 @@ const MICROPHONE_TEST_DOT_WIDTH =
   MICROPHONE_TEST_DOT_COLS * MICROPHONE_TEST_DOT_SIZE +
   (MICROPHONE_TEST_DOT_COLS - 1) * MICROPHONE_TEST_DOT_GAP;
 const EMPTY_MICROPHONE_TEST_LEVELS = { left: 0, right: 0 };
-const MICROPHONE_TEST_UPDATE_INTERVAL_MS = 24;
 
 type MicrophoneTestSlotProps = {
   status: MicrophoneTestStatus;
@@ -707,25 +707,16 @@ const useMicrophoneTest = (
   const [activeDeviceLabel, setActiveDeviceLabel] = useState<string | null>(
     null,
   );
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const unlistenRef = useRef<(() => void) | null>(null);
   const smoothedLevelsRef = useRef<MicrophoneTestLevels>(
     EMPTY_MICROPHONE_TEST_LEVELS,
   );
   const runIdRef = useRef(0);
 
   const releaseResources = useCallback(() => {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-
-    void audioContextRef.current?.close();
-    audioContextRef.current = null;
+    unlistenRef.current?.();
+    unlistenRef.current = null;
+    void invoke("stop_microphone_test");
   }, []);
 
   const clearMeterState = useCallback(() => {
@@ -743,18 +734,6 @@ const useMicrophoneTest = (
   }, [clearMeterState, releaseResources]);
 
   const start = useCallback(async () => {
-    const mediaDevices = navigator.mediaDevices;
-    if (!mediaDevices?.getUserMedia) {
-      setStatus("error");
-      setError(
-        t({
-          id: "settings.general.microphone_test.unsupported",
-          message: "Microphone testing isn't available in this window.",
-        }),
-      );
-      return;
-    }
-
     runIdRef.current += 1;
     const runId = runIdRef.current;
     releaseResources();
@@ -762,119 +741,59 @@ const useMicrophoneTest = (
     clearMeterState();
     setError(null);
 
-    let stream: MediaStream | null = null;
-
     try {
-      const selectedDeviceName = getSelectedMicrophoneName(
-        inputDevices,
-        microphoneDevice,
+      const unlistenLevel = await listen<number>(
+        "microphone-test:level",
+        (event) => {
+          smoothedLevelsRef.current = smoothMicrophoneLevels(
+            smoothedLevelsRef.current,
+            { left: event.payload, right: event.payload },
+          );
+          setLevels(smoothedLevelsRef.current);
+        },
       );
-
-      stream = await mediaDevices.getUserMedia({ audio: true });
+      // The backend ended the test: dictation started or the window closed.
+      const unlistenStopped = await listen("microphone-test:stopped", reset);
+      unlistenRef.current = () => {
+        unlistenLevel();
+        unlistenStopped();
+      };
 
       if (runIdRef.current !== runId) {
-        stream.getTracks().forEach((track) => track.stop());
+        releaseResources();
         return;
       }
 
-      const matchedDeviceId = await findBrowserMicrophoneDeviceId(
-        mediaDevices,
-        selectedDeviceName,
+      await invoke("start_microphone_test", { deviceId: microphoneDevice });
+
+      if (runIdRef.current !== runId) return;
+      setActiveDeviceLabel(
+        getSelectedMicrophoneName(inputDevices, microphoneDevice),
       );
-
-      if (matchedDeviceId) {
-        let selectedStream: MediaStream | null = null;
-        try {
-          selectedStream = await mediaDevices.getUserMedia({
-            audio: { deviceId: { exact: matchedDeviceId } },
-          });
-
-          if (runIdRef.current !== runId) {
-            selectedStream.getTracks().forEach((track) => track.stop());
-            stream.getTracks().forEach((track) => track.stop());
-            return;
-          }
-
-          stream.getTracks().forEach((track) => track.stop());
-          stream = selectedStream;
-          selectedStream = null;
-        } catch (err) {
-          selectedStream?.getTracks().forEach((track) => track.stop());
-          stream?.getTracks().forEach((track) => track.stop());
-          stream = null;
-          throw err;
-        }
-      }
-
-      const AudioContextCtor =
-        window.AudioContext ??
-        (
-          window as typeof window & {
-            webkitAudioContext?: typeof AudioContext;
-          }
-        ).webkitAudioContext;
-
-      if (!AudioContextCtor) {
-        throw new Error("AudioContext is not available");
-      }
-
-      const audioContext = new AudioContextCtor();
-      const source = audioContext.createMediaStreamSource(stream);
-      const leftAnalyser = audioContext.createAnalyser();
-      const rightAnalyser = audioContext.createAnalyser();
-      const splitter = audioContext.createChannelSplitter(2);
-      const channelCount =
-        stream.getAudioTracks()[0]?.getSettings().channelCount ?? 1;
-      leftAnalyser.fftSize = 128;
-      rightAnalyser.fftSize = 128;
-      leftAnalyser.smoothingTimeConstant = 0.12;
-      rightAnalyser.smoothingTimeConstant = 0.12;
-      source.connect(splitter);
-      splitter.connect(leftAnalyser, 0);
-      splitter.connect(rightAnalyser, channelCount > 1 ? 1 : 0);
-
-      streamRef.current = stream;
-      audioContextRef.current = audioContext;
-      const displayLabel =
-        stream.getAudioTracks()[0]?.label || selectedDeviceName;
-      setActiveDeviceLabel(displayLabel);
       setStatus("listening");
-
-      const leftData = new Uint8Array(leftAnalyser.fftSize);
-      const rightData = new Uint8Array(rightAnalyser.fftSize);
-      let lastUpdate = 0;
-
-      const updateLevel = (now: number) => {
-        leftAnalyser.getByteTimeDomainData(leftData);
-        rightAnalyser.getByteTimeDomainData(rightData);
-
-        if (now - lastUpdate > MICROPHONE_TEST_UPDATE_INTERVAL_MS) {
-          smoothedLevelsRef.current = smoothMicrophoneLevels(
-            smoothedLevelsRef.current,
-            {
-              left: calculateMicrophoneLevel(leftData),
-              right: calculateMicrophoneLevel(rightData),
-            },
-          );
-          setLevels(smoothedLevelsRef.current);
-          lastUpdate = now;
-        }
-
-        animationFrameRef.current = requestAnimationFrame(updateLevel);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(updateLevel);
     } catch (err) {
-      stream?.getTracks().forEach((track) => track.stop());
       if (runIdRef.current !== runId) return;
       releaseResources();
       clearMeterState();
       setStatus("error");
       setError(t(formatMicrophoneTestError(err)));
     }
-  }, [clearMeterState, inputDevices, microphoneDevice, releaseResources, t]);
+  }, [
+    clearMeterState,
+    inputDevices,
+    microphoneDevice,
+    releaseResources,
+    reset,
+    t,
+  ]);
 
-  useEffect(() => releaseResources, [releaseResources]);
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+      releaseResources();
+    },
+    [releaseResources],
+  );
 
   return {
     activeDeviceLabel,
@@ -900,79 +819,19 @@ const smoothMicrophoneLevel = (previous: number, target: number) => {
   return next < 0.02 ? 0 : next;
 };
 
-const calculateMicrophoneLevel = (data: Uint8Array) => {
-  let sum = 0;
-  for (const sample of data) {
-    const centered = (sample - 128) / 128;
-    sum += centered * centered;
+const formatMicrophoneTestError = (err: unknown) => {
+  if (err === "permission") {
+    return msg({
+      id: "settings.general.microphone_test.permission_error",
+      message: "Microphone access was denied.",
+    });
   }
 
-  const noiseFloor = 0.012;
-  const speechCeiling = 0.18;
-  const rms = Math.sqrt(sum / data.length);
-  const normalized =
-    Math.max(0, rms - noiseFloor) / (speechCeiling - noiseFloor);
-
-  return Math.min(1, Math.pow(normalized, 0.72));
-};
-
-const findBrowserMicrophoneDeviceId = async (
-  mediaDevices: MediaDevices,
-  selectedDeviceName: string | null,
-) => {
-  if (!selectedDeviceName || !mediaDevices.enumerateDevices) return null;
-
-  const browserDevices = await mediaDevices.enumerateDevices();
-  const selectedName = normalizeMicrophoneLabel(selectedDeviceName);
-  if (!selectedName) return null;
-
-  const match = browserDevices.find((device) => {
-    if (device.kind !== "audioinput" || !device.deviceId || !device.label) {
-      return false;
-    }
-
-    const browserLabel = normalizeMicrophoneLabel(device.label);
-    return (
-      browserLabel.includes(selectedName) || selectedName.includes(browserLabel)
-    );
-  });
-
-  return match?.deviceId ?? null;
-};
-
-const normalizeMicrophoneLabel = (label: string) =>
-  label
-    .toLowerCase()
-    .replace(/^default\s*[-:]\s*/, "")
-    .replace(/\([^)]*\)/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const formatMicrophoneTestError = (err: unknown) => {
-  if (err instanceof DOMException) {
-    if (
-      err.name === "NotAllowedError" ||
-      err.name === "PermissionDeniedError"
-    ) {
-      return msg({
-        id: "settings.general.microphone_test.permission_error",
-        message: "Microphone access was denied.",
-      });
-    }
-
-    if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-      return msg({
-        id: "settings.general.microphone_test.not_found_error",
-        message: "No microphone was found.",
-      });
-    }
-
-    if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-      return msg({
-        id: "settings.general.microphone_test.busy_error",
-        message: "That microphone is already in use.",
-      });
-    }
+  if (err === "busy") {
+    return msg({
+      id: "settings.general.microphone_test.busy_error",
+      message: "That microphone is already in use.",
+    });
   }
 
   return msg({

@@ -93,6 +93,33 @@ impl BackgroundEmitter {
     }
 }
 
+// Meter level: RMS mapped between a noise floor and a speech ceiling.
+fn microphone_test_level(samples: &[f32]) -> f32 {
+    const NOISE_FLOOR: f32 = 0.012;
+    const SPEECH_CEILING: f32 = 0.18;
+    if samples.is_empty() {
+        return 0.0;
+    }
+    let rms = (samples.iter().map(|s| s * s).sum::<f32>() / samples.len() as f32).sqrt();
+    let normalized = (rms - NOISE_FLOOR).max(0.0) / (SPEECH_CEILING - NOISE_FLOOR);
+    normalized.powf(0.72).min(1.0)
+}
+
+fn start_microphone_level_emitter(
+    app: AppHandle<AppRuntime>,
+    recorder: Arc<RecorderManager>,
+) -> BackgroundEmitter {
+    BackgroundEmitter::spawn(move |stop_signal| {
+        let interval = Duration::from_millis(40);
+        while !stop_signal.load(Ordering::Relaxed) {
+            if let Some(samples) = recorder.spectrum_snapshot() {
+                let _ = app.emit("microphone-test:level", microphone_test_level(&samples));
+            }
+            std::thread::sleep(interval);
+        }
+    })
+}
+
 fn start_spectrum_emitter(
     app: AppHandle<AppRuntime>,
     recorder: Arc<RecorderManager>,
@@ -194,6 +221,7 @@ pub struct PillController {
     paused_media_session: Mutex<Option<music::MediaSession>>,
     recorder: Arc<RecorderManager>,
     audio_spectrum_emitter: Mutex<Option<BackgroundEmitter>>,
+    microphone_test: Mutex<Option<BackgroundEmitter>>,
     hover_emitter: Mutex<Option<BackgroundEmitter>>,
     recording_generation: AtomicU64,
     is_expanded: Mutex<bool>,
@@ -212,6 +240,7 @@ impl PillController {
             paused_media_session: Mutex::new(None),
             recorder,
             audio_spectrum_emitter: Mutex::new(None),
+            microphone_test: Mutex::new(None),
             hover_emitter: Mutex::new(None),
             recording_generation: AtomicU64::new(0),
             is_expanded: Mutex::new(false),
@@ -249,6 +278,41 @@ impl PillController {
         if let Some(emitter) = self.audio_spectrum_emitter.lock().take() {
             emitter.stop();
         }
+    }
+
+    /// Settings mic test: opens the mic through the recorder and streams a level.
+    /// Errors are short codes the frontend maps to copy.
+    pub fn start_microphone_test(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        device_id: Option<String>,
+    ) -> Result<(), String> {
+        if !permissions::check_microphone_permission() {
+            return Err("permission".into());
+        }
+        if self.is_recording() {
+            return Err("busy".into());
+        }
+        self.stop_microphone_test(app);
+        self.recorder
+            .start_monitor(device_id)
+            .map_err(|err| err.to_string())?;
+        *self.microphone_test.lock() = Some(start_microphone_level_emitter(
+            app.clone(),
+            Arc::clone(&self.recorder),
+        ));
+        Ok(())
+    }
+
+    pub fn stop_microphone_test(&self, app: &AppHandle<AppRuntime>) {
+        let Some(emitter) = self.microphone_test.lock().take() else {
+            return;
+        };
+        emitter.stop();
+        if let Err(err) = self.recorder.stop() {
+            tracing::warn!("Failed to stop microphone test: {err}");
+        }
+        let _ = app.emit("microphone-test:stopped", ());
     }
 
     fn start_hover_emitter(&self, app: &AppHandle<AppRuntime>) {
@@ -516,6 +580,9 @@ impl PillController {
             crate::analytics::track_first_dictation_attempted(app, "mic_blocked");
             return false;
         }
+
+        // Dictation wins over an open Settings mic test.
+        self.stop_microphone_test(app);
 
         if !self.try_start_recording(mode, origin, options) {
             return false;
