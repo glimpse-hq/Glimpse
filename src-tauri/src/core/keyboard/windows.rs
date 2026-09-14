@@ -18,6 +18,7 @@ use super::{
     BlockingHotkeys, Key, KeyEvent, Modifiers, PlatformShutdown, should_block_event,
     should_forward_event,
 };
+use crate::assistive::keyboard_input;
 
 const LLKHF_EXTENDED_FLAG: u32 = 0x01;
 
@@ -167,17 +168,23 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
         return unsafe { CallNextHookEx(None, code, wparam, lparam) };
     }
 
-    let should_block = HOOK_STATE.with(|state| {
+    let decision = HOOK_STATE.with(|state| {
         let mut state = state.borrow_mut();
         let state = state.as_mut()?;
         let info = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
         let event = build_event(state.blocked_modifiers, info, is_key_down)?;
 
-        let should_block = should_block_event(&state.blocking_hotkeys, &event);
+        let should_block =
+            should_block_event(&state.blocking_hotkeys, state.blocked_modifiers, &event);
+        let mut passed_through = Modifiers::empty();
         if let Some(modifier) = event.changed_modifier {
             if is_key_down && should_block {
-                state.blocked_modifiers.insert(modifier);
-            } else {
+                if !state.blocked_modifiers.contains(modifier) {
+                    state.blocked_modifiers.insert(modifier);
+                    passed_through = event.modifiers;
+                    passed_through.remove(state.blocked_modifiers);
+                }
+            } else if !is_key_down {
                 state.blocked_modifiers.remove(modifier);
             }
         }
@@ -186,14 +193,15 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
             let _ = state.tx.try_send(event);
         }
 
-        Some(should_block)
+        Some((should_block, passed_through))
     });
 
-    let Some(should_block) = should_block else {
+    let Some((should_block, passed_through)) = decision else {
         return unsafe { CallNextHookEx(None, code, wparam, lparam) };
     };
 
     if should_block {
+        mask_menu_activation(passed_through);
         LRESULT(1)
     } else {
         unsafe { CallNextHookEx(None, code, wparam, lparam) }
@@ -221,7 +229,7 @@ unsafe extern "system" fn mouse_hook_proc(code: i32, wparam: WPARAM, lparam: LPA
         let state = state.borrow();
         let state = state.as_ref()?;
         let event = KeyEvent {
-            modifiers: held_modifiers(state.blocked_modifiers, None),
+            modifiers: held_modifiers(state.blocked_modifiers, os_held_modifiers(), None),
             key: Some(key),
             is_key_down,
             changed_modifier: None,
@@ -234,7 +242,7 @@ unsafe extern "system" fn mouse_hook_proc(code: i32, wparam: WPARAM, lparam: LPA
         return unsafe { CallNextHookEx(None, code, wparam, lparam) };
     };
 
-    let should_block = should_block_event(&blocking_hotkeys, &event);
+    let should_block = should_block_event(&blocking_hotkeys, Modifiers::empty(), &event);
     if should_forward_event(&blocking_hotkeys, &event) {
         let _ = tx.try_send(event);
     }
@@ -267,17 +275,19 @@ fn build_event(
     let is_extended = (info.flags.0 & LLKHF_EXTENDED_FLAG) != 0;
 
     if let Some(modifier) = modifier_from_vk(vk, info.scanCode, is_extended) {
+        let os_held = os_held_modifiers();
         return Some(KeyEvent {
-            modifiers: held_modifiers(blocked_modifiers, Some((modifier, is_key_down))),
+            modifiers: held_modifiers(blocked_modifiers, os_held, Some((modifier, is_key_down))),
             key: None,
             is_key_down,
             changed_modifier: Some(modifier),
-            repeat: false,
+            // Windows auto-repeats held modifiers; a swallowed one never shows as held.
+            repeat: is_key_down && os_held.contains(modifier),
         });
     }
 
     Some(KeyEvent {
-        modifiers: held_modifiers(blocked_modifiers, None),
+        modifiers: held_modifiers(blocked_modifiers, os_held_modifiers(), None),
         key: Some(key_from_vk(vk, is_extended)?),
         is_key_down,
         changed_modifier: None,
@@ -285,27 +295,36 @@ fn build_event(
     })
 }
 
-// Read unblocked modifiers from Windows so missed releases do not leave them stuck.
-// Swallowed modifiers must be remembered until release or a desktop switch. This
-// event's own modifier comes from the hook, before Windows updates its state.
-fn held_modifiers(blocked_modifiers: Modifiers, changed: Option<(Modifiers, bool)>) -> Modifiers {
-    const MODIFIER_KEYS: [(VIRTUAL_KEY, Modifiers); 8] = [
-        (VK_LWIN, Modifiers::CMD_LEFT),
-        (VK_RWIN, Modifiers::CMD_RIGHT),
-        (VK_LSHIFT, Modifiers::SHIFT_LEFT),
-        (VK_RSHIFT, Modifiers::SHIFT_RIGHT),
-        (VK_LCONTROL, Modifiers::CTRL_LEFT),
-        (VK_RCONTROL, Modifiers::CTRL_RIGHT),
-        (VK_LMENU, Modifiers::OPT_LEFT),
-        (VK_RMENU, Modifiers::OPT_RIGHT),
-    ];
+const MODIFIER_KEYS: [(VIRTUAL_KEY, Modifiers); 8] = [
+    (VK_LWIN, Modifiers::CMD_LEFT),
+    (VK_RWIN, Modifiers::CMD_RIGHT),
+    (VK_LSHIFT, Modifiers::SHIFT_LEFT),
+    (VK_RSHIFT, Modifiers::SHIFT_RIGHT),
+    (VK_LCONTROL, Modifiers::CTRL_LEFT),
+    (VK_RCONTROL, Modifiers::CTRL_RIGHT),
+    (VK_LMENU, Modifiers::OPT_LEFT),
+    (VK_RMENU, Modifiers::OPT_RIGHT),
+];
 
-    let mut modifiers = blocked_modifiers;
+fn os_held_modifiers() -> Modifiers {
+    let mut modifiers = Modifiers::empty();
     for (vk, modifier) in MODIFIER_KEYS {
         if unsafe { GetAsyncKeyState(vk.0 as i32) } as u16 & 0x8000 != 0 {
             modifiers.insert(modifier);
         }
     }
+    modifiers
+}
+
+// Read unblocked modifiers from Windows so missed releases do not leave them stuck.
+// Swallowed modifiers must be remembered until release or a desktop switch. This
+// event's own modifier comes from the hook, before Windows updates its state.
+fn held_modifiers(
+    blocked_modifiers: Modifiers,
+    os_held: Modifiers,
+    changed: Option<(Modifiers, bool)>,
+) -> Modifiers {
+    let mut modifiers = blocked_modifiers | os_held;
 
     if let Some((modifier, is_key_down)) = changed {
         if is_key_down {
@@ -316,6 +335,32 @@ fn held_modifiers(blocked_modifiers: Modifiers, changed: Option<(Modifiers, bool
     }
 
     modifiers
+}
+
+// A lone Alt or Win press-and-release opens the menu bar or Start. When one of them
+// passed through before the chord completed, send a no-op key so Windows sees the press
+// as part of a combination. Same trick as PowerToys Keyboard Manager.
+fn mask_menu_activation(passed_through: Modifiers) {
+    let opens_menu = [
+        Modifiers::CMD_LEFT,
+        Modifiers::CMD_RIGHT,
+        Modifiers::OPT_LEFT,
+        Modifiers::OPT_RIGHT,
+    ]
+    .into_iter()
+    .any(|modifier| passed_through.contains(modifier));
+    if !opens_menu {
+        return;
+    }
+
+    const VK_DUMMY: VIRTUAL_KEY = VIRTUAL_KEY(0xFF);
+    let inputs = [
+        keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)),
+        keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP),
+    ];
+    unsafe {
+        let _ = SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
+    }
 }
 
 fn modifier_from_vk(vk: VIRTUAL_KEY, scan_code: u32, is_extended: bool) -> Option<Modifiers> {

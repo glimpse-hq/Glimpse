@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -40,6 +41,7 @@ pub(super) fn start(
             let run_loop = CFRunLoop::get_current();
             let reenable_tap = Arc::new(AtomicBool::new(false));
             let request_reenable = Arc::clone(&reenable_tap);
+            let swallowed_modifiers = Cell::new(Modifiers::empty());
             let options = if has_blocking_hotkeys {
                 CGEventTapOptions::Default
             } else {
@@ -64,6 +66,7 @@ pub(super) fn start(
                         &tx,
                         &blocking_hotkeys,
                         has_blocking_hotkeys,
+                        &swallowed_modifiers,
                         &request_reenable,
                     )
                 },
@@ -137,6 +140,7 @@ fn handle_event(
     tx: &Sender<KeyEvent>,
     blocking_hotkeys: &BlockingHotkeys,
     can_block: bool,
+    swallowed_modifiers: &Cell<Modifiers>,
     reenable_tap: &AtomicBool,
 ) -> CallbackResult {
     let key_event = match event_type {
@@ -147,6 +151,7 @@ fn handle_event(
         CGEventType::OtherMouseUp => mouse_event(event, false),
         CGEventType::TapDisabledByTimeout | CGEventType::TapDisabledByUserInput => {
             reenable_tap.store(true, Ordering::Release);
+            swallowed_modifiers.set(Modifiers::empty());
             Some(KeyEvent {
                 modifiers: Modifiers::empty(),
                 key: None,
@@ -162,7 +167,17 @@ fn handle_event(
         return CallbackResult::Keep;
     };
 
-    let should_block = can_block && should_block_event(blocking_hotkeys, &key_event);
+    let should_block =
+        can_block && should_block_event(blocking_hotkeys, swallowed_modifiers.get(), &key_event);
+    if let Some(modifier) = key_event.changed_modifier {
+        let mut swallowed = swallowed_modifiers.get();
+        if key_event.is_key_down && should_block {
+            swallowed.insert(modifier);
+        } else if !key_event.is_key_down {
+            swallowed.remove(modifier);
+        }
+        swallowed_modifiers.set(swallowed);
+    }
     if should_forward_event(blocking_hotkeys, &key_event) {
         let _ = tx.try_send(key_event);
     }
