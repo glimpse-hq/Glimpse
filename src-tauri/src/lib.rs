@@ -681,6 +681,8 @@ pub fn run() {
             start_hold_recording,
             pill::stop_hold_recording,
             cancel_recording,
+            start_microphone_test,
+            stop_microphone_test,
             view_recovered_transcriptions,
             copy_last_transcription,
             reset_onboarding,
@@ -1341,6 +1343,21 @@ fn check_accessibility_permission() -> bool {
 #[tauri::command]
 fn check_microphone_permission() -> bool {
     permissions::check_microphone_permission()
+}
+
+#[tauri::command]
+fn start_microphone_test(
+    app: AppHandle<AppRuntime>,
+    device_id: Option<String>,
+) -> Result<String, String> {
+    let state = app.state::<AppState>();
+    state.pill().start_microphone_test(&app, device_id)
+}
+
+#[tauri::command]
+fn stop_microphone_test(app: AppHandle<AppRuntime>) {
+    let state = app.state::<AppState>();
+    state.pill().stop_microphone_test(&app);
 }
 
 #[tauri::command]

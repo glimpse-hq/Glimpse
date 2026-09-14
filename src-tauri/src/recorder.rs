@@ -1,11 +1,11 @@
 use std::{
     f32::consts::PI,
-    fs,
+    fmt, fs,
     io::Cursor,
     path::{Path, PathBuf},
     sync::{
         Arc,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicI16, AtomicUsize, Ordering},
     },
     thread::JoinHandle,
     time::Duration,
@@ -79,6 +79,121 @@ struct LiveBufferState {
     channels: u16,
 }
 
+// Seconds of audio the ring holds if the drain thread stalls.
+const CAPTURE_RING_SECONDS: usize = 4;
+const CAPTURE_DRAIN_INTERVAL: Duration = Duration::from_millis(10);
+
+/// Single-producer, single-consumer ring the audio callback writes into.
+/// The callback never locks or allocates; a drain thread moves samples to the Vec.
+struct SampleRing {
+    slots: Box<[AtomicI16]>,
+    head: AtomicUsize,
+    tail: AtomicUsize,
+    dropped: AtomicUsize,
+}
+
+impl SampleRing {
+    fn new(capacity: usize) -> Self {
+        let slots = (0..capacity.max(1)).map(|_| AtomicI16::new(0)).collect();
+        Self {
+            slots,
+            head: AtomicUsize::new(0),
+            tail: AtomicUsize::new(0),
+            dropped: AtomicUsize::new(0),
+        }
+    }
+
+    fn push(&self, samples: impl Iterator<Item = i16>) {
+        let cap = self.slots.len();
+        let tail = self.tail.load(Ordering::Acquire);
+        let mut head = self.head.load(Ordering::Relaxed);
+        let mut dropped = 0usize;
+        for sample in samples {
+            if head - tail >= cap {
+                dropped += 1;
+                continue;
+            }
+            self.slots[head % cap].store(sample, Ordering::Relaxed);
+            head += 1;
+        }
+        self.head.store(head, Ordering::Release);
+        if dropped > 0 {
+            self.dropped.fetch_add(dropped, Ordering::Relaxed);
+        }
+    }
+
+    fn drain_into(&self, out: &mut Vec<i16>) {
+        let cap = self.slots.len();
+        let head = self.head.load(Ordering::Acquire);
+        let mut tail = self.tail.load(Ordering::Relaxed);
+        out.reserve(head - tail);
+        while tail != head {
+            out.push(self.slots[tail % cap].load(Ordering::Relaxed));
+            tail += 1;
+        }
+        self.tail.store(tail, Ordering::Release);
+    }
+
+    fn dropped(&self) -> usize {
+        self.dropped.load(Ordering::Relaxed)
+    }
+}
+
+struct CaptureDrain {
+    ring: Arc<SampleRing>,
+    stop_flag: Arc<AtomicBool>,
+    handle: Option<JoinHandle<()>>,
+}
+
+impl CaptureDrain {
+    fn spawn(ring: Arc<SampleRing>, buffer: Arc<Mutex<Vec<i16>>>) -> Result<Self> {
+        let stop_flag = Arc::new(AtomicBool::new(false));
+        let stop_for_thread = Arc::clone(&stop_flag);
+        let ring_for_thread = Arc::clone(&ring);
+        let handle = std::thread::Builder::new()
+            .name("glimpse-capture-drain".into())
+            .spawn(move || {
+                loop {
+                    let stopping = stop_for_thread.load(Ordering::Relaxed);
+                    ring_for_thread.drain_into(&mut buffer.lock());
+                    if stopping {
+                        break;
+                    }
+                    std::thread::sleep(CAPTURE_DRAIN_INTERVAL);
+                }
+            })
+            .map_err(|err| anyhow!("Failed to spawn capture drain thread: {err}"))?;
+        Ok(Self {
+            ring,
+            stop_flag,
+            handle: Some(handle),
+        })
+    }
+
+    fn stop(&mut self) {
+        self.stop_flag.store(true, Ordering::Relaxed);
+        if let Some(handle) = self.handle.take() {
+            let _ = handle.join();
+        }
+    }
+
+    /// Call after the stream is dropped so the final drain sees every sample.
+    fn finish(mut self) {
+        self.stop();
+        let dropped = self.ring.dropped();
+        if dropped > 0 {
+            tracing::warn!("Capture ring overflowed, dropped {dropped} samples");
+        }
+    }
+}
+
+// A failed stream start drops the drain without calling `finish`.
+impl Drop for CaptureDrain {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
 pub struct RecorderManager {
     tx: Sender<RecorderCommand>,
     spectrum: Arc<Mutex<AudioSpectrumState>>,
@@ -90,8 +205,20 @@ pub struct RecorderManager {
 
 type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
 
+#[derive(Debug)]
+pub struct NoInputDevice;
+
+impl fmt::Display for NoInputDevice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("No input device found")
+    }
+}
+
+impl std::error::Error for NoInputDevice {}
+
 struct ActiveRecording {
     stream: Stream,
+    drain: CaptureDrain,
     buffer: Arc<Mutex<Vec<i16>>>,
     sample_rate: u32,
     channels: u16,
@@ -238,9 +365,10 @@ impl Default for RecorderManager {
                         RecorderCommand::Start {
                             device_id,
                             pending_dir,
+                            monitor_only,
                             respond,
                         } => {
-                            let _ = respond.send(core.start(device_id, pending_dir));
+                            let _ = respond.send(core.start(device_id, pending_dir, monitor_only));
                         }
                         RecorderCommand::Stop {
                             respond,
@@ -324,11 +452,30 @@ impl RecorderManager {
         device_id: Option<String>,
         pending_dir: Option<PathBuf>,
     ) -> Result<DateTime<Local>> {
+        self.start_inner(device_id, pending_dir, false)
+            .map(|(started_at, _)| started_at)
+    }
+
+    /// Opens the microphone for the spectrum only; nothing is buffered.
+    /// Returns the name of the device that was opened, which is the default input
+    /// when the selected one is gone.
+    pub fn start_monitor(&self, device_id: Option<String>) -> Result<String> {
+        self.start_inner(device_id, None, true)
+            .map(|(_, device_name)| device_name)
+    }
+
+    fn start_inner(
+        &self,
+        device_id: Option<String>,
+        pending_dir: Option<PathBuf>,
+        monitor_only: bool,
+    ) -> Result<(DateTime<Local>, String)> {
         let (respond_tx, respond_rx) = bounded(1);
         self.tx
             .send(RecorderCommand::Start {
                 device_id,
                 pending_dir,
+                monitor_only,
                 respond: respond_tx,
             })
             .map_err(|err| anyhow!("Recorder channel closed: {err}"))?;
@@ -378,7 +525,8 @@ enum RecorderCommand {
     Start {
         device_id: Option<String>,
         pending_dir: Option<PathBuf>,
-        respond: Sender<Result<DateTime<Local>>>,
+        monitor_only: bool,
+        respond: Sender<Result<(DateTime<Local>, String)>>,
     },
     Stop {
         respond: Sender<Result<Option<CompletedRecording>>>,
@@ -392,6 +540,7 @@ struct RecorderCore {
     spectrum: Arc<Mutex<AudioSpectrumState>>,
     live_buffer: Arc<Mutex<Option<LiveBufferState>>>,
     armed: Arc<AtomicBool>,
+    monitor_only: Arc<AtomicBool>,
     #[cfg(target_os = "macos")]
     active_device: Arc<Mutex<Option<cpal::DeviceId>>>,
 }
@@ -408,6 +557,7 @@ impl RecorderCore {
             spectrum,
             live_buffer,
             armed,
+            monitor_only: Arc::new(AtomicBool::new(false)),
             #[cfg(target_os = "macos")]
             active_device,
         }
@@ -417,7 +567,8 @@ impl RecorderCore {
         &mut self,
         device_id: Option<String>,
         pending_dir: Option<PathBuf>,
-    ) -> Result<DateTime<Local>> {
+        monitor_only: bool,
+    ) -> Result<(DateTime<Local>, String)> {
         if self.active.is_some() {
             return Err(anyhow!("Recording is already in progress"));
         }
@@ -441,11 +592,14 @@ impl RecorderCore {
                     })
                 })
                 .or_else(|| host.default_input_device())
-                .context("Selected device not found and no default available")?
+                .ok_or(NoInputDevice)?
         } else {
-            host.default_input_device()
-                .context("No default input device found")?
+            host.default_input_device().ok_or(NoInputDevice)?
         };
+        let device_name = device
+            .description()
+            .map(|desc| desc.name().to_string())
+            .unwrap_or_default();
         let config = device
             .default_input_config()
             .map_err(|err| cpal_error("No supported input configuration found", &err))?;
@@ -459,40 +613,31 @@ impl RecorderCore {
         )));
         self.spectrum.lock().reset();
         self.armed.store(false, Ordering::Relaxed);
+        self.monitor_only.store(monitor_only, Ordering::Relaxed);
 
-        let spectrum = &self.spectrum;
-        let armed = &self.armed;
+        let ring = Arc::new(SampleRing::new(
+            sample_rate as usize * channels as usize * CAPTURE_RING_SECONDS,
+        ));
+        let sinks = CallbackSinks {
+            ring: Arc::clone(&ring),
+            spectrum: Arc::clone(&self.spectrum),
+            armed: Arc::clone(&self.armed),
+            monitor_only: Arc::clone(&self.monitor_only),
+        };
         let stream = match format {
-            SampleFormat::F32 => {
-                build_mic_stream::<f32>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::F64 => {
-                build_mic_stream::<f64>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::I8 => {
-                build_mic_stream::<i8>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::I16 => {
-                build_mic_stream::<i16>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::I24 => {
-                build_mic_stream::<cpal::I24>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::I32 => {
-                build_mic_stream::<i32>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::U8 => {
-                build_mic_stream::<u8>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::U16 => {
-                build_mic_stream::<u16>(&device, stream_config, &buffer, spectrum, armed)
-            }
-            SampleFormat::U32 => {
-                build_mic_stream::<u32>(&device, stream_config, &buffer, spectrum, armed)
-            }
+            SampleFormat::F32 => build_mic_stream::<f32>(&device, stream_config, sinks),
+            SampleFormat::F64 => build_mic_stream::<f64>(&device, stream_config, sinks),
+            SampleFormat::I8 => build_mic_stream::<i8>(&device, stream_config, sinks),
+            SampleFormat::I16 => build_mic_stream::<i16>(&device, stream_config, sinks),
+            SampleFormat::I24 => build_mic_stream::<cpal::I24>(&device, stream_config, sinks),
+            SampleFormat::I32 => build_mic_stream::<i32>(&device, stream_config, sinks),
+            SampleFormat::U8 => build_mic_stream::<u8>(&device, stream_config, sinks),
+            SampleFormat::U16 => build_mic_stream::<u16>(&device, stream_config, sinks),
+            SampleFormat::U32 => build_mic_stream::<u32>(&device, stream_config, sinks),
             other => return Err(anyhow!("Unsupported sample format: {other}")),
         }
         .map_err(|err| cpal_error("Failed to open input stream", &err))?;
+        let drain = CaptureDrain::spawn(ring, Arc::clone(&buffer))?;
 
         #[cfg(target_os = "macos")]
         {
@@ -526,6 +671,7 @@ impl RecorderCore {
 
         self.active = Some(ActiveRecording {
             stream,
+            drain,
             buffer,
             sample_rate,
             channels,
@@ -533,7 +679,7 @@ impl RecorderCore {
             pending,
         });
 
-        Ok(started_at)
+        Ok((started_at, device_name))
     }
 
     fn stop(
@@ -550,6 +696,7 @@ impl RecorderCore {
         match self.active.take() {
             Some(mut active) => {
                 drop(active.stream);
+                active.drain.finish();
                 let pending_path = match active.pending.take() {
                     Some(pending) => {
                         if discard_pending {
@@ -1386,42 +1533,40 @@ fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
     anyhow!("{what} ({:?}): {err}", err.kind())
 }
 
+struct CallbackSinks {
+    ring: Arc<SampleRing>,
+    spectrum: Arc<Mutex<AudioSpectrumState>>,
+    armed: Arc<AtomicBool>,
+    monitor_only: Arc<AtomicBool>,
+}
+
 fn build_mic_stream<T>(
     device: &cpal::Device,
     config: cpal::StreamConfig,
-    buffer: &Arc<Mutex<Vec<i16>>>,
-    spectrum: &Arc<Mutex<AudioSpectrumState>>,
-    armed: &Arc<AtomicBool>,
+    sinks: CallbackSinks,
 ) -> Result<Stream, cpal::Error>
 where
     T: SizedSample + 'static,
     i16: FromSample<T>,
     f32: FromSample<T>,
 {
-    let buffer = Arc::clone(buffer);
-    let spectrum = Arc::clone(spectrum);
-    let armed = Arc::clone(armed);
     let channels = (config.channels as usize).max(1);
     device.build_input_stream(
         config,
-        move |data: &[T], _| push_samples(data, &buffer, &spectrum, &armed, channels),
+        move |data: &[T], _| push_samples(data, &sinks, channels),
         |err| tracing::error!("Microphone stream error: {err}"),
         None,
     )
 }
 
-fn push_samples<T>(
-    data: &[T],
-    buffer: &Mutex<Vec<i16>>,
-    spectrum: &Mutex<AudioSpectrumState>,
-    armed: &AtomicBool,
-    channels: usize,
-) where
+// Runs on the audio device's realtime thread: no blocking locks, no allocation.
+fn push_samples<T>(data: &[T], sinks: &CallbackSinks, channels: usize)
+where
     T: Sample,
     i16: FromSample<T>,
     f32: FromSample<T>,
 {
-    if let Some(mut analysis) = spectrum.try_lock() {
+    if let Some(mut analysis) = sinks.spectrum.try_lock() {
         for frame in data.chunks(channels) {
             let mono: f32 = frame
                 .iter()
@@ -1431,7 +1576,11 @@ fn push_samples<T>(
         }
     }
 
-    if !armed.load(Ordering::Relaxed) {
+    if sinks.monitor_only.load(Ordering::Relaxed) {
+        return;
+    }
+
+    if !sinks.armed.load(Ordering::Relaxed) {
         let peak = data
             .iter()
             .map(|&sample| f32::from_sample(sample).abs())
@@ -1439,11 +1588,12 @@ fn push_samples<T>(
         if peak < ARM_SIGNAL_FLOOR {
             return;
         }
-        armed.store(true, Ordering::Relaxed);
+        sinks.armed.store(true, Ordering::Relaxed);
     }
 
-    let mut writer = buffer.lock();
-    writer.extend(data.iter().map(|&sample| i16::from_sample(sample)));
+    sinks
+        .ring
+        .push(data.iter().map(|&sample| i16::from_sample(sample)));
 }
 
 pub(crate) fn downmix_to_mono(samples: &[i16], channels: usize) -> Vec<i16> {

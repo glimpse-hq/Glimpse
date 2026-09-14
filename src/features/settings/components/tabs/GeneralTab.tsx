@@ -1,6 +1,7 @@
 import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -14,6 +15,7 @@ import {
   Square,
   X,
 } from "@phosphor-icons/react";
+import HoverTip from "../../../../shared/ui/HoverTip";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
@@ -27,7 +29,6 @@ type CaptureMode = { mode: ShortcutMode; index: number } | null;
 type InvalidShortcutDrafts = Partial<
   Record<ShortcutMode, Record<number, string>>
 >;
-type HelpTooltipId = "shortcuts";
 type MicrophoneTestStatus = "idle" | "starting" | "listening" | "error";
 type MicrophoneTestLevels = {
   left: number;
@@ -100,9 +101,6 @@ const GeneralTab = ({
   onOpenProvidersTab,
 }: GeneralTabProps) => {
   const { t } = useLingui();
-  const [openHelpTooltip, setOpenHelpTooltip] = useState<HelpTooltipId | null>(
-    null,
-  );
   const [expandedShortcut, setExpandedShortcut] = useState<ShortcutMode | null>(
     null,
   );
@@ -116,7 +114,7 @@ const GeneralTab = ({
     reset: resetMicrophoneTest,
     start: startMicrophoneTest,
     status: microphoneTestStatus,
-  } = useMicrophoneTest(inputDevices, microphoneDevice);
+  } = useMicrophoneTest(microphoneDevice);
   const aiFeaturesDisabled = !aiFeaturesReady;
   const cleanupNeedsLicense = !licenseGateActive;
   const autoDictionaryBody = autoDictionarySupported
@@ -132,18 +130,6 @@ const GeneralTab = ({
     id: "settings.general.system_default",
     message: "System Default",
   });
-
-  const showHelpTooltip = (tooltip: HelpTooltipId) => {
-    setOpenHelpTooltip(tooltip);
-  };
-
-  const hideHelpTooltip = (tooltip: HelpTooltipId) => {
-    setOpenHelpTooltip((current) => (current === tooltip ? null : current));
-  };
-
-  const toggleHelpTooltip = (tooltip: HelpTooltipId) => {
-    setOpenHelpTooltip((current) => (current === tooltip ? null : tooltip));
-  };
 
   const isMicrophoneTestActive =
     microphoneTestStatus === "starting" || microphoneTestStatus === "listening";
@@ -315,74 +301,7 @@ const GeneralTab = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <SectionLabel
-            trailing={
-              <div
-                className="relative"
-                onMouseEnter={() => showHelpTooltip("shortcuts")}
-                onMouseLeave={() => hideHelpTooltip("shortcuts")}
-              >
-                <button
-                  type="button"
-                  className="flex h-4 w-4 items-center justify-center text-content-disabled transition-colors hover:text-content-muted"
-                  aria-label={t({
-                    id: "settings.general.shortcuts.info_aria",
-                    message: "More information about shortcut options",
-                  })}
-                  aria-expanded={openHelpTooltip === "shortcuts"}
-                  aria-controls="shortcuts-help-tooltip"
-                  onFocus={() => showHelpTooltip("shortcuts")}
-                  onBlur={() => hideHelpTooltip("shortcuts")}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      hideHelpTooltip("shortcuts");
-                    }
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      toggleHelpTooltip("shortcuts");
-                    }
-                  }}
-                >
-                  <Info size={10} aria-hidden="true" />
-                </button>
-                <div
-                  id="shortcuts-help-tooltip"
-                  role="tooltip"
-                  className={`absolute left-0 top-full mt-1.5 z-tooltip ${
-                    openHelpTooltip === "shortcuts" ? "block" : "hidden"
-                  }`}
-                >
-                  <div className="w-64 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-2 ui-text-micro ui-color-secondary shadow-lg leading-snug">
-                    <p>
-                      <Ghost
-                        size={10}
-                        className="mr-1 inline-block align-[-1px]"
-                        aria-hidden="true"
-                      />
-                      {t({
-                        id: "settings.general.shortcuts.help_temporary",
-                        message:
-                          "Makes a shortcut temporary. It will not save audio, transcript, or history.",
-                      })}
-                    </p>
-                    <p className="mt-1">
-                      <BrushCleaning
-                        size={10}
-                        className="mr-1 inline-block align-[-1px]"
-                        aria-hidden="true"
-                      />
-                      {t({
-                        id: "settings.general.shortcuts.help_writing",
-                        message:
-                          "Uses the writing model for that shortcut only. It tidies what you dictate, and rewrites selected text when you speak an instruction.",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            }
-          >
+          <SectionLabel>
             {t({
               id: "settings.general.shortcuts",
               message: "Shortcuts",
@@ -590,7 +509,6 @@ const MICROPHONE_TEST_DOT_WIDTH =
   MICROPHONE_TEST_DOT_COLS * MICROPHONE_TEST_DOT_SIZE +
   (MICROPHONE_TEST_DOT_COLS - 1) * MICROPHONE_TEST_DOT_GAP;
 const EMPTY_MICROPHONE_TEST_LEVELS = { left: 0, right: 0 };
-const MICROPHONE_TEST_UPDATE_INTERVAL_MS = 24;
 
 type MicrophoneTestSlotProps = {
   status: MicrophoneTestStatus;
@@ -694,10 +612,7 @@ const getSelectedMicrophoneName = (
   );
 };
 
-const useMicrophoneTest = (
-  inputDevices: DeviceInfo[],
-  microphoneDevice: string | null,
-) => {
+const useMicrophoneTest = (microphoneDevice: string | null) => {
   const { t } = useLingui();
   const [status, setStatus] = useState<MicrophoneTestStatus>("idle");
   const [levels, setLevels] = useState<MicrophoneTestLevels>(
@@ -707,25 +622,16 @@ const useMicrophoneTest = (
   const [activeDeviceLabel, setActiveDeviceLabel] = useState<string | null>(
     null,
   );
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
+  const unlistenRef = useRef<(() => void) | null>(null);
   const smoothedLevelsRef = useRef<MicrophoneTestLevels>(
     EMPTY_MICROPHONE_TEST_LEVELS,
   );
   const runIdRef = useRef(0);
 
   const releaseResources = useCallback(() => {
-    if (animationFrameRef.current !== null) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-
-    void audioContextRef.current?.close();
-    audioContextRef.current = null;
+    unlistenRef.current?.();
+    unlistenRef.current = null;
+    void invoke("stop_microphone_test");
   }, []);
 
   const clearMeterState = useCallback(() => {
@@ -743,18 +649,6 @@ const useMicrophoneTest = (
   }, [clearMeterState, releaseResources]);
 
   const start = useCallback(async () => {
-    const mediaDevices = navigator.mediaDevices;
-    if (!mediaDevices?.getUserMedia) {
-      setStatus("error");
-      setError(
-        t({
-          id: "settings.general.microphone_test.unsupported",
-          message: "Microphone testing isn't available in this window.",
-        }),
-      );
-      return;
-    }
-
     runIdRef.current += 1;
     const runId = runIdRef.current;
     releaseResources();
@@ -762,119 +656,56 @@ const useMicrophoneTest = (
     clearMeterState();
     setError(null);
 
-    let stream: MediaStream | null = null;
-
     try {
-      const selectedDeviceName = getSelectedMicrophoneName(
-        inputDevices,
-        microphoneDevice,
-      );
-
-      stream = await mediaDevices.getUserMedia({ audio: true });
-
-      if (runIdRef.current !== runId) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-
-      const matchedDeviceId = await findBrowserMicrophoneDeviceId(
-        mediaDevices,
-        selectedDeviceName,
-      );
-
-      if (matchedDeviceId) {
-        let selectedStream: MediaStream | null = null;
-        try {
-          selectedStream = await mediaDevices.getUserMedia({
-            audio: { deviceId: { exact: matchedDeviceId } },
-          });
-
-          if (runIdRef.current !== runId) {
-            selectedStream.getTracks().forEach((track) => track.stop());
-            stream.getTracks().forEach((track) => track.stop());
-            return;
-          }
-
-          stream.getTracks().forEach((track) => track.stop());
-          stream = selectedStream;
-          selectedStream = null;
-        } catch (err) {
-          selectedStream?.getTracks().forEach((track) => track.stop());
-          stream?.getTracks().forEach((track) => track.stop());
-          stream = null;
-          throw err;
-        }
-      }
-
-      const AudioContextCtor =
-        window.AudioContext ??
-        (
-          window as typeof window & {
-            webkitAudioContext?: typeof AudioContext;
-          }
-        ).webkitAudioContext;
-
-      if (!AudioContextCtor) {
-        throw new Error("AudioContext is not available");
-      }
-
-      const audioContext = new AudioContextCtor();
-      const source = audioContext.createMediaStreamSource(stream);
-      const leftAnalyser = audioContext.createAnalyser();
-      const rightAnalyser = audioContext.createAnalyser();
-      const splitter = audioContext.createChannelSplitter(2);
-      const channelCount =
-        stream.getAudioTracks()[0]?.getSettings().channelCount ?? 1;
-      leftAnalyser.fftSize = 128;
-      rightAnalyser.fftSize = 128;
-      leftAnalyser.smoothingTimeConstant = 0.12;
-      rightAnalyser.smoothingTimeConstant = 0.12;
-      source.connect(splitter);
-      splitter.connect(leftAnalyser, 0);
-      splitter.connect(rightAnalyser, channelCount > 1 ? 1 : 0);
-
-      streamRef.current = stream;
-      audioContextRef.current = audioContext;
-      const displayLabel =
-        stream.getAudioTracks()[0]?.label || selectedDeviceName;
-      setActiveDeviceLabel(displayLabel);
-      setStatus("listening");
-
-      const leftData = new Uint8Array(leftAnalyser.fftSize);
-      const rightData = new Uint8Array(rightAnalyser.fftSize);
-      let lastUpdate = 0;
-
-      const updateLevel = (now: number) => {
-        leftAnalyser.getByteTimeDomainData(leftData);
-        rightAnalyser.getByteTimeDomainData(rightData);
-
-        if (now - lastUpdate > MICROPHONE_TEST_UPDATE_INTERVAL_MS) {
+      const unlistenLevel = await listen<number>(
+        "microphone-test:level",
+        (event) => {
           smoothedLevelsRef.current = smoothMicrophoneLevels(
             smoothedLevelsRef.current,
-            {
-              left: calculateMicrophoneLevel(leftData),
-              right: calculateMicrophoneLevel(rightData),
-            },
+            { left: event.payload, right: event.payload },
           );
           setLevels(smoothedLevelsRef.current);
-          lastUpdate = now;
-        }
-
-        animationFrameRef.current = requestAnimationFrame(updateLevel);
+        },
+      );
+      // The backend ended the test: dictation started or the window closed.
+      const unlistenStopped = await listen("microphone-test:stopped", reset);
+      const unlisten = () => {
+        unlistenLevel();
+        unlistenStopped();
       };
 
-      animationFrameRef.current = requestAnimationFrame(updateLevel);
+      // A newer run owns the shared ref by now; only drop this run's listeners.
+      if (runIdRef.current !== runId) {
+        unlisten();
+        return;
+      }
+      unlistenRef.current = unlisten;
+
+      // The backend reports the device it opened, which is the default input
+      // when the selected one is gone.
+      const openedDevice = await invoke<string>("start_microphone_test", {
+        deviceId: microphoneDevice,
+      });
+
+      if (runIdRef.current !== runId) return;
+      setActiveDeviceLabel(microphoneDevice ? openedDevice || null : null);
+      setStatus("listening");
     } catch (err) {
-      stream?.getTracks().forEach((track) => track.stop());
       if (runIdRef.current !== runId) return;
       releaseResources();
       clearMeterState();
       setStatus("error");
       setError(t(formatMicrophoneTestError(err)));
     }
-  }, [clearMeterState, inputDevices, microphoneDevice, releaseResources, t]);
+  }, [clearMeterState, microphoneDevice, releaseResources, reset, t]);
 
-  useEffect(() => releaseResources, [releaseResources]);
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+      releaseResources();
+    },
+    [releaseResources],
+  );
 
   return {
     activeDeviceLabel,
@@ -900,79 +731,26 @@ const smoothMicrophoneLevel = (previous: number, target: number) => {
   return next < 0.02 ? 0 : next;
 };
 
-const calculateMicrophoneLevel = (data: Uint8Array) => {
-  let sum = 0;
-  for (const sample of data) {
-    const centered = (sample - 128) / 128;
-    sum += centered * centered;
+const formatMicrophoneTestError = (err: unknown) => {
+  if (err === "permission") {
+    return msg({
+      id: "settings.general.microphone_test.permission_error",
+      message: "Microphone access was denied.",
+    });
   }
 
-  const noiseFloor = 0.012;
-  const speechCeiling = 0.18;
-  const rms = Math.sqrt(sum / data.length);
-  const normalized =
-    Math.max(0, rms - noiseFloor) / (speechCeiling - noiseFloor);
+  if (err === "busy") {
+    return msg({
+      id: "settings.general.microphone_test.busy_error",
+      message: "That microphone is already in use.",
+    });
+  }
 
-  return Math.min(1, Math.pow(normalized, 0.72));
-};
-
-const findBrowserMicrophoneDeviceId = async (
-  mediaDevices: MediaDevices,
-  selectedDeviceName: string | null,
-) => {
-  if (!selectedDeviceName || !mediaDevices.enumerateDevices) return null;
-
-  const browserDevices = await mediaDevices.enumerateDevices();
-  const selectedName = normalizeMicrophoneLabel(selectedDeviceName);
-  if (!selectedName) return null;
-
-  const match = browserDevices.find((device) => {
-    if (device.kind !== "audioinput" || !device.deviceId || !device.label) {
-      return false;
-    }
-
-    const browserLabel = normalizeMicrophoneLabel(device.label);
-    return (
-      browserLabel.includes(selectedName) || selectedName.includes(browserLabel)
-    );
-  });
-
-  return match?.deviceId ?? null;
-};
-
-const normalizeMicrophoneLabel = (label: string) =>
-  label
-    .toLowerCase()
-    .replace(/^default\s*[-:]\s*/, "")
-    .replace(/\([^)]*\)/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const formatMicrophoneTestError = (err: unknown) => {
-  if (err instanceof DOMException) {
-    if (
-      err.name === "NotAllowedError" ||
-      err.name === "PermissionDeniedError"
-    ) {
-      return msg({
-        id: "settings.general.microphone_test.permission_error",
-        message: "Microphone access was denied.",
-      });
-    }
-
-    if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
-      return msg({
-        id: "settings.general.microphone_test.not_found_error",
-        message: "No microphone was found.",
-      });
-    }
-
-    if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-      return msg({
-        id: "settings.general.microphone_test.busy_error",
-        message: "That microphone is already in use.",
-      });
-    }
+  if (err === "no_device") {
+    return msg({
+      id: "settings.general.microphone_test.not_found_error",
+      message: "No microphone was found.",
+    });
   }
 
   return msg({
@@ -1023,9 +801,19 @@ const ShortcutBindingsList = ({
     id: "settings.general.shortcuts.temporary",
     message: "Temporary",
   });
+  const temporaryDetail = t({
+    id: "settings.general.shortcuts.help_temporary",
+    message:
+      "Makes a shortcut temporary. It will not save audio, transcript, or history.",
+  });
   const cleanupLabel = t({
     id: "settings.general.shortcuts.cleanup",
     message: "Cleanup",
+  });
+  const cleanupDetail = t({
+    id: "settings.general.shortcuts.help_writing",
+    message:
+      "Uses the writing model for that shortcut only. It tidies what you dictate, and rewrites selected text when you speak an instruction.",
   });
   const visibleBindings =
     bindings.length > 0
@@ -1083,6 +871,7 @@ const ShortcutBindingsList = ({
 
         <ShortcutIconToggle
           label={temporaryLabel}
+          detail={temporaryDetail}
           tone="local"
           active={primaryBinding.temporary}
           disabled={false}
@@ -1096,6 +885,7 @@ const ShortcutBindingsList = ({
         </ShortcutIconToggle>
         <ShortcutIconToggle
           label={cleanupLabel}
+          detail={cleanupDetail}
           tone="cloud"
           active={primaryBinding.cleanup_enabled}
           disabled={cleanupDisabled}
@@ -1227,6 +1017,7 @@ const ShortcutBindingsList = ({
 
                     <ShortcutIconToggle
                       label={temporaryLabel}
+                      detail={temporaryDetail}
                       tone="local"
                       active={binding.temporary}
                       disabled={false}
@@ -1240,6 +1031,7 @@ const ShortcutBindingsList = ({
                     </ShortcutIconToggle>
                     <ShortcutIconToggle
                       label={cleanupLabel}
+                      detail={cleanupDetail}
                       tone="cloud"
                       active={binding.cleanup_enabled}
                       disabled={cleanupDisabled}
@@ -1285,6 +1077,7 @@ const ShortcutBindingsList = ({
 
 const ShortcutIconToggle = ({
   label,
+  detail,
   tone,
   active,
   disabled,
@@ -1292,6 +1085,7 @@ const ShortcutIconToggle = ({
   children,
 }: {
   label: string;
+  detail: string;
   tone: "local" | "cloud";
   active: boolean;
   disabled: boolean;
@@ -1304,21 +1098,22 @@ const ShortcutIconToggle = ({
       : "text-[var(--color-cloud)] bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]";
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={active}
-      title={label}
-      className={`box-border flex h-5 w-5 shrink-0 items-center justify-center rounded-md border leading-none transition-colors [&_svg]:block [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-40 ${
-        active
-          ? activeClass
-          : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
-      }`}
-    >
-      {children}
-    </button>
+    <HoverTip label={label} detail={detail} className="inline-flex shrink-0">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        aria-pressed={active}
+        className={`box-border flex h-5 w-5 shrink-0 items-center justify-center rounded-md border leading-none transition-colors [&_svg]:block [&_svg]:shrink-0 disabled:pointer-events-none disabled:opacity-40 ${
+          active
+            ? activeClass
+            : "border-transparent ui-color-muted hover:bg-surface-overlay hover:ui-color-secondary"
+        }`}
+      >
+        {children}
+      </button>
+    </HoverTip>
   );
 };
 
