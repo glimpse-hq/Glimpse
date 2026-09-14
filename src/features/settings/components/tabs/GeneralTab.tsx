@@ -114,7 +114,7 @@ const GeneralTab = ({
     reset: resetMicrophoneTest,
     start: startMicrophoneTest,
     status: microphoneTestStatus,
-  } = useMicrophoneTest(inputDevices, microphoneDevice);
+  } = useMicrophoneTest(microphoneDevice);
   const aiFeaturesDisabled = !aiFeaturesReady;
   const cleanupNeedsLicense = !licenseGateActive;
   const autoDictionaryBody = autoDictionarySupported
@@ -612,10 +612,7 @@ const getSelectedMicrophoneName = (
   );
 };
 
-const useMicrophoneTest = (
-  inputDevices: DeviceInfo[],
-  microphoneDevice: string | null,
-) => {
+const useMicrophoneTest = (microphoneDevice: string | null) => {
   const { t } = useLingui();
   const [status, setStatus] = useState<MicrophoneTestStatus>("idle");
   const [levels, setLevels] = useState<MicrophoneTestLevels>(
@@ -682,12 +679,14 @@ const useMicrophoneTest = (
         return;
       }
 
-      await invoke("start_microphone_test", { deviceId: microphoneDevice });
+      // The backend reports the device it opened, which is the default input
+      // when the selected one is gone.
+      const openedDevice = await invoke<string>("start_microphone_test", {
+        deviceId: microphoneDevice,
+      });
 
       if (runIdRef.current !== runId) return;
-      setActiveDeviceLabel(
-        getSelectedMicrophoneName(inputDevices, microphoneDevice),
-      );
+      setActiveDeviceLabel(microphoneDevice ? openedDevice || null : null);
       setStatus("listening");
     } catch (err) {
       if (runIdRef.current !== runId) return;
@@ -698,7 +697,6 @@ const useMicrophoneTest = (
     }
   }, [
     clearMeterState,
-    inputDevices,
     microphoneDevice,
     releaseResources,
     reset,
@@ -749,6 +747,13 @@ const formatMicrophoneTestError = (err: unknown) => {
     return msg({
       id: "settings.general.microphone_test.busy_error",
       message: "That microphone is already in use.",
+    });
+  }
+
+  if (err === "no_device") {
+    return msg({
+      id: "settings.general.microphone_test.not_found_error",
+      message: "No microphone was found.",
     });
   }
 

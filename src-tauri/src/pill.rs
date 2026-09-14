@@ -3,7 +3,7 @@ use crate::{
     AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL, assistive,
     core::hotkeys::{self, HotkeyState},
     emit_event, model_manager, music, platform,
-    recorder::{MIN_RECORDING_DURATION_MS, RecorderManager, SPECTRUM_SIZE},
+    recorder::{MIN_RECORDING_DURATION_MS, NoInputDevice, RecorderManager, SPECTRUM_SIZE},
     settings::{MediaAction, UserSettings},
     toast,
 };
@@ -285,7 +285,7 @@ impl PillController {
         &self,
         app: &AppHandle<AppRuntime>,
         device_id: Option<String>,
-    ) -> Result<(), String> {
+    ) -> Result<String, String> {
         if !permissions::check_microphone_permission() {
             return Err("permission".into());
         }
@@ -293,14 +293,18 @@ impl PillController {
             return Err("busy".into());
         }
         self.stop_microphone_test(app);
-        self.recorder
-            .start_monitor(device_id)
-            .map_err(|err| err.to_string())?;
+        let device_name = self.recorder.start_monitor(device_id).map_err(|err| {
+            if err.downcast_ref::<NoInputDevice>().is_some() {
+                "no_device".to_string()
+            } else {
+                err.to_string()
+            }
+        })?;
         *self.microphone_test.lock() = Some(start_microphone_level_emitter(
             app.clone(),
             Arc::clone(&self.recorder),
         ));
-        Ok(())
+        Ok(device_name)
     }
 
     pub fn stop_microphone_test(&self, app: &AppHandle<AppRuntime>) {

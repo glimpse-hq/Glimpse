@@ -1349,7 +1349,7 @@ fn check_microphone_permission() -> bool {
 fn start_microphone_test(
     app: AppHandle<AppRuntime>,
     device_id: Option<String>,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let state = app.state::<AppState>();
     state.pill().start_microphone_test(&app, device_id)
 }

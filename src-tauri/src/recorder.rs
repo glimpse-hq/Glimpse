@@ -1,6 +1,6 @@
 use std::{
     f32::consts::PI,
-    fs,
+    fmt, fs,
     io::Cursor,
     path::{Path, PathBuf},
     sync::{
@@ -193,6 +193,17 @@ pub struct RecorderManager {
 }
 
 type AfterCaptureHook = Box<dyn FnOnce() + Send + 'static>;
+
+#[derive(Debug)]
+pub struct NoInputDevice;
+
+impl fmt::Display for NoInputDevice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("No input device found")
+    }
+}
+
+impl std::error::Error for NoInputDevice {}
 
 struct ActiveRecording {
     stream: Stream,
@@ -431,11 +442,15 @@ impl RecorderManager {
         pending_dir: Option<PathBuf>,
     ) -> Result<DateTime<Local>> {
         self.start_inner(device_id, pending_dir, false)
+            .map(|(started_at, _)| started_at)
     }
 
     /// Opens the microphone for the spectrum only; nothing is buffered.
-    pub fn start_monitor(&self, device_id: Option<String>) -> Result<DateTime<Local>> {
+    /// Returns the name of the device that was opened, which is the default input
+    /// when the selected one is gone.
+    pub fn start_monitor(&self, device_id: Option<String>) -> Result<String> {
         self.start_inner(device_id, None, true)
+            .map(|(_, device_name)| device_name)
     }
 
     fn start_inner(
@@ -443,7 +458,7 @@ impl RecorderManager {
         device_id: Option<String>,
         pending_dir: Option<PathBuf>,
         monitor_only: bool,
-    ) -> Result<DateTime<Local>> {
+    ) -> Result<(DateTime<Local>, String)> {
         let (respond_tx, respond_rx) = bounded(1);
         self.tx
             .send(RecorderCommand::Start {
@@ -500,7 +515,7 @@ enum RecorderCommand {
         device_id: Option<String>,
         pending_dir: Option<PathBuf>,
         monitor_only: bool,
-        respond: Sender<Result<DateTime<Local>>>,
+        respond: Sender<Result<(DateTime<Local>, String)>>,
     },
     Stop {
         respond: Sender<Result<Option<CompletedRecording>>>,
@@ -542,7 +557,7 @@ impl RecorderCore {
         device_id: Option<String>,
         pending_dir: Option<PathBuf>,
         monitor_only: bool,
-    ) -> Result<DateTime<Local>> {
+    ) -> Result<(DateTime<Local>, String)> {
         if self.active.is_some() {
             return Err(anyhow!("Recording is already in progress"));
         }
@@ -566,11 +581,14 @@ impl RecorderCore {
                     })
                 })
                 .or_else(|| host.default_input_device())
-                .context("Selected device not found and no default available")?
+                .ok_or(NoInputDevice)?
         } else {
-            host.default_input_device()
-                .context("No default input device found")?
+            host.default_input_device().ok_or(NoInputDevice)?
         };
+        let device_name = device
+            .description()
+            .map(|desc| desc.name().to_string())
+            .unwrap_or_default();
         let config = device
             .default_input_config()
             .map_err(|err| cpal_error("No supported input configuration found", &err))?;
@@ -650,7 +668,7 @@ impl RecorderCore {
             pending,
         });
 
-        Ok(started_at)
+        Ok((started_at, device_name))
     }
 
     fn stop(

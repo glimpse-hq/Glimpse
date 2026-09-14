@@ -2835,6 +2835,11 @@ msgid "dictionary.no_matches"
 msgstr "لا توجد نتائج مطابقة"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.microphone_test.not_found_error"
+msgstr "لم يُعثر على ميكروفون."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.model.none_held"
 msgstr "لا يُحتفظ بأي نموذج في الذاكرة بين الطلبات"
@@ -4312,16 +4317,6 @@ msgid "settings.app.theme.label"
 msgstr "المظهر"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.speech.body"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.guide.language.body"
-msgstr ""
-
-#. js-lingui-explicit-id
 #. placeholder {0}: (progress * 100).toFixed(0)
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.thinking"
@@ -4381,6 +4376,16 @@ msgstr "الطوابع الزمنية"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.timestamps"
 msgstr "الطوابع الزمنية"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.language.body"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.guide.speech.body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
