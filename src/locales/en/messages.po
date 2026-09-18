@@ -4417,7 +4417,7 @@ msgstr "Thank you for contributing. Up to 5 devices."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_active"
-msgstr "Thanks for supporting Glimpse."
+msgstr "Thanks for supporting Glimpse!"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx

@@ -82,7 +82,7 @@ export function LicenseStep({
   const line = isActive
     ? t({
         id: "onboarding.license_step.line_active",
-        message: "Thanks for supporting Glimpse.",
+        message: "Thanks for supporting Glimpse!",
       })
     : t({
         id: "onboarding.license_step.line_free",
