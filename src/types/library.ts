@@ -13,6 +13,19 @@ export type Speaker = {
 
 export type LibraryItemKind = "import" | "recording" | "meeting";
 
+// Inputs a recording captured. `system_audio` lists app names, or is empty
+// when the whole system was captured.
+export type AudioSources = {
+  microphone?: string | null;
+  system_audio?: string[] | null;
+};
+
+export type Bookmark = {
+  id: string;
+  at_ms: number;
+  label?: string | null;
+};
+
 export type LibraryItemStatus =
   | { type: "pending" }
   | { type: "importing"; progress: number }
@@ -44,6 +57,9 @@ export type LibraryItem = {
   detect_speakers: boolean;
   kind: LibraryItemKind;
   speakers?: Speaker[] | null;
+  secondary_audio_path?: string | null;
+  sources?: AudioSources | null;
+  bookmarks?: Bookmark[] | null;
 };
 
 export type LibraryItemsPage = {
@@ -72,6 +88,7 @@ export type LibraryItemPatch = {
   duration_seconds?: number | null;
   kind?: LibraryItemKind | null;
   speakers?: Speaker[] | null;
+  bookmarks?: Bookmark[] | null;
 };
 
 export type LibraryImportOptions = {

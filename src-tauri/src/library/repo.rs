@@ -8,7 +8,7 @@ use crate::library::{LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemSt
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
     created_at, transcribed_at, tags, llm_cleanup_enabled, speech_model, show_timestamps, \
-    detect_speakers, kind, speakers";
+    detect_speakers, kind, speakers, secondary_audio_path, sources, bookmarks";
 
 pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Result<LibraryItem> {
     let (status, progress, error_message) = item.status.as_fields();
@@ -16,6 +16,8 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
     let words = serialize_json_column(&item.words)?;
     let tags = serialize_tags(&item.tags)?;
     let speakers = serialize_json_column(&item.speakers)?;
+    let sources = serialize_json_value(&item.sources)?;
+    let bookmarks = serialize_json_column(&item.bookmarks)?;
 
     conn.execute(
         "INSERT INTO library_items (
@@ -41,8 +43,11 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             show_timestamps,
             detect_speakers,
             kind,
-            speakers
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23)",
+            speakers,
+            secondary_audio_path,
+            sources,
+            bookmarks
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
         params![
             item.id,
             item.name,
@@ -67,6 +72,9 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             if item.detect_speakers { 1 } else { 0 },
             item.kind,
             speakers,
+            item.secondary_audio_path,
+            sources,
+            bookmarks,
         ],
     )?;
 
@@ -180,6 +188,9 @@ pub(crate) fn update_library_item(
     if let Some(speakers) = patch.speakers {
         item.speakers = speakers;
     }
+    if let Some(bookmarks) = patch.bookmarks {
+        item.bookmarks = Some(bookmarks);
+    }
 
     update_library_item_full(&tx, &item)?;
     tx.commit()?;
@@ -235,6 +246,8 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
     let words = serialize_json_column(&item.words)?;
     let tags = serialize_tags(&item.tags)?;
     let speakers = serialize_json_column(&item.speakers)?;
+    let sources = serialize_json_value(&item.sources)?;
+    let bookmarks = serialize_json_column(&item.bookmarks)?;
 
     conn.execute(
         "UPDATE library_items SET
@@ -259,8 +272,11 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             show_timestamps = ?19,
             kind = ?20,
             speakers = ?21,
-            detect_speakers = ?22
-         WHERE id = ?23",
+            detect_speakers = ?22,
+            secondary_audio_path = ?23,
+            sources = ?24,
+            bookmarks = ?25
+         WHERE id = ?26",
         params![
             item.name,
             item.audio_path,
@@ -284,6 +300,9 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             item.kind,
             speakers,
             if item.detect_speakers { 1 } else { 0 },
+            item.secondary_audio_path,
+            sources,
+            bookmarks,
             item.id,
         ],
     )?;
@@ -315,11 +334,17 @@ fn library_item_from_row(root: &Path, row: &Row<'_>) -> rusqlite::Result<Library
     let words_json: Option<String> = row.get("words").ok();
     let tags_json: String = row.get("tags")?;
     let speakers_json: Option<String> = row.get("speakers").ok().flatten();
+    let sources_json: Option<String> = row.get("sources").ok().flatten();
+    let bookmarks_json: Option<String> = row.get("bookmarks").ok().flatten();
 
     let segments = parse_json_column(segments_json);
     let words = parse_json_column(words_json);
     let tags: Vec<String> = serde_json::from_str(&tags_json).unwrap_or_default();
     let speakers = parse_json_column(speakers_json);
+    let bookmarks = parse_json_column(bookmarks_json);
+    let sources = sources_json
+        .filter(|raw| !raw.trim().is_empty())
+        .and_then(|raw| serde_json::from_str(&raw).ok());
 
     Ok(LibraryItem {
         id: row.get("id")?,
@@ -350,10 +375,24 @@ fn library_item_from_row(root: &Path, row: &Row<'_>) -> rusqlite::Result<Library
             .flatten()
             .unwrap_or_else(crate::library::default_item_kind),
         speakers,
+        secondary_audio_path: row
+            .get::<_, Option<String>>("secondary_audio_path")
+            .ok()
+            .flatten()
+            .map(|stored| resolve_audio_path(root, stored)),
+        sources,
+        bookmarks,
     })
 }
 
 fn serialize_json_column<T: serde::Serialize>(value: &Option<Vec<T>>) -> Result<Option<String>> {
+    match value {
+        Some(value) => Ok(Some(serde_json::to_string(value)?)),
+        None => Ok(None),
+    }
+}
+
+fn serialize_json_value<T: serde::Serialize>(value: &Option<T>) -> Result<Option<String>> {
     match value {
         Some(value) => Ok(Some(serde_json::to_string(value)?)),
         None => Ok(None),

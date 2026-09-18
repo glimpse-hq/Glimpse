@@ -573,29 +573,7 @@ impl RecorderCore {
             return Err(anyhow!("Recording is already in progress"));
         }
 
-        let host = cpal::default_host();
-        let device = if let Some(selected) = device_id {
-            selected
-                .parse::<cpal::DeviceId>()
-                .ok()
-                .and_then(|parsed| host.device_by_id(&parsed))
-                .or_else(|| {
-                    host.input_devices().ok()?.find(|device| {
-                        device
-                            .id()
-                            .map(|id| id.to_string() == selected)
-                            .unwrap_or(false)
-                            || device
-                                .description()
-                                .map(|desc| desc.name() == selected.as_str())
-                                .unwrap_or(false)
-                    })
-                })
-                .or_else(|| host.default_input_device())
-                .ok_or(NoInputDevice)?
-        } else {
-            host.default_input_device().ok_or(NoInputDevice)?
-        };
+        let device = crate::audio::find_input_device(device_id.as_deref()).ok_or(NoInputDevice)?;
         let device_name = device
             .description()
             .map(|desc| desc.name().to_string())

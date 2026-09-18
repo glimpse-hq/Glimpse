@@ -979,6 +979,24 @@ impl StorageManager {
             "detect_speakers",
             "ALTER TABLE library_items ADD COLUMN detect_speakers INTEGER NOT NULL DEFAULT 0",
         )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "secondary_audio_path",
+            "ALTER TABLE library_items ADD COLUMN secondary_audio_path TEXT",
+        )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "sources",
+            "ALTER TABLE library_items ADD COLUMN sources TEXT",
+        )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "bookmarks",
+            "ALTER TABLE library_items ADD COLUMN bookmarks TEXT",
+        )?;
 
         let stats_seeded: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM lifetime_stats WHERE id = 1)",

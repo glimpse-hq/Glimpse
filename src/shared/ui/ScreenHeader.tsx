@@ -9,6 +9,9 @@ interface ScreenHeaderProps {
   className?: string;
 }
 
+// One block on every screen: marker, title over a one-line description, and
+// the screen's tools on the right (search, icon menus, one primary action
+// last, all h-8). Tools share this row; screens do not add a toolbar row.
 export function ScreenHeader({
   icon,
   title,
@@ -18,28 +21,28 @@ export function ScreenHeader({
   className = "",
 }: ScreenHeaderProps) {
   return (
-    <header className={className}>
-      <div className="flex min-w-0 items-start gap-3.5">
-        <span className="flex shrink-0 items-start pt-1.5">{icon}</span>
+    <header className={`mt-2 mb-5 shrink-0 md:-mt-6 ${className}`}>
+      <div className="flex min-w-0 items-center gap-3.5">
+        <span className="flex shrink-0 self-start pt-[9px]">{icon}</span>
         <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <h2 className="ui-text-screen-title ui-color-primary tracking-tight text-balance">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="min-w-0 truncate ui-text-screen-title ui-color-primary tracking-tight">
               {title}
             </h2>
             {titleAdornment}
           </div>
           {description ? (
-            <p className="mt-1 ui-text-body-sm ui-color-secondary text-pretty">
+            <p className="truncate ui-text-body-sm ui-color-muted">
               {description}
             </p>
           ) : null}
         </div>
         {trailing ? (
-          <div className="shrink-0 self-center">{trailing}</div>
+          <div className="flex shrink-0 items-center gap-2">{trailing}</div>
         ) : null}
       </div>
       <div
-        className="mt-4 h-px w-full"
+        className="mt-3 h-px w-full"
         style={{
           background:
             "linear-gradient(to right, transparent, var(--border-subtle) 8%, var(--border-subtle) 92%, transparent)",

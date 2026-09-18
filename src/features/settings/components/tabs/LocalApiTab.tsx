@@ -270,7 +270,7 @@ const LocalApiTab = ({
           </button>
         ) : (
           <button
-            className="ml-6 min-w-[92px] shrink-0 whitespace-nowrap px-5 py-1.5 rounded-md bg-content-primary hover:bg-content-secondary text-surface-secondary ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,0.1)] active:translate-y-[1px] active:shadow-none"
+            className="ui-button-primary ml-6 min-w-[92px] shrink-0 whitespace-nowrap px-5 py-1.5 rounded-md ui-text-button-sm"
             onClick={onStart}
             disabled={busy || lanRequiresApiKey}
           >

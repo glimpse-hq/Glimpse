@@ -27,6 +27,7 @@ mod pill;
 mod platform;
 mod recent_transcriptions;
 mod recorder;
+mod recording;
 mod settings;
 mod speech;
 mod storage;
@@ -500,6 +501,7 @@ pub fn run() {
             analytics::set_crash_phase("services");
             integrations::start_control_server(handle.clone());
             library::commands::recover_interrupted_library_items(handle);
+            recording::recover_interrupted_sessions(handle);
             register_deep_link_handlers(app);
 
             #[cfg(target_os = "macos")]
@@ -653,6 +655,19 @@ pub fn run() {
             library::commands::export_library_item_to_path,
             library::commands::get_library_tags,
             library::commands::probe_library_import_files,
+            recording::get_recording_capabilities,
+            recording::list_audio_apps,
+            recording::get_recording_session_state,
+            recording::get_last_recording_sources,
+            recording::start_recording_session,
+            recording::pause_recording_session,
+            recording::resume_recording_session,
+            recording::add_recording_bookmark,
+            recording::finish_recording_session,
+            recording::update_recording_bookmark,
+            recording::remove_recording_bookmark,
+            recording::discard_recording_session,
+            recording::open_system_audio_settings,
             model_manager::list_models,
             model_manager::check_model_status,
             model_manager::download_model,
@@ -846,6 +861,7 @@ pub struct AppState {
     should_start_in_background: bool,
     /// Cached so analytics can tag events without touching the settings DB.
     license_snapshot: parking_lot::Mutex<Option<LicenseSnapshot>>,
+    recording: recording::RecordingManager,
 }
 
 #[derive(Clone)]
@@ -923,7 +939,12 @@ impl AppState {
             streaming_session: parking_lot::Mutex::new(None),
             license_snapshot: parking_lot::Mutex::new(None),
             should_start_in_background,
+            recording: recording::RecordingManager::new(),
         }
+    }
+
+    pub(crate) fn recording(&self) -> &recording::RecordingManager {
+        &self.recording
     }
 
     pub fn should_open_settings_on_startup(&self) -> bool {

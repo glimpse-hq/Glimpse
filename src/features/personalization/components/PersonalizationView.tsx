@@ -410,7 +410,6 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   return (
     <div className="flex h-full min-h-0 w-full max-w-7xl flex-col text-left mx-auto px-0">
       <ScreenHeader
-        className="mb-6 mt-2 md:-mt-6"
         icon={
           <DotMatrix
             rows={2}
@@ -438,7 +437,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
               id: "personalization.new_mode",
               message: "New mode",
             })}
-            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md bg-content-primary px-3.5 py-1.5 ui-text-button-sm font-semibold text-surface-secondary transition-all hover:bg-content-secondary shadow-[0_3px_0_-1px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,0.1)] active:translate-y-[1px] active:shadow-none"
+            className="ui-button-primary inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 ui-text-body-sm"
           >
             <Plus size={13} aria-hidden="true" />
             {t({

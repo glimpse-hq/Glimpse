@@ -140,6 +140,7 @@ fn open(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
         ("dictionary", _) => Some(SettingsPage::Dictionary),
         ("personalization", _) => Some(SettingsPage::Personalization),
         ("library", _) => Some(SettingsPage::Library),
+        ("record", _) => Some(SettingsPage::Record),
         ("models", _) | ("settings", Some("models")) => Some(SettingsPage::Models),
         ("settings", Some("about")) => Some(SettingsPage::About),
         ("settings", Some("account")) => Some(SettingsPage::Account),

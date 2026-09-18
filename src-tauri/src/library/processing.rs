@@ -23,7 +23,7 @@ use crate::{AppRuntime, AppState, model_manager, storage::StorageManager};
 use super::types::{
     EVENT_LIBRARY_IMPORT_PROGRESS, ExportFormat, LibraryImportOptions,
     LibraryImportProgressPayload, LibraryItem, LibraryItemPatch, LibraryItemStatus,
-    SUPPORTED_AUDIO_FORMATS, SUPPORTED_VIDEO_FORMATS, Speaker, TARGET_SAMPLE_RATE,
+    RecordingOutput, SUPPORTED_AUDIO_FORMATS, SUPPORTED_VIDEO_FORMATS, Speaker, TARGET_SAMPLE_RATE,
     TranscriptSegment, cancelled_error, is_cancelled_error,
 };
 
@@ -94,10 +94,107 @@ pub(crate) fn create_item_from_path(
         detect_speakers,
         kind: crate::library::default_item_kind(),
         speakers: None,
+        secondary_audio_path: None,
+        sources: None,
+        bookmarks: None,
     };
 
     storage.insert_library_item(item.clone())?;
     Ok(item)
+}
+
+/// Moves a finished recording's tracks into the library and inserts the item.
+/// The microphone track is primary; system audio becomes the second track
+/// when both were captured, so the two sides get their own speaker.
+pub(crate) fn create_recording_item(
+    app: &AppHandle<AppRuntime>,
+    storage: Arc<StorageManager>,
+    model_key: &str,
+    output: RecordingOutput,
+) -> Result<LibraryItem> {
+    let id = Uuid::new_v4().to_string();
+    let item_dir = library_root(app)?.join(build_folder_name(&output.name, &id));
+    fs::create_dir_all(&item_dir)
+        .with_context(|| format!("Failed to create library folder at {}", item_dir.display()))?;
+
+    let (primary, secondary) = match (output.microphone_path, output.system_path) {
+        (Some(mic), system) => (mic, system),
+        (None, Some(system)) => (system, None),
+        (None, None) => return Err(anyhow!("Recording has no audio tracks")),
+    };
+    let audio_path = item_dir.join(format!("{id}.wav"));
+    move_file(&primary, &audio_path)?;
+    let secondary_audio_path = match secondary {
+        Some(source) => {
+            let target = item_dir.join(format!("{id}-system.wav"));
+            move_file(&source, &target)?;
+            Some(target)
+        }
+        None => None,
+    };
+    let file_size_bytes = [Some(&audio_path), secondary_audio_path.as_ref()]
+        .into_iter()
+        .flatten()
+        .filter_map(|path| fs::metadata(path).ok())
+        .map(|meta| meta.len())
+        .sum();
+
+    let remote_selection = crate::remote_speech::is_remote_model(model_key);
+    let show_timestamps = remote_selection || model_supports_timestamps(model_key);
+    let speakers = secondary_audio_path.as_ref().map(|_| {
+        vec![
+            Speaker {
+                id: "you".to_string(),
+                name: "You".to_string(),
+                color: Some("#7aa2f7".to_string()),
+            },
+            Speaker {
+                id: "others".to_string(),
+                name: "Others".to_string(),
+                color: Some("#9ece6a".to_string()),
+            },
+        ]
+    });
+
+    let item = LibraryItem {
+        id,
+        name: output.name,
+        audio_path: audio_path.display().to_string(),
+        source_path: String::new(),
+        store_original: false,
+        status: LibraryItemStatus::Pending,
+        transcript: None,
+        segments: None,
+        words: None,
+        duration_seconds: output.duration_seconds,
+        file_size_bytes,
+        original_format: "wav".to_string(),
+        created_at: output.started_at.with_timezone(&Utc).to_rfc3339(),
+        transcribed_at: None,
+        tags: Vec::new(),
+        llm_cleanup_enabled: false,
+        speech_model: model_key.to_string(),
+        show_timestamps,
+        detect_speakers: false,
+        kind: "recording".to_string(),
+        speakers,
+        secondary_audio_path: secondary_audio_path.map(|path| path.display().to_string()),
+        sources: Some(output.sources),
+        bookmarks: Some(output.bookmarks),
+    };
+
+    storage.insert_library_item(item.clone())?;
+    Ok(item)
+}
+
+fn move_file(from: &Path, to: &Path) -> Result<()> {
+    if fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    fs::copy(from, to)
+        .with_context(|| format!("Failed to move {} to {}", from.display(), to.display()))?;
+    let _ = fs::remove_file(from);
+    Ok(())
 }
 
 pub(crate) fn convert_library_item(

@@ -74,9 +74,18 @@
       "minimumSystemVersion": "14.0",
       "entitlements": "Entitlements.plist",
       "dmg": {
+        "background": "macos/background.png",
         "windowSize": {
-          "width": 720,
-          "height": 450
+          "width": 642,
+          "height": 406
+        },
+        "appPosition": {
+          "x": 142,
+          "y": 93
+        },
+        "applicationFolderPosition": {
+          "x": 427,
+          "y": 210
         }
       }
     }

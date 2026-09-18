@@ -65,6 +65,35 @@ pub(crate) fn default_item_kind() -> String {
     "import".to_string()
 }
 
+/// Which inputs a recording captured. `system_audio` lists app names, or is
+/// empty when the whole system was captured.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AudioSources {
+    #[serde(default)]
+    pub microphone: Option<String>,
+    #[serde(default)]
+    pub system_audio: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bookmark {
+    pub id: String,
+    pub at_ms: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+}
+
+/// A finished recording session ready to become a Library item.
+pub(crate) struct RecordingOutput {
+    pub name: String,
+    pub started_at: chrono::DateTime<chrono::Local>,
+    pub duration_seconds: f32,
+    pub microphone_path: Option<std::path::PathBuf>,
+    pub system_path: Option<std::path::PathBuf>,
+    pub sources: AudioSources,
+    pub bookmarks: Vec<Bookmark>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum LibraryItemStatus {
@@ -138,6 +167,13 @@ pub struct LibraryItem {
     pub kind: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub speakers: Option<Vec<Speaker>>,
+    /// Second track of a recording (system audio next to the microphone).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub secondary_audio_path: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sources: Option<AudioSources>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bookmarks: Option<Vec<Bookmark>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -170,6 +206,7 @@ pub struct LibraryItemPatch {
     pub duration_seconds: Option<f32>,
     pub kind: Option<String>,
     pub speakers: Option<Option<Vec<Speaker>>>,
+    pub bookmarks: Option<Vec<Bookmark>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
