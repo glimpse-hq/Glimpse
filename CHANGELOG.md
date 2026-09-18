@@ -5,6 +5,7 @@
 - Cleaner, faster onboarding.
 - Parakeet now uses the faster GGUF version by default.
 - Neural Engine acceleration is on by default on Apple Silicon.
+- Going from onboarding to in app feels significantly more fluid.
 
 1.1.6
 

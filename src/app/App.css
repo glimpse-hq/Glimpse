@@ -1420,6 +1420,35 @@ body {
   }
 }
 
+@keyframes home-enter-sidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes home-enter-main {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+}
+
+.home-enter [data-app-sidebar] {
+  animation: home-enter-sidebar 480ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.home-enter main {
+  animation: home-enter-main 600ms cubic-bezier(0.16, 1, 0.3, 1) 120ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-enter [data-app-sidebar],
+  .home-enter main {
+    animation: none;
+  }
+}
+
 @keyframes shake {
   0%,
   100% {
