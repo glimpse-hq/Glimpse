@@ -1,8 +1,9 @@
-//! System audio via WASAPI loopback. Everything the default output device
-//! plays, or chosen apps through process loopback where Windows supports it.
+//! System audio via WASAPI loopback. Where Windows supports process loopback,
+//! it records chosen apps or everything except Glimpse, otherwise everything the
+//! default output device plays.
 
 use std::{
-    collections::VecDeque,
+    collections::{HashSet, VecDeque},
     ffi::c_void,
     mem::ManuallyDrop,
     path::{Path, PathBuf},
@@ -16,7 +17,7 @@ use std::{
 
 use anyhow::{Result, anyhow};
 use crossbeam_channel::{Sender, bounded};
-use windows::Win32::Foundation::{CloseHandle, HANDLE};
+use windows::Win32::Foundation::{CloseHandle, HANDLE, HWND, LPARAM};
 use windows::Win32::Media::Audio::{
     AUDCLNT_BUFFERFLAGS_SILENT, AUDCLNT_SHAREMODE_SHARED, AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM,
     AUDCLNT_STREAMFLAGS_LOOPBACK, AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY,
@@ -26,6 +27,7 @@ use windows::Win32::Media::Audio::{
     IActivateAudioInterfaceAsyncOperation, IActivateAudioInterfaceCompletionHandler,
     IActivateAudioInterfaceCompletionHandler_Impl, IAudioCaptureClient, IAudioClient,
     IAudioSessionControl2, IAudioSessionManager2, IMMDeviceEnumerator, MMDeviceEnumerator,
+    PROCESS_LOOPBACK_MODE, PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
     PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE, VIRTUAL_AUDIO_DEVICE_PROCESS_LOOPBACK,
     WAVEFORMATEX, WAVEFORMATEXTENSIBLE, eConsole, eRender,
 };
@@ -44,7 +46,11 @@ use windows::Win32::System::Threading::{
     OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW,
 };
 use windows::Win32::System::Variant::VT_BLOB;
-use windows::core::{HRESULT, IUnknown, Interface, PCWSTR, PWSTR, Ref, implement};
+use windows::Win32::UI::WindowsAndMessaging::{
+    EnumWindows, GW_OWNER, GWL_EXSTYLE, GetWindow, GetWindowLongW, GetWindowThreadProcessId,
+    IsWindowVisible, WS_EX_TOOLWINDOW,
+};
+use windows::core::{BOOL, HRESULT, IUnknown, Interface, PCWSTR, PWSTR, Ref, implement};
 
 use super::{AudioApp, SystemAudioScope};
 
@@ -72,7 +78,11 @@ pub(crate) fn app_selection_supported() -> bool {
     *SUPPORTED.get_or_init(|| {
         std::thread::spawn(|| {
             let _com = ComGuard::init().ok()?;
-            let client = activate_process_loopback(std::process::id()).ok()?;
+            let client = activate_process_loopback(
+                std::process::id(),
+                PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE,
+            )
+            .ok()?;
             initialize_app_client(&client).ok()
         })
         .join()
@@ -89,12 +99,19 @@ pub(crate) fn permission_settings_url() -> &'static str {
 pub(crate) fn list_apps() -> Result<Vec<AudioApp>> {
     let _com = ComGuard::init()?;
     let own_pid = std::process::id();
+    let processes = running_processes()?;
+    let windowed = windowed_pids()?;
     let mut apps: Vec<AudioApp> = Vec::new();
     for pid in audio_session_pids()? {
-        if pid == own_pid {
+        // Audio often plays from a helper process, so the app is the nearest
+        // process up the tree that shows a window. Background services have none.
+        let Some(app_pid) = windowed_ancestor(pid, &processes, &windowed) else {
+            continue;
+        };
+        if app_pid == own_pid {
             continue;
         }
-        let Some(path) = process_path(pid) else {
+        let Some(path) = process_path(app_pid) else {
             continue;
         };
         let Some(id) = exe_key(&path) else {
@@ -211,8 +228,8 @@ struct Stream {
     pending: VecDeque<f32>,
 }
 
-/// Captures the whole default output device, or each app root's process tree
-/// on its own client, mixed into one track.
+/// Captures everything, or each app root's process tree on its own client,
+/// mixed into one track.
 fn run_loopback(
     targets: Option<Vec<u32>>,
     stop: Arc<AtomicBool>,
@@ -221,10 +238,17 @@ fn run_loopback(
 ) -> Result<()> {
     let _com = ComGuard::init()?;
     let mut streams = match targets {
+        // Leaves out Glimpse's own sounds, as on macOS.
+        None if app_selection_supported() => vec![open_process_loopback(
+            std::process::id(),
+            PROCESS_LOOPBACK_MODE_EXCLUDE_TARGET_PROCESS_TREE,
+        )?],
         None => vec![open_device_loopback()?],
         Some(pids) => pids
             .into_iter()
-            .map(open_app_loopback)
+            .map(|pid| {
+                open_process_loopback(pid, PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE)
+            })
             .collect::<Result<Vec<_>>>()?,
     };
     for stream in &streams {
@@ -342,8 +366,8 @@ fn open_device_loopback() -> Result<Stream> {
     }
 }
 
-fn open_app_loopback(pid: u32) -> Result<Stream> {
-    let client = activate_process_loopback(pid)?;
+fn open_process_loopback(pid: u32, mode: PROCESS_LOOPBACK_MODE) -> Result<Stream> {
+    let client = activate_process_loopback(pid, mode)?;
     let format = initialize_app_client(&client)?;
     let capture: IAudioCaptureClient = unsafe { client.GetService() }
         .map_err(|err| anyhow!("Capture client unavailable: {err}"))?;
@@ -368,14 +392,15 @@ impl IActivateAudioInterfaceCompletionHandler_Impl for ActivationHandler_Impl {
     }
 }
 
-/// An audio client that hears `pid` and every process it started.
-fn activate_process_loopback(pid: u32) -> Result<IAudioClient> {
+/// An audio client that hears `pid` and every process it started, or everything
+/// but them.
+fn activate_process_loopback(pid: u32, mode: PROCESS_LOOPBACK_MODE) -> Result<IAudioClient> {
     let mut params = AUDIOCLIENT_ACTIVATION_PARAMS {
         ActivationType: AUDIOCLIENT_ACTIVATION_TYPE_PROCESS_LOOPBACK,
         Anonymous: AUDIOCLIENT_ACTIVATION_PARAMS_0 {
             ProcessLoopbackParams: AUDIOCLIENT_PROCESS_LOOPBACK_PARAMS {
                 TargetProcessId: pid,
-                ProcessLoopbackMode: PROCESS_LOOPBACK_MODE_INCLUDE_TARGET_PROCESS_TREE,
+                ProcessLoopbackMode: mode,
             },
         },
     };
@@ -488,6 +513,51 @@ fn audio_session_pids() -> Result<Vec<u32>> {
         }
     }
     Ok(pids)
+}
+
+/// Processes with a visible top-level window, what Task Manager counts as apps.
+fn windowed_pids() -> Result<HashSet<u32>> {
+    unsafe extern "system" fn collect(window: HWND, pids: LPARAM) -> BOOL {
+        unsafe {
+            let unowned = GetWindow(window, GW_OWNER).is_err();
+            let tool = GetWindowLongW(window, GWL_EXSTYLE) as u32 & WS_EX_TOOLWINDOW.0 != 0;
+            if IsWindowVisible(window).as_bool() && unowned && !tool {
+                let mut pid = 0u32;
+                GetWindowThreadProcessId(window, Some(&mut pid));
+                (*(pids.0 as *mut HashSet<u32>)).insert(pid);
+            }
+        }
+        true.into()
+    }
+    let mut pids: HashSet<u32> = HashSet::new();
+    unsafe {
+        EnumWindows(
+            Some(collect),
+            LPARAM(&mut pids as *mut HashSet<u32> as isize),
+        )
+    }
+    .map_err(|err| anyhow!("Failed to list windows: {err}"))?;
+    Ok(pids)
+}
+
+fn windowed_ancestor(
+    pid: u32,
+    processes: &[(u32, u32, String)],
+    windowed: &HashSet<u32>,
+) -> Option<u32> {
+    let mut current = pid;
+    // Bounded, since a reused parent pid can form a loop.
+    for _ in 0..16 {
+        if windowed.contains(&current) {
+            return Some(current);
+        }
+        current = processes
+            .iter()
+            .find(|(candidate, _, _)| *candidate == current)
+            .map(|(_, parent, _)| *parent)
+            .filter(|parent| *parent != 0 && *parent != current)?;
+    }
+    None
 }
 
 /// The topmost running process of each selected app. Capturing its tree

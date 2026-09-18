@@ -13,7 +13,7 @@ use std::{
 
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Local, TimeZone};
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::{FromSample, Sample, SampleFormat, SizedSample, Stream};
 use crossbeam_channel::{Sender, bounded, unbounded};
 use parking_lot::Mutex;
@@ -406,6 +406,8 @@ impl RecorderManager {
     /// `None` when nothing is recording or the device has no stable id.
     #[cfg(target_os = "macos")]
     pub fn active_device_present(&self) -> Option<bool> {
+        use cpal::traits::HostTrait;
+
         let id = self.active_device.lock().clone()?;
         Some(cpal::default_host().device_by_id(&id).is_some())
     }

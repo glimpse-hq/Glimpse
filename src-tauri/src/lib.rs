@@ -124,6 +124,7 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
+#[cfg(target_os = "macos")]
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/glimpse-hq/Glimpse/issues/new/choose";
 #[cfg(target_os = "windows")]
 pub(crate) const FFMPEG_HELP_URL: &str =
