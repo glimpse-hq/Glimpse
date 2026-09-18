@@ -82,7 +82,6 @@ const MemberCardInner = ({
   );
 
   const personal = tierInfo("personal");
-  const commercial = tierInfo("commercial");
   const previewInfo = !active && previewTier ? tierInfo(previewTier) : null;
 
   const displayKey = licenseState?.displayKey ?? null;
@@ -481,24 +480,6 @@ const MemberCardInner = ({
                     disabled={tierDisabledForPicker}
                     onHover={() => setPreviewTier("personal")}
                     onClick={() => handleTierClick("personal")}
-                  />
-                  <div
-                    aria-hidden="true"
-                    className="mx-1.5 my-1.5 w-px shrink-0"
-                    style={{
-                      backgroundImage: `repeating-linear-gradient(to bottom, ${palette.border} 0, ${palette.border} 2px, transparent 2px, transparent 5px)`,
-                    }}
-                  />
-                  <TierOption
-                    label={commercial.label}
-                    price={commercial.price}
-                    inlinePrice={commercial.pickerPrice}
-                    accent={TIER_COLORS.commercial}
-                    active={previewTier === "commercial"}
-                    opening={openingTarget === "commercial"}
-                    disabled={tierDisabledForPicker}
-                    onHover={() => setPreviewTier("commercial")}
-                    onClick={() => handleTierClick("commercial")}
                   />
                 </div>
               ) : showCoverage ? (

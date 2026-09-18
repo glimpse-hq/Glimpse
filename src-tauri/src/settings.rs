@@ -630,7 +630,7 @@ pub fn default_local_model() -> String {
 
     #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
     {
-        "parakeet_tdt_int8".to_string()
+        "parakeet_tdt_v3_gguf".to_string()
     }
 }
 

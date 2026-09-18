@@ -30,8 +30,8 @@ import { WelcomeStep } from "./steps/WelcomeStep";
 import { ModelStep } from "./steps/ModelStep";
 import { PermissionsStep } from "./steps/PermissionsStep";
 import { ReadyStep } from "./steps/ReadyStep";
+import { LicenseStep } from "./steps/LicenseStep";
 import FirstDictationGuide from "./FirstDictationGuide";
-import { LicenseModal } from "./steps/LicenseModal";
 import { StepIndicator } from "./steps/shared";
 import { useActivateLicense, useLicenseState } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
@@ -41,7 +41,7 @@ import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
 
 const ONBOARDING_MODEL_SLOTS = [
   ["whisper_large_v3_turbo_q8"],
-  ["parakeet_tdt_int8", "parakeet_tdt_v3_gguf"],
+  ["parakeet_tdt_v3_gguf"],
 ] as const;
 
 const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
@@ -161,10 +161,31 @@ interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
+// Direction 0 is the zoom out of the welcome intro; 1 and -1 slide.
 const stepTransitionVariants = {
-  enter: (direction: 1 | -1) => ({ opacity: 0, x: direction > 0 ? 28 : -28 }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: 1 | -1) => ({ opacity: 0, x: direction > 0 ? -28 : 28 }),
+  enter: (direction: number) =>
+    direction === 0
+      ? { opacity: 0, scale: 0.94, x: 0, filter: "blur(8px)" }
+      : {
+          opacity: 0,
+          scale: 1,
+          x: direction > 0 ? 28 : -28,
+          filter: "blur(0px)",
+        },
+  center: (direction: number) => ({
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition:
+      direction === 0
+        ? { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }
+        : { duration: 0.22, ease: "easeOut" as const },
+  }),
+  exit: (direction: number) =>
+    direction === 0
+      ? { opacity: 0, transition: { duration: 0 } }
+      : { opacity: 0, x: direction > 0 ? -28 : 28 },
 };
 
 export default function OnboardingScreen({
@@ -178,7 +199,6 @@ export default function OnboardingScreen({
   const [openingLicenseTarget, setOpeningLicenseTarget] =
     useState<PurchaseTier | null>(null);
   const [licenseOpenError, setLicenseOpenError] = useState<string | null>(null);
-  const [showLicenseModal, setShowLicenseModal] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const ctx = state.context;
   const queryClient = useQueryClient();
@@ -464,6 +484,9 @@ export default function OnboardingScreen({
   const openLicenseCheckout = useCallback(async (tier: PurchaseTier) => {
     setLicenseOpenError(null);
     setOpeningLicenseTarget(tier);
+    void invoke("track_paywall_clicked", { source: "onboarding", tier }).catch(
+      () => {},
+    );
     try {
       const checkoutUrl = checkoutUrlFor(tier, "onboarding");
       if (!checkoutUrl) {
@@ -647,16 +670,24 @@ export default function OnboardingScreen({
     ],
   );
 
+  const zoomingFromWelcome = useRef(false);
+
   const goNext = useCallback(() => {
+    zoomingFromWelcome.current = state.matches("welcome");
     send({ type: "NEXT" });
-  }, [send]);
+  }, [send, state]);
 
   const goBack = useCallback(() => {
+    zoomingFromWelcome.current = false;
     send({ type: "BACK" });
   }, [send]);
 
+  const stepDirection = zoomingFromWelcome.current
+    ? 0
+    : ctx.transitionDirection;
+
   const stepMotionProps = {
-    custom: ctx.transitionDirection,
+    custom: stepDirection,
     variants: stepTransitionVariants,
     animate: "center" as const,
     exit: "exit" as const,
@@ -698,8 +729,6 @@ export default function OnboardingScreen({
               }
             }
             selectedModelReady={selectedModelReady}
-            showLocalConfirm={ctx.showLocalConfirm}
-            onShowConfirm={(show) => send({ type: "SHOW_LOCAL_CONFIRM", show })}
             onDownload={handleDownload}
             onDelete={handleDelete}
             onCancelDownload={handleCancelDownload}
@@ -746,6 +775,27 @@ export default function OnboardingScreen({
             onNext={goNext}
           />
         );
+      case "license":
+        return (
+          <LicenseStep
+            key="license"
+            stepMotionProps={stepMotionProps}
+            licenseState={licenseQuery.data ?? null}
+            openingTarget={openingLicenseTarget}
+            openError={licenseOpenError}
+            activating={activateLicense.isPending}
+            activationError={
+              activateLicense.error instanceof Error
+                ? activateLicense.error.message
+                : activateLicense.error
+                  ? String(activateLicense.error)
+                  : null
+            }
+            onOpenCheckout={openLicenseCheckout}
+            onActivate={(key) => activateLicense.mutate(key)}
+            onNext={goNext}
+          />
+        );
       case "done":
         return (
           <ReadyStep
@@ -763,12 +813,6 @@ export default function OnboardingScreen({
             onSetAutoLaunch={(value) =>
               send({ type: "SET_AUTO_LAUNCH", value })
             }
-            licenseActive={licenseQuery.data?.status === "active"}
-            onOpenLicense={() => {
-              activateLicense.reset();
-              setLicenseOpenError(null);
-              setShowLicenseModal(true);
-            }}
             isCompleting={ctx.isCompleting}
             completionError={ctx.completionError}
             onComplete={handleStartPractice}
@@ -813,24 +857,27 @@ export default function OnboardingScreen({
           </div>
         </div>
 
-        <div className="flex-1 flex flex-col items-center overflow-y-auto px-10 pb-6">
-          <AnimatePresence mode="wait" custom={ctx.transitionDirection}>
+        <div
+          className={`flex-1 flex flex-col items-center px-10 pb-6 ${currentStep === "welcome" ? "overflow-hidden" : "overflow-y-auto"}`}
+        >
+          <AnimatePresence mode="wait" custom={stepDirection}>
             {renderStep()}
           </AnimatePresence>
         </div>
 
-        {currentStep !== "welcome" && (
-          <button
-            onClick={goBack}
-            className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-primary transition-colors"
-          >
-            <ChevronLeft size={14} />
-            {t({
-              id: "onboarding.back",
-              message: "Back",
-            })}
-          </button>
-        )}
+        {currentStep !== "welcome" &&
+          steps.indexOf(currentStep as (typeof steps)[number]) !== 0 && (
+            <button
+              onClick={goBack}
+              className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-primary transition-colors"
+            >
+              <ChevronLeft size={14} />
+              {t({
+                id: "onboarding.back",
+                message: "Back",
+              })}
+            </button>
+          )}
 
         <FAQModal
           isOpen={ctx.showFAQModal}
@@ -856,28 +903,6 @@ export default function OnboardingScreen({
           onDelete={handleDelete}
           onCancel={handleCancelDownload}
         />
-
-        <AnimatePresence>
-          {showLicenseModal && (
-            <LicenseModal
-              licenseState={licenseQuery.data ?? null}
-              licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
-              activating={activateLicense.isPending}
-              openingTarget={openingLicenseTarget}
-              openError={licenseOpenError}
-              activationError={
-                activateLicense.error instanceof Error
-                  ? activateLicense.error.message
-                  : activateLicense.error
-                    ? String(activateLicense.error)
-                    : null
-              }
-              onOpenCheckout={openLicenseCheckout}
-              onActivateLicense={(key) => activateLicense.mutate(key)}
-              onClose={() => setShowLicenseModal(false)}
-            />
-          )}
-        </AnimatePresence>
       </div>
     </MotionConfig>
   );

@@ -414,8 +414,8 @@ pub fn track_feature_used_command(app: tauri::AppHandle<AppRuntime>, feature: St
 #[tauri::command]
 pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: String) {
     let step = match step.as_str() {
-        "welcome" | "import" | "model" | "model_downloading" | "permissions" | "done"
-        | "practice" => step.as_str(),
+        "welcome" | "import" | "model" | "model_downloading" | "permissions" | "license"
+        | "done" | "practice" => step.as_str(),
         _ => "unknown",
     };
     capture_event(&app, "onboarding_step_viewed", json!({ "step": step }));
@@ -550,10 +550,23 @@ pub fn track_paywall_shown(app: tauri::AppHandle<AppRuntime>, source: String) {
     capture_event(&app, "paywall_shown", json!({ "source": source }));
 }
 
-/// Records that a locked feature was clicked, and where.
+/// Records that a locked feature or buy button was clicked, where, and for which tier.
 #[tauri::command]
-pub fn track_paywall_clicked(app: tauri::AppHandle<AppRuntime>, source: String) {
-    capture_event(&app, "paywall_clicked", json!({ "source": source }));
+pub fn track_paywall_clicked(
+    app: tauri::AppHandle<AppRuntime>,
+    source: String,
+    tier: Option<String>,
+) {
+    let tier = match tier.as_deref() {
+        Some("personal") => Some("personal"),
+        Some("commercial") => Some("commercial"),
+        _ => None,
+    };
+    capture_event(
+        &app,
+        "paywall_clicked",
+        json!({ "source": source, "tier": tier }),
+    );
 }
 
 /// Records selected product-setting toggles after settings persist.

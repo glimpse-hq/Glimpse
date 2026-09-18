@@ -337,7 +337,7 @@ mod parakeet_ane_tests {
             assert!(!result.transcript.trim().is_empty());
             assert_eq!(
                 result.speech_model.as_deref(),
-                Some("Parakeet TDT 0.6B V3 (GGUF)")
+                Some("Parakeet TDT V3")
             );
             let words = result.words.as_ref().expect("word timestamps");
             assert!(!words.is_empty());

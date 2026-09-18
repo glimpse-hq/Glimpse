@@ -319,7 +319,7 @@ pub async fn download_model(
 ) -> Result<ModelStatus, String> {
     let manager = model_manager(&app)
         .map_err(|err| track_download_error(&app, &model, "resolve", err.to_string()))?;
-    let ane = ane.unwrap_or(false);
+    let ane = ane.unwrap_or_else(|| super::catalog::ane_encoder_dir(&model).is_some());
     ensure_model_downloadable(&model, ane, &manager)
         .map_err(|err| track_download_error(&app, &model, "resolve", err))?;
     let spec = spec_for(&model, ane)
