@@ -11,7 +11,7 @@ Glimpse can now record your meetings, calls, lectures and anything else playing 
 - **Nothing lost.** If Glimpse quits in the middle of a recording, it's saved to your Library the next time you open the app.
 - **Both sides in the Library.** Play the recording back with both tracks together, or mute either one.
 
-Recording your computer's audio needs macOS 14.2 or later. On Windows, Glimpse records the whole system.
+Recording your computer's audio needs macOS 14.2 or later. Picking apps on Windows needs Windows 10 version 2004 or later.
 
 ### Improvements
 
