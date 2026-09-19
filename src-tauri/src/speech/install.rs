@@ -544,30 +544,34 @@ pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result
     })
 }
 
+/// `preferred` when it's installed, else the first installed local model.
+pub fn installed_local_model<R: Runtime>(
+    app: &AppHandle<R>,
+    preferred: &str,
+) -> Option<ReadyModel> {
+    std::iter::once(preferred)
+        .chain(
+            super::catalog::local_manifests()
+                .iter()
+                .map(|manifest| manifest.id)
+                .filter(|id| *id != preferred),
+        )
+        .find_map(|id| ensure_model_ready(app, id).ok())
+}
+
 pub fn ensure_local_fallback_model<R: Runtime>(
     app: &AppHandle<R>,
     preferred: &str,
 ) -> Result<ReadyModel> {
-    if let Ok(model) = ensure_model_ready(app, preferred) {
-        return Ok(model);
+    let model = installed_local_model(app, preferred)
+        .ok_or_else(|| anyhow!("No local transcription model is installed for fallback"))?;
+    if model.key != preferred {
+        tracing::error!(
+            "[LocalTranscriber] Using installed local model `{}` for remote fallback (preferred `{preferred}` is unavailable)",
+            model.key
+        );
     }
-
-    for manifest in super::catalog::local_manifests() {
-        if manifest.id == preferred {
-            continue;
-        }
-        if let Ok(model) = ensure_model_ready(app, manifest.id) {
-            tracing::error!(
-                "[LocalTranscriber] Using installed local model `{}` for remote fallback (preferred `{preferred}` is unavailable)",
-                manifest.id
-            );
-            return Ok(model);
-        }
-    }
-
-    Err(anyhow::anyhow!(
-        "No local transcription model is installed for fallback"
-    ))
+    Ok(model)
 }
 
 #[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
