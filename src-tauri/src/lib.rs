@@ -1016,6 +1016,7 @@ impl AppState {
             && self.library_active.lock().is_none()
             && self.library_queue.lock().is_empty()
             && self.retry_tokens.lock().is_empty()
+            && !self.recording.is_active()
     }
 
     pub fn set_auto_update_completed(&self) {
