@@ -196,7 +196,7 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
             .get("model")
             .and_then(Value::as_str)
             .map(str::to_string)
-            .unwrap_or_else(|| settings.local_model.clone()),
+            .unwrap_or_else(|| crate::speech::selected_model(&settings)),
         llm_cleanup_enabled: args
             .get("llm_cleanup")
             .and_then(Value::as_bool)
