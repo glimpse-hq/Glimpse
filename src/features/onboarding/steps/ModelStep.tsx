@@ -1,20 +1,21 @@
 import { useLingui } from "@lingui/react/macro";
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import type { ReactNode } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import ModelPickerModal from "../../../shared/ui/ModelPickerModal";
-import ModelStatCard from "../../settings/components/ModelStatCard";
-import {
-  isBuiltInModel,
-  formatModelSize,
-  modelSizeMb,
-} from "../../../shared/lib/modelStats";
+import { plural } from "@lingui/core/macro";
 import {
   hasModelCapability,
+  MODEL_CAPABILITY_DIARIZATION,
   MODEL_CAPABILITY_DICTIONARY,
+  MODEL_CAPABILITY_STREAMING,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../shared/lib/modelCapabilities";
+import { useState } from "react";
+import { Check } from "@phosphor-icons/react";
+import ModelPickerModal from "../../../shared/ui/ModelPickerModal";
+import {
+  deriveModelStats,
+  formatModelSize,
+  isBuiltInModel,
+  modelSizeMb,
+} from "../../../shared/lib/modelStats";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../../types";
 import {
   OnboardingHeader,
@@ -36,8 +37,6 @@ interface ModelStepProps {
   unavailable: boolean;
   displayState: DownloadEvent;
   selectedModelReady: boolean;
-  showLocalConfirm: boolean;
-  onShowConfirm: (show: boolean) => void;
   onDownload: (key: string, ane?: boolean) => void;
   onDelete: (key: string) => void;
   onCancelDownload: (key: string) => void;
@@ -57,8 +56,6 @@ export function ModelStep({
   unavailable,
   displayState,
   selectedModelReady,
-  showLocalConfirm,
-  onShowConfirm,
   onDownload,
   onDelete,
   onCancelDownload,
@@ -66,7 +63,6 @@ export function ModelStep({
 }: ModelStepProps) {
   const { t } = useLingui();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [confirmDismissed, setConfirmDismissed] = useState(false);
 
   const realStatus = selectedModel
     ? modelStatusByKey[selectedModel.key]
@@ -87,28 +83,30 @@ export function ModelStep({
       ? displayState
       : undefined;
 
-  const capabilityRow = [
-    {
-      key: MODEL_CAPABILITY_DICTIONARY,
-      label: t({
-        id: "onboarding.model.capability.dictionary",
-        message: "Custom words",
-      }),
-    },
-    {
-      key: MODEL_CAPABILITY_TIMESTAMPS,
-      label: t({
-        id: "onboarding.model.capability.timestamps",
-        message: "Timestamps",
-      }),
-    },
-  ];
+  const optionTier = (option: ModelInfo) => {
+    if (isBuiltInModel(option)) {
+      return t({ id: "onboarding.model.tier.built_in", message: "Built in" });
+    }
+    if (option.key.startsWith("whisper_large")) {
+      return t({ id: "onboarding.model.tier.accurate", message: "Accurate" });
+    }
+    if (option.key.startsWith("parakeet")) {
+      return t({ id: "onboarding.model.tier.fast", message: "Fast" });
+    }
+    if (option.key === "whisper_small_q8") {
+      return t({ id: "onboarding.model.tier.small", message: "Small" });
+    }
+    return null;
+  };
 
   const handleContinue = () => {
     if (isLoading) return;
-    if (!selectedModelReady) {
-      onShowConfirm(true);
-      return;
+    if (
+      !selectedModelReady &&
+      selectedModel &&
+      displayState.status !== "downloading"
+    ) {
+      onDownload(selectedModel.key);
     }
     onNext();
   };
@@ -117,6 +115,8 @@ export function ModelStep({
     <OnboardingStep
       stepKey="model"
       motionProps={stepMotionProps}
+      widthClass="max-w-2xl"
+      align="center"
       footer={
         <>
           <button
@@ -148,95 +148,87 @@ export function ModelStep({
         title={t({ id: "onboarding.model.title", message: "Choose a model" })}
       />
 
-      <div className="mb-6 flex items-center justify-center gap-1.5">
-        {options.map((option) => {
-          const selected = selectedModel?.key === option.key;
-          return (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => onUse(option.key)}
-              aria-pressed={selected}
-              className={`flex flex-col items-center gap-0.5 rounded-lg px-5 py-2 transition-colors ${
-                selected
-                  ? "bg-surface-tertiary text-content-primary"
-                  : "text-content-muted hover:text-content-primary"
-              }`}
-            >
-              <span className="ui-text-body-sm-strong">{option.label}</span>
-              <span
-                className={`ui-text-meta ${
-                  selected ? "text-cloud" : "text-content-disabled"
+      <div className="flex w-full items-stretch justify-center">
+        <div className="flex w-[240px] shrink-0 flex-col gap-2 pr-8">
+          {options.map((option) => {
+            const selected = selectedModel?.key === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => onUse(option.key)}
+                aria-pressed={selected}
+                className={`group flex h-[52px] w-full items-center gap-3 rounded-xl border px-3.5 text-left transition-[background-color,border-color,transform] duration-150 active:scale-[0.99] ${
+                  selected
+                    ? "border-cloud bg-cloud-10"
+                    : "border-border-primary hover:border-cloud-50 hover:bg-[var(--surface-interactive)] active:bg-[var(--surface-interactive-pressed)]"
                 }`}
               >
-                {isBuiltInModel(option)
-                  ? t({
-                      id: "onboarding.model.option.no_download",
-                      message: "No download",
-                    })
-                  : formatModelSize(modelSizeMb(option, true))}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {isLoading ? (
-        <div className="w-full overflow-hidden rounded-xl border border-border-secondary bg-surface-surface text-left">
-          <p className="p-4 ui-text-body-sm text-content-muted">
-            {t({
-              id: "onboarding.model.loading",
-              message: "Finding a model for your device",
-            })}
-          </p>
-        </div>
-      ) : !selectedModel ? (
-        <div className="w-full overflow-hidden rounded-xl border border-border-secondary bg-surface-surface text-left">
-          <p className="p-4 ui-text-body-sm text-content-muted">
-            {unavailable
-              ? t({
-                  id: "onboarding.model.unavailable",
-                  message:
-                    "Model list unavailable. You can add one later in Settings.",
-                })
-              : t({
-                  id: "onboarding.model.empty",
-                  message:
-                    "No models found. You can add one later in Settings.",
-                })}
-          </p>
-        </div>
-      ) : (
-        <>
-          <ModelStatCard
-            model={selectedModel}
-            status={status}
-            withAne
-            progress={progress}
-            onDownload={() => onDownload(selectedModel.key)}
-            onDelete={() => onDelete(selectedModel.key)}
-            onCancel={() => onCancelDownload(selectedModel.key)}
-          />
-          <div className="mt-3 flex items-center justify-center gap-4">
-            {capabilityRow.map((capability) => {
-              const supported = hasModelCapability(
-                selectedModel,
-                capability.key,
-              );
-              return (
                 <span
-                  key={capability.key}
-                  className={`ui-text-meta ${
-                    supported ? "text-content-muted" : "text-content-disabled"
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
+                    selected
+                      ? "border-cloud bg-cloud"
+                      : "border-border-secondary group-hover:border-cloud-50"
                   }`}
                 >
-                  {supported ? "✓" : "○"} {capability.label}
+                  {selected ? (
+                    <Check
+                      size={10}
+                      weight="bold"
+                      className="text-surface-secondary"
+                    />
+                  ) : null}
                 </span>
-              );
-            })}
-          </div>
-        </>
-      )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate ui-text-body-lg-strong leading-tight text-content-primary">
+                    {optionTier(option) ?? friendlyModelName(option.label)}
+                  </span>
+                  <span className="block truncate ui-text-meta text-content-muted">
+                    {isBuiltInModel(option)
+                      ? t({
+                          id: "onboarding.model.option.no_download",
+                          message: "No download",
+                        })
+                      : formatModelSize(modelSizeMb(option, true))}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="min-h-[236px] w-[240px] shrink-0 border-l border-border-primary pl-8 pt-1 text-left">
+          {isLoading ? (
+            <p className="ui-text-body-sm text-content-muted">
+              {t({
+                id: "onboarding.model.loading",
+                message: "Finding a model for your device",
+              })}
+            </p>
+          ) : !selectedModel ? (
+            <p className="ui-text-body-sm text-content-muted">
+              {unavailable
+                ? t({
+                    id: "onboarding.model.unavailable",
+                    message:
+                      "Model list unavailable. You can add one later in Settings.",
+                  })
+                : t({
+                    id: "onboarding.model.empty",
+                    message:
+                      "No models found. You can add one later in Settings.",
+                  })}
+            </p>
+          ) : (
+            <ModelDetails
+              model={selectedModel}
+              installed={Boolean(status?.installed)}
+              progress={progress}
+              onCancel={() => onCancelDownload(selectedModel.key)}
+            />
+          )}
+        </div>
+      </div>
 
       <ModelPickerModal
         open={showAdvanced}
@@ -254,101 +246,112 @@ export function ModelStep({
         onDelete={onDelete}
         onCancel={onCancelDownload}
       />
-
-      {createPortal(
-        <AnimatePresence>
-          {showLocalConfirm && !confirmDismissed && (
-            <ConfirmModelDownload
-              onStay={() => onShowConfirm(false)}
-              onDownload={() => {
-                setConfirmDismissed(true);
-                onShowConfirm(false);
-                if (selectedModel) onDownload(selectedModel.key);
-                onNext();
-              }}
-              onContinue={() => {
-                setConfirmDismissed(true);
-                onShowConfirm(false);
-                onNext();
-              }}
-            />
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
     </OnboardingStep>
   );
 }
 
-function ConfirmModelDownload({
-  onStay,
-  onDownload,
-  onContinue,
+function friendlyModelName(label: string): string {
+  return label
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\bTDT\b/g, "")
+    .replace(/\b\d+(\.\d+)?B\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function ModelDetails({
+  model,
+  installed,
+  progress,
+  onCancel,
 }: {
-  onStay: () => void;
-  onDownload: () => void;
-  onContinue: () => void;
-}): ReactNode {
+  model: ModelInfo;
+  installed: boolean;
+  progress: DownloadEvent | undefined;
+  onCancel: () => void;
+}) {
   const { t } = useLingui();
+  const stats = deriveModelStats(model);
+  const builtIn = isBuiltInModel(model);
+  const downloading = progress?.status === "downloading";
+
+  const supports = [
+    stats.englishOnly
+      ? t({ id: "onboarding.model.supports.english", message: "English" })
+      : t({
+          id: "onboarding.model.supports.languages",
+          message: plural(stats.langCount, {
+            one: "# language",
+            other: "# languages",
+          }),
+        }),
+    hasModelCapability(model, MODEL_CAPABILITY_STREAMING) &&
+      t({
+        id: "onboarding.model.supports.live",
+        message: "Live text while you speak",
+      }),
+    hasModelCapability(model, MODEL_CAPABILITY_DICTIONARY) &&
+      t({ id: "onboarding.model.supports.words", message: "Custom words" }),
+    hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS) &&
+      t({ id: "onboarding.model.supports.timestamps", message: "Timestamps" }),
+    hasModelCapability(model, MODEL_CAPABILITY_DIARIZATION) &&
+      t({
+        id: "onboarding.model.supports.speakers",
+        message: "Speaker detection",
+      }),
+  ].filter((item): item is string => Boolean(item));
+
   return (
-    <motion.div
-      key="model-confirm"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.18 } }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-xs"
-      onClick={onStay}
-    >
-      <motion.div
-        initial={{ scale: 0.96, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.96, opacity: 0 }}
-        transition={{ duration: 0.18 }}
-        className="w-full max-w-sm rounded-2xl border border-border-secondary bg-surface-secondary p-6 text-left ui-shadow-modal-deep"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="onboarding-model-confirm-title"
-      >
-        <p
-          id="onboarding-model-confirm-title"
-          className="ui-text-body-lg font-semibold text-content-primary"
-        >
-          {t({
-            id: "onboarding.model.confirm.title",
-            message: "Continue without a model?",
-          })}
-        </p>
-        <p className="mt-1.5 ui-text-label text-content-muted text-pretty">
-          {t({
-            id: "onboarding.model.confirm.body",
-            message:
-              "Glimpse needs one to transcribe. The recommended model can download in the background while you finish setup.",
-          })}
-        </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onContinue}
-            className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-primary transition-colors hover:bg-surface-hover"
+    <div>
+      <h3 className="text-[17px] font-semibold leading-snug tracking-tight text-content-primary">
+        {friendlyModelName(model.label)}
+      </h3>
+      <div className="mt-1 flex h-5 items-center gap-2 ui-text-body-sm text-content-muted">
+        {downloading ? (
+          <>
+            <span>
+              {t({
+                id: "onboarding.model.status.downloading",
+                message: `Downloading ${Math.round(progress?.percent ?? 0)}%`,
+              })}
+            </span>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-content-secondary underline-offset-4 hover:underline"
+            >
+              {t({ id: "onboarding.model.status.cancel", message: "Cancel" })}
+            </button>
+          </>
+        ) : builtIn ? (
+          t({
+            id: "onboarding.model.status.built_in",
+            message: "Built into your Mac",
+          })
+        ) : installed ? (
+          t({ id: "onboarding.model.status.ready", message: "Downloaded" })
+        ) : (
+          t({
+            id: "onboarding.model.status.download",
+            message: `${formatModelSize(modelSizeMb(model, true))} download`,
+          })
+        )}
+      </div>
+
+      <p className="mt-6 ui-text-meta font-medium text-content-disabled">
+        {t({ id: "onboarding.model.supports", message: "Supports" })}
+      </p>
+      <ul className="mt-2 flex flex-col gap-1.5">
+        {supports.map((item) => (
+          <li
+            key={item}
+            className="flex items-center gap-2 ui-text-body-sm text-content-primary"
           >
-            {t({
-              id: "onboarding.model.confirm.continue",
-              message: "Skip for now",
-            })}
-          </button>
-          <button
-            type="button"
-            onClick={onDownload}
-            className="rounded-lg bg-content-primary px-4 py-2 ui-text-body-sm font-semibold text-surface-secondary transition-opacity hover:opacity-90"
-          >
-            {t({
-              id: "onboarding.model.confirm.download",
-              message: "Download",
-            })}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
+            <Check size={12} weight="bold" className="text-cloud" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

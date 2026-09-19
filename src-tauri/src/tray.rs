@@ -7,21 +7,27 @@ use crate::settings::UserSettings;
 use crate::speech::menu::{
     build_model_status_items, build_models_submenu, handle_speech_menu_event,
 };
-use crate::{AppRuntime, AppState, FEEDBACK_URL, SETTINGS_WINDOW_LABEL, audio};
+use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, audio};
 use parking_lot::Mutex;
-use std::sync::{OnceLock, atomic::Ordering};
+use std::sync::{
+    OnceLock,
+    atomic::{AtomicBool, Ordering},
+};
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, Submenu, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
-use tauri_plugin_opener::OpenerExt;
 
 pub(crate) const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
 pub(crate) const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
-const MENU_ID_FEEDBACK: &str = "menu_send_feedback";
-const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
+const MENU_ID_RECORDING_START: &str = "menu_recording_start";
+const MENU_ID_RECORDING_TOGGLE_PAUSE: &str = "menu_recording_toggle_pause";
+const MENU_ID_RECORDING_BOOKMARK: &str = "menu_recording_bookmark";
+const MENU_ID_RECORDING_FINISH: &str = "menu_recording_finish";
+// Apple's system red, so the icon reads as "recording" on any menu bar.
+const RECORDING_ICON_RGB: [u8; 3] = [255, 59, 48];
 pub(crate) const EVENT_SETTINGS_RENDERER_READY: &str = "settings:renderer_ready";
 
 #[derive(Clone, Copy)]
@@ -33,6 +39,7 @@ pub(crate) enum SettingsPage {
     Dictionary,
     Personalization,
     Library,
+    Record,
 }
 
 impl SettingsPage {
@@ -45,6 +52,268 @@ impl SettingsPage {
             Self::Dictionary => "navigate:dictionary",
             Self::Personalization => "navigate:personalization",
             Self::Library => "navigate:library",
+            Self::Record => "navigate:record",
+        }
+    }
+}
+
+fn format_clock(elapsed_ms: u64) -> String {
+    let total = elapsed_ms / 1000;
+    let hours = total / 3600;
+    let minutes = (total % 3600) / 60;
+    let seconds = total % 60;
+    if hours > 0 {
+        format!("{hours}:{minutes:02}:{seconds:02}")
+    } else {
+        format!("{minutes:02}:{seconds:02}")
+    }
+}
+
+/// The menu bar glyph in white, for drawing on the recording pill.
+#[cfg(target_os = "macos")]
+fn white_tray_glyph(size: f64) -> Option<objc2::rc::Retained<objc2_app_kit::NSImage>> {
+    use objc2::AnyThread;
+    use objc2::runtime::Bool;
+    use objc2_app_kit::{NSColor, NSCompositingOperation, NSImage, NSRectFillUsingOperation};
+    use objc2_foundation::{NSData, NSRect, NSSize};
+
+    let data = NSData::with_bytes(include_bytes!("../icons/tray.png"));
+    let glyph = NSImage::initWithData(NSImage::alloc(), &data)?;
+    let draw = block2::RcBlock::new(move |rect: NSRect| {
+        glyph.drawInRect_fromRect_operation_fraction(
+            rect,
+            NSRect::ZERO,
+            NSCompositingOperation::SourceOver,
+            1.0,
+        );
+        NSColor::whiteColor().set();
+        NSRectFillUsingOperation(rect, NSCompositingOperation::SourceAtop);
+        Bool::YES
+    });
+    Some(NSImage::imageWithSize_flipped_drawingHandler(
+        NSSize::new(size, size),
+        false,
+        &draw,
+    ))
+}
+
+/// White glyph and clock on a red rounded box. Drawn as one image so the
+/// status item only changes width when the clock gains an hours field.
+#[cfg(target_os = "macos")]
+fn recording_pill_image(clock: &str) -> Option<objc2::rc::Retained<objc2_app_kit::NSImage>> {
+    use objc2::rc::Retained;
+    use objc2::runtime::{AnyObject, Bool};
+    use objc2_app_kit::{
+        NSBezierPath, NSColor, NSCompositingOperation, NSFont, NSFontAttributeName,
+        NSFontWeightMedium, NSForegroundColorAttributeName, NSImage, NSStringDrawing,
+    };
+    use objc2_foundation::{NSDictionary, NSPoint, NSRect, NSSize, NSString};
+
+    const HEIGHT: f64 = 18.0;
+    const GLYPH: f64 = 14.0;
+    const PAD_LEFT: f64 = 5.0;
+    const GAP: f64 = 3.0;
+    const PAD_RIGHT: f64 = 7.0;
+    const RADIUS: f64 = 5.0;
+
+    let glyph = white_tray_glyph(GLYPH)?;
+    let font = NSFont::monospacedDigitSystemFontOfSize_weight(12.0, unsafe { NSFontWeightMedium });
+    let keys = unsafe { [NSFontAttributeName, NSForegroundColorAttributeName] };
+    let attrs = NSDictionary::<NSString, AnyObject>::from_retained_objects(
+        &keys,
+        &[
+            Retained::into_super(Retained::into_super(font)),
+            Retained::into_super(Retained::into_super(NSColor::whiteColor())),
+        ],
+    );
+    let text = NSString::from_str(clock);
+    let text_size = unsafe { text.sizeWithAttributes(Some(&attrs)) };
+    let text_x = PAD_LEFT + GLYPH + GAP;
+    let width = (text_x + text_size.width + PAD_RIGHT).ceil();
+
+    let [red, green, blue] = RECORDING_ICON_RGB.map(|channel| f64::from(channel) / 255.0);
+    let draw = block2::RcBlock::new(move |rect: NSRect| {
+        NSColor::colorWithSRGBRed_green_blue_alpha(red, green, blue, 1.0).setFill();
+        NSBezierPath::bezierPathWithRoundedRect_xRadius_yRadius(rect, RADIUS, RADIUS).fill();
+        glyph.drawInRect_fromRect_operation_fraction(
+            NSRect::new(
+                NSPoint::new(PAD_LEFT, (HEIGHT - GLYPH) / 2.0),
+                NSSize::new(GLYPH, GLYPH),
+            ),
+            NSRect::ZERO,
+            NSCompositingOperation::SourceOver,
+            1.0,
+        );
+        unsafe {
+            text.drawAtPoint_withAttributes(
+                NSPoint::new(text_x, ((HEIGHT - text_size.height) / 2.0).round()),
+                Some(&attrs),
+            );
+        }
+        Bool::YES
+    });
+    Some(NSImage::imageWithSize_flipped_drawingHandler(
+        NSSize::new(width, HEIGHT),
+        false,
+        &draw,
+    ))
+}
+
+/// Rasterizes the pill at 2x into straight-alpha RGBA for the tray icon.
+#[cfg(target_os = "macos")]
+fn recording_pill_icon(clock: &str) -> Option<tauri::image::Image<'static>> {
+    use objc2::AnyThread;
+    use objc2_app_kit::{
+        NSBitmapImageRep, NSCompositingOperation, NSDeviceRGBColorSpace, NSGraphicsContext,
+    };
+    use objc2_foundation::{NSPoint, NSRect};
+
+    const SCALE: f64 = 2.0;
+
+    let image = recording_pill_image(clock)?;
+    let size = image.size();
+    let width = (size.width * SCALE) as usize;
+    let height = (size.height * SCALE) as usize;
+    let rep = unsafe {
+        NSBitmapImageRep::initWithBitmapDataPlanes_pixelsWide_pixelsHigh_bitsPerSample_samplesPerPixel_hasAlpha_isPlanar_colorSpaceName_bytesPerRow_bitsPerPixel(
+            NSBitmapImageRep::alloc(),
+            std::ptr::null_mut(),
+            width as isize,
+            height as isize,
+            8,
+            4,
+            true,
+            false,
+            NSDeviceRGBColorSpace,
+            0,
+            0,
+        )
+    }?;
+    // Point size, so drawing in points fills the 2x pixel grid.
+    rep.setSize(size);
+    let context = NSGraphicsContext::graphicsContextWithBitmapImageRep(&rep)?;
+    NSGraphicsContext::saveGraphicsState_class();
+    NSGraphicsContext::setCurrentContext(Some(&context));
+    image.drawInRect_fromRect_operation_fraction(
+        NSRect::new(NSPoint::new(0.0, 0.0), size),
+        NSRect::ZERO,
+        NSCompositingOperation::SourceOver,
+        1.0,
+    );
+    context.flushGraphics();
+    NSGraphicsContext::restoreGraphicsState_class();
+
+    let data = rep.bitmapData();
+    if data.is_null() {
+        return None;
+    }
+    let stride = rep.bytesPerRow() as usize;
+    let pixels = unsafe { std::slice::from_raw_parts(data, stride * height) };
+    let mut rgba = Vec::with_capacity(width * height * 4);
+    for row in pixels.chunks_exact(stride) {
+        for pixel in row[..width * 4].chunks_exact(4) {
+            // The bitmap is premultiplied.
+            let alpha = u16::from(pixel[3]);
+            let straight = |channel: u8| match alpha {
+                0 => 0,
+                _ => (u16::from(channel) * 255 / alpha).min(255) as u8,
+            };
+            rgba.extend([
+                straight(pixel[0]),
+                straight(pixel[1]),
+                straight(pixel[2]),
+                pixel[3],
+            ]);
+        }
+    }
+    Some(tauri::image::Image::new_owned(
+        rgba,
+        width as u32,
+        height as u32,
+    ))
+}
+
+#[cfg(target_os = "windows")]
+fn tray_icon(app: &AppHandle<AppRuntime>, recording: bool) -> Option<tauri::image::Image<'static>> {
+    let icon = app.default_window_icon()?.clone().to_owned();
+    if !recording {
+        return Some(icon);
+    }
+    // A red badge in the corner, the Windows convention for live state.
+    let (width, height) = (icon.width() as i32, icon.height() as i32);
+    let mut rgba = icon.rgba().to_vec();
+    let radius = (width.min(height) as f32 * 0.28).max(3.0);
+    let (cx, cy) = (width as f32 - radius - 1.0, height as f32 - radius - 1.0);
+    for y in 0..height {
+        for x in 0..width {
+            let dx = x as f32 + 0.5 - cx;
+            let dy = y as f32 + 0.5 - cy;
+            if dx * dx + dy * dy <= radius * radius {
+                let index = ((y * width + x) * 4) as usize;
+                rgba[index..index + 3].copy_from_slice(&RECORDING_ICON_RGB);
+                rgba[index + 3] = 255;
+            }
+        }
+    }
+    Some(tauri::image::Image::new_owned(
+        rgba,
+        width as u32,
+        height as u32,
+    ))
+}
+
+/// Shows the recording indicator with the elapsed time while a session is
+/// active; `None` restores the idle icon.
+pub(crate) fn set_recording_indicator(app: &AppHandle<AppRuntime>, elapsed_ms: Option<u64>) {
+    static SHOWING_RECORDING: AtomicBool = AtomicBool::new(false);
+    let state = app.state::<AppState>();
+    let Some(tray) = state.tray.lock().clone() else {
+        return;
+    };
+    let recording = elapsed_ms.is_some();
+    let changed = SHOWING_RECORDING.swap(recording, Ordering::Relaxed) != recording;
+
+    #[cfg(target_os = "macos")]
+    {
+        match elapsed_ms {
+            Some(elapsed) => match recording_pill_icon(&format_clock(elapsed)) {
+                Some(icon) => {
+                    if let Err(err) = tray.set_icon_with_as_template(Some(icon), false) {
+                        tracing::warn!("Failed to update tray icon: {err}");
+                    }
+                }
+                None => tracing::warn!("Failed to draw the recording tray icon"),
+            },
+            None if changed => {
+                match tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png")) {
+                    Ok(icon) => {
+                        if let Err(err) = tray.set_icon_with_as_template(Some(icon), true) {
+                            tracing::warn!("Failed to restore tray icon: {err}");
+                        }
+                    }
+                    Err(err) => tracing::warn!("Failed to build tray icon: {err}"),
+                }
+            }
+            None => {}
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if changed {
+            if let Some(icon) = tray_icon(app, recording)
+                && let Err(err) = tray.set_icon(Some(icon))
+            {
+                tracing::warn!("Failed to update tray icon: {err}");
+            }
+        }
+        let app_name = app.package_info().name.clone();
+        let tooltip = match elapsed_ms {
+            Some(elapsed) => format!("{app_name} · {}", format_clock(elapsed)),
+            None => app_name,
+        };
+        if let Err(err) = tray.set_tooltip(Some(tooltip)) {
+            tracing::warn!("Failed to update tray tooltip: {err}");
         }
     }
 }
@@ -160,15 +429,62 @@ fn build_tray_menu(
     let app_name = app.package_info().name.clone();
     let mut menu = MenuBuilder::new(app);
 
-    let check_updates = MenuItem::with_id(
-        app,
-        MENU_ID_CHECK_UPDATES,
-        strings.get("native.menu.check_updates"),
-        true,
-        None::<&str>,
-    )?;
-    menu = menu.item(&check_updates);
-    menu = menu.separator();
+    let recording = app.state::<AppState>().recording().state();
+    if recording.status == "recording" || recording.status == "paused" {
+        let paused = recording.status == "paused";
+        let status = MenuItem::with_id(
+            app,
+            "menu_recording_status",
+            if paused {
+                strings.get("native.menu.recording_paused")
+            } else {
+                strings.get("native.menu.recording_active")
+            },
+            false,
+            None::<&str>,
+        )?;
+        let toggle_pause = MenuItem::with_id(
+            app,
+            MENU_ID_RECORDING_TOGGLE_PAUSE,
+            if paused {
+                strings.get("native.menu.recording_resume")
+            } else {
+                strings.get("native.menu.recording_pause")
+            },
+            true,
+            None::<&str>,
+        )?;
+        let bookmark = MenuItem::with_id(
+            app,
+            MENU_ID_RECORDING_BOOKMARK,
+            strings.get("native.menu.recording_bookmark"),
+            true,
+            None::<&str>,
+        )?;
+        let finish = MenuItem::with_id(
+            app,
+            MENU_ID_RECORDING_FINISH,
+            strings.get("native.menu.recording_finish"),
+            true,
+            None::<&str>,
+        )?;
+        menu = menu
+            .item(&status)
+            .item(&toggle_pause)
+            .item(&bookmark)
+            .item(&finish)
+            .separator();
+    } else {
+        let start = MenuItem::with_id(
+            app,
+            MENU_ID_RECORDING_START,
+            strings.get("native.menu.recording_start"),
+            true,
+            None::<&str>,
+        )?;
+        menu = menu.item(&start).separator();
+    }
+
     let status_items = build_model_status_items(app, settings)?;
     for item in &status_items {
         menu = menu.item(item);
@@ -184,16 +500,6 @@ fn build_tray_menu(
     menu = menu.separator();
     let recent_submenu = build_recent_transcriptions_menu(app, &strings)?;
     menu = menu.item(&recent_submenu);
-    menu = menu.separator();
-
-    let send_feedback = MenuItem::with_id(
-        app,
-        MENU_ID_FEEDBACK,
-        strings.get("native.menu.send_feedback"),
-        true,
-        None::<&str>,
-    )?;
-    menu = menu.item(&send_feedback);
     menu = menu.separator();
 
     let open_settings = MenuItem::with_id(
@@ -263,24 +569,10 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
 
     match id {
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
-        MENU_ID_FEEDBACK => {
-            if let Err(err) = app.opener().open_url(FEEDBACK_URL, None::<&str>) {
-                tracing::error!("Failed to open feedback link: {err}");
-            }
-        }
-        MENU_ID_CHECK_UPDATES => {
-            if crate::platform::is_store_build() {
-                // Store installs update through the Store's Downloads and Updates page.
-                if let Err(err) = app
-                    .opener()
-                    .open_url("ms-windows-store://downloadsandupdates", None::<&str>)
-                {
-                    tracing::error!("Failed to open Microsoft Store updates: {err}");
-                }
-            } else if let Err(err) = open_settings_page(app, SettingsPage::About) {
-                tracing::error!("Failed to open settings for update check: {err}");
-            }
-        }
+        MENU_ID_RECORDING_START => crate::recording::start_from_tray(app),
+        MENU_ID_RECORDING_TOGGLE_PAUSE => crate::recording::toggle_pause_from_tray(app),
+        MENU_ID_RECORDING_BOOKMARK => crate::recording::add_bookmark_from_tray(app),
+        MENU_ID_RECORDING_FINISH => crate::recording::request_finish_from_tray(app),
         _ => {
             if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
                 copy_transcription_to_clipboard(app, transcription_id);

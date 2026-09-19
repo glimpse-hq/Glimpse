@@ -42,6 +42,7 @@ export function PermissionsStep({
     <OnboardingStep
       stepKey="permissions"
       motionProps={stepMotionProps}
+      align="center"
       footer={
         <>
           <button
@@ -54,13 +55,6 @@ export function PermissionsStep({
               id: "onboarding.permissions.continue",
               message: "Continue",
             })}
-          </button>
-          <button
-            type="button"
-            onClick={onNext}
-            className="ui-text-body-sm text-content-muted transition-colors hover:text-content-primary"
-          >
-            {t({ id: "onboarding.permissions.skip", message: "Skip" })}
           </button>
         </>
       }

@@ -47,6 +47,7 @@ mod macos {
     }
 
     static MICROPHONE_GRANTED: AtomicBool = AtomicBool::new(false);
+    static MICROPHONE_CHECKED: AtomicBool = AtomicBool::new(false);
 
     pub fn check_microphone_permission_cached() -> bool {
         if MICROPHONE_GRANTED.load(Ordering::Relaxed) {
@@ -57,6 +58,7 @@ mod macos {
         if granted {
             MICROPHONE_GRANTED.store(true, Ordering::Relaxed);
         }
+        MICROPHONE_CHECKED.store(true, Ordering::Relaxed);
         granted
     }
 
@@ -64,7 +66,17 @@ mod macos {
     pub fn refresh_microphone_permission() -> bool {
         let granted = check_microphone_permission();
         MICROPHONE_GRANTED.store(granted, Ordering::Relaxed);
+        MICROPHONE_CHECKED.store(true, Ordering::Relaxed);
         granted
+    }
+
+    /// The last known grant without querying TCC; None before the first check.
+    pub fn microphone_permission_known() -> Option<bool> {
+        if MICROPHONE_GRANTED.load(Ordering::Relaxed) {
+            Some(true)
+        } else {
+            MICROPHONE_CHECKED.load(Ordering::Relaxed).then_some(false)
+        }
     }
 
     static REFRESH_IN_FLIGHT: AtomicBool = AtomicBool::new(false);

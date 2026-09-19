@@ -1,9 +1,12 @@
+use crate::analytics::{self, Activity};
 use crate::permissions;
 use crate::{
     AppRuntime, AppState, AudioSpectrumPayload, EVENT_AUDIO_SPECTRUM, MAIN_WINDOW_LABEL, assistive,
     core::hotkeys::{self, HotkeyState},
     emit_event, model_manager, music, platform,
-    recorder::{MIN_RECORDING_DURATION_MS, NoInputDevice, RecorderManager, SPECTRUM_SIZE},
+    recorder::{
+        MIN_RECORDING_DURATION_MS, NoInputDevice, RecorderManager, SPECTRUM_SIZE, calculate_rms_i16,
+    },
     settings::{MediaAction, UserSettings},
     toast,
 };
@@ -13,9 +16,9 @@ use rustfft::{FftPlanner, num_complex::Complex};
 use serde::Serialize;
 use std::sync::{
     Arc,
-    atomic::{AtomicBool, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
@@ -224,6 +227,8 @@ pub struct PillController {
     hover_emitter: Mutex<Option<BackgroundEmitter>>,
     recording_generation: AtomicU64,
     is_expanded: Mutex<bool>,
+    recording_started_at: Mutex<Option<Instant>>,
+    stopped_audio_seconds: Mutex<Option<f32>>,
 }
 
 impl PillController {
@@ -243,6 +248,8 @@ impl PillController {
             hover_emitter: Mutex::new(None),
             recording_generation: AtomicU64::new(0),
             is_expanded: Mutex::new(false),
+            recording_started_at: Mutex::new(None),
+            stopped_audio_seconds: Mutex::new(None),
         }
     }
 
@@ -392,20 +399,21 @@ impl PillController {
         toast::show(app, "error", None, &simple_msg);
     }
 
-    fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, message: &str) {
+    fn fail_recording_stop(&self, app: &AppHandle<AppRuntime>, context: &str, err: &anyhow::Error) {
+        let message = format!("{context}: {err}");
         tracing::error!("[Pill] {message}");
         let settings = app.state::<AppState>().current_settings();
-        crate::analytics::track_recording_failed(
+        analytics::track_recording_failed(
             app,
             "stop",
-            crate::analytics::classify_failure_reason(message),
+            analytics::error_detail(err),
             microphone_input_kind(&settings),
         );
         self.resume_paused_media();
         self.reset_recording_state();
         self.set_hold_key_down(false);
         self.transition_to(app, PillStatus::Error);
-        let simple_msg = simplify_recording_error(message);
+        let simple_msg = simplify_recording_error(&message);
         toast::show(app, "error", None, &simple_msg);
     }
 
@@ -475,6 +483,8 @@ impl PillController {
 
     fn reset_recording_state(&self) {
         self.stop_audio_spectrum_emitter();
+        end_dictation_activity();
+        *self.recording_started_at.lock() = None;
         *self.recording_mode.lock() = None;
         *self.shortcut_origin.lock() = None;
         *self.recording_options.lock() = hotkeys::ShortcutOptions::default();
@@ -557,7 +567,7 @@ impl PillController {
 
         if self.status() == PillStatus::Processing {
             if *self.shortcut_origin.lock() == Some(action) {
-                self.cancel_processing(app);
+                self.cancel_processing(app, "shortcut");
             }
             return false;
         }
@@ -590,6 +600,8 @@ impl PillController {
         if !self.try_start_recording(mode, origin, options) {
             return false;
         }
+        analytics::set_activity(Activity::Recording);
+        *self.recording_started_at.lock() = Some(Instant::now());
 
         let state = app.state::<AppState>();
         state.clear_cancellation();
@@ -635,10 +647,10 @@ impl PillController {
             }
             Err(err) => {
                 crate::analytics::track_first_dictation_attempted(app, "start_failed");
-                crate::analytics::track_recording_failed(
+                analytics::track_recording_failed(
                     app,
                     "start",
-                    crate::analytics::classify_error(&err),
+                    analytics::error_detail(&err),
                     microphone_input_kind(&settings),
                 );
                 self.reset_recording_state();
@@ -803,13 +815,28 @@ impl PillController {
 
     fn stop_and_process_inner(&self, app: &AppHandle<AppRuntime>, auto_paste: bool) {
         self.stop_audio_spectrum_emitter();
-        *self.recording_mode.lock() = None;
+        let stopped_at = Instant::now();
+        analytics::set_activity(Activity::Transcribing);
+        let trigger = match self.recording_mode.lock().take() {
+            Some(RecordingMode::Toggle) => "toggle",
+            _ => "hold",
+        };
+        *self.stopped_audio_seconds.lock() = self
+            .recording_started_at
+            .lock()
+            .take()
+            .map(|started| stopped_at.duration_since(started).as_secs_f32());
         let settings = self
             .recording_settings
             .lock()
             .take()
             .unwrap_or_else(|| app.state::<AppState>().current_settings());
         let recording_options = *self.recording_options.lock();
+        let origin = crate::transcribe::DictationOrigin {
+            trigger,
+            cleanup_shortcut: recording_options.cleanup_enabled,
+            stopped_at,
+        };
         let state = app.state::<AppState>();
         if auto_paste {
             self.capture_selected_text_if_enabled(app, &settings);
@@ -834,6 +861,7 @@ impl PillController {
                     .state::<AppState>()
                     .stop_streaming_session(&app_handle)
                     .unwrap_or_default();
+                let asr_seconds = stopped_at.elapsed().as_secs_f32();
                 match recorder.stop_after_capture(move || {
                     resume_app.state::<AppState>().pill().resume_paused_media();
                 }) {
@@ -842,10 +870,11 @@ impl PillController {
                             (recording.ended_at - recording.started_at).num_milliseconds();
 
                         if duration_ms < MIN_RECORDING_DURATION_MS {
-                            crate::analytics::track_dictation_discarded(
+                            analytics::track_dictation_discarded(
                                 &app_handle,
                                 "too_short",
                                 Some(duration_ms as f32 / 1000.0),
+                                Some(calculate_rms_i16(&recording.samples)),
                             );
                             discard_pending_recording(&recording);
                             collapse_expanded_pill(&app_handle);
@@ -868,6 +897,7 @@ impl PillController {
                                 recording_options.temporary,
                                 auto_paste,
                                 cancel_token,
+                                origin,
                             );
                             return;
                         }
@@ -880,7 +910,8 @@ impl PillController {
                                 collapse_expanded_pill(&app_handle);
                                 app_handle.state::<AppState>().pill().fail_recording_stop(
                                     &app_handle,
-                                    &format!("Unable to save recording: {err}"),
+                                    "Unable to save recording",
+                                    &err,
                                 );
                                 return;
                             }
@@ -900,6 +931,8 @@ impl PillController {
                                 temporary: recording_options.temporary,
                                 auto_paste,
                                 cancel_token,
+                                origin,
+                                asr_seconds,
                             },
                         );
                     }
@@ -914,7 +947,8 @@ impl PillController {
                         collapse_expanded_pill(&app_handle);
                         app_handle.state::<AppState>().pill().fail_recording_stop(
                             &app_handle,
-                            &format!("Unable to stop recording: {err}"),
+                            "Unable to stop recording",
+                            &err,
                         );
                     }
                 }
@@ -933,10 +967,11 @@ impl PillController {
                         let duration_ms =
                             (recording.ended_at - recording.started_at).num_milliseconds();
                         if duration_ms < MIN_RECORDING_DURATION_MS {
-                            crate::analytics::track_dictation_discarded(
+                            analytics::track_dictation_discarded(
                                 &app_handle,
                                 "too_short",
                                 Some(duration_ms as f32 / 1000.0),
+                                Some(calculate_rms_i16(&recording.samples)),
                             );
                             discard_pending_recording(&recording);
                             app_handle
@@ -953,6 +988,7 @@ impl PillController {
                             recording_options.temporary,
                             auto_paste,
                             cancel_token,
+                            origin,
                         );
                     }
                     Ok(None) => {
@@ -964,7 +1000,8 @@ impl PillController {
                     Err(err) => {
                         app_handle.state::<AppState>().pill().fail_recording_stop(
                             &app_handle,
-                            &format!("Unable to stop recording: {err}"),
+                            "Unable to stop recording",
+                            &err,
                         );
                     }
                 }
@@ -972,7 +1009,12 @@ impl PillController {
         }
     }
 
-    pub fn cancel(&self, app: &AppHandle<AppRuntime>) {
+    pub fn cancel(&self, app: &AppHandle<AppRuntime>, how: &str) {
+        let recording_seconds = self
+            .is_recording()
+            .then(|| *self.recording_started_at.lock())
+            .flatten()
+            .map(|started| started.elapsed().as_secs_f32());
         self.stop_audio_spectrum_emitter();
         let _ = app.state::<AppState>().stop_streaming_session(app);
         collapse_expanded_pill(app);
@@ -987,12 +1029,20 @@ impl PillController {
             tracing::error!("Failed to stop recorder: {err}");
         }
         self.reset(app);
+        if let Some(seconds) = recording_seconds {
+            analytics::track_dictation_cancelled(app, "recording", how, Some(seconds));
+        }
     }
 
-    pub fn cancel_processing(&self, app: &AppHandle<AppRuntime>) {
+    pub fn cancel_processing(&self, app: &AppHandle<AppRuntime>, how: &str) {
         if self.status() != PillStatus::Processing {
             return;
         }
+        let stage = if analytics::activity() == Activity::Llm {
+            "cleanup"
+        } else {
+            "transcribing"
+        };
 
         self.stop_audio_spectrum_emitter();
         let state = app.state::<AppState>();
@@ -1021,6 +1071,22 @@ impl PillController {
             &toast::native(app, "native.toast.cancelled"),
         );
         self.reset(app);
+        let audio_seconds = *self.stopped_audio_seconds.lock();
+        analytics::track_dictation_cancelled(app, stage, how, audio_seconds);
+    }
+}
+
+/// Idle again, unless a recording session or update owns the activity.
+fn end_dictation_activity() {
+    if matches!(
+        analytics::activity(),
+        Activity::Recording
+            | Activity::Transcribing
+            | Activity::Llm
+            | Activity::Inserting
+            | Activity::ModelLoading
+    ) {
+        analytics::set_activity(Activity::Idle);
     }
 }
 
@@ -1104,10 +1170,23 @@ fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
     true
 }
 
+// 0 = not checked yet, 1 = denied, 2 = granted.
+static ACCESSIBILITY_AT_RECORDING_START: AtomicU8 = AtomicU8::new(0);
+
+/// Accessibility access as last checked at recording start, without a fresh check.
+pub(crate) fn cached_accessibility_granted() -> Option<bool> {
+    match ACCESSIBILITY_AT_RECORDING_START.load(Ordering::Relaxed) {
+        1 => Some(false),
+        2 => Some(true),
+        _ => None,
+    }
+}
+
 fn check_accessibility_warning(app: &AppHandle<AppRuntime>) {
     #[cfg(target_os = "macos")]
     {
         let is_trusted = permissions::check_accessibility_permission();
+        ACCESSIBILITY_AT_RECORDING_START.store(if is_trusted { 2 } else { 1 }, Ordering::Relaxed);
         if !is_trusted {
             toast::show_with_action(
                 app,

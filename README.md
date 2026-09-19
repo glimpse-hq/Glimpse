@@ -55,6 +55,9 @@ Core dictation is free, runs on-device, and has no word limits. A license adds e
 - **AI Cleanup.** Polish dictated text with your own LLM, set up in **Settings → Providers**.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
 - **Personalization.** Different tones per app or site, with [snippets](https://github.com/glimpse-hq/Glimpse/wiki/snippets) for dynamic context.
+
+**License only** (not included in the trial)
+
 - **Local API.** An OpenAI-compatible speech endpoint, running on your machine.
 - **CLI.** An optional `glimpse` command for the terminal.
 
@@ -78,12 +81,12 @@ Transcription stays on-device by default. Enabling an external speech or LLM pro
 
 The app sends anonymous usage telemetry to [PostHog EU](https://posthog.com/) to help prioritize development. It's tied to a random install ID, not your identity, and stored in the EU.
 
-- **Collected:** app version and platform, launches and uptime, durations and counts, which built-in features you use, whether microphone and accessibility permissions are granted, country, and bounded error/crash categories. A crash also records a code location (source file and line, or module and offset) so we can find the bug.
-- **Never sent:** transcripts, audio, API keys, prompts, raw error text or stacks, full file paths, microphone names, provider endpoints, your IP address, or anything personally identifiable.
+- **Collected:** app version and platform, launches and uptime, whether the app quit normally, durations and counts, which built-in features you use, whether microphone and accessibility permissions are granted, your dictation and display language settings, a coarse hardware class (memory size range, chip family, graphics vendor), country, and bounded error/crash categories. A crash also records a code location (source file and line, or module and offset) so we can find the bug. If the app crashed, the next launch reads the crash report your OS saved and sends only the error type and module and offset frames.
+- **Never sent:** transcripts, audio, API keys, prompts, raw error text or stacks, full file paths, microphone names, the apps you record, model or provider names you type in, provider endpoints, your IP address, or anything personally identifiable.
 
 Opt out anytime in **Settings → App**. Opting out sends one final ping, then nothing, ever.
 
-For the full picture, see the [analytics wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) or [`analytics.rs`](src-tauri/src/analytics.rs). The website is a separate system with its own [privacy policy](https://tryglimpse.cc/privacy).
+For the full picture, see the [analytics wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) or [`analytics/`](src-tauri/src/analytics). The website is a separate system with its own [privacy policy](https://tryglimpse.cc/privacy).
 
 ## Contributing
 

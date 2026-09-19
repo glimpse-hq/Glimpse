@@ -134,6 +134,12 @@ fn language_name(code: &str) -> Option<&'static str> {
         .find_map(|(c, name)| if *c == code { Some(*name) } else { None })
 }
 
+pub(crate) fn known_language_code(code: &str) -> Option<&'static str> {
+    LANGUAGE_NAMES
+        .iter()
+        .find_map(|(c, _)| (*c == code).then_some(*c))
+}
+
 fn supported_languages_for_codes(codes: &[&str]) -> Vec<SupportedLanguageInfo> {
     codes
         .iter()

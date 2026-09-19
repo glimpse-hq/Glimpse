@@ -382,7 +382,10 @@ pub(crate) fn update_settings(
 
     state.request_preflight_refresh();
 
-    pill::register_shortcuts(app).map_err(|err| err.to_string())?;
+    pill::register_shortcuts(app).map_err(|err| {
+        crate::analytics::track_shortcut_failed("register", crate::analytics::error_detail(&err));
+        err.to_string()
+    })?;
 
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model

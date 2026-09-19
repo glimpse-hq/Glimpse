@@ -4,6 +4,8 @@ pub struct TranscriptionSuccess {
     pub speech_model: Option<String>,
     pub segments: Option<Vec<glimpse_speech::TranscriptionSegment>>,
     pub words: Option<Vec<glimpse_speech::TranscriptionSegment>>,
+    /// Language the engine detected, when it reports one.
+    pub language: Option<String>,
 }
 
 pub fn auto_paste_enabled() -> bool {

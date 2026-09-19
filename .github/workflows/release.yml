@@ -251,10 +251,26 @@ jobs:
           uploadUpdaterJson: false
           args: ${{ matrix.tauri-args }}
 
+      # Debug symbols for symbolicating crash reports. Kept as a workflow
+      # artifact, never shipped in the bundle.
+      - name: archive macOS dSYMs
+        if: matrix.os == 'macos'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: glimpse-${{ needs.create-release.outputs.version }}-macos-dsym
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/Glimpse.dSYM
+            src-tauri/target/x86_64-apple-darwin/release/Glimpse.dSYM
+          if-no-files-found: error
+          retention-days: 90
+
       - name: build and publish Windows
         if: matrix.os == 'windows'
         uses: tauri-apps/tauri-action@1deb371b0cd8bd54025b384f1cd735e725c4060f # v1
         env:
+          # `strip` makes the MSVC linker skip the PDB; a PE never embeds
+          # debug info, so the exe stays the same.
+          CARGO_PROFILE_RELEASE_STRIP: "none"
           # Build whisper.cpp/ggml for a portable AVX2 baseline, not the build host
           GGML_NATIVE: "OFF"
           GGML_AVX2: "ON"
@@ -280,6 +296,15 @@ jobs:
           prerelease: ${{ needs.create-release.outputs.prerelease == 'true' }}
           uploadUpdaterJson: false
           args: ${{ matrix.tauri-args }}
+
+      - name: archive Windows PDB
+        if: matrix.os == 'windows'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: glimpse-${{ needs.create-release.outputs.version }}-windows-pdb
+          path: ${{ env.CARGO_TARGET_DIR }}/release/Glimpse.pdb
+          if-no-files-found: error
+          retention-days: 90
 
       # Wraps the already-built exe into an unsigned MSIX for Partner Center
       # (the Store signs it on publish). Identity values come from the

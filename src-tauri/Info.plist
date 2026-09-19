@@ -10,6 +10,8 @@
     </array>
     <key>NSMicrophoneUsageDescription</key>
     <string>Glimpse needs microphone access to transcribe your voice to text.</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>Glimpse records system audio when you choose to capture it in a recording, so calls and lectures can be transcribed.</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>Glimpse uses Apple Events automation (via System Events) only to help check and guide required permissions (such as Accessibility) on macOS.</string>
 </dict>

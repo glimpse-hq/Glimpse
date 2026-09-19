@@ -38,6 +38,7 @@ pub(crate) fn start_after_paste(
     inserted_text: String,
     dictionary_entries: Vec<String>,
     ignored_entries: Vec<String>,
+    model: String,
 ) {
     if inserted_text.trim().is_empty() {
         return;
@@ -56,16 +57,27 @@ pub(crate) fn start_after_paste(
         let mut last_value = pre_paste.value.clone();
         let mut last_changed = Instant::now();
         let mut last_analyzed: Option<String> = None;
+        // Only a field that showed the paste can tell "no edit" from "unreadable".
+        let mut paste_seen = false;
+        let report_edit = |value: &str, paste_seen: bool| {
+            if paste_seen {
+                let edit = edit_bucket(&pre_paste.value, &inserted_text, value);
+                crate::analytics::track_paste_edited(&app, edit, &model);
+            }
+        };
 
         while started.elapsed() < HARD_CAP {
             thread::sleep(POLL_INTERVAL);
 
             let Some(snapshot) = assistive::focused_text_snapshot() else {
+                report_edit(&last_value, paste_seen);
                 return;
             };
             if !same_target(&pre_paste, &snapshot) {
+                report_edit(&last_value, paste_seen);
                 return;
             }
+            paste_seen |= snapshot.value != pre_paste.value;
 
             if snapshot.value != last_value {
                 last_value = snapshot.value.clone();
@@ -86,6 +98,7 @@ pub(crate) fn start_after_paste(
                 &last_value,
                 &dictionary_entries,
             ) {
+                report_edit(&last_value, paste_seen);
                 if is_ignored_suggestion(&candidate) {
                     return;
                 }
@@ -107,7 +120,36 @@ pub(crate) fn start_after_paste(
                 return;
             }
         }
+        report_edit(&last_value, paste_seen);
     });
+}
+
+/// none, small (at most a tenth of the pasted words changed), or large.
+fn edit_bucket(pre_value: &str, inserted_text: &str, current_value: &str) -> &'static str {
+    let inserted = tokenize(inserted_text);
+    let current = changed_current_span(pre_value, current_value)
+        .map(tokenize)
+        .unwrap_or_default();
+    let prefix = inserted
+        .iter()
+        .zip(&current)
+        .take_while(|(a, b)| a.text == b.text)
+        .count();
+    let suffix = inserted[prefix..]
+        .iter()
+        .rev()
+        .zip(current[prefix..].iter().rev())
+        .take_while(|(a, b)| a.text == b.text)
+        .count();
+    // Words typed after the dictation are additions, not edits of it.
+    let changed = inserted.len() - prefix - suffix;
+    if changed == 0 {
+        "none"
+    } else if changed * 10 <= inserted.len() {
+        "small"
+    } else {
+        "large"
+    }
 }
 
 #[tauri::command]

@@ -10,6 +10,7 @@ use crate::tray::SettingsPage;
 use crate::{AppRuntime, AppState};
 
 pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Response {
+    crate::analytics::track_cli_command(app, request.client.as_deref(), &request.command);
     let result = match request.command.as_str() {
         "ping" => Ok(json!({ "pong": true })),
         "dictionary.add" => dictionary_add(app, &request.args),
@@ -24,6 +25,14 @@ pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Respon
         "api.stop" => api_stop(app),
         "api.status" => api_status(app),
         "transcribe" => transcribe(app, &request.args),
+        "record.status" => Ok(record_state_json(
+            &app.state::<AppState>().recording().state(),
+        )),
+        "record.start" => record_start(app),
+        "record.pause" => record_pause(app),
+        "record.resume" => record_resume(app),
+        "record.bookmark" => record_bookmark(app),
+        "record.finish" => record_finish(app, &request.args),
         other => Err(format!("Unknown command: {other}")),
     };
     match result {
@@ -140,6 +149,7 @@ fn open(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
         ("dictionary", _) => Some(SettingsPage::Dictionary),
         ("personalization", _) => Some(SettingsPage::Personalization),
         ("library", _) => Some(SettingsPage::Library),
+        ("record", _) => Some(SettingsPage::Record),
         ("models", _) | ("settings", Some("models")) => Some(SettingsPage::Models),
         ("settings", Some("about")) => Some(SettingsPage::About),
         ("settings", Some("account")) => Some(SettingsPage::Account),
@@ -201,7 +211,13 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
             .unwrap_or(false),
     };
 
-    let item = crate::library::commands::create_library_item(path, options, app.clone(), state)?;
+    let item = crate::library::commands::import_library_file(
+        path,
+        options,
+        crate::library::JobSource::Cli,
+        app,
+        &state,
+    )?;
     Ok(json!({
         "id": item.id,
         "name": item.name,
@@ -329,6 +345,92 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         "word_count": text.split_whitespace().count(),
         "duration_seconds": duration_seconds,
     }))
+}
+
+fn record_state_json(state: &crate::recording::RecordingSessionState) -> Value {
+    json!({
+        "app_running": true,
+        "status": state.status,
+        "elapsed_ms": state.elapsed_ms,
+        "mic": state.sources.microphone.is_some(),
+        "system": crate::recording::captured_system_label(&state.sources),
+        "bookmarks": state.bookmarks.len(),
+    })
+}
+
+/// Turns the recording error codes the Record screen translates into sentences.
+fn record_error(code: String) -> String {
+    let message = match code.as_str() {
+        "already_recording" => "A recording is already in progress.",
+        "not_recording" => "No recording is in progress.",
+        "no_model" => "Install a speech model in Glimpse first.",
+        "microphone_permission" => "Glimpse needs microphone access.",
+        "system_audio_permission" => "Glimpse needs permission to record system audio.",
+        "no_microphone" => "No microphone was found.",
+        _ => return code,
+    };
+    message.to_string()
+}
+
+fn require_recording(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    let status = app.state::<AppState>().recording().state().status;
+    if matches!(status, "recording" | "paused") {
+        Ok(())
+    } else {
+        Err(record_error("not_recording".into()))
+    }
+}
+
+fn record_start(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+    let state = app.state::<AppState>();
+    require_license(&state)?;
+    if state.recording().is_active() {
+        return Err(record_error("already_recording".into()));
+    }
+    let Some(sources) = crate::recording::load_last_sources(app) else {
+        crate::tray::open_settings_page(app, SettingsPage::Record)
+            .map_err(|err| err.to_string())?;
+        return Err("Choose what to record in Glimpse first. The Record screen is open.".into());
+    };
+    crate::recording::start_session(app, sources).map_err(|err| record_error(err.to_string()))?;
+    Ok(record_state_json(&state.recording().state()))
+}
+
+fn record_pause(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    require_recording(app)?;
+    let state = crate::recording::pause_recording_session(app.clone(), None);
+    Ok(record_state_json(&state))
+}
+
+fn record_resume(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    require_recording(app)?;
+    let state = crate::recording::resume_recording_session(app.clone());
+    Ok(record_state_json(&state))
+}
+
+fn record_bookmark(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    let bookmark = crate::recording::add_recording_bookmark(app.clone()).map_err(record_error)?;
+    Ok(json!({ "bookmark": bookmark }))
+}
+
+fn record_finish(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String> {
+    require_license(&app.state::<AppState>())?;
+    // A finish that is already saving must not run again: it would reset the session.
+    require_recording(app)?;
+    let name = args
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_string();
+    let item = tauri::async_runtime::block_on(crate::recording::finish_recording_session(
+        app.clone(),
+        name,
+    ))
+    .map_err(record_error)?;
+    Ok(json!({ "item": { "id": item.id, "name": item.name } }))
 }
 
 static NEXT_DECODE_TEMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);

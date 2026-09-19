@@ -128,7 +128,7 @@ fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
                     &app,
                     &model,
                     "ane_compile",
-                    crate::analytics::classify_failure_reason(&err.to_string()),
+                    crate::analytics::error_detail(&err),
                 );
                 crate::toast::show(
                     &app,
@@ -317,15 +317,14 @@ pub async fn download_model(
     model: String,
     ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
-    let manager = model_manager(&app)
-        .map_err(|err| track_download_error(&app, &model, "resolve", err.to_string()))?;
-    let ane = ane.unwrap_or(false);
+    let manager =
+        model_manager(&app).map_err(|err| track_download_error(&app, &model, "resolve", err))?;
+    let ane = ane.unwrap_or_else(|| super::catalog::ane_encoder_dir(&model).is_some());
     ensure_model_downloadable(&model, ane, &manager)
-        .map_err(|err| track_download_error(&app, &model, "resolve", err))?;
-    let spec = spec_for(&model, ane)
-        .map_err(|err| track_download_error(&app, &model, "resolve", err.to_string()))?;
-    ensure_models_root(&app)
-        .map_err(|err| track_download_error(&app, &model, "install", err.to_string()))?;
+        .map_err(|err| track_download_error(&app, &model, "resolve", anyhow!(err)))?;
+    let spec =
+        spec_for(&model, ane).map_err(|err| track_download_error(&app, &model, "resolve", err))?;
+    ensure_models_root(&app).map_err(|err| track_download_error(&app, &model, "install", err))?;
     let ane_pending = ane
         && super::catalog::ane_needs_compile_step(&model)
         && super::catalog::ane_encoder_dir(&model).is_some()
@@ -377,13 +376,13 @@ pub async fn download_model(
                 let status = manager.status(&installed).map_err(|err| err.to_string())?;
                 return Ok(map_status(status, &manager));
             }
-            let reason = crate::analytics::classify_failure_reason(&err.to_string());
-            let stage = match reason {
+            let detail = crate::analytics::error_detail(&err);
+            let stage = match detail.reason {
                 "verification" => "verify",
                 "storage" => "install",
                 _ => "download",
             };
-            crate::analytics::track_model_download_failed(&app, &model, stage, reason);
+            crate::analytics::track_model_download_failed(&app, &model, stage, detail);
             let _ = app.emit(
                 "download:error",
                 DownloadErrorPayload {
@@ -444,15 +443,15 @@ fn track_download_error(
     app: &AppHandle<AppRuntime>,
     model: &str,
     stage: &str,
-    message: String,
+    err: anyhow::Error,
 ) -> String {
     crate::analytics::track_model_download_failed(
         app,
         model,
         stage,
-        crate::analytics::classify_failure_reason(&message),
+        crate::analytics::error_detail(&err),
     );
-    message
+    err.to_string()
 }
 
 /// The manager deletes with `remove_dir_all`, so clear the tree first.
@@ -513,6 +512,8 @@ pub async fn delete_model(
     })
     .await
     .map_err(|err| err.to_string())??;
+
+    crate::analytics::track_model_deleted(&app, &status.key);
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();

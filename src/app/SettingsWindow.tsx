@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { activateLocale } from "../i18n";
 import { detectAppPlatform } from "../platform/service";
@@ -97,6 +98,9 @@ function QuerySyncBridge() {
 function SettingsContent() {
   const { data: settings, isLoading } = useSettings();
   const showOnboarding = !!settings && !settings.onboarding_completed;
+  // Home builds in only after onboarding, not on a normal launch.
+  const [homeEnters, setHomeEnters] = useState(false);
+  if (showOnboarding && !homeEnters) setHomeEnters(true);
   const didActivateInitialLocale = useRef(false);
 
   useEffect(() => {
@@ -140,9 +144,7 @@ function SettingsContent() {
       return;
     }
 
-    let currentMode: ThemeMode = showOnboarding
-      ? "system"
-      : parseThemeMode(settings?.theme_mode ?? null);
+    let currentMode = parseThemeMode(settings?.theme_mode ?? null);
 
     const applyTheme = (mode: ThemeMode) => {
       currentMode = mode;
@@ -168,7 +170,7 @@ function SettingsContent() {
       mediaQuery.removeEventListener("change", handleSystemChange);
       unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
     };
-  }, [isLoading, settings?.theme_mode, showOnboarding]);
+  }, [isLoading, settings?.theme_mode]);
 
   if (isLoading) {
     return (
@@ -177,16 +179,46 @@ function SettingsContent() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="settings-view h-screen w-screen overflow-hidden bg-surface-secondary" />
-      }
-    >
+    <MotionConfig reducedMotion="user">
       <div className="settings-view h-screen w-screen overflow-hidden">
-        {showOnboarding ? <OnboardingScreen onComplete={() => {}} /> : <Home />}
-        <AneCompileOverlay />
+        <AnimatePresence mode="wait" initial={false}>
+          {showOnboarding ? (
+            <motion.div
+              key="onboarding"
+              className="h-full w-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.3 } }}
+              exit={{
+                opacity: 0,
+                scale: 0.985,
+                transition: { duration: 0.28, ease: [0.4, 0, 1, 1] },
+              }}
+            >
+              <Suspense
+                fallback={
+                  <div className="h-full w-full bg-surface-secondary" />
+                }
+              >
+                <OnboardingScreen onComplete={() => {}} />
+              </Suspense>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="home"
+              className={`h-full w-full${homeEnters ? " home-enter" : ""}`}
+              exit={{ opacity: 0, transition: { duration: 0.22 } }}
+            >
+              <Suspense fallback={null}>
+                <Home />
+              </Suspense>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <Suspense fallback={null}>
+          <AneCompileOverlay />
+        </Suspense>
       </div>
-    </Suspense>
+    </MotionConfig>
   );
 }
 

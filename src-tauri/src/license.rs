@@ -267,7 +267,15 @@ pub fn is_license_deep_link(raw_url: &str) -> bool {
     host == "license" || path.starts_with("license")
 }
 
+static CHECKOUT_RETURNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// True once the checkout deep link has brought the user back this session.
+pub(crate) fn checkout_returned_this_session() -> bool {
+    CHECKOUT_RETURNED.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    CHECKOUT_RETURNED.store(true, std::sync::atomic::Ordering::Relaxed);
     crate::analytics::track_checkout_returned(app);
     tray::toggle_settings_window(app)
         .map_err(|err| format!("Failed to open settings for license deep link: {err}"))?;

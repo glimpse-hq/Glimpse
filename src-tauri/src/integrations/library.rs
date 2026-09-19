@@ -244,6 +244,10 @@ fn item_summary(item: &LibraryItem) -> Value {
     json!({
         "id": item.id,
         "name": item.name,
+        "kind": item.kind,
+        // Recordings have a second track when system audio was captured next to the microphone.
+        "tracks": (item.kind == "recording")
+            .then(|| 1 + u8::from(item.secondary_audio_path.is_some())),
         "status": status,
         "progress": progress,
         "error": error,

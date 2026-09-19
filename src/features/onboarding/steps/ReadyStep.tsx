@@ -29,8 +29,6 @@ interface ReadyStepProps {
   onSetMicrophoneDevice: (device: string | null) => void;
   autoLaunch: boolean;
   onSetAutoLaunch: (value: boolean) => void;
-  licenseActive: boolean;
-  onOpenLicense: () => void;
   isCompleting: boolean;
   completionError: string | null;
   onComplete: () => void;
@@ -46,8 +44,6 @@ export function ReadyStep({
   onSetMicrophoneDevice,
   autoLaunch,
   onSetAutoLaunch,
-  licenseActive,
-  onOpenLicense,
   isCompleting,
   completionError,
   onComplete,
@@ -244,43 +240,6 @@ export function ReadyStep({
             />
           </span>
         </button>
-      </div>
-
-      <div className="mt-8 flex w-full items-start justify-between gap-4 text-left">
-        <span>
-          <span className="block ui-text-body-sm-strong text-content-primary">
-            {licenseActive
-              ? t({
-                  id: "onboarding.done.license_active_title.v2",
-                  message: "Thank you for supporting Glimpse",
-                })
-              : t({
-                  id: "onboarding.done.free_title",
-                  message: "Dictation is free forever",
-                })}
-          </span>
-          <span className="mt-0.5 block ui-text-meta text-content-muted text-pretty">
-            {licenseActive
-              ? t({
-                  id: "onboarding.done.license_active.v2",
-                  message: "Every feature is unlocked. Go make something!",
-                })
-              : t({
-                  id: "onboarding.done.license_adds.v2",
-                  message:
-                    "Unlock Cleanup, Personalities, File Transcription, and more.",
-                })}
-          </span>
-        </span>
-        {!licenseActive ? (
-          <button
-            type="button"
-            onClick={onOpenLicense}
-            className="shrink-0 ui-text-body-sm-strong text-cloud underline-offset-4 transition-colors hover:underline"
-          >
-            {t({ id: "onboarding.done.get_license", message: "Get a license" })}
-          </button>
-        ) : null}
       </div>
 
       {completionError ? (
