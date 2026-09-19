@@ -72,7 +72,8 @@ fn marker_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
         .map(|d| d.join(AUTO_UPDATE_MARKER_FILE))
 }
 
-fn write_marker(app: &AppHandle<AppRuntime>) -> bool {
+/// `source` is `auto` or `manual`.
+fn write_marker(app: &AppHandle<AppRuntime>, source: &str) -> bool {
     let Some(path) = marker_path(app) else {
         warn!("auto-update: failed to resolve restart marker path");
         return false;
@@ -88,7 +89,11 @@ fn write_marker(app: &AppHandle<AppRuntime>) -> bool {
         );
     }
 
-    if let Err(err) = std::fs::write(&path, "auto_update_completed\n") {
+    let contents = format!(
+        "from_version={}\nsource={source}\n",
+        env!("CARGO_PKG_VERSION")
+    );
+    if let Err(err) = std::fs::write(&path, contents) {
         error!(
             path = %path.display(),
             error = %err,
@@ -100,18 +105,38 @@ fn write_marker(app: &AppHandle<AppRuntime>) -> bool {
     true
 }
 
-/// Called on startup: if a marker file exists, the app was just auto-updated.
-/// Sets a flag on AppState so a toast can be shown when the user opens the settings window.
+/// Called on startup: if a marker file exists, the app was just updated.
+/// After an automatic update, sets a flag on AppState so a toast can be shown
+/// when the user opens the settings window.
 pub fn check_post_auto_update(app: &AppHandle<AppRuntime>) {
     if let Some(path) = marker_path(app)
         && path.is_file()
     {
+        let contents = std::fs::read_to_string(&path).unwrap_or_default();
         match std::fs::remove_file(&path) {
             Ok(()) => {
-                app.state::<AppState>().set_auto_update_completed();
-                info!(
-                    "auto-update: detected post-restart marker, will show toast on next settings open"
+                let field = |key: &str| {
+                    contents
+                        .lines()
+                        .find_map(|line| line.strip_prefix(key)?.strip_prefix('='))
+                        .map(str::trim)
+                };
+                // Markers from before 1.2.0 hold no fields and only came from auto-update.
+                let source = match field("source") {
+                    Some("manual") => "manual",
+                    _ => "auto",
+                };
+                crate::analytics::track_update_installed(
+                    app,
+                    field("from_version").unwrap_or_default(),
+                    source,
                 );
+                if source == "auto" {
+                    app.state::<AppState>().set_auto_update_completed();
+                    info!(
+                        "auto-update: detected post-restart marker, will show toast on next settings open"
+                    );
+                }
             }
             Err(err) => {
                 warn!(
@@ -181,10 +206,13 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
 
         info!("auto-update: app is idle and window hidden, downloading update");
 
-        match resolve_available_update(&app).await {
+        match resolve_available_update(&app, "auto").await {
             Ok(Some(update)) => {
                 let version = update.version.clone();
-                match update.download_and_install(|_, _| {}, || {}).await {
+                crate::analytics::set_activity(crate::analytics::Activity::Updating);
+                let installed = update.download_and_install(|_, _| {}, || {}).await;
+                crate::analytics::set_activity(crate::analytics::Activity::Idle);
+                match installed {
                     Ok(()) => {
                         // Marker-write failures repeat every poll; report once per install.
                         let mut marker_failure_reported = false;
@@ -228,7 +256,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                             "automatic",
                             "download_install",
                             Some(&version),
-                            crate::analytics::classify_failure_reason(&err.to_string()),
+                            crate::analytics::error_detail(&err.into()),
                         );
                     }
                 }
@@ -241,7 +269,7 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                     "automatic",
                     "resolve",
                     None,
-                    crate::analytics::classify_failure_reason(&err),
+                    crate::analytics::error_detail(&err.into()),
                 );
             }
         }
@@ -290,7 +318,7 @@ fn restart_after_auto_update(
     version: &str,
     marker_failure_reported: &mut bool,
 ) -> bool {
-    if write_marker(app) {
+    if write_marker(app, "auto") {
         state.lock().clear();
         info!("auto-update: installed, restarting");
         app.request_restart();
@@ -325,21 +353,23 @@ fn is_settings_window_visible(app: &AppHandle<AppRuntime>) -> bool {
         .unwrap_or(false)
 }
 
+/// `source` is written to the restart marker if this update gets installed.
 async fn resolve_available_update(
     app: &AppHandle<AppRuntime>,
-) -> Result<Option<tauri_plugin_updater::Update>, String> {
-    let endpoint = Url::parse(STABLE_UPDATE_ENDPOINT).map_err(|err| err.to_string())?;
-    let updater_builder = app
-        .updater_builder()
-        .endpoints(vec![endpoint])
-        .map_err(|err| err.to_string())?;
-    let updater = updater_builder.build().map_err(|err| err.to_string())?;
-
-    match updater.check().await {
-        Ok(Some(update)) => Ok(Some(update)),
-        Ok(None) => Ok(None),
-        Err(err) => Err(err.to_string()),
-    }
+    source: &'static str,
+) -> tauri_plugin_updater::Result<Option<tauri_plugin_updater::Update>> {
+    let endpoint = Url::parse(STABLE_UPDATE_ENDPOINT)?;
+    let marker_app = app.clone();
+    app.updater_builder()
+        .endpoints(vec![endpoint])?
+        // Windows exits into the installer inside `download_and_install`, so
+        // code after it never runs there.
+        .on_before_exit(move || {
+            write_marker(&marker_app, source);
+        })
+        .build()?
+        .check()
+        .await
 }
 
 async fn check_for_update(
@@ -348,10 +378,7 @@ async fn check_for_update(
 ) -> anyhow::Result<()> {
     debug!("checking for updates");
 
-    match resolve_available_update(app)
-        .await
-        .map_err(|err| anyhow::anyhow!(err))?
-    {
+    match resolve_available_update(app, "auto").await? {
         Some(update) => {
             let version = update.version.clone();
             info!(version = %version, "update available");
@@ -465,21 +492,22 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
     if crate::platform::is_store_build() {
         return Err("Updates are managed by the Microsoft Store.".to_string());
     }
-    let update = match resolve_available_update(&app).await {
+    let update = match resolve_available_update(&app, "manual").await {
         Ok(Some(update)) => update,
         Ok(None) => {
             crate::analytics::track_update_failed(&app, "manual", "resolve", None, "not_found");
             return Err("No update is currently available.".to_string());
         }
         Err(err) => {
+            let err = anyhow::Error::from(err);
             crate::analytics::track_update_failed(
                 &app,
                 "manual",
                 "resolve",
                 None,
-                crate::analytics::classify_failure_reason(&err),
+                crate::analytics::error_detail(&err),
             );
-            return Err(err);
+            return Err(err.to_string());
         }
     };
     let version = update.version.clone();
@@ -488,7 +516,8 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
     let mut total: Option<u64> = None;
     let progress_app = app.clone();
 
-    if let Err(err) = update
+    crate::analytics::set_activity(crate::analytics::Activity::Updating);
+    let installed = update
         .download_and_install(
             |chunk_length, content_length| {
                 if total.is_none() {
@@ -514,17 +543,20 @@ pub async fn download_and_install_update(app: AppHandle<AppRuntime>) -> Result<(
             },
             || {},
         )
-        .await
-    {
+        .await;
+    crate::analytics::set_activity(crate::analytics::Activity::Idle);
+    if let Err(err) = installed {
+        let err = anyhow::Error::from(err);
         crate::analytics::track_update_failed(
             &app,
             "manual",
             "download_install",
             Some(&version),
-            crate::analytics::classify_failure_reason(&err.to_string()),
+            crate::analytics::error_detail(&err),
         );
         return Err(err.to_string());
     }
+    write_marker(&app, "manual");
 
     let _ = app.emit(
         EVENT_UPDATE_DOWNLOAD_PROGRESS,

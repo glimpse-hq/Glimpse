@@ -22,7 +22,7 @@ use super::processing::{
 };
 use super::types::{
     CHUNK_OVERLAP_SECONDS, DIRECT_TRANSCRIBE_MINUTES, EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR,
-    EVENT_LIBRARY_PROGRESS, LibraryCompletePayload, LibraryErrorPayload, LibraryItem,
+    EVENT_LIBRARY_PROGRESS, JobSource, LibraryCompletePayload, LibraryErrorPayload, LibraryItem,
     LibraryItemPatch, LibraryItemStatus, LibraryProgressPayload, LibraryProgressUpdate,
     LibraryTranscriptionResult, MAX_CHUNK_MINUTES, TranscriptSegment, cancelled_error,
     is_cancelled_error, is_ffmpeg_error_message,
@@ -37,6 +37,7 @@ fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
     async_runtime::spawn(async move {
         let state_handle = app_handle.state::<AppState>();
         let job_id = job.id.clone();
+        let source = job.source;
         let token = state_handle.register_library_transcription(job_id.clone());
 
         match job.kind {
@@ -71,7 +72,12 @@ fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
                             );
                             return;
                         }
-                        start_library_transcription_internal(&app_handle, &state_handle, job_id);
+                        start_library_transcription_internal(
+                            &app_handle,
+                            &state_handle,
+                            job_id,
+                            source,
+                        );
                     }
                     Ok(Err(err)) => {
                         handle_library_job_error(&app_handle, &state_handle, &job_id, err);
@@ -96,7 +102,7 @@ fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
                     );
                     return;
                 }
-                start_library_transcription_internal(&app_handle, &state_handle, job_id);
+                start_library_transcription_internal(&app_handle, &state_handle, job_id, source);
             }
         }
     });
@@ -106,6 +112,7 @@ fn start_library_transcription_internal(
     app: &AppHandle<AppRuntime>,
     state: &tauri::State<'_, AppState>,
     id: String,
+    source: JobSource,
 ) {
     let storage = state.storage();
     let item = match storage.get_library_item(&id) {
@@ -176,6 +183,9 @@ fn start_library_transcription_internal(
     let app_handle = app.clone();
     let item_for_task = item.clone();
     let transcription_started_at = Instant::now();
+    // Recordings have a second track when system audio was captured next to the microphone.
+    let tracks =
+        (source == JobSource::Recording).then(|| 1 + u8::from(item.secondary_audio_path.is_some()));
     async_runtime::spawn(async move {
         let id_for_release = id.clone();
         let token_handle = token.clone();
@@ -219,7 +229,7 @@ fn start_library_transcription_internal(
                         speech_model,
                         "no_speech",
                         Some(item.duration_seconds),
-                        "uploaded_file",
+                        source.as_str(),
                     );
                     let _ = storage.update_library_item(
                         &id,
@@ -247,13 +257,18 @@ fn start_library_transcription_internal(
                     let model_label = crate::model_manager::model_label(speech_model);
                     crate::analytics::track_transcription_completed(
                         &app_handle,
-                        library_transcription_mode(speech_model),
-                        Some(&model_label),
-                        false,
-                        item.duration_seconds,
-                        transcription_started_at.elapsed().as_secs_f32(),
-                        count_words(&final_transcript),
-                        "uploaded_file",
+                        crate::analytics::TranscriptionEvent {
+                            mode: library_transcription_mode(speech_model),
+                            model: &model_label,
+                            audio_duration_seconds: item.duration_seconds,
+                            transcription_duration_seconds: transcription_started_at
+                                .elapsed()
+                                .as_secs_f32(),
+                            word_count: count_words(&final_transcript),
+                            audio_source: source.as_str(),
+                            tracks,
+                            ..Default::default()
+                        },
                     );
                     let _ = storage.update_library_item(
                         &id,
@@ -286,7 +301,7 @@ fn start_library_transcription_internal(
                         &item.speech_model,
                         crate::analytics::classify_error(&err),
                         Some(item.duration_seconds),
-                        "uploaded_file",
+                        source.as_str(),
                     );
                 }
                 let status = if cancelled {
@@ -321,7 +336,7 @@ fn start_library_transcription_internal(
                     &item.speech_model,
                     "task_failed",
                     Some(item.duration_seconds),
-                    "uploaded_file",
+                    source.as_str(),
                 );
                 let _ = storage.update_library_item(
                     &id,

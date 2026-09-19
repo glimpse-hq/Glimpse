@@ -7,7 +7,7 @@
 3. `transcribe.rs` chunks, calls `speech::transcribe()`, filters, applies replacements, personalization, and optional `llm_cleanup.rs`, then stores and emits.
 4. `assistive.rs` inserts the text.
 
-Work that can wait (notices, asks, analytics) runs after insertion.
+Work that can wait (notices, asks, analytics) runs after insertion. For analytics that means not even an enqueue: keep outcomes in locals and report after the paste. `analytics::set_activity` (one atomic store) and the stall watchdog's single timer spawn are the exceptions.
 
 ## Where things go
 

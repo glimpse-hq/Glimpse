@@ -122,10 +122,8 @@ pub fn set_personalities(
     state: tauri::State<AppState>,
 ) -> Result<Vec<Personality>, String> {
     let cleaned = sanitize_personalities(&personalities);
-    if !cleaned.is_empty() {
-        crate::analytics::track_feature_used(&app, "personalities");
-    }
     let mut settings = state.current_settings();
+    let previous_custom = custom_count(&settings.personalities);
     settings.personalities = cleaned.clone();
     let saved = state
         .persist_settings(settings)
@@ -134,6 +132,17 @@ pub fn set_personalities(
     if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
         tracing::error!("Failed to emit settings change: {err}");
     }
+    let custom = custom_count(&cleaned);
+    if custom != previous_custom {
+        crate::analytics::track_personalities_changed(&app, custom);
+    }
 
     Ok(cleaned)
+}
+
+fn custom_count(personalities: &[Personality]) -> usize {
+    personalities
+        .iter()
+        .filter(|personality| crate::analytics::personality_label(Some(personality)) == "custom")
+        .count()
 }

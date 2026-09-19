@@ -450,11 +450,13 @@ pub fn run() {
             analytics::set_crash_phase("logging");
             init_logging(handle);
             analytics::set_crash_phase("crash_handler");
+            let previous_session = analytics::begin_session(handle);
+            analytics::set_app(handle);
             let crash_marker = handle
                 .path()
                 .app_data_dir()
                 .ok()
-                .map(|dir| dir.join("last_crash.txt"));
+                .map(|dir| dir.join(analytics::CRASH_MARKER_FILE));
             let crash_log = handle.path().app_log_dir().ok().map(|dir| {
                 let _ = std::fs::create_dir_all(&dir);
                 dir.join("crash.log")
@@ -585,8 +587,11 @@ pub fn run() {
                 tauri::async_runtime::spawn(async move {
                     analytics::set_crash_phase("analytics_init");
                     analytics::init(&h).await;
+                    if let Some(previous) = &previous_session {
+                        analytics::report_unclean_exit(&h, previous);
+                    }
                     if let Some(path) = crash_marker {
-                        analytics::report_pending_crash(&h, &path);
+                        analytics::report_pending_crash(&h, &path, previous_session.is_none());
                     }
                     {
                         let app_state = h.state::<AppState>();
@@ -709,6 +714,7 @@ pub fn run() {
             analytics::track_paywall_clicked,
             analytics::track_gate_blocked,
             analytics::track_feature_used_command,
+            analytics::track_screen_viewed,
             fetch_llm_models,
             apple_llm_availability,
             fetch_remote_speech_models,
@@ -748,6 +754,7 @@ pub fn run() {
                 // Quit-time panics (e.g. tao's Windows event-loop teardown)
                 // should not report as crashes while running.
                 analytics::set_crash_phase("shutdown");
+                analytics::end_session();
                 let state = handler.state::<AppState>();
                 state.local_transcriber.unload_if_idle();
                 state.stop_preflight_loop();
@@ -758,6 +765,12 @@ pub fn run() {
                     (now - state.session_started_at).as_secs_f64(),
                     counters.transcription_count,
                 );
+                #[cfg(target_os = "windows")]
+                platform::windows::crash::exit_if_session_ending();
+            }
+            #[cfg(target_os = "windows")]
+            tauri::RunEvent::ExitRequested { .. } => {
+                platform::windows::crash::note_exit_requested();
             }
             _ => {}
         });
@@ -818,6 +831,7 @@ type GlimpseResult<T> = Result<T>;
 pub struct LibraryJob {
     pub id: String,
     pub kind: LibraryJobKind,
+    pub source: library::JobSource,
 }
 
 #[derive(Clone)]
@@ -1482,6 +1496,7 @@ async fn activate_license(
                 &app,
                 license_state.edition.map(|edition| edition.as_str()),
                 trial_day,
+                input_shape,
             );
             Ok(license_state)
         }
@@ -1902,14 +1917,14 @@ pub(crate) fn hide_overlay(app: &AppHandle<AppRuntime>) {
 }
 
 pub(crate) fn stop_active_recording(app: &AppHandle<AppRuntime>) {
-    app.state::<AppState>().pill().cancel(app);
+    app.state::<AppState>().pill().cancel(app, "escape");
 }
 
 #[tauri::command]
 fn cancel_recording(app: AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
     if state.pill().status() == pill::PillStatus::Processing {
-        state.pill().cancel_processing(&app);
+        state.pill().cancel_processing(&app, "escape");
     } else {
         stop_active_recording(&app);
         hide_overlay(&app);
@@ -1923,6 +1938,7 @@ pub(crate) fn persist_recording_async(
     temporary: bool,
     auto_paste: bool,
     cancel_token: CancellationToken,
+    origin: transcribe::DictationOrigin,
 ) {
     let input = if settings.microphone_device.is_some() {
         "selected"
@@ -1935,7 +1951,7 @@ pub(crate) fn persist_recording_async(
             analytics::track_recording_failed(
                 &app,
                 "persist",
-                analytics::classify_error(&err),
+                analytics::error_detail(&err),
                 input,
             );
             emit_error(
@@ -1977,6 +1993,7 @@ pub(crate) fn persist_recording_async(
             &app,
             code,
             Some((recording.ended_at - recording.started_at).num_milliseconds() as f32 / 1000.0),
+            Some(recorder::calculate_rms_i16(&recording.samples)),
         );
         tracing::error!("Recording rejected: {reason}");
         if let Some(notice) = notice {
@@ -2014,12 +2031,13 @@ pub(crate) fn persist_recording_async(
                 temporary,
                 auto_paste,
                 cancel_token,
+                origin,
             ),
             Ok(Err(err)) => {
                 analytics::track_recording_failed(
                     &app,
                     "persist",
-                    analytics::classify_error(&err),
+                    analytics::error_detail(&err),
                     input,
                 );
                 emit_error(&app, format!("Unable to save recording: {err}"));

@@ -121,6 +121,12 @@ const LibraryView = ({
     [items, selectedItemId],
   );
   useEffect(() => {
+    if (!selectedItemId) return;
+    void invoke("track_feature_used_command", { feature: "library" }).catch(
+      () => {},
+    );
+  }, [selectedItemId]);
+  useEffect(() => {
     if (!openItemId) return;
     setSearchQuery("");
     setStatusFilter("all");

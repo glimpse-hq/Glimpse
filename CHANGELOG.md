@@ -23,6 +23,8 @@ Recording your computer's audio needs macOS 14.2 or later. Picking apps on Windo
 
 ### Fixes
 
+- Glimpse no longer crashes when you sign out of Windows or shut down while it's running.
+- On Windows, Glimpse now lets you know when it has updated itself, as it already did on Mac.
 - Long transcriptions in the Library come out noticeably cleaner. Glimpse no longer repeats words where it stitches the pieces of a long file together, which was most noticeable with Whisper.
 
 1.1.6

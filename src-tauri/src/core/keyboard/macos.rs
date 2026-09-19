@@ -73,6 +73,7 @@ pub(super) fn start(
             ) {
                 Ok(event_tap) => event_tap,
                 Err(_) => {
+                    crate::analytics::track_shortcut_failed("event_tap", "unknown");
                     let _ = ready_tx.send(Err(
                         "Failed to create macOS event tap for global shortcuts".to_string(),
                     ));
@@ -150,6 +151,12 @@ fn handle_event(
         CGEventType::OtherMouseDown => mouse_event(event, true),
         CGEventType::OtherMouseUp => mouse_event(event, false),
         CGEventType::TapDisabledByTimeout | CGEventType::TapDisabledByUserInput => {
+            let reason = if matches!(event_type, CGEventType::TapDisabledByTimeout) {
+                "timeout"
+            } else {
+                "user_input"
+            };
+            crate::analytics::track_shortcut_failed("event_tap_disabled", reason);
             reenable_tap.store(true, Ordering::Release);
             swallowed_modifiers.set(Modifiers::empty());
             Some(KeyEvent {

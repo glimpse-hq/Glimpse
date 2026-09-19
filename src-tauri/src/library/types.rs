@@ -65,6 +65,33 @@ pub(crate) fn default_item_kind() -> String {
     "import".to_string()
 }
 
+/// Where a Library job's audio came from, as reported in analytics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum JobSource {
+    Upload,
+    Recording,
+    Cli,
+}
+
+impl JobSource {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            JobSource::Upload => "uploaded_file",
+            JobSource::Recording => "recording",
+            JobSource::Cli => "cli",
+        }
+    }
+
+    /// Source for a job rebuilt from a stored item (retry, launch recovery).
+    pub(crate) fn of_item(item: &LibraryItem) -> Self {
+        if item.kind == "recording" {
+            JobSource::Recording
+        } else {
+            JobSource::Upload
+        }
+    }
+}
+
 /// Which inputs a recording captured. `system_audio` lists app names, or is
 /// empty when the whole system was captured.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

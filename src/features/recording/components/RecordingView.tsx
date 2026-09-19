@@ -619,7 +619,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     const wasRecording = state.status === "recording";
     if (wasRecording) {
       try {
-        applyState(await recordingApi.pauseRecordingSession());
+        applyState(await recordingApi.pauseRecordingSession(true));
       } catch (err) {
         console.error("Failed to pause before naming:", err);
       }

@@ -16,6 +16,6 @@ pub use types::EVENT_LIBRARY_RENDERER_READY;
 pub(crate) use types::RecordingOutput;
 pub(crate) use types::default_item_kind;
 pub use types::{
-    AudioSources, Bookmark, ExportFormat, LibraryFilter, LibraryImportOptions, LibraryItem,
-    LibraryItemPatch, LibraryItemStatus, TranscriptSegment,
+    AudioSources, Bookmark, ExportFormat, JobSource, LibraryFilter, LibraryImportOptions,
+    LibraryItem, LibraryItemPatch, LibraryItemStatus, TranscriptSegment,
 };

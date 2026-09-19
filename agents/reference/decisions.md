@@ -16,3 +16,4 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **The commercial license card copy ("per seat", device suffix) is intentional.**
 - **`transcription_mode` stays although the Cloud/Local UI is gone.** It's a placeholder for a possible managed service.
 - **CLI writes and the local API check the license at call time**, not only at install.
+- **Windows exits right after `RunEvent::Exit` when no `ExitRequested` came first** (`platform/windows/crash.rs`). Logoff and shutdown end tao's loop from `WM_ENDSESSION`, and tao keeps pumping into the destroyed loop until it panics.

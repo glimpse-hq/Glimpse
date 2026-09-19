@@ -32,8 +32,12 @@ export async function startRecordingSession(
   return invoke<RecordingSessionState>("start_recording_session", { sources });
 }
 
-export async function pauseRecordingSession(): Promise<RecordingSessionState> {
-  return invoke<RecordingSessionState>("pause_recording_session");
+export async function pauseRecordingSession(
+  finishing = false,
+): Promise<RecordingSessionState> {
+  return invoke<RecordingSessionState>("pause_recording_session", {
+    finishing,
+  });
 }
 
 export async function resumeRecordingSession(): Promise<RecordingSessionState> {

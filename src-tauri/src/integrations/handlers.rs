@@ -10,6 +10,7 @@ use crate::tray::SettingsPage;
 use crate::{AppRuntime, AppState};
 
 pub(crate) fn dispatch(app: &AppHandle<AppRuntime>, request: &Request) -> Response {
+    crate::analytics::track_cli_command(app, request.client.as_deref(), &request.command);
     let result = match request.command.as_str() {
         "ping" => Ok(json!({ "pong": true })),
         "dictionary.add" => dictionary_add(app, &request.args),
@@ -202,7 +203,13 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
             .unwrap_or(false),
     };
 
-    let item = crate::library::commands::create_library_item(path, options, app.clone(), state)?;
+    let item = crate::library::commands::import_library_file(
+        path,
+        options,
+        crate::library::JobSource::Cli,
+        app,
+        &state,
+    )?;
     Ok(json!({
         "id": item.id,
         "name": item.name,

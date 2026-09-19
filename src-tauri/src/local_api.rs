@@ -185,6 +185,9 @@ impl LocalApiController {
             if event.message.starts_with(TRANSCRIBE_REQUEST_LOG) {
                 controller.note_request(&sink_app);
             }
+            if let Some(endpoint) = api_endpoint(&event.message) {
+                crate::analytics::track_integration_used(&sink_app, "api", endpoint);
+            }
             controller.push_log(&sink_app, event.level, event.message);
         });
 
@@ -291,7 +294,6 @@ impl LocalApiController {
             }
         };
         if counted {
-            crate::analytics::track_feature_used(app, "local_api");
             self.emit_status(app);
         }
     }
@@ -327,6 +329,21 @@ impl LocalApiController {
 
     fn emit_status(&self, app: &AppHandle<AppRuntime>) {
         let _ = app.emit(EVENT_LOCAL_API_STATUS, self.status());
+    }
+}
+
+/// Maps glimpse-speech's per-request log line to its route, without the model id.
+fn api_endpoint(message: &str) -> Option<&'static str> {
+    if message.starts_with(TRANSCRIBE_REQUEST_LOG) {
+        Some("transcriptions")
+    } else if message.starts_with("GET /v1/models") {
+        Some("models.list")
+    } else if message.starts_with("POST /v1/models/") {
+        Some("models.install")
+    } else if message.starts_with("DELETE /v1/models/") {
+        Some("models.delete")
+    } else {
+        None
     }
 }
 

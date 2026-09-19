@@ -764,7 +764,7 @@ fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> 
 
 pub const MIN_RECORDING_DURATION_MS: i64 = 300;
 
-const MIN_RMS_ENERGY: f32 = 0.0002;
+pub(crate) const MIN_RMS_ENERGY: f32 = 0.0002;
 const MIN_SPEECH_PERCENTAGE: f32 = 3.0;
 
 pub fn validate_recording(recording: &CompletedRecording) -> Result<(), RecordingRejectionReason> {
@@ -813,7 +813,7 @@ fn calculate_rms(samples: &[f32]) -> f32 {
     (sum_squares / samples.len() as f32).sqrt()
 }
 
-fn calculate_rms_i16(samples: &[i16]) -> f32 {
+pub(crate) fn calculate_rms_i16(samples: &[i16]) -> f32 {
     if samples.is_empty() {
         return 0.0;
     }
@@ -1508,9 +1508,10 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     output
 }
 
-// cpal's Display drops the kind when a backend message is present.
+// cpal's Display drops the kind when a backend message is present. The cpal
+// error stays in the chain so analytics can classify it by kind.
 fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
-    anyhow!("{what} ({:?}): {err}", err.kind())
+    anyhow::Error::new(err.clone()).context(format!("{what} ({:?}): {err}", err.kind()))
 }
 
 struct CallbackSinks {

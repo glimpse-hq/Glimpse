@@ -143,10 +143,7 @@ const Home = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>("home");
   useEffect(() => {
-    if (activeView !== "library" && activeView !== "record") return;
-    void invoke("track_feature_used_command", { feature: activeView }).catch(
-      () => {},
-    );
+    void invoke("track_screen_viewed", { screen: activeView }).catch(() => {});
   }, [activeView]);
   const [openLibraryItemId, setOpenLibraryItemId] = useState<string | null>(
     null,

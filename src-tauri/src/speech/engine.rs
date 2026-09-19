@@ -7,6 +7,7 @@ use glimpse_speech::service::{AudioInput, SpeechConfig, SpeechService, Transcrib
 use parking_lot::{Condvar, Mutex};
 
 use crate::{
+    analytics::{self, Activity},
     model_manager::{self, ReadyModel},
     transcription_api::{TranscriptionSuccess, normalize_transcript},
 };
@@ -100,7 +101,16 @@ impl LocalTranscriber {
     fn warm_locked(&self, model: &ReadyModel) -> Result<()> {
         let was_loaded = self.service.is_loaded();
         let started = Instant::now();
-        self.service.preload_and_warm(&model.key)?;
+        let previous_activity = analytics::activity();
+        if !was_loaded {
+            analytics::set_activity(Activity::ModelLoading);
+        }
+        let result = self.service.preload_and_warm(&model.key);
+        // A dictation step that started meanwhile keeps its own activity.
+        if analytics::activity() == Activity::ModelLoading {
+            analytics::set_activity(previous_activity);
+        }
+        result?;
         tracing::info!(
             "[LocalTranscriber] warm {} took {:.2}s (was_loaded={})",
             model.key,
@@ -161,6 +171,7 @@ impl LocalTranscriber {
             speech_model: Some(model_manager::model_label(&model.key)),
             segments: None,
             words: None,
+            language: result.language,
         })
     }
 
@@ -180,6 +191,7 @@ impl LocalTranscriber {
             speech_model: Some(model_manager::model_label(&model.key)),
             segments: result.segments,
             words: result.words,
+            language: result.language,
         })
     }
 
@@ -335,10 +347,7 @@ mod parakeet_ane_tests {
             let result =
                 transcriber.transcribe_with_segments(&model, &pcm, 16_000, &[], Some("en"))?;
             assert!(!result.transcript.trim().is_empty());
-            assert_eq!(
-                result.speech_model.as_deref(),
-                Some("Parakeet TDT V3")
-            );
+            assert_eq!(result.speech_model.as_deref(), Some("Parakeet TDT V3"));
             let words = result.words.as_ref().expect("word timestamps");
             assert!(!words.is_empty());
             let mut previous_start = 0.0;

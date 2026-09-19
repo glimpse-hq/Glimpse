@@ -55,6 +55,10 @@ pub(super) fn start(
             let hook = match hook {
                 Ok(hook) => hook,
                 Err(err) => {
+                    crate::analytics::track_shortcut_failed(
+                        "keyboard_hook",
+                        crate::analytics::error_detail(&err.clone().into()),
+                    );
                     let _ = ready_tx.send(Err(format!("Failed to install keyboard hook: {err}")));
                     return;
                 }
@@ -88,6 +92,10 @@ pub(super) fn start(
                     Err(err) => {
                         tracing::warn!(
                             "Failed to install mouse hook, mouse-button shortcuts disabled: {err}"
+                        );
+                        crate::analytics::track_shortcut_failed(
+                            "mouse_hook",
+                            crate::analytics::error_detail(&err.into()),
                         );
                         None
                     }

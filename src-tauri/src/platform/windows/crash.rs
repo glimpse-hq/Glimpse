@@ -1,6 +1,7 @@
 use std::os::windows::io::AsRawHandle;
 use std::path::PathBuf;
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use windows::Win32::Foundation::{HANDLE, HMODULE};
 use windows::Win32::System::Diagnostics::Debug::{
@@ -29,6 +30,20 @@ struct CrashPaths {
 
 static PATHS: OnceLock<CrashPaths> = OnceLock::new();
 static PREV_FILTER: OnceLock<Option<ExceptionFilter>> = OnceLock::new();
+static EXIT_REQUESTED: AtomicBool = AtomicBool::new(false);
+
+pub fn note_exit_requested() {
+    EXIT_REQUESTED.store(true, Ordering::Relaxed);
+}
+
+// Logoff and shutdown end tao's loop from WM_ENDSESSION with no ExitRequested,
+// and tao keeps pumping messages into the destroyed loop until Windows kills
+// the process, which panics in runner.rs ("cannot move state from Destroyed").
+pub fn exit_if_session_ending() {
+    if !EXIT_REQUESTED.load(Ordering::Relaxed) {
+        std::process::exit(0);
+    }
+}
 
 pub fn install(log_dir: PathBuf, marker: PathBuf) {
     if PATHS.set(CrashPaths { log_dir, marker }).is_err() {
@@ -67,9 +82,10 @@ unsafe extern "system" fn handler(info: *const EXCEPTION_POINTERS) -> i32 {
 
     // First three lines match the panic marker; analytics folds in the rest.
     let marker_body = format!(
-        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\ncrash_phase={}\n",
+        "{APP_VERSION}\n{location}\nnative\nexception_code={code:#010x}\nfaulting_module={module}\nminidump={}\ncrash_phase={}\nactivity={}\n",
         if dump_written { DUMP_FILE_NAME } else { "none" },
         crate::analytics::crash_phase(),
+        crate::analytics::activity().as_str(),
     );
     crate::analytics::write_marker_atomically(&paths.marker, &marker_body);
 

@@ -28,7 +28,8 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::library::{AudioSources, Bookmark, LibraryItem, RecordingOutput};
+use crate::analytics::{self, Activity, ErrorDetail, RecordingSessionSummary, error_detail};
+use crate::library::{AudioSources, Bookmark, JobSource, LibraryItem, RecordingOutput};
 use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
 use track::{TrackInput, TrackWriter};
 
@@ -84,6 +85,18 @@ pub(crate) enum SystemAudioScope {
     All,
     Apps(Vec<String>),
 }
+
+/// Analytics label for the system audio scope: none, all, or app.
+fn system_scope_label(sources: &RecordingSources) -> &'static str {
+    match sources.system_audio.as_ref() {
+        None => "none",
+        Some(SystemAudioSource { apps: None }) => "all",
+        Some(_) => "app",
+    }
+}
+
+/// A start failure and the step it happened in, for analytics.
+type StartFailure = (&'static str, anyhow::Error);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Status {
@@ -186,6 +199,8 @@ struct Shared {
     status: Mutex<Status>,
     clock: Mutex<Option<Arc<SessionClock>>>,
     paused: Arc<AtomicBool>,
+    // Set by user pauses, not by the pause before the naming dialog.
+    paused_by_user: AtomicBool,
     microphone_level: Arc<AtomicU32>,
     system_level: Arc<AtomicU32>,
     sources: Mutex<AudioSources>,
@@ -220,10 +235,32 @@ impl Shared {
         !matches!(*self.status.lock(), Status::Idle)
     }
 
+    fn summary(&self) -> RecordingSessionSummary {
+        let elapsed_ms = self
+            .clock
+            .lock()
+            .as_ref()
+            .map(|clock| clock.elapsed_ms())
+            .unwrap_or(0);
+        let sources = self.sources.lock();
+        RecordingSessionSummary {
+            duration_seconds: elapsed_ms as f32 / 1000.0,
+            paused: self.paused_by_user.load(Ordering::Relaxed),
+            bookmarks: self.bookmarks.lock().len(),
+            mic: sources.microphone.is_some(),
+            system: match sources.system_audio.as_deref() {
+                None => "none",
+                Some([]) => "all",
+                Some(_) => "app",
+            },
+        }
+    }
+
     fn reset(&self) {
         *self.status.lock() = Status::Idle;
         *self.clock.lock() = None;
         self.paused.store(false, Ordering::Relaxed);
+        self.paused_by_user.store(false, Ordering::Relaxed);
         self.microphone_level
             .store(0f32.to_bits(), Ordering::Relaxed);
         self.system_level.store(0f32.to_bits(), Ordering::Relaxed);
@@ -246,7 +283,7 @@ enum WorkerCommand {
     Start {
         sources: RecordingSources,
         dir: PathBuf,
-        reply: Sender<Result<()>>,
+        reply: Sender<Result<(), StartFailure>>,
     },
     Finish {
         reply: Sender<Result<SessionOutput>>,
@@ -267,6 +304,7 @@ impl Default for RecordingManager {
             status: Mutex::new(Status::Idle),
             clock: Mutex::new(None),
             paused: Arc::new(AtomicBool::new(false)),
+            paused_by_user: AtomicBool::new(false),
             microphone_level: Arc::new(AtomicU32::new(0f32.to_bits())),
             system_level: Arc::new(AtomicU32::new(0f32.to_bits())),
             sources: Mutex::new(AudioSources::default()),
@@ -322,7 +360,7 @@ impl RecordingManager {
         self.shared.is_active()
     }
 
-    fn send_start(&self, sources: RecordingSources, dir: PathBuf) -> Result<()> {
+    fn send_start(&self, sources: RecordingSources, dir: PathBuf) -> Result<(), StartFailure> {
         let (reply, rx) = bounded(1);
         self.tx
             .send(WorkerCommand::Start {
@@ -330,9 +368,9 @@ impl RecordingManager {
                 dir,
                 reply,
             })
-            .map_err(|_| anyhow!("Recording worker is gone"))?;
+            .map_err(|_| ("setup", anyhow!("Recording worker is gone")))?;
         rx.recv()
-            .map_err(|_| anyhow!("Recording worker did not respond"))?
+            .map_err(|_| ("setup", anyhow!("Recording worker did not respond")))?
     }
 
     fn send_finish(&self) -> Result<SessionOutput> {
@@ -458,18 +496,21 @@ struct Worker {
 }
 
 impl Worker {
-    fn start(&mut self, sources: RecordingSources, dir: PathBuf) -> Result<()> {
+    fn start(&mut self, sources: RecordingSources, dir: PathBuf) -> Result<(), StartFailure> {
         if self.active.is_some() {
-            return Err(anyhow!("already_recording"));
+            return Err(("setup", anyhow!("already_recording")));
         }
         if sources.microphone.is_none() && sources.system_audio.is_none() {
-            return Err(anyhow!("no_sources"));
+            return Err(("setup", anyhow!("no_sources")));
         }
-        fs::create_dir_all(&dir).with_context(|| format!("Failed to create {}", dir.display()))?;
+        fs::create_dir_all(&dir)
+            .with_context(|| format!("Failed to create {}", dir.display()))
+            .map_err(|err| ("setup", err))?;
 
         let clock = Arc::new(SessionClock::new());
         let started_at = Local::now();
         self.shared.paused.store(false, Ordering::Relaxed);
+        self.shared.paused_by_user.store(false, Ordering::Relaxed);
         self.shared
             .microphone_level
             .store(0f32.to_bits(), Ordering::Relaxed);
@@ -486,6 +527,7 @@ impl Worker {
             system: None,
         };
 
+        let mut stage = "start_system";
         let result =
             (|| -> Result<()> {
                 // System audio first: it is the source that can be refused, and
@@ -546,6 +588,7 @@ impl Worker {
                 }
 
                 if let Some(mic) = sources.microphone.as_ref() {
+                    stage = "start_mic";
                     let path = dir.join(MICROPHONE_FILE);
                     let sink = SinkParts {
                         clock: Arc::clone(&clock),
@@ -586,7 +629,7 @@ impl Worker {
 
         if let Err(err) = result {
             discard_session(session);
-            return Err(err);
+            return Err((stage, err));
         }
 
         let manifest = SessionManifest {
@@ -703,6 +746,16 @@ fn sessions_root(app: &AppHandle<AppRuntime>) -> Result<PathBuf> {
         .join(SESSIONS_DIR))
 }
 
+/// True when a session directory still has its manifest, so it never finished.
+pub(crate) fn has_unfinished_session(app: &AppHandle<AppRuntime>) -> bool {
+    let Ok(entries) = sessions_root(app).and_then(|root| Ok(fs::read_dir(root)?)) else {
+        return false;
+    };
+    entries
+        .flatten()
+        .any(|entry| entry.path().join(MANIFEST_FILE).is_file())
+}
+
 fn emit_state(app: &AppHandle<AppRuntime>, shared: &Shared) {
     let _ = app.emit(EVENT_STATE, shared.state());
 }
@@ -806,6 +859,7 @@ fn save_session(
         LibraryJob {
             id: item.id.clone(),
             kind: LibraryJobKind::TranscribeExisting,
+            source: JobSource::Recording,
         },
     );
     Ok(item)
@@ -831,6 +885,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             return;
         }
     };
+    let (mut recovered, mut failed) = (0, 0);
     for entry in entries.flatten() {
         let dir = entry.path();
         if !dir.is_dir() {
@@ -883,9 +938,18 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             manifest.sources,
             manifest.bookmarks,
         ) {
-            Ok(item) => tracing::info!("Recovered interrupted recording {}", item.id),
-            Err(err) => tracing::error!("Failed to recover recording: {err}"),
+            Ok(item) => {
+                recovered += 1;
+                tracing::info!("Recovered interrupted recording {}", item.id);
+            }
+            Err(err) => {
+                failed += 1;
+                tracing::error!("Failed to recover recording: {err}");
+            }
         }
+    }
+    if recovered > 0 || failed > 0 {
+        analytics::track_recording_recovered(app, recovered, failed);
     }
 }
 
@@ -923,19 +987,37 @@ fn start_session(app: &AppHandle<AppRuntime>, sources: RecordingSources) -> Resu
     if manager.is_active() {
         return Err(anyhow!("already_recording"));
     }
-    selected_model_ready(app, &state)?;
+    let system = system_scope_label(&sources);
+    let failed = |stage: &str, reason: ErrorDetail| {
+        analytics::track_recording_session_failed(app, stage, reason, system);
+    };
+    if let Err(err) = selected_model_ready(app, &state) {
+        failed("no_model", error_detail(&err));
+        return Err(err);
+    }
     if sources.microphone.is_some() && !check_microphone_permission() {
+        failed("permission", "microphone".into());
         return Err(anyhow!("microphone_permission"));
     }
-    let root = sessions_root(app)?;
+    let root = sessions_root(app).inspect_err(|err| failed("setup", error_detail(err)))?;
     let dir = root.join(uuid::Uuid::new_v4().to_string());
-    manager.send_start(sources.clone(), dir)?;
+    manager
+        .send_start(sources.clone(), dir)
+        .map_err(|(stage, err)| {
+            match err.to_string().as_str() {
+                "system_audio_permission" => failed("permission", "system_audio".into()),
+                "no_microphone" => failed(stage, "no_microphone".into()),
+                _ => failed(stage, error_detail(&err)),
+            }
+            err
+        })?;
 
     if let Ok(json) = serde_json::to_vec(&sources) {
         let _ = fs::create_dir_all(&root);
         let _ = fs::write(root.join(LAST_SOURCES_FILE), json);
     }
-    crate::analytics::track_feature_used(app, "recording");
+    analytics::track_recording_session_started(app, sources.microphone.is_some(), system);
+    analytics::set_activity(Activity::RecordingSession);
     refresh_menus(app);
     start_state_emitter(app.clone(), Arc::clone(&manager.shared));
     Ok(())
@@ -986,8 +1068,12 @@ pub(crate) fn start_from_tray(app: &AppHandle<AppRuntime>) {
     });
 }
 
+/// `finishing` marks the pause before the naming dialog, which is not a user pause.
 #[tauri::command]
-pub fn pause_recording_session(app: AppHandle<AppRuntime>) -> RecordingSessionState {
+pub fn pause_recording_session(
+    app: AppHandle<AppRuntime>,
+    finishing: Option<bool>,
+) -> RecordingSessionState {
     let state = app.state::<AppState>();
     let manager = state.recording();
     manager
@@ -995,6 +1081,9 @@ pub fn pause_recording_session(app: AppHandle<AppRuntime>) -> RecordingSessionSt
         .finish_requested
         .store(false, Ordering::Relaxed);
     if manager.pause() {
+        if finishing != Some(true) {
+            manager.shared.paused_by_user.store(true, Ordering::Relaxed);
+        }
         refresh_menus(&app);
     }
     emit_state(&app, &manager.shared);
@@ -1054,6 +1143,11 @@ pub fn remove_recording_bookmark(app: AppHandle<AppRuntime>, id: String) -> Reco
 /// Throws the session away: files deleted, nothing added to the Library.
 #[tauri::command]
 pub async fn discard_recording_session(app: AppHandle<AppRuntime>) -> RecordingSessionState {
+    let summary = {
+        let state = app.state::<AppState>();
+        let shared = &state.recording().shared;
+        shared.is_active().then(|| shared.summary())
+    };
     let app_for_task = app.clone();
     let _ = tauri::async_runtime::spawn_blocking(move || {
         app_for_task.state::<AppState>().recording().send_discard();
@@ -1062,6 +1156,10 @@ pub async fn discard_recording_session(app: AppHandle<AppRuntime>) -> RecordingS
     let state = app.state::<AppState>();
     let manager = state.recording();
     manager.shared.reset();
+    if let Some(summary) = summary {
+        analytics::set_activity(Activity::Idle);
+        analytics::track_recording_session_ended(&app, "discarded", &summary, None);
+    }
     refresh_menus(&app);
     sync_tray(&app, &manager.shared.state());
     emit_state(&app, &manager.shared);
@@ -1081,12 +1179,16 @@ pub async fn finish_recording_session(
     let model = selected_model_ready(&app, &state).map_err(|err| err.to_string())?;
     let sources = manager.shared.sources.lock().clone();
     let bookmarks = manager.shared.bookmarks.lock().clone();
+    let summary = manager.shared.summary();
     emit_state(&app, &manager.shared);
 
     let app_for_task = app.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
         let state = app_for_task.state::<AppState>();
-        let output = state.recording().send_finish()?;
+        let output = state
+            .recording()
+            .send_finish()
+            .map_err(|err| ("finish", err))?;
         let name = name.trim().to_string();
         let name = if name.is_empty() {
             default_session_name(&output.started_at)
@@ -1094,15 +1196,26 @@ pub async fn finish_recording_session(
             name
         };
         save_session(&app_for_task, name, &model, output, sources, bookmarks)
+            .map_err(|err| ("save", err))
     })
     .await
     .map_err(|err| err.to_string())?;
 
     manager.shared.reset();
+    analytics::set_activity(Activity::Idle);
+    match &result {
+        Ok(_) => analytics::track_recording_session_ended(&app, "saved", &summary, None),
+        Err((stage, err)) => analytics::track_recording_session_ended(
+            &app,
+            "failed",
+            &summary,
+            Some((stage, error_detail(err))),
+        ),
+    }
     refresh_menus(&app);
     sync_tray(&app, &manager.shared.state());
     emit_state(&app, &manager.shared);
-    result.map_err(|err| err.to_string())
+    result.map_err(|(_, err)| err.to_string())
 }
 
 #[tauri::command]
@@ -1110,7 +1223,9 @@ pub fn open_system_audio_settings(app: AppHandle<AppRuntime>) -> Result<(), Stri
     use tauri_plugin_opener::OpenerExt;
     app.opener()
         .open_url(system_audio::permission_settings_url(), None::<&str>)
-        .map_err(|err| err.to_string())
+        .map_err(|err| err.to_string())?;
+    analytics::track_permission_prompt_opened(&app, "system_audio");
+    Ok(())
 }
 
 /// Tray "Finish Recording": pauses, brings the window to the Record screen and
@@ -1139,7 +1254,11 @@ pub(crate) fn toggle_pause_from_tray(app: &AppHandle<AppRuntime>) {
     let changed = if *manager.shared.status.lock() == Status::Paused {
         manager.resume()
     } else {
-        manager.pause()
+        let paused = manager.pause();
+        if paused {
+            manager.shared.paused_by_user.store(true, Ordering::Relaxed);
+        }
+        paused
     };
     if changed {
         refresh_menus(app);
