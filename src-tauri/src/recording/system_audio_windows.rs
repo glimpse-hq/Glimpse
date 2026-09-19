@@ -664,8 +664,9 @@ fn file_description(path: &Path) -> Option<String> {
         if !found.as_bool() || translation.is_null() || translation_len < 4 {
             return None;
         }
-        let language = *(translation as *const u16);
-        let code_page = *(translation as *const u16).add(1);
+        // Version info sits in a byte buffer, so reads can't assume u16 alignment.
+        let language = (translation as *const u16).read_unaligned();
+        let code_page = (translation as *const u16).add(1).read_unaligned();
         let key: Vec<u16> =
             format!("\\StringFileInfo\\{language:04x}{code_page:04x}\\FileDescription")
                 .encode_utf16()
@@ -682,7 +683,9 @@ fn file_description(path: &Path) -> Option<String> {
         if !found.as_bool() || value.is_null() || value_len == 0 {
             return None;
         }
-        let text = std::slice::from_raw_parts(value as *const u16, value_len as usize);
+        let text: Vec<u16> = (0..value_len as usize)
+            .map(|index| (value as *const u16).add(index).read_unaligned())
+            .collect();
         let end = text.iter().position(|ch| *ch == 0).unwrap_or(text.len());
         let name = String::from_utf16_lossy(&text[..end]).trim().to_string();
         (!name.is_empty()).then_some(name)
