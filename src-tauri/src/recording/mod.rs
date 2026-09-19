@@ -948,7 +948,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             microphone_path: microphone.map(|(path, _)| path),
             system_path: system.map(|(path, _)| path),
         };
-        let name = default_session_name(&manifest.started_at);
+        let name = default_session_name(app, &manifest.started_at);
         match save_session(
             app,
             name,
@@ -972,8 +972,23 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
     }
 }
 
-fn default_session_name(started_at: &DateTime<Local>) -> String {
-    format!("Recording - {}", started_at.format("%b %-d, %-I:%M %p"))
+/// The Record screen's default name, in the app's language: short month, day and time.
+fn default_session_name(app: &AppHandle<AppRuntime>, started_at: &DateTime<Local>) -> String {
+    use chrono::Locale;
+    let settings = app.state::<AppState>().current_settings();
+    let (pattern, locale) = match crate::native_i18n::ui_locale(&settings) {
+        "de" => ("%-d. %b, %H:%M", Locale::de_DE),
+        "fr" => ("%-d %b, %H:%M", Locale::fr_FR),
+        "es" => ("%-d %b, %H:%M", Locale::es_ES),
+        "it" => ("%-d %b, %H:%M", Locale::it_IT),
+        "nl" => ("%-d %b, %H:%M", Locale::nl_NL),
+        "ru" => ("%-d %b, %H:%M", Locale::ru_RU),
+        "hi" => ("%-d %b, %-I:%M %p", Locale::hi_IN),
+        "ar" => ("%-d %b، %H:%M", Locale::ar_SA),
+        _ => ("%b %-d, %-I:%M %p", Locale::en_US),
+    };
+    let date = started_at.format_localized(pattern, locale).to_string();
+    crate::toast::native(app, "native.recording.default_name").replace("{date}", &date)
 }
 
 #[tauri::command]
@@ -1210,7 +1225,7 @@ pub async fn finish_recording_session(
             .map_err(|err| ("finish", err))?;
         let name = name.trim().to_string();
         let name = if name.is_empty() {
-            default_session_name(&output.started_at)
+            default_session_name(&app_for_task, &output.started_at)
         } else {
             name
         };

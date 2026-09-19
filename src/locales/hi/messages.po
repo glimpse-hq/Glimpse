@@ -3725,6 +3725,16 @@ msgstr "रिकॉर्डिंग"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.recording.default_name"
+msgstr "रिकॉर्डिंग - {date}"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.default_name"
+msgstr "रिकॉर्डिंग - {day}, {time}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_paused"
 msgstr "रिकॉर्डिंग रोकी गई"
 

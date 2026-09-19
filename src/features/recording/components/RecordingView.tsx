@@ -90,18 +90,6 @@ const formatClock = (elapsedMs: number) => {
   return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
 };
 
-const defaultRecordingName = (date: Date) => {
-  const day = date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-  const time = date.toLocaleTimeString(undefined, {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-  return `Recording - ${day}, ${time}`;
-};
-
 const LevelMeter = ({ level }: { level: number }) => {
   const active = Math.min(METER_DOTS, Math.round(level * METER_DOTS));
   return (
@@ -397,7 +385,15 @@ type RecordingViewProps = {
 };
 
 const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
+  const defaultRecordingName = (date: Date) => {
+    const day = i18n.date(date, { month: "short", day: "numeric" });
+    const time = i18n.date(date, { hour: "numeric", minute: "2-digit" });
+    return t({
+      id: "record.default_name",
+      message: `Recording - ${day}, ${time}`,
+    });
+  };
   const queryClient = useQueryClient();
   const { state, applyState } = useRecordingSession();
   const { data: devices = [] } = useInputDevices(isActive);

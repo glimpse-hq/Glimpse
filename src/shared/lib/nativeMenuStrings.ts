@@ -92,6 +92,10 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.toast.recovered_one", message: "Recording recovered" }),
   msg({ id: "native.toast.recovered_many", message: "Recordings recovered" }),
   msg({
+    id: "native.recording.default_name",
+    message: "Recording - {date}",
+  }),
+  msg({
     id: "native.toast.recovered_saved_one",
     message: "Recording saved to History.",
   }),
