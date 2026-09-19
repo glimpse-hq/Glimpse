@@ -41,7 +41,7 @@ msgstr "„Glimpse wandelt meine Stimme in Text um.“"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit_command"
-msgstr ""
+msgstr "„Formeller formulieren“"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -57,7 +57,7 @@ msgstr "(falls erforderlich)"
 #. placeholder {0}: selectedApps.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.count"
-msgstr ""
+msgstr "{0, plural, one {# App} other {# Apps}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.llmCleanedCount
@@ -82,7 +82,7 @@ msgstr "{0, plural, one {# Sprache} other {# Sprachen}}"
 #. placeholder {0}: stats.langCount
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.languages"
-msgstr ""
+msgstr "{0, plural, one {# Sprache} other {# Sprachen}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.replacementsCount
@@ -100,7 +100,7 @@ msgstr "{0} gespeichert"
 #. placeholder {0}: closedApps.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.closed_many"
-msgstr ""
+msgstr "{0, plural, one {# ausgewählte App wird nicht ausgeführt und daher nicht aufgezeichnet.} other {# ausgewählte Apps werden nicht ausgeführt und daher nicht aufgezeichnet.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.transcriptCount
@@ -145,7 +145,7 @@ msgstr "{0, plural, one {Wir haben eine andere Diktier-App gefunden. Wähle aus,
 #. placeholder {0}: state.bookmarks.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmarks"
-msgstr ""
+msgstr "{0} Lesezeichen"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -157,7 +157,7 @@ msgstr "{0} Kopie"
 #. placeholder {0}: formatModelSize(modelSizeMb(model, true))
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.download"
-msgstr ""
+msgstr "{0} Download"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: entries.length
@@ -187,7 +187,7 @@ msgstr "{0} Zeit, die ich nie mit Tippen verbracht habe. @try_glimpse_app"
 #. placeholder {0}: closedApps[0].name
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.closed_one"
-msgstr ""
+msgstr "{0} wird nicht ausgeführt und daher nicht aufgezeichnet."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: model.label
@@ -308,7 +308,7 @@ msgstr "1 Audio-Text-Paar"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_one"
-msgstr ""
+msgstr "1 Lesezeichen"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -323,7 +323,7 @@ msgstr "1 Ersetzung"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_files_duration"
-msgstr ""
+msgstr "42 Min."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -338,7 +338,7 @@ msgstr "1 Tag"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_modes"
-msgstr ""
+msgstr "Ein Modus für jede App"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -353,7 +353,7 @@ msgstr "1 Monat"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.already_recording"
-msgstr ""
+msgstr "Eine Aufnahme wird bereits ausgeführt."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -413,7 +413,7 @@ msgstr "Account"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.accurate"
-msgstr ""
+msgstr "Genau"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -453,12 +453,12 @@ msgstr "Hinzufügen"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark.note"
-msgstr ""
+msgstr "Notiz hinzufügen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.label_placeholder"
-msgstr ""
+msgstr "Notiz hinzufügen"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -473,7 +473,7 @@ msgstr "App hinzufügen"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_bookmark"
-msgstr ""
+msgstr "Lesezeichen hinzufügen"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -533,7 +533,7 @@ msgstr "nach"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup"
-msgstr ""
+msgstr "KI-Bereinigung"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -568,7 +568,7 @@ msgstr "Bereits gekauft?"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.have_license"
-msgstr ""
+msgstr "Haben Sie bereits eine Lizenz?"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -608,7 +608,7 @@ msgstr "API-Schlüssel"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_api"
-msgstr ""
+msgstr "API-Server"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -770,12 +770,12 @@ msgstr "Beste Serie"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.bookmark"
-msgstr ""
+msgstr "Lesezeichen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.unnamed"
-msgstr ""
+msgstr "Lesezeichen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -800,7 +800,7 @@ msgstr "Integriert"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.built_in"
-msgstr ""
+msgstr "Integriert"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
@@ -815,7 +815,7 @@ msgstr "In diesem Mac integriert."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.built_in"
-msgstr ""
+msgstr "In deinen Mac integriert"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -825,12 +825,12 @@ msgstr "Lizenz kaufen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy"
-msgstr ""
+msgstr "Lizenz kaufen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.buy_team"
-msgstr ""
+msgstr "Für ein Team kaufen?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -855,7 +855,7 @@ msgstr "Abbrechen"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.cancel"
-msgstr ""
+msgstr "Abbrechen"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -865,7 +865,7 @@ msgstr "Abbrechen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.cancel"
-msgstr ""
+msgstr "Abbrechen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -911,7 +911,7 @@ msgstr "Funktionen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_modes_casual"
-msgstr ""
+msgstr "Locker"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1057,12 +1057,12 @@ msgstr "Zum Umbenennen klicken"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
-msgstr ""
+msgstr "Klicken, um Karten anzuzeigen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_list"
-msgstr ""
+msgstr "Klicken, um Zeilen anzuzeigen"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1147,7 +1147,7 @@ msgstr "Befehlszeile"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cli"
-msgstr ""
+msgstr "Befehlszeile"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -1177,7 +1177,7 @@ msgstr "Verbindungsdetails für Cloud-Transkription. Wählen Sie sie in Modelle 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue"
-msgstr ""
+msgstr "Fortfahren"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -1192,7 +1192,7 @@ msgstr "Fortfahren"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue_trial"
-msgstr ""
+msgstr "Kostenlose Testversion fortsetzen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -1329,7 +1329,7 @@ msgstr "Core"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v3"
-msgstr ""
+msgstr "Die Kern-Diktierfunktion ist kostenlos: lokale Transkription, Wörterbuch, Ersetzungen und Verlauf. Dafür fallen keine Gebühren pro Minute oder Abonnements an. Mediathek, Bereinigung und Personalisierung mit einem LLM sind Teil von Glimpse Personal und können 14 Tage lang kostenlos getestet werden. Der lokale API-Server und die CLI erfordern eine Lizenz und sind nicht Teil der Testversion. Aktiviere in Einstellungen → Account eine Personal-Lizenz (einmaliger Kauf) oder eine Commercial-Lizenz (jährliche Abrechnung)."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1479,7 +1479,7 @@ msgstr "Eigene Wörter"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.words"
-msgstr ""
+msgstr "Benutzerdefinierte Wörter"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/CustomerPortalLink.tsx
@@ -1706,7 +1706,7 @@ msgstr "Entwickler"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_anywhere"
-msgstr ""
+msgstr "In jeder App diktieren"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -1716,7 +1716,7 @@ msgstr "Diktat"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_free"
-msgstr ""
+msgstr "Diktieren bleibt dauerhaft kostenlos."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1777,7 +1777,7 @@ msgstr "Fertig"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.done"
-msgstr ""
+msgstr "Fertig"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -1817,7 +1817,7 @@ msgstr "Neural-Engine-Encoder laden"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.ready"
-msgstr ""
+msgstr "Heruntergeladen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
@@ -1828,7 +1828,7 @@ msgstr "Wird geladen"
 #. placeholder {0}: Math.round(progress?.percent ?? 0)
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading"
-msgstr ""
+msgstr "{0} % werden heruntergeladen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1873,7 +1873,7 @@ msgstr "Modusnamen bearbeiten"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit"
-msgstr ""
+msgstr "Mit deiner Stimme bearbeiten"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1933,7 +1933,7 @@ msgstr "Englisch"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.english"
-msgstr ""
+msgstr "Englisch"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
@@ -1958,7 +1958,7 @@ msgstr "Eigene Endpunkt-URL eingeben"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
-msgstr ""
+msgstr "Gesamtes System"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -1973,12 +1973,12 @@ msgstr "Jede Diktataufnahme wird in deiner Mediathek gespeichert."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_active"
-msgstr ""
+msgstr "Alles ist freigeschaltet."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_trial"
-msgstr ""
+msgstr "14 Tage lang steht dir alles zur Verfügung."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2018,7 +2018,7 @@ msgstr "Transkription exportieren"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_export"
-msgstr ""
+msgstr "Transkripte exportieren"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2083,7 +2083,7 @@ msgstr "FAQ"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.fast"
-msgstr ""
+msgstr "Schnell"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2148,7 +2148,7 @@ msgstr "Ein Modell für dein Gerät finden"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_finish"
-msgstr ""
+msgstr "Aufnahme beenden …"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -2168,7 +2168,7 @@ msgstr "Für dich. Bis zu 5 Geräte."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_modes_formal"
-msgstr ""
+msgstr "Formell"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2178,7 +2178,7 @@ msgstr "Gründer"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tag_free"
-msgstr ""
+msgstr "Kostenlos"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/WelcomeStep.tsx
@@ -2208,7 +2208,7 @@ msgstr "Allgemein"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_free"
-msgstr ""
+msgstr "Mit einer Lizenz erhältst du alles."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2248,12 +2248,12 @@ msgstr "Glimpse-Mitgliedskarte"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.microphone_permission"
-msgstr ""
+msgstr "Glimpse benötigt Zugriff auf das Mikrofon."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.system_audio_permission"
-msgstr ""
+msgstr "Glimpse benötigt die Berechtigung, Systemaudio aufzunehmen."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -2293,7 +2293,7 @@ msgstr "Zugriff gewähren"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.grid_view"
-msgstr ""
+msgstr "Rasteransicht"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeGreeting.ts
@@ -2313,7 +2313,7 @@ msgstr "Hilfe"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_edit_selection"
-msgstr ""
+msgstr "hey kannst du die Datei senden"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2348,7 +2348,7 @@ msgstr "Zum Löschen halten"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.delete"
-msgstr ""
+msgstr "Zum Löschen gedrückt halten"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -2493,7 +2493,7 @@ msgstr "Eingabemonitoring"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.no_model"
-msgstr ""
+msgstr "Installieren Sie zuerst ein Sprachmodell in den Einstellungen."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2560,7 +2560,7 @@ msgstr "Tastenkürzel"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers"
-msgstr ""
+msgstr "Wissen, wer was gesagt hat"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -2615,7 +2615,7 @@ msgstr "Gründungsmitglied seit dem Start. Bis zu 5 Geräte."
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout"
-msgstr ""
+msgstr "Layout"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2665,7 +2665,7 @@ msgstr "Hell"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.list_view"
-msgstr ""
+msgstr "Listenansicht"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2695,7 +2695,7 @@ msgstr "Live-Text"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.live"
-msgstr ""
+msgstr "Live-Text, während Sie sprechen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -2771,7 +2771,7 @@ msgstr "Verringert die Systemlautstärke während der Aufnahme."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices_body"
-msgstr ""
+msgstr "Mac und Windows"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AneCompileOverlay.tsx
@@ -2816,7 +2816,7 @@ msgstr "Mikrofon"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone"
-msgstr ""
+msgstr "Mikrofon"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -2832,7 +2832,7 @@ msgstr "Mikrofon"
 #: src/features/library/components/LibraryCard.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.sources.microphone"
-msgstr ""
+msgstr "Mikrofon"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2852,7 +2852,7 @@ msgstr "Mikrofon getrennt. Aufnahme wurde beendet und im Verlauf gespeichert."
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.tracks.microphone"
-msgstr ""
+msgstr "Mikrofonspur"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2989,7 +2989,7 @@ msgstr "Meine Tastatur wird langsam eifersüchtig. {wpm} Wörter pro Minute mit 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.title"
-msgstr ""
+msgstr "Aufnahme benennen"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2999,7 +2999,7 @@ msgstr "Benötigt eine Glimpse-Lizenz. Öffnet Account."
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_audio.unsupported"
-msgstr ""
+msgstr "Erfordert macOS 14.2 oder neuer"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3115,7 +3115,7 @@ msgstr "Kein Mikrofon gefunden."
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.no_microphone"
-msgstr ""
+msgstr "Kein Mikrofon gefunden."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3265,7 +3265,7 @@ msgstr "Nicht installiert"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.not_running"
-msgstr ""
+msgstr "Nicht aktiv"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -3325,7 +3325,7 @@ msgstr "Aus"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.source.off"
-msgstr ""
+msgstr "Aus"
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3350,7 +3350,7 @@ msgstr "Auf dem Gerät"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices"
-msgstr ""
+msgstr "Eine Lizenz, 5 Geräte"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -3360,12 +3360,12 @@ msgstr "Nur, wenn Sie unter Einstellungen → Anbieter ein Schreibmodell einrich
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps"
-msgstr ""
+msgstr "Nur diese Apps"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.saved.open"
-msgstr ""
+msgstr "Öffnen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3405,12 +3405,12 @@ msgstr "Einstellungen öffnen"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
-msgstr ""
+msgstr "Einstellungen öffnen"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.empty"
-msgstr ""
+msgstr "Öffnen Sie die App, die Sie aufnehmen möchten. Sie wird dann hier angezeigt."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3445,7 +3445,7 @@ msgstr "Originaltext"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_others"
-msgstr ""
+msgstr "Andere"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3465,7 +3465,7 @@ msgstr "Pausieren"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.pause"
-msgstr ""
+msgstr "Pausieren"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3475,12 +3475,12 @@ msgstr "Audio anhalten"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_pause"
-msgstr ""
+msgstr "Aufnahme pausieren"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.paused"
-msgstr ""
+msgstr "Pausiert"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3525,7 +3525,7 @@ msgstr "Audio wiedergeben"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.playback_settings"
-msgstr ""
+msgstr "Wiedergabeeinstellungen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3681,7 +3681,7 @@ msgstr "Glimpse im Microsoft Store bewerten?"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_raycast"
-msgstr ""
+msgstr "Raycast"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -3701,32 +3701,32 @@ msgstr "Erkennt Wörter aus Ihrem Wörterbuch."
 #. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.record"
-msgstr ""
+msgstr "Aufnehmen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording"
-msgstr ""
+msgstr "Besprechungen aufnehmen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_active"
-msgstr ""
+msgstr "Aufnahme"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.recording"
-msgstr ""
+msgstr "Aufnahme"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.recording"
-msgstr ""
+msgstr "Aufnahme"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_paused"
-msgstr ""
+msgstr "Aufnahme pausiert"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3833,12 +3833,12 @@ msgstr "{tag} entfernen"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark.remove"
-msgstr ""
+msgstr "Lesezeichen entfernen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.remove"
-msgstr ""
+msgstr "Lesezeichen entfernen"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3967,12 +3967,12 @@ msgstr "Ursprüngliches Transkript wiederherstellen"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.resume"
-msgstr ""
+msgstr "Fortsetzen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_resume"
-msgstr ""
+msgstr "Aufnahme fortsetzen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4092,7 +4092,7 @@ msgstr "Namen speichern"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.save"
-msgstr ""
+msgstr "In Mediathek sichern"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4103,12 +4103,12 @@ msgstr "gespeichert"
 #. placeholder {0}: saved.name
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.saved"
-msgstr ""
+msgstr "„{0}“ wurde in der Mediathek gesichert."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.saving"
-msgstr ""
+msgstr "Wird gesichert …"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -4118,7 +4118,7 @@ msgstr "Wird gesichert …"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.follow_playback"
-msgstr ""
+msgstr "Mit Wiedergabe scrollen"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -4128,7 +4128,7 @@ msgstr "Suchen"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_raycast_body"
-msgstr ""
+msgstr "Vergangene Diktate suchen und einfügen."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -4298,7 +4298,7 @@ msgstr "Feedback senden"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup_after"
-msgstr ""
+msgstr "Morgen senden."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4373,7 +4373,7 @@ msgstr "Kurzbefehle anzeigen"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.show_timestamps"
-msgstr ""
+msgstr "Zeitstempel anzeigen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4423,7 +4423,7 @@ msgstr "Klein"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.tier.small"
-msgstr ""
+msgstr "Klein"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4453,17 +4453,17 @@ msgstr "Sprecher {nextIndex}"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers_one"
-msgstr ""
+msgstr "Sprecher 1"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers_two"
-msgstr ""
+msgstr "Sprecher 2"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.speakers"
-msgstr ""
+msgstr "Sprechererkennung"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4483,7 +4483,7 @@ msgstr "Sprachmodell"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_offline_body"
-msgstr ""
+msgstr "Gesprochenes bleibt auf diesem Computer."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4528,12 +4528,12 @@ msgstr "Beim Start automatisch beginnen"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_start"
-msgstr ""
+msgstr "Aufnahme starten"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.start"
-msgstr ""
+msgstr "Aufnahme starten"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -4543,7 +4543,7 @@ msgstr "wird gestartet …"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.starting"
-msgstr ""
+msgstr "Wird gestartet …"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4553,7 +4553,7 @@ msgstr "Statistik"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.status"
-msgstr ""
+msgstr "Status"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4618,7 +4618,7 @@ msgstr "Support-Menü"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports"
-msgstr ""
+msgstr "Unterstützt"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -4643,13 +4643,13 @@ msgstr "System"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_audio"
-msgstr ""
+msgstr "Systemaudio"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.sources.system_audio"
-msgstr ""
+msgstr "Systemaudio"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4659,7 +4659,7 @@ msgstr "Systemaudio wird während der Aufnahme wiedergegeben."
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.tracks.system_audio"
-msgstr ""
+msgstr "System-Audiotrack"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -4679,12 +4679,12 @@ msgstr "Systemstandard"
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone.default"
-msgstr ""
+msgstr "Systemstandard"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone.default_named"
-msgstr ""
+msgstr "Systemstandard ({fallback})"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4744,7 +4744,7 @@ msgstr "Danke für deinen Beitrag. Bis zu 5 Geräte."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_active"
-msgstr ""
+msgstr "Danke, dass du Glimpse unterstützt!"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4860,7 +4860,7 @@ msgstr "Zeitstempel"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.timestamps"
-msgstr ""
+msgstr "Zeitstempel"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4940,7 +4940,7 @@ msgstr "Gesamt"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_files"
-msgstr ""
+msgstr "Dateien transkribieren"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5024,7 +5024,7 @@ msgstr "Aktiviere Apple Intelligence in den Systemeinstellungen, um dies zu verw
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.no_sources"
-msgstr ""
+msgstr "Aktiviere mindestens eine Quelle."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -5039,7 +5039,7 @@ msgstr "Aktiviert das automatische Einfügen in jede App."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup_before"
-msgstr ""
+msgstr "Ähm, ja, schick es morgen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5310,7 +5310,7 @@ msgstr "Gesprochene Wörter"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_offline"
-msgstr ""
+msgstr "Funktioniert offline"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -5325,7 +5325,7 @@ msgstr "Gestern"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording_you"
-msgstr ""
+msgstr "Du"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
