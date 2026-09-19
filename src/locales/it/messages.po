@@ -3725,6 +3725,16 @@ msgstr "Registrazione"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.recording.default_name"
+msgstr "Registrazione - {date}"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.default_name"
+msgstr "Registrazione - {day}, {time}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_paused"
 msgstr "Registrazione in pausa"
 

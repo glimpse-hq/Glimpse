@@ -3725,6 +3725,16 @@ msgstr "Opname"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.recording.default_name"
+msgstr "Opname - {date}"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.default_name"
+msgstr "Opname - {day}, {time}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_paused"
 msgstr "Opname gepauzeerd"
 
