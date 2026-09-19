@@ -67,6 +67,9 @@ pub struct MicrophoneSource {
 pub struct SelectedApp {
     pub id: String,
     pub name: String,
+    // Kept so a remembered app still shows its icon after it quits.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

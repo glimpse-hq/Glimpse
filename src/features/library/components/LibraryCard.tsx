@@ -427,11 +427,15 @@ const LibraryCard = ({
             <div className="flex min-w-0 flex-wrap items-center gap-1.5 ui-text-label ui-color-muted">
               <span>{formatDuration(item.duration_seconds)}</span>
               <span className="opacity-40">&bull;</span>
-              <span title={sourcesLabel ?? undefined}>
-                {item.kind === "recording"
-                  ? t({ id: "library.card.recording", message: "Recording" })
-                  : formatBytes(item.file_size_bytes)}
-              </span>
+              {item.kind === "recording" && (
+                <>
+                  <span title={sourcesLabel ?? undefined}>
+                    {t({ id: "library.card.recording", message: "Recording" })}
+                  </span>
+                  <span className="opacity-40">&bull;</span>
+                </>
+              )}
+              <span>{formatBytes(item.file_size_bytes)}</span>
               {bookmarkCount > 0 && (
                 <>
                   <span className="opacity-40">&bull;</span>
@@ -869,10 +873,19 @@ const LibraryCard = ({
 
       <span
         className="w-20 shrink-0 truncate ui-text-label ui-color-muted"
-        title={sourcesLabel ?? undefined}
+        title={
+          item.kind === "recording"
+            ? [
+                t({ id: "library.card.recording", message: "Recording" }),
+                sourcesLabel,
+              ]
+                .filter(Boolean)
+                .join(": ")
+            : (sourcesLabel ?? undefined)
+        }
       >
         {item.kind === "recording"
-          ? t({ id: "library.card.recording", message: "Recording" })
+          ? formatBytes(item.file_size_bytes)
           : item.source_path
             ? t({ id: "library.card.imported", message: "Imported" })
             : formatBytes(item.file_size_bytes)}

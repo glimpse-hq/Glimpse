@@ -36,6 +36,7 @@ import type {
   LibraryItem,
   RecordingCapabilities,
   RecordingSources,
+  SelectedApp,
 } from "../../../types";
 
 type StartError = {
@@ -56,7 +57,7 @@ type SourceChoices = {
   systemAudio: boolean;
   // `null` follows the dictation microphone, `""` is the system default.
   microphoneDevice: string | null;
-  apps: Array<{ id: string; name: string }>;
+  apps: SelectedApp[];
 };
 
 const DEFAULT_CHOICES: SourceChoices = {
@@ -141,6 +142,7 @@ type SourceMenuItem = {
   key: string;
   label: string;
   icon?: ReactNode;
+  detail?: string;
   selected: boolean;
   onSelect: () => void;
 };
@@ -245,6 +247,11 @@ const SourceMenu = ({
                     <span className="min-w-0 flex-1 truncate">
                       {item.label}
                     </span>
+                    {item.detail && (
+                      <span className="shrink-0 ui-text-label text-content-muted">
+                        {item.detail}
+                      </span>
+                    )}
                     <span className="flex w-3 shrink-0 items-center justify-center">
                       {item.selected && <Check size={12} aria-hidden="true" />}
                     </span>
@@ -405,6 +412,8 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   });
   const [choices, setChoices] = useState<SourceChoices>(DEFAULT_CHOICES);
   const [apps, setApps] = useState<AudioApp[]>([]);
+  // Until the first list arrives, no remembered app counts as closed.
+  const [appsLoaded, setAppsLoaded] = useState(false);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<StartError | null>(null);
   const [naming, setNaming] = useState<NamingDialog | null>(null);
@@ -444,7 +453,10 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     if (!capabilities.app_selection) return;
     recordingApi
       .listAudioApps()
-      .then(setApps)
+      .then((next) => {
+        setApps(next);
+        setAppsLoaded(true);
+      })
       .catch(() => {});
   }, [capabilities.app_selection]);
 
@@ -455,6 +467,20 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     const timer = setInterval(refreshApps, 4000);
     return () => clearInterval(timer);
   }, [isActive, wantsApps, refreshApps]);
+
+  // Selections made before icons were saved pick theirs up once the app runs.
+  useEffect(() => {
+    setChoices((prev) => {
+      let changed = false;
+      const nextApps = prev.apps.map((selected) => {
+        const icon = apps.find((app) => app.id === selected.id)?.icon;
+        if (!icon || icon === selected.icon) return selected;
+        changed = true;
+        return { ...selected, icon };
+      });
+      return changed ? { ...prev, apps: nextApps } : prev;
+    });
+  }, [apps]);
 
   // Tray "Finish Recording" lands here: the backend already paused.
   useEffect(() => {
@@ -667,17 +693,20 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     }
   };
 
-  const toggleApp = (app: AudioApp) => {
+  const toggleApp = (app: SelectedApp) => {
     setChoices((prev) => ({
       ...prev,
       systemAudio: true,
       apps: prev.apps.some((entry) => entry.id === app.id)
         ? prev.apps.filter((entry) => entry.id !== app.id)
-        : [...prev.apps, { id: app.id, name: app.name }],
+        : [...prev.apps, { id: app.id, name: app.name, icon: app.icon }],
     }));
   };
 
   const idle = !active && !busy;
+  const isClosed = (app: { id: string }) =>
+    appsLoaded && !apps.some((running) => running.id === app.id);
+  const closedApps = choices.systemAudio ? selectedApps.filter(isClosed) : [];
   const secondaryButton =
     "flex h-9 w-[104px] items-center justify-center gap-1.5 rounded-full border border-border-secondary ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover hover:text-content-primary disabled:cursor-default disabled:opacity-30 disabled:hover:border-border-secondary disabled:hover:text-content-secondary";
 
@@ -756,7 +785,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   ];
   if (capabilities.app_selection) {
     // Remembered apps stay listed while closed so they can be deselected.
-    const menuApps: AudioApp[] = [
+    const menuApps: SelectedApp[] = [
       ...apps,
       ...selectedApps.filter(
         (selected) => !apps.some((app) => app.id === selected.id),
@@ -782,6 +811,9 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         ) : (
           <AppWindow size={14} className="shrink-0 text-content-muted" />
         ),
+        detail: isClosed(app)
+          ? t({ id: "record.setup.apps.not_running", message: "Not running" })
+          : undefined,
         selected:
           choices.systemAudio &&
           selectedApps.some((entry) => entry.id === app.id),
@@ -804,7 +836,8 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     choices.systemAudio && selectedApps.length > 0 ? (
       <span className="flex shrink-0 items-center gap-1">
         {selectedApps.slice(0, 4).map((selected) => {
-          const icon = apps.find((app) => app.id === selected.id)?.icon;
+          const icon =
+            apps.find((app) => app.id === selected.id)?.icon ?? selected.icon;
           return icon ? (
             <img
               key={selected.id}
@@ -869,6 +902,25 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
             {t({ id: "record.saved.open", message: "Open" })}
           </button>
         </>
+      );
+    }
+    if (idle && closedApps.length > 0) {
+      return (
+        <span className="truncate ui-color-warning">
+          {closedApps.length === 1
+            ? t({
+                id: "record.setup.apps.closed_one",
+                message: `${closedApps[0].name} isn't running, so it won't be recorded.`,
+              })
+            : t({
+                id: "record.setup.apps.closed_many",
+                message: plural(closedApps.length, {
+                  one: "# selected app isn't running, so it won't be recorded.",
+                  other:
+                    "# selected apps aren't running, so they won't be recorded.",
+                }),
+              })}
+        </span>
       );
     }
     return null;

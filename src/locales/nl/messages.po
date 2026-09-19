@@ -97,6 +97,12 @@ msgid "import.cat.personalities.detail"
 msgstr "{0} opgeslagen"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: closedApps.length
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.apps.closed_many"
+msgstr ""
+
+#. js-lingui-explicit-id
 #. placeholder {0}: previewForApp.transcriptCount
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.history.detail"
@@ -176,6 +182,12 @@ msgstr "{0} bestanden"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.8.v2"
 msgstr "{0} die ik nooit al typend heb besteed. @try_glimpse_app"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: closedApps[0].name
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.apps.closed_one"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: model.label
@@ -821,11 +833,6 @@ msgid "onboarding.license_step.buy_team"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.name.cancel"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancel"
 msgstr "Annuleren"
@@ -844,6 +851,11 @@ msgstr "Annuleren"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.cancel"
 msgstr "Annuleren"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.name.cancel"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1758,14 +1770,14 @@ msgid "personalization.disable_mode"
 msgstr "Modus uitschakelen"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.active.done"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.done"
 msgstr "Gereed"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.done"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2329,14 +2341,14 @@ msgid "onboarding.first_dictation.failed_empty_body"
 msgstr "Houd iets langer vast en probeer het opnieuw."
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.name.delete"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.hold_to_delete"
 msgstr "Ingedrukt houden om te verwijderen"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.name.delete"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -2787,17 +2799,6 @@ msgid "member_card.label_member_since"
 msgstr "Lid sinds"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.microphone"
-msgstr ""
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.sources.microphone"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.microphone"
 msgstr "Microfoon"
@@ -2813,6 +2814,11 @@ msgid "settings.general.microphone"
 msgstr "Microfoon"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.microphone"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.microphone.title"
 msgstr "Microfoontoegang"
@@ -2821,6 +2827,12 @@ msgstr "Microfoontoegang"
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.microphone"
 msgstr "Microfoon"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.sources.microphone"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -3096,14 +3108,14 @@ msgid "dictionary.no_matches"
 msgstr "Geen overeenkomsten gevonden"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.error.no_microphone"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.not_found_error"
 msgstr "Geen microfoon gevonden."
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.error.no_microphone"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3251,6 +3263,11 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "Niet geïnstalleerd"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.apps.not_running"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.not_set_up"
 msgstr "Niet ingesteld"
@@ -3296,11 +3313,6 @@ msgid "settings.app.permission.off"
 msgstr "uit"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.source.off"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.off"
 msgstr "Uit"
@@ -3309,6 +3321,11 @@ msgstr "Uit"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.card.off"
 msgstr "Uit"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.source.off"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -3381,14 +3398,14 @@ msgid "settings.providers.guide.speech.action"
 msgstr "Modellen openen"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.error.open_settings"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.open_settings"
 msgstr "Instellingen openen"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.error.open_settings"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -3441,14 +3458,14 @@ msgid "native.menu.paste"
 msgstr "Plak"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.active.pause"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_pause_media.pause"
 msgstr "Pauzeren"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.pause"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4650,11 +4667,6 @@ msgid "onboarding.done.recap.microphone_default"
 msgstr "Systeemstandaard"
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.microphone.default"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.mic_system_default"
 msgstr "Systeemstandaard"
@@ -4663,6 +4675,11 @@ msgstr "Systeemstandaard"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.system_default"
 msgstr "Systeemstandaard"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.microphone.default"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx

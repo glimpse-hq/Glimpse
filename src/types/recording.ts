@@ -11,9 +11,15 @@ export type AudioApp = {
   icon?: string | null;
 };
 
+export type SelectedApp = {
+  id: string;
+  name: string;
+  icon?: string | null;
+};
+
 export type RecordingSources = {
   microphone: { device_id: string | null } | null;
-  system_audio: { apps: Array<{ id: string; name: string }> | null } | null;
+  system_audio: { apps: SelectedApp[] | null } | null;
 };
 
 export type RecordingSessionStatus = "idle" | "recording" | "paused" | "saving";
