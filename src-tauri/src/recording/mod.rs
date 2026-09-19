@@ -209,6 +209,7 @@ struct Shared {
     sources: Mutex<AudioSources>,
     bookmarks: Mutex<Vec<Bookmark>>,
     session_dir: Mutex<Option<PathBuf>>,
+    started_at: Mutex<Option<DateTime<Local>>>,
     finish_requested: AtomicBool,
     emitter_running: AtomicBool,
 }
@@ -266,6 +267,7 @@ impl Shared {
         *self.sources.lock() = AudioSources::default();
         self.bookmarks.lock().clear();
         *self.session_dir.lock() = None;
+        *self.started_at.lock() = None;
         self.finish_requested.store(false, Ordering::Relaxed);
     }
 }
@@ -318,6 +320,7 @@ impl Default for RecordingManager {
             sources: Mutex::new(AudioSources::default()),
             bookmarks: Mutex::new(Vec::new()),
             session_dir: Mutex::new(None),
+            started_at: Mutex::new(None),
             finish_requested: AtomicBool::new(false),
             emitter_running: AtomicBool::new(false),
         });
@@ -472,9 +475,12 @@ impl RecordingManager {
         else {
             return;
         };
+        let Some(started_at) = *self.shared.started_at.lock() else {
+            return;
+        };
         let manifest = SessionManifest {
             id,
-            started_at: Local::now(),
+            started_at,
             sources: self.shared.sources.lock().clone(),
             bookmarks: self.shared.bookmarks.lock().clone(),
         };
@@ -656,6 +662,7 @@ impl Worker {
         *self.shared.sources.lock() = summary;
         self.shared.bookmarks.lock().clear();
         *self.shared.session_dir.lock() = Some(dir);
+        *self.shared.started_at.lock() = Some(started_at);
         *self.shared.clock.lock() = Some(clock);
         self.shared.finish_requested.store(false, Ordering::Relaxed);
         *self.shared.status.lock() = Status::Recording;
