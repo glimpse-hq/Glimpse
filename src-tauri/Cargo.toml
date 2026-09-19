@@ -50,7 +50,7 @@ rustfft = "6"
 reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
 posthog-rs = { version = "0.25", default-features = false, features = ["async-client"] }
 arboard = "3"
-glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.6.3", features = ["whisper", "nvidia", "transcribe", "api", "cli", "remote", "cleanup-apple", "apple-speech"] }
+glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.6.4", features = ["whisper", "nvidia", "transcribe", "api", "cli", "remote", "cleanup-apple", "apple-speech"] }
 uuid = { version = "1.26.0", features = ["v4"] }
 aes-gcm = "0.11"
 pbkdf2 = "0.13"

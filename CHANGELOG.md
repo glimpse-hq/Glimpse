@@ -22,11 +22,22 @@ Recording your computer's audio needs macOS 14.2 or later. Picking apps on Windo
 - Going from onboarding to in app feels significantly more fluid.
 - The Library has a fresh, simpler look, with plain rows or a grid, and a transcript that follows along as it plays.
 
+### Raycast
+
+The Glimpse extension for Raycast has a new version with this release.
+
+- Start, pause, bookmark and finish recordings, with a timer in the menu bar while you record.
+- Recordings stand out in Browse Library, and you can jump straight to the Record screen.
+- Edit your text replacements with the new Manage Replacements command.
+- Clearer messages when Glimpse isn't running, the command line tool isn't installed, or a license is needed.
+- Switch Speech Model can download models again.
+
 ### Fixes
 
 - Glimpse no longer crashes when you sign out of Windows or shut down while it's running.
 - On Windows, Glimpse now lets you know when it has updated itself, as it already did on Mac.
 - Long transcriptions in the Library come out noticeably cleaner. Glimpse no longer repeats words where it stitches the pieces of a long file together, which was most noticeable with Whisper.
+- Websites can no longer reach the Local API while it's running. Scripts and apps on your computer still work as before, and browser access stays available when you turn on CORS.
 
 1.1.6
 
