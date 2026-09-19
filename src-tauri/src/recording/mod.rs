@@ -490,9 +490,13 @@ impl RecordingManager {
     }
 }
 
+// Written through a temp file: recovery discards a session whose manifest
+// does not parse, so a crash mid-write must not leave a truncated one.
 fn write_manifest_file(dir: &Path, manifest: &SessionManifest) -> Result<()> {
     let contents = serde_json::to_vec_pretty(manifest)?;
-    fs::write(dir.join(MANIFEST_FILE), contents)?;
+    let tmp = dir.join(format!("{MANIFEST_FILE}.tmp"));
+    fs::write(&tmp, contents)?;
+    fs::rename(&tmp, dir.join(MANIFEST_FILE))?;
     Ok(())
 }
 
