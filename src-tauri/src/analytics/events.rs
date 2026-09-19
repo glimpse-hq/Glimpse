@@ -336,7 +336,9 @@ pub fn track_checkout_returned(app: &tauri::AppHandle<AppRuntime>) {
 #[tauri::command]
 pub fn track_gate_blocked(app: tauri::AppHandle<AppRuntime>, feature: String) {
     let feature = match feature.as_str() {
-        "personalization" | "library" | "cleanup" | "providers" | "api" => feature.as_str(),
+        "personalization" | "library" | "record" | "cleanup" | "providers" | "api" => {
+            feature.as_str()
+        }
         _ => "other",
     };
     capture_event(&app, "gate_blocked", json!({ "feature": feature }));
