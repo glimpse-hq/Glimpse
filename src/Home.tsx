@@ -21,6 +21,7 @@ import {
   X,
   ArrowCircleUp as ArrowUpCircle,
   Books as Library,
+  Record as RecordIcon,
 } from "@phosphor-icons/react";
 import { emit, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import WindowControls from "./shared/ui/WindowControls";
@@ -43,6 +44,7 @@ import { useTimeOfDayPeriodTick } from "./features/transcriptions/homeGreeting";
 import DictionaryView from "./features/dictionary/components/DictionaryView";
 import PersonalizationView from "./features/personalization/components/PersonalizationView";
 import LibraryView from "./features/library/components/LibraryView";
+import RecordingView from "./features/recording/components/RecordingView";
 import LocalApiSidebarStatus from "./features/settings/components/LocalApiSidebarStatus";
 import NewsMenu from "./features/news/components/NewsMenu";
 import AccountPill from "./features/license/components/AccountPill";
@@ -62,7 +64,7 @@ const importSettingsScreen = () =>
 const SettingsScreen = lazy(importSettingsScreen);
 const FAQModal = lazy(() => import("./shared/ui/FAQModal"));
 
-type ActiveView = "home" | "dictionary" | "brain" | "library";
+type ActiveView = "home" | "dictionary" | "brain" | "library" | "record";
 
 let cachedLocalApiStatus: LocalApiStatus | null = null;
 
@@ -128,8 +130,8 @@ const StaticGlimpseLogo = ({
   );
 };
 
-const gatedFeatureName = (view: "brain" | "library") =>
-  view === "brain" ? "personalization" : "library";
+const gatedFeatureName = (view: "brain" | "library" | "record") =>
+  view === "brain" ? "personalization" : view;
 
 const Home = () => {
   const { t } = useLingui();
@@ -141,11 +143,11 @@ const Home = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>("home");
   useEffect(() => {
-    if (activeView !== "library") return;
-    void invoke("track_feature_used_command", { feature: "library" }).catch(
-      () => {},
-    );
+    void invoke("track_screen_viewed", { screen: activeView }).catch(() => {});
   }, [activeView]);
+  const [openLibraryItemId, setOpenLibraryItemId] = useState<string | null>(
+    null,
+  );
   const licenseGateActive = useLicenseGate();
   const { data: licenseState } = useLicenseState();
   const activeLicense = licenseState?.status === "active";
@@ -265,7 +267,9 @@ const Home = () => {
   );
 
   // A gated view requested (from the CLI) before the license state has loaded.
-  const pendingGatedViewRef = useRef<"brain" | "library" | null>(null);
+  const pendingGatedViewRef = useRef<"brain" | "library" | "record" | null>(
+    null,
+  );
 
   useEffect(() => {
     licenseGateActiveRef.current = licenseGateActive;
@@ -278,7 +282,9 @@ const Home = () => {
     }
     if (
       !licenseGateActive &&
-      (activeView === "brain" || activeView === "library")
+      (activeView === "brain" ||
+        activeView === "library" ||
+        activeView === "record")
     ) {
       setActiveView("home");
       setDragActive(false);
@@ -382,6 +388,7 @@ const Home = () => {
         ["navigate:dictionary", "dictionary"],
         ["navigate:personalization", "brain"],
         ["navigate:library", "library"],
+        ["navigate:record", "record"],
       ] as const
     ).map(([event, view]) =>
       listen(event, () => {
@@ -567,6 +574,7 @@ const Home = () => {
     dictionary: Book,
     brain: Brain,
     library: Library,
+    record: RecordIcon,
   }[activeView];
   useTimeOfDayPeriodTick(homeViewActive);
   const {
@@ -715,6 +723,27 @@ const Home = () => {
                     licenseGateActive
                       ? setActiveView("library")
                       : openAccountSettings("sidebar_lock", "library")
+                  }
+                />
+                <div className="flex h-5 items-center pr-3 pl-[var(--sidebar-icon-pl,17px)]">
+                  <div className="flex w-[20px] shrink-0 justify-center">
+                    <div className="h-px w-3.5 bg-[var(--border-strong)]" />
+                  </div>
+                </div>
+                <SidebarItem
+                  icon={RecordIcon}
+                  label={t({
+                    id: "home.sidebar.record",
+                    message: "Record",
+                  })}
+                  active={activeView === "record"}
+                  collapsed={isSidebarCollapsed}
+                  locked={!licenseGateActive}
+                  lockedHint={lockedHint}
+                  onClick={() =>
+                    licenseGateActive
+                      ? setActiveView("record")
+                      : openAccountSettings("sidebar_lock", "record")
                   }
                 />
               </>
@@ -1073,7 +1102,21 @@ const Home = () => {
             <LibraryView
               pendingImportPaths={pendingImportPaths}
               onSetImportPaths={setPendingImportPaths}
+              openItemId={openLibraryItemId}
+              onOpenItemHandled={() => setOpenLibraryItemId(null)}
               isActive={activeView === "library" && licenseGateActive}
+            />
+          </div>
+
+          <div
+            className={`w-full max-w-[400px] mx-auto pt-8 min-h-0 flex-1 ${activeView === "record" ? "flex flex-col" : "hidden"}`}
+          >
+            <RecordingView
+              isActive={activeView === "record" && licenseGateActive}
+              onOpenLibraryItem={(id) => {
+                setOpenLibraryItemId(id);
+                setActiveView("library");
+              }}
             />
           </div>
         </div>

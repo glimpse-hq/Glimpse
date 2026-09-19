@@ -211,7 +211,7 @@ fn resolve_shortcut_icon_source(shortcut_path: &Path) -> Option<(PathBuf, i32)> 
     result
 }
 
-fn write_bgra_png(path: &Path, width: u32, height: u32, pixels: &[u8]) -> Option<()> {
+fn encode_bgra_png(width: u32, height: u32, pixels: &[u8]) -> Option<Vec<u8>> {
     let pixel_bytes = width.checked_mul(height)?.checked_mul(4)?;
     if pixels.len() != pixel_bytes as usize {
         return None;
@@ -225,6 +225,18 @@ fn write_bgra_png(path: &Path, width: u32, height: u32, pixels: &[u8]) -> Option
         rgba.push(pixel[3]);
     }
 
+    let mut png_bytes = Vec::new();
+    let mut encoder = png::Encoder::new(&mut png_bytes, width, height);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    let mut writer = encoder.write_header().ok()?;
+    writer.write_image_data(&rgba).ok()?;
+    drop(writer);
+    Some(png_bytes)
+}
+
+fn write_bgra_png(path: &Path, width: u32, height: u32, pixels: &[u8]) -> Option<()> {
+    let png_bytes = encode_bgra_png(width, height, pixels)?;
     let parent = path.parent()?;
     let file_name = path.file_name()?.to_string_lossy();
     let suffix = std::time::SystemTime::now()
@@ -238,13 +250,7 @@ fn write_bgra_png(path: &Path, width: u32, height: u32, pixels: &[u8]) -> Option
     ));
 
     let result = (|| {
-        let file = std::fs::File::create(&temp_path).ok()?;
-        let mut encoder = png::Encoder::new(file, width, height);
-        encoder.set_color(png::ColorType::Rgba);
-        encoder.set_depth(png::BitDepth::Eight);
-        let mut writer = encoder.write_header().ok()?;
-        writer.write_image_data(&rgba).ok()?;
-        drop(writer);
+        std::fs::write(&temp_path, &png_bytes).ok()?;
         let temp_wide = path_to_wide_null(&temp_path);
         let path_wide = path_to_wide_null(path);
         unsafe {
@@ -265,10 +271,7 @@ fn write_bgra_png(path: &Path, width: u32, height: u32, pixels: &[u8]) -> Option
     result
 }
 
-fn write_hicon_to_png(
-    icon: windows::Win32::UI::WindowsAndMessaging::HICON,
-    cached_icon: &Path,
-) -> Option<()> {
+fn hicon_bgra(icon: windows::Win32::UI::WindowsAndMessaging::HICON) -> Option<Vec<u8>> {
     use std::ffi::c_void;
     use windows::Win32::Graphics::Gdi::{
         BI_RGB, BITMAPINFO, BITMAPINFOHEADER, CreateCompatibleDC, CreateDIBSection, DIB_RGB_COLORS,
@@ -338,16 +341,32 @@ fn write_hicon_to_png(
         }
     }
 
-    if pixels.is_empty() {
-        return None;
-    }
+    (!pixels.is_empty()).then_some(pixels)
+}
 
+fn write_hicon_to_png(
+    icon: windows::Win32::UI::WindowsAndMessaging::HICON,
+    cached_icon: &Path,
+) -> Option<()> {
+    let pixels = hicon_bgra(icon)?;
     write_bgra_png(
         cached_icon,
         WINDOWS_ICON_SIZE as u32,
         WINDOWS_ICON_SIZE as u32,
         &pixels,
     )
+}
+
+/// Icon of an executable, encoded as PNG.
+pub(crate) fn exe_icon_png(exe_path: &Path) -> Option<Vec<u8>> {
+    use windows::Win32::UI::WindowsAndMessaging::DestroyIcon;
+
+    let icon = extract_icon_handle(exe_path, 0)?;
+    let pixels = hicon_bgra(icon);
+    unsafe {
+        let _ = DestroyIcon(icon);
+    }
+    encode_bgra_png(WINDOWS_ICON_SIZE as u32, WINDOWS_ICON_SIZE as u32, &pixels?)
 }
 
 fn extract_icon_handle(

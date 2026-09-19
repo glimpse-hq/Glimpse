@@ -64,3 +64,29 @@ pub fn list_input_devices() -> Result<Vec<DeviceInfo>, String> {
 
     Ok(result)
 }
+
+/// Resolves a stored device id (or name, for older settings) to a device,
+/// falling back to the system default. `None` means the system default.
+pub(crate) fn find_input_device(selected: Option<&str>) -> Option<cpal::Device> {
+    let host = cpal::default_host();
+    let Some(selected) = selected else {
+        return host.default_input_device();
+    };
+    selected
+        .parse::<cpal::DeviceId>()
+        .ok()
+        .and_then(|parsed| host.device_by_id(&parsed))
+        .or_else(|| {
+            host.input_devices().ok()?.find(|device| {
+                device
+                    .id()
+                    .map(|id| id.to_string() == selected)
+                    .unwrap_or(false)
+                    || device
+                        .description()
+                        .map(|desc| desc.name() == selected)
+                        .unwrap_or(false)
+            })
+        })
+        .or_else(|| host.default_input_device())
+}

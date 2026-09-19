@@ -372,7 +372,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   return (
     <div className="w-full min-w-0 max-w-7xl mx-auto px-0 text-left">
       <ScreenHeader
-        className="mb-6 mt-2 md:-mt-6"
         icon={
           <DotMatrix
             rows={2}

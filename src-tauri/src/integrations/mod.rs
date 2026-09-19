@@ -13,6 +13,7 @@ mod library;
 mod model;
 mod open;
 mod output;
+mod record;
 mod replacements;
 mod server;
 mod status;
@@ -38,6 +39,11 @@ const COMMANDS: &[CliCommand] = &[
     CliCommand {
         name: "library",
         help: "Import and transcribe files in the background.",
+        owned: true,
+    },
+    CliCommand {
+        name: "record",
+        help: "Control Recording Mode.",
         owned: true,
     },
     CliCommand {
@@ -165,6 +171,7 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "replacements" => replacements::run(identifier, rest, json),
         "model" => model::run(identifier, rest, json),
         "library" => library::run(identifier, rest, json),
+        "record" => record::run(rest, json),
         "open" => open::run(rest, json),
         "status" => status::run(rest, json),
         "api" => api::run(rest, json),

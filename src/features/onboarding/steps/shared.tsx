@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { motion, type Variants, type Easing } from "framer-motion";
+import type { Icon } from "@phosphor-icons/react";
 
 export { GlimpseLogo } from "../../../shared/ui/GlimpseLogo";
 
 export type StepMotionProps = {
-  custom: 1 | -1;
+  custom: number;
   variants: Variants;
   animate: string;
   exit: string;
@@ -46,6 +47,46 @@ export function OnboardingStep({
     </motion.div>
   );
 }
+
+export function Tile({
+  icon: TileIcon,
+  title,
+  tag,
+  children,
+}: {
+  icon: Icon;
+  title: string;
+  tag?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border-primary bg-surface-overlay px-4 pb-4 pt-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+      <div className="mb-3 flex items-start gap-2">
+        <TileIcon size={15} className="mt-0.5 shrink-0 text-content-muted" />
+        <p className="min-w-0 flex-1 leading-snug ui-text-body-sm-strong text-content-primary text-balance">
+          {title}
+        </p>
+        {tag ? (
+          <span className="mt-0.5 shrink-0 ui-text-meta text-content-disabled">
+            {tag}
+          </span>
+        ) : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function Chip({ children }: { children: ReactNode }) {
+  return (
+    <span className="whitespace-nowrap rounded-md bg-surface-secondary px-2 py-0.5 font-mono ui-text-meta text-content-secondary">
+      {children}
+    </span>
+  );
+}
+
+export const SECONDARY_BUTTON_CLASS =
+  "flex w-full items-center justify-center gap-2 rounded-lg border border-border-secondary px-5 py-2.5 ui-text-body-lg font-semibold text-content-primary transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50";
 
 export function OnboardingHeader({
   title,

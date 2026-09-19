@@ -504,6 +504,9 @@ mod tests {
                 detect_speakers: false,
                 kind: "import".to_string(),
                 speakers: None,
+                secondary_audio_path: None,
+                sources: None,
+                bookmarks: None,
             })
             .expect("insert library item");
 

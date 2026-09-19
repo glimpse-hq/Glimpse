@@ -13,7 +13,7 @@ use std::{
 
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Local, TimeZone};
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::{FromSample, Sample, SampleFormat, SizedSample, Stream};
 use crossbeam_channel::{Sender, bounded, unbounded};
 use parking_lot::Mutex;
@@ -406,6 +406,8 @@ impl RecorderManager {
     /// `None` when nothing is recording or the device has no stable id.
     #[cfg(target_os = "macos")]
     pub fn active_device_present(&self) -> Option<bool> {
+        use cpal::traits::HostTrait;
+
         let id = self.active_device.lock().clone()?;
         Some(cpal::default_host().device_by_id(&id).is_some())
     }
@@ -573,29 +575,7 @@ impl RecorderCore {
             return Err(anyhow!("Recording is already in progress"));
         }
 
-        let host = cpal::default_host();
-        let device = if let Some(selected) = device_id {
-            selected
-                .parse::<cpal::DeviceId>()
-                .ok()
-                .and_then(|parsed| host.device_by_id(&parsed))
-                .or_else(|| {
-                    host.input_devices().ok()?.find(|device| {
-                        device
-                            .id()
-                            .map(|id| id.to_string() == selected)
-                            .unwrap_or(false)
-                            || device
-                                .description()
-                                .map(|desc| desc.name() == selected.as_str())
-                                .unwrap_or(false)
-                    })
-                })
-                .or_else(|| host.default_input_device())
-                .ok_or(NoInputDevice)?
-        } else {
-            host.default_input_device().ok_or(NoInputDevice)?
-        };
+        let device = crate::audio::find_input_device(device_id.as_deref()).ok_or(NoInputDevice)?;
         let device_name = device
             .description()
             .map(|desc| desc.name().to_string())
@@ -784,7 +764,7 @@ fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> 
 
 pub const MIN_RECORDING_DURATION_MS: i64 = 300;
 
-const MIN_RMS_ENERGY: f32 = 0.0002;
+pub(crate) const MIN_RMS_ENERGY: f32 = 0.0002;
 const MIN_SPEECH_PERCENTAGE: f32 = 3.0;
 
 pub fn validate_recording(recording: &CompletedRecording) -> Result<(), RecordingRejectionReason> {
@@ -833,7 +813,7 @@ fn calculate_rms(samples: &[f32]) -> f32 {
     (sum_squares / samples.len() as f32).sqrt()
 }
 
-fn calculate_rms_i16(samples: &[i16]) -> f32 {
+pub(crate) fn calculate_rms_i16(samples: &[i16]) -> f32 {
     if samples.is_empty() {
         return 0.0;
     }
@@ -1528,9 +1508,10 @@ fn resample_linear(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {
     output
 }
 
-// cpal's Display drops the kind when a backend message is present.
+// cpal's Display drops the kind when a backend message is present. The cpal
+// error stays in the chain so analytics can classify it by kind.
 fn cpal_error(what: &str, err: &cpal::Error) -> anyhow::Error {
-    anyhow!("{what} ({:?}): {err}", err.kind())
+    anyhow::Error::new(err.clone()).context(format!("{what} ({:?}): {err}", err.kind()))
 }
 
 struct CallbackSinks {

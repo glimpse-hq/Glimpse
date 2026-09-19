@@ -18,8 +18,8 @@ use super::queue::{release_library_slot, schedule_library_job};
 #[cfg(target_os = "macos")]
 use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
-    EVENT_LIBRARY_ERROR, ExportFormat, LibraryErrorPayload, LibraryFilter, LibraryImportOptions,
-    LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryItemsPage,
+    EVENT_LIBRARY_ERROR, ExportFormat, JobSource, LibraryErrorPayload, LibraryFilter,
+    LibraryImportOptions, LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryItemsPage,
 };
 
 #[cfg(target_os = "macos")]
@@ -71,21 +71,34 @@ pub fn create_library_item(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<LibraryItem, String> {
-    require_library_license(&state)?;
+    let item = import_library_file(path, options, JobSource::Upload, &app, &state)?;
+    crate::analytics::track_feature_used(&app, "library");
+    Ok(item)
+}
+
+pub(crate) fn import_library_file(
+    path: String,
+    options: LibraryImportOptions,
+    source: JobSource,
+    app: &AppHandle<AppRuntime>,
+    state: &tauri::State<'_, AppState>,
+) -> Result<LibraryItem, String> {
+    require_library_license(state)?;
 
     let source_path = PathBuf::from(path);
     let storage = state.storage();
-    let item = create_item_from_path(&app, storage, &source_path, &options)
+    let item = create_item_from_path(app, storage, &source_path, &options)
         .map_err(|err| err.to_string())?;
     schedule_library_job(
-        &app,
-        &state,
+        app,
+        state,
         LibraryJob {
             id: item.id.clone(),
             kind: LibraryJobKind::Import {
                 source_path,
                 store_original: options.store_original,
             },
+            source,
         },
     );
     Ok(item)
@@ -217,7 +230,15 @@ pub fn retry_library_transcription(
     };
 
     set_library_status(&storage, &id, LibraryItemStatus::Pending);
-    schedule_library_job(&app, &state, LibraryJob { id, kind: job });
+    schedule_library_job(
+        &app,
+        &state,
+        LibraryJob {
+            id,
+            kind: job,
+            source: JobSource::of_item(&item),
+        },
+    );
     Ok(())
 }
 
@@ -226,6 +247,7 @@ pub fn export_library_item_to_path(
     id: String,
     format: ExportFormat,
     output_path: String,
+    app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     require_library_license(&state)?;
@@ -262,6 +284,7 @@ pub fn export_library_item_to_path(
         .with_context(|| "Failed to write export file".to_string())
         .map_err(|err| err.to_string())?;
 
+    crate::analytics::track_feature_used(&app, "library");
     Ok(())
 }
 
@@ -338,6 +361,7 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                         LibraryJob {
                             id: item.id.clone(),
                             kind,
+                            source: JobSource::of_item(&item),
                         },
                     );
                 }

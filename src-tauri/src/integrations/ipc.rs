@@ -14,6 +14,9 @@ pub struct Request {
     pub command: String,
     #[serde(default)]
     pub args: Value,
+    /// The tool driving the CLI, from `GLIMPSE_CLIENT` (e.g. "raycast").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub client: Option<String>,
 }
 
 impl Request {
@@ -21,6 +24,7 @@ impl Request {
         Self {
             command: command.into(),
             args,
+            client: std::env::var("GLIMPSE_CLIENT").ok(),
         }
     }
 }

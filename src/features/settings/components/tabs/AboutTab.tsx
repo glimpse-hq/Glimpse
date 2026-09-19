@@ -422,7 +422,6 @@ const AboutTab = ({
   const handleResetOnboarding = async () => {
     try {
       await invoke("reset_onboarding");
-      window.location.reload();
     } catch (err) {
       console.error("Failed to restart onboarding:", err);
     }

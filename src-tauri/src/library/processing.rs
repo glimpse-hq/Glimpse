@@ -23,7 +23,7 @@ use crate::{AppRuntime, AppState, model_manager, storage::StorageManager};
 use super::types::{
     EVENT_LIBRARY_IMPORT_PROGRESS, ExportFormat, LibraryImportOptions,
     LibraryImportProgressPayload, LibraryItem, LibraryItemPatch, LibraryItemStatus,
-    SUPPORTED_AUDIO_FORMATS, SUPPORTED_VIDEO_FORMATS, Speaker, TARGET_SAMPLE_RATE,
+    RecordingOutput, SUPPORTED_AUDIO_FORMATS, SUPPORTED_VIDEO_FORMATS, Speaker, TARGET_SAMPLE_RATE,
     TranscriptSegment, cancelled_error, is_cancelled_error,
 };
 
@@ -94,10 +94,119 @@ pub(crate) fn create_item_from_path(
         detect_speakers,
         kind: crate::library::default_item_kind(),
         speakers: None,
+        secondary_audio_path: None,
+        sources: None,
+        bookmarks: None,
     };
 
     storage.insert_library_item(item.clone())?;
     Ok(item)
+}
+
+/// Moves a finished recording's tracks into the library and inserts the item.
+/// The microphone track is primary; system audio becomes the second track
+/// when both were captured, so the two sides get their own speaker.
+pub(crate) fn create_recording_item(
+    app: &AppHandle<AppRuntime>,
+    storage: Arc<StorageManager>,
+    model_key: &str,
+    output: RecordingOutput,
+) -> Result<LibraryItem> {
+    let id = Uuid::new_v4().to_string();
+    let item_dir = library_root(app)?.join(build_folder_name(&output.name, &id));
+    fs::create_dir_all(&item_dir)
+        .with_context(|| format!("Failed to create library folder at {}", item_dir.display()))?;
+
+    let (primary, secondary) = match (output.microphone_path, output.system_path) {
+        (Some(mic), system) => (mic, system),
+        (None, Some(system)) => (system, None),
+        (None, None) => return Err(anyhow!("Recording has no audio tracks")),
+    };
+    let audio_path = item_dir.join(format!("{id}.wav"));
+    let secondary_audio_path = secondary
+        .as_ref()
+        .map(|_| item_dir.join(format!("{id}-system.wav")));
+    let file_size_bytes = [Some(&primary), secondary.as_ref()]
+        .into_iter()
+        .flatten()
+        .filter_map(|path| fs::metadata(path).ok())
+        .map(|meta| meta.len())
+        .sum();
+
+    let remote_selection = crate::remote_speech::is_remote_model(model_key);
+    let show_timestamps = remote_selection || model_supports_timestamps(model_key);
+    let speakers = secondary_audio_path.as_ref().map(|_| {
+        vec![
+            Speaker {
+                id: "you".to_string(),
+                name: "You".to_string(),
+                color: Some("#7aa2f7".to_string()),
+            },
+            Speaker {
+                id: "others".to_string(),
+                name: "Others".to_string(),
+                color: Some("#9ece6a".to_string()),
+            },
+        ]
+    });
+
+    let item = LibraryItem {
+        id,
+        name: output.name,
+        audio_path: audio_path.display().to_string(),
+        source_path: String::new(),
+        store_original: false,
+        status: LibraryItemStatus::Pending,
+        transcript: None,
+        segments: None,
+        words: None,
+        duration_seconds: output.duration_seconds,
+        file_size_bytes,
+        original_format: "wav".to_string(),
+        created_at: output.started_at.with_timezone(&Utc).to_rfc3339(),
+        transcribed_at: None,
+        tags: Vec::new(),
+        llm_cleanup_enabled: false,
+        speech_model: model_key.to_string(),
+        show_timestamps,
+        detect_speakers: false,
+        kind: "recording".to_string(),
+        speakers,
+        secondary_audio_path: secondary_audio_path
+            .as_ref()
+            .map(|path| path.display().to_string()),
+        sources: Some(output.sources),
+        bookmarks: Some(output.bookmarks),
+    };
+
+    let tracks = [
+        Some((&primary, &audio_path)),
+        secondary.as_ref().zip(secondary_audio_path.as_ref()),
+    ];
+    let stored = tracks
+        .iter()
+        .flatten()
+        .try_for_each(|(from, to)| move_file(from, to))
+        .and_then(|_| storage.insert_library_item(item.clone()));
+    if let Err(err) = stored {
+        // The session directory stays recoverable on the next launch.
+        for (from, to) in tracks.iter().flatten() {
+            let _ = move_file(to, from);
+        }
+        let _ = fs::remove_dir_all(&item_dir);
+        return Err(err);
+    }
+    Ok(item)
+}
+
+fn move_file(from: &Path, to: &Path) -> Result<()> {
+    if fs::rename(from, to).is_ok() {
+        return Ok(());
+    }
+    fs::copy(from, to)
+        .with_context(|| format!("Failed to move {} to {}", from.display(), to.display()))?;
+    let _ = fs::remove_file(from);
+    Ok(())
 }
 
 pub(crate) fn convert_library_item(
@@ -1178,15 +1287,18 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
     let transcript = item.transcript.clone().unwrap_or_default();
     match format {
         ExportFormat::Txt => Ok(format!(
-            "{}\nTranscribed: {}\n\n{}",
+            "{}\nTranscribed: {}\n\n{}{}",
             title,
             item.transcribed_at
                 .clone()
                 .unwrap_or_else(|| item.created_at.clone()),
+            bookmark_list(item, false)
+                .map(|list| format!("Bookmarks\n{list}\n\n"))
+                .unwrap_or_default(),
             build_speaker_transcript(item, false).unwrap_or(transcript)
         )),
         ExportFormat::Md => Ok(format!(
-            "# {}\n\n**Duration:** {}  \n**Transcribed:** {}  \n**Tags:** {}\n\n---\n\n{}",
+            "# {}\n\n**Duration:** {}  \n**Transcribed:** {}  \n**Tags:** {}\n\n{}---\n\n{}",
             title,
             format_duration(item.duration_seconds),
             item.transcribed_at
@@ -1197,11 +1309,42 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
             } else {
                 item.tags.join(", ")
             },
+            bookmark_list(item, true)
+                .map(|list| format!("## Bookmarks\n\n{list}\n\n"))
+                .unwrap_or_default(),
             build_speaker_transcript(item, true).unwrap_or(transcript)
         )),
         ExportFormat::Srt => build_srt(item),
         ExportFormat::Vtt => build_vtt(item),
     }
+}
+
+/// Bookmarks in time order, one `time  note` line each; None without any.
+fn bookmark_list(item: &LibraryItem, markdown: bool) -> Option<String> {
+    let mut bookmarks: Vec<_> = item.bookmarks.as_deref()?.iter().collect();
+    if bookmarks.is_empty() {
+        return None;
+    }
+    bookmarks.sort_by_key(|bookmark| bookmark.at_ms);
+    let lines: Vec<String> = bookmarks
+        .into_iter()
+        .map(|bookmark| {
+            let at = format_duration(bookmark.at_ms as f32 / 1000.0);
+            let label = bookmark
+                .label
+                .as_deref()
+                .map(|label| label.replace(['\r', '\n'], " "))
+                .filter(|label| !label.trim().is_empty())
+                .unwrap_or_else(|| "Bookmark".to_string());
+            let label = label.trim();
+            if markdown {
+                format!("- **{at}** {label}")
+            } else {
+                format!("{at}  {label}")
+            }
+        })
+        .collect();
+    Some(lines.join("\n"))
 }
 
 fn speaker_name<'a>(item: &'a LibraryItem, speaker_id: &Option<String>) -> Option<&'a str> {

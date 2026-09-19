@@ -760,6 +760,31 @@
     background: linear-gradient(to right, var(--border-subtle), transparent);
   }
 
+  /* Solid, slightly raised primary action (the "Start API" keycap look). */
+  .ui-button-primary {
+    background: var(--color-text-primary);
+    color: var(--color-bg-secondary);
+    font-weight: 600;
+    box-shadow:
+      0 3px 0 -1px rgba(255, 255, 255, 0.25),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+    transition:
+      background-color 0.15s ease,
+      transform 0.1s ease,
+      box-shadow 0.1s ease;
+  }
+  .ui-button-primary:hover:not(:disabled) {
+    background: var(--color-text-secondary);
+  }
+  .ui-button-primary:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: none;
+  }
+  .ui-button-primary:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
   .ui-button-ghost {
     display: inline-flex;
     align-items: center;
@@ -1249,54 +1274,6 @@ body {
   background: var(--color-scrollbar-thumb-subtle-hover);
 }
 
-.library-scrubber {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--color-border-secondary);
-  outline: none;
-  cursor: pointer;
-}
-
-.library-scrubber:focus-visible {
-  box-shadow: 0 0 0 2px var(--color-toggle-on-30);
-}
-
-.library-scrubber::-webkit-slider-runnable-track {
-  height: 6px;
-  border-radius: 999px;
-  background: transparent;
-}
-
-.library-scrubber::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-toggle-on);
-  border: 2px solid var(--color-bg-overlay);
-  box-shadow: 0 0 6px var(--color-toggle-on-20);
-  margin-top: -3px;
-}
-
-.library-scrubber::-moz-range-track {
-  height: 6px;
-  border-radius: 999px;
-  background: transparent;
-}
-
-.library-scrubber::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--color-toggle-on);
-  border: 2px solid var(--color-bg-overlay);
-  box-shadow: 0 0 6px var(--color-toggle-on-20);
-}
-
 .transcript-segment {
   transition: background-color 0.2s ease;
 }
@@ -1416,6 +1393,35 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .transcription-entry-fade {
+    animation: none;
+  }
+}
+
+@keyframes home-enter-sidebar {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes home-enter-main {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+}
+
+.home-enter [data-app-sidebar] {
+  animation: home-enter-sidebar 480ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.home-enter main {
+  animation: home-enter-main 600ms cubic-bezier(0.16, 1, 0.3, 1) 120ms backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-enter [data-app-sidebar],
+  .home-enter main {
     animation: none;
   }
 }
@@ -1738,5 +1744,21 @@ body {
   .settings-layer.is-open {
     transition: none;
     transform: none;
+  }
+}
+
+/* Record screen status dot */
+.recording-pulse {
+  animation: recording-pulse 1.6s ease-in-out infinite;
+}
+@keyframes recording-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.45);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 4px rgba(255, 59, 48, 0);
   }
 }

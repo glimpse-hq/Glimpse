@@ -1,3 +1,44 @@
+1.2.0
+
+### Introducing Recording Mode
+
+Glimpse can now record your meetings, calls, lectures and anything else playing on your computer, and turn it all into a transcript with the same models you dictate with. Start a recording from the new Record screen or the menu bar. Your microphone and your computer's audio are kept as separate tracks, so the transcript knows what you said and what everyone else said.
+
+- **Choose what to record.** Your microphone, your whole computer, or only the apps you pick, like Zoom or your browser. Glimpse starts the next recording with the same setup.
+- **Bookmarks.** Mark a moment while you record, add a note, and jump straight back to it later in the Library. Markdown and text exports list them at the top.
+- **Menu bar controls.** Keep an eye on the timer, and pause, bookmark or finish without opening Glimpse.
+- **No doubled words.** When your microphone hears the other side through your speakers, Glimpse recognizes it and keeps those words out of your side of the transcript.
+- **Nothing lost.** If Glimpse quits in the middle of a recording, it's saved to your Library the next time you open the app.
+- **Both sides in the Library.** Play the recording back with both tracks together, or mute either one.
+- **Control it from anywhere.** Start, pause, bookmark and finish recordings from Raycast or the `glimpse` command line tool.
+
+Recording your computer's audio needs macOS 14.2 or later. Picking apps on Windows needs Windows 10 version 2004 or later.
+
+### Improvements
+
+- Cleaner, faster onboarding.
+- Parakeet now uses the faster GGUF version by default.
+- Neural Engine acceleration is on by default on Apple Silicon.
+- Going from onboarding to in app feels significantly more fluid.
+- The Library has a fresh, simpler look, with plain rows or a grid, and a transcript that follows along as it plays.
+
+### Raycast
+
+The Glimpse extension for Raycast has a new version with this release.
+
+- Start, pause, bookmark and finish recordings, with a timer in the menu bar while you record.
+- Recordings stand out in Browse Library, and you can jump straight to the Record screen.
+- Edit your text replacements with the new Manage Replacements command.
+- Clearer messages when Glimpse isn't running, the command line tool isn't installed, or a license is needed.
+- Switch Speech Model can download models again.
+
+### Fixes
+
+- Glimpse no longer crashes when you sign out of Windows or shut down while it's running.
+- On Windows, Glimpse now lets you know when it has updated itself, as it already did on Mac.
+- Long transcriptions in the Library come out noticeably cleaner. Glimpse no longer repeats words where it stitches the pieces of a long file together, which was most noticeable with Whisper.
+- Websites can no longer reach the Local API while it's running. Scripts and apps on your computer still work as before, and browser access stays available when you turn on CORS.
+
 1.1.6
 
 ### Fixes

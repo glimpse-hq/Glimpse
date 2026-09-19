@@ -337,6 +337,10 @@ impl WorkerSession {
             .spawn(move || {
                 if let Err(err) = task(stop_rx) {
                     tracing::error!("Hotkey worker exited with error: {err}");
+                    crate::analytics::track_shortcut_failed(
+                        "worker_exit",
+                        crate::analytics::error_detail(&err),
+                    );
                 }
             })
             .map_err(|err| anyhow!("Failed to spawn hotkey worker: {err}"))?;

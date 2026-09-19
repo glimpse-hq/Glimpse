@@ -1,5 +1,6 @@
 import { msg } from "@lingui/core/macro";
 import { i18n } from "../../../i18n";
+import type { AudioSources } from "../../../types";
 
 export const SUPPORTED_EXTENSIONS = [
   "wav",
@@ -367,4 +368,22 @@ export const getLibraryErrorDetails = (rawMessage: string) => {
   }
 
   return { message, showFfmpegHelp: false };
+};
+
+// "Zoom, Chrome + Microphone" / "System Audio + Microphone" / "Microphone".
+export const describeAudioSources = (
+  sources: AudioSources | null | undefined,
+  labels: { microphone: string; systemAudio: string },
+) => {
+  if (!sources) return null;
+  const parts: string[] = [];
+  if (sources.system_audio) {
+    parts.push(
+      sources.system_audio.length > 0
+        ? sources.system_audio.join(", ")
+        : labels.systemAudio,
+    );
+  }
+  if (sources.microphone) parts.push(labels.microphone);
+  return parts.length > 0 ? parts.join(" + ") : null;
 };
