@@ -38,6 +38,8 @@ The Glimpse extension for Raycast has a new version with this release.
 - On Windows, Glimpse now lets you know when it has updated itself, as it already did on Mac.
 - Long transcriptions in the Library come out noticeably cleaner. Glimpse no longer repeats words where it stitches the pieces of a long file together, which was most noticeable with Whisper.
 - Websites can no longer reach the Local API while it's running. Scripts and apps on your computer still work as before, and browser access stays available when you turn on CORS.
+- Transcribing from the command line now uses your selected model, including cloud models. Add `--local` to keep the audio on your computer.
+- Starting the Local API from the command line now uses a model you've downloaded, and tells you when you need to download one first. The Local API only ever runs local models.
 
 1.1.6
 
