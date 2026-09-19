@@ -338,6 +338,16 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
         None => crate::speech::selected_model(&settings),
     };
     let remote = crate::remote_speech::is_remote_model(&model_id);
+    if remote && !settings.remote_speech_enabled {
+        if !crate::remote_speech::has_valid_config(&settings) {
+            return Err(
+                "No cloud speech provider is set up. Set one up in Glimpse or pass a local --model."
+                    .to_string(),
+            );
+        }
+        // An explicit cloud --model uses the saved provider for this run only.
+        settings.remote_speech_enabled = true;
+    }
     let local_model = if remote {
         None
     } else {
