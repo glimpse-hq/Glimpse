@@ -5,7 +5,7 @@
 Glimpse can now record your meetings, calls, lectures and anything else playing on your computer, and turn it all into a transcript with the same models you dictate with. Start a recording from the new Record screen or the menu bar. Your microphone and your computer's audio are kept as separate tracks, so the transcript knows what you said and what everyone else said.
 
 - **Choose what to record.** Your microphone, your whole computer, or only the apps you pick, like Zoom or your browser. Glimpse starts the next recording with the same setup.
-- **Bookmarks.** Mark a moment while you record, add a note, and jump straight back to it later in the Library.
+- **Bookmarks.** Mark a moment while you record, add a note, and jump straight back to it later in the Library. Markdown and text exports list them at the top.
 - **Menu bar controls.** Keep an eye on the timer, and pause, bookmark or finish without opening Glimpse.
 - **No doubled words.** When your microphone hears the other side through your speakers, Glimpse recognizes it and keeps those words out of your side of the transcript.
 - **Nothing lost.** If Glimpse quits in the middle of a recording, it's saved to your Library the next time you open the app.

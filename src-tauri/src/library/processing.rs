@@ -1275,15 +1275,18 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
     let transcript = item.transcript.clone().unwrap_or_default();
     match format {
         ExportFormat::Txt => Ok(format!(
-            "{}\nTranscribed: {}\n\n{}",
+            "{}\nTranscribed: {}\n\n{}{}",
             title,
             item.transcribed_at
                 .clone()
                 .unwrap_or_else(|| item.created_at.clone()),
+            bookmark_list(item, false)
+                .map(|list| format!("Bookmarks\n{list}\n\n"))
+                .unwrap_or_default(),
             build_speaker_transcript(item, false).unwrap_or(transcript)
         )),
         ExportFormat::Md => Ok(format!(
-            "# {}\n\n**Duration:** {}  \n**Transcribed:** {}  \n**Tags:** {}\n\n---\n\n{}",
+            "# {}\n\n**Duration:** {}  \n**Transcribed:** {}  \n**Tags:** {}\n\n{}---\n\n{}",
             title,
             format_duration(item.duration_seconds),
             item.transcribed_at
@@ -1294,11 +1297,42 @@ pub(crate) fn build_export_content(item: &LibraryItem, format: ExportFormat) -> 
             } else {
                 item.tags.join(", ")
             },
+            bookmark_list(item, true)
+                .map(|list| format!("## Bookmarks\n\n{list}\n\n"))
+                .unwrap_or_default(),
             build_speaker_transcript(item, true).unwrap_or(transcript)
         )),
         ExportFormat::Srt => build_srt(item),
         ExportFormat::Vtt => build_vtt(item),
     }
+}
+
+/// Bookmarks in time order, one `time  note` line each; None without any.
+fn bookmark_list(item: &LibraryItem, markdown: bool) -> Option<String> {
+    let mut bookmarks: Vec<_> = item.bookmarks.as_deref()?.iter().collect();
+    if bookmarks.is_empty() {
+        return None;
+    }
+    bookmarks.sort_by_key(|bookmark| bookmark.at_ms);
+    let lines: Vec<String> = bookmarks
+        .into_iter()
+        .map(|bookmark| {
+            let at = format_duration(bookmark.at_ms as f32 / 1000.0);
+            let label = bookmark
+                .label
+                .as_deref()
+                .map(|label| label.replace(['\r', '\n'], " "))
+                .filter(|label| !label.trim().is_empty())
+                .unwrap_or_else(|| "Bookmark".to_string());
+            let label = label.trim();
+            if markdown {
+                format!("- **{at}** {label}")
+            } else {
+                format!("{at}  {label}")
+            }
+        })
+        .collect();
+    Some(lines.join("\n"))
 }
 
 fn speaker_name<'a>(item: &'a LibraryItem, speaker_id: &Option<String>) -> Option<&'a str> {
