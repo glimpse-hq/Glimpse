@@ -230,13 +230,14 @@ fn api_start(app: &AppHandle<AppRuntime>, overrides: &Value) -> Result<Value, St
     let state = app.state::<AppState>();
     crate::license::require_active_license(&state.settings_store, "the API server")?;
     let settings = state.current_settings_unmasked();
+    let requested = overrides.get("model").and_then(Value::as_str);
+    if requested.is_some_and(crate::remote_speech::is_remote_model) {
+        return Err("The Local API only runs local models.".to_string());
+    }
     let installed = crate::model_manager::installed_local_model(app, &settings.local_model)
         .ok_or_else(|| NO_LOCAL_MODEL.to_string())?;
     // "auto" preloads nothing; each request names its model.
-    let model = match overrides.get("model").and_then(Value::as_str) {
-        Some(model) if crate::remote_speech::is_remote_model(model) => {
-            return Err("The Local API only runs local models.".to_string());
-        }
+    let model = match requested {
         Some("auto") => "auto".to_string(),
         Some(model) => ready_local_model(app, model)?.key,
         None if settings.local_api_model == "auto" => "auto".to_string(),
