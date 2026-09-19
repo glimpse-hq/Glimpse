@@ -10,6 +10,7 @@ Glimpse can now record your meetings, calls, lectures and anything else playing 
 - **No doubled words.** When your microphone hears the other side through your speakers, Glimpse recognizes it and keeps those words out of your side of the transcript.
 - **Nothing lost.** If Glimpse quits in the middle of a recording, it's saved to your Library the next time you open the app.
 - **Both sides in the Library.** Play the recording back with both tracks together, or mute either one.
+- **Control it from anywhere.** Start, pause, bookmark and finish recordings from Raycast or the `glimpse` command line tool.
 
 Recording your computer's audio needs macOS 14.2 or later. Picking apps on Windows needs Windows 10 version 2004 or later.
 
