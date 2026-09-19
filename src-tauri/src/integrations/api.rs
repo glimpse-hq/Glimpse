@@ -23,7 +23,10 @@ fn help() {
                 &[
                     ("--host <host>", "Bind host (start)."),
                     ("--port <port>", "Bind port (start)."),
-                    ("--model <id>", "Speech model (start)."),
+                    (
+                        "--model <id>",
+                        "Local model to keep loaded, or auto for none (start).",
+                    ),
                     ("--api-key <key>", "Require this API key (start)."),
                     ("--cors", "Allow browser clients (start)."),
                     ("--no-cors", "Disallow browser clients (start)."),
