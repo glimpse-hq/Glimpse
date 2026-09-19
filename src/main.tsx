@@ -180,7 +180,12 @@ applyInitialTextScale();
 // render or every window would paint untranslated and then swap.
 localeReady
   .finally(() => {
-    ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    // HMR can re-run this module; a second root on #root breaks the DOM.
+    const root: ReactDOM.Root =
+      import.meta.hot?.data.root ??
+      ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
+    if (import.meta.hot) import.meta.hot.data.root = root;
+    root.render(
       <React.StrictMode>
         <CrashBoundary>
           <AppProviders>

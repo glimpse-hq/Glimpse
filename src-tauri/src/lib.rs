@@ -637,6 +637,7 @@ pub fn run() {
             toast::debug_show_toast,
             analytics::report_frontend_crash,
             analytics::track_onboarding_step_viewed,
+            analytics::track_onboarding_source,
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
             analytics::track_gate_blocked,

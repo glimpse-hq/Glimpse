@@ -36,6 +36,8 @@ struct DownloadProgressPayload {
     total: u64,
     percent: f64,
     verifying: bool,
+    file_index: usize,
+    file_count: usize,
 }
 
 #[derive(Serialize, Clone)]
@@ -338,7 +340,24 @@ pub async fn download_model(
     }
     let _download_guard = DownloadGuard(&state, model.clone());
     let progress_app = app.clone();
+    let files: Vec<(String, Option<u64>)> = spec
+        .files
+        .iter()
+        .map(|file| (file.path.clone(), file.size_bytes))
+        .collect();
+    // Speech reports percent per file; report it across the whole model so
+    // it doesn't restart at 0% on each file.
+    let sizes: Option<Vec<u64>> = files.iter().map(|(_, size)| *size).collect();
+    let total_size: u64 = sizes.iter().flatten().sum();
     let progress = |event: speech_models::ModelDownloadProgress| {
+        let index = files.iter().position(|(path, _)| *path == event.file);
+        let percent = match (index, &sizes) {
+            (Some(index), Some(sizes)) if !event.verifying && total_size > 0 => {
+                let done = sizes[..index].iter().sum::<u64>() + event.downloaded;
+                (done as f64 / total_size as f64 * 100.0).clamp(0.0, 100.0)
+            }
+            _ => event.percent,
+        };
         let _ = progress_app.emit(
             "download:progress",
             DownloadProgressPayload {
@@ -346,8 +365,10 @@ pub async fn download_model(
                 file: event.file,
                 downloaded: event.downloaded,
                 total: event.total,
-                percent: event.percent,
+                percent,
                 verifying: event.verifying,
+                file_index: index.map_or(0, |index| index + 1),
+                file_count: files.len(),
             },
         );
     };

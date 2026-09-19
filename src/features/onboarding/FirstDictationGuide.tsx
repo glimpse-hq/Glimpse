@@ -40,6 +40,7 @@ interface FirstDictationGuideProps {
   stepMotionProps: StepMotionProps;
   smartShortcut: string;
   onSetShortcut: (shortcut: string) => void | Promise<void>;
+  modelState: "ready" | "downloading" | "failed";
   onFinish: (firstDictation: boolean) => void;
   isFinishing: boolean;
   completionError: string | null;
@@ -49,6 +50,7 @@ export default function FirstDictationGuide({
   stepMotionProps,
   smartShortcut,
   onSetShortcut,
+  modelState,
   onFinish,
   isFinishing,
   completionError,
@@ -65,6 +67,12 @@ export default function FirstDictationGuide({
   const isListening = holding || pillStatus === "listening";
   const isProcessing = pillStatus === "processing";
   const showSuccess = completedDictation && hasSpokenWords(practiceText);
+  const modelPending = modelState !== "ready";
+
+  // A shortcut pressed mid-download fails; don't carry that into the ready state.
+  useEffect(() => {
+    if (!modelPending) setDictationFailed(false);
+  }, [modelPending]);
 
   const stopCapture = useCallback(async () => {
     await invoke("set_shortcut_capture_active", { active: false }).catch(
@@ -146,7 +154,13 @@ export default function FirstDictationGuide({
   };
 
   const startHold = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (capturing || showSuccess || isProcessing || (isListening && !holding)) {
+    if (
+      modelPending ||
+      capturing ||
+      showSuccess ||
+      isProcessing ||
+      (isListening && !holding)
+    ) {
       return;
     }
     event.preventDefault();
@@ -187,7 +201,17 @@ export default function FirstDictationGuide({
     id: "onboarding.first_dictation.waiting.v5",
     message: "Press the shortcut above, or hold the button below.",
   });
-  if (capturing) {
+  if (modelState === "downloading") {
+    waitingMessage = t({
+      id: "onboarding.first_dictation.waiting.model",
+      message: "Your model is still downloading. Please wait.",
+    });
+  } else if (modelState === "failed") {
+    waitingMessage = t({
+      id: "onboarding.first_dictation.waiting.model_failed",
+      message: "Your model didn't download. Retry below.",
+    });
+  } else if (capturing) {
     waitingMessage = t({
       id: "onboarding.first_dictation.waiting.capture",
       message: "Press the shortcut you want.",
@@ -241,7 +265,12 @@ export default function FirstDictationGuide({
               onPointerUp={stopHold}
               onPointerCancel={stopHold}
               onLostPointerCapture={stopHold}
-              disabled={capturing || isProcessing || (isListening && !holding)}
+              disabled={
+                modelPending ||
+                capturing ||
+                isProcessing ||
+                (isListening && !holding)
+              }
               aria-pressed={isListening}
               className={`${PRIMARY_BUTTON_CLASS} select-none touch-none`}
             >
@@ -422,7 +451,7 @@ export default function FirstDictationGuide({
                   </motion.li>
                 </ul>
               </motion.div>
-            ) : dictationFailed ? (
+            ) : dictationFailed && !modelPending ? (
               <motion.div
                 key="failed"
                 className="w-full"
@@ -446,7 +475,13 @@ export default function FirstDictationGuide({
               </motion.div>
             ) : (
               <motion.p
-                key={capturing ? "capture" : "waiting"}
+                key={
+                  modelPending
+                    ? `model-${modelState}`
+                    : capturing
+                      ? "capture"
+                      : "waiting"
+                }
                 className="ui-text-body-sm text-content-muted"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}

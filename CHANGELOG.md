@@ -5,6 +5,9 @@
 - The menu bar menu on Mac is simpler. It has Start Recording, Copy Last Transcription and your recent transcriptions. Models, microphone and Check for Updates moved to the Glimpse menu at the top left.
 - Start Recording is grayed out when you don't have a license.
 - On Windows, the tray menu gains Copy Last Transcription, and Check for Updates outside the Microsoft Store version.
+- Onboarding flows better. Your model downloads in the background while you finish setting up, and the practice dictation waits for it instead of failing.
+- Model downloads show one percentage for the whole model instead of starting over on each file.
+- Onboarding now asks how you found Glimpse.
 
 ### Fixes
 

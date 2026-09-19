@@ -31,6 +31,8 @@ import { ModelStep } from "./steps/ModelStep";
 import { PermissionsStep } from "./steps/PermissionsStep";
 import { ReadyStep } from "./steps/ReadyStep";
 import { LicenseStep } from "./steps/LicenseStep";
+import { SourceStep, type OnboardingSource } from "./steps/SourceStep";
+import { ModelDownloadStatus } from "./ModelDownloadStatus";
 import FirstDictationGuide from "./FirstDictationGuide";
 import { StepIndicator } from "./steps/shared";
 import { useActivateLicense, useLicenseState } from "../license/queries";
@@ -200,6 +202,7 @@ export default function OnboardingScreen({
     useState<PurchaseTier | null>(null);
   const [licenseOpenError, setLicenseOpenError] = useState<string | null>(null);
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [source, setSource] = useState<OnboardingSource | null>(null);
   const ctx = state.context;
   const queryClient = useQueryClient();
 
@@ -360,11 +363,14 @@ export default function OnboardingScreen({
               : undefined;
         const verifyingOf = (event: DownloadEvent | undefined) =>
           event && "verifying" in event ? event.verifying : undefined;
+        const fileIndexOf = (event: DownloadEvent | undefined) =>
+          event && "fileIndex" in event ? event.fileIndex : undefined;
         if (
           current?.status === status.status &&
           current?.percent === status.percent &&
           detail(current) === detail(status) &&
-          verifyingOf(current) === verifyingOf(status)
+          verifyingOf(current) === verifyingOf(status) &&
+          fileIndexOf(current) === fileIndexOf(status)
         ) {
           return prev;
         }
@@ -382,6 +388,8 @@ export default function OnboardingScreen({
         percent: Math.min(100, Math.max(0, Math.round(payload.percent))),
         file: payload.file,
         verifying: payload.verifying,
+        fileIndex: payload.file_index,
+        fileCount: payload.file_count,
       });
     },
     onComplete: ({ model }) => {
@@ -682,6 +690,46 @@ export default function OnboardingScreen({
     send({ type: "BACK" });
   }, [send]);
 
+  // A short beat on the picked option, then move on without a Continue.
+  const sourceAdvanceTimer = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (sourceAdvanceTimer.current !== null) {
+        window.clearTimeout(sourceAdvanceTimer.current);
+      }
+    },
+    [],
+  );
+
+  const handleSelectSource = useCallback(
+    (picked: OnboardingSource) => {
+      if (sourceAdvanceTimer.current !== null) return;
+      if (picked !== source) {
+        void invoke("track_onboarding_source", { source: picked }).catch(
+          () => {},
+        );
+      }
+      setSource(picked);
+      sourceAdvanceTimer.current = window.setTimeout(() => {
+        sourceAdvanceTimer.current = null;
+        goNext();
+      }, 220);
+    },
+    [goNext, source],
+  );
+
+  const selectedModelState = displayStateByModel[selectedModel] ?? null;
+  const showDownloadStatus =
+    Boolean(downloadStatus[selectedModel]) &&
+    currentStep !== "welcome" &&
+    currentStep !== "import" &&
+    currentStep !== "model";
+  const practiceModelState = selectedModelReady
+    ? "ready"
+    : selectedModelState?.status === "error"
+      ? "failed"
+      : "downloading";
+
   const stepDirection = zoomingFromWelcome.current
     ? 0
     : ctx.transitionDirection;
@@ -759,6 +807,17 @@ export default function OnboardingScreen({
             onNext={goNext}
           />
         );
+      case "source":
+        return (
+          <SourceStep
+            key="source"
+            stepMotionProps={stepMotionProps}
+            isWindows={ctx.platform.id === "windows"}
+            selected={source}
+            onSelect={handleSelectSource}
+            onSkip={goNext}
+          />
+        );
       case "permissions":
         return (
           <PermissionsStep
@@ -825,6 +884,7 @@ export default function OnboardingScreen({
             stepMotionProps={stepMotionProps}
             smartShortcut={ctx.smartShortcut}
             onSetShortcut={applySmartShortcut}
+            modelState={practiceModelState}
             onFinish={handleFinishOnboarding}
             isFinishing={ctx.isCompleting}
             completionError={ctx.completionError}
@@ -878,6 +938,13 @@ export default function OnboardingScreen({
               })}
             </button>
           )}
+
+        {showDownloadStatus ? (
+          <ModelDownloadStatus
+            state={selectedModelState}
+            onRetry={() => void handleDownload(selectedModel)}
+          />
+        ) : null}
 
         <FAQModal
           isOpen={ctx.showFAQModal}

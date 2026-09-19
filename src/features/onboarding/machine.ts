@@ -49,7 +49,7 @@ function getSteps(
     steps.push("import");
   }
 
-  steps.push("model");
+  steps.push("model", "source");
 
   if (
     platform.requiresMicrophonePermission ||
@@ -156,6 +156,15 @@ export const onboardingMachine = setup({
     },
     model: {
       on: {
+        NEXT: { target: "source", actions: "forward" },
+        BACK: [
+          { target: "import", guard: hasImportStep, actions: "backward" },
+          { target: "welcome", actions: "backward" },
+        ],
+      },
+    },
+    source: {
+      on: {
         NEXT: [
           {
             target: "permissions",
@@ -164,16 +173,13 @@ export const onboardingMachine = setup({
           },
           { target: "license", actions: "forward" },
         ],
-        BACK: [
-          { target: "import", guard: hasImportStep, actions: "backward" },
-          { target: "welcome", actions: "backward" },
-        ],
+        BACK: { target: "model", actions: "backward" },
       },
     },
     permissions: {
       on: {
         NEXT: { target: "license", actions: "forward" },
-        BACK: { target: "model", actions: "backward" },
+        BACK: { target: "source", actions: "backward" },
       },
     },
     license: {
@@ -185,7 +191,7 @@ export const onboardingMachine = setup({
             guard: requiresPermissionsStep,
             actions: "backward",
           },
-          { target: "model", actions: "backward" },
+          { target: "source", actions: "backward" },
         ],
       },
     },

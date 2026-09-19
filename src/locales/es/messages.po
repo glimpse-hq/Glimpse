@@ -531,6 +531,11 @@ msgid "settings.app.auto_delete.after"
 msgstr "después"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.ai"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup"
 msgstr "Limpieza con IA"
@@ -973,6 +978,11 @@ msgstr "Buscando novedades…"
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.checking"
 msgstr "Buscando actualizaciones..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.verifying"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1830,10 +1840,24 @@ msgid "models.card.downloading"
 msgstr "Descargando"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: Math.round(progress?.percent ?? 0)
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading"
 msgstr "Descargando {0}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.status.downloading_files"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading_files"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2196,6 +2220,11 @@ msgid "faq.title"
 msgstr "Preguntas frecuentes"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.friend"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.full"
 msgstr "Completo"
@@ -2374,6 +2403,11 @@ msgstr "mantén pulsado para hablar, suelta para detener"
 #: src/Home.tsx
 msgid "home.sidebar.home"
 msgstr "Inicio"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2907,6 +2941,11 @@ msgid "settings.speech_model.model.placeholder"
 msgstr "Modelo (predeterminado: {0})"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.unavailable"
 msgstr "Lista de modelos no disponible. Puedes añadir uno más tarde en Ajustes."
@@ -2915,6 +2954,11 @@ msgstr "Lista de modelos no disponible. Puedes añadir uno más tarde en Ajustes
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.model_not_installed"
 msgstr "Modelo no instalado."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.ready"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4030,6 +4074,11 @@ msgid "transcriptions.item.retry"
 msgstr "Reintentar"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.retry"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.retry"
 msgstr "Reintentar"
@@ -4159,6 +4208,11 @@ msgstr "Buscar modelos de voz disponibles..."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_only"
 msgstr "Buscar en el diccionario..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.search"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4416,6 +4470,11 @@ msgid "onboarding.first_dictation.later"
 msgstr "Omitir"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.skip"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.skip_short_aria"
 msgstr "Omitir clips de menos de un segundo"
@@ -4449,6 +4508,11 @@ msgstr "Inteligente"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.title"
 msgstr "¿Algunas preguntas sobre cómo usas Glimpse?"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.other"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5361,6 +5425,16 @@ msgstr "Tu servidor de API se está ejecutando en segundo plano."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Sí. En modo local, todo tu audio y tus transcripciones permanecen en tu dispositivo. Nunca recopilamos ni transmitimos tus grabaciones. La sincronización en la nube es opcional."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
