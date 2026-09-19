@@ -29,6 +29,7 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.menu.models", message: "Models" }),
   msg({ id: "native.menu.model_fallback", message: "Fallback: {model}" }),
   msg({ id: "native.menu.recent", message: "Last Transcriptions" }),
+  msg({ id: "native.menu.copy_last", message: "Copy Last Transcription" }),
   msg({ id: "native.menu.recent_empty", message: "No transcriptions yet" }),
   msg({ id: "native.menu.recent_empty_item", message: "Empty transcription" }),
   msg({

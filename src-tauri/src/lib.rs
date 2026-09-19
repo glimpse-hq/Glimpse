@@ -215,76 +215,6 @@ pub(crate) fn sync_launch_at_login(
 }
 
 #[cfg(target_os = "macos")]
-fn handle_app_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
-    use crate::recent_transcriptions::{
-        MENU_ID_RECENT_TRANSCRIPTION_PREFIX, copy_transcription_to_clipboard,
-    };
-    use crate::speech::menu::handle_speech_menu_event;
-    use platform::macos::menu::{MENU_ID_CHECK_UPDATES, MENU_ID_REPORT_ISSUE, MENU_ID_WEBSITE};
-    use tauri_plugin_opener::OpenerExt;
-    use tray::{MENU_ID_MIC_DEFAULT, MENU_ID_MIC_PREFIX};
-
-    if let Some(saved) = handle_speech_menu_event(app, id) {
-        refresh_speech_menus(app, &saved);
-        return;
-    }
-
-    match id {
-        MENU_ID_CHECK_UPDATES => {
-            let _ = tray::open_settings_page(app, SettingsPage::About);
-        }
-        MENU_ID_WEBSITE => {
-            let _ = app
-                .opener()
-                .open_url("https://tryglimpse.cc/", None::<&str>);
-        }
-        MENU_ID_REPORT_ISSUE => {
-            let _ = app.opener().open_url(FEEDBACK_URL, None::<&str>);
-        }
-        MENU_ID_MIC_DEFAULT => {
-            set_microphone(app, None);
-        }
-        _ => {
-            if let Some(transcription_id) = id.strip_prefix(MENU_ID_RECENT_TRANSCRIPTION_PREFIX) {
-                copy_transcription_to_clipboard(app, transcription_id);
-            } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
-                let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
-                set_microphone(app, Some(device_id));
-            }
-        }
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &settings::UserSettings) {
-    if let Err(err) = set_app_menu(app, settings) {
-        tracing::error!("Failed to refresh app menu: {err}");
-    }
-    if let Err(err) = tray::refresh_tray_menu(app, settings) {
-        tracing::error!("Failed to refresh tray menu: {err}");
-    }
-}
-
-#[cfg(target_os = "macos")]
-fn set_microphone(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
-    let state = app.state::<AppState>();
-    let mut current = state.current_settings_unmasked();
-    if current.microphone_device.as_deref() == device_id {
-        return;
-    }
-    let previous = current.clone();
-    current.microphone_device = device_id.map(|id| id.to_string());
-    match state.persist_settings(current.clone()) {
-        Ok(saved) => {
-            analytics::track_settings_changes(app, &previous, &saved);
-            refresh_speech_menus(app, &saved);
-            state.emit_settings_changed(app, &saved);
-        }
-        Err(err) => tracing::error!("Failed to update microphone selection: {err}"),
-    }
-}
-
-#[cfg(target_os = "macos")]
 pub(crate) fn set_app_menu(
     app: &AppHandle<AppRuntime>,
     settings: &settings::UserSettings,
@@ -434,11 +364,8 @@ pub fn run() {
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init());
 
-    #[cfg(target_os = "macos")]
-    let builder = builder.on_menu_event(|app, event| {
-        let id = event.id().as_ref();
-        handle_app_menu_event(app, id);
-    });
+    let builder =
+        builder.on_menu_event(|app, event| tray::handle_menu_event(app, event.id().as_ref()));
 
     builder
         .setup(|app| {
@@ -1466,7 +1393,12 @@ fn note_license_state(
     state: &AppState,
     license_state: &license::LicenseState,
 ) {
+    let previous = state.license_snapshot().map(|snapshot| snapshot.status);
     state.note_license_state(license_state);
+    // Start Recording is enabled by the license, so the menus follow its status.
+    if previous.is_some_and(|status| status != license_state.status.as_str()) {
+        tray::refresh_menus(app, &state.current_settings());
+    }
     if license::take_trial_expiry_report(&state.settings_store, license_state) {
         analytics::track_trial_expired(app);
     }
@@ -1866,14 +1798,7 @@ fn delete_transcription(
         Err(err) => Err(format!("Failed to delete transcription: {err}")),
     }?;
 
-    let settings = state.current_settings();
-    if let Err(err) = tray::refresh_tray_menu(&app, &settings) {
-        tracing::error!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = set_app_menu(&app, &settings) {
-        tracing::error!("Failed to refresh app menu: {err}");
-    }
+    tray::refresh_menus(&app, &state.current_settings());
 
     Ok(result)
 }

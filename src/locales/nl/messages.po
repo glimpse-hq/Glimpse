@@ -1297,6 +1297,11 @@ msgid "model_picker.error.copy"
 msgstr "Foutmelding kopiëren"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.menu.copy_last"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.copy_aria"
 msgstr "Logboeken kopiëren"

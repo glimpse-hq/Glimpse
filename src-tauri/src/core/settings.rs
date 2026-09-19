@@ -395,13 +395,7 @@ pub(crate) fn update_settings(
         || prev.microphone_device != next.microphone_device
         || prev.app_locale != next.app_locale
     {
-        if let Err(err) = tray::refresh_tray_menu(app, &next) {
-            tracing::error!("Failed to refresh tray menu: {err}");
-        }
-        #[cfg(target_os = "macos")]
-        if let Err(err) = crate::set_app_menu(app, &next) {
-            tracing::error!("Failed to refresh app menu: {err}");
-        }
+        tray::refresh_menus(app, &next);
     }
 
     state.emit_settings_changed(app, &next);

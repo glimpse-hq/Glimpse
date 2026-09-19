@@ -4,6 +4,7 @@ use tauri::menu::{MenuItem, SubmenuBuilder};
 use tauri::{AppHandle, Manager};
 
 pub const MENU_ID_RECENT_TRANSCRIPTION_PREFIX: &str = "menu_recent_transcription_";
+pub const MENU_ID_COPY_LAST_TRANSCRIPTION: &str = "menu_copy_last_transcription";
 const MENU_ID_RECENT_TRANSCRIPTION_EMPTY: &str = "menu_recent_transcription_empty";
 const MENU_ID_RECENT_TRANSCRIPTION_ERROR: &str = "menu_recent_transcription_error";
 const RECENT_TRANSCRIPTIONS_LIMIT: usize = 5;
@@ -72,6 +73,43 @@ pub fn build_recent_transcriptions_menu(
     submenu.build()
 }
 
+/// Disabled until there is something to copy.
+pub fn build_copy_last_item(
+    app: &AppHandle<AppRuntime>,
+    strings: &MenuStrings,
+) -> tauri::Result<MenuItem<AppRuntime>> {
+    let has_last = app.try_state::<AppState>().is_some_and(|state| {
+        state
+            .storage()
+            .get_recent_transcriptions(1)
+            .is_ok_and(|records| !records.is_empty())
+    });
+    MenuItem::with_id(
+        app,
+        MENU_ID_COPY_LAST_TRANSCRIPTION,
+        strings.get("native.menu.copy_last"),
+        has_last,
+        None::<&str>,
+    )
+}
+
+pub fn copy_last_transcription_to_clipboard(app: &AppHandle<AppRuntime>) {
+    match app
+        .state::<AppState>()
+        .storage()
+        .get_recent_transcriptions(1)
+    {
+        Ok(records) => match records.first() {
+            Some(record) => copy_transcription_to_clipboard(app, &record.id),
+            None => refresh_recent_menus(app),
+        },
+        Err(err) => {
+            tracing::error!("Failed to load the last transcription: {err}");
+            emit_copy_error_toast(app, "Unable to copy to clipboard");
+        }
+    }
+}
+
 pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcription_id: &str) {
     let record = app
         .state::<AppState>()
@@ -120,14 +158,7 @@ fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
 }
 
 fn refresh_recent_menus(app: &AppHandle<AppRuntime>) {
-    let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        tracing::error!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = crate::set_app_menu(app, &settings) {
-        tracing::error!("Failed to refresh app menu: {err}");
-    }
+    crate::tray::refresh_menus(app, &app.state::<AppState>().current_settings());
 }
 
 fn format_transcription_preview(text: &str, max_len: usize, empty_label: &str) -> String {
