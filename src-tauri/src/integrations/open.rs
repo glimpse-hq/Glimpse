@@ -18,6 +18,7 @@ fn help() {
                     ("dictionary", "Open the dictionary view."),
                     ("personalization", "Open the personalization view."),
                     ("library", "Open the library view."),
+                    ("record", "Open the Record screen."),
                     ("models", "Open the models view."),
                 ],
             ),

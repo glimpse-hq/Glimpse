@@ -169,6 +169,12 @@ const CLI_COMMANDS: &[&str] = &[
     "api.stop",
     "api.status",
     "transcribe",
+    "record.status",
+    "record.start",
+    "record.pause",
+    "record.resume",
+    "record.bookmark",
+    "record.finish",
 ];
 
 /// Records, once per app session, that the CLI ran a command in the app:

@@ -248,11 +248,7 @@ impl Shared {
             paused: self.paused_by_user.load(Ordering::Relaxed),
             bookmarks: self.bookmarks.lock().len(),
             mic: sources.microphone.is_some(),
-            system: match sources.system_audio.as_deref() {
-                None => "none",
-                Some([]) => "all",
-                Some(_) => "app",
-            },
+            system: captured_system_label(&sources),
         }
     }
 
@@ -268,6 +264,15 @@ impl Shared {
         self.bookmarks.lock().clear();
         *self.session_dir.lock() = None;
         self.finish_requested.store(false, Ordering::Relaxed);
+    }
+}
+
+/// System audio label for captured sources: none, all, or app.
+pub(crate) fn captured_system_label(sources: &AudioSources) -> &'static str {
+    match sources.system_audio.as_deref() {
+        None => "none",
+        Some([]) => "all",
+        Some(_) => "app",
     }
 }
 
@@ -978,8 +983,8 @@ pub fn get_recording_session_state(app: AppHandle<AppRuntime>) -> RecordingSessi
     app.state::<AppState>().recording().state()
 }
 
-/// Blocking start used by the command (off the async runtime) and the tray.
-fn start_session(app: &AppHandle<AppRuntime>, sources: RecordingSources) -> Result<()> {
+/// Blocking start used by the command (off the async runtime), the tray and the CLI.
+pub(crate) fn start_session(app: &AppHandle<AppRuntime>, sources: RecordingSources) -> Result<()> {
     let state = app.state::<AppState>();
     crate::license::require_license_gate(&state.settings_store, "Recording")
         .map_err(|err| anyhow!(err))?;
@@ -1036,7 +1041,7 @@ pub async fn start_recording_session(
     Ok(app.state::<AppState>().recording().state())
 }
 
-fn load_last_sources(app: &AppHandle<AppRuntime>) -> Option<RecordingSources> {
+pub(crate) fn load_last_sources(app: &AppHandle<AppRuntime>) -> Option<RecordingSources> {
     let bytes = fs::read(sessions_root(app).ok()?.join(LAST_SOURCES_FILE)).ok()?;
     serde_json::from_slice(&bytes).ok()
 }
