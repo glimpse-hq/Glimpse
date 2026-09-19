@@ -123,16 +123,10 @@ pub(crate) fn create_recording_item(
         (None, None) => return Err(anyhow!("Recording has no audio tracks")),
     };
     let audio_path = item_dir.join(format!("{id}.wav"));
-    move_file(&primary, &audio_path)?;
-    let secondary_audio_path = match secondary {
-        Some(source) => {
-            let target = item_dir.join(format!("{id}-system.wav"));
-            move_file(&source, &target)?;
-            Some(target)
-        }
-        None => None,
-    };
-    let file_size_bytes = [Some(&audio_path), secondary_audio_path.as_ref()]
+    let secondary_audio_path = secondary
+        .as_ref()
+        .map(|_| item_dir.join(format!("{id}-system.wav")));
+    let file_size_bytes = [Some(&primary), secondary.as_ref()]
         .into_iter()
         .flatten()
         .filter_map(|path| fs::metadata(path).ok())
@@ -178,12 +172,30 @@ pub(crate) fn create_recording_item(
         detect_speakers: false,
         kind: "recording".to_string(),
         speakers,
-        secondary_audio_path: secondary_audio_path.map(|path| path.display().to_string()),
+        secondary_audio_path: secondary_audio_path
+            .as_ref()
+            .map(|path| path.display().to_string()),
         sources: Some(output.sources),
         bookmarks: Some(output.bookmarks),
     };
 
-    storage.insert_library_item(item.clone())?;
+    let tracks = [
+        Some((&primary, &audio_path)),
+        secondary.as_ref().zip(secondary_audio_path.as_ref()),
+    ];
+    let stored = tracks
+        .iter()
+        .flatten()
+        .try_for_each(|(from, to)| move_file(from, to))
+        .and_then(|_| storage.insert_library_item(item.clone()));
+    if let Err(err) = stored {
+        // The session directory stays recoverable on the next launch.
+        for (from, to) in tracks.iter().flatten() {
+            let _ = move_file(to, from);
+        }
+        let _ = fs::remove_dir_all(&item_dir);
+        return Err(err);
+    }
     Ok(item)
 }
 
