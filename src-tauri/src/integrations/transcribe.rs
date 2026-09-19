@@ -1,6 +1,5 @@
-//! `glimpse transcribe …` - applies the user's model/language/dictionary/
-//! replacements/cleanup. With no Glimpse-specific flag it delegates to the
-//! glimpse-speech CLI; otherwise it reuses the running app's warm model.
+//! `glimpse transcribe …` - runs in the app with the user's selected model,
+//! language, dictionary, replacements, and cleanup.
 
 use std::path::PathBuf;
 
@@ -8,20 +7,6 @@ use anyhow::{Result, bail};
 use serde_json::{Value, json};
 
 use super::{client, coded, has_flag, output, positionals, str_flag, wants_help};
-
-/// Flags that switch on Glimpse-flavored behavior; otherwise we delegate to
-/// glimpse-speech so existing `glimpse transcribe` usage is unchanged.
-const GLIMPSE_FLAGS: &[&str] = &[
-    "--output",
-    "--output-dir",
-    "--stdout",
-    "--json",
-    "--language",
-    "--model",
-    "--cleanup",
-    "--no-cleanup",
-    "--suffix",
-];
 
 const VALUE_FLAGS: &[&str] = &[
     "--output",
@@ -33,7 +18,7 @@ const VALUE_FLAGS: &[&str] = &[
 
 fn help() {
     super::print_command_help(
-        "Transcribe a file to text. With no options, delegates to the speech engine.",
+        "Transcribe a file to text with the model selected in Glimpse. Requires the app.",
         "glimpse transcribe <file>... [options]",
         &[(
             "OPTIONS",
@@ -52,7 +37,11 @@ fn help() {
                     "Print the transcript instead of writing a file.",
                 ),
                 ("--language <code>", "Override the language."),
-                ("--model <id>", "Override the speech model."),
+                ("--model <id>", "Use this speech model instead."),
+                (
+                    "--local",
+                    "Use a downloaded local model so audio stays on this device.",
+                ),
                 ("--cleanup", "Force LLM cleanup."),
                 ("--no-cleanup", "Skip LLM cleanup."),
                 ("--json", "Output machine-readable JSON."),
@@ -65,12 +54,6 @@ pub(crate) fn run(_identifier: &str, args: &[String], json: bool) -> Result<()> 
     if wants_help(args) {
         help();
         return Ok(());
-    }
-
-    let glimpse_mode = args.iter().any(|arg| GLIMPSE_FLAGS.contains(&arg.as_str()));
-    if !glimpse_mode {
-        // No Glimpse-specific behavior requested: hand off to glimpse-speech.
-        return glimpse_speech::cli::run_blocking();
     }
 
     let files: Vec<String> = positionals(args, VALUE_FLAGS)
@@ -87,6 +70,7 @@ pub(crate) fn run(_identifier: &str, args: &[String], json: bool) -> Result<()> 
     let to_stdout = has_flag(args, "--stdout");
     let language = str_flag(args, "--language")?;
     let model = str_flag(args, "--model")?;
+    let local = has_flag(args, "--local");
     let cleanup = if has_flag(args, "--no-cleanup") {
         Some(false)
     } else if has_flag(args, "--cleanup") {
@@ -110,6 +94,9 @@ pub(crate) fn run(_identifier: &str, args: &[String], json: bool) -> Result<()> 
         if let Some(model) = model {
             payload["model"] = json!(model);
         }
+        if local {
+            payload["local"] = json!(true);
+        }
         if let Some(cleanup) = cleanup {
             payload["cleanup"] = json!(cleanup);
         }
@@ -119,8 +106,7 @@ pub(crate) fn run(_identifier: &str, args: &[String], json: bool) -> Result<()> 
             None => {
                 return Err(coded(
                     2,
-                    "Glimpse must be running to use transcribe options. Open Glimpse, or run \
-                     `glimpse transcribe <file>` with no Glimpse flags for raw output.",
+                    "Glimpse must be running to transcribe. Open Glimpse and try again.",
                 ));
             }
         };
