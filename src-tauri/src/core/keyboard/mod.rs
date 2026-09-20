@@ -700,6 +700,8 @@ impl FromStr for Hotkey {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct KeyEvent {
+    // Timestamp before queueing so microphone startup cannot lengthen a tap.
+    pub(crate) occurred_at: std::time::Instant,
     pub(crate) modifiers: Modifiers,
     pub(crate) key: Option<Key>,
     pub(crate) is_key_down: bool,
@@ -803,6 +805,7 @@ mod tests {
             &hotkeys,
             Modifiers::empty(),
             &KeyEvent {
+                occurred_at: std::time::Instant::now(),
                 modifiers: Modifiers::OPT_RIGHT,
                 key: None,
                 is_key_down: true,
@@ -814,6 +817,7 @@ mod tests {
             &hotkeys,
             Modifiers::OPT_RIGHT,
             &KeyEvent {
+                occurred_at: std::time::Instant::now(),
                 modifiers: Modifiers::empty(),
                 key: None,
                 is_key_down: false,

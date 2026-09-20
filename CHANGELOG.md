@@ -1,3 +1,9 @@
+1.2.5
+
+### Fixes
+
+- Fixed quick shortcut taps sometimes stopping dictation immediately when the microphone was slow to start.
+
 1.2.1
 
 ### Improvements
