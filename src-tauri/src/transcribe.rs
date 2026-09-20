@@ -33,6 +33,7 @@ pub(crate) fn run_transcription_prune_for_settings(
         true,
     )?;
     if count > 0 {
+        crate::tray::refresh_menus(app, &app.state::<AppState>().current_settings());
         app.emit(
             EVENT_TRANSCRIPTION_COMPLETE,
             TranscriptionCompletePayload {

@@ -696,9 +696,10 @@ export default function OnboardingScreen({
     () => () => {
       if (sourceAdvanceTimer.current !== null) {
         window.clearTimeout(sourceAdvanceTimer.current);
+        sourceAdvanceTimer.current = null;
       }
     },
-    [],
+    [currentStep],
   );
 
   const handleSelectSource = useCallback(
