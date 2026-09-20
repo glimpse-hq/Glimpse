@@ -533,7 +533,7 @@ msgstr "после"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.ai"
-msgstr ""
+msgstr "ИИ-ассистент"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -982,7 +982,7 @@ msgstr "Проверка обновлений..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.verifying"
-msgstr ""
+msgstr "Проверка модели"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1309,7 +1309,7 @@ msgstr "Скопировать сообщение об ошибке"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.copy_last"
-msgstr ""
+msgstr "Скопировать последнюю транскрипцию"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1847,17 +1847,17 @@ msgstr "Загрузка {0}%"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading_files"
-msgstr ""
+msgstr "Загрузка {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading"
-msgstr ""
+msgstr "Загрузка модели {percent}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading_files"
-msgstr ""
+msgstr "Загрузка модели {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2222,7 +2222,7 @@ msgstr "Часто задаваемые вопросы"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.friend"
-msgstr ""
+msgstr "Друг или коллега"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -2252,7 +2252,7 @@ msgstr "Получить поддержку"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr ""
+msgstr "Подготовка речевой модели. Это выполняется в фоновом режиме."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2287,7 +2287,7 @@ msgstr "Карточка участника Glimpse"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_none"
-msgstr ""
+msgstr "Для работы Glimpse необходима речевая модель."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2417,7 +2417,7 @@ msgstr "Главная"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.title"
-msgstr ""
+msgstr "Как вы узнали о Glimpse?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2953,7 +2953,7 @@ msgstr "Модель (по умолчанию: {0})"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.failed"
-msgstr ""
+msgstr "Ошибка загрузки модели"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2968,7 +2968,7 @@ msgstr "Модель не установлена."
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.ready"
-msgstr ""
+msgstr "Модель готова"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3454,7 +3454,7 @@ msgstr "Открыть GitHub"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_action"
-msgstr ""
+msgstr "Открыть модели"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -3790,12 +3790,12 @@ msgstr "Запись"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.recording.default_name"
-msgstr "Запись - {date}"
+msgstr "Запись — {date}"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.default_name"
-msgstr "Запись - {day}, {time}"
+msgstr "Запись — {day}, {time}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4091,7 +4091,7 @@ msgstr "Повторить"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.retry"
-msgstr ""
+msgstr "Повторить"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4227,7 +4227,7 @@ msgstr "Поиск в словаре..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.search"
-msgstr ""
+msgstr "Поисковая система"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4487,7 +4487,7 @@ msgstr "Пропустить"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.skip"
-msgstr ""
+msgstr "Пропустить"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4527,7 +4527,7 @@ msgstr "Несколько вопросов о том, как вы исполь�
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.other"
-msgstr ""
+msgstr "Другой источник"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5444,12 +5444,12 @@ msgstr "Да. В локальном режиме все ваши аудиоза�
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model_failed"
-msgstr ""
+msgstr "Не удалось загрузить модель. Повторите попытку ниже."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model"
-msgstr ""
+msgstr "Модель ещё загружается. Пожалуйста, подождите."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5459,7 +5459,7 @@ msgstr "Здесь появятся ваши последние транскри
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_downloading"
-msgstr ""
+msgstr "Речевая модель ещё загружается. Выполнено {percent}%."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

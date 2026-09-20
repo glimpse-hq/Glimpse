@@ -533,7 +533,7 @@ msgstr "après"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.ai"
-msgstr ""
+msgstr "Assistant IA"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -982,7 +982,7 @@ msgstr "Recherche de mises à jour…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.verifying"
-msgstr ""
+msgstr "Vérification du modèle"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1309,7 +1309,7 @@ msgstr "Copier le message d'erreur"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.copy_last"
-msgstr ""
+msgstr "Copier la dernière transcription"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1847,17 +1847,17 @@ msgstr "Téléchargement {0} %"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading_files"
-msgstr ""
+msgstr "Téléchargement {percent} % ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading"
-msgstr ""
+msgstr "Téléchargement du modèle {percent} %"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading_files"
-msgstr ""
+msgstr "Téléchargement du modèle {percent} % ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2222,7 +2222,7 @@ msgstr "Foire aux questions"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.friend"
-msgstr ""
+msgstr "Un ami ou un collègue"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -2252,7 +2252,7 @@ msgstr "Obtenir de l'aide"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr ""
+msgstr "Préparation de votre modèle vocal en cours. Cette opération s'exécute en arrière-plan."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2287,7 +2287,7 @@ msgstr "Carte de membre Glimpse"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_none"
-msgstr ""
+msgstr "Glimpse a besoin d'un modèle vocal pour pouvoir saisir du texte à votre place."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2417,7 +2417,7 @@ msgstr "Accueil"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.title"
-msgstr ""
+msgstr "Comment avez-vous découvert Glimpse ?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2953,7 +2953,7 @@ msgstr "Modèle (par défaut : {0})"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.failed"
-msgstr ""
+msgstr "Échec du téléchargement du modèle"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2968,7 +2968,7 @@ msgstr "Modèle non installé."
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.ready"
-msgstr ""
+msgstr "Modèle prêt"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3454,7 +3454,7 @@ msgstr "Ouvrir GitHub"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_action"
-msgstr ""
+msgstr "Ouvrir les modèles"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4091,7 +4091,7 @@ msgstr "Réessayer"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.retry"
-msgstr ""
+msgstr "Réessayer"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4227,7 +4227,7 @@ msgstr "Rechercher dans le dictionnaire…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.search"
-msgstr ""
+msgstr "Moteur de recherche"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4487,7 +4487,7 @@ msgstr "Ignorer"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.skip"
-msgstr ""
+msgstr "Ignorer"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4527,7 +4527,7 @@ msgstr "Quelques questions sur votre utilisation de Glimpse ?"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.other"
-msgstr ""
+msgstr "Ailleurs"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5444,12 +5444,12 @@ msgstr "Oui. En mode local, vos fichiers audio et transcriptions restent sur vot
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model_failed"
-msgstr ""
+msgstr "Le téléchargement de votre modèle a échoué. Réessayez ci-dessous."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model"
-msgstr ""
+msgstr "Le téléchargement de votre modèle est en cours. Veuillez patienter."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5459,7 +5459,7 @@ msgstr "Vos transcriptions récentes apparaîtront ici"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_downloading"
-msgstr ""
+msgstr "Le téléchargement de votre modèle vocal est en cours. {percent} % effectué."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

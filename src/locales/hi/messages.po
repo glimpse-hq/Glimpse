@@ -533,7 +533,7 @@ msgstr "के बाद"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.ai"
-msgstr ""
+msgstr "AI सहायक"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -982,7 +982,7 @@ msgstr "अपडेट की जाँच की जा रही है..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.verifying"
-msgstr ""
+msgstr "मॉडल जाँचा जा रहा है"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1309,7 +1309,7 @@ msgstr "त्रुटि संदेश कॉपी करें"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.copy_last"
-msgstr ""
+msgstr "पिछला ट्रांसक्रिप्शन कॉपी करें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1847,17 +1847,17 @@ msgstr "{0}% डाउनलोड हो रहा है"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading_files"
-msgstr ""
+msgstr "डाउनलोड हो रहा है {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading"
-msgstr ""
+msgstr "मॉडल डाउनलोड हो रहा है {percent}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading_files"
-msgstr ""
+msgstr "मॉडल डाउनलोड हो रहा है {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2222,7 +2222,7 @@ msgstr "अक्सर पूछे जाने वाले प्रश्�
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.friend"
-msgstr ""
+msgstr "मित्र या सहकर्मी"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -2252,7 +2252,7 @@ msgstr "सहायता प्राप्त करें"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr ""
+msgstr "आपका वाक् मॉडल तैयार किया जा रहा है। यह पृष्ठभूमि में चलता है।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2287,7 +2287,7 @@ msgstr "Glimpse सदस्य कार्ड"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_none"
-msgstr ""
+msgstr "आपके लिए टाइप करने से पहले Glimpse को एक वाक् मॉडल की आवश्यकता है।"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2417,7 +2417,7 @@ msgstr "होम"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.title"
-msgstr ""
+msgstr "आपको Glimpse के बारे में कैसे पता चला?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2953,7 +2953,7 @@ msgstr "मॉडल (डिफ़ॉल्ट: {0})"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.failed"
-msgstr ""
+msgstr "मॉडल डाउनलोड विफल हुआ"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2968,7 +2968,7 @@ msgstr "मॉडल इंस्टॉल नहीं है।"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.ready"
-msgstr ""
+msgstr "मॉडल तैयार है"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3454,7 +3454,7 @@ msgstr "GitHub खोलें"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_action"
-msgstr ""
+msgstr "मॉडल खोलें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4091,7 +4091,7 @@ msgstr "पुनः प्रयास करें"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.retry"
-msgstr ""
+msgstr "पुनः प्रयास करें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4227,7 +4227,7 @@ msgstr "शब्दकोश में खोजें..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.search"
-msgstr ""
+msgstr "खोज इंजन"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4487,7 +4487,7 @@ msgstr "छोड़ें"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.skip"
-msgstr ""
+msgstr "छोड़ें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4527,7 +4527,7 @@ msgstr "आप Glimpse का उपयोग कैसे करते है�
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.other"
-msgstr ""
+msgstr "कहीं और"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5444,12 +5444,12 @@ msgstr "हाँ। लोकल मोड में आपका सारा 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model_failed"
-msgstr ""
+msgstr "आपका मॉडल डाउनलोड नहीं हुआ। नीचे पुनः प्रयास करें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model"
-msgstr ""
+msgstr "आपका मॉडल अभी भी डाउनलोड हो रहा है। कृपया प्रतीक्षा करें।"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5459,7 +5459,7 @@ msgstr "आपके हाल के ट्रांसक्रिप्शन
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_downloading"
-msgstr ""
+msgstr "आपका वाक् मॉडल अभी भी डाउनलोड हो रहा है। {percent}% पूर्ण।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

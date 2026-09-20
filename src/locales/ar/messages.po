@@ -533,7 +533,7 @@ msgstr "بعد"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.ai"
-msgstr ""
+msgstr "مساعد الذكاء الاصطناعي"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -982,7 +982,7 @@ msgstr "جارٍ التحقق من التحديثات..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.verifying"
-msgstr ""
+msgstr "جارٍ التحقق من النموذج"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1309,7 +1309,7 @@ msgstr "نسخ رسالة الخطأ"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.copy_last"
-msgstr ""
+msgstr "نسخ آخر نص مُحوَّل"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1847,17 +1847,17 @@ msgstr "جارٍ تنزيل {0}%"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading_files"
-msgstr ""
+msgstr "جارٍ التنزيل {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading"
-msgstr ""
+msgstr "جارٍ تنزيل النموذج {percent}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.downloading_files"
-msgstr ""
+msgstr "جارٍ تنزيل النموذج {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2222,7 +2222,7 @@ msgstr "الأسئلة الشائعة"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.friend"
-msgstr ""
+msgstr "صديق أو زميل عمل"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -2252,7 +2252,7 @@ msgstr "الحصول على الدعم"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_preparing"
-msgstr ""
+msgstr "جارٍ تجهيز نموذج التعرف على الكلام. يعمل هذا في الخلفية."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2287,7 +2287,7 @@ msgstr "بطاقة عضوية Glimpse"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_none"
-msgstr ""
+msgstr "يحتاج Glimpse إلى نموذج تعرف على الكلام قبل أن يتمكن من الكتابة نيابةً عنك."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2417,7 +2417,7 @@ msgstr "الرئيسية"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.title"
-msgstr ""
+msgstr "كيف اكتشفت Glimpse؟"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2953,7 +2953,7 @@ msgstr "النموذج (الافتراضي: {0})"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.failed"
-msgstr ""
+msgstr "فشل تنزيل النموذج"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2968,7 +2968,7 @@ msgstr "النموذج غير مثبَّت."
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.ready"
-msgstr ""
+msgstr "النموذج جاهز"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3454,7 +3454,7 @@ msgstr "فتح GitHub"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_action"
-msgstr ""
+msgstr "فتح النماذج"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4091,7 +4091,7 @@ msgstr "إعادة المحاولة"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.retry"
-msgstr ""
+msgstr "إعادة المحاولة"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4227,7 +4227,7 @@ msgstr "البحث في القاموس..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.search"
-msgstr ""
+msgstr "محرك البحث"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4487,7 +4487,7 @@ msgstr "تخطّي"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.skip"
-msgstr ""
+msgstr "تخطي"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4527,7 +4527,7 @@ msgstr "بعض الأسئلة حول كيفية استخدامك لـ Glimpse؟"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.other"
-msgstr ""
+msgstr "مكان آخر"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5444,12 +5444,12 @@ msgstr "نعم. في الوضع المحلي، تبقى جميع ملفاتك ا
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model_failed"
-msgstr ""
+msgstr "لم يكتمل تنزيل النموذج. أعد المحاولة أدناه."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model"
-msgstr ""
+msgstr "لا يزال النموذج قيد التنزيل. يُرجى الانتظار."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5459,7 +5459,7 @@ msgstr "ستظهر نصوصك المُفرَّغة الأخيرة هنا"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_downloading"
-msgstr ""
+msgstr "لا يزال نموذج التعرف على الكلام قيد التنزيل. اكتمل {percent}%."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
