@@ -274,6 +274,11 @@ function ModelDetails({
   const stats = deriveModelStats(model);
   const builtIn = isBuiltInModel(model);
   const downloading = progress?.status === "downloading";
+  const percent = Math.round(progress?.percent ?? 0);
+  const fileIndex =
+    progress && "fileIndex" in progress ? progress.fileIndex : undefined;
+  const fileCount =
+    progress && "fileCount" in progress ? progress.fileCount : undefined;
 
   const supports = [
     stats.englishOnly
@@ -309,11 +314,17 @@ function ModelDetails({
       <div className="mt-1 flex h-5 items-center gap-2 ui-text-body-sm text-content-muted">
         {downloading ? (
           <>
-            <span>
-              {t({
-                id: "onboarding.model.status.downloading",
-                message: `Downloading ${Math.round(progress?.percent ?? 0)}%`,
-              })}
+            {/* Fixed width so Cancel doesn't move as the percent grows. */}
+            <span className="min-w-[9rem] tabular-nums">
+              {fileIndex && fileCount && fileCount > 1
+                ? t({
+                    id: "onboarding.model.status.downloading_files",
+                    message: `Downloading ${percent}% (${fileIndex}/${fileCount})`,
+                  })
+                : t({
+                    id: "onboarding.model.status.downloading",
+                    message: `Downloading ${percent}%`,
+                  })}
             </span>
             <button
               type="button"

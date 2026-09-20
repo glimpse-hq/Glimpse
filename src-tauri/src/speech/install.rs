@@ -36,6 +36,8 @@ struct DownloadProgressPayload {
     total: u64,
     percent: f64,
     verifying: bool,
+    file_index: usize,
+    file_count: usize,
 }
 
 #[derive(Serialize, Clone)]
@@ -313,10 +315,18 @@ fn ensure_model_downloadable(
 #[tauri::command]
 pub async fn download_model(
     app: AppHandle<AppRuntime>,
-    state: tauri::State<'_, crate::AppState>,
     model: String,
     ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
+    download_model_now(app, model, ane).await
+}
+
+pub async fn download_model_now(
+    app: AppHandle<AppRuntime>,
+    model: String,
+    ane: Option<bool>,
+) -> Result<ModelStatus, String> {
+    let state = app.state::<crate::AppState>();
     let manager =
         model_manager(&app).map_err(|err| track_download_error(&app, &model, "resolve", err))?;
     let ane = ane.unwrap_or_else(|| super::catalog::ane_encoder_dir(&model).is_some());
@@ -330,24 +340,49 @@ pub async fn download_model(
         && super::catalog::ane_encoder_dir(&model).is_some()
         && !ane_installed_for(&model, &manager);
     let cancel_token = state.create_download_token(&model)?;
-    struct DownloadGuard<'a>(&'a crate::AppState, String);
+    struct DownloadGuard<'a>(&'a AppHandle<AppRuntime>, String);
     impl Drop for DownloadGuard<'_> {
         fn drop(&mut self) {
-            self.0.clear_download_token(&self.1);
+            refresh_model_readiness(self.0, &self.1);
+            self.0
+                .state::<crate::AppState>()
+                .clear_download_token(&self.1);
         }
     }
-    let _download_guard = DownloadGuard(&state, model.clone());
+    let _download_guard = DownloadGuard(&app, model.clone());
     let progress_app = app.clone();
+    let files: Vec<(String, Option<u64>)> = spec
+        .files
+        .iter()
+        .map(|file| (file.path.clone(), file.size_bytes))
+        .collect();
+    // Speech reports percent per file; report it across the whole model so
+    // it doesn't restart at 0% on each file.
+    let sizes: Option<Vec<u64>> = files.iter().map(|(_, size)| *size).collect();
+    let total_size: u64 = sizes.iter().flatten().sum();
     let progress = |event: speech_models::ModelDownloadProgress| {
+        let index = files.iter().position(|(path, _)| *path == event.file);
+        let percent = match (index, &sizes) {
+            (Some(index), Some(sizes)) if !event.verifying && total_size > 0 => {
+                let done = sizes[..index].iter().sum::<u64>() + event.downloaded;
+                (done as f64 / total_size as f64 * 100.0).clamp(0.0, 100.0)
+            }
+            _ => event.percent,
+        };
+        progress_app
+            .state::<crate::AppState>()
+            .note_download_percent(&event.model, percent.round().clamp(0.0, 100.0) as u8);
         let _ = progress_app.emit(
             "download:progress",
             DownloadProgressPayload {
-                model: event.model,
+                model: event.model.clone(),
                 file: event.file,
                 downloaded: event.downloaded,
                 total: event.total,
-                percent: event.percent,
+                percent,
                 verifying: event.verifying,
+                file_index: index.map_or(0, |index| index + 1),
+                file_count: files.len(),
             },
         );
     };
@@ -432,9 +467,7 @@ pub async fn download_model(
     }
 
     let settings = state.current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-        tracing::error!("Failed to refresh tray menu after download: {err}");
-    }
+    crate::tray::refresh_menus(&app, &settings);
 
     Ok(map_status(status, &manager))
 }
@@ -497,18 +530,21 @@ pub async fn delete_model(
         let manager = model_manager(&handle).map_err(|err| err.to_string())?;
 
         if let Some(state) = handle.try_state::<crate::AppState>() {
+            state.ready_models.lock().remove(&model);
             let transcriber = state.local_transcriber();
             if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
                 transcriber.unload();
             }
         }
 
-        delete_with_retry(&manager, &model)
+        let result = delete_with_retry(&manager, &model)
             .map(|status| map_status(status, &manager))
             .map_err(|err| {
                 tracing::error!("[speech] delete {model} failed: {err:#}");
                 format!("{err:#}")
-            })
+            });
+        refresh_model_readiness(&handle, &model);
+        result
     })
     .await
     .map_err(|err| err.to_string())??;
@@ -517,9 +553,7 @@ pub async fn delete_model(
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();
-        if let Err(err) = crate::tray::refresh_tray_menu(&app, &settings) {
-            tracing::error!("Failed to refresh tray menu after delete: {err}");
-        }
+        crate::tray::refresh_menus(&app, &settings);
     }
 
     Ok(status)
@@ -542,6 +576,18 @@ pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result
         path: resolved.path,
         engine: resolved.engine,
     })
+}
+
+fn refresh_model_readiness(app: &AppHandle<AppRuntime>, model: &str) {
+    // Keep disk I/O outside the lock used by the shortcut.
+    let ready = ensure_model_ready(app, model).is_ok();
+    let state = app.state::<crate::AppState>();
+    let mut models = state.ready_models.lock();
+    if ready {
+        models.insert(model.to_string());
+    } else {
+        models.remove(model);
+    }
 }
 
 /// `preferred` when it's installed, else the first installed local model.

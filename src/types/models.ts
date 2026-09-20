@@ -52,6 +52,8 @@ export type DownloadProgressPayload = {
   total: number;
   percent: number;
   verifying: boolean;
+  file_index: number;
+  file_count: number;
 };
 
 export type AneCompileEvent = {
@@ -67,6 +69,8 @@ export type DownloadEvent =
       percent: number;
       file: string;
       verifying?: boolean;
+      fileIndex?: number;
+      fileCount?: number;
     }
   | { status: "complete"; percent: number }
   | { status: "cancelled"; percent: number }

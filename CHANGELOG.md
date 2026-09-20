@@ -1,3 +1,19 @@
+1.2.1
+
+### Improvements
+
+- The menu bar menu on Mac is simpler. It has Start Recording, Copy Last Transcription and your recent transcriptions. Models, microphone and Check for Updates moved to the Glimpse menu at the top left.
+- Start Recording is grayed out when you don't have a license.
+- On Windows, the tray menu gains Copy Last Transcription, and Check for Updates outside the Microsoft Store version.
+- Onboarding flows better. Your model downloads in the background while you finish setting up, and the practice dictation waits for it instead of failing.
+- Model downloads show one percentage for the whole model instead of starting over on each file.
+- Onboarding now asks how you found Glimpse.
+
+### Fixes
+
+- Choosing a cloud model from the menu on Mac works again. Before, it switched straight back off.
+- On Windows, changing the microphone from the tray after your trial ended could turn off Cleanup, and it stayed off after activating a license. It no longer does.
+
 1.2.0
 
 ### Introducing Recording Mode

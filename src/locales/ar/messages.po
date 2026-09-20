@@ -531,6 +531,11 @@ msgid "settings.app.auto_delete.after"
 msgstr "بعد"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.ai"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup"
 msgstr "تنظيف بالذكاء الاصطناعي"
@@ -975,6 +980,11 @@ msgid "updates.checking"
 msgstr "جارٍ التحقق من التحديثات..."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.verifying"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.checking"
 msgstr "جارٍ التحقق من الإذن"
@@ -1295,6 +1305,11 @@ msgstr "نسخ الخطأ"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
 msgstr "نسخ رسالة الخطأ"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.menu.copy_last"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1825,10 +1840,24 @@ msgid "models.card.downloading"
 msgstr "جارٍ التنزيل"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: Math.round(progress?.percent ?? 0)
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading"
 msgstr "جارٍ تنزيل {0}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.status.downloading_files"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading_files"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2191,6 +2220,11 @@ msgid "faq.title"
 msgstr "الأسئلة الشائعة"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.friend"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.full"
 msgstr "كامل"
@@ -2214,6 +2248,11 @@ msgstr "احصل على كل شيء بترخيص."
 #: src/Home.tsx
 msgid "home.support.title"
 msgstr "الحصول على الدعم"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_preparing"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2244,6 +2283,11 @@ msgstr "Glimpse"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.aria"
 msgstr "بطاقة عضوية Glimpse"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_none"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2369,6 +2413,11 @@ msgstr "اضغط مع الاستمرار للتحدث، وأفلت للإيقا�
 #: src/Home.tsx
 msgid "home.sidebar.home"
 msgstr "الرئيسية"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2902,6 +2951,11 @@ msgid "settings.speech_model.model.placeholder"
 msgstr "النموذج (الافتراضي: {0})"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.unavailable"
 msgstr "قائمة النماذج غير متاحة. يمكنك إضافة نموذج لاحقاً من الإعدادات."
@@ -2910,6 +2964,11 @@ msgstr "قائمة النماذج غير متاحة. يمكنك إضافة نم�
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.model_not_installed"
 msgstr "النموذج غير مثبَّت."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.ready"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3391,6 +3450,11 @@ msgstr "فتح عام"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "فتح GitHub"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4025,6 +4089,11 @@ msgid "transcriptions.item.retry"
 msgstr "إعادة المحاولة"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.retry"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.retry"
 msgstr "إعادة المحاولة"
@@ -4154,6 +4223,11 @@ msgstr "البحث في نماذج الكلام المتاحة..."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_only"
 msgstr "البحث في القاموس..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.search"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4411,6 +4485,11 @@ msgid "onboarding.first_dictation.later"
 msgstr "تخطّي"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.skip"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.skip_short_aria"
 msgstr "تخطي المقاطع الأقصر من ثانية واحدة"
@@ -4444,6 +4523,11 @@ msgstr "ذكي"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.title"
 msgstr "بعض الأسئلة حول كيفية استخدامك لـ Glimpse؟"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.other"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5358,9 +5442,24 @@ msgid "faq.privacy.answer"
 msgstr "نعم. في الوضع المحلي، تبقى جميع ملفاتك الصوتية ونصوصك المُفرَّغة على جهازك. لا نجمع تسجيلاتك ولا نرسلها. المزامنة السحابية اختيارية."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "ستظهر نصوصك المُفرَّغة الأخيرة هنا"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_downloading"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

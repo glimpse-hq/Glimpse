@@ -33,6 +33,7 @@ pub(crate) fn run_transcription_prune_for_settings(
         true,
     )?;
     if count > 0 {
+        crate::tray::refresh_menus(app, &app.state::<AppState>().current_settings());
         app.emit(
             EVENT_TRANSCRIPTION_COMPLETE,
             TranscriptionCompletePayload {
@@ -1319,21 +1320,14 @@ fn emit_transcription_complete_with_cleanup(
     }
 
     let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        tracing::error!("Failed to refresh tray menu: {err}");
-    }
-    #[cfg(target_os = "macos")]
-    if let Err(err) = crate::set_app_menu(app, &settings) {
-        tracing::error!("Failed to refresh app menu: {err}");
-    }
+    crate::tray::refresh_menus(app, &settings);
 
     crate::schedule_recording_prune(app.clone(), settings.clone());
     crate::schedule_transcription_prune(app.clone(), settings);
 
     let update_state = app.state::<AppState>().update_state().clone();
-    if !update_checker::maybe_show_update_toast(app, &update_state) {
-        crate::notifications::evaluate_after_use(app);
-    }
+    let update_toast_shown = update_checker::maybe_show_update_toast(app, &update_state);
+    crate::notifications::evaluate_after_use(app, !update_toast_shown);
     crate::asks::evaluate_after_use(app);
 
     persisted
