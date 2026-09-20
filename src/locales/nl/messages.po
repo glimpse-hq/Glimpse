@@ -2251,6 +2251,11 @@ msgstr "Ondersteuning krijgen"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_preparing"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.github"
 msgstr "Github"
 
@@ -2278,6 +2283,11 @@ msgstr "Glimpse"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.aria"
 msgstr "Glimpse‑lidmaatschapskaart"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_none"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -3440,6 +3450,11 @@ msgstr "Algemeen openen"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "Open GitHub"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -5440,6 +5455,11 @@ msgstr ""
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "Je recente transcripties verschijnen hier"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_downloading"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

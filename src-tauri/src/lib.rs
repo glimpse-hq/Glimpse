@@ -42,7 +42,7 @@ pub(crate) use speech::engine as local_transcription;
 pub(crate) use speech::install as model_manager;
 pub(crate) use speech::remote as remote_speech;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -648,6 +648,7 @@ pub fn run() {
             fetch_remote_speech_models,
             open_about_page,
             open_account_page,
+            open_models_page,
             asks::get_ask_prompt,
             asks::mark_ask_prompt_seen,
             asks::resolve_ask_prompt,
@@ -788,6 +789,8 @@ pub struct AppState {
     pending_recording_path: parking_lot::Mutex<Option<PathBuf>>,
     pending_selected_text: parking_lot::Mutex<Option<String>>,
     download_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
+    download_percent: parking_lot::Mutex<HashMap<String, u8>>,
+    pub(crate) ready_models: parking_lot::Mutex<HashSet<String>>,
     library_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     library_queue: parking_lot::Mutex<VecDeque<LibraryJob>>,
     library_active: parking_lot::Mutex<Option<String>>,
@@ -848,6 +851,13 @@ impl AppState {
             Arc::new(local_transcription::LocalTranscriber::new(model_cache_dir));
         local_transcriber.start_idle_monitor();
 
+        // Cache readiness before registering shortcuts to keep disk I/O off the keypress path.
+        let ready_models = speech::catalog::local_manifests()
+            .iter()
+            .filter(|model| model_manager::ensure_model_ready(app_handle, model.id).is_ok())
+            .map(|model| model.id.to_string())
+            .collect();
+
         Self {
             pill: Arc::new(PillController::new(Arc::clone(&recorder))),
             http,
@@ -865,6 +875,8 @@ impl AppState {
             pending_recording_path: parking_lot::Mutex::new(None),
             pending_selected_text: parking_lot::Mutex::new(None),
             download_tokens: parking_lot::Mutex::new(HashMap::new()),
+            download_percent: parking_lot::Mutex::new(HashMap::new()),
+            ready_models: parking_lot::Mutex::new(ready_models),
             library_tokens: parking_lot::Mutex::new(HashMap::new()),
             library_queue: parking_lot::Mutex::new(VecDeque::new()),
             library_active: parking_lot::Mutex::new(None),
@@ -1115,6 +1127,23 @@ impl AppState {
 
     pub fn clear_download_token(&self, model: &str) {
         self.download_tokens.lock().remove(model);
+        self.download_percent.lock().remove(model);
+    }
+
+    pub fn note_download_percent(&self, model: &str, percent: u8) {
+        self.download_percent
+            .lock()
+            .insert(model.to_string(), percent);
+    }
+
+    pub fn download_percent(&self, model: &str) -> Option<u8> {
+        self.download_tokens.lock().contains_key(model).then(|| {
+            self.download_percent
+                .lock()
+                .get(model)
+                .copied()
+                .unwrap_or_default()
+        })
     }
 
     pub fn register_library_transcription(&self, id: String) -> CancellationToken {
@@ -1389,7 +1418,7 @@ fn update_settings(
 }
 
 /// Caches the license status for analytics and reports a lapsed trial once.
-fn note_license_state(
+pub(crate) fn note_license_state(
     app: &tauri::AppHandle<AppRuntime>,
     state: &AppState,
     license_state: &license::LicenseState,
@@ -1400,7 +1429,10 @@ fn note_license_state(
     if previous.is_some_and(|status| status != license_state.status.as_str()) {
         tray::refresh_menus(app, &state.current_settings());
     }
-    if license::take_trial_expiry_report(&state.settings_store, license_state) {
+    // Preserve the expiry marker while analytics is disabled.
+    if state.current_settings().analytics_enabled
+        && license::take_trial_expiry_report(&state.settings_store, license_state)
+    {
         analytics::track_trial_expired(app);
     }
 }
@@ -1660,6 +1692,11 @@ fn open_about_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
 #[tauri::command]
 fn open_account_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
     open_settings_page(&app, SettingsPage::Account)
+}
+
+#[tauri::command]
+fn open_models_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    open_settings_page(&app, SettingsPage::Models)
 }
 
 fn open_settings_page(app: &AppHandle<AppRuntime>, page: SettingsPage) -> Result<(), String> {

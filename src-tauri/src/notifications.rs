@@ -82,12 +82,14 @@ pub fn last_notice_shown_at(store: &SettingsStore) -> Option<DateTime<Utc>> {
     NoticeState::load(store).last_shown_any()
 }
 
-pub fn evaluate_after_use(app: &AppHandle<AppRuntime>) {
+// Refresh license analytics even when another toast suppresses the notice.
+pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
     if license::developer_license_bypass_active() {
         return;
     }
 
-    let store = app.state::<AppState>().settings_store.clone();
+    let state = app.state::<AppState>();
+    let store = state.settings_store.clone();
 
     let license_state = match license::get_license_state(&store) {
         Ok(state) => state,
@@ -96,6 +98,10 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>) {
             return;
         }
     };
+    crate::note_license_state(app, &state, &license_state);
+    if !show_notice {
+        return;
+    }
 
     let now = Utc::now();
     let mut state = NoticeState::load(&store);

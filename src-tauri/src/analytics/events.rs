@@ -171,9 +171,7 @@ const KEY_FIRST_DICTATION_REPORTED: &str = "analytics_first_dictation_reported";
 // Keeps the store read off the keypress path after the first check.
 static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
 
-/// Records the very first time you press a dictation shortcut, once per
-/// install, with a bounded outcome: recording started, the microphone was
-/// blocked, or the device failed to open.
+// Report the first shortcut attempt once per install.
 pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
     if FIRST_DICTATION_REPORTED.load(Ordering::Relaxed) {
         return;
@@ -237,7 +235,11 @@ pub fn track_onboarding_source(app: tauri::AppHandle<AppRuntime>, source: String
         | "microsoft_store" | "other" => source.as_str(),
         _ => "unknown",
     };
-    capture_event(&app, "onboarding_source_selected", json!({ "source": source }));
+    capture_event(
+        &app,
+        "onboarding_source_selected",
+        json!({ "source": source }),
+    );
 }
 
 /// Records that a one-time ask appeared, with usage as coarse

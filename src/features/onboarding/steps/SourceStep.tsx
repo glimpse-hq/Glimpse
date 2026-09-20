@@ -45,7 +45,10 @@ export function SourceStep({
     },
     {
       id: "friend",
-      label: t({ id: "onboarding.source.friend", message: "Friend or coworker" }),
+      label: t({
+        id: "onboarding.source.friend",
+        message: "Friend or coworker",
+      }),
     },
     { id: "reddit", label: "Reddit" },
     { id: "youtube", label: "YouTube" },

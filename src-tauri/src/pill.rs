@@ -21,6 +21,7 @@ use std::sync::{
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
+const MODEL_NOTICE_INTERVAL: Duration = Duration::from_secs(20);
 const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
@@ -229,6 +230,7 @@ pub struct PillController {
     is_expanded: Mutex<bool>,
     recording_started_at: Mutex<Option<Instant>>,
     stopped_audio_seconds: Mutex<Option<f32>>,
+    model_notice_shown_at: Mutex<Option<Instant>>,
 }
 
 impl PillController {
@@ -250,6 +252,7 @@ impl PillController {
             is_expanded: Mutex::new(false),
             recording_started_at: Mutex::new(None),
             stopped_audio_seconds: Mutex::new(None),
+            model_notice_shown_at: Mutex::new(None),
         }
     }
 
@@ -337,6 +340,59 @@ impl PillController {
         if let Some(emitter) = self.hover_emitter.lock().take() {
             emitter.stop();
         }
+    }
+
+    fn model_is_ready(&self, app: &AppHandle<AppRuntime>) -> bool {
+        let state = app.state::<AppState>();
+        let model = crate::speech::selected_model(&state.current_settings());
+        if crate::remote_speech::is_remote_model(&model)
+            || state.ready_models.lock().contains(&model)
+        {
+            return true;
+        }
+
+        if self.model_notice_is_due() {
+            match state.download_percent(&model) {
+                Some(percent) => toast::show(
+                    app,
+                    "info",
+                    None,
+                    &toast::native_format(
+                        app,
+                        "native.toast.model_downloading",
+                        &[("percent", &percent.to_string())],
+                    ),
+                ),
+                None => {
+                    let downloading = start_model_download(app, &model);
+                    toast::show_with_action(
+                        app,
+                        "info",
+                        None,
+                        &toast::native(
+                            app,
+                            if downloading {
+                                "native.toast.model_preparing"
+                            } else {
+                                "native.toast.model_none"
+                            },
+                        ),
+                        "open_models_page",
+                        &toast::native(app, "native.toast.model_action"),
+                    );
+                }
+            }
+        }
+        false
+    }
+
+    fn model_notice_is_due(&self) -> bool {
+        let mut last = self.model_notice_shown_at.lock();
+        if last.is_some_and(|shown| shown.elapsed() < MODEL_NOTICE_INTERVAL) {
+            return false;
+        }
+        *last = Some(Instant::now());
+        true
     }
 
     fn start_streaming_session_if_supported(
@@ -591,6 +647,11 @@ impl PillController {
     ) -> bool {
         if !check_mic_permission(app) {
             crate::analytics::track_first_dictation_attempted(app, "mic_blocked");
+            return false;
+        }
+
+        if !self.model_is_ready(app) {
+            crate::analytics::track_first_dictation_attempted(app, "model_not_ready");
             return false;
         }
 
@@ -1145,6 +1206,23 @@ fn handle_revoked_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
 #[cfg(not(target_os = "macos"))]
 fn handle_revoked_mic_permission(_app: &AppHandle<AppRuntime>) -> bool {
     false
+}
+
+fn start_model_download(app: &AppHandle<AppRuntime>, model: &str) -> bool {
+    let downloadable = crate::speech::catalog::local_manifests()
+        .iter()
+        .any(|manifest| manifest.id == model && crate::speech::catalog::is_downloadable(manifest));
+    if !downloadable {
+        return false;
+    }
+    let app = app.clone();
+    let model = model.to_string();
+    tauri::async_runtime::spawn(async move {
+        if let Err(err) = crate::speech::install::download_model_now(app, model, None).await {
+            tracing::warn!("Could not start the model download after a dictation: {err}");
+        }
+    });
+    true
 }
 
 fn check_mic_permission(app: &AppHandle<AppRuntime>) -> bool {

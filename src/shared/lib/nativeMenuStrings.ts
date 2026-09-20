@@ -87,6 +87,20 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.toast.copied", message: "Copied to clipboard" }),
 
   msg({
+    id: "native.toast.model_downloading",
+    message: "Your speech model is still downloading. {percent}% done.",
+  }),
+  msg({
+    id: "native.toast.model_preparing",
+    message: "Getting your speech model ready. This runs in the background.",
+  }),
+  msg({
+    id: "native.toast.model_none",
+    message: "Glimpse needs a speech model before it can type for you.",
+  }),
+  msg({ id: "native.toast.model_action", message: "Open Models" }),
+
+  msg({
     id: "native.toast.recovering",
     message: "Recovering your last recording...",
   }),
