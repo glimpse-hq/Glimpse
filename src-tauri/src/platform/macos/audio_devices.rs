@@ -10,7 +10,7 @@ use objc2_core_audio::{
 };
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, set_app_menu, tray};
+use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, tray};
 
 pub const EVENT_INPUT_DEVICES_CHANGED: &str = "audio:input-devices-changed";
 
@@ -46,13 +46,7 @@ fn run_input_device_watcher(app: AppHandle<AppRuntime>) -> Result<(), String> {
 }
 
 fn refresh_native_menus(app: &AppHandle<AppRuntime>) {
-    let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = set_app_menu(app, &settings) {
-        tracing::error!("Failed to refresh app menu after input device change: {err}");
-    }
-    if let Err(err) = tray::refresh_tray_menu(app, &settings) {
-        tracing::error!("Failed to refresh tray menu after input device change: {err}");
-    }
+    tray::refresh_menus(app, &app.state::<AppState>().current_settings());
 }
 
 struct ListenerState {

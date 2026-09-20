@@ -171,9 +171,7 @@ const KEY_FIRST_DICTATION_REPORTED: &str = "analytics_first_dictation_reported";
 // Keeps the store read off the keypress path after the first check.
 static FIRST_DICTATION_REPORTED: AtomicBool = AtomicBool::new(false);
 
-/// Records the very first time you press a dictation shortcut, once per
-/// install, with a bounded outcome: recording started, the microphone was
-/// blocked, or the device failed to open.
+// Report the first shortcut attempt once per install.
 pub fn track_first_dictation_attempted(app: &tauri::AppHandle<AppRuntime>, outcome: &str) {
     if FIRST_DICTATION_REPORTED.load(Ordering::Relaxed) {
         return;
@@ -222,11 +220,26 @@ pub fn track_feature_used_command(app: tauri::AppHandle<AppRuntime>, feature: St
 #[tauri::command]
 pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: String) {
     let step = match step.as_str() {
-        "welcome" | "import" | "model" | "model_downloading" | "permissions" | "license"
-        | "done" | "practice" => step.as_str(),
+        "welcome" | "import" | "model" | "model_downloading" | "source" | "permissions"
+        | "license" | "done" | "practice" => step.as_str(),
         _ => "unknown",
     };
     capture_event(&app, "onboarding_step_viewed", json!({ "step": step }));
+}
+
+/// Records where you said you heard about Glimpse, from a fixed list.
+#[tauri::command]
+pub fn track_onboarding_source(app: tauri::AppHandle<AppRuntime>, source: String) {
+    let source = match source.as_str() {
+        "search" | "ai" | "friend" | "reddit" | "youtube" | "x" | "product_hunt"
+        | "microsoft_store" | "other" => source.as_str(),
+        _ => "unknown",
+    };
+    capture_event(
+        &app,
+        "onboarding_source_selected",
+        json!({ "source": source }),
+    );
 }
 
 /// Records that a one-time ask appeared, with usage as coarse

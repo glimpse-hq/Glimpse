@@ -1,12 +1,11 @@
 use crate::native_i18n::MenuStrings;
 use crate::recent_transcriptions::{
-    MENU_ID_RECENT_TRANSCRIPTION_PREFIX, build_recent_transcriptions_menu,
+    MENU_ID_COPY_LAST_TRANSCRIPTION, MENU_ID_RECENT_TRANSCRIPTION_PREFIX, build_copy_last_item,
+    build_recent_transcriptions_menu, copy_last_transcription_to_clipboard,
     copy_transcription_to_clipboard,
 };
 use crate::settings::UserSettings;
-use crate::speech::menu::{
-    build_model_status_items, build_models_submenu, handle_speech_menu_event,
-};
+use crate::speech::menu::handle_speech_menu_event;
 use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, audio};
 use parking_lot::Mutex;
 use std::sync::{
@@ -20,8 +19,11 @@ use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, Windo
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
 
-pub(crate) const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
-pub(crate) const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
+pub(crate) const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
+const MENU_ID_OPEN_SETTINGS: &str = "open_settings";
+const MENU_ID_QUIT: &str = "quit_glimpse";
+const MENU_ID_MIC_PREFIX: &str = "menu_mic_";
+const MENU_ID_MIC_DEFAULT: &str = "menu_mic_default";
 const MENU_ID_RECORDING_START: &str = "menu_recording_start";
 const MENU_ID_RECORDING_TOGGLE_PAUSE: &str = "menu_recording_toggle_pause";
 const MENU_ID_RECORDING_BOOKMARK: &str = "menu_recording_bookmark";
@@ -421,18 +423,28 @@ pub(crate) fn build_microphone_submenu(
     mic_submenu.build()
 }
 
-fn build_tray_menu(
+/// Session controls while recording, otherwise Start Recording, which is
+/// disabled without a license.
+fn build_recording_items(
     app: &AppHandle<AppRuntime>,
-    settings: &UserSettings,
-) -> tauri::Result<Menu<AppRuntime>> {
-    let strings = MenuStrings::resolve(settings);
-    let app_name = app.package_info().name.clone();
-    let mut menu = MenuBuilder::new(app);
+    strings: &MenuStrings,
+) -> tauri::Result<Vec<MenuItem<AppRuntime>>> {
+    let state = app.state::<AppState>();
+    let recording = state.recording().state();
+    if recording.status != "recording" && recording.status != "paused" {
+        let licensed = crate::license::license_gate_active(&state.settings_store);
+        return Ok(vec![MenuItem::with_id(
+            app,
+            MENU_ID_RECORDING_START,
+            strings.get("native.menu.recording_start"),
+            licensed,
+            None::<&str>,
+        )?]);
+    }
 
-    let recording = app.state::<AppState>().recording().state();
-    if recording.status == "recording" || recording.status == "paused" {
-        let paused = recording.status == "paused";
-        let status = MenuItem::with_id(
+    let paused = recording.status == "paused";
+    Ok(vec![
+        MenuItem::with_id(
             app,
             "menu_recording_status",
             if paused {
@@ -442,8 +454,8 @@ fn build_tray_menu(
             },
             false,
             None::<&str>,
-        )?;
-        let toggle_pause = MenuItem::with_id(
+        )?,
+        MenuItem::with_id(
             app,
             MENU_ID_RECORDING_TOGGLE_PAUSE,
             if paused {
@@ -453,65 +465,77 @@ fn build_tray_menu(
             },
             true,
             None::<&str>,
-        )?;
-        let bookmark = MenuItem::with_id(
+        )?,
+        MenuItem::with_id(
             app,
             MENU_ID_RECORDING_BOOKMARK,
             strings.get("native.menu.recording_bookmark"),
             true,
             None::<&str>,
-        )?;
-        let finish = MenuItem::with_id(
+        )?,
+        MenuItem::with_id(
             app,
             MENU_ID_RECORDING_FINISH,
             strings.get("native.menu.recording_finish"),
             true,
             None::<&str>,
-        )?;
+        )?,
+    ])
+}
+
+fn build_tray_menu(
+    app: &AppHandle<AppRuntime>,
+    settings: &UserSettings,
+) -> tauri::Result<Menu<AppRuntime>> {
+    let strings = MenuStrings::resolve(settings);
+    let app_name = app.package_info().name.clone();
+    let mut menu = MenuBuilder::new(app);
+
+    for item in build_recording_items(app, &strings)? {
+        menu = menu.item(&item);
+    }
+    menu = menu
+        .separator()
+        .item(&build_copy_last_item(app, &strings)?)
+        .item(&build_recent_transcriptions_menu(app, &strings)?)
+        .separator();
+
+    // Windows has no app menu, so the tray also carries what macOS puts there.
+    #[cfg(target_os = "windows")]
+    {
+        use crate::speech::menu::{build_model_status_items, build_models_submenu};
+
+        for item in build_model_status_items(app, settings)? {
+            menu = menu.item(&item);
+        }
         menu = menu
-            .item(&status)
-            .item(&toggle_pause)
-            .item(&bookmark)
-            .item(&finish)
+            .item(&build_models_submenu(app, settings)?)
+            .item(&build_microphone_submenu(app, settings, &strings)?)
             .separator();
-    } else {
-        let start = MenuItem::with_id(
-            app,
-            MENU_ID_RECORDING_START,
-            strings.get("native.menu.recording_start"),
-            true,
-            None::<&str>,
-        )?;
-        menu = menu.item(&start).separator();
+
+        // Store builds update through the Store.
+        if !crate::platform::is_store_build() {
+            let check_updates = MenuItem::with_id(
+                app,
+                MENU_ID_CHECK_UPDATES,
+                strings.get("native.menu.check_updates_long"),
+                true,
+                None::<&str>,
+            )?;
+            menu = menu.item(&check_updates).separator();
+        }
     }
-
-    let status_items = build_model_status_items(app, settings)?;
-    for item in &status_items {
-        menu = menu.item(item);
-    }
-    if !status_items.is_empty() {
-        menu = menu.separator();
-    }
-
-    menu = menu.item(&build_models_submenu(app, settings)?);
-
-    menu = menu.item(&build_microphone_submenu(app, settings, &strings)?);
-
-    menu = menu.separator();
-    let recent_submenu = build_recent_transcriptions_menu(app, &strings)?;
-    menu = menu.item(&recent_submenu);
-    menu = menu.separator();
 
     let open_settings = MenuItem::with_id(
         app,
-        "open_settings",
+        MENU_ID_OPEN_SETTINGS,
         strings.format("native.tray.open", &[("app", &app_name)]),
         true,
         None::<&str>,
     )?;
     let quit = MenuItem::with_id(
         app,
-        "quit_glimpse",
+        MENU_ID_QUIT,
         strings.format("native.tray.quit", &[("app", &app_name)]),
         true,
         None::<&str>,
@@ -521,20 +545,11 @@ fn build_tray_menu(
     menu.build()
 }
 
-pub(crate) fn refresh_tray_menu(
-    app: &AppHandle<AppRuntime>,
-    settings: &UserSettings,
-) -> tauri::Result<()> {
-    let state = app.state::<AppState>();
-    if let Some(tray) = state.tray.lock().clone() {
-        let menu = build_tray_menu(app, settings)?;
-        tray.set_menu(Some(menu))?;
-    }
-    Ok(())
-}
-
-fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
-    if let Err(err) = refresh_tray_menu(app, settings) {
+/// Rebuilds the tray menu and, on macOS, the app menu.
+pub(crate) fn refresh_menus(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
+    if let Some(tray) = app.state::<AppState>().tray.lock().clone()
+        && let Err(err) = build_tray_menu(app, settings).and_then(|menu| tray.set_menu(Some(menu)))
+    {
         tracing::error!("Failed to refresh tray menu: {err}");
     }
     #[cfg(target_os = "macos")]
@@ -545,30 +560,44 @@ fn refresh_speech_menus(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
 
 fn set_microphone_from_menu(app: &AppHandle<AppRuntime>, device_id: Option<&str>) {
     let state = app.state::<AppState>();
-    let mut settings = state.current_settings();
+    let mut settings = state.current_settings_unmasked();
     if settings.microphone_device.as_deref() == device_id {
         return;
     }
+    let previous = settings.clone();
     settings.microphone_device = device_id.map(|id| id.to_string());
-    match state.persist_settings(settings.clone()) {
+    match state.persist_settings(settings) {
         Ok(saved) => {
-            refresh_speech_menus(app, &saved);
-            if let Err(err) = app.emit(crate::EVENT_SETTINGS_CHANGED, &saved) {
-                tracing::error!("Failed to emit settings change: {err}");
-            }
+            crate::analytics::track_settings_changes(app, &previous, &saved);
+            refresh_menus(app, &saved);
+            state.emit_settings_changed(app, &saved);
         }
         Err(err) => tracing::error!("Failed to update microphone selection: {err}"),
     }
 }
 
-fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
+/// Handles clicks from the tray menu and the macOS app menu. Tauri delivers
+/// every menu event to every global listener, so this is the only one.
+pub(crate) fn handle_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
     if let Some(saved) = handle_speech_menu_event(app, id) {
-        refresh_speech_menus(app, &saved);
+        refresh_menus(app, &saved);
         return;
     }
 
     match id {
+        MENU_ID_OPEN_SETTINGS => {
+            if let Err(err) = toggle_settings_window(app) {
+                tracing::error!("Failed to open settings window: {err}");
+            }
+        }
+        MENU_ID_QUIT => app.exit(0),
+        MENU_ID_CHECK_UPDATES => {
+            if let Err(err) = open_settings_page(app, SettingsPage::About) {
+                tracing::error!("Failed to open the About screen: {err}");
+            }
+        }
         MENU_ID_MIC_DEFAULT => set_microphone_from_menu(app, None),
+        MENU_ID_COPY_LAST_TRANSCRIPTION => copy_last_transcription_to_clipboard(app),
         MENU_ID_RECORDING_START => crate::recording::start_from_tray(app),
         MENU_ID_RECORDING_TOGGLE_PAUSE => crate::recording::toggle_pause_from_tray(app),
         MENU_ID_RECORDING_BOOKMARK => crate::recording::add_bookmark_from_tray(app),
@@ -579,6 +608,9 @@ fn handle_tray_menu_event(app: &AppHandle<AppRuntime>, id: &str) {
             } else if let Some(device_id_raw) = id.strip_prefix(MENU_ID_MIC_PREFIX) {
                 let device_id = device_id_raw.strip_prefix("dev:").unwrap_or(device_id_raw);
                 set_microphone_from_menu(app, Some(device_id));
+            } else {
+                #[cfg(target_os = "macos")]
+                crate::platform::macos::menu::handle_app_menu_event(app, id);
             }
         }
     }
@@ -617,17 +649,6 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
                 }
             }
             _ => {}
-        })
-        .on_menu_event(|app, event| match event.id().as_ref() {
-            "open_settings" => {
-                if let Err(err) = toggle_settings_window(app) {
-                    tracing::error!("Failed to open settings window: {err}");
-                }
-            }
-            "quit_glimpse" => {
-                app.exit(0);
-            }
-            other => handle_tray_menu_event(app, other),
         })
         .build(app)
 }

@@ -47,6 +47,15 @@ pub fn native(app: &AppHandle<AppRuntime>, key: &'static str) -> String {
         .to_string()
 }
 
+pub fn native_format(
+    app: &AppHandle<AppRuntime>,
+    key: &'static str,
+    args: &[(&str, &str)],
+) -> String {
+    let settings = app.state::<AppState>().current_settings();
+    crate::native_i18n::MenuStrings::resolve(&settings).format(key, args)
+}
+
 pub fn show(app: &AppHandle<AppRuntime>, toast_type: &str, title: Option<&str>, message: &str) {
     emit_toast(
         app,

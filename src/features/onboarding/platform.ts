@@ -10,6 +10,7 @@ export type OnboardingStep =
   | "welcome"
   | "model"
   | "import"
+  | "source"
   | "permissions"
   | "license"
   | "done"

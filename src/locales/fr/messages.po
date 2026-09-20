@@ -531,6 +531,11 @@ msgid "settings.app.auto_delete.after"
 msgstr "après"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.ai"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup"
 msgstr "Nettoyage IA"
@@ -975,6 +980,11 @@ msgid "updates.checking"
 msgstr "Recherche de mises à jour…"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.verifying"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.checking"
 msgstr "Vérification de l'autorisation"
@@ -1295,6 +1305,11 @@ msgstr "Copier l'erreur"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
 msgstr "Copier le message d'erreur"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.menu.copy_last"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1825,10 +1840,24 @@ msgid "models.card.downloading"
 msgstr "Téléchargement en cours"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: Math.round(progress?.percent ?? 0)
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading"
 msgstr "Téléchargement {0} %"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.status.downloading_files"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading_files"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2191,6 +2220,11 @@ msgid "faq.title"
 msgstr "Foire aux questions"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.friend"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.full"
 msgstr "Complet"
@@ -2214,6 +2248,11 @@ msgstr "Obtenez tout avec une licence."
 #: src/Home.tsx
 msgid "home.support.title"
 msgstr "Obtenir de l'aide"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_preparing"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2244,6 +2283,11 @@ msgstr "Glimpse"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.aria"
 msgstr "Carte de membre Glimpse"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_none"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2369,6 +2413,11 @@ msgstr "maintenez pour parler, relâchez pour arrêter"
 #: src/Home.tsx
 msgid "home.sidebar.home"
 msgstr "Accueil"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2902,6 +2951,11 @@ msgid "settings.speech_model.model.placeholder"
 msgstr "Modèle (par défaut : {0})"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.unavailable"
 msgstr "Liste de modèles indisponible. Vous pouvez en ajouter un ultérieurement dans les Réglages."
@@ -2910,6 +2964,11 @@ msgstr "Liste de modèles indisponible. Vous pouvez en ajouter un ultérieuremen
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.model_not_installed"
 msgstr "Modèle non installé."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.ready"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3391,6 +3450,11 @@ msgstr "Ouvrir Général"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "Ouvrir GitHub"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4025,6 +4089,11 @@ msgid "transcriptions.item.retry"
 msgstr "Réessayer"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.retry"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.retry"
 msgstr "Réessayer"
@@ -4154,6 +4223,11 @@ msgstr "Rechercher des modèles vocaux disponibles…"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_only"
 msgstr "Rechercher dans le dictionnaire…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.search"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4411,6 +4485,11 @@ msgid "onboarding.first_dictation.later"
 msgstr "Ignorer"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.skip"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.skip_short_aria"
 msgstr "Ignorer les clips de moins d'une seconde"
@@ -4444,6 +4523,11 @@ msgstr "Intelligent"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.title"
 msgstr "Quelques questions sur votre utilisation de Glimpse ?"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.other"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5358,9 +5442,24 @@ msgid "faq.privacy.answer"
 msgstr "Oui. En mode local, vos fichiers audio et transcriptions restent sur votre appareil. Nous ne collectons ni ne transmettons jamais vos enregistrements. La synchronisation dans le cloud est facultative."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "Vos transcriptions récentes apparaîtront ici"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_downloading"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

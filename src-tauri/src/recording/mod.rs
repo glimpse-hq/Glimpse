@@ -786,10 +786,7 @@ fn sync_tray(app: &AppHandle<AppRuntime>, state: &RecordingSessionState) {
 
 /// Refreshes the tray menu (pause/resume/finish items) after a transition.
 fn refresh_menus(app: &AppHandle<AppRuntime>) {
-    let settings = app.state::<AppState>().current_settings();
-    if let Err(err) = crate::tray::refresh_tray_menu(app, &settings) {
-        tracing::warn!("Failed to refresh tray menu: {err}");
-    }
+    crate::tray::refresh_menus(app, &app.state::<AppState>().current_settings());
 }
 
 fn start_state_emitter(app: AppHandle<AppRuntime>, shared: Arc<Shared>) {

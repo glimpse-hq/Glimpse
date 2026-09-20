@@ -531,6 +531,11 @@ msgid "settings.app.auto_delete.after"
 msgstr "after"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.ai"
+msgstr "AI assistant"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup"
 msgstr "AI cleanup"
@@ -975,6 +980,11 @@ msgid "updates.checking"
 msgstr "Checking for updates..."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.verifying"
+msgstr "Checking model"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.checking"
 msgstr "Checking permission"
@@ -1295,6 +1305,11 @@ msgstr "Copy error"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copy"
 msgstr "Copy error message"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.menu.copy_last"
+msgstr "Copy Last Transcription"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1825,10 +1840,24 @@ msgid "models.card.downloading"
 msgstr "Downloading"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: Math.round(progress?.percent ?? 0)
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.downloading"
 msgstr "Downloading {0}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.status.downloading_files"
+msgstr "Downloading {percent}% ({fileIndex}/{fileCount})"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading"
+msgstr "Downloading model {percent}%"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.downloading_files"
+msgstr "Downloading model {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2191,6 +2220,11 @@ msgid "faq.title"
 msgstr "Frequently Asked Questions"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.friend"
+msgstr "Friend or coworker"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.full"
 msgstr "Full"
@@ -2214,6 +2248,11 @@ msgstr "Get everything with a license."
 #: src/Home.tsx
 msgid "home.support.title"
 msgstr "Get Support"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_preparing"
+msgstr "Getting your speech model ready. This runs in the background."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2244,6 +2283,11 @@ msgstr "Glimpse"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.aria"
 msgstr "Glimpse member card"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_none"
+msgstr "Glimpse needs a speech model before it can type for you."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -2369,6 +2413,11 @@ msgstr "hold to talk, release to stop"
 #: src/Home.tsx
 msgid "home.sidebar.home"
 msgstr "Home"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.title"
+msgstr "How did you find Glimpse?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -2902,6 +2951,11 @@ msgid "settings.speech_model.model.placeholder"
 msgstr "Model (default: {0})"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.failed"
+msgstr "Model download failed"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.unavailable"
 msgstr "Model list unavailable. You can add one later in Settings."
@@ -2910,6 +2964,11 @@ msgstr "Model list unavailable. You can add one later in Settings."
 #: src/features/library/components/library-utils.ts
 msgid "library.error_details.model_not_installed"
 msgstr "Model not installed."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.ready"
+msgstr "Model ready"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3391,6 +3450,11 @@ msgstr "Open General"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.ask.star.answer"
 msgstr "Open GitHub"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_action"
+msgstr "Open Models"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
@@ -4025,6 +4089,11 @@ msgid "transcriptions.item.retry"
 msgstr "Retry"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/ModelDownloadStatus.tsx
+msgid "onboarding.download_status.retry"
+msgstr "Retry"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.retry"
 msgstr "Retry"
@@ -4154,6 +4223,11 @@ msgstr "Search available speech models..."
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.search_only"
 msgstr "Search dictionary..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.search"
+msgstr "Search engine"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4411,6 +4485,11 @@ msgid "onboarding.first_dictation.later"
 msgstr "Skip"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.skip"
+msgstr "Skip"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.skip_short_aria"
 msgstr "Skip clips shorter than one second"
@@ -4444,6 +4523,11 @@ msgstr "Smart"
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.title"
 msgstr "Some questions about how you use Glimpse?"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/SourceStep.tsx
+msgid "onboarding.source.other"
+msgstr "Somewhere else"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -5358,9 +5442,24 @@ msgid "faq.privacy.answer"
 msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model_failed"
+msgstr "Your model didn't download. Retry below."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.waiting.model"
+msgstr "Your model is still downloading. Please wait."
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "Your recent transcriptions will appear here"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_downloading"
+msgstr "Your speech model is still downloading. {percent}% done."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx

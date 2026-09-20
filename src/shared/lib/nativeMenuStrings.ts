@@ -29,6 +29,7 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.menu.models", message: "Models" }),
   msg({ id: "native.menu.model_fallback", message: "Fallback: {model}" }),
   msg({ id: "native.menu.recent", message: "Last Transcriptions" }),
+  msg({ id: "native.menu.copy_last", message: "Copy Last Transcription" }),
   msg({ id: "native.menu.recent_empty", message: "No transcriptions yet" }),
   msg({ id: "native.menu.recent_empty_item", message: "Empty transcription" }),
   msg({
@@ -84,6 +85,20 @@ export const NATIVE_MENU_STRINGS = [
     message: "{count} words dictated with Glimpse!",
   }),
   msg({ id: "native.toast.copied", message: "Copied to clipboard" }),
+
+  msg({
+    id: "native.toast.model_downloading",
+    message: "Your speech model is still downloading. {percent}% done.",
+  }),
+  msg({
+    id: "native.toast.model_preparing",
+    message: "Getting your speech model ready. This runs in the background.",
+  }),
+  msg({
+    id: "native.toast.model_none",
+    message: "Glimpse needs a speech model before it can type for you.",
+  }),
+  msg({ id: "native.toast.model_action", message: "Open Models" }),
 
   msg({
     id: "native.toast.recovering",
