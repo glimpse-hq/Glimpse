@@ -5,6 +5,7 @@
 Glimpse can now tell who is speaking in your Library transcripts. Download the speaker detection model in Settings under Models, in the Experimental section, and your recordings and imports are labeled by speaker after they transcribe. It runs entirely on your computer.
 
 - **Made for recordings.** Your microphone and your computer's audio are checked separately, so the people in the room with you and the people on the call each get their own label. It can tell apart up to 4 voices on each side.
+- **Reads like a script.** With timestamps off, each speaker gets their own paragraph with their name.
 - **Detect speakers again.** Run it on anything already in your Library from the item's menu, without transcribing it again.
 - **Cloud models too.** Mistral, xAI, ElevenLabs, Deepgram and OpenAI's diarize model can label speakers themselves when you use them.
 
