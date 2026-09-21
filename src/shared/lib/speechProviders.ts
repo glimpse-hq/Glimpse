@@ -3,6 +3,7 @@ import type { RemoteSpeechProvider, StoredSettings } from "../../types";
 export type { RemoteSpeechProvider };
 
 export type SpeechProviderCompatibility =
+  | "native"
   | "direct-openai-compatible"
   | "openai-compatible-proxy"
   | "openai-compatible-self-hosted";
@@ -86,22 +87,20 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
   {
     id: "deepgram",
     label: "Deepgram",
-    endpoint: "http://localhost:4000/v1",
+    endpoint: "https://api.deepgram.com/v1",
     defaultModel: "nova-3",
     apiKeyRequired: true,
-    compatibility: "openai-compatible-proxy",
+    compatibility: "native",
     supportsModelDiscovery: true,
-    notes: "Use through an OpenAI-compatible gateway or proxy.",
   },
   {
     id: "elevenlabs",
     label: "ElevenLabs",
-    endpoint: "http://localhost:4000/v1",
+    endpoint: "https://api.elevenlabs.io/v1",
     defaultModel: "scribe_v2",
     apiKeyRequired: true,
-    compatibility: "openai-compatible-proxy",
-    supportsModelDiscovery: true,
-    notes: "Use through an OpenAI-compatible gateway or proxy.",
+    compatibility: "native",
+    supportsModelDiscovery: false,
   },
   {
     id: "vllm",
