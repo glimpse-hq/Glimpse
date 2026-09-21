@@ -1,16 +1,31 @@
 1.2.5
 
+### Speaker Detection
+
+Glimpse can now tell who is speaking in your Library transcripts. Download the speaker detection model in Settings under Models, in the Experimental section, and your recordings and imports are labeled by speaker after they transcribe. It runs entirely on your computer.
+
+- **Made for recordings.** Your microphone and your computer's audio are checked separately, so the people in the room with you and the people on the call each get their own label. It can tell apart up to 4 voices on each side.
+- **Detect speakers again.** Run it on anything already in your Library from the item's menu, without transcribing it again.
+- **Cloud models too.** Mistral, xAI, ElevenLabs, Deepgram and OpenAI's diarize model can label speakers themselves when you use them.
+
 ### Improvements
 
 - You can now use Grok Voice Transcribe from xAI as a cloud model.
+- ElevenLabs and Deepgram now connect directly with just an API key, no proxy needed.
 - Cloud models default to each provider's latest: OpenAI and OpenRouter use GPT Transcribe, and ElevenLabs uses Scribe v2.
 - Pausing a recording now turns off the microphone, and the menu bar icon turns orange while paused.
+- Recordings take up half the space and still sound clear when you play them back.
+- Long recordings show their transcript as it comes in, in the order it was said.
+- If one side of a recording is silent, Glimpse skips it and finishes sooner.
+- A recording's sources show as app icons.
+- The Library shows "Transcribing" with a percentage, on the recording's page too, and "Detecting speakers" while that runs.
 - Library search updates as you type, and there's an X to clear it.
 - Buying Glimpse now opens the website, where you can compare plans. After you pay, Glimpse activates on its own.
 
 ### Fixes
 
-- Fireworks AI has been updated to use it's new endpoint.
+- Fireworks AI has been updated to use its new endpoint.
+- Long recordings start transcribing much sooner.
 - Fixed quick shortcut taps sometimes stopping dictation immediately when the microphone was slow to start.
 - The Library shows transcriptions working again. The dots pulse while a recording or import is being transcribed, instead of sitting still.
 - Files imported from the command line show up in the Library while they transcribe, not only once they're done.
