@@ -1045,6 +1045,11 @@ msgid "settings.local_api.logs.clear"
 msgstr "Clear"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr "Clear search"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "Clear search"

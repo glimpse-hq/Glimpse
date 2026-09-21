@@ -5,11 +5,15 @@
 - You can now use Grok Voice Transcribe from xAI as a cloud model.
 - Cloud models default to each provider's latest: OpenAI and OpenRouter use GPT Transcribe, and ElevenLabs uses Scribe v2.
 - Pausing a recording now turns off the microphone, and the menu bar icon turns orange while paused.
+- Library search updates as you type, and there's an X to clear it.
 
 ### Fixes
 
 - Fireworks AI has been updated to use it's new endpoint.
 - Fixed quick shortcut taps sometimes stopping dictation immediately when the microphone was slow to start.
+- The Library shows transcriptions working again. The dots pulse while a recording or import is being transcribed, instead of sitting still.
+- Files imported from the command line show up in the Library while they transcribe, not only once they're done.
+- A few other animations that had stopped moving work again, like the Glimpse logo.
 
 1.2.1
 
