@@ -99,6 +99,33 @@ const EXPORT_FORMATS: Array<{ value: ExportFormat; needsSegments?: boolean }> =
     { value: "vtt", needsSegments: true },
   ];
 
+type SpeakerTurn = {
+  key: number;
+  speaker: Speaker | null;
+  text: string;
+};
+
+// Consecutive segments by the same speaker merge into one turn.
+const buildSpeakerTurns = (
+  segments: TranscriptSegment[],
+  speakerById: Map<string, Speaker>,
+) => {
+  const turns: SpeakerTurn[] = [];
+  for (let index = 0; index < segments.length; index += 1) {
+    const text = segments[index].text.trim();
+    if (!text) continue;
+    const id = segments[index].speaker_id;
+    const speaker = (id && speakerById.get(id)) || null;
+    const last = turns[turns.length - 1];
+    if (last && last.speaker === speaker) {
+      last.text += ` ${text}`;
+    } else {
+      turns.push({ key: index, speaker, text });
+    }
+  }
+  return turns;
+};
+
 const SegmentWordsRow = ({
   tokens,
   activePosition,
@@ -358,6 +385,7 @@ const LibraryDetail = ({
   const lastTimestampNavRef = useRef(0);
   const transcriptAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const segmentsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
+  const turnsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
   const streamVirtuosoRef = useRef<VirtuosoHandle | null>(null);
   const segmentsScrollerRef = useRef<HTMLElement | null>(null);
   const followScrollRafRef = useRef<number | null>(null);
@@ -952,6 +980,23 @@ const LibraryDetail = ({
     );
   }, [item.segments, speakerFilter]);
 
+  const speakerTurns = useMemo(
+    () => buildSpeakerTurns(item.segments ?? [], speakerById),
+    [item.segments, speakerById],
+  );
+  const speakersUsed = useMemo(
+    () =>
+      new Set(speakerTurns.map((turn) => turn.speaker).filter(Boolean)).size,
+    [speakerTurns],
+  );
+  const visibleTurns = useMemo(
+    () =>
+      speakerFilter
+        ? speakerTurns.filter((turn) => turn.speaker?.id === speakerFilter)
+        : speakerTurns,
+    [speakerTurns, speakerFilter],
+  );
+
   // Each bookmark sits under the segment that was playing when it was set.
   const bookmarksBySegment = useMemo(() => {
     const map = new Map<number, Bookmark[]>();
@@ -1049,6 +1094,16 @@ const LibraryDetail = ({
   };
 
   const handleCopy = () => {
+    if (showSpeakerText) {
+      copyTranscript(
+        speakerTurns
+          .map((turn) =>
+            turn.speaker ? `${turn.speaker.name}: ${turn.text}` : turn.text,
+          )
+          .join("\n\n"),
+      );
+      return;
+    }
     if (transcriptDraft.trim()) copyTranscript(transcriptDraft);
   };
 
@@ -1166,6 +1221,9 @@ const LibraryDetail = ({
   const canIncreasePlaybackRate = playbackRate < maxPlaybackRate;
   const showStreaming = item.status.type === "transcribing" && !showTimestamps;
   const showSegmentView = showTimestamps && canShowTimestamps;
+  // Read-only script of speaker turns, in place of the editable textarea.
+  const showSpeakerText =
+    !showSegmentView && item.status.type === "complete" && speakersUsed >= 2;
   const transcribingPlaceholder = showStreaming && streamChunks.length === 0;
   const detectingSpeakers =
     rediarizing ||
@@ -1283,6 +1341,18 @@ const LibraryDetail = ({
     return matches;
   }, [normalizedSearchQuery, visibleSegments, showSegmentView]);
 
+  const turnMatchIndexes = useMemo(() => {
+    if (!normalizedSearchQuery || !showSpeakerText) return [];
+    const query = normalizedSearchQuery.toLowerCase();
+    const matches: number[] = [];
+    for (let i = 0; i < visibleTurns.length; i += 1) {
+      if (visibleTurns[i].text.toLowerCase().includes(query)) {
+        matches.push(i);
+      }
+    }
+    return matches;
+  }, [normalizedSearchQuery, visibleTurns, showSpeakerText]);
+
   const streamMatchIndexes = useMemo(() => {
     if (!normalizedSearchQuery || !showStreaming) return [];
     const query = normalizedSearchQuery.toLowerCase();
@@ -1296,16 +1366,30 @@ const LibraryDetail = ({
   }, [normalizedSearchQuery, showStreaming, streamChunks]);
 
   const textMatchIndex = useMemo(() => {
-    if (!normalizedSearchQuery || showSegmentView || showStreaming) return -1;
+    if (
+      !normalizedSearchQuery ||
+      showSegmentView ||
+      showSpeakerText ||
+      showStreaming
+    ) {
+      return -1;
+    }
     const query = normalizedSearchQuery.toLowerCase();
     return transcriptDraft.toLowerCase().indexOf(query);
-  }, [normalizedSearchQuery, showSegmentView, showStreaming, transcriptDraft]);
+  }, [
+    normalizedSearchQuery,
+    showSegmentView,
+    showSpeakerText,
+    showStreaming,
+    transcriptDraft,
+  ]);
 
   const searchMatchLabel = useMemo(() => {
     if (!normalizedSearchQuery) return null;
     const indexed = (matches: number[]) =>
       `${matches.length ? Math.min(activeSearchIndex, matches.length - 1) + 1 : 0}/${matches.length}`;
     if (showSegmentView) return indexed(segmentMatchIndexes);
+    if (showSpeakerText) return indexed(turnMatchIndexes);
     if (showStreaming) return indexed(streamMatchIndexes);
     const query = normalizedSearchQuery.toLowerCase();
     const text = transcriptDraft.toLowerCase();
@@ -1319,8 +1403,10 @@ const LibraryDetail = ({
   }, [
     normalizedSearchQuery,
     showSegmentView,
+    showSpeakerText,
     showStreaming,
     segmentMatchIndexes,
+    turnMatchIndexes,
     streamMatchIndexes,
     activeSearchIndex,
     transcriptDraft,
@@ -1330,6 +1416,9 @@ const LibraryDetail = ({
     ? segmentMatchIndexes[
         Math.min(activeSearchIndex, segmentMatchIndexes.length - 1)
       ]
+    : -1;
+  const activeTurnMatch = turnMatchIndexes.length
+    ? turnMatchIndexes[Math.min(activeSearchIndex, turnMatchIndexes.length - 1)]
     : -1;
   const activeStreamMatch = streamMatchIndexes.length
     ? streamMatchIndexes[
@@ -1388,6 +1477,14 @@ const LibraryDetail = ({
         );
         return;
       }
+      if (showSpeakerText && turnMatchIndexes.length > 0) {
+        setActiveSearchIndex(
+          (prev) =>
+            (prev + direction + turnMatchIndexes.length) %
+            turnMatchIndexes.length,
+        );
+        return;
+      }
       if (showStreaming && streamMatchIndexes.length > 0) {
         setActiveSearchIndex(
           (prev) =>
@@ -1399,8 +1496,10 @@ const LibraryDetail = ({
     [
       normalizedSearchQuery,
       showSegmentView,
+      showSpeakerText,
       showStreaming,
       segmentMatchIndexes,
+      turnMatchIndexes,
       streamMatchIndexes,
     ],
   );
@@ -1502,6 +1601,15 @@ const LibraryDetail = ({
       });
       return;
     }
+    if (showSpeakerText) {
+      if (turnMatchIndexes.length === 0) return;
+      turnsVirtuosoRef.current?.scrollToIndex({
+        index: activeTurnMatch,
+        align: "center",
+        behavior: "smooth",
+      });
+      return;
+    }
     if (showStreaming) {
       if (streamMatchIndexes.length === 0) return;
       const targetIndex =
@@ -1523,8 +1631,11 @@ const LibraryDetail = ({
   }, [
     normalizedSearchQuery,
     showSegmentView,
+    showSpeakerText,
     showStreaming,
     segmentMatchIndexes,
+    turnMatchIndexes,
+    activeTurnMatch,
     streamMatchIndexes,
     activeSearchIndex,
     textMatchIndex,
@@ -1947,7 +2058,7 @@ const LibraryDetail = ({
 
               <button
                 onClick={handleCopy}
-                disabled={!transcriptDraft.trim()}
+                disabled={!showSpeakerText && !transcriptDraft.trim()}
                 aria-label={t({ id: "library.modal.copy", message: "Copy" })}
                 title={t({ id: "library.modal.copy", message: "Copy" })}
                 className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40 ${
@@ -2617,6 +2728,48 @@ const LibraryDetail = ({
                     {importStatusText}
                   </div>
                 </div>
+              ) : showSpeakerText ? (
+                <Virtuoso
+                  ref={turnsVirtuosoRef}
+                  style={{ height: "100%" }}
+                  data={visibleTurns}
+                  overscan={200}
+                  className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
+                  computeItemKey={(_index: number, turn: SpeakerTurn) =>
+                    turn.key
+                  }
+                  components={{
+                    Header: () => <div className="h-2" />,
+                    Footer: () => <div className="h-4" />,
+                  }}
+                  itemContent={(idx, turn) => (
+                    <div className={`${CONTENT_COLUMN} pb-4`}>
+                      <div className="px-2">
+                        {turn.speaker && (
+                          <div className="flex items-center gap-2 ui-text-label font-medium text-content-primary">
+                            <span
+                              className="inline-block h-2 w-2 rounded-full shrink-0"
+                              style={{
+                                backgroundColor:
+                                  turn.speaker.color ?? undefined,
+                              }}
+                              aria-hidden="true"
+                            />
+                            <span className="truncate">
+                              {turn.speaker.name}
+                            </span>
+                          </div>
+                        )}
+                        <p className="select-text">
+                          {renderHighlightedText(
+                            turn.text,
+                            idx === activeTurnMatch,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                />
               ) : (
                 <textarea
                   ref={transcriptAreaRef}
