@@ -17,8 +17,22 @@ impl std::fmt::Display for NoMicrophone {
 impl std::error::Error for NoMicrophone {}
 
 pub(crate) struct MicrophoneCapture {
-    _stream: cpal::Stream,
+    stream: cpal::Stream,
     pub(crate) name: String,
+}
+
+impl MicrophoneCapture {
+    /// Stopping the stream releases the device, so the system mic indicator goes away.
+    pub(crate) fn set_paused(&self, paused: bool) {
+        let result = if paused {
+            self.stream.pause()
+        } else {
+            self.stream.play()
+        };
+        if let Err(err) = result {
+            tracing::warn!("Failed to set recording microphone paused={paused}: {err}");
+        }
+    }
 }
 
 /// Opens the microphone and delivers mono f32 audio at the device's native
@@ -54,10 +68,7 @@ pub(crate) fn start(
     .context("Failed to open microphone")?;
     stream.play().context("Failed to start microphone")?;
 
-    Ok(MicrophoneCapture {
-        _stream: stream,
-        name,
-    })
+    Ok(MicrophoneCapture { stream, name })
 }
 
 fn build_stream<T>(

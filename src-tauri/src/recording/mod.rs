@@ -301,6 +301,7 @@ enum WorkerCommand {
     Discard {
         reply: Sender<()>,
     },
+    SetMicrophonePaused(bool),
 }
 
 pub struct RecordingManager {
@@ -349,6 +350,9 @@ impl Default for RecordingManager {
                         WorkerCommand::Discard { reply } => {
                             worker.discard();
                             let _ = reply.send(());
+                        }
+                        WorkerCommand::SetMicrophonePaused(paused) => {
+                            worker.set_microphone_paused(paused);
                         }
                     }
                 }
@@ -410,6 +414,7 @@ impl RecordingManager {
         }
         self.shared.paused.store(true, Ordering::Relaxed);
         *status = Status::Paused;
+        let _ = self.tx.send(WorkerCommand::SetMicrophonePaused(true));
         true
     }
 
@@ -423,6 +428,7 @@ impl RecordingManager {
         }
         self.shared.paused.store(false, Ordering::Relaxed);
         *status = Status::Recording;
+        let _ = self.tx.send(WorkerCommand::SetMicrophonePaused(false));
         true
     }
 
@@ -707,6 +713,12 @@ impl Worker {
 }
 
 impl Worker {
+    fn set_microphone_paused(&self, paused: bool) {
+        if let Some((capture, _)) = self.active.as_ref().and_then(|s| s.microphone.as_ref()) {
+            capture.set_paused(paused);
+        }
+    }
+
     fn discard(&mut self) {
         if let Some(session) = self.active.take() {
             discard_session(session);
@@ -781,7 +793,7 @@ fn emit_state(app: &AppHandle<AppRuntime>, shared: &Shared) {
 
 fn sync_tray(app: &AppHandle<AppRuntime>, state: &RecordingSessionState) {
     let elapsed = matches!(state.status, "recording" | "paused").then_some(state.elapsed_ms);
-    crate::tray::set_recording_indicator(app, elapsed);
+    crate::tray::set_recording_indicator(app, elapsed, state.status == "paused");
 }
 
 /// Refreshes the tray menu (pause/resume/finish items) after a transition.
