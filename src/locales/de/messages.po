@@ -34,6 +34,46 @@ msgstr ""
 #~ msgstr "Zeitstempel"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "Für ein Team kaufen?"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "Für dich. Bis zu 5 Geräte."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "Gründungsmitglied seit dem Start. Bis zu 5 Geräte."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "Polar hat dir deinen Lizenzschlüssel gemailt. Füge ihn hier ein oder füge die gesamte E‑Mail ein."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "{label} für {price} kaufen"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "Danke für deinen Beitrag. Bis zu 5 Geräte."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "Das ist der gekürzte Schlüssel. Kopiere den vollständigen von deiner Polar‑Kaufseite."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "Das ist deine Bestellnummer. Der Lizenzschlüssel steht in derselben E‑Mail von Polar und beginnt mit GLIMPSE_."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -828,14 +868,14 @@ msgid "member_card.draft_idle"
 msgstr "Lizenz kaufen"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "Lizenz kaufen"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "Für ein Team kaufen?"
+msgid "onboarding.license_step.buy"
+msgstr "Lizenz kaufen"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1045,11 +1085,6 @@ msgid "settings.local_api.logs.clear"
 msgstr "Löschen"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "Suche löschen"
@@ -1058,6 +1093,11 @@ msgstr "Suche löschen"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "Suche löschen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2196,8 +2236,8 @@ msgstr "Für die Arbeit. Eine Person pro Lizenz, jährliche Abrechnung."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "Für dich. Bis zu 5 Geräte."
+msgid "member_card.edition_blurb_personal_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2663,8 +2703,8 @@ msgstr "Beim Anmelden öffnen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "Gründungsmitglied seit dem Start. Bis zu 5 Geräte."
+msgid "member_card.edition_blurb_founder_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3597,11 +3637,6 @@ msgid "library.detail.playback_settings"
 msgstr "Wiedergabeeinstellungen"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "Polar hat dir deinen Lizenzschlüssel gemailt. Füge ihn hier ein oder füge die gesamte E‑Mail ein."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "Port"
@@ -3711,11 +3746,6 @@ msgstr "Anbieter"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "Anbieter"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "{label} für {price} kaufen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4837,8 +4867,8 @@ msgstr "als Tippen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "Danke für deinen Beitrag. Bis zu 5 Geräte."
+msgid "member_card.edition_blurb_contributor_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4852,13 +4882,13 @@ msgstr "Diese Domain wurde bereits hinzugefügt."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "Das ist der gekürzte Schlüssel. Kopiere den vollständigen von deiner Polar‑Kaufseite."
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "Das ist deine Bestellnummer. Der Lizenzschlüssel steht in derselben E‑Mail von Polar und beginnt mit GLIMPSE_."
+msgid "settings.account.activate.order_id_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5445,6 +5475,11 @@ msgstr "Ihr API-Server wird im Hintergrund ausgeführt."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Ja. Im lokalen Modus bleiben alle Ihre Audios und Transkriptionen auf Ihrem Gerät. Wir erfassen oder übertragen Ihre Aufnahmen niemals. Die Cloud-Synchronisierung ist optional."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

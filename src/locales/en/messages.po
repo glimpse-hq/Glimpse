@@ -34,6 +34,46 @@ msgstr ""
 #~ msgstr "Timestamps"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "Buying for a team?"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "For you. Up to 5 devices."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "Launch founder. Up to 5 devices."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "Polar emailed your license key. Paste it here, or paste the whole email."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "Purchase {label} for {price}"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "Thank you for contributing. Up to 5 devices."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "That is the shortened key. Copy the full one from your Polar purchases page."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -828,14 +868,14 @@ msgid "member_card.draft_idle"
 msgstr "Buy a license"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "Buy License"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr "Buy Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "Buying for a team?"
+msgid "onboarding.license_step.buy"
+msgstr "Buy License"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1045,11 +1085,6 @@ msgid "settings.local_api.logs.clear"
 msgstr "Clear"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
-msgstr "Clear search"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "Clear search"
@@ -1057,6 +1092,11 @@ msgstr "Clear search"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
+msgstr "Clear search"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
 msgstr "Clear search"
 
 #. js-lingui-explicit-id
@@ -2196,8 +2236,8 @@ msgstr "For work. One person per seat, billed yearly."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "For you. Up to 5 devices."
+msgid "member_card.edition_blurb_personal_short"
+msgstr "For you."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2663,8 +2703,8 @@ msgstr "Launch at Login"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "Launch founder. Up to 5 devices."
+msgid "member_card.edition_blurb_founder_short"
+msgstr "Launch founder."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3597,11 +3637,6 @@ msgid "library.detail.playback_settings"
 msgstr "Playback settings"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "Polar emailed your license key. Paste it here, or paste the whole email."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "Port"
@@ -3711,11 +3746,6 @@ msgstr "Providers"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "Providers"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "Purchase {label} for {price}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4837,8 +4867,8 @@ msgstr "than typing"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "Thank you for contributing. Up to 5 devices."
+msgid "member_card.edition_blurb_contributor_short"
+msgstr "Thank you for contributing."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4852,13 +4882,13 @@ msgstr "That domain is already added"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "That is the shortened key. Copy the full one from your Polar purchases page."
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr "That is the shortened key. Copy the full one from your receipt email."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_."
+msgid "settings.account.activate.order_id_error_generic"
+msgstr "That is your order number. Paste the license key from the same email."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5445,6 +5475,11 @@ msgstr "Your API server is running in the background."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr "Your license key is in your receipt email. Paste it here, or paste the whole email."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

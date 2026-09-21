@@ -34,6 +34,46 @@ msgstr ""
 #~ msgstr "Marcas de tiempo"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "¿Compras para un equipo?"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "Para ti. Hasta 5 dispositivos."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "Fundador desde el lanzamiento. Hasta 5 dispositivos."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "Polar te envió tu clave de licencia por correo. Pégala aquí o pega todo el correo."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "Comprar {label} por {price}"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "Gracias por contribuir. Hasta 5 dispositivos."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "Esa es la clave abreviada. Copia la completa desde la página de compras de Polar."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "Ese es tu número de pedido. La clave de licencia está en el mismo correo de Polar y empieza por GLIMPSE_."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -828,14 +868,14 @@ msgid "member_card.draft_idle"
 msgstr "Comprar una licencia"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "Comprar licencia"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "¿Compras para un equipo?"
+msgid "onboarding.license_step.buy"
+msgstr "Comprar licencia"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1045,11 +1085,6 @@ msgid "settings.local_api.logs.clear"
 msgstr "Borrar"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "Borrar búsqueda"
@@ -1058,6 +1093,11 @@ msgstr "Borrar búsqueda"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "Borrar búsqueda"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2196,8 +2236,8 @@ msgstr "Para trabajar. Una persona por licencia, con facturación anual."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "Para ti. Hasta 5 dispositivos."
+msgid "member_card.edition_blurb_personal_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2663,8 +2703,8 @@ msgstr "Abrir al iniciar sesión"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "Fundador desde el lanzamiento. Hasta 5 dispositivos."
+msgid "member_card.edition_blurb_founder_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3597,11 +3637,6 @@ msgid "library.detail.playback_settings"
 msgstr "Ajustes de reproducción"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "Polar te envió tu clave de licencia por correo. Pégala aquí o pega todo el correo."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "Puerto"
@@ -3711,11 +3746,6 @@ msgstr "Proveedores"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "Proveedores"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "Comprar {label} por {price}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4837,8 +4867,8 @@ msgstr "que escribir"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "Gracias por contribuir. Hasta 5 dispositivos."
+msgid "member_card.edition_blurb_contributor_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4852,13 +4882,13 @@ msgstr "Ese dominio ya está añadido"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "Esa es la clave abreviada. Copia la completa desde la página de compras de Polar."
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "Ese es tu número de pedido. La clave de licencia está en el mismo correo de Polar y empieza por GLIMPSE_."
+msgid "settings.account.activate.order_id_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5445,6 +5475,11 @@ msgstr "Tu servidor de API se está ejecutando en segundo plano."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Sí. En modo local, todo tu audio y tus transcripciones permanecen en tu dispositivo. Nunca recopilamos ni transmitimos tus grabaciones. La sincronización en la nube es opcional."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

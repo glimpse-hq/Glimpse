@@ -34,6 +34,46 @@ msgstr ""
 #~ msgstr "الطوابع الزمنية"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "هل تشتري لفريق؟"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "لاستخدامك الشخصي. حتى 5 أجهزة."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "مؤسس منذ الإطلاق. حتى 5 أجهزة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "أرسلت Polar مفتاح الترخيص إلى بريدك الإلكتروني. الصقه هنا، أو الصق الرسالة بأكملها."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "شراء {label} مقابل {price}"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "شكرًا لمساهمتك. حتى 5 أجهزة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "هذا هو المفتاح المختصر. انسخ المفتاح الكامل من صفحة مشترياتك في Polar."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "هذا هو رقم طلبك. مفتاح الترخيص موجود في الرسالة ذاتها من Polar ويبدأ بـ GLIMPSE_."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -828,14 +868,14 @@ msgid "member_card.draft_idle"
 msgstr "شراء ترخيص"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "شراء ترخيص"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "هل تشتري لفريق؟"
+msgid "onboarding.license_step.buy"
+msgstr "شراء ترخيص"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1045,11 +1085,6 @@ msgid "settings.local_api.logs.clear"
 msgstr "مسح"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "مسح البحث"
@@ -1058,6 +1093,11 @@ msgstr "مسح البحث"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "مسح البحث"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2196,8 +2236,8 @@ msgstr "للعمل. شخص واحد لكل مقعد، بفوترة سنوية."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "لاستخدامك الشخصي. حتى 5 أجهزة."
+msgid "member_card.edition_blurb_personal_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2663,8 +2703,8 @@ msgstr "التشغيل عند تسجيل الدخول"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "مؤسس منذ الإطلاق. حتى 5 أجهزة."
+msgid "member_card.edition_blurb_founder_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3597,11 +3637,6 @@ msgid "library.detail.playback_settings"
 msgstr "إعدادات التشغيل"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "أرسلت Polar مفتاح الترخيص إلى بريدك الإلكتروني. الصقه هنا، أو الصق الرسالة بأكملها."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "المنفذ"
@@ -3711,11 +3746,6 @@ msgstr "الموفِّرون"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "الموفرون"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "شراء {label} مقابل {price}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4837,8 +4867,8 @@ msgstr "من الكتابة"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "شكرًا لمساهمتك. حتى 5 أجهزة."
+msgid "member_card.edition_blurb_contributor_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4852,13 +4882,13 @@ msgstr "هذا النطاق مضاف مسبقاً"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "هذا هو المفتاح المختصر. انسخ المفتاح الكامل من صفحة مشترياتك في Polar."
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "هذا هو رقم طلبك. مفتاح الترخيص موجود في الرسالة ذاتها من Polar ويبدأ بـ GLIMPSE_."
+msgid "settings.account.activate.order_id_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5445,6 +5475,11 @@ msgstr "خادم API الخاص بك يعمل في الخلفية."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "نعم. في الوضع المحلي، تبقى جميع ملفاتك الصوتية ونصوصك المُفرَّغة على جهازك. لا نجمع تسجيلاتك ولا نرسلها. المزامنة السحابية اختيارية."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

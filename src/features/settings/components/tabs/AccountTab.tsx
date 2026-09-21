@@ -2,9 +2,8 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { motion, type Variants } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import {
-  checkoutUrlFor,
+  pricingUrlFor,
   type PurchaseSource,
-  type PurchaseTier,
 } from "../../../license/purchaseConfig";
 import {
   useActivateLicense,
@@ -29,7 +28,7 @@ const AccountTab = ({
   const { mutate: refreshLicense, isPending: refreshLicensePending } =
     useRefreshLicense();
   const deactivateLicense = useDeactivateLicense();
-  const [openingTarget, setOpeningTarget] = useState<PurchaseTier | null>(null);
+  const [opening, setOpening] = useState(false);
   const [openError, setOpenError] = useState<string | null>(null);
   const refreshedIdentityForKeyRef = useRef<string | null>(null);
 
@@ -47,21 +46,15 @@ const AccountTab = ({
     refreshLicense();
   }, [licenseQuery.data, refreshLicense, refreshLicensePending]);
 
-  const openCheckout = async (tier: PurchaseTier) => {
+  const openCheckout = async () => {
     setOpenError(null);
-    setOpeningTarget(tier);
+    setOpening(true);
     try {
-      const checkoutUrl = checkoutUrlFor(tier, source);
-      if (!checkoutUrl) {
-        throw new Error(
-          `${tier === "commercial" ? "Commercial" : "Personal"} checkout link is not configured for this build.`,
-        );
-      }
-      await openUrl(checkoutUrl);
+      await openUrl(pricingUrlFor(source));
     } catch (err) {
       setOpenError(err instanceof Error ? err.message : String(err));
     } finally {
-      setOpeningTarget(null);
+      setOpening(false);
     }
   };
 
@@ -79,7 +72,7 @@ const AccountTab = ({
         licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
         activating={activateLicense.isPending}
         deactivating={deactivateLicense.isPending}
-        openingTarget={openingTarget}
+        opening={opening}
         openError={openError}
         activationError={
           activateLicense.error instanceof Error

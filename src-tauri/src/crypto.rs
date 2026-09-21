@@ -60,7 +60,9 @@ pub fn get_hardware_uuid() -> Option<String> {
 
 #[cfg(target_os = "windows")]
 fn query_windows_hardware_uuid() -> Option<String> {
-    let output = Command::new("powershell")
+    // Absolute paths: a lookalike earlier on PATH could report any UUID.
+    let system = windows_system_directory()?;
+    let output = Command::new(system.join(r"WindowsPowerShell\v1.0\powershell.exe"))
         .creation_flags(CREATE_NO_WINDOW)
         .args([
             "-NoProfile",
@@ -80,7 +82,7 @@ fn query_windows_hardware_uuid() -> Option<String> {
         }
     }
 
-    let output = Command::new("wmic")
+    let output = Command::new(system.join(r"wbem\wmic.exe"))
         .creation_flags(CREATE_NO_WINDOW)
         .args(["csproduct", "get", "uuid"])
         .output()
@@ -94,6 +96,16 @@ fn query_windows_hardware_uuid() -> Option<String> {
         }
     }
     None
+}
+
+#[cfg(target_os = "windows")]
+fn windows_system_directory() -> Option<std::path::PathBuf> {
+    use windows::Win32::System::SystemInformation::GetSystemDirectoryW;
+
+    let mut buffer = [0u16; 260];
+    let len = unsafe { GetSystemDirectoryW(Some(&mut buffer)) } as usize;
+    (len > 0 && len < buffer.len())
+        .then(|| std::path::PathBuf::from(String::from_utf16_lossy(&buffer[..len])))
 }
 
 pub fn encrypt(plaintext: &str, hardware_uuid: &str) -> Result<String, String> {

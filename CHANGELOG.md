@@ -6,6 +6,7 @@
 - Cloud models default to each provider's latest: OpenAI and OpenRouter use GPT Transcribe, and ElevenLabs uses Scribe v2.
 - Pausing a recording now turns off the microphone, and the menu bar icon turns orange while paused.
 - Library search updates as you type, and there's an X to clear it.
+- Buying Glimpse now opens the website, where you can compare plans. After you pay, Glimpse activates on its own.
 
 ### Fixes
 

@@ -18,9 +18,6 @@ export type LicenseState = {
   activatedAt?: string | null;
   purchasedAt?: string | null;
   expiresAt?: string | null;
-  validations?: number | null;
-  usage?: number | null;
-  limitUsage?: number | null;
   activationsLimit: number;
   activationsCount?: number | null;
 };

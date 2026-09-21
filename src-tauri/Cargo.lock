@@ -32,6 +32,7 @@ dependencies = [
  "posthog-rs",
  "regex",
  "reqwest",
+ "ring",
  "rubato",
  "rusqlite",
  "rustfft",

@@ -6,7 +6,6 @@ import {
   EDITION_COLORS,
   editionFromLicenseState,
 } from "../../../shared/lib/licenseEdition";
-import { tierInfo, type PurchaseTier } from "../../license/purchaseConfig";
 import { TypewriterText } from "../../../shared/ui/TypewriterText";
 import type { LicenseState } from "../api";
 import { useDictationStats } from "../queries";
@@ -28,7 +27,6 @@ import {
   MemberCardStripe,
   STAMP_LAYER_CLASS,
   TierStamp,
-  TIER_COLORS,
   useMemberCardPalette,
 } from "./memberCardShared";
 import {
@@ -44,9 +42,9 @@ type MemberCardProps = {
   activationAttempt?: number;
   licenseLoading?: boolean;
   licenseState: LicenseState | null;
-  openingTarget?: PurchaseTier | null;
+  opening?: boolean;
   checkoutDisabled?: boolean;
-  onOpenCheckout?: (tier: PurchaseTier) => void;
+  onOpenCheckout?: () => void;
   onRevealComplete?: () => void;
 };
 
@@ -65,14 +63,13 @@ const MemberCardInner = ({
   activationAttempt = 0,
   licenseLoading = false,
   licenseState,
-  openingTarget = null,
+  opening = false,
   checkoutDisabled = false,
   onOpenCheckout,
   onRevealComplete,
 }: MemberCardProps) => {
   const { t } = useLingui();
   const palette = useMemberCardPalette();
-  const [previewTier, setPreviewTier] = useState<PurchaseTier | null>(null);
   const [coverageExtraHeight, setCoverageExtraHeight] = useState(0);
   const coverageTextRef = useRef<HTMLDivElement>(null);
   const stripeSeedRef = useRef(
@@ -80,9 +77,6 @@ const MemberCardInner = ({
       ? licenseState.displayKey
       : "draft-glimpse",
   );
-
-  const personal = tierInfo("personal");
-  const previewInfo = !active && previewTier ? tierInfo(previewTier) : null;
 
   const displayKey = licenseState?.displayKey ?? null;
   const email = licenseState?.customerEmail ?? null;
@@ -109,17 +103,17 @@ const MemberCardInner = ({
         })
       : edition === "founder"
         ? t({
-            id: "member_card.edition_blurb_founder",
-            message: "Launch founder. Up to 5 devices.",
+            id: "member_card.edition_blurb_founder_short",
+            message: "Launch founder.",
           })
         : edition === "contributor"
           ? t({
-              id: "member_card.edition_blurb_contributor",
-              message: "Thank you for contributing. Up to 5 devices.",
+              id: "member_card.edition_blurb_contributor_short",
+              message: "Thank you for contributing.",
             })
           : t({
-              id: "member_card.edition_blurb_personal",
-              message: "For you. Up to 5 devices.",
+              id: "member_card.edition_blurb_personal_short",
+              message: "For you.",
             });
   const editionColors = EDITION_COLORS[edition];
   const name = customerName?.trim() || null;
@@ -133,7 +127,7 @@ const MemberCardInner = ({
 
   const cardHeight = getMemberCardHeight(coverageExtraHeight);
   const expandedHeadline = !active;
-  const tierDisabled = checkoutDisabled || openingTarget !== null;
+  const checkoutBlocked = checkoutDisabled || opening;
 
   const {
     stage,
@@ -177,12 +171,6 @@ const MemberCardInner = ({
     licenseResolved && !active && !cinematic && !activating;
 
   useEffect(() => {
-    if (cinematic) {
-      setPreviewTier(null);
-    }
-  }, [cinematic]);
-
-  useEffect(() => {
     if (stage === "draft") {
       stripeSeedRef.current = "draft-glimpse";
     } else if (displayKey) {
@@ -195,7 +183,7 @@ const MemberCardInner = ({
     isUserActivationReveal && cinematic && displayKey
       ? ("sweep" as const)
       : ("none" as const);
-  const tierDisabledForPicker = tierDisabled || cinematic || !showDraftChrome;
+  const buyDisabled = checkoutBlocked || cinematic || !showDraftChrome;
 
   const idlePrompt = t({
     id: "member_card.draft_idle",
@@ -242,9 +230,7 @@ const MemberCardInner = ({
     color:
       showName && displayTitle
         ? palette.textPrimary
-        : previewInfo
-          ? palette.textPrimary
-          : palette.textDisabled,
+        : palette.textDisabled,
   } as const;
 
   const subtitleStyle = {
@@ -255,15 +241,6 @@ const MemberCardInner = ({
     color: palette.textDisabled,
   } as const;
 
-  const handleTierClick = (tierChoice: PurchaseTier) => {
-    if (tierDisabledForPicker || !onOpenCheckout) return;
-    onOpenCheckout(tierChoice);
-  };
-
-  const previewStampLabel = previewInfo?.label;
-  const previewStampColors = previewTier
-    ? TIER_COLORS[previewTier]
-    : TIER_COLORS.personal;
 
   return (
     <article
@@ -284,8 +261,6 @@ const MemberCardInner = ({
       <MemberCardPaperOverlays seedKey={visualSeed} cardHeight={cardHeight} />
       <MemberCardFrame>
         <CardHeaderRow
-          price={previewInfo?.price ?? null}
-          priceColor={previewTier ? TIER_COLORS[previewTier].fg : undefined}
           stamp={
             showStamp && displayKey ? (
               <SlamTierStamp
@@ -295,21 +270,6 @@ const MemberCardInner = ({
                 bg={editionColors.bg}
                 playSlam={isUserActivationReveal && stampSlam}
               />
-            ) : previewStampLabel ? (
-              <motion.div
-                key={previewTier}
-                className={STAMP_LAYER_CLASS}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.22, ease: "easeOut" }}
-              >
-                <TierStamp
-                  label={previewStampLabel}
-                  color={previewStampColors.fg}
-                  bg={previewStampColors.bg}
-                />
-              </motion.div>
             ) : (
               <span
                 className="absolute inset-x-0 flex justify-end font-mono uppercase tracking-[0.16em]"
@@ -389,13 +349,6 @@ const MemberCardInner = ({
               >
                 {PLACEHOLDER}
               </h2>
-            ) : previewInfo ? (
-              <h2
-                className="font-bold tracking-[-0.02em] break-words"
-                style={titleStyle}
-              >
-                {previewInfo.label}
-              </h2>
             ) : (
               <h2
                 className="font-bold tracking-[-0.02em] break-words"
@@ -423,10 +376,6 @@ const MemberCardInner = ({
               )
             ) : cinematic ? (
               <span aria-hidden="true">&nbsp;</span>
-            ) : previewInfo ? (
-              <p className="break-words" style={subtitleStyle}>
-                {previewInfo.blurb}
-              </p>
             ) : (
               <span aria-hidden="true">&nbsp;</span>
             )
@@ -470,16 +419,10 @@ const MemberCardInner = ({
             >
               {showTierPicker && showDraftChrome ? (
                 <div className="absolute inset-0 flex items-stretch gap-0">
-                  <TierOption
-                    label={personal.label}
-                    price={personal.price}
-                    inlinePrice={personal.pickerPrice}
-                    accent={TIER_COLORS.personal}
-                    active={previewTier === "personal"}
-                    opening={openingTarget === "personal"}
-                    disabled={tierDisabledForPicker}
-                    onHover={() => setPreviewTier("personal")}
-                    onClick={() => handleTierClick("personal")}
+                  <BuyOption
+                    opening={opening}
+                    disabled={buyDisabled}
+                    onClick={() => onOpenCheckout?.()}
                   />
                 </div>
               ) : showCoverage ? (
@@ -641,44 +584,27 @@ const StatDetail = ({
   );
 };
 
-const TierOption = ({
-  label,
-  price,
-  inlinePrice,
-  accent,
-  active,
+const BuyOption = ({
   opening,
   disabled,
-  onHover,
   onClick,
 }: {
-  label: string;
-  price: string;
-  inlinePrice?: string;
-  accent: { fg: string; bg: string };
-  active?: boolean;
-  opening?: boolean;
-  disabled?: boolean;
-  onHover: () => void;
+  opening: boolean;
+  disabled: boolean;
   onClick: () => void;
 }) => {
   const { t } = useLingui();
   const palette = useMemberCardPalette();
-  const highlighted = active || opening;
-  const pickerLabel = inlinePrice ? `${label} · ${inlinePrice}` : label;
+  const accent = EDITION_COLORS.personal;
+  const color = opening ? accent.fg : palette.textPrimary;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={onHover}
       disabled={disabled && !opening}
-      aria-label={t({
-        id: "member_card.tier_purchase_aria",
-        message: `Purchase ${label} for ${price}`,
-      })}
-      className="flex min-w-0 flex-1 items-center justify-between gap-1.5 border-0 bg-transparent py-1.5 text-left disabled:opacity-50"
-      style={{ color: highlighted ? accent.fg : palette.textPrimary }}
+      className="group flex min-w-0 flex-1 items-center justify-between gap-1.5 border-0 bg-transparent py-1.5 text-left disabled:opacity-50"
+      style={{ color }}
     >
       <span
         className="min-w-0 truncate font-mono uppercase tracking-[0.05em] underline"
@@ -686,10 +612,10 @@ const TierOption = ({
           fontSize: "10px",
           fontWeight: 600,
           textUnderlineOffset: "3px",
-          textDecorationColor: `color-mix(in srgb, ${highlighted ? accent.fg : palette.textPrimary} ${highlighted ? 70 : 30}%, transparent)`,
+          textDecorationColor: `color-mix(in srgb, ${color} 30%, transparent)`,
         }}
       >
-        {pickerLabel}
+        {t({ id: "member_card.buy_glimpse", message: "Buy Glimpse" })}
       </span>
       {opening ? (
         <Loader2
@@ -700,8 +626,8 @@ const TierOption = ({
       ) : (
         <ArrowUpRight
           size={11}
-          className="shrink-0 transition-opacity"
-          style={{ color: accent.fg, opacity: highlighted ? 1 : 0.8 }}
+          className="shrink-0 opacity-80 transition-opacity group-hover:opacity-100"
+          style={{ color: accent.fg }}
           aria-hidden="true"
         />
       )}

@@ -34,6 +34,46 @@ msgstr ""
 #~ msgstr "टाइमस्टैम्प"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "क्या टीम के लिए खरीद रहे हैं?"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "आपके लिए। अधिकतम 5 डिवाइस।"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "लॉन्च के संस्थापक सदस्य। अधिकतम 5 डिवाइस।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "Polar ने आपके लाइसेंस कुंजी को ई‑मेल किया है। उसे यहाँ पेस्ट करें, या पूरा ई‑मेल पेस्ट कर दें।"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "{label} को {price} में ख़रीदें"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "योगदान देने के लिए धन्यवाद। अधिकतम 5 डिवाइस।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "यह संक्षिप्त कुंजी है। पूरी कुंजी अपनी Polar खरीद पेज से कॉपी करें।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "यह आपका ऑर्डर नंबर है। लाइसेंस कुंजी उसी Polar ई‑मेल में है और GLIMPSE_ से शुरू होती है।"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -828,14 +868,14 @@ msgid "member_card.draft_idle"
 msgstr "लाइसेंस खरीदें"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "लाइसेंस खरीदें"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "क्या टीम के लिए खरीद रहे हैं?"
+msgid "onboarding.license_step.buy"
+msgstr "लाइसेंस खरीदें"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1045,11 +1085,6 @@ msgid "settings.local_api.logs.clear"
 msgstr "साफ़ करें"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.search_clear"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.search.clear"
 msgstr "खोज साफ़ करें"
@@ -1058,6 +1093,11 @@ msgstr "खोज साफ़ करें"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "खोज मिटाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2196,8 +2236,8 @@ msgstr "काम के लिए। हर सीट पर एक व्य�
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "आपके लिए। अधिकतम 5 डिवाइस।"
+msgid "member_card.edition_blurb_personal_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2663,8 +2703,8 @@ msgstr "लॉगिन पर लॉन्च करें"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "लॉन्च के संस्थापक सदस्य। अधिकतम 5 डिवाइस।"
+msgid "member_card.edition_blurb_founder_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3597,11 +3637,6 @@ msgid "library.detail.playback_settings"
 msgstr "प्लेबैक सेटिंग्स"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "Polar ने आपके लाइसेंस कुंजी को ई‑मेल किया है। उसे यहाँ पेस्ट करें, या पूरा ई‑मेल पेस्ट कर दें।"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "पोर्ट"
@@ -3711,11 +3746,6 @@ msgstr "प्रदाता"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "प्रदाता"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "{label} को {price} में ख़रीदें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4837,8 +4867,8 @@ msgstr "टाइप करने से"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "योगदान देने के लिए धन्यवाद। अधिकतम 5 डिवाइस।"
+msgid "member_card.edition_blurb_contributor_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4852,13 +4882,13 @@ msgstr "यह डोमेन पहले से जोड़ा जा चु
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "यह संक्षिप्त कुंजी है। पूरी कुंजी अपनी Polar खरीद पेज से कॉपी करें।"
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "यह आपका ऑर्डर नंबर है। लाइसेंस कुंजी उसी Polar ई‑मेल में है और GLIMPSE_ से शुरू होती है।"
+msgid "settings.account.activate.order_id_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5445,6 +5475,11 @@ msgstr "आपका API सर्वर बैकग्राउंड मे�
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "हाँ। लोकल मोड में आपका सारा ऑडियो और ट्रांसक्रिप्शन आपके डिवाइस पर ही रहता है। हम आपकी रिकॉर्डिंग न तो इकट्ठा करते हैं न भेजते हैं। क्लाउड सिंक वैकल्पिक है।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

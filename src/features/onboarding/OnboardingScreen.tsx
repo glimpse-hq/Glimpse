@@ -14,7 +14,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
 import { isBuiltInModel } from "../../shared/lib/modelStats";
 import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
-import { checkoutUrlFor, type PurchaseTier } from "../license/purchaseConfig";
+import { pricingUrlFor } from "../license/purchaseConfig";
 import { useSettings } from "../settings/queries";
 import { getSettings } from "../settings/api";
 import {
@@ -198,8 +198,7 @@ export default function OnboardingScreen({
   const [downloadStatus, setDownloadStatus] = useState<
     Record<string, DownloadEvent>
   >({});
-  const [openingLicenseTarget, setOpeningLicenseTarget] =
-    useState<PurchaseTier | null>(null);
+  const [openingLicenseCheckout, setOpeningLicenseCheckout] = useState(false);
   const [licenseOpenError, setLicenseOpenError] = useState<string | null>(null);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [source, setSource] = useState<OnboardingSource | null>(null);
@@ -489,24 +488,18 @@ export default function OnboardingScreen({
     requestAccessibilityPermission();
   }, [requestAccessibilityPermission]);
 
-  const openLicenseCheckout = useCallback(async (tier: PurchaseTier) => {
+  const openLicenseCheckout = useCallback(async () => {
     setLicenseOpenError(null);
-    setOpeningLicenseTarget(tier);
-    void invoke("track_paywall_clicked", { source: "onboarding", tier }).catch(
+    setOpeningLicenseCheckout(true);
+    void invoke("track_paywall_clicked", { source: "onboarding" }).catch(
       () => {},
     );
     try {
-      const checkoutUrl = checkoutUrlFor(tier, "onboarding");
-      if (!checkoutUrl) {
-        throw new Error(
-          `${tier === "commercial" ? "Commercial" : "Personal"} checkout link is not configured for this build.`,
-        );
-      }
-      await openUrl(checkoutUrl);
+      await openUrl(pricingUrlFor("onboarding"));
     } catch (err) {
       setLicenseOpenError(err instanceof Error ? err.message : String(err));
     } finally {
-      setOpeningLicenseTarget(null);
+      setOpeningLicenseCheckout(false);
     }
   }, []);
 
@@ -841,7 +834,7 @@ export default function OnboardingScreen({
             key="license"
             stepMotionProps={stepMotionProps}
             licenseState={licenseQuery.data ?? null}
-            openingTarget={openingLicenseTarget}
+            opening={openingLicenseCheckout}
             openError={licenseOpenError}
             activating={activateLicense.isPending}
             activationError={

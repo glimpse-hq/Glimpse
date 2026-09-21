@@ -2,6 +2,7 @@ import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import {
+  ArrowUpRight,
   Books,
   CardsThree,
   CircleNotch,
@@ -18,7 +19,6 @@ import {
   WifiSlash,
 } from "@phosphor-icons/react";
 import type { LicenseState } from "../../license/api";
-import { tierInfo, type PurchaseTier } from "../../license/purchaseConfig";
 import { detectAppPlatform } from "../../../platform/service";
 import { getDefaultShortcuts } from "../platform";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
@@ -37,11 +37,11 @@ const PLATFORM = detectAppPlatform();
 interface LicenseStepProps {
   stepMotionProps: StepMotionProps;
   licenseState: LicenseState | null;
-  openingTarget: PurchaseTier | null;
+  opening: boolean;
   openError: string | null;
   activating: boolean;
   activationError: string | null;
-  onOpenCheckout: (tier: PurchaseTier) => void;
+  onOpenCheckout: () => void;
   onActivate: (key: string) => void;
   onNext: () => void;
 }
@@ -49,7 +49,7 @@ interface LicenseStepProps {
 export function LicenseStep({
   stepMotionProps,
   licenseState,
-  openingTarget,
+  opening,
   openError,
   activating,
   activationError,
@@ -62,7 +62,6 @@ export function LicenseStep({
   const status = licenseState?.status;
   const isActive = status === "active";
   const isTrial = status === "trial";
-  const price = tierInfo("personal").price;
 
   const title = isActive
     ? t({
@@ -119,8 +118,8 @@ export function LicenseStep({
               <>
                 <button
                   type="button"
-                  onClick={() => onOpenCheckout("personal")}
-                  disabled={openingTarget !== null}
+                  onClick={onOpenCheckout}
+                  disabled={opening}
                   className="flex w-full items-center justify-between rounded-lg bg-cloud px-5 py-2.5 ui-text-body-lg font-semibold text-surface-secondary shadow-sm transition-[filter] hover:brightness-105 disabled:opacity-60"
                 >
                   <span>
@@ -130,10 +129,10 @@ export function LicenseStep({
                     })}
                   </span>
                   <span className="opacity-80">
-                    {openingTarget ? (
+                    {opening ? (
                       <CircleNotch size={14} className="animate-spin" />
                     ) : (
-                      price
+                      <ArrowUpRight size={14} />
                     )}
                   </span>
                 </button>
@@ -160,17 +159,6 @@ export function LicenseStep({
                   />
                 ) : (
                   <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-4 gap-y-1 ui-text-body-sm">
-                    <button
-                      type="button"
-                      onClick={() => onOpenCheckout("commercial")}
-                      disabled={openingTarget !== null}
-                      className="whitespace-nowrap text-content-secondary transition-colors hover:text-content-primary disabled:opacity-50"
-                    >
-                      {t({
-                        id: "onboarding.license_step.buy_team",
-                        message: "Buying for a team?",
-                      })}
-                    </button>
                     <button
                       type="button"
                       onClick={() => setEnteringKey(true)}

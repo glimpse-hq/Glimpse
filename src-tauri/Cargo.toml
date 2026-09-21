@@ -55,6 +55,8 @@ uuid = { version = "1.26.0", features = ["v4"] }
 aes-gcm = "0.11"
 pbkdf2 = "0.13"
 sha2 = "0.11"
+# Already in the tree through rustls; verifies the license server's Ed25519 tokens.
+ring = "0.17"
 base64 = { version = "0.23", default-features = false, features = ["std"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
 regex = "1"

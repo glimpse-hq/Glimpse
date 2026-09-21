@@ -1,33 +1,17 @@
-import type {
-  PurchaseSource,
-  PurchaseTier,
-} from "../../shared/lib/purchaseConfig";
+import type { PurchaseSource } from "../../shared/lib/purchaseConfig";
 
-export type { PurchaseSource, PurchaseTier };
-export { tierInfo } from "../../shared/lib/purchaseConfig";
+export type { PurchaseSource };
 
-export function personalCheckoutUrl(): string | null {
-  const url = import.meta.env.VITE_GLIMPSE_PERSONAL_CHECKOUT_URL?.trim();
-  return url || null;
-}
+// Plans and prices live on the site, so they change without an app update.
+const PRICING_URL = "https://tryglimpse.cc/#pricing";
 
-export function commercialCheckoutUrl(): string | null {
-  const url = import.meta.env.VITE_GLIMPSE_COMMERCIAL_CHECKOUT_URL?.trim();
-  return url || null;
+export function pricingUrlFor(source: PurchaseSource): string {
+  return withCheckoutTracking(PRICING_URL, "pricing", source) ?? PRICING_URL;
 }
 
 export function customerPortalUrl(): string | null {
   const url = import.meta.env.VITE_GLIMPSE_CUSTOMER_PORTAL?.trim();
   return url || null;
-}
-
-export function checkoutUrlFor(
-  tier: PurchaseTier,
-  source: PurchaseSource,
-): string | null {
-  const rawUrl =
-    tier === "commercial" ? commercialCheckoutUrl() : personalCheckoutUrl();
-  return withCheckoutTracking(rawUrl, `${tier}_license`, source);
 }
 
 export function customerPortalUrlFor(source: PurchaseSource): string | null {
@@ -47,6 +31,8 @@ function withCheckoutTracking(
     url.searchParams.set("utm_medium", "desktop");
     url.searchParams.set("utm_campaign", campaign);
     url.searchParams.set("utm_content", source);
+    // The site forwards this to the checkout link.
+    url.searchParams.set("source", source);
     return url.toString();
   } catch {
     return rawUrl;
