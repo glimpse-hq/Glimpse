@@ -89,6 +89,17 @@ msgstr ""
 #~ msgstr "¿Cómo es que Glimpse es gratis?"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.transcribing"
+#~ msgstr "Transcribiendo..."
+
+#. placeholder {0}: (progress * 100).toFixed(0)
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.thinking"
+#~ msgstr "Pensando {0}%"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -1472,6 +1483,11 @@ msgid "library.delete_error.storage_missing"
 msgstr "No se pudo eliminar este elemento. No se encontró el almacenamiento de la biblioteca."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.rediarize_error"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "No se pudo encontrar este elemento de la biblioteca. Intenta volver a abrirlo."
@@ -1779,6 +1795,21 @@ msgid "library.retranscribe.detect_speakers.aria"
 msgstr "Detectar oradores"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detect_speakers_again"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.section.developer"
 msgstr "Desarrollador"
@@ -2050,6 +2081,7 @@ msgid "settings.speech_model.provider.custom.description"
 msgstr "Introduce tu propia URL de endpoint"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Todo el sistema"
@@ -2775,6 +2807,11 @@ msgstr "Clave de licencia"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Claro"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -4615,6 +4652,11 @@ msgid "onboarding.model.supports.speakers"
 msgstr "Detección de hablantes"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speakers"
 msgstr "Oradores"
@@ -4956,12 +4998,6 @@ msgid "settings.app.theme.label"
 msgstr "Tema"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: (progress * 100).toFixed(0)
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.thinking"
-msgstr "Pensando {0}%"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_info"
 msgstr "Esta versión no incluye el asistente de línea de comandos."
@@ -5092,13 +5128,20 @@ msgid "onboarding.license_step.tile_files"
 msgstr "Transcribir archivos"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.transcribing"
-msgstr "Transcribiendo..."
+#. placeholder {0}: (progress * 100).toFixed(0)
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.transcribing"
+msgstr ""
 
 #. js-lingui-explicit-id
+#. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.transcribing"
+msgid "library.modal.transcribing_progress"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.transcribing"
 msgstr "Transcribiendo..."
 
 #. js-lingui-explicit-id
@@ -5234,6 +5277,11 @@ msgstr "Formato de archivo no compatible."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "Los idiomas no compatibles no están disponibles en tu modelo activo. Cambia a un modelo compatible para usarlos."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

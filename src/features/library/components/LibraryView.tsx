@@ -31,6 +31,7 @@ import {
   useUpdateLibraryItem,
   useDeleteLibraryItem,
   useCancelLibraryTranscription,
+  useRediarizeLibraryItem,
   useRetryLibraryTranscription,
   useExportLibraryItem,
   useLibraryTags,
@@ -144,6 +145,7 @@ const LibraryView = ({
   const deleteItemMutation = useDeleteLibraryItem();
   const cancelMutation = useCancelLibraryTranscription();
   const retryMutation = useRetryLibraryTranscription();
+  const rediarizeMutation = useRediarizeLibraryItem();
   const exportMutation = useExportLibraryItem();
 
   const invalidateTags = useCallback(() => {
@@ -175,6 +177,24 @@ const LibraryView = ({
       }
     },
     [deleteItemMutation, invalidateTags],
+  );
+
+  const rediarizeItem = useCallback(
+    async (id: string) => {
+      try {
+        await rediarizeMutation.mutateAsync(id);
+      } catch (err) {
+        console.error("Failed to detect speakers:", err);
+        invoke("debug_show_toast", {
+          toastType: "error",
+          message: t({
+            id: "library.view.rediarize_error",
+            message: "Couldn't detect speakers.",
+          }),
+        }).catch(() => {});
+      }
+    },
+    [rediarizeMutation, t],
   );
 
   const installedModels = useMemo(
@@ -326,6 +346,11 @@ const LibraryView = ({
               setSelectedItemId(null);
             }}
             onRetry={() => retryMutation.mutateAsync(selectedItem.id)}
+            onRediarize={() => rediarizeItem(selectedItem.id)}
+            rediarizing={
+              rediarizeMutation.isPending &&
+              rediarizeMutation.variables === selectedItem.id
+            }
             onCancel={() => cancelMutation.mutateAsync(selectedItem.id)}
             onUpdate={(patch) => updateItemWithTags(selectedItem.id, patch)}
             onExport={(format, outputPath) =>

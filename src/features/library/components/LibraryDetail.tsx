@@ -16,6 +16,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
   Warning as AlertTriangle,
+  AppWindow,
   ArrowLeft,
   BookmarkSimple,
   Check,
@@ -35,6 +36,7 @@ import {
   Plus,
   ArrowClockwise as RotateCw,
   MagnifyingGlass as Search,
+  Monitor,
   SpeakerHigh,
   SpeakerSlash,
   Trash as Trash2,
@@ -46,7 +48,6 @@ import AudioScrubber from "./AudioScrubber";
 import LibraryRetranscribeModal from "./LibraryRetranscribeModal";
 import {
   clampProgress,
-  describeAudioSources,
   formatDuration,
   formatPlaybackRate,
   formatTimestamp,
@@ -56,9 +57,14 @@ import {
   shouldShowImportProgress,
   formatLibraryName,
 } from "./library-utils";
-import { resolveSpeechModelLabel } from "../../settings/models-queries";
+import {
+  resolveSpeechModelLabel,
+  useDiarizerInstalled,
+} from "../../settings/models-queries";
+import { useInstalledApps } from "../../personalization/queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
+import HoverTip from "../../../shared/ui/HoverTip";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type {
   Bookmark,
@@ -77,6 +83,8 @@ const SPEAKER_COLORS = [
   "#f7768e",
   "#bb9af7",
   "#7dcfff",
+  "#ff9e64",
+  "#73daca",
 ];
 
 const MAX_SPEAKERS = 16;
@@ -253,6 +261,8 @@ const LibraryDetail = ({
   onClose,
   onDelete,
   onRetry,
+  onRediarize,
+  rediarizing,
   onCancel,
   onUpdate,
   onExport,
@@ -264,6 +274,8 @@ const LibraryDetail = ({
   onClose: () => void;
   onDelete: () => Promise<void>;
   onRetry: () => Promise<void>;
+  onRediarize: () => Promise<void>;
+  rediarizing: boolean;
   onCancel: () => void;
   onUpdate: (patch: LibraryItemPatch) => Promise<LibraryItem>;
   onExport: (format: ExportFormat, outputPath: string) => Promise<void>;
@@ -303,6 +315,7 @@ const LibraryDetail = ({
   });
   const [streamChunks, setStreamChunks] = useState<string[]>([]);
   const [showRetranscribe, setShowRetranscribe] = useState(false);
+  const diarizerInstalled = useDiarizerInstalled();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [renamingSpeakerId, setRenamingSpeakerId] = useState<string | null>(
@@ -351,13 +364,23 @@ const LibraryDetail = ({
 
   const modelLabel =
     resolveSpeechModelLabel(models, item.speech_model) ?? item.speech_model;
-  const sourcesLabel = describeAudioSources(item.sources, {
-    microphone: t({ id: "library.sources.microphone", message: "Microphone" }),
-    systemAudio: t({
-      id: "library.sources.system_audio",
-      message: "System Audio",
-    }),
+  const sourceAppNames = item.sources?.system_audio ?? [];
+  const installedApps = useInstalledApps(sourceAppNames.length > 0).data;
+  const microphoneLabel = t({
+    id: "library.sources.microphone",
+    message: "Microphone",
   });
+  const systemAudioLabel = t({
+    id: "library.sources.system_audio",
+    message: "System Audio",
+  });
+  const entireSystemLabel = t({
+    id: "record.setup.system_mode.all",
+    message: "Entire system",
+  });
+  const appIconPath = (name: string) =>
+    installedApps?.find((app) => app.name.toLowerCase() === name.toLowerCase())
+      ?.icon_path ?? null;
   const bookmarks = useMemo(
     () => [...(item.bookmarks ?? [])].sort((a, b) => a.at_ms - b.at_ms),
     [item.bookmarks],
@@ -366,20 +389,39 @@ const LibraryDetail = ({
   const transcriptAvailable =
     transcriptEditable && (item.transcript ?? "").trim().length > 0;
   const canShowTimestamps = !!item.segments && item.segments.length > 0;
-  const speakers = useMemo(
-    () =>
-      (item.speakers ?? []).map((speaker, index) => ({
-        ...speaker,
-        color: speaker.color ?? SPEAKER_COLORS[index % SPEAKER_COLORS.length],
-      })),
-    [item.speakers],
-  );
+  const speakers = useMemo(() => {
+    const list = item.speakers ?? [];
+    // Recording tracks keep fixed colors; detected speakers take the rest.
+    const taken = new Set(list.map((speaker) => speaker.color));
+    const free = SPEAKER_COLORS.filter((color) => !taken.has(color));
+    let next = 0;
+    return list.map((speaker, index) => ({
+      ...speaker,
+      color:
+        speaker.color ??
+        free[next++] ??
+        SPEAKER_COLORS[index % SPEAKER_COLORS.length],
+    }));
+  }, [item.speakers]);
   const canAddSpeaker = speakers.length < MAX_SPEAKERS;
   const isBusy =
     item.status.type === "transcribing" ||
     item.status.type === "cancelling" ||
     item.status.type === "pending" ||
     item.status.type === "importing";
+  const detectingSpeakersLabel = t({
+    id: "library.modal.detecting_speakers",
+    message: "Detecting speakers...",
+  });
+  const transcribingLabel =
+    item.status.type !== "transcribing"
+      ? null
+      : item.status.detecting_speakers
+        ? detectingSpeakersLabel
+        : t({
+            id: "library.modal.transcribing_progress",
+            message: `Transcribing ${(clampProgress(item.status.progress) * 100).toFixed(0)}%`,
+          });
   const importStatusText =
     item.status.type === "importing"
       ? shouldShowImportProgress(item.status.progress)
@@ -1124,6 +1166,16 @@ const LibraryDetail = ({
   const canIncreasePlaybackRate = playbackRate < maxPlaybackRate;
   const showStreaming = item.status.type === "transcribing" && !showTimestamps;
   const showSegmentView = showTimestamps && canShowTimestamps;
+  const transcribingPlaceholder = showStreaming && streamChunks.length === 0;
+  const detectingSpeakers =
+    rediarizing ||
+    (item.status.type === "transcribing" && !!item.status.detecting_speakers);
+  // The placeholder shows progress itself until text arrives.
+  const footerStatus = transcribingPlaceholder
+    ? null
+    : rediarizing
+      ? detectingSpeakersLabel
+      : transcribingLabel;
   // The transcript follows playback until the reader scrolls it themselves.
   const followTimestampsActive =
     followPlayback && showSegmentView && isPlaying && !followPaused;
@@ -1989,6 +2041,22 @@ const LibraryDetail = ({
                           message: "Retranscribe",
                         })}
                       </button>
+                      {diarizerInstalled && item.status.type === "complete" && (
+                        <button
+                          onClick={() => {
+                            setOverflowOpen(false);
+                            void onRediarize();
+                          }}
+                          disabled={rediarizing}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Users size={11} />
+                          {t({
+                            id: "library.modal.detect_speakers_again",
+                            message: "Detect speakers again",
+                          })}
+                        </button>
+                      )}
                       {isBusy && (
                         <button
                           onClick={() => {
@@ -2056,16 +2124,57 @@ const LibraryDetail = ({
                 ·
               </span>
               <span>{modelLabel}</span>
-              {sourcesLabel && (
-                <>
-                  <span className="opacity-40" aria-hidden="true">
-                    ·
-                  </span>
-                  <span className="truncate" title={sourcesLabel}>
-                    {sourcesLabel}
-                  </span>
-                </>
-              )}
+              {item.sources &&
+                (item.sources.system_audio || item.sources.microphone) && (
+                  <>
+                    <span className="opacity-40" aria-hidden="true">
+                      ·
+                    </span>
+                    <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+                      {item.sources.system_audio &&
+                        (sourceAppNames.length > 0 ? (
+                          sourceAppNames.map((name) => {
+                            const iconPath = appIconPath(name);
+                            return (
+                              <HoverTip
+                                key={name}
+                                label={name}
+                                detail={systemAudioLabel}
+                                className="flex h-4 w-4 items-center justify-center text-content-muted"
+                              >
+                                {iconPath ? (
+                                  <img
+                                    src={convertFileSrc(iconPath)}
+                                    alt={name}
+                                    className="h-4 w-4 object-contain"
+                                  />
+                                ) : (
+                                  <AppWindow size={14} aria-label={name} />
+                                )}
+                              </HoverTip>
+                            );
+                          })
+                        ) : (
+                          <HoverTip
+                            label={entireSystemLabel}
+                            detail={systemAudioLabel}
+                            className="flex h-4 w-4 items-center justify-center text-content-muted"
+                          >
+                            <Monitor size={14} aria-label={entireSystemLabel} />
+                          </HoverTip>
+                        ))}
+                      {item.sources.microphone && (
+                        <HoverTip
+                          label={item.sources.microphone}
+                          detail={microphoneLabel}
+                          className="flex h-4 w-4 items-center justify-center text-content-muted"
+                        >
+                          <Microphone size={14} aria-label={microphoneLabel} />
+                        </HoverTip>
+                      )}
+                    </span>
+                  </>
+                )}
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2">
@@ -2462,14 +2571,11 @@ const LibraryDetail = ({
                   }}
                 />
               ) : showStreaming ? (
-                streamChunks.length === 0 ? (
+                transcribingPlaceholder ? (
                   <div className="flex flex-col h-full w-full items-center justify-center gap-5">
                     <IntelligencePixel active size="md" />
-                    <div className="ui-text-label font-medium text-content-disabled">
-                      {t({
-                        id: "library.modal.transcribing",
-                        message: "Transcribing...",
-                      })}
+                    <div className="ui-text-label font-medium tabular-nums text-content-disabled">
+                      {transcribingLabel}
                     </div>
                   </div>
                 ) : (
@@ -2529,7 +2635,7 @@ const LibraryDetail = ({
         )}
       </main>
 
-      <footer className="shrink-0 border-t border-[var(--color-border-primary)] px-5 py-2.5">
+      <footer className="shrink-0 border-t border-[var(--color-border-primary)] px-5 pt-2.5 pb-1">
         <div className="flex items-center gap-3">
           <button
             onClick={handleTogglePlayback}
@@ -2751,6 +2857,14 @@ const LibraryDetail = ({
               )}
             </AnimatePresence>
           </div>
+        </div>
+        <div
+          aria-live="polite"
+          className={`h-4 truncate text-center ui-text-meta tabular-nums ${
+            detectingSpeakers ? "text-local" : "text-content-disabled"
+          }`}
+        >
+          {footerStatus}
         </div>
       </footer>
 

@@ -89,6 +89,17 @@ msgstr ""
 #~ msgstr "Почему Glimpse бесплатен?"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.transcribing"
+#~ msgstr "Транскрибирование…"
+
+#. placeholder {0}: (progress * 100).toFixed(0)
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.thinking"
+#~ msgstr "Обработка {0}%"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -1472,6 +1483,11 @@ msgid "library.delete_error.storage_missing"
 msgstr "Не удалось удалить этот элемент. Хранилище библиотеки не найдено."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.rediarize_error"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "Этот элемент библиотеки не найден. Попробуйте открыть его снова."
@@ -1779,6 +1795,21 @@ msgid "library.retranscribe.detect_speakers.aria"
 msgstr "Определять говорящих"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detect_speakers_again"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.section.developer"
 msgstr "Разработчик"
@@ -2050,6 +2081,7 @@ msgid "settings.speech_model.provider.custom.description"
 msgstr "Введите собственный URL конечной точки"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Вся система"
@@ -2775,6 +2807,11 @@ msgstr "Лицензионный ключ"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Светлый"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -4615,6 +4652,11 @@ msgid "onboarding.model.supports.speakers"
 msgstr "Определение говорящего"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speakers"
 msgstr "Говорящие"
@@ -4956,12 +4998,6 @@ msgid "settings.app.theme.label"
 msgstr "Тема"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: (progress * 100).toFixed(0)
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.thinking"
-msgstr "Обработка {0}%"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_info"
 msgstr "В этой сборке отсутствует вспомогательный инструмент командной строки."
@@ -5092,14 +5128,21 @@ msgid "onboarding.license_step.tile_files"
 msgstr "Транскрибировать файлы"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: (progress * 100).toFixed(0)
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.transcribing"
+msgstr ""
+
+#. js-lingui-explicit-id
+#. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.transcribing_progress"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.transcribing"
 msgstr "Транскрибирование..."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.transcribing"
-msgstr "Транскрибирование…"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5234,6 +5277,11 @@ msgstr "Неподдерживаемый формат файла."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "Неподдерживаемые языки недоступны в активной модели. Переключитесь на подходящую модель, чтобы их использовать."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

@@ -46,6 +46,10 @@ export async function retryLibraryTranscription(id: string): Promise<void> {
   await invoke("retry_library_transcription", { id });
 }
 
+export async function rediarizeLibraryItem(id: string): Promise<void> {
+  await invoke("rediarize_library_item", { id });
+}
+
 export async function exportLibraryItemToPath(
   id: string,
   format: ExportFormat,

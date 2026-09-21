@@ -18,6 +18,7 @@ import {
   formatDuration,
 } from "./library-utils";
 import { formatBytes } from "../../../shared/lib/format";
+import { useDiarizerInstalled } from "../../settings/models-queries";
 import type { LibraryImportOptions, SpeechModel } from "../../../types";
 
 type ImportFileProbe = {
@@ -56,7 +57,8 @@ const LibraryImportModal = ({
     defaultModelKey || "",
   );
   const [showTimestamps, setShowTimestamps] = useState(true);
-  const [detectSpeakers, setDetectSpeakers] = useState(false);
+  const diarizerInstalled = useDiarizerInstalled();
+  const [speakersChoice, setSpeakersChoice] = useState<boolean | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
   const modelOptions: DropdownOption<string>[] = models.map((model) => ({
@@ -81,22 +83,17 @@ const LibraryImportModal = ({
   const timestampsSupported =
     Boolean(selectedModel?.remote) ||
     hasModelCapability(selectedModel, MODEL_CAPABILITY_TIMESTAMPS);
-  const diarizationSupported = hasModelCapability(
-    selectedModel,
-    MODEL_CAPABILITY_DIARIZATION,
-  );
+  const diarizationSupported =
+    diarizerInstalled ||
+    hasModelCapability(selectedModel, MODEL_CAPABILITY_DIARIZATION);
+  const detectSpeakers =
+    diarizationSupported && (speakersChoice ?? diarizerInstalled);
 
   useEffect(() => {
     if (!timestampsSupported) {
       setShowTimestamps(false);
     }
   }, [timestampsSupported]);
-
-  useEffect(() => {
-    if (!diarizationSupported) {
-      setDetectSpeakers(false);
-    }
-  }, [diarizationSupported]);
 
   useEffect(() => {
     if (importPaths.length > 1) {
@@ -184,7 +181,7 @@ const LibraryImportModal = ({
         model_key: selectedModelKey,
         llm_cleanup_enabled: false,
         show_timestamps: showTimestamps,
-        detect_speakers: diarizationSupported ? detectSpeakers : false,
+        detect_speakers: detectSpeakers,
       };
       await onConfirm(importPaths, options);
     } finally {
@@ -395,7 +392,7 @@ const LibraryImportModal = ({
               </div>
               <ToggleSwitch
                 enabled={detectSpeakers}
-                onToggle={() => setDetectSpeakers(!detectSpeakers)}
+                onToggle={() => setSpeakersChoice(!detectSpeakers)}
                 ariaLabel={t({
                   id: "library.import.detect_speakers.aria",
                   message: "Detect speakers",

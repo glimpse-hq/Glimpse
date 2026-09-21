@@ -601,6 +601,7 @@ pub fn run() {
             library::commands::delete_library_item,
             library::commands::cancel_library_transcription,
             library::commands::retry_library_transcription,
+            library::commands::rediarize_library_item,
             library::commands::export_library_item_to_path,
             library::commands::get_library_tags,
             library::commands::probe_library_import_files,

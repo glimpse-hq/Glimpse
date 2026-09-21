@@ -45,6 +45,7 @@ const SIDE_BY_SIDE_WIDTH = 280;
 type ModelsTabProps = {
   variants: Variants;
   modelCatalog: ModelInfo[];
+  diarizerModel: ModelInfo | null;
   modelStatus: Record<string, ModelStatus>;
   downloadState: Record<string, DownloadEvent>;
   localModel: string;
@@ -248,6 +249,7 @@ const CloudHeroCard = ({
 const ModelsTab = ({
   variants,
   modelCatalog,
+  diarizerModel,
   modelStatus,
   downloadState,
   localModel,
@@ -341,6 +343,7 @@ const ModelsTab = ({
           <ModelPickerPanel
             className="w-full min-h-0 flex-1"
             catalog={modelCatalog}
+            diarizer={diarizerModel}
             activeKey={localModel}
             isInstalled={(key) => Boolean(modelStatus[key]?.installed)}
             isAneInstalled={(key) => Boolean(modelStatus[key]?.ane_installed)}

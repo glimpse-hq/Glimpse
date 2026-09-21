@@ -2415,8 +2415,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "1.6.4"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.6.4#6334594eb6d3577dac1a41d5cf6096fbe0500e99"
+version = "1.6.5"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.6.5#0319ed185b9251e9f57b7d2df897f6a018822fae"
 dependencies = [
  "anyhow",
  "axum",
@@ -6965,7 +6965,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp"
 version = "0.2.3"
-source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=9790356833bf58b1135b1b09fd7900626872c6ff#9790356833bf58b1135b1b09fd7900626872c6ff"
+source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=2be9c5078633be1a56bead5752d5d042ff1ca91b#2be9c5078633be1a56bead5752d5d042ff1ca91b"
 dependencies = [
  "log",
  "thiserror 2.0.20",
@@ -6975,7 +6975,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp-sys"
 version = "0.2.3"
-source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=9790356833bf58b1135b1b09fd7900626872c6ff#9790356833bf58b1135b1b09fd7900626872c6ff"
+source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=2be9c5078633be1a56bead5752d5d042ff1ca91b#2be9c5078633be1a56bead5752d5d042ff1ca91b"
 dependencies = [
  "cmake",
  "serde_json",

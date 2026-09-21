@@ -208,7 +208,7 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
         detect_speakers: args
             .get("detect_speakers")
             .and_then(Value::as_bool)
-            .unwrap_or(false),
+            .unwrap_or_else(|| crate::speech::installed_diarizer_path(app).is_some()),
     };
 
     let item = crate::library::commands::import_library_file(

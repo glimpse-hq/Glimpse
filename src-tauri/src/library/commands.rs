@@ -18,8 +18,9 @@ use super::queue::{release_library_slot, schedule_library_job};
 #[cfg(target_os = "macos")]
 use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
-    EVENT_LIBRARY_ERROR, ExportFormat, JobSource, LibraryErrorPayload, LibraryFilter,
-    LibraryImportOptions, LibraryItem, LibraryItemPatch, LibraryItemStatus, LibraryItemsPage,
+    EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR, ExportFormat, JobSource, LibraryCompletePayload,
+    LibraryErrorPayload, LibraryFilter, LibraryImportOptions, LibraryItem, LibraryItemPatch,
+    LibraryItemStatus, LibraryItemsPage,
 };
 
 #[cfg(target_os = "macos")]
@@ -240,6 +241,56 @@ pub fn retry_library_transcription(
         },
     );
     Ok(())
+}
+
+/// Re-runs speaker detection on a finished item without transcribing it again.
+#[tauri::command]
+pub async fn rediarize_library_item(
+    id: String,
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<'_, AppState>,
+) -> Result<LibraryItem, String> {
+    require_library_license(&state)?;
+
+    let storage = state.storage();
+    let task_app = app.clone();
+    let task_id = id.clone();
+    let updated = tauri::async_runtime::spawn_blocking(move || {
+        let model_path = crate::speech::installed_diarizer_path(&task_app)
+            .ok_or_else(|| "The speaker detection model isn't downloaded".to_string())?;
+        let load = || {
+            storage
+                .get_library_item(&task_id)
+                .map_err(|err| format!("Failed to load library item: {err}"))?
+                .filter(|item| matches!(item.status, LibraryItemStatus::Complete))
+                .ok_or_else(|| "Library item isn't finished transcribing".to_string())
+        };
+        let item = load()?;
+        let labeled = super::speakers::rediarize(&item, &model_path).map_err(|err| {
+            tracing::warn!("[library] speaker detection failed: {err}");
+            err.to_string()
+        })?;
+        // A transcription started meanwhile owns the item now.
+        load()?;
+        storage
+            .update_library_item(
+                &task_id,
+                LibraryItemPatch {
+                    segments: Some(labeled.segments),
+                    words: labeled.words,
+                    speakers: Some(labeled.speakers),
+                    detect_speakers: Some(true),
+                    ..Default::default()
+                },
+            )
+            .map_err(|err| format!("Failed to update library item: {err}"))?
+            .ok_or_else(|| "Library item not found".to_string())
+    })
+    .await
+    .map_err(|err| format!("Speaker detection task failed: {err}"))??;
+
+    let _ = app.emit(EVENT_LIBRARY_COMPLETE, LibraryCompletePayload { id });
+    Ok(updated)
 }
 
 #[tauri::command]

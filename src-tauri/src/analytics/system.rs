@@ -53,7 +53,7 @@ pub fn track_update_installed(
 
 /// Records the name of a speech model you deleted.
 pub fn track_model_deleted(app: &tauri::AppHandle<AppRuntime>, model: &str) {
-    let model = if crate::speech::catalog::definition(model).is_some() {
+    let model = if crate::speech::catalog::installable_definition(model).is_some() {
         model
     } else {
         "other"

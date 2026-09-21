@@ -89,6 +89,17 @@ msgstr ""
 #~ msgstr "كيف يكون Glimpse مجانيًا؟"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.transcribing"
+#~ msgstr "جارٍ التفريغ..."
+
+#. placeholder {0}: (progress * 100).toFixed(0)
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.thinking"
+#~ msgstr "جارٍ المعالجة {0}%"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1472,6 +1483,11 @@ msgid "library.delete_error.storage_missing"
 msgstr "تعذّر حذف هذا العنصر. تعذّر العثور على مساحة تخزين المكتبة."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.rediarize_error"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "تعذّر العثور على هذا العنصر في المكتبة. حاول إعادة فتحه."
@@ -1779,6 +1795,21 @@ msgid "library.retranscribe.detect_speakers.aria"
 msgstr "اكتشاف المتحدثين"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detect_speakers_again"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.section.developer"
 msgstr "المطوّر"
@@ -2050,6 +2081,7 @@ msgid "settings.speech_model.provider.custom.description"
 msgstr "أدخل عنوان URL لنقطة النهاية الخاصة بك"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "النظام بأكمله"
@@ -2775,6 +2807,11 @@ msgstr "مفتاح الترخيص"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "فاتح"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -4615,6 +4652,11 @@ msgid "onboarding.model.supports.speakers"
 msgstr "اكتشاف المتحدث"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speakers"
 msgstr "المتحدثون"
@@ -4956,12 +4998,6 @@ msgid "settings.app.theme.label"
 msgstr "المظهر"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: (progress * 100).toFixed(0)
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.thinking"
-msgstr "جارٍ المعالجة {0}%"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_info"
 msgstr "لا يتضمن هذا الإصدار أداة سطر الأوامر."
@@ -5092,14 +5128,21 @@ msgid "onboarding.license_step.tile_files"
 msgstr "نسخ الملفات"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: (progress * 100).toFixed(0)
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.transcribing"
+msgstr ""
+
+#. js-lingui-explicit-id
+#. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.transcribing_progress"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.transcribing"
 msgstr "جارٍ النسخ..."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.transcribing"
-msgstr "جارٍ التفريغ..."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5234,6 +5277,11 @@ msgstr "تنسيق الملف غير مدعوم."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "اللغات غير المدعومة غير متاحة في نموذجك النشط. بدّل إلى نموذج يدعمها لاستخدامها."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

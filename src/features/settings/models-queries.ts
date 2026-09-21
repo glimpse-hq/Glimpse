@@ -17,12 +17,38 @@ export const modelKeys = {
   cli: () => [...modelKeys.all, "cli"] as const,
 };
 
+// The speaker diarization model shares the catalog but never transcribes.
+const DIARIZATION_CATEGORY = "diarization";
+
+const selectTranscriptionModels = (models: ModelInfo[]) =>
+  models.filter((model) => model.category !== DIARIZATION_CATEGORY);
+
+const selectDiarizer = (models: ModelInfo[]) =>
+  models.find((model) => model.category === DIARIZATION_CATEGORY) ?? null;
+
 export function useModelCatalog(enabled: boolean = true) {
   return useQuery({
     queryKey: modelKeys.catalog(),
     queryFn: modelsApi.listModels,
     enabled,
+    select: selectTranscriptionModels,
   });
+}
+
+export function useDiarizerModel(enabled: boolean = true) {
+  return useQuery({
+    queryKey: modelKeys.catalog(),
+    queryFn: modelsApi.listModels,
+    enabled,
+    select: selectDiarizer,
+  });
+}
+
+export function useDiarizerInstalled(): boolean {
+  const diarizer = useDiarizerModel().data;
+  const keys = useMemo(() => (diarizer ? [diarizer.key] : []), [diarizer]);
+  const { statusByModel } = useModelStatuses(keys);
+  return Boolean(diarizer && statusByModel[diarizer.key]?.installed);
 }
 
 export function useSpeechModels(enabled: boolean = true) {

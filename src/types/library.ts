@@ -29,7 +29,7 @@ export type Bookmark = {
 export type LibraryItemStatus =
   | { type: "pending" }
   | { type: "importing"; progress: number }
-  | { type: "transcribing"; progress: number }
+  | { type: "transcribing"; progress: number; detecting_speakers?: boolean }
   | { type: "complete" }
   | { type: "cancelling" }
   | { type: "cancelled" }
@@ -108,6 +108,7 @@ export type LibraryProgressPayload = {
   total_chunks: number;
   chunk_text?: string | null;
   chunk_segments?: TranscriptSegment[] | null;
+  detecting_speakers?: boolean;
 };
 
 export type LibraryImportProgressPayload = {

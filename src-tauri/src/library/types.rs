@@ -256,6 +256,9 @@ pub struct LibraryProgressPayload {
     pub chunk_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chunk_segments: Option<Vec<TranscriptSegment>>,
+    /// Transcription is done and the diarizer is labeling speakers.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub detecting_speakers: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -292,7 +295,7 @@ impl LibraryProgressUpdate {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct LibraryTranscriptionResult {
     pub transcript: String,
     pub segments: Option<Vec<TranscriptSegment>>,

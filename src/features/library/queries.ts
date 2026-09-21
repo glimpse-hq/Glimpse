@@ -97,6 +97,7 @@ export function useLibraryItems(
           chunk_segments,
           current_chunk,
           total_chunks,
+          detecting_speakers,
         } = event.payload;
         const found = patchItemInCache(queryClient, filter, id, (item) => {
           if (!isProgressable(item.status)) return item;
@@ -126,7 +127,11 @@ export function useLibraryItems(
           }
           return {
             ...item,
-            status: { type: "transcribing" as const, progress },
+            status: {
+              type: "transcribing" as const,
+              progress,
+              detecting_speakers,
+            },
             ...(updateTranscript ? { transcript: nextTranscript } : {}),
             ...(updateSegments ? { segments: nextSegments } : {}),
           };
@@ -272,6 +277,17 @@ export function useRetryLibraryTranscription() {
 
   return useMutation({
     mutationFn: libraryApi.retryLibraryTranscription,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    },
+  });
+}
+
+export function useRediarizeLibraryItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: libraryApi.rediarizeLibraryItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
