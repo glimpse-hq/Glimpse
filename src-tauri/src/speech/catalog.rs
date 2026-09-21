@@ -1170,6 +1170,7 @@ fn provider_display(provider: &str) -> String {
     match provider.trim().to_ascii_lowercase().as_str() {
         "openai" => "OpenAI".to_string(),
         "groq" => "Groq".to_string(),
+        "xai" => "xAI (Grok)".to_string(),
         "mistral" => "Mistral".to_string(),
         "fireworks" => "Fireworks".to_string(),
         "openrouter" => "OpenRouter".to_string(),

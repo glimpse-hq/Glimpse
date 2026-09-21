@@ -154,6 +154,7 @@ const REMOTE_SPEECH_PROVIDERS: &[&str] = &[
     "custom",
     "openai",
     "groq",
+    "xai",
     "mistral",
     "fireworks",
     "openrouter",
@@ -168,6 +169,7 @@ const REMOTE_SPEECH_PROVIDERS: &[&str] = &[
 
 // Remote model names are typed by the user, so only well-known public ids pass.
 const REMOTE_SPEECH_MODELS: &[&str] = &[
+    "gpt-transcribe",
     "gpt-4o-transcribe",
     "gpt-4o-mini-transcribe",
     "whisper-1",
@@ -179,6 +181,12 @@ const REMOTE_SPEECH_MODELS: &[&str] = &[
     "openai/whisper-1",
     "openai/whisper-large-v3",
     "openai/whisper-large-v3-turbo",
+    "openai/gpt-transcribe",
+    "x-ai/grok-stt-1.0",
+    "grok-voice-transcribe-1.0",
+    "grok-voice-transcribe-2.0",
+    "deepgram/nova-3",
+    "mistralai/voxtral-mini-transcribe",
     "voxtral-mini-latest",
     "voxtral-small-latest",
     "nova-2",
