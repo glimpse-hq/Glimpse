@@ -74,6 +74,21 @@ msgstr ""
 #~ msgstr "هذا هو رقم طلبك. مفتاح الترخيص موجود في الرسالة ذاتها من Polar ويبدأ بـ GLIMPSE_."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "الإملاء الأساسي مجاني: النسخ المحلي، والقاموس، والاستبدالات، والسجل. لا توجد رسوم بالدقيقة أو اشتراكات لذلك. المكتبة، والتنظيف، والتخصيص باستخدام نموذج لغوي كبير هي جزء من Glimpse Personal، ويمكنك تجربتها مجانًا لمدة 14 يومًا. يحتاج خادم API المحلي وواجهة سطر الأوامر إلى ترخيص وليسا جزءًا من الإصدار التجريبي. فعّل ترخيص Personal (شراء لمرة واحدة) أو ترخيص Commercial (يُحصَّل سنويًا) من الإعدادات ← الحساب."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "ترخيص واحد، 5 أجهزة"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "كيف يكون Glimpse مجانيًا؟"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -1388,8 +1403,8 @@ msgstr "أساسي"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "الإملاء الأساسي مجاني: النسخ المحلي، والقاموس، والاستبدالات، والسجل. لا توجد رسوم بالدقيقة أو اشتراكات لذلك. المكتبة، والتنظيف، والتخصيص باستخدام نموذج لغوي كبير هي جزء من Glimpse Personal، ويمكنك تجربتها مجانًا لمدة 14 يومًا. يحتاج خادم API المحلي وواجهة سطر الأوامر إلى ترخيص وليسا جزءًا من الإصدار التجريبي. فعّل ترخيص Personal (شراء لمرة واحدة) أو ترخيص Commercial (يُحصَّل سنويًا) من الإعدادات ← الحساب."
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1495,6 +1510,11 @@ msgstr "تعذّر كتابة ملف التصدير. جرّب موقعًا مخ�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "جارٍ حساب التسجيلات…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3452,11 +3472,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "على الجهاز"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "ترخيص واحد، 5 أجهزة"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "فقط إذا أعددت نموذج كتابة ضمن الإعدادات ← الموفرون. تُرسل الاختصارات التي تم تفعيل «التنظيف» فيها، والتخصيص، النص ذا الصلة مباشرةً إلى ذلك الموفر. يظل مفتاح API الخاص بك مخزنًا محليًا في Glimpse. لا يغادر الصوت جهازك إلا إذا اخترت نموذج كلام سحابيًا في الإعدادات ← النماذج."
@@ -3796,6 +3811,11 @@ msgstr "جاهز للتثبيت"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "يتعرّف على الكلمات من قاموسك."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5383,8 +5403,8 @@ msgstr "نشاط الإملاء الأسبوعي خلال العام الماض�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "كيف يكون Glimpse مجانيًا؟"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

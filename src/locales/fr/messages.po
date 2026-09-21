@@ -74,6 +74,21 @@ msgstr ""
 #~ msgstr "Il s'agit de votre numéro de commande. La clé de licence se trouve dans le même e-mail de Polar et commence par GLIMPSE_."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "La dictée de base est gratuite : transcription locale, dictionnaire, remplacements et historique. Aucun frais à la minute ni abonnement pour ces fonctionnalités. La bibliothèque, le nettoyage et la personnalisation avec un LLM font partie de Glimpse Personal, et vous pouvez les essayer gratuitement pendant 14 jours. Le serveur API local et la CLI nécessitent une licence et ne sont pas inclus dans l'essai. Activez une licence Personal (achat unique) ou une licence Commercial (facturée annuellement) dans Réglages → Compte."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "Une licence, 5 appareils"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "Pourquoi Glimpse est-il gratuit ?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -1388,8 +1403,8 @@ msgstr "Core"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "La dictée de base est gratuite : transcription locale, dictionnaire, remplacements et historique. Aucun frais à la minute ni abonnement pour ces fonctionnalités. La bibliothèque, le nettoyage et la personnalisation avec un LLM font partie de Glimpse Personal, et vous pouvez les essayer gratuitement pendant 14 jours. Le serveur API local et la CLI nécessitent une licence et ne sont pas inclus dans l'essai. Activez une licence Personal (achat unique) ou une licence Commercial (facturée annuellement) dans Réglages → Compte."
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1495,6 +1510,11 @@ msgstr "Impossible d'écrire le fichier d'exportation. Essayez un autre emplacem
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "Comptage des enregistrements…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3452,11 +3472,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "Sur l'appareil"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "Une licence, 5 appareils"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "Uniquement si vous configurez un modèle de rédaction dans Réglages → Fournisseurs. Les raccourcis avec Nettoyage activé, ainsi que la Personnalisation, envoient alors le texte concerné directement à ce fournisseur. Votre clé API reste stockée localement dans Glimpse. L'audio ne quitte votre appareil que si vous choisissez un modèle de reconnaissance vocale cloud dans Réglages → Modèles."
@@ -3796,6 +3811,11 @@ msgstr "Prêt à installer"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "Reconnaît les mots de votre dictionnaire."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5383,8 +5403,8 @@ msgstr "Activité de dictée hebdomadaire au cours de la dernière année"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "Pourquoi Glimpse est-il gratuit ?"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

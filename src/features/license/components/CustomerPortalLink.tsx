@@ -1,13 +1,11 @@
 import { useLingui } from "@lingui/react/macro";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ArrowSquareOut as ExternalLink } from "@phosphor-icons/react";
-import {
-  customerPortalUrlFor,
-  type PurchaseSource,
-} from "../../license/purchaseConfig";
+import { customerPortalUrlFor } from "../../license/purchaseConfig";
+import type { LicenseProvider } from "../../../shared/types/license";
 
 type CustomerPortalLinkProps = {
-  source: PurchaseSource;
+  provider: LicenseProvider | null | undefined;
   className?: string;
 };
 
@@ -15,12 +13,11 @@ const defaultClassName =
   "inline-flex h-7 items-center justify-center gap-1.5 rounded-md px-2.5 ui-text-button-sm ui-color-muted transition-colors hover:bg-surface-elevated hover:text-content-primary";
 
 const CustomerPortalLink = ({
-  source,
+  provider,
   className = defaultClassName,
 }: CustomerPortalLinkProps) => {
   const { t } = useLingui();
-  const url = customerPortalUrlFor(source);
-  if (!url) return null;
+  const url = customerPortalUrlFor(provider);
 
   const openPortal = async () => {
     try {

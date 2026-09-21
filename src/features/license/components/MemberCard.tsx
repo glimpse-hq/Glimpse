@@ -228,9 +228,7 @@ const MemberCardInner = ({
     lineHeight: 1.35,
     margin: 0,
     color:
-      showName && displayTitle
-        ? palette.textPrimary
-        : palette.textDisabled,
+      showName && displayTitle ? palette.textPrimary : palette.textDisabled,
   } as const;
 
   const subtitleStyle = {
@@ -240,7 +238,6 @@ const MemberCardInner = ({
     margin: 0,
     color: palette.textDisabled,
   } as const;
-
 
   return (
     <article

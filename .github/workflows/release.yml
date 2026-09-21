@@ -233,7 +233,6 @@ jobs:
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
-          VITE_GLIMPSE_CUSTOMER_PORTAL: ${{ secrets.VITE_GLIMPSE_CUSTOMER_PORTAL }}
         with:
           releaseId: ${{ needs.create-release.outputs.release-id }}
           tagName: v__VERSION__
@@ -272,7 +271,6 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
-          VITE_GLIMPSE_CUSTOMER_PORTAL: ${{ secrets.VITE_GLIMPSE_CUSTOMER_PORTAL }}
         with:
           releaseId: ${{ needs.create-release.outputs.release-id }}
           tagName: v__VERSION__

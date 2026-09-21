@@ -62,6 +62,7 @@ pub struct LicenseState {
     pub activations_count: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub edition: Option<LicenseEdition>,
+    pub provider: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -80,6 +81,9 @@ pub enum LicenseStatus {
     Active,
     Expired,
     Invalid,
+    // A granted license cached without a signed token, waiting for its first
+    // online refresh. Never trusted, but not lapsed either.
+    Unverified,
 }
 
 impl LicenseStatus {
@@ -89,6 +93,7 @@ impl LicenseStatus {
             Self::Active => "active",
             Self::Expired => "expired",
             Self::Invalid => "invalid",
+            Self::Unverified => "unverified",
         }
     }
 }
@@ -114,6 +119,8 @@ pub struct ActivateLicenseArgs {
 #[derive(Debug, Deserialize)]
 struct LicenseGrant {
     status: String,
+    #[serde(default)]
+    provider: Option<String>,
     edition: LicenseEdition,
     activation_id: String,
     display_key: Option<String>,
@@ -157,6 +164,8 @@ struct CachedLicenseGrant {
     activations: Option<u32>,
     #[serde(default)]
     grant_token: Option<String>,
+    #[serde(default)]
+    provider: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -348,8 +357,13 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
     let grant = verified.or(cached);
 
     let grant_status = grant.as_ref().map(|grant| grant.status.as_str());
+    let unsigned = grant
+        .as_ref()
+        .is_some_and(|grant| grant.grant_token.is_none());
     let status = if license_active {
         LicenseStatus::Active
+    } else if grant_status == Some(GRANT_STATUS_GRANTED) && unsigned {
+        LicenseStatus::Unverified
     } else if grant_status == Some(GRANT_STATUS_GRANTED) {
         LicenseStatus::Expired
     } else if grant_status.is_some() {
@@ -389,6 +403,7 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
             .unwrap_or(5),
         activations_count: grant.as_ref().and_then(|grant| grant.activations),
         edition,
+        provider: grant.as_ref().and_then(|grant| grant.provider.clone()),
         status,
     })
 }
@@ -500,6 +515,7 @@ fn write_grant(store: &SettingsStore, grant: LicenseGrant) -> Result<(), String>
             limit_activations: grant.limit_activations,
             activations: grant.activations,
             grant_token: grant.grant_token,
+            provider: grant.provider,
         },
     )?;
     invalidate_gate_cache();
@@ -846,11 +862,12 @@ fn cache_is_fresh(now: DateTime<Utc>, last_validated_at: &str, expires_at: Optio
     true
 }
 
-/// Finds a Polar key (brand prefix plus UUID, GLIMPSE_XXXXXXXX-XXXX-...) inside any text.
+/// Finds a license key inside any text, such as a pasted receipt: a Creem key
+/// (five groups of five) or a Polar key (brand prefix plus UUID).
 pub(crate) fn find_license_key(text: &str) -> Option<&str> {
     static KEY: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
         regex::Regex::new(
-            r"(?i)[a-z]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            r"(?i)\b[a-z0-9]{5}(?:-[a-z0-9]{5}){4}\b|[a-z]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
         )
         .expect("license key regex")
     });
@@ -937,8 +954,7 @@ fn sha256_hex(text: &str) -> String {
         .collect()
 }
 
-const UNAVAILABLE_MESSAGE: &str =
-    "Could not reach the Glimpse license server. Try again shortly.";
+const UNAVAILABLE_MESSAGE: &str = "Could not reach the Glimpse license server. Try again shortly.";
 
 /// Calls `POST /v1/{path}`. Only a well-formed `not_found`, `inactive` or
 /// `expired` answer counts as a rejection; anything else keeps the cache.
@@ -979,12 +995,12 @@ async fn license_post<T: serde::de::DeserializeOwned>(
         (403, "expired") => {
             LicenseFailure::Rejected("That activation code has expired.".to_string())
         }
-        (403, "device_limit") => LicenseFailure::Other(
-            "This activation code has reached its device limit.".to_string(),
-        ),
-        (429, _) => LicenseFailure::Other(
-            "Too many attempts. Wait a minute and try again.".to_string(),
-        ),
+        (403, "device_limit") => {
+            LicenseFailure::Other("This activation code has reached its device limit.".to_string())
+        }
+        (429, _) => {
+            LicenseFailure::Other("Too many attempts. Wait a minute and try again.".to_string())
+        }
         (400, _) => LicenseFailure::Other(
             error
                 .message

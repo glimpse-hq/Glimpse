@@ -51,6 +51,7 @@ const AccountView = ({
   const confirmTimeoutRef = useRef<number | null>(null);
 
   const isActive = licenseState?.status === "active";
+  const isUnverified = licenseState?.status === "unverified";
   const isTrialing = !isActive && (licenseState?.trialActive ?? false);
   const renewsAt =
     isActive && licenseState?.expiresAt
@@ -139,6 +140,13 @@ const AccountView = ({
   const trialStatusText = (() => {
     if (licenseLoading) return "\u00a0";
 
+    if (isUnverified) {
+      return t({
+        id: "settings.account.license.unverified",
+        message: "Reconnect to the internet to verify your license.",
+      });
+    }
+
     if (isTrialing) {
       if (trialDaysRemaining === 1) {
         return t({
@@ -186,7 +194,7 @@ const AccountView = ({
                 </p>
               ) : null}
               <CustomerPortalLink
-                source="settings_account"
+                provider={licenseState?.provider}
                 className={portalLinkClassName}
               />
             </div>
@@ -252,12 +260,7 @@ const AccountView = ({
                 })}
               </button>
             )
-          ) : (
-            <CustomerPortalLink
-              source="settings_account"
-              className={portalLinkClassName}
-            />
-          )}
+          ) : null}
         </div>
 
         {deactivationError ? (

@@ -74,6 +74,21 @@ msgstr ""
 #~ msgstr "Dat is je bestelnummer. De licentiesleutel staat in dezelfde e-mail van Polar en begint met GLIMPSE_."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "Kern-dictatie is gratis: lokale transcriptie, woordenboek, vervangingen en geschiedenis. Hiervoor zijn er geen kosten per minuut of abonnementen. Bibliotheek, opruiming en personalisatie met een LLM maken deel uit van Glimpse Personal en je kunt ze 14 dagen gratis proberen. De lokale API-server en de CLI vereisen een licentie en maken geen deel uit van de proefversie. Activeer een persoonlijke licentie (een eenmalige aankoop) of een commerciële licentie (jaarlijks gefactureerd) in Instellingen → Account."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "Eén licentie, 5 apparaten"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "Hoe kan Glimpse gratis zijn?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -1388,8 +1403,8 @@ msgstr "Kern"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "Kern-dictatie is gratis: lokale transcriptie, woordenboek, vervangingen en geschiedenis. Hiervoor zijn er geen kosten per minuut of abonnementen. Bibliotheek, opruiming en personalisatie met een LLM maken deel uit van Glimpse Personal en je kunt ze 14 dagen gratis proberen. De lokale API-server en de CLI vereisen een licentie en maken geen deel uit van de proefversie. Activeer een persoonlijke licentie (een eenmalige aankoop) of een commerciële licentie (jaarlijks gefactureerd) in Instellingen → Account."
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1495,6 +1510,11 @@ msgstr "Het exportbestand kon niet worden weggeschreven. Probeer een andere loca
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "Opnamen tellen…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3452,11 +3472,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "Op het apparaat"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "Eén licentie, 5 apparaten"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "Alleen als je een schrijfmodel instelt onder Instellingen → Providers. Snelkoppelingen met Opschonen ingeschakeld en Personalisatie sturen de relevante tekst dan rechtstreeks naar die provider. Je API-sleutel blijft lokaal opgeslagen in Glimpse. Audio verlaat je apparaat alleen als je in Instellingen → Modellen een cloudspraakmodel kiest."
@@ -3796,6 +3811,11 @@ msgstr "Gereed voor installatie"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "Herkent woorden uit je woordenboek."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5383,8 +5403,8 @@ msgstr "Wekelijkse dicteeractiviteit over het afgelopen jaar"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "Hoe kan Glimpse gratis zijn?"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

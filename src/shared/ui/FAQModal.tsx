@@ -107,13 +107,13 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
     {
       id: "free",
       question: t({
-        id: "faq.free.question",
-        message: "What is free vs Glimpse Personal?",
+        id: "faq.free.question.v2",
+        message: "What is free vs paid?",
       }),
       answer: t({
-        id: "faq.free.answer.v3",
+        id: "faq.free.answer.v4",
         message:
-          "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, Cleanup, and personalization with an LLM are part of Glimpse Personal, and you can try them free for 14 days. The local API server and the CLI need a license and aren't part of the trial. Activate a Personal license (a one-time purchase) or a Commercial license (billed yearly) in Settings → Account.",
+          "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, Cleanup, and personalization with an LLM are part of every paid plan, and you can try them free for 14 days. The local API server and the CLI need a license and aren't part of the trial. Activate a license in Settings → Account.",
       }),
     },
     {

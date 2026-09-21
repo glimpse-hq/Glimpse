@@ -298,8 +298,8 @@ function FeatureMarquee() {
       key="devices"
       icon={Devices}
       title={t({
-        id: "onboarding.license_step.tile_devices",
-        message: "One license, 5 devices",
+        id: "onboarding.license_step.tile_devices.v2",
+        message: "Covers your devices",
       })}
     >
       <p className="ui-text-body-sm text-content-muted">

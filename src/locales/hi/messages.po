@@ -74,6 +74,21 @@ msgstr ""
 #~ msgstr "यह आपका ऑर्डर नंबर है। लाइसेंस कुंजी उसी Polar ई‑मेल में है और GLIMPSE_ से शुरू होती है।"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "मूल श्रुतलेखन निःशुल्क है: स्थानीय ट्रांसक्रिप्शन, शब्दकोश, प्रतिस्थापन और इतिहास। इसके लिए प्रति-मिनट शुल्क या सदस्यता नहीं है। लाइब्रेरी, क्लीनअप और LLM के साथ वैयक्तिकरण Glimpse Personal का हिस्सा हैं, और आप इन्हें 14 दिनों तक निःशुल्क आज़मा सकते हैं। स्थानीय API सर्वर और CLI के लिए लाइसेंस आवश्यक है और ये परीक्षण का हिस्सा नहीं हैं। सेटिंग्स → खाता में Personal लाइसेंस (एकमुश्त खरीद) या Commercial लाइसेंस (वार्षिक बिलिंग) सक्रिय करें।"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "एक लाइसेंस, 5 डिवाइस"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "Glimpse मुफ़्त कैसे है?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -1388,8 +1403,8 @@ msgstr "कोर"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "मूल श्रुतलेखन निःशुल्क है: स्थानीय ट्रांसक्रिप्शन, शब्दकोश, प्रतिस्थापन और इतिहास। इसके लिए प्रति-मिनट शुल्क या सदस्यता नहीं है। लाइब्रेरी, क्लीनअप और LLM के साथ वैयक्तिकरण Glimpse Personal का हिस्सा हैं, और आप इन्हें 14 दिनों तक निःशुल्क आज़मा सकते हैं। स्थानीय API सर्वर और CLI के लिए लाइसेंस आवश्यक है और ये परीक्षण का हिस्सा नहीं हैं। सेटिंग्स → खाता में Personal लाइसेंस (एकमुश्त खरीद) या Commercial लाइसेंस (वार्षिक बिलिंग) सक्रिय करें।"
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1495,6 +1510,11 @@ msgstr "एक्सपोर्ट फ़ाइल लिखी नहीं �
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "रिकॉर्डिंग गिनी जा रही हैं…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3452,11 +3472,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "डिवाइस पर"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "एक लाइसेंस, 5 डिवाइस"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "सिर्फ़ तब, जब आप सेटिंग्स → प्रदाताओं के तहत कोई राइटिंग मॉडल सेट करते हैं। Cleanup चालू वाले शॉर्टकट, और Personalization, फिर संबंधित टेक्स्ट सीधे उसी प्रदाता को भेजते हैं। आपकी API कुंजी Glimpse में लोकल ही संग्रहीत रहती है। ऑडियो आपके डिवाइस से तभी बाहर जाएगा जब आप सेटिंग्स → मॉडल्स में कोई क्लाउड स्पीच मॉडल चुनते हैं।"
@@ -3796,6 +3811,11 @@ msgstr "इंस्टॉल करने के लिए तैयार"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "आपके शब्दकोश के शब्द पहचानता है।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5383,8 +5403,8 @@ msgstr "पिछले वर्ष की साप्ताहिक डि�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "Glimpse मुफ़्त कैसे है?"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

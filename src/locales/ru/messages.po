@@ -74,6 +74,21 @@ msgstr ""
 #~ msgstr "Это ваш номер заказа. Лицензионный ключ находится в том же письме от Polar и начинается с GLIMPSE_."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "Базовая диктовка бесплатна: локальная транскрипция, словарь, замены и история. Поминутная оплата и подписка за это не взимаются. Библиотека, очистка и персонализация с помощью LLM входят в состав Glimpse Personal — их можно бесплатно попробовать в течение 14 дней. Локальный API-сервер и CLI требуют лицензии и не включены в пробный период. Активируйте лицензию Personal (единовременная покупка) или Commercial (оплата ежегодно) в разделе Настройки → Аккаунт."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "Одна лицензия, 5 устройств"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "Почему Glimpse бесплатен?"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -1388,8 +1403,8 @@ msgstr "Ядро"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "Базовая диктовка бесплатна: локальная транскрипция, словарь, замены и история. Поминутная оплата и подписка за это не взимаются. Библиотека, очистка и персонализация с помощью LLM входят в состав Glimpse Personal — их можно бесплатно попробовать в течение 14 дней. Локальный API-сервер и CLI требуют лицензии и не включены в пробный период. Активируйте лицензию Personal (единовременная покупка) или Commercial (оплата ежегодно) в разделе Настройки → Аккаунт."
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1495,6 +1510,11 @@ msgstr "Не удалось записать файл экспорта. Попр
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "Подсчёт записей…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -3452,11 +3472,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "На устройстве"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "Одна лицензия, 5 устройств"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "Только если вы настроили языковую модель в разделе Настройки → Провайдеры. Сочетания клавиш с включённой функцией «Очистка» и персонализация отправляют соответствующий текст напрямую этому провайдеру. Ваш API-ключ хранится локально в Glimpse. Аудио покидает устройство только в том случае, если вы выбрали облачную модель распознавания речи в разделе Настройки → Модели."
@@ -3796,6 +3811,11 @@ msgstr "Готово к установке"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "Распознаёт слова из вашего словаря."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5383,8 +5403,8 @@ msgstr "Активность диктовки по неделям за посл�
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "Почему Glimpse бесплатен?"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx

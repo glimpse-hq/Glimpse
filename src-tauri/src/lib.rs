@@ -434,8 +434,7 @@ pub fn run() {
                         Ok(false) => {}
                         Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
                     }
-                    if let Err(err) =
-                        license::sync_trial(state.http(), &state.settings_store).await
+                    if let Err(err) = license::sync_trial(state.http(), &state.settings_store).await
                     {
                         tracing::warn!("Could not confirm the trial with the server: {err}");
                     }

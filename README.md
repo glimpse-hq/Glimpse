@@ -68,10 +68,11 @@ Core dictation is free, runs on-device, and has no word limits. A license adds e
 
 ## Pricing
 
-| Edition        | Price             | For                                       |
-| -------------- | ----------------- | ----------------------------------------- |
-| **Personal**   | $24.99 one-time   | You, on up to 5 personal devices          |
-| **Commercial** | $48 / seat / year | Work use, one seat per person, one device |
+| Edition      | Price             | For                                       |
+| ------------ | ----------------- | ----------------------------------------- |
+| **Solo**     | $25 one-time      | You, on 1 device                          |
+| **Plus**     | $39 one-time      | You, on up to 3 devices                   |
+| **Business** | $48 / seat / year | Work use, one seat per person, one device |
 
 Start with the 14-day trial, then buy or paste a license key in **Settings → Account**.
 
