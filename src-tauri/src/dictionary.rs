@@ -180,3 +180,107 @@ pub fn set_replacements(
         .map_err(|err| err.to_string())?;
     Ok(cleaned)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::apply_replacements;
+    use crate::settings::Replacement;
+
+    fn rules(pairs: &[(&str, &str)]) -> Vec<Replacement> {
+        pairs
+            .iter()
+            .map(|(from, to)| Replacement {
+                from: (*from).to_string(),
+                to: (*to).to_string(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn longer_phrases_win_over_shorter_ones_inside_them() {
+        let replacements = rules(&[("york", "Yorkshire"), ("new york", "NYC")]);
+        assert_eq!(
+            apply_replacements("I love new york and york", &replacements),
+            "I love NYC and Yorkshire"
+        );
+    }
+
+    #[test]
+    fn replaced_text_is_not_replaced_again() {
+        let replacements = rules(&[("cat", "dog"), ("dog", "wolf")]);
+        assert_eq!(
+            apply_replacements("cat and dog", &replacements),
+            "dog and wolf"
+        );
+    }
+
+    #[test]
+    fn matches_whole_words_only() {
+        let replacements = rules(&[("cat", "dog")]);
+        assert_eq!(
+            apply_replacements("concatenate the cat", &replacements),
+            "concatenate the dog"
+        );
+    }
+
+    #[test]
+    fn terms_ending_in_symbols_match() {
+        let replacements = rules(&[("c++", "C plus plus"), ("e.g.", "for example")]);
+        assert_eq!(
+            apply_replacements("i like c++, e.g. templates", &replacements),
+            "i like C plus plus, for example templates"
+        );
+    }
+
+    #[test]
+    fn symbol_only_terms_match() {
+        let replacements = rules(&[("&", "and")]);
+        assert_eq!(
+            apply_replacements("salt & pepper", &replacements),
+            "salt and pepper"
+        );
+    }
+
+    #[test]
+    fn replacements_with_capitals_are_kept_as_typed() {
+        let replacements = rules(&[("iphone", "iPhone")]);
+        assert_eq!(
+            apply_replacements("Iphone sales. my iphone. IPHONE", &replacements),
+            "iPhone sales. my iPhone. iPhone"
+        );
+    }
+
+    #[test]
+    fn lowercase_replacements_follow_the_spoken_case() {
+        let replacements = rules(&[("gonna", "going to")]);
+        assert_eq!(
+            apply_replacements("Gonna go. gonna go. GONNA GO", &replacements),
+            "Going to go. going to go. GOING TO GO"
+        );
+    }
+
+    #[test]
+    fn matches_without_letters_are_not_uppercased() {
+        let replacements = rules(&[("24/7", "around the clock")]);
+        assert_eq!(
+            apply_replacements("We're open 24/7", &replacements),
+            "We're open around the clock"
+        );
+    }
+
+    #[test]
+    fn empty_replacements_remove_the_match() {
+        let replacements = rules(&[("um", "")]);
+        let result = apply_replacements("um I think um so", &replacements);
+        assert_eq!(
+            result.split_whitespace().collect::<Vec<_>>(),
+            ["I", "think", "so"]
+        );
+    }
+
+    #[test]
+    fn empty_sources_and_no_rules_leave_text_unchanged() {
+        assert_eq!(apply_replacements("hello", &[]), "hello");
+        assert_eq!(apply_replacements("hello", &rules(&[("", "bye")])), "hello");
+    }
+}
