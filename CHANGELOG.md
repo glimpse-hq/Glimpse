@@ -4,6 +4,7 @@
 
 - The Personalization screen is cleaner: each mode shows a line of its instructions and its apps and websites at a glance, and editing a mode has more room.
 - The Dictionary screen is cleaner: words show as compact tags you can click to edit, and replacements line up in two columns.
+- The Record screen is calmer before you start, and the Start Recording button shows a red dot.
 
 ### Fixes
 
