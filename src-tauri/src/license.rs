@@ -1,7 +1,7 @@
-// License storage lives entirely in the settings DB. Polar is the source of
-// truth via the validate endpoint, and the cache is trusted offline only for
-// `CACHE_TRUST_DAYS` after the last successful validate. Polar's per-device
-// activation_id is what actually constrains credential copying across machines.
+// License storage lives entirely in the settings DB. The Glimpse API Worker
+// (glimpse-api, fronting Creem and legacy Polar keys) is the source of truth,
+// and the cache is trusted offline only for `CACHE_TRUST_DAYS` after the last
+// successful validate. The per-device activation_id constrains copying.
 
 use chrono::{DateTime, Duration, Utc};
 use parking_lot::Mutex;
@@ -22,21 +22,25 @@ const KEY_LICENSE_GRANT: &str = "license_grant";
 const KEY_LICENSE_TRIAL_STARTED_AT: &str = "license_trial_started_at";
 const KEY_ANALYTICS_TRIAL_EXPIRED_REPORTED: &str = "analytics_trial_expired_reported";
 const KEY_LICENSE_TRIAL_RECORD: &str = "license_trial_record";
+const KEY_LICENSE_TRIAL_TOKEN: &str = "license_trial_token";
 const TRIAL_SEAL_PEPPER: &str = "glimpse_trial_v1";
 
 const GRANT_STATUS_GRANTED: &str = "granted";
 const GRANT_STATUS_INVALID: &str = "invalid";
 
 const TRIAL_DAYS: i64 = 14;
-// Paid entitlement is Polar-native: a local cache is only a short last-known-good
-// grace period after live validation, not an offline license issuer.
+// A local cache is only a short last-known-good grace period after live
+// validation, not an offline license issuer.
 const CACHE_TRUST_DAYS: i64 = 7;
 // Try to refresh often when online, but keep the cached grant usable until the
 // hard trust window expires if the network is unavailable.
 const CACHE_REFRESH_HOURS: i64 = 24;
 const LICENSE_TIME_SKEW_MINUTES: i64 = 10;
-const DEFAULT_POLAR_API_BASE: &str = "https://api.polar.sh";
-const DEFAULT_POLAR_ORGANIZATION_ID: &str = "98d75121-191c-4136-aa56-2c7803173973";
+const DEFAULT_LICENSE_API_BASE: &str = "https://api.tryglimpse.cc";
+// Verifies tokens signed by the license server's GRANT_SIGNING_KEY.
+const DEFAULT_GRANT_PUBLIC_KEY: &str = "SKnDcW9glyjJNUwzzlxZAUAYujBSAyrH1yQcUbxF4Mg=";
+// Without a server-confirmed start, the trial runs this long from the local one.
+const PROVISIONAL_TRIAL_DAYS: i64 = 3;
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -54,16 +58,14 @@ pub struct LicenseState {
     pub activated_at: Option<String>,
     pub purchased_at: Option<String>,
     pub expires_at: Option<String>,
-    pub validations: Option<u32>,
-    pub usage: Option<u32>,
-    pub limit_usage: Option<u32>,
     pub activations_limit: u32,
     pub activations_count: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub edition: Option<LicenseEdition>,
+    pub provider: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub enum LicenseEdition {
     Personal,
@@ -79,6 +81,9 @@ pub enum LicenseStatus {
     Active,
     Expired,
     Invalid,
+    // A granted license cached without a signed token, waiting for its first
+    // online refresh. Never trusted, but not lapsed either.
+    Unverified,
 }
 
 impl LicenseStatus {
@@ -88,6 +93,7 @@ impl LicenseStatus {
             Self::Active => "active",
             Self::Expired => "expired",
             Self::Invalid => "invalid",
+            Self::Unverified => "unverified",
         }
     }
 }
@@ -109,37 +115,28 @@ pub struct ActivateLicenseArgs {
     pub key: String,
 }
 
+/// 200 body of activate and validate. See glimpse-api `agents/reference/contract.md`.
 #[derive(Debug, Deserialize)]
-struct PolarLicenseResponse {
-    organization_id: Option<String>,
-    benefit_id: Option<String>,
+struct LicenseGrant {
     status: String,
+    #[serde(default)]
+    provider: Option<String>,
+    edition: LicenseEdition,
+    activation_id: String,
     display_key: Option<String>,
-    customer: Option<PolarCustomer>,
-    activation: Option<PolarActivation>,
+    customer_email: Option<String>,
+    customer_name: Option<String>,
+    purchased_at: Option<String>,
     expires_at: Option<String>,
-    validations: Option<u32>,
-    usage: Option<u32>,
-    limit_usage: Option<u32>,
     limit_activations: Option<u32>,
-    created_at: Option<String>,
+    activations: Option<u32>,
+    grant_token: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
-struct PolarActivationResponse {
-    id: String,
-    license_key: PolarLicenseResponse,
-}
-
-#[derive(Debug, Deserialize)]
-struct PolarActivation {
-    id: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct PolarCustomer {
-    email: Option<String>,
-    name: Option<String>,
+struct LicenseApiError {
+    error: String,
+    message: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -152,8 +149,9 @@ struct CachedLicenseGrant {
     expires_at: Option<String>,
     #[serde(default)]
     purchased_at: Option<String>,
+    // None on grants cached before the Worker, which forces one refresh.
     #[serde(default)]
-    benefit_id: Option<String>,
+    edition: Option<LicenseEdition>,
     #[serde(default)]
     display_key: Option<String>,
     #[serde(default)]
@@ -161,42 +159,46 @@ struct CachedLicenseGrant {
     #[serde(default)]
     customer_name: Option<String>,
     #[serde(default)]
-    validations: Option<u32>,
-    #[serde(default)]
-    usage: Option<u32>,
-    #[serde(default)]
-    limit_usage: Option<u32>,
-    #[serde(default)]
     limit_activations: Option<u32>,
+    #[serde(default)]
+    activations: Option<u32>,
+    #[serde(default)]
+    grant_token: Option<String>,
+    #[serde(default)]
+    provider: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
-struct PolarActivateRequest<'a> {
+struct ActivateRequest<'a> {
     key: &'a str,
-    organization_id: &'a str,
     label: &'a str,
-    conditions: PolarConditions<'a>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    device: Option<&'a str>,
 }
 
 #[derive(Debug, Serialize)]
-struct PolarValidateRequest<'a> {
+struct KeyActivationRequest<'a> {
     key: &'a str,
-    organization_id: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
     activation_id: Option<&'a str>,
-    benefit_id: Option<&'a str>,
-    conditions: PolarConditions<'a>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    device: Option<&'a str>,
 }
 
-#[derive(Debug, Serialize)]
-struct PolarDeactivateRequest<'a> {
-    key: &'a str,
-    organization_id: &'a str,
-    activation_id: &'a str,
+/// What a failed license call means for the cached grant.
+enum LicenseFailure {
+    /// The Worker answered definitively that this key or device is no longer valid.
+    Rejected(String),
+    /// Anything else. The cache stays so a blip never downgrades anyone.
+    Other(String),
 }
 
-#[derive(Debug, Serialize)]
-struct PolarConditions<'a> {
-    os: &'a str,
+impl LicenseFailure {
+    fn message(self) -> String {
+        match self {
+            Self::Rejected(message) | Self::Other(message) => message,
+        }
+    }
 }
 
 static GATE_CACHE: Mutex<Option<(bool, DateTime<Utc>)>> = Mutex::new(None);
@@ -267,6 +269,20 @@ pub fn is_license_deep_link(raw_url: &str) -> bool {
     host == "license" || path.starts_with("license")
 }
 
+/// The key in `glimpse://license/activate?key=...`, sent by the checkout return page.
+pub(crate) fn deep_link_license_key(raw_url: &str) -> Option<String> {
+    let url = reqwest::Url::parse(raw_url).ok()?;
+    url.query_pairs()
+        .find(|(name, _)| name == "key")
+        .map(|(_, key)| key.trim().to_string())
+        .filter(|key| !key.is_empty() && key.len() <= 256)
+}
+
+/// A paid license is active, ignoring the debug-build bypass.
+pub(crate) fn has_active_license(store: &SettingsStore) -> bool {
+    stored_license_active(store, Utc::now()).unwrap_or(false)
+}
+
 static CHECKOUT_RETURNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// True once the checkout deep link has brought the user back this session.
@@ -323,26 +339,31 @@ pub(crate) fn require_active_license(store: &SettingsStore, feature: &str) -> Re
 }
 
 pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> {
-    let trial_started_at = load_trial_started_at(store)?;
+    let (trial_started_at, trial_days) = trial_window(store)?;
     let now = Utc::now();
-    let trial_ends_at = trial_started_at + Duration::days(TRIAL_DAYS);
+    let trial_ends_at = trial_started_at + Duration::days(trial_days);
     let trial_days_remaining =
         ((trial_ends_at - now).num_seconds() as f64 / 86_400.0).ceil() as i64;
     let trial_active = now < trial_ends_at;
 
-    let has_usable_license_credential = matches!(
-        stored_license_credential_state(store)?,
-        StoredLicenseCredential::Readable
-    );
-    let grant = read_cached_license_grant(store)?;
-    let license_active = has_usable_license_credential
-        && grant
-            .as_ref()
-            .is_some_and(|grant| cached_grant_is_active(now, grant));
+    let cached = read_cached_license_grant(store)?;
+    let verified = cached
+        .clone()
+        .and_then(|grant| verified_grant(store, grant));
+    let license_active = verified
+        .as_ref()
+        .is_some_and(|grant| cached_grant_is_active(now, grant));
+    // Display fields come from the cache; enforced ones from the signed token.
+    let grant = verified.or(cached);
 
     let grant_status = grant.as_ref().map(|grant| grant.status.as_str());
+    let unsigned = grant
+        .as_ref()
+        .is_some_and(|grant| grant.grant_token.is_none());
     let status = if license_active {
         LicenseStatus::Active
+    } else if grant_status == Some(GRANT_STATUS_GRANTED) && unsigned {
+        LicenseStatus::Unverified
     } else if grant_status == Some(GRANT_STATUS_GRANTED) {
         LicenseStatus::Expired
     } else if grant_status.is_some() {
@@ -353,8 +374,12 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         LicenseStatus::Expired
     };
 
-    let edition = license_active
-        .then(|| resolve_edition(grant.as_ref().and_then(|grant| grant.benefit_id.as_deref())));
+    let edition = license_active.then(|| {
+        grant
+            .as_ref()
+            .and_then(|grant| grant.edition)
+            .unwrap_or(LicenseEdition::Personal)
+    });
 
     Ok(LicenseState {
         license_gate_active: license_active || trial_active || developer_license_bypass_active(),
@@ -372,16 +397,13 @@ pub fn get_license_state(store: &SettingsStore) -> Result<LicenseState, String> 
         activated_at: grant.as_ref().and_then(|grant| grant.activated_at.clone()),
         purchased_at: grant.as_ref().and_then(|grant| grant.purchased_at.clone()),
         expires_at: grant.as_ref().and_then(|grant| grant.expires_at.clone()),
-        validations: grant.as_ref().and_then(|grant| grant.validations),
-        usage: grant.as_ref().and_then(|grant| grant.usage),
-        limit_usage: grant.as_ref().and_then(|grant| grant.limit_usage),
         activations_limit: grant
             .as_ref()
             .and_then(|grant| grant.limit_activations)
             .unwrap_or(5),
-        // TODO: return a tally of activated devices once the cloud worker exists.
-        activations_count: None,
+        activations_count: grant.as_ref().and_then(|grant| grant.activations),
         edition,
+        provider: grant.as_ref().and_then(|grant| grant.provider.clone()),
         status,
     })
 }
@@ -392,27 +414,17 @@ pub async fn activate_license(
     args: ActivateLicenseArgs,
 ) -> Result<LicenseState, String> {
     let key = normalize_license_key(&args.key)?;
-    let organization_id = polar_organization_id();
-    let body = PolarActivateRequest {
+    let body = ActivateRequest {
         key: &key,
-        organization_id,
         label: activation_label(),
-        conditions: current_conditions(),
+        device: device_id(),
     };
+    let grant = license_post::<LicenseGrant>(&client, "license/activate", &body)
+        .await
+        .map_err(LicenseFailure::message)?;
 
-    let response = polar_post("activate", &client, &body).await?;
-
-    if !response.status().is_success() {
-        return Err(polar_error_message(response.status().as_u16()).to_string());
-    }
-
-    let activated = read_polar_json::<PolarActivationResponse>(response).await?;
-    validate_polar_license(&activated.license_key, None)?;
-
+    write_grant(store, grant)?;
     write_license_key(store, Some(&key))?;
-    write_string(store, KEY_LICENSE_ACTIVATION_ID, &activated.id)?;
-    write_cache_from_polar(store, &activated.license_key)?;
-    invalidate_gate_cache();
     get_license_state(store)
 }
 
@@ -424,41 +436,22 @@ pub async fn refresh_license(
         return get_license_state(store);
     };
     let activation_id = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)?;
-    let organization_id = polar_organization_id();
-    let validation_benefit_id = single_configured_benefit_id();
-    let body = PolarValidateRequest {
+    let body = KeyActivationRequest {
         key: &key,
-        organization_id,
         activation_id: activation_id.as_deref(),
-        benefit_id: validation_benefit_id.as_deref(),
-        conditions: current_conditions(),
+        device: device_id(),
     };
-
-    let response = polar_post("validate", &client, &body).await?;
-
-    let status = response.status();
-    if !status.is_success() {
-        // Definitive rejections (404 not found, 422 unprocessable, 403 forbidden)
-        // revoke the entitlement. Transient failures (5xx, 429) leave the cache
-        // alone so a network blip doesn't downgrade the user.
-        if matches!(status.as_u16(), 403 | 404 | 422) {
-            revoke_cached_license_grant(store)?;
+    match license_post::<LicenseGrant>(&client, "license/validate", &body).await {
+        Ok(grant) => {
+            write_grant(store, grant)?;
+            get_license_state(store)
         }
-        return Err(polar_error_message(status.as_u16()).to_string());
+        Err(LicenseFailure::Rejected(message)) => {
+            revoke_cached_license_grant(store)?;
+            Err(message)
+        }
+        Err(LicenseFailure::Other(message)) => Err(message),
     }
-
-    let validated = read_polar_json::<PolarLicenseResponse>(response).await?;
-    if let Err(err) = validate_polar_license(&validated, activation_id.as_deref()) {
-        revoke_cached_license_grant(store)?;
-        return Err(err);
-    }
-    if let Some(activation) = validated.activation.as_ref() {
-        write_string(store, KEY_LICENSE_ACTIVATION_ID, &activation.id)?;
-    }
-    write_license_key(store, Some(&key))?;
-    write_cache_from_polar(store, &validated)?;
-    invalidate_gate_cache();
-    get_license_state(store)
 }
 
 pub async fn deactivate_license(
@@ -479,18 +472,16 @@ pub async fn deactivate_license(
     let activation_id = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID)?;
 
     if let (Some(key), Some(activation_id)) = (key.as_deref(), activation_id.as_deref()) {
-        let organization_id = polar_organization_id();
-        let body = PolarDeactivateRequest {
+        let body = KeyActivationRequest {
             key,
-            organization_id,
-            activation_id,
+            activation_id: Some(activation_id),
+            device: None,
         };
-        let response = polar_post("deactivate", &client, &body).await?;
-        let status = response.status();
-        // 4xx beyond 404 still lets us clear locally: user explicitly asked to
-        // deactivate this device and Polar's view will eventually catch up.
-        if status.is_server_error() {
-            return Err(polar_error_message(status.as_u16()).to_string());
+        // Only a definitive answer clears locally. Clearing on a rate limit or
+        // outage would leave the device slot taken on the server.
+        match license_post::<serde_json::Value>(&client, "license/deactivate", &body).await {
+            Ok(_) | Err(LicenseFailure::Rejected(_)) => {}
+            Err(LicenseFailure::Other(message)) => return Err(message),
         }
     }
 
@@ -499,87 +490,36 @@ pub async fn deactivate_license(
     get_license_state(store)
 }
 
-fn validate_polar_license(
-    license: &PolarLicenseResponse,
-    expected_activation_id: Option<&str>,
-) -> Result<(), String> {
-    // Only reject a present mismatch; activate responses may omit organization_id.
-    if let Some(org) = license.organization_id.as_deref()
-        && org != polar_organization_id()
-    {
-        return Err("Polar returned a license for a different organization.".to_string());
+fn write_grant(store: &SettingsStore, grant: LicenseGrant) -> Result<(), String> {
+    if grant.status != GRANT_STATUS_GRANTED || grant.activation_id.trim().is_empty() {
+        return Err("The license server sent an unreadable response.".to_string());
     }
-
-    if license.status != "granted" {
-        return Err(polar_error_message_for_status(&license.status).to_string());
-    }
-
-    if !benefit_id_is_allowed(license.benefit_id.as_deref()) {
-        return Err("That activation code is not valid for this Glimpse edition.".to_string());
-    }
-
-    if let Some(expected) = expected_activation_id {
-        match license.activation.as_ref() {
-            Some(activation) if activation.id == expected => {}
-            Some(_) => {
-                return Err(
-                    "Polar returned a license for a different device activation.".to_string(),
-                );
-            }
-            None => {
-                return Err("Polar did not confirm this device activation.".to_string());
-            }
-        }
-    }
-
-    if !license_expiration_is_valid(Utc::now(), license.expires_at.as_deref()) {
-        return Err("That activation code is expired.".to_string());
-    }
-
-    if let Some(limit_usage) = license.limit_usage
-        && license.usage.unwrap_or_default() > limit_usage
-    {
-        return Err("That activation code has reached its usage limit.".to_string());
-    }
-
-    Ok(())
-}
-
-fn license_expiration_is_valid(now: DateTime<Utc>, expires_at: Option<&str>) -> bool {
-    let Some(expires_at) = expires_at else {
-        return true;
-    };
-    let Ok(expires_at) = DateTime::parse_from_rfc3339(expires_at) else {
-        return false;
-    };
-    now < expires_at.with_timezone(&Utc)
-}
-
-fn write_cache_from_polar(
-    store: &SettingsStore,
-    license: &PolarLicenseResponse,
-) -> Result<(), String> {
     let now = Utc::now().to_rfc3339();
     let activated_at = read_cached_license_grant(store)?
-        .and_then(|grant| grant.activated_at)
+        .and_then(|cached| cached.activated_at)
         .or_else(|| Some(now.clone()));
-    let customer = license.customer.as_ref();
-    let grant = CachedLicenseGrant {
-        status: license.status.clone(),
-        last_validated_at: now,
-        activated_at,
-        expires_at: license.expires_at.clone(),
-        purchased_at: license.created_at.clone(),
-        benefit_id: license.benefit_id.clone(),
-        display_key: license.display_key.clone(),
-        customer_email: customer.and_then(|customer| customer.email.clone()),
-        customer_name: customer.and_then(|customer| customer.name.clone()),
-        validations: license.validations,
-        usage: license.usage,
-        limit_usage: license.limit_usage,
-        limit_activations: license.limit_activations,
-    };
-    write_cached_license_grant(store, &grant)
+    // Legacy keys get a new activation ID on their first validate.
+    write_string(store, KEY_LICENSE_ACTIVATION_ID, &grant.activation_id)?;
+    write_cached_license_grant(
+        store,
+        &CachedLicenseGrant {
+            status: grant.status,
+            last_validated_at: now,
+            activated_at,
+            expires_at: grant.expires_at,
+            purchased_at: grant.purchased_at,
+            edition: Some(grant.edition),
+            display_key: grant.display_key,
+            customer_email: grant.customer_email,
+            customer_name: grant.customer_name,
+            limit_activations: grant.limit_activations,
+            activations: grant.activations,
+            grant_token: grant.grant_token,
+            provider: grant.provider,
+        },
+    )?;
+    invalidate_gate_cache();
+    Ok(())
 }
 
 fn clear_cache(store: &SettingsStore) -> Result<(), String> {
@@ -666,25 +606,61 @@ fn write_license_key(store: &SettingsStore, key: Option<&str>) -> Result<(), Str
 }
 
 fn stored_license_active(store: &SettingsStore, now: DateTime<Utc>) -> Result<bool, String> {
-    if !matches!(
-        stored_license_credential_state(store)?,
-        StoredLicenseCredential::Readable
-    ) {
-        return Ok(false);
-    }
-
     Ok(read_cached_license_grant(store)?
-        .as_ref()
-        .is_some_and(|grant| cached_grant_is_active(now, grant)))
+        .and_then(|grant| verified_grant(store, grant))
+        .is_some_and(|grant| cached_grant_is_active(now, &grant)))
+}
+
+/// The cached grant with its enforced fields replaced by the signed token's,
+/// or None when this device can't trust it. The cache itself is readable by
+/// its owner, so only the server's signature makes a grant believable.
+fn verified_grant(
+    store: &SettingsStore,
+    mut grant: CachedLicenseGrant,
+) -> Option<CachedLicenseGrant> {
+    let key = read_license_key(store).ok().flatten()?;
+    // An unsigned grant is never trusted, however recent: its owner can write
+    // one. Grants from older versions are swapped for signed ones on launch.
+    let token = grant.grant_token.as_deref()?;
+    let Some(SignedToken::License {
+        kh,
+        aid,
+        dev,
+        ed,
+        exp,
+        iat,
+    }) = verify_token(token)
+    else {
+        return None;
+    };
+    let activation_id = read_optional_string(store, KEY_LICENSE_ACTIVATION_ID).ok()??;
+    if Some(dev.as_str()) != device_id() || aid != activation_id || kh != key_hash(&key) {
+        return None;
+    }
+    grant.edition = Some(ed);
+    grant.last_validated_at = DateTime::from_timestamp(iat, 0)?.to_rfc3339();
+    grant.expires_at = match exp {
+        Some(exp) => Some(DateTime::from_timestamp(exp, 0)?.to_rfc3339()),
+        None => None,
+    };
+    Some(grant)
 }
 
 fn cached_grant_is_active(now: DateTime<Utc>, grant: &CachedLicenseGrant) -> bool {
     grant.status == GRANT_STATUS_GRANTED
-        && benefit_id_is_allowed(grant.benefit_id.as_deref())
         && cache_is_fresh(now, &grant.last_validated_at, grant.expires_at.as_deref())
 }
 
 fn cached_grant_refresh_due(now: DateTime<Utc>, grant: &CachedLicenseGrant) -> bool {
+    if grant.edition.is_none() || grant.grant_token.is_none() {
+        return true;
+    }
+    // A subscription that renewed has a later expiry waiting on the server.
+    if let Some(expires_at) = grant.expires_at.as_deref()
+        && DateTime::parse_from_rfc3339(expires_at).is_ok_and(|at| now >= at.with_timezone(&Utc))
+    {
+        return true;
+    }
     let Ok(last_validated_at) = DateTime::parse_from_rfc3339(&grant.last_validated_at) else {
         return true;
     };
@@ -723,6 +699,64 @@ fn write_cached_license_grant(
     let encrypted = crate::crypto::encrypt(&serialized, &hardware_uuid)
         .map_err(|err| format!("Failed to encrypt license grant: {err}"))?;
     write_string(store, KEY_LICENSE_GRANT, &encrypted)
+}
+
+/// Trial start and length. A start the server signed for this device gets the
+/// full trial and survives reinstalling; a local one only gets a few days.
+fn trial_window(store: &SettingsStore) -> Result<(DateTime<Utc>, i64), String> {
+    if let Some(start) = confirmed_trial_start(store)? {
+        return Ok((start, TRIAL_DAYS));
+    }
+    Ok((load_trial_started_at(store)?, PROVISIONAL_TRIAL_DAYS))
+}
+
+fn confirmed_trial_start(store: &SettingsStore) -> Result<Option<DateTime<Utc>>, String> {
+    let Some(token) = read_optional_string(store, KEY_LICENSE_TRIAL_TOKEN)? else {
+        return Ok(None);
+    };
+    Ok(match verify_token(&token) {
+        Some(SignedToken::Trial { dev, start, .. }) if Some(dev.as_str()) == device_id() => {
+            DateTime::from_timestamp(start, 0)
+        }
+        _ => None,
+    })
+}
+
+#[derive(Debug, Serialize)]
+struct TrialRequest<'a> {
+    device: &'a str,
+    started_at: i64,
+}
+
+#[derive(Debug, Deserialize)]
+struct TrialResponse {
+    trial_token: String,
+}
+
+/// Asks the server for this device's trial start once. The server keeps the
+/// first start it sees, so the local clock can only make the trial shorter.
+pub async fn sync_trial(client: Client, store: &SettingsStore) -> Result<(), String> {
+    if confirmed_trial_start(store)?.is_some() {
+        return Ok(());
+    }
+    let Some(device) = device_id() else {
+        return Ok(());
+    };
+    let body = TrialRequest {
+        device,
+        started_at: load_trial_started_at(store)?.timestamp(),
+    };
+    let response = license_post::<TrialResponse>(&client, "trial", &body)
+        .await
+        .map_err(LicenseFailure::message)?;
+    match verify_token(&response.trial_token) {
+        Some(SignedToken::Trial { dev, .. }) if dev == device => {
+            write_string(store, KEY_LICENSE_TRIAL_TOKEN, &response.trial_token)?;
+            invalidate_gate_cache();
+            Ok(())
+        }
+        _ => Err("The license server sent an unreadable trial.".to_string()),
+    }
 }
 
 fn load_trial_started_at(store: &SettingsStore) -> Result<DateTime<Utc>, String> {
@@ -828,11 +862,12 @@ fn cache_is_fresh(now: DateTime<Utc>, last_validated_at: &str, expires_at: Optio
     true
 }
 
-/// Finds a Polar key (brand prefix plus UUID, GLIMPSE_XXXXXXXX-XXXX-...) inside any text.
+/// Finds a license key inside any text, such as a pasted receipt: a Creem key
+/// (five groups of five) or a Polar key (brand prefix plus UUID).
 pub(crate) fn find_license_key(text: &str) -> Option<&str> {
     static KEY: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
         regex::Regex::new(
-            r"(?i)[a-z]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            r"(?i)\b[a-z0-9]{5}(?:-[a-z0-9]{5}){4}\b|[a-z]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
         )
         .expect("license key regex")
     });
@@ -854,39 +889,131 @@ pub fn trial_day(store: &SettingsStore) -> Result<i64, String> {
     Ok((Utc::now() - started_at).num_days().max(0) + 1)
 }
 
-fn polar_organization_id() -> &'static str {
-    option_env!("GLIMPSE_POLAR_ORGANIZATION_ID")
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or(DEFAULT_POLAR_ORGANIZATION_ID)
+/// Payloads the license server signs. Times are Unix seconds.
+#[derive(Debug, Deserialize)]
+#[serde(tag = "typ", rename_all = "lowercase")]
+enum SignedToken {
+    License {
+        kh: String,
+        aid: String,
+        dev: String,
+        ed: LicenseEdition,
+        exp: Option<i64>,
+        iat: i64,
+    },
+    Trial {
+        dev: String,
+        start: i64,
+    },
 }
 
-async fn polar_post<B: Serialize>(
-    verb: &str,
+/// Checks a `base64url(json).base64url(ed25519)` token against the built-in
+/// public key and returns its payload.
+fn verify_token(token: &str) -> Option<SignedToken> {
+    use base64::{
+        Engine,
+        engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
+    };
+    use ring::signature::{ED25519, UnparsedPublicKey};
+
+    let (body, signature) = token.split_once('.')?;
+    let public_key = STANDARD.decode(grant_public_key()).ok()?;
+    UnparsedPublicKey::new(&ED25519, public_key)
+        .verify(body.as_bytes(), &URL_SAFE_NO_PAD.decode(signature).ok()?)
+        .ok()?;
+    serde_json::from_slice(&URL_SAFE_NO_PAD.decode(body).ok()?).ok()
+}
+
+fn grant_public_key() -> &'static str {
+    option_env!("GLIMPSE_GRANT_PUBLIC_KEY")
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or(DEFAULT_GRANT_PUBLIC_KEY)
+}
+
+/// sha256 of the hardware UUID, so the server never sees the UUID itself.
+fn device_id() -> Option<&'static str> {
+    static DEVICE: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+    DEVICE
+        .get_or_init(|| {
+            crate::crypto::get_hardware_uuid()
+                .map(|uuid| sha256_hex(&format!("glimpse-device-v1:{uuid}")))
+        })
+        .as_deref()
+}
+
+/// Same form as the server's KV keys: trimmed and uppercased.
+fn key_hash(key: &str) -> String {
+    sha256_hex(&key.trim().to_uppercase())
+}
+
+fn sha256_hex(text: &str) -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(text.as_bytes())
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+const UNAVAILABLE_MESSAGE: &str = "Could not reach the Glimpse license server. Try again shortly.";
+
+/// Calls `POST /v1/{path}`. Only a well-formed `not_found`, `inactive` or
+/// `expired` answer counts as a rejection; anything else keeps the cache.
+async fn license_post<T: serde::de::DeserializeOwned>(
     client: &Client,
-    body: &B,
-) -> Result<reqwest::Response, String> {
-    client
-        .post(format!(
-            "{}/v1/customer-portal/license-keys/{verb}",
-            polar_api_base()
-        ))
+    path: &str,
+    body: &impl Serialize,
+) -> Result<T, LicenseFailure> {
+    let response = client
+        .post(format!("{}/v1/{path}", license_api_base()))
         .json(body)
+        .timeout(std::time::Duration::from_secs(20))
         .send()
         .await
-        .map_err(|err| format!("Could not reach Polar: {err}"))
+        .map_err(|err| {
+            tracing::warn!("License {path} request failed: {err}");
+            LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string())
+        })?;
+
+    let status = response.status();
+    if status.is_success() {
+        return response.json::<T>().await.map_err(|err| {
+            tracing::warn!("License {path} response unreadable: {err}");
+            LicenseFailure::Other("The license server sent an unreadable response.".to_string())
+        });
+    }
+
+    let Ok(error) = response.json::<LicenseApiError>().await else {
+        return Err(LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string()));
+    };
+    Err(match (status.as_u16(), error.error.as_str()) {
+        (404, "not_found") => {
+            LicenseFailure::Rejected("That activation code was not found.".to_string())
+        }
+        (403, "inactive") => {
+            LicenseFailure::Rejected("That activation code is no longer active.".to_string())
+        }
+        (403, "expired") => {
+            LicenseFailure::Rejected("That activation code has expired.".to_string())
+        }
+        (403, "device_limit") => {
+            LicenseFailure::Other("This activation code has reached its device limit.".to_string())
+        }
+        (429, _) => {
+            LicenseFailure::Other("Too many attempts. Wait a minute and try again.".to_string())
+        }
+        (400, _) => LicenseFailure::Other(
+            error
+                .message
+                .unwrap_or_else(|| "Check the activation code and try again.".to_string()),
+        ),
+        _ => LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string()),
+    })
 }
 
-async fn read_polar_json<T: serde::de::DeserializeOwned>(
-    response: reqwest::Response,
-) -> Result<T, String> {
-    response
-        .json::<T>()
-        .await
-        .map_err(|err| format!("Polar returned an unreadable license response: {err}"))
-}
-
-fn polar_api_base() -> &'static str {
-    option_env!("GLIMPSE_POLAR_API_BASE").unwrap_or(DEFAULT_POLAR_API_BASE)
+fn license_api_base() -> &'static str {
+    option_env!("GLIMPSE_API_BASE")
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or(DEFAULT_LICENSE_API_BASE)
 }
 
 fn activation_label() -> &'static str {
@@ -896,99 +1023,6 @@ fn activation_label() -> &'static str {
         "Glimpse for Windows"
     } else {
         "Glimpse"
-    }
-}
-
-fn current_conditions() -> PolarConditions<'static> {
-    PolarConditions {
-        os: std::env::consts::OS,
-    }
-}
-
-fn polar_benefit_id_env(key: &str) -> Option<String> {
-    match key {
-        "GLIMPSE_POLAR_BENEFIT_PERSONAL" => option_env!("GLIMPSE_POLAR_BENEFIT_PERSONAL"),
-        "GLIMPSE_POLAR_BENEFIT_COMMERCIAL" => option_env!("GLIMPSE_POLAR_BENEFIT_COMMERCIAL"),
-        "GLIMPSE_POLAR_BENEFIT_FOUNDER" => option_env!("GLIMPSE_POLAR_BENEFIT_FOUNDER"),
-        "GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR" => option_env!("GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR"),
-        _ => None,
-    }
-    .filter(|value| !value.trim().is_empty())
-    .map(str::to_string)
-}
-
-fn benefit_id_for_edition(edition: LicenseEdition) -> Option<String> {
-    let env_key = match edition {
-        LicenseEdition::Personal => "GLIMPSE_POLAR_BENEFIT_PERSONAL",
-        LicenseEdition::Commercial => "GLIMPSE_POLAR_BENEFIT_COMMERCIAL",
-        LicenseEdition::Founder => "GLIMPSE_POLAR_BENEFIT_FOUNDER",
-        LicenseEdition::Contributor => "GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR",
-    };
-    polar_benefit_id_env(env_key)
-}
-
-fn configured_benefit_ids() -> Vec<String> {
-    let mut ids: Vec<String> = [
-        LicenseEdition::Personal,
-        LicenseEdition::Commercial,
-        LicenseEdition::Founder,
-        LicenseEdition::Contributor,
-    ]
-    .into_iter()
-    .filter_map(benefit_id_for_edition)
-    .collect();
-    ids.sort();
-    ids.dedup();
-    ids
-}
-
-fn single_configured_benefit_id() -> Option<String> {
-    let ids = configured_benefit_ids();
-    (ids.len() == 1).then(|| ids[0].clone())
-}
-
-fn benefit_id_is_allowed(benefit_id: Option<&str>) -> bool {
-    let configured = configured_benefit_ids();
-    if configured.is_empty() {
-        return true;
-    }
-    benefit_id.is_some_and(|id| configured.iter().any(|expected| expected == id))
-}
-
-/// Polar's `benefit_id` is the single source of truth for edition. The mapping
-/// from benefit id to edition is configured via `GLIMPSE_POLAR_BENEFIT_*` env
-/// vars baked at build time. Unknown or missing benefit ids only fall back to
-/// `Personal` for display after `benefit_id_is_allowed` has accepted the grant.
-fn resolve_edition(benefit_id: Option<&str>) -> LicenseEdition {
-    let Some(id) = benefit_id else {
-        return LicenseEdition::Personal;
-    };
-    for edition in [
-        LicenseEdition::Founder,
-        LicenseEdition::Contributor,
-        LicenseEdition::Commercial,
-        LicenseEdition::Personal,
-    ] {
-        if benefit_id_for_edition(edition).as_deref() == Some(id) {
-            return edition;
-        }
-    }
-    LicenseEdition::Personal
-}
-
-fn polar_error_message(status: u16) -> &'static str {
-    match status {
-        403 => "This activation code has reached its device limit.",
-        404 => "That activation code was not found.",
-        422 => "That activation code is not valid for this app.",
-        _ => "Polar could not validate that activation code.",
-    }
-}
-
-fn polar_error_message_for_status(status: &str) -> &'static str {
-    match status {
-        "revoked" | "disabled" => "That activation code is no longer active.",
-        _ => "Polar did not grant that activation code.",
     }
 }
 
@@ -1031,51 +1065,6 @@ fn write_string(store: &SettingsStore, key: &str, value: &str) -> Result<(), Str
 mod tests {
     use super::*;
 
-    fn granted_response() -> PolarLicenseResponse {
-        PolarLicenseResponse {
-            organization_id: Some(polar_organization_id().to_string()),
-            benefit_id: configured_benefit_ids().into_iter().next(),
-            status: GRANT_STATUS_GRANTED.to_string(),
-            display_key: None,
-            customer: None,
-            activation: None,
-            expires_at: None,
-            validations: None,
-            usage: None,
-            limit_usage: None,
-            limit_activations: None,
-            created_at: None,
-        }
-    }
-
-    #[test]
-    fn validate_polar_license_accepts_granted_license_for_this_org() {
-        assert!(validate_polar_license(&granted_response(), None).is_ok());
-    }
-
-    #[test]
-    fn validate_polar_license_rejects_other_organization() {
-        let mut license = granted_response();
-        license.organization_id = Some("org_someone_else".to_string());
-        assert!(validate_polar_license(&license, None).is_err());
-    }
-
-    #[test]
-    fn validate_polar_license_rejects_revoked_status() {
-        let mut license = granted_response();
-        license.status = "revoked".to_string();
-        assert!(validate_polar_license(&license, None).is_err());
-    }
-
-    #[test]
-    fn validate_polar_license_rejects_activation_mismatch() {
-        let mut license = granted_response();
-        license.activation = Some(PolarActivation {
-            id: "act_other".to_string(),
-        });
-        assert!(validate_polar_license(&license, Some("act_expected")).is_err());
-    }
-
     #[test]
     fn cached_grant_is_inactive_when_revoked() {
         let now = DateTime::parse_from_rfc3339("2026-05-25T12:00:00Z")
@@ -1088,19 +1077,6 @@ mod tests {
         };
 
         assert!(!cached_grant_is_active(now, &grant));
-    }
-
-    #[test]
-    fn resolve_edition_defaults_to_personal_without_benefit_id() {
-        assert_eq!(resolve_edition(None), LicenseEdition::Personal);
-    }
-
-    #[test]
-    fn resolve_edition_defaults_to_personal_for_unknown_benefit_id() {
-        assert_eq!(
-            resolve_edition(Some("ben_unrecognized")),
-            LicenseEdition::Personal
-        );
     }
 
     #[test]
@@ -1162,6 +1138,8 @@ mod tests {
         let grant = CachedLicenseGrant {
             status: GRANT_STATUS_GRANTED.to_string(),
             last_validated_at: "2026-05-25T11:59:00Z".to_string(),
+            edition: Some(LicenseEdition::Personal),
+            grant_token: Some("signed".to_string()),
             ..CachedLicenseGrant::default()
         };
 

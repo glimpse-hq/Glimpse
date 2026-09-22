@@ -152,7 +152,10 @@ const MODELS_ROOT: &str = "models";
 
 pub fn local_resolver(models_dir: PathBuf) -> glimpse_speech::service::ModelResolver {
     let manager = speech_models::ModelInstallManager::new(models_dir);
-    std::sync::Arc::new(move |model| installed_spec(model, &manager).ok())
+    std::sync::Arc::new(move |model| {
+        definition(model)?;
+        installed_spec(model, &manager).ok()
+    })
 }
 
 fn installed_spec(
@@ -273,7 +276,9 @@ fn map_status(
 
 #[tauri::command]
 pub fn list_models() -> Vec<ModelInfo> {
-    super::catalog::list_local_models()
+    let mut models = super::catalog::list_local_models();
+    models.push(super::catalog::diarizer_model_info());
+    models
 }
 
 #[tauri::command]
@@ -462,7 +467,7 @@ pub async fn download_model_now(
     if ane_pending {
         // The compile loads the model itself and warms once it lands.
         spawn_ane_compile(app.clone(), model.clone());
-    } else {
+    } else if definition(&model).is_some() {
         super::warm_model(&app, status.id.clone());
     }
 
@@ -568,6 +573,7 @@ pub fn cancel_download(
 }
 
 pub fn ensure_model_ready<R: Runtime>(app: &AppHandle<R>, model: &str) -> Result<ReadyModel> {
+    definition(model).ok_or_else(|| anyhow!("Not a transcription model: {model}"))?;
     let manager = model_manager(app)?;
     let spec = installed_spec(model, &manager)?;
     let resolved = manager.resolve(&spec)?;

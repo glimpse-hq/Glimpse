@@ -1690,7 +1690,8 @@ pub(crate) fn load_audio_for_transcription(path: &Path) -> Result<(Vec<i16>, u32
 fn decode_wav(path: &Path) -> Result<(Vec<i16>, u32)> {
     let file = std::fs::File::open(path)
         .with_context(|| format!("Failed to open WAV file at {}", path.display()))?;
-    let mut reader = hound::WavReader::new(file).map_err(|err| anyhow!("WAV read error: {err}"))?;
+    let mut reader = hound::WavReader::new(std::io::BufReader::new(file))
+        .map_err(|err| anyhow!("WAV read error: {err}"))?;
     let spec = reader.spec();
     if spec.sample_format != hound::SampleFormat::Int {
         return Err(anyhow!("Unsupported WAV sample format"));
@@ -1702,11 +1703,10 @@ fn decode_wav(path: &Path) -> Result<(Vec<i16>, u32)> {
         ));
     }
 
-    let mut samples = Vec::new();
-    for sample in reader.samples::<i16>() {
-        let sample = sample.map_err(|err| anyhow!("WAV read error: {err}"))?;
-        samples.push(sample);
-    }
+    let samples = reader
+        .samples::<i16>()
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|err| anyhow!("WAV read error: {err}"))?;
 
     let samples = if spec.channels <= 1 {
         samples

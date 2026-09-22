@@ -2,20 +2,13 @@ import type { RemoteSpeechProvider, StoredSettings } from "../../types";
 
 export type { RemoteSpeechProvider };
 
-export type SpeechProviderCompatibility =
-  | "direct-openai-compatible"
-  | "openai-compatible-proxy"
-  | "openai-compatible-self-hosted";
-
 export type SpeechProviderPreset = {
   id: RemoteSpeechProvider;
   label: string;
   endpoint: string;
   defaultModel: string;
   apiKeyRequired: boolean;
-  compatibility: SpeechProviderCompatibility;
   supportsModelDiscovery: boolean;
-  notes?: string;
 };
 
 const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
@@ -25,16 +18,14 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "",
     defaultModel: "auto",
     apiKeyRequired: false,
-    compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
   },
   {
     id: "openai",
     label: "OpenAI",
     endpoint: "https://api.openai.com/v1",
-    defaultModel: "gpt-4o-mini-transcribe",
+    defaultModel: "gpt-transcribe",
     apiKeyRequired: true,
-    compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
   },
   {
@@ -43,8 +34,15 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "https://api.groq.com/openai/v1",
     defaultModel: "whisper-large-v3-turbo",
     apiKeyRequired: true,
-    compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
+  },
+  {
+    id: "xai",
+    label: "xAI (Grok)",
+    endpoint: "https://api.x.ai/v1",
+    defaultModel: "grok-voice-transcribe-2.0",
+    apiKeyRequired: true,
+    supportsModelDiscovery: false,
   },
   {
     id: "mistral",
@@ -52,47 +50,39 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "https://api.mistral.ai/v1",
     defaultModel: "voxtral-mini-latest",
     apiKeyRequired: true,
-    compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
   },
   {
     id: "fireworks",
     label: "Fireworks AI",
-    endpoint: "https://audio-prod.api.fireworks.ai/v1",
-    defaultModel: "whisper-v3",
+    endpoint: "https://audio-turbo.api.fireworks.ai/v1",
+    defaultModel: "whisper-v3-turbo",
     apiKeyRequired: true,
-    compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
-    notes: "Uses the Fireworks audio API base, not the normal inference base.",
   },
   {
     id: "openrouter",
     label: "OpenRouter",
     endpoint: "https://openrouter.ai/api/v1",
-    defaultModel: "openai/whisper-1",
+    defaultModel: "openai/gpt-transcribe",
     apiKeyRequired: true,
-    compatibility: "direct-openai-compatible",
     supportsModelDiscovery: true,
   },
   {
     id: "deepgram",
     label: "Deepgram",
-    endpoint: "http://localhost:4000/v1",
+    endpoint: "https://api.deepgram.com/v1",
     defaultModel: "nova-3",
     apiKeyRequired: true,
-    compatibility: "openai-compatible-proxy",
     supportsModelDiscovery: true,
-    notes: "Use through an OpenAI-compatible gateway or proxy.",
   },
   {
     id: "elevenlabs",
     label: "ElevenLabs",
-    endpoint: "http://localhost:4000/v1",
-    defaultModel: "scribe_v1",
+    endpoint: "https://api.elevenlabs.io/v1",
+    defaultModel: "scribe_v2",
     apiKeyRequired: true,
-    compatibility: "openai-compatible-proxy",
-    supportsModelDiscovery: true,
-    notes: "Use through an OpenAI-compatible gateway or proxy.",
+    supportsModelDiscovery: false,
   },
   {
     id: "vllm",
@@ -100,7 +90,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "http://localhost:8000/v1",
     defaultModel: "openai/whisper-large-v3-turbo",
     apiKeyRequired: false,
-    compatibility: "openai-compatible-self-hosted",
     supportsModelDiscovery: true,
   },
   {
@@ -109,7 +98,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "http://localhost:8080/v1",
     defaultModel: "whisper-1",
     apiKeyRequired: false,
-    compatibility: "openai-compatible-self-hosted",
     supportsModelDiscovery: true,
   },
   {
@@ -118,7 +106,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "http://127.0.0.1:8080/v1",
     defaultModel: "whisper-1",
     apiKeyRequired: false,
-    compatibility: "openai-compatible-self-hosted",
     supportsModelDiscovery: false,
   },
   {
@@ -127,7 +114,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "http://localhost:8080/v1",
     defaultModel: "whisper-1",
     apiKeyRequired: false,
-    compatibility: "openai-compatible-self-hosted",
     supportsModelDiscovery: false,
   },
   {
@@ -136,7 +122,6 @@ const SPEECH_PROVIDER_PRESETS: SpeechProviderPreset[] = [
     endpoint: "http://localhost:4000/v1",
     defaultModel: "whisper-1",
     apiKeyRequired: false,
-    compatibility: "openai-compatible-proxy",
     supportsModelDiscovery: true,
   },
 ];

@@ -58,6 +58,7 @@ import {
   useFetchRemoteSpeechModels,
   useCliInstallStatus,
   useInstallCli,
+  useDiarizerModel,
   useModelCatalog,
   useModelStatuses,
   useRemoveCli,
@@ -381,6 +382,7 @@ export function useSettingsForm({
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
+  const diarizerModel = useDiarizerModel(isOpen).data ?? null;
   const cliInstallQuery = useCliInstallStatus(isOpen);
   const installCliMutation = useInstallCli();
   const removeCliMutation = useRemoveCli();
@@ -406,8 +408,11 @@ export function useSettingsForm({
     }
   }, [cliInstallError]);
   const modelKeysForStatus = useMemo(
-    () => modelCatalog.map((model) => model.key),
-    [modelCatalog],
+    () => [
+      ...modelCatalog.map((model) => model.key),
+      ...(diarizerModel ? [diarizerModel.key] : []),
+    ],
+    [modelCatalog, diarizerModel],
   );
   const modelStatusesQuery = useModelStatuses(
     modelKeysForStatus,
@@ -1879,6 +1884,7 @@ export function useSettingsForm({
 
     inputDevices,
     modelCatalog,
+    diarizerModel,
     modelStatus,
     downloadState,
     appInfo,

@@ -9,6 +9,7 @@ import {
   MODEL_CAPABILITY_DIARIZATION,
   MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../shared/lib/modelCapabilities";
+import { useDiarizerInstalled } from "../../settings/models-queries";
 import type { LibraryItem, SpeechModel } from "../../../types";
 
 type LibraryRetranscribeOptions = {
@@ -35,7 +36,8 @@ const LibraryRetranscribeModal = ({
     item.speech_model,
   );
   const [showTimestamps, setShowTimestamps] = useState(item.show_timestamps);
-  const [detectSpeakers, setDetectSpeakers] = useState(item.detect_speakers);
+  const diarizerInstalled = useDiarizerInstalled();
+  const [speakersChoice, setSpeakersChoice] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const modelOptions: DropdownOption<string>[] = useMemo(
@@ -60,7 +62,7 @@ const LibraryRetranscribeModal = ({
       : (modelOptions[0]?.value ?? "");
     setSelectedModelKey(nextModel);
     setShowTimestamps(item.show_timestamps);
-    setDetectSpeakers(item.detect_speakers);
+    setSpeakersChoice(null);
   }, [
     item.id,
     item.speech_model,
@@ -74,22 +76,18 @@ const LibraryRetranscribeModal = ({
   const timestampsSupported =
     Boolean(selectedModel?.remote) ||
     hasModelCapability(selectedModel, MODEL_CAPABILITY_TIMESTAMPS);
-  const diarizationSupported = hasModelCapability(
-    selectedModel,
-    MODEL_CAPABILITY_DIARIZATION,
-  );
+  const diarizationSupported =
+    diarizerInstalled ||
+    hasModelCapability(selectedModel, MODEL_CAPABILITY_DIARIZATION);
+  const detectSpeakers =
+    diarizationSupported &&
+    (speakersChoice ?? (item.detect_speakers || diarizerInstalled));
 
   useEffect(() => {
     if (!timestampsSupported) {
       setShowTimestamps(false);
     }
   }, [timestampsSupported]);
-
-  useEffect(() => {
-    if (!diarizationSupported) {
-      setDetectSpeakers(false);
-    }
-  }, [diarizationSupported]);
 
   const handleConfirm = async () => {
     if (!selectedModelKey) return;
@@ -98,7 +96,7 @@ const LibraryRetranscribeModal = ({
       await onConfirm({
         model_key: selectedModelKey,
         show_timestamps: timestampsSupported ? showTimestamps : false,
-        detect_speakers: diarizationSupported ? detectSpeakers : false,
+        detect_speakers: detectSpeakers,
       });
     } finally {
       setIsSubmitting(false);
@@ -247,7 +245,7 @@ const LibraryRetranscribeModal = ({
               </div>
               <ToggleSwitch
                 enabled={detectSpeakers}
-                onToggle={() => setDetectSpeakers(!detectSpeakers)}
+                onToggle={() => setSpeakersChoice(!detectSpeakers)}
                 ariaLabel={t({
                   id: "library.retranscribe.detect_speakers.aria",
                   message: "Detect speakers",

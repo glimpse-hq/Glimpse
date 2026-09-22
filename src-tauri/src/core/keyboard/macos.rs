@@ -160,6 +160,7 @@ fn handle_event(
             reenable_tap.store(true, Ordering::Release);
             swallowed_modifiers.set(Modifiers::empty());
             Some(KeyEvent {
+                occurred_at: std::time::Instant::now(),
                 modifiers: Modifiers::empty(),
                 key: None,
                 is_key_down: false,
@@ -208,6 +209,7 @@ fn key_event(event: &CGEvent, is_key_down: bool) -> Option<KeyEvent> {
     }
 
     Some(KeyEvent {
+        occurred_at: std::time::Instant::now(),
         modifiers,
         key: Some(key),
         is_key_down,
@@ -226,6 +228,7 @@ fn mouse_event(event: &CGEvent, is_key_down: bool) -> Option<KeyEvent> {
     };
 
     Some(KeyEvent {
+        occurred_at: std::time::Instant::now(),
         modifiers: modifiers_from_flags(event.get_flags(), None),
         key: Some(key),
         is_key_down,
@@ -240,6 +243,7 @@ fn flags_changed_event(event: &CGEvent) -> Option<KeyEvent> {
 
     if let Some(key) = lock_key_from_keycode(key_code) {
         return Some(KeyEvent {
+            occurred_at: std::time::Instant::now(),
             modifiers: modifiers_from_flags(flags, None),
             key: Some(key),
             is_key_down: flags.contains(CGEventFlags::CGEventFlagAlphaShift),
@@ -252,6 +256,7 @@ fn flags_changed_event(event: &CGEvent) -> Option<KeyEvent> {
     let modifiers = modifiers_from_flags(flags, Some(changed_modifier));
 
     Some(KeyEvent {
+        occurred_at: std::time::Instant::now(),
         modifiers,
         key: None,
         is_key_down: modifiers.contains(changed_modifier),

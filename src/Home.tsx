@@ -50,7 +50,12 @@ import NewsMenu from "./features/news/components/NewsMenu";
 import AccountPill from "./features/license/components/AccountPill";
 import { getLocalApiStatus } from "./features/settings/models-api";
 import type { LocalApiStatus } from "./types";
-import { useLicenseGate, useLicenseState } from "./features/license/queries";
+import {
+  licenseKeys,
+  useLicenseGate,
+  useLicenseState,
+} from "./features/license/queries";
+import { useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings, useAppInfo } from "./features/settings/queries";
@@ -135,6 +140,7 @@ const gatedFeatureName = (view: "brain" | "library" | "record") =>
 
 const Home = () => {
   const { t } = useLingui();
+  const queryClient = useQueryClient();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsMounted, setSettingsMounted] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsPane>("account");
@@ -487,6 +493,8 @@ const Home = () => {
       .catch(() => {});
 
     listen("license:checkout-returned", () => {
+      // The backend may have just activated the key from the link.
+      void queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
       setAccountSource("checkout_return");
       setSettingsTab("account");
       setIsSettingsOpen(true);
@@ -512,7 +520,7 @@ const Home = () => {
       unlistenOpenImport?.();
       unlistenLicenseReturn?.();
     };
-  }, []);
+  }, [queryClient]);
 
   useClickOutside(
     supportMenuRef,

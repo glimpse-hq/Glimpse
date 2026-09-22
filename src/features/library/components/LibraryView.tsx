@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -10,11 +10,11 @@ import {
   Plus,
   MagnifyingGlass as Search,
   SquaresFour,
+  X,
 } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import ScreenHeader from "../../../shared/ui/ScreenHeader";
-import { useDebouncedValue } from "../../../shared/hooks/useDebouncedValue";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
 import { useModelDownloadEvents } from "../../../shared/hooks/useModelDownloadEvents";
 import { useSettings } from "../../settings/queries";
@@ -31,6 +31,7 @@ import {
   useUpdateLibraryItem,
   useDeleteLibraryItem,
   useCancelLibraryTranscription,
+  useRediarizeLibraryItem,
   useRetryLibraryTranscription,
   useExportLibraryItem,
   useLibraryTags,
@@ -72,6 +73,7 @@ const LibraryView = ({
   const queryClient = useQueryClient();
 
   const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [layout, setLayout] = useState<LibraryLayout>(() =>
     localStorage.getItem(LAYOUT_KEY) === "grid" ? "grid" : "list",
@@ -86,15 +88,14 @@ const LibraryView = ({
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState("");
   const shiftHeld = useShiftHeld(isActive);
-  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const filter = useMemo<LibraryFilter>(() => {
     return {
-      search: debouncedSearchQuery || null,
+      search: searchQuery || null,
       status: statusFilter === "all" ? null : statusFilter,
       tag: null,
       since_days: null,
     };
-  }, [debouncedSearchQuery, statusFilter]);
+  }, [searchQuery, statusFilter]);
 
   const {
     data,
@@ -144,6 +145,7 @@ const LibraryView = ({
   const deleteItemMutation = useDeleteLibraryItem();
   const cancelMutation = useCancelLibraryTranscription();
   const retryMutation = useRetryLibraryTranscription();
+  const rediarizeMutation = useRediarizeLibraryItem();
   const exportMutation = useExportLibraryItem();
 
   const invalidateTags = useCallback(() => {
@@ -175,6 +177,24 @@ const LibraryView = ({
       }
     },
     [deleteItemMutation, invalidateTags],
+  );
+
+  const rediarizeItem = useCallback(
+    async (id: string) => {
+      try {
+        await rediarizeMutation.mutateAsync(id);
+      } catch (err) {
+        console.error("Failed to detect speakers:", err);
+        invoke("debug_show_toast", {
+          toastType: "error",
+          message: t({
+            id: "library.view.rediarize_error",
+            message: "Couldn't detect speakers.",
+          }),
+        }).catch(() => {});
+      }
+    },
+    [rediarizeMutation, t],
   );
 
   const installedModels = useMemo(
@@ -326,6 +346,11 @@ const LibraryView = ({
               setSelectedItemId(null);
             }}
             onRetry={() => retryMutation.mutateAsync(selectedItem.id)}
+            onRediarize={() => rediarizeItem(selectedItem.id)}
+            rediarizing={
+              rediarizeMutation.isPending &&
+              rediarizeMutation.variables === selectedItem.id
+            }
             onCancel={() => cancelMutation.mutateAsync(selectedItem.id)}
             onUpdate={(patch) => updateItemWithTags(selectedItem.id, patch)}
             onExport={(format, outputPath) =>
@@ -365,6 +390,7 @@ const LibraryView = ({
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 ui-color-muted"
                     />
                     <input
+                      ref={searchInputRef}
                       type="text"
                       placeholder={t({
                         id: "library.view.search_placeholder",
@@ -372,8 +398,27 @@ const LibraryView = ({
                       })}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-8 w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-primary)] rounded-lg focus:border-[var(--color-border-hover)] pl-8 pr-3 ui-text-body-sm ui-color-primary placeholder-[var(--color-text-muted)] outline-none transition-colors duration-100 ease-out"
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setSearchQuery("");
+                      }}
+                      className="h-8 w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-primary)] rounded-lg focus:border-[var(--color-border-hover)] pl-8 pr-7 ui-text-body-sm ui-color-primary placeholder-[var(--color-text-muted)] outline-none transition-colors duration-100 ease-out"
                     />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchQuery("");
+                          searchInputRef.current?.focus();
+                        }}
+                        aria-label={t({
+                          id: "library.view.search_clear",
+                          message: "Clear search",
+                        })}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-content-disabled hover:text-content-muted transition-colors"
+                      >
+                        <X size={12} aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
 
                   <HoverTip

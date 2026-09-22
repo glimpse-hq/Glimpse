@@ -7,7 +7,7 @@ use crate::core::hotkeys;
 use crate::dictionary::{sanitize_dictionary_entries, sanitize_replacements};
 use crate::personalization::sanitize_personalities;
 use crate::settings::ShortcutBinding;
-use crate::{AppRuntime, AppState, model_manager};
+use crate::{AppRuntime, AppState};
 
 use super::detect::parse_app;
 use super::shared::resolve_glimpse_model;
@@ -148,7 +148,7 @@ pub fn apply_import(
     {
         match hint.family {
             Some(family) => {
-                let keys: Vec<String> = model_manager::list_models()
+                let keys: Vec<String> = crate::speech::catalog::list_local_models()
                     .into_iter()
                     .map(|m| m.key)
                     .collect();

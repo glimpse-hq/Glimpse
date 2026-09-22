@@ -17,6 +17,8 @@ pub const MODEL_CAPABILITY_TIMESTAMPS: &str = "timestamps";
 pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
 pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
+pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
+pub const DIARIZER_MODEL: &str = "sortformer_4spk_v2_1_q8";
 
 pub fn is_legacy_category(category: &str) -> bool {
     category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)
@@ -27,7 +29,7 @@ pub fn is_downloadable(manifest: &LocalModelManifest) -> bool {
 }
 
 pub fn model_is_downloadable(key: &str) -> bool {
-    definition(key).is_some_and(is_downloadable)
+    installable_definition(key).is_some_and(is_downloadable)
 }
 
 pub use glimpse_speech::models::ModelEngine as LocalModelEngine;
@@ -205,6 +207,13 @@ const PARAKEET_DECODER_FILE: CatalogFile = CatalogFile {
     size_bytes: Some(19_479_904),
     sha256: Some("dfcf670a00df8d49474fddea707bcfc77339789f65dde115aeb79570fc813744"),
 };
+
+const DIARIZER_FILES: &[CatalogFile] = &[CatalogFile {
+    url: "https://huggingface.co/handy-computer/diar_streaming_sortformer_4spk-v2.1-gguf/resolve/main/diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf",
+    path: "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf",
+    size_bytes: Some(139_310_336),
+    sha256: Some("a5dacdc650790266c7a362e54e6bf51952015487edaa606c4e11632bc32442a9"),
+}];
 
 const QWEN3_ASR_0_6B_FILES: &[CatalogFile] = &[CatalogFile {
     url: "https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf/resolve/main/Qwen3-ASR-0.6B-Q8_0.gguf",
@@ -806,12 +815,32 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
     },
 ];
 
+// Speaker detection for Library items. Kept out of MODEL_MANIFESTS so it never
+// shows up where a transcription model is expected.
+const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
+    id: DIARIZER_MODEL,
+    family: "sortformer-4spk-v2.1",
+    label: "Streaming Sortformer",
+    description: "Labels who is speaking in Library transcripts.",
+    tags: &[],
+    category: MODEL_CATEGORY_DIARIZATION,
+    engine: LocalModelEngine::Transcribe,
+    variant: "Q8_0",
+    files: DIARIZER_FILES,
+    capabilities: &[],
+};
+
 pub fn local_manifests() -> &'static [LocalModelManifest] {
     MODEL_MANIFESTS
 }
 
+/// Transcription models only. [`installable_definition`] also covers the diarizer.
 pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
     MODEL_MANIFESTS.iter().find(|manifest| manifest.id == key)
+}
+
+pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelManifest> {
+    definition(key).or_else(|| (key == DIARIZER_MODEL).then_some(&DIARIZER_MANIFEST))
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {
@@ -829,7 +858,7 @@ pub fn ane_replaces_model_files(model: &str) -> bool {
 }
 
 pub fn install_spec(model: &str, ane: bool) -> Option<InstallSpec> {
-    let manifest = definition(model)?;
+    let manifest = installable_definition(model)?;
     let model_files = if ane {
         ane_replacement_files(model).unwrap_or(manifest.files)
     } else {
@@ -903,6 +932,9 @@ fn supports_only_english(manifest: &LocalModelManifest) -> bool {
 }
 
 fn supported_languages(manifest: &LocalModelManifest) -> Vec<SupportedLanguageInfo> {
+    if manifest.id == DIARIZER_MODEL {
+        return Vec::new();
+    }
     if supports_only_english(manifest) {
         return english_supported_languages();
     }
@@ -1058,6 +1090,10 @@ pub fn list_local_models() -> Vec<ModelInfo> {
         .collect()
 }
 
+pub fn diarizer_model_info() -> ModelInfo {
+    manifest_to_model_info(&DIARIZER_MANIFEST)
+}
+
 pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<SpeechModel> {
     let mut models = Vec::new();
 
@@ -1132,7 +1168,10 @@ fn remote_entry(settings: &UserSettings) -> SpeechModel {
                 MODEL_CAPABILITY_TIMESTAMPS.to_string(),
                 MODEL_CAPABILITY_DICTIONARY.to_string(),
             ];
-            if glimpse_speech::remote::supports_diarization(&remote::resolved_endpoint(settings)) {
+            if glimpse_speech::remote::supports_diarization(
+                &remote::resolved_endpoint(settings),
+                &remote::resolved_model_name(settings).unwrap_or_default(),
+            ) {
                 caps.push(MODEL_CAPABILITY_DIARIZATION.to_string());
             }
             caps
@@ -1170,6 +1209,7 @@ fn provider_display(provider: &str) -> String {
     match provider.trim().to_ascii_lowercase().as_str() {
         "openai" => "OpenAI".to_string(),
         "groq" => "Groq".to_string(),
+        "xai" => "xAI (Grok)".to_string(),
         "mistral" => "Mistral".to_string(),
         "fireworks" => "Fireworks".to_string(),
         "openrouter" => "OpenRouter".to_string(),

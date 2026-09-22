@@ -4,7 +4,7 @@ pub mod install;
 pub mod menu;
 pub mod remote;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
 use reqwest::Client;
@@ -71,6 +71,14 @@ where
         remote::RemoteAttempt::Cancelled => Err(anyhow!("Transcription cancelled")),
         remote::RemoteAttempt::Unavailable(message) => Err(anyhow!(message)),
     }
+}
+
+/// The speaker diarization model, once fully downloaded.
+pub(crate) fn installed_diarizer_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
+    let manager =
+        glimpse_speech::models::ModelInstallManager::new(install::model_cache_dir(app).ok()?);
+    let spec = catalog::install_spec(catalog::DIARIZER_MODEL, false)?;
+    manager.resolve(&spec).ok().map(|resolved| resolved.path)
 }
 
 pub fn warm(app: &AppHandle<AppRuntime>, settings: &UserSettings) {

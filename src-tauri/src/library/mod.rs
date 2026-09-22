@@ -3,6 +3,7 @@ pub(crate) mod commands;
 mod processing;
 mod queue;
 pub(crate) mod repo;
+mod speakers;
 mod types;
 
 #[cfg(target_os = "macos")]

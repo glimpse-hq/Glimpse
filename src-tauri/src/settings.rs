@@ -580,6 +580,21 @@ pub fn auto_delete_transcription_policy(settings: &UserSettings) -> RecordingPru
     }
 }
 
+/// ElevenLabs and Deepgram presets used to point at a local OpenAI-compatible
+/// proxy. Moves the untouched preset endpoint to the provider's own API.
+fn migrate_proxy_speech_endpoint(settings: &mut UserSettings) -> bool {
+    let native = match settings.remote_speech_provider.as_str() {
+        "elevenlabs" => "https://api.elevenlabs.io/v1",
+        "deepgram" => "https://api.deepgram.com/v1",
+        _ => return false,
+    };
+    if settings.remote_speech_endpoint.trim() != "http://localhost:4000/v1" {
+        return false;
+    }
+    settings.remote_speech_endpoint = native.to_string();
+    true
+}
+
 fn migrate_auto_delete_from_legacy(
     settings: &mut UserSettings,
     legacy_recording: RecordingPrunePolicy,
@@ -1002,6 +1017,10 @@ impl SettingsStore {
         }
 
         sync_legacy_shortcuts_from_bindings(&mut settings);
+
+        if migrate_proxy_speech_endpoint(&mut settings) {
+            should_persist = true;
+        }
 
         if crate::model_manager::definition(&settings.local_model).is_none() {
             settings.local_model = default_local_model();

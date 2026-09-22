@@ -1,6 +1,11 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  PresenceContext,
+} from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { activateLocale } from "../i18n";
 import { detectAppPlatform } from "../platform/service";
@@ -194,13 +199,16 @@ function SettingsContent() {
                 transition: { duration: 0.28, ease: [0.4, 0, 1, 1] },
               }}
             >
-              <Suspense
-                fallback={
-                  <div className="h-full w-full bg-surface-secondary" />
-                }
-              >
-                <OnboardingScreen onComplete={() => {}} />
-              </Suspense>
+              {/* initial={false} above would otherwise block every nested mount animation. */}
+              <PresenceContext.Provider value={null}>
+                <Suspense
+                  fallback={
+                    <div className="h-full w-full bg-surface-secondary" />
+                  }
+                >
+                  <OnboardingScreen onComplete={() => {}} />
+                </Suspense>
+              </PresenceContext.Provider>
             </motion.div>
           ) : (
             <motion.div
@@ -208,9 +216,11 @@ function SettingsContent() {
               className={`h-full w-full${homeEnters ? " home-enter" : ""}`}
               exit={{ opacity: 0, transition: { duration: 0.22 } }}
             >
-              <Suspense fallback={null}>
-                <Home />
-              </Suspense>
+              <PresenceContext.Provider value={null}>
+                <Suspense fallback={null}>
+                  <Home />
+                </Suspense>
+              </PresenceContext.Provider>
             </motion.div>
           )}
         </AnimatePresence>

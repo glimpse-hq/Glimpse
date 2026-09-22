@@ -1,4 +1,7 @@
-export type LicenseStatus = "trial" | "active" | "expired" | "invalid";
+export type LicenseStatus =
+  "trial" | "active" | "expired" | "invalid" | "unverified";
+
+export type LicenseProvider = "creem" | "legacy";
 
 export type LicenseEdition =
   "personal" | "commercial" | "founder" | "contributor";
@@ -18,9 +21,7 @@ export type LicenseState = {
   activatedAt?: string | null;
   purchasedAt?: string | null;
   expiresAt?: string | null;
-  validations?: number | null;
-  usage?: number | null;
-  limitUsage?: number | null;
   activationsLimit: number;
   activationsCount?: number | null;
+  provider?: LicenseProvider | null;
 };

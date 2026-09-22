@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
-use crate::{AppRuntime, AppState, model_manager};
+use crate::{AppRuntime, AppState};
 
 use super::apply::{ImportResult, ImportSelections, apply_import as run_apply};
 use super::detect::{DetectedApp, detect_apps, display_name, parse_app};
@@ -46,7 +46,7 @@ pub fn preview_import(app: AppHandle<AppRuntime>, id: String) -> Result<ImportPr
     let (model_source, model_key, model_recognized) = match bundle.model_hint.as_ref() {
         Some(hint) => {
             let key = hint.family.and_then(|family| {
-                let keys: Vec<String> = model_manager::list_models()
+                let keys: Vec<String> = crate::speech::catalog::list_local_models()
                     .into_iter()
                     .map(|m| m.key)
                     .collect();

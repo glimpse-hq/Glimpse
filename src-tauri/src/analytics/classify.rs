@@ -12,6 +12,8 @@ pub(crate) fn classify_activation_failure(message: &str) -> &'static str {
         "wrong_product"
     } else if lower.contains("no longer active") {
         "revoked"
+    } else if lower.contains("has expired") {
+        "expired"
     } else if lower.contains("could not reach") {
         "network"
     } else if lower.contains("unreadable") {

@@ -156,6 +156,7 @@ unsafe extern "system" fn desktop_switch_proc(
         };
         state.blocked_modifiers = Modifiers::empty();
         let _ = state.tx.try_send(KeyEvent {
+            occurred_at: std::time::Instant::now(),
             modifiers: Modifiers::empty(),
             key: None,
             is_key_down: false,
@@ -237,6 +238,7 @@ unsafe extern "system" fn mouse_hook_proc(code: i32, wparam: WPARAM, lparam: LPA
         let state = state.borrow();
         let state = state.as_ref()?;
         let event = KeyEvent {
+            occurred_at: std::time::Instant::now(),
             modifiers: held_modifiers(state.blocked_modifiers, os_held_modifiers(), None),
             key: Some(key),
             is_key_down,
@@ -285,6 +287,7 @@ fn build_event(
     if let Some(modifier) = modifier_from_vk(vk, info.scanCode, is_extended) {
         let os_held = os_held_modifiers();
         return Some(KeyEvent {
+            occurred_at: std::time::Instant::now(),
             modifiers: held_modifiers(blocked_modifiers, os_held, Some((modifier, is_key_down))),
             key: None,
             is_key_down,
@@ -295,6 +298,7 @@ fn build_event(
     }
 
     Some(KeyEvent {
+        occurred_at: std::time::Instant::now(),
         modifiers: held_modifiers(blocked_modifiers, os_held_modifiers(), None),
         key: Some(key_from_vk(vk, is_extended)?),
         is_key_down,

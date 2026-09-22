@@ -34,6 +34,72 @@ msgstr ""
 #~ msgstr "Marcas de tiempo"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "¿Compras para un equipo?"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "Para ti. Hasta 5 dispositivos."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "Fundador desde el lanzamiento. Hasta 5 dispositivos."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "Polar te envió tu clave de licencia por correo. Pégala aquí o pega todo el correo."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "Comprar {label} por {price}"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "Gracias por contribuir. Hasta 5 dispositivos."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "Esa es la clave abreviada. Copia la completa desde la página de compras de Polar."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "Ese es tu número de pedido. La clave de licencia está en el mismo correo de Polar y empieza por GLIMPSE_."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "El dictado básico es gratuito: transcripción local, diccionario, sustituciones e historial. No hay tarifas por minuto ni suscripciones para ello. Biblioteca, Limpieza y personalización con un LLM forman parte de Glimpse Personal, y puedes probarlas gratis durante 14 días. El servidor de API local y la CLI requieren una licencia y no forman parte de la prueba. Activa una licencia Personal (una compra única) o una licencia Comercial (facturada anualmente) en Ajustes → Cuenta."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "Una licencia, 5 dispositivos"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "¿Cómo es que Glimpse es gratis?"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.transcribing"
+#~ msgstr "Transcribiendo..."
+
+#. placeholder {0}: (progress * 100).toFixed(0)
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.thinking"
+#~ msgstr "Pensando {0}%"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -828,14 +894,14 @@ msgid "member_card.draft_idle"
 msgstr "Comprar una licencia"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "Comprar licencia"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "¿Compras para un equipo?"
+msgid "onboarding.license_step.buy"
+msgstr "Comprar licencia"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1053,6 +1119,11 @@ msgstr "Borrar búsqueda"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "Borrar búsqueda"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1343,8 +1414,8 @@ msgstr "Núcleo"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "El dictado básico es gratuito: transcripción local, diccionario, sustituciones e historial. No hay tarifas por minuto ni suscripciones para ello. Biblioteca, Limpieza y personalización con un LLM forman parte de Glimpse Personal, y puedes probarlas gratis durante 14 días. El servidor de API local y la CLI requieren una licencia y no forman parte de la prueba. Activa una licencia Personal (una compra única) o una licencia Comercial (facturada anualmente) en Ajustes → Cuenta."
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1412,6 +1483,11 @@ msgid "library.delete_error.storage_missing"
 msgstr "No se pudo eliminar este elemento. No se encontró el almacenamiento de la biblioteca."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.rediarize_error"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "No se pudo encontrar este elemento de la biblioteca. Intenta volver a abrirlo."
@@ -1450,6 +1526,11 @@ msgstr "No se pudo escribir el archivo de exportación. Prueba con otra ubicaci�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "Contando grabaciones…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1712,6 +1793,21 @@ msgstr "Detectar oradores"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.detect_speakers.aria"
 msgstr "Detectar oradores"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detect_speakers_again"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detecting_speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -1985,6 +2081,7 @@ msgid "settings.speech_model.provider.custom.description"
 msgstr "Introduce tu propia URL de endpoint"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Todo el sistema"
@@ -2191,8 +2288,8 @@ msgstr "Para trabajar. Una persona por licencia, con facturación anual."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "Para ti. Hasta 5 dispositivos."
+msgid "member_card.edition_blurb_personal_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2658,8 +2755,8 @@ msgstr "Abrir al iniciar sesión"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "Fundador desde el lanzamiento. Hasta 5 dispositivos."
+msgid "member_card.edition_blurb_founder_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2710,6 +2807,11 @@ msgstr "Clave de licencia"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Claro"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3407,11 +3509,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "En el dispositivo"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "Una licencia, 5 dispositivos"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "Solo si configuras un modelo de escritura en Ajustes → Proveedores. Los atajos con Cleanup activado y la Personalización envían el texto correspondiente directamente a ese proveedor. Tu clave de API se guarda localmente en Glimpse. El audio solo sale de tu dispositivo si eliges un modelo de voz en la nube en Ajustes → Modelos."
@@ -3592,11 +3689,6 @@ msgid "library.detail.playback_settings"
 msgstr "Ajustes de reproducción"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "Polar te envió tu clave de licencia por correo. Pégala aquí o pega todo el correo."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "Puerto"
@@ -3708,11 +3800,6 @@ msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "Proveedores"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "Comprar {label} por {price}"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.queued"
 msgstr "En cola"
@@ -3761,6 +3848,11 @@ msgstr "Listo para instalar"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "Reconoce palabras de tu diccionario."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4560,6 +4652,11 @@ msgid "onboarding.model.supports.speakers"
 msgstr "Detección de hablantes"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speakers"
 msgstr "Oradores"
@@ -4832,8 +4929,8 @@ msgstr "que escribir"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "Gracias por contribuir. Hasta 5 dispositivos."
+msgid "member_card.edition_blurb_contributor_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4847,13 +4944,13 @@ msgstr "Ese dominio ya está añadido"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "Esa es la clave abreviada. Copia la completa desde la página de compras de Polar."
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "Ese es tu número de pedido. La clave de licencia está en el mismo correo de Polar y empieza por GLIMPSE_."
+msgid "settings.account.activate.order_id_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4891,6 +4988,16 @@ msgid "settings.about.cli.installed_info"
 msgstr "El comando glimpse está instalado en {cliInstallPath}. Úsalo desde Terminal, scripts o herramientas de automatización para llamar a Glimpse sin abrir la interfaz de la app."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_lost"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_switched"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.next.anywhere"
 msgstr "El mismo atajo funciona en cualquier app donde puedas escribir."
@@ -4899,12 +5006,6 @@ msgstr "El mismo atajo funciona en cualquier app donde puedas escribir."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "Tema"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: (progress * 100).toFixed(0)
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.thinking"
-msgstr "Pensando {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -5037,13 +5138,20 @@ msgid "onboarding.license_step.tile_files"
 msgstr "Transcribir archivos"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.transcribing"
-msgstr "Transcribiendo..."
+#. placeholder {0}: (progress * 100).toFixed(0)
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.transcribing"
+msgstr ""
 
 #. js-lingui-explicit-id
+#. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.transcribing"
+msgid "library.modal.transcribing_progress"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.transcribing"
 msgstr "Transcribiendo..."
 
 #. js-lingui-explicit-id
@@ -5179,6 +5287,11 @@ msgstr "Formato de archivo no compatible."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "Los idiomas no compatibles no están disponibles en tu modelo activo. Cambia a un modelo compatible para usarlos."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5348,8 +5461,8 @@ msgstr "Actividad semanal de dictado durante el último año"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "¿Cómo es que Glimpse es gratis?"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5440,6 +5553,11 @@ msgstr "Tu servidor de API se está ejecutando en segundo plano."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Sí. En modo local, todo tu audio y tus transcripciones permanecen en tu dispositivo. Nunca recopilamos ni transmitimos tus grabaciones. La sincronización en la nube es opcional."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

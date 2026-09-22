@@ -1,3 +1,38 @@
+1.2.5
+
+### Speaker Detection
+
+Glimpse can now tell who's speaking in your Library. Download the speaker detection model from Settings → Models, under Experimental. It runs on your computer.
+
+- **Made for recordings.** Your microphone and your computer's audio are labeled separately, up to 4 voices each.
+- **Reads like a script.** Turn timestamps off to see one paragraph per speaker.
+- **Detect speakers again** from any item's menu, without transcribing again.
+- **Cloud models too.** Mistral, xAI, ElevenLabs, Deepgram and OpenAI's diarize model can label speakers themselves.
+
+### Improvements
+
+- Grok Voice Transcribe from xAI is now available as a cloud model.
+- ElevenLabs and Deepgram connect directly with just an API key.
+- Cloud models default to each provider's latest: GPT Transcribe for OpenAI and OpenRouter, Scribe v2 for ElevenLabs.
+- Recordings are half the size and still sound clear.
+- Long recordings show their transcript as it comes in.
+- Pausing a recording turns off the microphone, and the menu bar icon turns orange.
+- If your microphone disconnects during a recording, Glimpse switches to another one and lets you know.
+- If one side of a recording is silent, Glimpse skips it and finishes sooner.
+- Recording sources show as app icons.
+- The Library shows transcription progress as a percentage.
+- Library search updates as you type, with an X to clear it.
+- Buying Glimpse opens the website to compare plans, and Glimpse activates on its own after you pay.
+
+### Fixes
+
+- Fireworks AI uses its new endpoint.
+- Long recordings and imports start transcribing much sooner.
+- Quick shortcut taps no longer stop dictation when the microphone is slow to start.
+- The Library's transcribing dots pulse again instead of sitting still.
+- Imports from the command line show up in the Library while they transcribe.
+- Other animations that had stopped, like the Glimpse logo, move again.
+
 1.2.1
 
 ### Improvements

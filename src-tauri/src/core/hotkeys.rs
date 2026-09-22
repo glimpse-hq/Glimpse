@@ -87,6 +87,7 @@ impl HotkeyCoordinator {
                                 action,
                                 hotkey_state,
                                 options,
+                                event.occurred_at,
                             );
                         }
                     }
@@ -94,7 +95,13 @@ impl HotkeyCoordinator {
             }
 
             for (action, hotkey_state, options) in state.release_all() {
-                pill::handle_registered_hotkey_event(&app_handle, action, hotkey_state, options);
+                pill::handle_registered_hotkey_event(
+                    &app_handle,
+                    action,
+                    hotkey_state,
+                    options,
+                    std::time::Instant::now(),
+                );
             }
             Ok(())
         })?;
@@ -512,6 +519,7 @@ mod tests {
 
     fn event(modifiers: Modifiers, key: Option<Key>, is_key_down: bool) -> KeyEvent {
         KeyEvent {
+            occurred_at: std::time::Instant::now(),
             modifiers,
             key,
             is_key_down,
@@ -548,6 +556,7 @@ mod tests {
 
     fn modifier_only_press() -> KeyEvent {
         KeyEvent {
+            occurred_at: std::time::Instant::now(),
             modifiers: Modifiers::OPT_RIGHT,
             key: None,
             is_key_down: true,

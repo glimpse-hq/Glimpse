@@ -159,6 +159,7 @@ const SettingsScreen = ({
                 key="models"
                 variants={paneVariants}
                 modelCatalog={form.modelCatalog}
+                diarizerModel={form.diarizerModel}
                 modelStatus={form.modelStatus}
                 downloadState={form.downloadState}
                 localModel={form.localModel}
