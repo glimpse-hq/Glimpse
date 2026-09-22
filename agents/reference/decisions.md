@@ -12,7 +12,8 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **Writing features need a license whatever model runs them**, including on-device Apple models.
 - **Trial expiry degrades to free.** Notices are in-app only, fire only after a dictation, and have a budget. No OS notifications, nothing on a timer or at launch.
 - **No sentiment gate before review asks.** Store policy forbids it.
-- **The trial is not hardened against tampering.** The app is open source.
+- **Unsigned license grants are never trusted**, including ones cached before 1.2.5. A paid user who updates offline sees reconnect until the app is online once.
+- **The trial start comes from the Glimpse API.** Offline, a 3-day provisional trial applies until the signed 14 days arrive.
 - **The commercial license card copy ("per seat", device suffix) is intentional.**
 - **`transcription_mode` stays although the Cloud/Local UI is gone.** It's a placeholder for a possible managed service.
 - **CLI writes and the local API check the license at call time**, not only at install.
