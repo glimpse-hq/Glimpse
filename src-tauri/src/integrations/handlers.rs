@@ -515,7 +515,7 @@ fn record_pause(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
 fn record_resume(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
     require_license(&app.state::<AppState>())?;
     require_recording(app)?;
-    let state = crate::recording::resume_recording_session(app.clone());
+    let state = crate::recording::resume_session(app);
     Ok(record_state_json(&state))
 }
 

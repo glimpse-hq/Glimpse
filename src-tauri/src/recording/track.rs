@@ -12,6 +12,7 @@ const RESAMPLER_CHUNK: usize = 1024;
 
 enum TrackMessage {
     Audio { samples: Vec<f32>, position_ms: u64 },
+    SourceChanged { rate: u32 },
     Finish { final_ms: u64 },
 }
 
@@ -48,11 +49,7 @@ impl TrackWriter {
                 .with_context(|| format!("Failed to create {}", dir.display()))?;
         }
         let stored_rate = source_rate.min(STORED_RATE);
-        let mut downsampler = if stored_rate < source_rate {
-            Some(Downsampler::new(source_rate, stored_rate)?)
-        } else {
-            None
-        };
+        let mut converter = RateConverter::for_source(source_rate, stored_rate, 0)?;
         let spec = hound::WavSpec {
             channels: 1,
             sample_rate: stored_rate,
@@ -71,18 +68,22 @@ impl TrackWriter {
             refresh_every: stored_rate as u64,
         };
 
-        let rate = source_rate as u64;
+        let mut rate = source_rate as u64;
         // A source that stalls (nothing rendering, app closed) is padded with silence
         // once it falls this far behind the session clock, so tracks stay aligned.
         // Padding is counted in source frames and goes through the resampler with the
         // audio, so it lands in order behind the samples the resampler still holds.
-        let align_tolerance_frames = rate / 4;
+        let mut align_tolerance_frames = rate / 4;
 
         let (tx, rx) = unbounded::<TrackMessage>();
         let handle = std::thread::Builder::new()
             .name(thread_name.to_string())
             .spawn(move || -> Result<u64> {
+                // Source frames received, in the current source rate.
                 let mut received: u64 = 0;
+                // The clock runs before a device delivers audio, so the first chunk
+                // from a new source is placed exactly instead of within tolerance.
+                let mut place_exact = true;
 
                 while let Ok(message) = rx.recv() {
                     match message {
@@ -92,30 +93,42 @@ impl TrackWriter {
                         } => {
                             let expected_end = position_ms * rate / 1000;
                             let chunk_end = received + samples.len() as u64;
-                            // The clock starts before the device delivers audio, so
-                            // the first chunk is placed exactly.
-                            let tolerance = if received == 0 {
+                            let tolerance = if place_exact {
                                 0
                             } else {
                                 align_tolerance_frames
                             };
+                            place_exact = false;
                             if chunk_end + tolerance < expected_end {
                                 let pad = expected_end - chunk_end;
-                                match downsampler.as_mut() {
-                                    Some(down) => down.push_silence(pad, &mut output)?,
+                                match converter.as_mut() {
+                                    Some(conv) => conv.push_silence(pad, &mut output)?,
                                     None => output.write_silence(pad)?,
                                 }
                                 received += pad;
                             }
-                            match downsampler.as_mut() {
-                                Some(down) => down.push(&samples, &mut output)?,
+                            match converter.as_mut() {
+                                Some(conv) => conv.push(&samples, &mut output)?,
                                 None => output.write(&samples)?,
                             }
                             received += samples.len() as u64;
                         }
+                        TrackMessage::SourceChanged { rate: new_rate } => {
+                            // Everything from the old source lands before the new one
+                            // starts, so the file position is the only carry-over.
+                            if let Some(conv) = converter.as_mut() {
+                                conv.flush(received * stored_rate as u64 / rate, &mut output)?;
+                            }
+                            rate = new_rate as u64;
+                            align_tolerance_frames = rate / 4;
+                            received = output.written * rate / stored_rate as u64;
+                            converter =
+                                RateConverter::for_source(new_rate, stored_rate, output.written)?;
+                            place_exact = true;
+                        }
                         TrackMessage::Finish { final_ms } => {
-                            if let Some(down) = downsampler.as_mut() {
-                                down.flush(received * stored_rate as u64 / rate, &mut output)?;
+                            if let Some(conv) = converter.as_mut() {
+                                conv.flush(received * stored_rate as u64 / rate, &mut output)?;
                             }
                             let target = final_ms * stored_rate as u64 / 1000;
                             if output.written < target {
@@ -141,6 +154,12 @@ impl TrackWriter {
         TrackInput {
             tx: self.tx.clone(),
         }
+    }
+
+    /// The source was reopened, possibly at another rate; later chunks continue
+    /// on the session clock.
+    pub(crate) fn source_changed(&self, rate: u32) {
+        let _ = self.tx.send(TrackMessage::SourceChanged { rate });
     }
 
     /// Pads to `final_ms`, closes the file and returns the sample count.
@@ -202,9 +221,9 @@ impl TrackOutput {
     }
 }
 
-/// Streaming anti-aliased downsampler. The resampler's startup delay is dropped,
-/// so output frame `n` is source time `n / out_rate`.
-struct Downsampler {
+/// Streaming anti-aliased rate converter. The resampler's startup delay is
+/// dropped, so output frame `n` is source time `n / out_rate`.
+struct RateConverter {
     resampler: Fft<f32>,
     pending: Vec<f32>,
     scratch: Vec<f32>,
@@ -212,8 +231,14 @@ struct Downsampler {
     emitted: u64,
 }
 
-impl Downsampler {
-    fn new(in_rate: u32, out_rate: u32) -> Result<Self> {
+impl RateConverter {
+    /// `None` when the source already runs at the stored rate. A replacement
+    /// microphone can run below it, so this also upsamples. `emitted` starts at
+    /// the file position so `flush` targets stay absolute.
+    fn for_source(in_rate: u32, out_rate: u32, emitted: u64) -> Result<Option<Self>> {
+        if in_rate == out_rate {
+            return Ok(None);
+        }
         // One FFT block per chunk keeps the anti-aliasing cutoff close to the output Nyquist.
         let resampler = Fft::<f32>::new_custom(
             in_rate as usize,
@@ -225,13 +250,13 @@ impl Downsampler {
             FixedSync::Input,
         )
         .map_err(|err| anyhow!("Resampler init failed: {err}"))?;
-        Ok(Self {
+        Ok(Some(Self {
             scratch: vec![0.0; resampler.output_frames_max()],
             pending: Vec::with_capacity(resampler.input_frames_max() * 2),
             delay_left: resampler.output_delay(),
             resampler,
-            emitted: 0,
-        })
+            emitted,
+        }))
     }
 
     fn push(&mut self, samples: &[f32], output: &mut TrackOutput) -> Result<()> {

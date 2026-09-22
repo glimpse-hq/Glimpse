@@ -17,6 +17,7 @@ Glimpse can now tell who's speaking in your Library. Download the speaker detect
 - Recordings are half the size and still sound clear.
 - Long recordings show their transcript as it comes in.
 - Pausing a recording turns off the microphone, and the menu bar icon turns orange.
+- If your microphone disconnects during a recording, Glimpse switches to another one and lets you know.
 - If one side of a recording is silent, Glimpse skips it and finishes sooner.
 - Recording sources show as app icons.
 - The Library shows transcription progress as a percentage.

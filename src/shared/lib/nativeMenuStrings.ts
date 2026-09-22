@@ -81,6 +81,16 @@ export const NATIVE_MENU_STRINGS = [
     message: "Microphone disconnected. Recording stopped and saved to History.",
   }),
   msg({
+    id: "native.toast.recording_mic_switched",
+    message:
+      "The microphone stopped responding. The recording continues with {name}.",
+  }),
+  msg({
+    id: "native.toast.recording_mic_lost",
+    message:
+      "The microphone stopped responding and no other microphone was found. The recording continues without it. Pause and resume to try again.",
+  }),
+  msg({
     id: "native.toast.milestone",
     message: "{count} words dictated with Glimpse!",
   }),

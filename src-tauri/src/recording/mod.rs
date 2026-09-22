@@ -256,6 +256,30 @@ impl Shared {
         }
     }
 
+    fn write_manifest(&self) {
+        let Some(dir) = self.session_dir.lock().clone() else {
+            return;
+        };
+        let Some(id) = dir
+            .file_name()
+            .map(|name| name.to_string_lossy().to_string())
+        else {
+            return;
+        };
+        let Some(started_at) = *self.started_at.lock() else {
+            return;
+        };
+        let manifest = SessionManifest {
+            id,
+            started_at,
+            sources: self.sources.lock().clone(),
+            bookmarks: self.bookmarks.lock().clone(),
+        };
+        if let Err(err) = write_manifest_file(&dir, &manifest) {
+            tracing::warn!("Failed to write recording manifest: {err}");
+        }
+    }
+
     fn reset(&self) {
         *self.status.lock() = Status::Idle;
         *self.clock.lock() = None;
@@ -291,6 +315,7 @@ struct SessionOutput {
 
 enum WorkerCommand {
     Start {
+        app: AppHandle<AppRuntime>,
         sources: RecordingSources,
         dir: PathBuf,
         reply: Sender<Result<(), StartFailure>>,
@@ -301,7 +326,12 @@ enum WorkerCommand {
     Discard {
         reply: Sender<()>,
     },
-    SetMicrophonePaused(bool),
+    SetMicrophonePaused {
+        paused: bool,
+        reply: Sender<()>,
+    },
+    /// From the stream's error callback; the generation drops signals of a stream already replaced.
+    MicrophoneLost(u64),
 }
 
 pub struct RecordingManager {
@@ -327,22 +357,25 @@ impl Default for RecordingManager {
         });
         let (tx, rx) = unbounded();
         let worker_shared = Arc::clone(&shared);
+        let worker_tx = tx.clone();
         // Capture streams are not Send on every platform, so one thread owns them.
         std::thread::Builder::new()
             .name("glimpse-recording".into())
             .spawn(move || {
                 let mut worker = Worker {
                     shared: worker_shared,
+                    tx: worker_tx,
                     active: None,
                 };
                 while let Ok(command) = rx.recv() {
                     match command {
                         WorkerCommand::Start {
+                            app,
                             sources,
                             dir,
                             reply,
                         } => {
-                            let _ = reply.send(worker.start(sources, dir));
+                            let _ = reply.send(worker.start(app, sources, dir));
                         }
                         WorkerCommand::Finish { reply } => {
                             let _ = reply.send(worker.finish());
@@ -351,8 +384,12 @@ impl Default for RecordingManager {
                             worker.discard();
                             let _ = reply.send(());
                         }
-                        WorkerCommand::SetMicrophonePaused(paused) => {
+                        WorkerCommand::SetMicrophonePaused { paused, reply } => {
                             worker.set_microphone_paused(paused);
+                            let _ = reply.send(());
+                        }
+                        WorkerCommand::MicrophoneLost(generation) => {
+                            worker.microphone_lost(generation);
                         }
                     }
                 }
@@ -375,10 +412,16 @@ impl RecordingManager {
         self.shared.is_active()
     }
 
-    fn send_start(&self, sources: RecordingSources, dir: PathBuf) -> Result<(), StartFailure> {
+    fn send_start(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        sources: RecordingSources,
+        dir: PathBuf,
+    ) -> Result<(), StartFailure> {
         let (reply, rx) = bounded(1);
         self.tx
             .send(WorkerCommand::Start {
+                app: app.clone(),
                 sources,
                 dir,
                 reply,
@@ -414,11 +457,32 @@ impl RecordingManager {
         }
         self.shared.paused.store(true, Ordering::Relaxed);
         *status = Status::Paused;
-        let _ = self.tx.send(WorkerCommand::SetMicrophonePaused(true));
+        let (reply, _) = bounded(1);
+        let _ = self.tx.send(WorkerCommand::SetMicrophonePaused {
+            paused: true,
+            reply,
+        });
         true
     }
 
+    /// Waits for the microphone to run again (or be given up on) before the
+    /// session reports Recording. The status lock is released meanwhile so the
+    /// state emitter keeps ticking.
     fn resume(&self) -> bool {
+        if *self.shared.status.lock() != Status::Paused {
+            return false;
+        }
+        let (reply, rx) = bounded(1);
+        if self
+            .tx
+            .send(WorkerCommand::SetMicrophonePaused {
+                paused: false,
+                reply,
+            })
+            .is_ok()
+        {
+            let _ = rx.recv();
+        }
         let mut status = self.shared.status.lock();
         if *status != Status::Paused {
             return false;
@@ -428,7 +492,6 @@ impl RecordingManager {
         }
         self.shared.paused.store(false, Ordering::Relaxed);
         *status = Status::Recording;
-        let _ = self.tx.send(WorkerCommand::SetMicrophonePaused(false));
         true
     }
 
@@ -446,7 +509,7 @@ impl RecordingManager {
             label: None,
         };
         self.shared.bookmarks.lock().push(bookmark.clone());
-        self.write_manifest();
+        self.shared.write_manifest();
         Some(bookmark)
     }
 
@@ -459,7 +522,7 @@ impl RecordingManager {
             .map(|label| label.trim().to_string())
             .filter(|label| !label.is_empty());
         drop(bookmarks);
-        self.write_manifest();
+        self.shared.write_manifest();
         true
     }
 
@@ -468,31 +531,7 @@ impl RecordingManager {
             .bookmarks
             .lock()
             .retain(|bookmark| bookmark.id != id);
-        self.write_manifest();
-    }
-
-    fn write_manifest(&self) {
-        let Some(dir) = self.shared.session_dir.lock().clone() else {
-            return;
-        };
-        let Some(id) = dir
-            .file_name()
-            .map(|name| name.to_string_lossy().to_string())
-        else {
-            return;
-        };
-        let Some(started_at) = *self.shared.started_at.lock() else {
-            return;
-        };
-        let manifest = SessionManifest {
-            id,
-            started_at,
-            sources: self.shared.sources.lock().clone(),
-            bookmarks: self.shared.bookmarks.lock().clone(),
-        };
-        if let Err(err) = write_manifest_file(&dir, &manifest) {
-            tracing::warn!("Failed to write recording manifest: {err}");
-        }
+        self.shared.write_manifest();
     }
 }
 
@@ -507,20 +546,38 @@ fn write_manifest_file(dir: &Path, manifest: &SessionManifest) -> Result<()> {
 }
 
 struct ActiveSession {
+    app: AppHandle<AppRuntime>,
     dir: PathBuf,
     started_at: DateTime<Local>,
     clock: Arc<SessionClock>,
-    microphone: Option<(microphone::MicrophoneCapture, TrackWriter)>,
+    microphone: Option<MicrophoneTrack>,
     system: Option<(system_audio::SystemAudioCapture, TrackWriter)>,
+}
+
+/// The track outlives its capture: a lost microphone leaves the writer padding
+/// silence until a replacement is opened or the session ends.
+struct MicrophoneTrack {
+    capture: Option<microphone::MicrophoneCapture>,
+    writer: TrackWriter,
+    device_id: Option<String>,
+    generation: u64,
+    // Set in worker command order, so a loss signal can't race a resume.
+    paused: bool,
 }
 
 struct Worker {
     shared: Arc<Shared>,
+    tx: Sender<WorkerCommand>,
     active: Option<ActiveSession>,
 }
 
 impl Worker {
-    fn start(&mut self, sources: RecordingSources, dir: PathBuf) -> Result<(), StartFailure> {
+    fn start(
+        &mut self,
+        app: AppHandle<AppRuntime>,
+        sources: RecordingSources,
+        dir: PathBuf,
+    ) -> Result<(), StartFailure> {
         if self.active.is_some() {
             return Err(("setup", anyhow!("already_recording")));
         }
@@ -544,6 +601,7 @@ impl Worker {
 
         let mut summary = AudioSources::default();
         let mut session = ActiveSession {
+            app,
             dir: dir.clone(),
             started_at,
             clock: Arc::clone(&clock),
@@ -552,87 +610,90 @@ impl Worker {
         };
 
         let mut stage = "start_system";
-        let result =
-            (|| -> Result<()> {
-                // System audio first: it is the source that can be refused, and
-                // failing before the microphone opens keeps cleanup simple.
-                if let Some(system) = sources.system_audio.as_ref() {
-                    let scope = match system.apps.as_ref() {
-                        Some(apps) => {
-                            SystemAudioScope::Apps(apps.iter().map(|app| app.id.clone()).collect())
+        let result = (|| -> Result<()> {
+            // System audio first: it is the source that can be refused, and
+            // failing before the microphone opens keeps cleanup simple.
+            if let Some(system) = sources.system_audio.as_ref() {
+                let scope = match system.apps.as_ref() {
+                    Some(apps) => {
+                        SystemAudioScope::Apps(apps.iter().map(|app| app.id.clone()).collect())
+                    }
+                    None => SystemAudioScope::All,
+                };
+                let path = dir.join(SYSTEM_FILE);
+                let sink = SinkParts {
+                    clock: Arc::clone(&clock),
+                    paused: Arc::clone(&self.shared.paused),
+                    level: Arc::clone(&self.shared.system_level),
+                };
+                let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
+                let capture = system_audio::SystemAudioCapture::start(&scope, move |rate| {
+                    match TrackWriter::spawn(path, rate, "glimpse-recording-system") {
+                        Ok(writer) => {
+                            let callback = sink.into_callback(writer.input());
+                            let _ = writer_tx.send(Ok(writer));
+                            callback
                         }
-                        None => SystemAudioScope::All,
-                    };
-                    let path = dir.join(SYSTEM_FILE);
-                    let sink = SinkParts {
-                        clock: Arc::clone(&clock),
-                        paused: Arc::clone(&self.shared.paused),
-                        level: Arc::clone(&self.shared.system_level),
-                    };
-                    let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
-                    let capture = system_audio::SystemAudioCapture::start(&scope, move |rate| {
-                        match TrackWriter::spawn(path, rate, "glimpse-recording-system") {
-                            Ok(writer) => {
-                                let callback = sink.into_callback(writer.input());
-                                let _ = writer_tx.send(Ok(writer));
-                                callback
-                            }
-                            Err(err) => {
-                                let _ = writer_tx.send(Err(err));
-                                Box::new(|_: &[f32]| {})
-                            }
+                        Err(err) => {
+                            let _ = writer_tx.send(Err(err));
+                            Box::new(|_: &[f32]| {})
                         }
-                    })
-                    .map_err(|err| {
-                        if err.to_string() == "permission" {
-                            anyhow!("system_audio_permission")
-                        } else {
-                            err
-                        }
-                    })?;
-                    let writer = match writer_rx.recv() {
-                        Ok(Ok(writer)) => writer,
-                        Ok(Err(err)) => {
-                            capture.stop();
-                            return Err(err);
-                        }
-                        Err(_) => {
-                            capture.stop();
-                            return Err(anyhow!("System audio writer did not start"));
-                        }
-                    };
-                    summary.system_audio = Some(
-                        system
-                            .apps
-                            .as_ref()
-                            .map(|apps| apps.iter().map(|app| app.name.clone()).collect())
-                            .unwrap_or_default(),
-                    );
-                    session.system = Some((capture, writer));
-                }
+                    }
+                })
+                .map_err(|err| {
+                    if err.to_string() == "permission" {
+                        anyhow!("system_audio_permission")
+                    } else {
+                        err
+                    }
+                })?;
+                let writer = match writer_rx.recv() {
+                    Ok(Ok(writer)) => writer,
+                    Ok(Err(err)) => {
+                        capture.stop();
+                        return Err(err);
+                    }
+                    Err(_) => {
+                        capture.stop();
+                        return Err(anyhow!("System audio writer did not start"));
+                    }
+                };
+                summary.system_audio = Some(
+                    system
+                        .apps
+                        .as_ref()
+                        .map(|apps| apps.iter().map(|app| app.name.clone()).collect())
+                        .unwrap_or_default(),
+                );
+                session.system = Some((capture, writer));
+            }
 
-                if let Some(mic) = sources.microphone.as_ref() {
-                    stage = "start_mic";
-                    let path = dir.join(MICROPHONE_FILE);
-                    let sink = SinkParts {
-                        clock: Arc::clone(&clock),
-                        paused: Arc::clone(&self.shared.paused),
-                        level: Arc::clone(&self.shared.microphone_level),
-                    };
-                    let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
-                    let capture = microphone::start(mic.device_id.as_deref(), move |rate| {
-                        match TrackWriter::spawn(path, rate, "glimpse-recording-microphone") {
-                            Ok(writer) => {
-                                let callback = sink.into_callback(writer.input());
-                                let _ = writer_tx.send(Ok(writer));
-                                callback
-                            }
-                            Err(err) => {
-                                let _ = writer_tx.send(Err(err));
-                                Box::new(|_: &[f32]| {})
-                            }
-                        }
-                    })
+            if let Some(mic) = sources.microphone.as_ref() {
+                stage = "start_mic";
+                let path = dir.join(MICROPHONE_FILE);
+                let sink = SinkParts {
+                    clock: Arc::clone(&clock),
+                    paused: Arc::clone(&self.shared.paused),
+                    level: Arc::clone(&self.shared.microphone_level),
+                };
+                let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
+                let make_sink = move |rate| match TrackWriter::spawn(
+                    path,
+                    rate,
+                    "glimpse-recording-microphone",
+                ) {
+                    Ok(writer) => {
+                        let callback = sink.into_callback(writer.input());
+                        let _ = writer_tx.send(Ok(writer));
+                        callback
+                    }
+                    Err(err) => {
+                        let _ = writer_tx.send(Err(err));
+                        Box::new(|_: &[f32]| {})
+                    }
+                };
+                let lost = lost_signal(&self.tx, 0);
+                let capture = microphone::start(mic.device_id.as_deref(), make_sink, lost)
                     .map_err(|err| {
                         if err.downcast_ref::<microphone::NoMicrophone>().is_some() {
                             anyhow!("no_microphone")
@@ -640,16 +701,22 @@ impl Worker {
                             err
                         }
                     })?;
-                    let writer = match writer_rx.recv() {
-                        Ok(Ok(writer)) => writer,
-                        Ok(Err(err)) => return Err(err),
-                        Err(_) => return Err(anyhow!("Microphone writer did not start")),
-                    };
-                    summary.microphone = Some(capture.name.clone());
-                    session.microphone = Some((capture, writer));
-                }
-                Ok(())
-            })();
+                let writer = match writer_rx.recv() {
+                    Ok(Ok(writer)) => writer,
+                    Ok(Err(err)) => return Err(err),
+                    Err(_) => return Err(anyhow!("Microphone writer did not start")),
+                };
+                summary.microphone = Some(capture.name.clone());
+                session.microphone = Some(MicrophoneTrack {
+                    capture: Some(capture),
+                    writer,
+                    device_id: mic.device_id.clone(),
+                    generation: 0,
+                    paused: false,
+                });
+            }
+            Ok(())
+        })();
 
         if let Err(err) = result {
             discard_session(session);
@@ -688,9 +755,9 @@ impl Worker {
         let mut microphone_path = None;
         let mut system_path = None;
         let result = (|| -> Result<()> {
-            if let Some((capture, writer)) = session.microphone {
-                drop(capture);
-                let (path, _) = writer.finish(final_ms)?;
+            if let Some(mic) = session.microphone {
+                drop(mic.capture);
+                let (path, _) = mic.writer.finish(final_ms)?;
                 microphone_path = Some(path);
             }
             if let Some((capture, writer)) = session.system {
@@ -713,9 +780,114 @@ impl Worker {
 }
 
 impl Worker {
-    fn set_microphone_paused(&self, paused: bool) {
-        if let Some((capture, _)) = self.active.as_ref().and_then(|s| s.microphone.as_ref()) {
-            capture.set_paused(paused);
+    fn set_microphone_paused(&mut self, paused: bool) {
+        let Some(mic) = self.active.as_mut().and_then(|s| s.microphone.as_mut()) else {
+            return;
+        };
+        mic.paused = paused;
+        match mic
+            .capture
+            .as_ref()
+            .map(|capture| capture.set_paused(paused))
+        {
+            Some(Ok(())) => {}
+            Some(Err(err)) => {
+                tracing::warn!("{err}");
+                if !paused {
+                    self.reopen_microphone();
+                }
+            }
+            // Lost while paused; resume is the retry.
+            None if !paused => self.reopen_microphone(),
+            None => {}
+        }
+    }
+
+    fn microphone_lost(&mut self, generation: u64) {
+        let Some(mic) = self.active.as_mut().and_then(|s| s.microphone.as_mut()) else {
+            return;
+        };
+        if mic.generation != generation {
+            return;
+        }
+        mic.capture = None;
+        self.shared
+            .microphone_level
+            .store(0f32.to_bits(), Ordering::Relaxed);
+        if !mic.paused {
+            self.reopen_microphone();
+        }
+    }
+
+    /// Reopens the selected microphone, or the system default when it is gone,
+    /// onto the same track. The user is told when the device changed or none opened.
+    fn reopen_microphone(&mut self) {
+        let tx = self.tx.clone();
+        let Some(session) = self.active.as_mut() else {
+            return;
+        };
+        let Some(mic) = session.microphone.as_mut() else {
+            return;
+        };
+        // Released before reopening so the same device can be taken again.
+        mic.capture = None;
+        mic.generation += 1;
+        let generation = mic.generation;
+        let writer = &mic.writer;
+        let open = |device_id: Option<&str>| {
+            let sink = SinkParts {
+                clock: Arc::clone(&session.clock),
+                paused: Arc::clone(&self.shared.paused),
+                level: Arc::clone(&self.shared.microphone_level),
+            };
+            microphone::start(
+                device_id,
+                move |rate| {
+                    writer.source_changed(rate);
+                    sink.into_callback(writer.input())
+                },
+                lost_signal(&tx, generation),
+            )
+        };
+        // A dying device can still be listed, and still be the default, for a moment.
+        let opened = open(mic.device_id.as_deref()).or_else(|err| {
+            tracing::warn!("Recording microphone reopen failed, retrying on the default: {err}");
+            std::thread::sleep(Duration::from_millis(500));
+            open(None)
+        });
+        let app = &session.app;
+        match opened {
+            Ok(capture) => {
+                let name = capture.name.clone();
+                mic.capture = Some(capture);
+                let mut sources = self.shared.sources.lock();
+                if sources.microphone.as_deref() == Some(name.as_str()) {
+                    return;
+                }
+                sources.microphone = Some(name.clone());
+                drop(sources);
+                self.shared.write_manifest();
+                tracing::warn!("Recording microphone switched to another device");
+                crate::toast::show(
+                    app,
+                    "warning",
+                    None,
+                    &crate::toast::native_format(
+                        app,
+                        "native.toast.recording_mic_switched",
+                        &[("name", &name)],
+                    ),
+                );
+            }
+            Err(err) => {
+                tracing::warn!("Recording microphone could not be reopened: {err}");
+                crate::toast::show(
+                    app,
+                    "warning",
+                    None,
+                    &crate::toast::native(app, "native.toast.recording_mic_lost"),
+                );
+            }
         }
     }
 
@@ -726,10 +898,17 @@ impl Worker {
     }
 }
 
+fn lost_signal(tx: &Sender<WorkerCommand>, generation: u64) -> Box<dyn FnMut() + Send> {
+    let tx = tx.clone();
+    Box::new(move || {
+        let _ = tx.send(WorkerCommand::MicrophoneLost(generation));
+    })
+}
+
 fn discard_session(session: ActiveSession) {
-    if let Some((capture, writer)) = session.microphone {
-        drop(capture);
-        writer.discard();
+    if let Some(mic) = session.microphone {
+        drop(mic.capture);
+        mic.writer.discard();
     }
     if let Some((capture, writer)) = session.system {
         capture.stop();
@@ -1045,7 +1224,7 @@ pub(crate) fn start_session(app: &AppHandle<AppRuntime>, sources: RecordingSourc
     let root = sessions_root(app).inspect_err(|err| failed("setup", error_detail(err)))?;
     let dir = root.join(uuid::Uuid::new_v4().to_string());
     manager
-        .send_start(sources.clone(), dir)
+        .send_start(app, sources.clone(), dir)
         .map_err(|(stage, err)| {
             match err.to_string().as_str() {
                 "system_audio_permission" => failed("permission", "system_audio".into()),
@@ -1133,8 +1312,8 @@ pub fn pause_recording_session(
     manager.state()
 }
 
-#[tauri::command]
-pub fn resume_recording_session(app: AppHandle<AppRuntime>) -> RecordingSessionState {
+/// Blocks until the microphone runs again, so keep it off the main thread.
+pub(crate) fn resume_session(app: &AppHandle<AppRuntime>) -> RecordingSessionState {
     let state = app.state::<AppState>();
     let manager = state.recording();
     manager
@@ -1142,10 +1321,19 @@ pub fn resume_recording_session(app: AppHandle<AppRuntime>) -> RecordingSessionS
         .finish_requested
         .store(false, Ordering::Relaxed);
     if manager.resume() {
-        refresh_menus(&app);
+        refresh_menus(app);
     }
-    emit_state(&app, &manager.shared);
+    emit_state(app, &manager.shared);
     manager.state()
+}
+
+#[tauri::command]
+pub async fn resume_recording_session(
+    app: AppHandle<AppRuntime>,
+) -> Result<RecordingSessionState, String> {
+    tauri::async_runtime::spawn_blocking(move || resume_session(&app))
+        .await
+        .map_err(|err| format!("Failed to resume recording: {err}"))
 }
 
 #[tauri::command]
@@ -1294,16 +1482,21 @@ pub(crate) fn request_finish_from_tray(app: &AppHandle<AppRuntime>) {
 pub(crate) fn toggle_pause_from_tray(app: &AppHandle<AppRuntime>) {
     let state = app.state::<AppState>();
     let manager = state.recording();
-    let changed = if *manager.shared.status.lock() == Status::Paused {
-        manager.resume()
-    } else {
-        let paused = manager.pause();
-        if paused {
-            manager.shared.paused_by_user.store(true, Ordering::Relaxed);
-        }
-        paused
-    };
-    if changed {
+    if *manager.shared.status.lock() == Status::Paused {
+        // Off the main thread: resume waits on the worker, which can raise a toast.
+        let app = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let state = app.state::<AppState>();
+            let manager = state.recording();
+            if manager.resume() {
+                refresh_menus(&app);
+                emit_state(&app, &manager.shared);
+            }
+        });
+        return;
+    }
+    if manager.pause() {
+        manager.shared.paused_by_user.store(true, Ordering::Relaxed);
         refresh_menus(app);
         emit_state(app, &manager.shared);
     }

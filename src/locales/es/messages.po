@@ -4988,6 +4988,16 @@ msgid "settings.about.cli.installed_info"
 msgstr "El comando glimpse está instalado en {cliInstallPath}. Úsalo desde Terminal, scripts o herramientas de automatización para llamar a Glimpse sin abrir la interfaz de la app."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_lost"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_switched"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.next.anywhere"
 msgstr "El mismo atajo funciona en cualquier app donde puedas escribir."

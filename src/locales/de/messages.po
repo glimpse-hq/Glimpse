@@ -4988,6 +4988,16 @@ msgid "settings.about.cli.installed_info"
 msgstr "Der glimpse-Befehl ist unter {cliInstallPath} installiert. Verwende ihn in Terminal, Skripten oder Automatisierungswerkzeugen, um Glimpse aufzurufen, ohne die App-Oberfläche zu öffnen."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_lost"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_switched"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.next.anywhere"
 msgstr "Dieselbe Tastenkombination funktioniert in jeder App, in der du tippen kannst."

@@ -4988,6 +4988,16 @@ msgid "settings.about.cli.installed_info"
 msgstr "The glimpse command is installed at {cliInstallPath}. Use it from Terminal, scripts, or automation tools to call Glimpse without opening the app UI."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_lost"
+msgstr "The microphone stopped responding and no other microphone was found. The recording continues without it. Pause and resume to try again."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_switched"
+msgstr "The microphone stopped responding. The recording continues with {name}."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.next.anywhere"
 msgstr "The same shortcut works in any app where you can type."
