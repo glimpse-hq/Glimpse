@@ -3,6 +3,9 @@
 ### Fixes
 
 - When a model download fails, the error in Settings says why, like a network error, instead of only naming the file.
+- Replacements keep the capitals you typed, so "iPhone" no longer becomes "IPhone" at the start of a sentence.
+- Replacements with symbols, like "C++" or "e.g.", now work, and ones like "24/7" are no longer written in all caps.
+- A replacement's result is no longer changed again by another replacement, and longer phrases win over shorter ones inside them.
 
 1.2.5
 

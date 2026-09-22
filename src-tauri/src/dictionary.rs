@@ -1,4 +1,6 @@
-use std::collections::HashSet;
+use std::{cmp::Reverse, collections::HashSet, sync::LazyLock};
+
+use regex::Regex;
 
 use crate::{
     AppState,
@@ -67,36 +69,46 @@ pub fn sanitize_replacements(replacements: &[Replacement]) -> Vec<Replacement> {
 }
 
 pub fn apply_replacements(text: &str, replacements: &[Replacement]) -> String {
-    if replacements.is_empty() {
+    let mut ordered: Vec<&Replacement> =
+        replacements.iter().filter(|r| !r.from.is_empty()).collect();
+    if ordered.is_empty() {
         return text.to_string();
     }
+    ordered.sort_by_key(|r| Reverse(r.from.chars().count()));
+    let alternatives: Vec<String> = ordered
+        .iter()
+        .map(|r| format!("({})", replacement_pattern(&r.from)))
+        .collect();
+    let Ok(re) = Regex::new(&format!("(?i){}", alternatives.join("|"))) else {
+        return text.to_string();
+    };
+    re.replace_all(text, |caps: &regex::Captures| {
+        let index = caps.iter().skip(1).position(|m| m.is_some()).unwrap_or(0);
+        apply_case_pattern(&caps[0], &ordered[index].to)
+    })
+    .into_owned()
+}
 
-    let mut result = text.to_string();
-    for r in replacements {
-        if r.from.is_empty() {
-            continue;
-        }
-        let pattern = format!(r"(?i)\b{}\b", regex::escape(&r.from));
-        if let Ok(re) = regex::Regex::new(&pattern) {
-            result = re
-                .replace_all(&result, |caps: &regex::Captures| {
-                    let matched = &caps[0];
-                    apply_case_pattern(matched, &r.to)
-                })
-                .to_string();
-        }
-    }
-    result
+fn replacement_pattern(from: &str) -> String {
+    static STARTS_WORD: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\w").unwrap());
+    static ENDS_WORD: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\w$").unwrap());
+    let boundary = |is_word: bool| if is_word { r"\b" } else { "" };
+    format!(
+        "{}{}{}",
+        boundary(STARTS_WORD.is_match(from)),
+        regex::escape(from),
+        boundary(ENDS_WORD.is_match(from))
+    )
 }
 
 fn apply_case_pattern(matched: &str, replacement: &str) -> String {
-    if replacement.is_empty() {
-        return String::new();
+    if replacement.is_empty() || replacement.chars().any(char::is_uppercase) {
+        return replacement.to_string();
     }
 
     let first_char = matched.chars().next();
     let is_first_upper = first_char.map(|c| c.is_uppercase()).unwrap_or(false);
-    let is_all_upper = matched.len() > 1
+    let is_all_upper = matched.chars().filter(|c| c.is_alphabetic()).count() > 1
         && matched
             .chars()
             .all(|c| !c.is_alphabetic() || c.is_uppercase());
