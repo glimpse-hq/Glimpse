@@ -420,7 +420,7 @@ fn serialize_tags(tags: &[String]) -> Result<String> {
     Ok(serde_json::to_string(tags)?)
 }
 
-fn extract_search_terms(search: &str) -> (String, Vec<String>) {
+fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
     let mut tag_terms = Vec::new();
     let mut text_terms = Vec::new();
 
@@ -433,10 +433,10 @@ fn extract_search_terms(search: &str) -> (String, Vec<String>) {
             continue;
         }
 
-        text_terms.push(token);
+        text_terms.push(token.to_string());
     }
 
-    (text_terms.join(" ").trim().to_string(), tag_terms)
+    (text_terms, tag_terms)
 }
 
 fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>) {
@@ -446,11 +446,16 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
     if let Some(search) = filter.search.as_ref()
         && !search.trim().is_empty()
     {
-        let (text_search, tag_terms) = extract_search_terms(search.trim());
+        let (text_terms, tag_terms) = extract_search_terms(search.trim());
 
-        if !text_search.is_empty() {
-            let like = format!("%{}%", text_search);
-            clauses.push("(name LIKE ? OR transcript LIKE ?)".to_string());
+        // Each word matches independently, so word order and gaps don't matter.
+        for term in text_terms {
+            let escaped = term
+                .replace('\\', "\\\\")
+                .replace('%', "\\%")
+                .replace('_', "\\_");
+            let like = format!("%{escaped}%");
+            clauses.push("(name LIKE ? ESCAPE '\\' OR transcript LIKE ? ESCAPE '\\')".to_string());
             params.push(Box::new(like.clone()));
             params.push(Box::new(like));
         }
