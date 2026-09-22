@@ -134,6 +134,115 @@ msgstr ""
 #~ msgid "personalization.websites"
 #~ msgstr "Websites"
 
+#. placeholder {0}: entries.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.multiple"
+#~ msgstr "{0} items"
+
+#. placeholder {0}: replacements.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.multiple"
+#~ msgstr "{0} vervangingen"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.single"
+#~ msgstr "1 item"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.single"
+#~ msgstr "1 vervanging"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.dictionary_description"
+#~ msgstr "Voeg aangepaste woorden toe die Glimpse moet herkennen."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.combined.description"
+#~ msgstr "Voeg aangepaste woorden toe die het systeem moet herkennen en stel automatische woordvervangingen in."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none_description"
+#~ msgstr "Voeg woordparen toe om ze automatisch in transcripties te vervangen. Overeenkomsten zijn niet hoofdlettergevoelig."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries.description"
+#~ msgstr "Voeg woorden, zinnen of namen toe die niet in het standaardwoordenboek staan."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.delete"
+#~ msgstr "Verwijderen"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.full_hint"
+#~ msgstr "Woordenboek is vol"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning"
+#~ msgstr "Woordenboek werkt alleen voor modellen met woordenboekondersteuning. Het huidige model {0} negeert deze invoer totdat je overschakelt naar een compatibel model."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries"
+#~ msgstr "Nog geen items"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_matches"
+#~ msgstr "Geen overeenkomsten gevonden"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none"
+#~ msgstr "Nog geen vervangingen"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.press_enter_to_add"
+#~ msgstr "Druk in een van de velden op Enter om toe te voegen"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add"
+#~ msgstr "Druk op Enter om toe te voegen"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add_match"
+#~ msgstr "Druk op Enter om dit woord toe te voegen"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.edit_hint"
+#~ msgstr "Druk op Enter om op te slaan · Esc om te annuleren"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.replacements_description"
+#~ msgstr "Veelgebruikte zinnen na transcriptie automatisch vervangen."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning_aria"
+#~ msgstr "Waarschuwing: compatibiliteitsprobleem met model"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning.inline"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -261,12 +370,6 @@ msgid "onboarding.model.status.download"
 msgstr "{0} download"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: entries.length
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.multiple"
-msgstr "{0} items"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files"
@@ -304,10 +407,10 @@ msgid "dictionary.search_matches"
 msgstr "{0} van {1} overeenkomsten"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: replacements.length
+#. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.multiple"
-msgstr "{0} vervangingen"
+msgid "dictionary.entry_count.of_limit"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -410,16 +513,6 @@ msgstr "1 audio- en tekstpaar"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_one"
 msgstr "1 bladwijzer"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.single"
-msgstr "1 item"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.single"
-msgstr "1 vervanging"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -582,16 +675,6 @@ msgid "personalization.modal.custom_instructions.placeholder"
 msgstr "Aangepaste instructies toevoegen"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.dictionary_description"
-msgstr "Voeg aangepaste woorden toe die Glimpse moet herkennen."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.combined.description"
-msgstr "Voeg aangepaste woorden toe die het systeem moet herkennen en stel automatische woordvervangingen in."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.add_files"
 msgstr "Bestanden toevoegen"
@@ -618,13 +701,8 @@ msgstr "Websitedomein toevoegen"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none_description"
-msgstr "Voeg woordparen toe om ze automatisch in transcripties te vervangen. Overeenkomsten zijn niet hoofdlettergevoelig."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries.description"
-msgstr "Voeg woorden, zinnen of namen toe die niet in het standaardwoordenboek staan."
+msgid "dictionary.header.description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1099,6 +1177,11 @@ msgstr "Kies een model"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "Kies een model"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.switch_model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1708,11 +1791,6 @@ msgid "library.modal.delete"
 msgstr "Verwijderen"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.delete"
-msgstr "Verwijderen"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: pendingDeletePersonality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.delete_mode.description"
@@ -1890,17 +1968,6 @@ msgid "dictionary.combined.title"
 msgstr "Woordenboek en vervangingen"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.full_hint"
-msgstr "Woordenboek is vol"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: currentModel?.label ?? settings?.local_model
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning"
-msgstr "Woordenboek werkt alleen voor modellen met woordenboekondersteuning. Het huidige model {0} negeert deze invoer totdat je overschakelt naar een compatibel model."
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "Uitschakelen"
@@ -2014,6 +2081,11 @@ msgstr "Dupliceer"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.edit"
 msgstr "Wijzig"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.edit_entry"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2575,6 +2647,12 @@ msgstr "Ik spreek met"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "Ik spreek met {wpm} woorden per minuut. Blijkt dat praten sneller gaat dan typen. Gedicteerd met @try_glimpse_app"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.ignored_by"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3269,11 +3347,6 @@ msgid "onboarding.model.option.no_download"
 msgstr "Geen download"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries"
-msgstr "Nog geen items"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_files"
 msgstr "Geen bestanden meer om te importeren"
@@ -3287,11 +3360,6 @@ msgstr "Geen invoerapparaten gevonden"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "Nog geen logboeken."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_matches"
-msgstr "Geen overeenkomsten gevonden"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3352,11 +3420,6 @@ msgstr "Geen andere labels"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.no_other_tags"
 msgstr "Geen andere labels"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none"
-msgstr "Nog geen vervangingen"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3725,29 +3788,14 @@ msgstr "Vooraf geladen model"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.press_enter_to_add"
-msgstr "Druk in een van de velden op Enter om toe te voegen"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add"
-msgstr "Druk op Enter om toe te voegen"
+msgid "dictionary.replacements.empty_hint"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.add_prompt"
 msgstr "Druk op Enter om \"{0}\" als nieuw item toe te voegen."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add_match"
-msgstr "Druk op Enter om dit woord toe te voegen"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.edit_hint"
-msgstr "Druk op Enter om op te slaan · Esc om te annuleren"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4822,11 +4870,6 @@ msgid "onboarding.model.supports"
 msgstr "Ondersteunt"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.replacements_description"
-msgstr "Veelgebruikte zinnen na transcriptie automatisch vervangen."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "Systeem"
@@ -5244,6 +5287,11 @@ msgid "settings.stats.post.7"
 msgstr "Blijkt dat ik sneller denk dan ik typ. {wpm} woorden per minuut. @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.empty_hint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.subtitle"
 msgstr "Schakelt automatisch plakken in elke app in."
@@ -5423,11 +5471,6 @@ msgstr "Mijn stem is het snelste toetsenbord dat ik heb. {wpm} woorden per minuu
 #: src/features/import/components/ImportStep.tsx
 msgid "import.title"
 msgstr "Wil je je instellingen meenemen?"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning_aria"
-msgstr "Waarschuwing: compatibiliteitsprobleem met model"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx

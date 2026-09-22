@@ -3,18 +3,13 @@ import { useLingui } from "@lingui/react/macro";
 import {
   useState,
   useCallback,
-  useId,
   useRef,
   type Dispatch,
-  type CSSProperties,
   type SetStateAction,
 } from "react";
-import {
-  Warning as AlertTriangle,
-  ArrowRight,
-  Trash as Trash2,
-} from "@phosphor-icons/react";
+import { Warning as AlertTriangle, ArrowRight, X } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import HoverTip from "../../../shared/ui/HoverTip";
 import ScreenHeader from "../../../shared/ui/ScreenHeader";
 import {
   hasModelCapability,
@@ -126,7 +121,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const [editingTo, setEditingTo] = useState("");
 
   const [error, setError] = useState<string | null>(null);
-  const warningTooltipId = useId();
 
   const settings = settingsQuery.data ?? null;
   const models = modelsQuery.data ?? [];
@@ -285,62 +279,17 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const showWarning = Boolean(
     isLocal && !remoteSpeechActive && currentModel && !supportsDictionary,
   );
-  const entryCountLabel =
-    entries.length === 1
-      ? t({
-          id: "dictionary.entry_count.single",
-          message: "1 entry",
-        })
-      : t({
-          id: "dictionary.entry_count.multiple",
-          message: `${entries.length} entries`,
-        });
-  const replacementCountLabel =
-    replacements.length === 1
-      ? t({
-          id: "dictionary.replacements.count.single",
-          message: "1 replacement",
-        })
-      : t({
-          id: "dictionary.replacements.count.multiple",
-          message: `${replacements.length} replacements`,
-        });
-  const dictionaryMetaLabel =
+  const dictionaryCountLabel =
     isSearching && entries.length > 0
       ? t({
           id: "dictionary.search_matches",
           message: `${filteredEntries.length} of ${entries.length} matches`,
         })
-      : entryCountLabel;
-  const isEditingDictionary = editingIndex !== null;
-  const isEditingReplacement = editingReplacementIndex !== null;
+      : t({
+          id: "dictionary.entry_count.of_limit",
+          message: `${entries.length} of ${DICTIONARY_ENTRY_LIMIT}`,
+        });
   const isDictionaryFull = entries.length >= DICTIONARY_ENTRY_LIMIT;
-  const editHintLabel = t({
-    id: "dictionary.edit_hint",
-    message: "Press Enter to save · Esc to cancel",
-  });
-  const dictionaryHintLabel = isEditingDictionary
-    ? editHintLabel
-    : isDictionaryFull
-      ? t({
-          id: "dictionary.full_hint",
-          message: "Dictionary is full",
-        })
-      : isSearching && entries.length > 0
-        ? t({
-            id: "dictionary.press_enter_to_add_match",
-            message: "Press Enter to add this word",
-          })
-        : t({
-            id: "dictionary.press_enter_to_add",
-            message: "Press Enter to add",
-          });
-  const replacementHintLabel = isEditingReplacement
-    ? editHintLabel
-    : t({
-        id: "dictionary.replacements.press_enter_to_add",
-        message: "Press Enter in either field to add",
-      });
   const dictionaryInputPlaceholder = isDictionaryFull
     ? t({
         id: "dictionary.search_only",
@@ -350,24 +299,30 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
         id: "dictionary.search_or_add",
         message: "Search or add a word...",
       });
-  const panelBodyClassName =
-    "mt-4 min-h-[16rem] max-h-[calc(100vh-330px)] overflow-x-hidden overflow-y-auto custom-scrollbar";
-  const panelBodyFadeClassName = "pb-20";
-  const itemRowClassName =
-    "group relative flex min-h-[42px] items-center overflow-hidden rounded-lg transition-colors hover:bg-[var(--surface-interactive)]";
-  const editRowClassName =
-    "group relative flex min-h-[42px] items-center rounded-lg bg-[var(--surface-interactive)]";
-  const actionGradientStyle: CSSProperties = {
-    backgroundImage:
-      "linear-gradient(to left, var(--color-row-action-fade) 62%, transparent)",
-  };
   const resolvedError =
     error ?? (bootstrapError ? toErrorMessage(bootstrapError) : null);
-  const deleteButtonClassName =
-    "rounded p-1 text-content-muted transition-colors hover:bg-[color-mix(in_srgb,var(--color-error)_16%,transparent)] hover:text-error";
-  const deleteButtonActiveClassName =
-    "rounded p-1 text-error bg-[color-mix(in_srgb,var(--color-error)_16%,transparent)] transition-colors";
-  const FADE_ITEM_THRESHOLD = 6;
+  const panelBodyClassName =
+    "mt-4 -mr-4 max-h-[calc(100vh-320px)] md:max-h-none md:min-h-0 md:flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar pr-[10px] pb-8 [scrollbar-gutter:stable] [mask-image:linear-gradient(to_bottom,black_calc(100%-2rem),transparent)]";
+  const deleteHoverClassName = shiftHeld
+    ? "text-error"
+    : "text-content-disabled hover:text-error";
+  const deleteTextClassName = shiftHeld
+    ? "group-hover:!text-error group-hover:line-through"
+    : "";
+  const loadingIndicator = (
+    <div className="flex items-center py-10">
+      <DotMatrix
+        rows={2}
+        cols={6}
+        activeDots={[0, 1, 2, 3, 4, 5]}
+        dotSize={3}
+        gap={3}
+        color="var(--color-content-muted)"
+        animated
+        className="opacity-60"
+      />
+    </div>
+  );
 
   return (
     <div className="w-full min-w-0 max-w-7xl mx-auto px-0 text-left">
@@ -387,65 +342,54 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
           message: "Dictionary & Replacements",
         })}
         description={t({
-          id: "dictionary.combined.description",
+          id: "dictionary.header.description",
           message:
-            "Add custom words the system should recognize, and set automatic word replacements.",
+            "Add words Glimpse should recognize and phrases to replace after transcription.",
         })}
-        titleAdornment={
-          showWarning && (
-            <span className="group relative inline-flex shrink-0 items-center justify-center self-center translate-y-[3px]">
-              <button
-                type="button"
-                aria-describedby={warningTooltipId}
-                aria-label={t({
-                  id: "dictionary.warning_aria",
-                  message: "Warning: model compatibility issue",
-                })}
-                className="inline-flex items-center justify-center ui-color-warning opacity-90 hover:opacity-100 cursor-default outline-hidden"
-              >
-                <AlertTriangle size={18} aria-hidden="true" />
-              </button>
-              <span
-                id={warningTooltipId}
-                role="tooltip"
-                className="pointer-events-none absolute left-1/2 top-full z-50 hidden w-80 -translate-x-1/2 pt-2 text-left font-sans tracking-normal group-hover:block group-focus-within:block"
-              >
-                <span
-                  className="block rounded-lg border bg-surface-overlay p-3 ui-color-warning shadow-xl leading-relaxed ui-text-body-sm shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
-                  style={{
-                    borderColor:
-                      "color-mix(in srgb, var(--color-warning) 30%, transparent)",
-                  }}
-                >
-                  {t({
-                    id: "dictionary.warning",
-                    message: `Dictionary works only for models with dictionary support. Current model ${currentModel?.label ?? settings?.local_model} will ignore these entries until you switch to a compatible model.`,
-                  })}
-                </span>
-              </span>
-            </span>
-          )
-        }
       />
 
-      <div className="grid w-full min-w-0 grid-cols-1 gap-0 md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <div className="min-w-0 pb-6 md:pr-6 md:pb-0 lg:pr-8">
-          <div className="min-w-0">
-            <p className="ui-text-title-strong ui-color-primary text-balance">
+      <div className="grid w-full min-w-0 grid-cols-1 gap-x-14 gap-y-10 md:h-[calc(100vh-200px)] md:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <section className="flex min-h-0 min-w-0 flex-col">
+          <div className="flex items-center gap-3">
+            <h3 className="shrink-0 ui-text-section-label-sm ui-color-muted">
               {t({
                 id: "dictionary.section.dictionary_title",
                 message: "Dictionary",
               })}
-            </p>
-            <p className="mt-1 ui-text-body-sm ui-color-muted text-pretty">
-              {t({
-                id: "dictionary.section.dictionary_description",
-                message: "Add custom words Glimpse should recognize.",
-              })}
-            </p>
+            </h3>
+            {showWarning && (
+              <HoverTip
+                label={t({
+                  id: "dictionary.warning.ignored_by",
+                  message: `Ignored by ${currentModel?.label ?? settings?.local_model}`,
+                })}
+                detail={t({
+                  id: "dictionary.warning.switch_model",
+                  message:
+                    "Choose a model with dictionary support to use these words.",
+                })}
+                className="flex shrink-0 items-center ui-color-warning"
+              >
+                <AlertTriangle
+                  size={13}
+                  tabIndex={0}
+                  aria-label={t({
+                    id: "dictionary.warning.ignored_by",
+                    message: `Ignored by ${currentModel?.label ?? settings?.local_model}`,
+                  })}
+                  className="outline-hidden"
+                />
+              </HoverTip>
+            )}
+            <span
+              className="ml-auto shrink-0 ui-text-meta ui-color-disabled tabular-nums"
+              role={isSearching && entries.length > 0 ? "status" : undefined}
+            >
+              {dictionaryCountLabel}
+            </span>
           </div>
 
-          <div className="mt-4 border-b border-border-primary pb-2 transition-colors focus-within:border-border-hover">
+          <div className="mt-3 border-b border-border-primary pb-2 transition-colors focus-within:border-border-hover">
             <input
               value={newEntry}
               onChange={(e) => setNewEntry(e.target.value)}
@@ -464,203 +408,114 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
             />
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 ui-text-meta ui-color-muted">
-            <span
-              className="tabular-nums"
-              role={isSearching && entries.length > 0 ? "status" : undefined}
-            >
-              {dictionaryMetaLabel}
-            </span>
-            <span>{dictionaryHintLabel}</span>
-          </div>
-
-          <div className="relative">
-            <div
-              aria-busy={entriesPending}
-              className={`${panelBodyClassName}${filteredEntries.length > FADE_ITEM_THRESHOLD ? ` ${panelBodyFadeClassName}` : ""}`}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <DotMatrix
-                    rows={2}
-                    cols={6}
-                    activeDots={[0, 1, 2, 3, 4, 5]}
-                    dotSize={3}
-                    gap={3}
-                    color="var(--color-content-muted)"
-                    animated
-                    className="opacity-60"
-                  />
-                </div>
-              ) : filteredEntries.length === 0 ? (
-                <div className="flex flex-col items-start gap-2 py-6 text-content-muted">
-                  {isSearching ? (
-                    <>
-                      <p className="ui-text-body-lg-strong">
-                        {t({
-                          id: "dictionary.no_matches",
-                          message: "No matches found",
-                        })}
-                      </p>
-                      <p className="ui-text-body-sm ui-color-muted">
-                        {isDictionaryFull
-                          ? t({
-                              id: "dictionary.full_add_prompt",
-                              message: "Delete an entry before adding another.",
-                            })
-                          : t({
-                              id: "dictionary.add_prompt",
-                              message: `Press Enter to add "${newEntry.trim()}" as a new entry.`,
-                            })}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="ui-text-body-lg-strong">
-                        {t({
-                          id: "dictionary.no_entries",
-                          message: "No entries yet",
-                        })}
-                      </p>
-                      <p className="ui-text-body-sm ui-color-muted text-pretty">
-                        {t({
-                          id: "dictionary.no_entries.description",
-                          message:
-                            "Add words, phrases, or names above and press Enter to save them here.",
-                        })}
-                      </p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <>
-                  {filteredEntries.map((entry, filteredIndex) => {
-                    const originalIndex = entries.indexOf(entry);
-                    const isEditing = editingIndex === originalIndex;
-                    if (isEditing) {
-                      return (
-                        <div
-                          key={`${entry}-${originalIndex}-${filteredIndex}`}
-                          className={`${editRowClassName} px-2.5`}
-                        >
-                          <input
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            autoFocus
-                            onFocus={(e) => e.target.select()}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleEditCommit();
-                              }
-                              if (e.key === "Escape") {
-                                setEditingIndex(null);
-                                setEditingValue("");
-                              }
-                            }}
-                            onBlur={() => handleEditCommit()}
-                            className="flex-1 min-w-0 bg-transparent border-0 px-0 py-0 rounded-none ui-text-body-lg ui-color-primary font-medium outline-hidden focus:ring-0"
-                            style={{
-                              boxShadow:
-                                "inset 0 -1px 0 var(--color-border-hover)",
-                            }}
-                          />
-                        </div>
-                      );
-                    }
+          <div aria-busy={entriesPending} className={panelBodyClassName}>
+            {loading ? (
+              loadingIndicator
+            ) : filteredEntries.length === 0 ? (
+              <p className="ui-text-meta ui-color-disabled text-pretty">
+                {isSearching
+                  ? isDictionaryFull
+                    ? t({
+                        id: "dictionary.full_add_prompt",
+                        message: "Delete an entry before adding another.",
+                      })
+                    : t({
+                        id: "dictionary.add_prompt",
+                        message: `Press Enter to add "${newEntry.trim()}" as a new entry.`,
+                      })
+                  : t({
+                      id: "dictionary.empty_hint",
+                      message: "Type a word above and press Enter to add it.",
+                    })}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {filteredEntries.map((entry, filteredIndex) => {
+                  const originalIndex = entries.indexOf(entry);
+                  const key = `${entry}-${originalIndex}-${filteredIndex}`;
+                  if (editingIndex === originalIndex) {
                     return (
-                      <div
-                        key={`${entry}-${originalIndex}-${filteredIndex}`}
-                        className={itemRowClassName}
-                      >
-                        <button
-                          onClick={() =>
-                            shiftHeld
-                              ? handleDelete(originalIndex)
-                              : startEditing(originalIndex)
+                      <input
+                        key={key}
+                        value={editingValue}
+                        onChange={(e) => setEditingValue(e.target.value)}
+                        size={Math.max(editingValue.length, 1)}
+                        autoFocus
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleEditCommit();
                           }
-                          className="flex-1 min-w-0 text-left px-2.5 py-2"
-                          title={
-                            shiftHeld
-                              ? t({
-                                  id: "dictionary.delete_entry",
-                                  message: `Delete ${entry}`,
-                                })
-                              : undefined
+                          if (e.key === "Escape") {
+                            setEditingIndex(null);
+                            setEditingValue("");
                           }
-                        >
-                          <p
-                            className={`ui-text-body-lg ui-color-primary leading-tight font-medium truncate transition-colors duration-100 ease-out ${
-                              shiftHeld
-                                ? "group-hover:!text-error group-hover:line-through"
-                                : ""
-                            }`}
-                          >
-                            {entry}
-                          </p>
-                        </button>
-                        <div
-                          className="absolute inset-y-0 right-0 flex items-center gap-1 pl-6 pr-2 opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto"
-                          style={{
-                            ...actionGradientStyle,
-                            willChange: "opacity",
-                          }}
-                        >
-                          <button
-                            onClick={() => handleDelete(originalIndex)}
-                            className={
-                              shiftHeld
-                                ? deleteButtonActiveClassName
-                                : deleteButtonClassName
-                            }
-                            title={t({
-                              id: "dictionary.delete",
-                              message: "Delete",
-                            })}
-                            aria-label={t({
-                              id: "dictionary.delete_entry",
-                              message: `Delete ${entry}`,
-                            })}
-                          >
-                            <Trash2 size={14} aria-hidden="true" />
-                          </button>
-                        </div>
-                      </div>
+                        }}
+                        onBlur={() => handleEditCommit()}
+                        aria-label={t({
+                          id: "dictionary.edit_entry",
+                          message: `Edit ${entry}`,
+                        })}
+                        className="h-7 min-w-12 rounded-md border border-border-hover bg-transparent px-2.5 ui-text-body-sm ui-color-primary outline-hidden"
+                      />
                     );
-                  })}
-                </>
-              )}
-            </div>
-            {filteredEntries.length > FADE_ITEM_THRESHOLD && (
-              <div
-                className="pointer-events-none absolute bottom-0 left-0 right-0 h-20"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, transparent, var(--color-bg-tertiary))",
-                }}
-              />
+                  }
+                  return (
+                    <span
+                      key={key}
+                      className="group inline-flex h-7 max-w-full items-center rounded-md bg-[var(--surface-interactive)] transition-colors"
+                    >
+                      <button
+                        onClick={() =>
+                          shiftHeld
+                            ? handleDelete(originalIndex)
+                            : startEditing(originalIndex)
+                        }
+                        className={`min-w-0 truncate pl-2.5 pr-0.5 ui-text-body-sm ui-color-primary transition-colors duration-100 ${deleteTextClassName}`}
+                        title={
+                          shiftHeld
+                            ? t({
+                                id: "dictionary.delete_entry",
+                                message: `Delete ${entry}`,
+                              })
+                            : undefined
+                        }
+                      >
+                        {entry}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(originalIndex)}
+                        className={`mr-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors ${deleteHoverClassName}`}
+                        aria-label={t({
+                          id: "dictionary.delete_entry",
+                          message: `Delete ${entry}`,
+                        })}
+                      >
+                        <X size={11} aria-hidden="true" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
             )}
           </div>
-        </div>
+        </section>
 
-        <div className="min-w-0 border-t border-border-primary pt-6 md:border-t-0 md:border-l md:pl-6 md:pt-0 lg:pl-8">
-          <div className="min-w-0">
-            <p className="ui-text-title-strong ui-color-primary text-balance">
+        <section className="flex min-h-0 min-w-0 flex-col">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="ui-text-section-label-sm ui-color-muted">
               {t({
                 id: "dictionary.section.replacements_title",
                 message: "Replacements",
               })}
-            </p>
-            <p className="mt-1 ui-text-body-sm ui-color-muted text-pretty">
-              {t({
-                id: "dictionary.section.replacements_description",
-                message:
-                  "Swap common phrases automatically after transcription.",
-              })}
-            </p>
+            </h3>
+            <span className="ui-text-meta ui-color-disabled tabular-nums">
+              {replacements.length}
+            </span>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-end">
+          <div className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-[minmax(0,1fr)_14px_minmax(0,1fr)_24px] sm:items-end">
             <div className="border-b border-border-primary pb-2 transition-colors focus-within:border-border-hover">
               <input
                 value={newFrom}
@@ -682,10 +537,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                 className="h-8 w-full min-w-0 bg-transparent ui-text-body-lg ui-color-primary placeholder-content-disabled outline-hidden"
               />
             </div>
-            <div className="hidden sm:flex items-center justify-center pb-2 text-content-muted">
+            <div className="mb-2 hidden h-8 items-center text-content-muted sm:flex">
               <ArrowRight size={14} aria-hidden="true" />
             </div>
-            <div className="border-b border-border-primary pb-2 transition-colors focus-within:border-border-hover">
+            <div className="border-b border-border-primary pb-2 transition-colors focus-within:border-border-hover sm:col-span-2">
               <input
                 value={newTo}
                 onChange={(e) => setNewTo(e.target.value)}
@@ -708,228 +563,143 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
             </div>
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 ui-text-meta ui-color-muted">
-            <span className="tabular-nums">{replacementCountLabel}</span>
-            <span>{replacementHintLabel}</span>
-          </div>
-
-          <div className="relative">
-            <div
-              aria-busy={replacementsPending}
-              className={`${panelBodyClassName}${replacements.length > FADE_ITEM_THRESHOLD ? ` ${panelBodyFadeClassName}` : ""}`}
-            >
-              {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <DotMatrix
-                    rows={2}
-                    cols={6}
-                    activeDots={[0, 1, 2, 3, 4, 5]}
-                    dotSize={3}
-                    gap={3}
-                    color="var(--color-content-muted)"
-                    animated
-                    className="opacity-60"
-                  />
-                </div>
-              ) : replacements.length === 0 ? (
-                <div className="flex flex-col items-start gap-2 py-6 text-content-muted">
-                  <p className="ui-text-body-lg-strong">
-                    {t({
-                      id: "dictionary.replacements.none",
-                      message: "No replacements yet",
-                    })}
-                  </p>
-                  <p className="ui-text-body-sm ui-color-muted text-pretty">
-                    {t({
-                      id: "dictionary.replacements.none_description",
-                      message:
-                        "Add word pairs to automatically swap in transcriptions. Matches are case-insensitive.",
-                    })}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {replacements.map((replacement, idx) => {
-                    const isEditing = editingReplacementIndex === idx;
-                    if (isEditing) {
-                      return (
-                        <div
-                          key={`${replacement.from}-${idx}`}
-                          className={`${editRowClassName} gap-2 px-2.5 py-2`}
-                          data-replacement-edit
-                        >
-                          <input
-                            value={editingFrom}
-                            onChange={(e) => setEditingFrom(e.target.value)}
-                            autoFocus
-                            onFocus={(e) => e.target.select()}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleEditReplacementCommit();
-                              }
-                              if (e.key === "Escape") {
-                                setEditingReplacementIndex(null);
-                                setEditingFrom("");
-                                setEditingTo("");
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const container = e.currentTarget.closest(
-                                "[data-replacement-edit]",
-                              );
-                              if (
-                                !container?.contains(e.relatedTarget as Node)
-                              ) {
-                                handleEditReplacementCommit();
-                              }
-                            }}
-                            className="min-w-0 flex-1 basis-0 bg-transparent border-0 px-0 py-0 rounded-none ui-text-body-lg ui-color-primary font-medium outline-hidden focus:ring-0"
-                            style={{
-                              boxShadow:
-                                "inset 0 -1px 0 var(--color-border-hover)",
-                            }}
-                          />
-                          <ArrowRight
-                            size={14}
-                            className="text-content-muted shrink-0"
-                            aria-hidden="true"
-                          />
-                          <input
-                            value={editingTo}
-                            onChange={(e) => setEditingTo(e.target.value)}
-                            onFocus={(e) => e.target.select()}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleEditReplacementCommit();
-                              }
-                              if (e.key === "Escape") {
-                                setEditingReplacementIndex(null);
-                                setEditingFrom("");
-                                setEditingTo("");
-                              }
-                            }}
-                            onBlur={(e) => {
-                              const container = e.currentTarget.closest(
-                                "[data-replacement-edit]",
-                              );
-                              if (
-                                !container?.contains(e.relatedTarget as Node)
-                              ) {
-                                handleEditReplacementCommit();
-                              }
-                            }}
-                            placeholder={t({
-                              id: "dictionary.replacements.replace_with",
-                              message: "Replace with...",
-                            })}
-                            className="min-w-0 flex-1 basis-0 bg-transparent border-0 px-0 py-0 rounded-none ui-text-body-lg ui-color-primary placeholder-content-disabled outline-hidden focus:ring-0"
-                            style={{
-                              boxShadow:
-                                "inset 0 -1px 0 var(--color-border-hover)",
-                            }}
-                          />
-                        </div>
+          <div aria-busy={replacementsPending} className={panelBodyClassName}>
+            {loading ? (
+              loadingIndicator
+            ) : replacements.length === 0 ? (
+              <p className="ui-text-meta ui-color-disabled text-pretty">
+                {t({
+                  id: "dictionary.replacements.empty_hint",
+                  message:
+                    "Press Enter in either field to add. Matches ignore capitalization.",
+                })}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border-primary">
+                {replacements.map((replacement, idx) => {
+                  const key = `${replacement.from}-${idx}`;
+                  if (editingReplacementIndex === idx) {
+                    const editKeyDown = (
+                      e: React.KeyboardEvent<HTMLInputElement>,
+                    ) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleEditReplacementCommit();
+                      }
+                      if (e.key === "Escape") {
+                        setEditingReplacementIndex(null);
+                        setEditingFrom("");
+                        setEditingTo("");
+                      }
+                    };
+                    const editBlur = (
+                      e: React.FocusEvent<HTMLInputElement>,
+                    ) => {
+                      const container = e.currentTarget.closest(
+                        "[data-replacement-edit]",
                       );
-                    }
+                      if (!container?.contains(e.relatedTarget as Node)) {
+                        handleEditReplacementCommit();
+                      }
+                    };
                     return (
-                      <div
-                        key={`${replacement.from}-${idx}`}
-                        className={itemRowClassName}
+                      <li
+                        key={key}
+                        className="grid min-h-10 grid-cols-[minmax(0,1fr)_14px_minmax(0,1fr)_24px] items-center gap-x-4"
+                        data-replacement-edit
                       >
-                        <button
-                          onClick={() =>
-                            shiftHeld
-                              ? handleDeleteReplacement(idx)
-                              : startEditingReplacement(idx)
-                          }
-                          className="flex flex-1 items-center text-left min-w-0 gap-2 px-2.5 py-2"
-                          title={
-                            shiftHeld
-                              ? t({
-                                  id: "dictionary.replacements.delete",
-                                  message: `Delete replacement for ${replacement.from}`,
-                                })
-                              : undefined
-                          }
-                        >
-                          <span
-                            className={`ui-text-body-lg ui-color-primary font-medium truncate min-w-0 flex-1 basis-0 transition-colors duration-100 ease-out ${
-                              shiftHeld
-                                ? "group-hover:!text-error group-hover:line-through"
-                                : ""
-                            }`}
-                          >
-                            {replacement.from}
-                          </span>
-                          <ArrowRight
-                            size={14}
-                            className={`shrink-0 text-content-muted transition-colors duration-100 ease-out ${
-                              shiftHeld ? "group-hover:!text-error" : ""
-                            }`}
-                            aria-hidden="true"
-                          />
-                          <span
-                            className={`ui-text-body-lg ui-color-primary truncate min-w-0 flex-1 basis-0 transition-colors duration-100 ease-out ${
-                              shiftHeld
-                                ? "group-hover:!text-error group-hover:line-through"
-                                : ""
-                            }`}
-                          >
-                            {replacement.to || (
-                              <span className="text-content-muted italic">
-                                {t({
-                                  id: "dictionary.replacements.remove_value",
-                                  message: "remove",
-                                })}
-                              </span>
-                            )}
-                          </span>
-                        </button>
-                        <div
-                          className="absolute inset-y-0 right-0 flex items-center gap-1 pl-6 pr-2 opacity-0 pointer-events-none transition-opacity duration-150 group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto"
-                          style={{
-                            ...actionGradientStyle,
-                            willChange: "opacity",
-                          }}
-                        >
-                          <button
-                            onClick={() => handleDeleteReplacement(idx)}
-                            className={
-                              shiftHeld
-                                ? deleteButtonActiveClassName
-                                : deleteButtonClassName
-                            }
-                            title={t({
-                              id: "dictionary.delete",
-                              message: "Delete",
-                            })}
-                            aria-label={t({
-                              id: "dictionary.replacements.delete",
-                              message: `Delete replacement for ${replacement.from}`,
-                            })}
-                          >
-                            <Trash2 size={14} aria-hidden="true" />
-                          </button>
-                        </div>
-                      </div>
+                        <input
+                          value={editingFrom}
+                          onChange={(e) => setEditingFrom(e.target.value)}
+                          autoFocus
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={editKeyDown}
+                          onBlur={editBlur}
+                          className="min-w-0 border-b border-border-hover bg-transparent py-0.5 ui-text-body ui-color-primary outline-hidden"
+                        />
+                        <ArrowRight
+                          size={14}
+                          className="shrink-0 text-content-muted"
+                          aria-hidden="true"
+                        />
+                        <input
+                          value={editingTo}
+                          onChange={(e) => setEditingTo(e.target.value)}
+                          onFocus={(e) => e.target.select()}
+                          onKeyDown={editKeyDown}
+                          onBlur={editBlur}
+                          placeholder={t({
+                            id: "dictionary.replacements.replace_with",
+                            message: "Replace with...",
+                          })}
+                          className="min-w-0 border-b border-border-hover bg-transparent py-0.5 ui-text-body ui-color-primary placeholder-content-disabled outline-hidden"
+                        />
+                      </li>
                     );
-                  })}
-                </>
-              )}
-            </div>
-            {replacements.length > FADE_ITEM_THRESHOLD && (
-              <div
-                className="pointer-events-none absolute bottom-0 left-0 right-0 h-20"
-                style={{
-                  background:
-                    "linear-gradient(to bottom, transparent, var(--color-bg-tertiary))",
-                }}
-              />
+                  }
+                  return (
+                    <li
+                      key={key}
+                      className="group grid min-h-10 grid-cols-[minmax(0,1fr)_24px] items-center gap-x-4"
+                    >
+                      <button
+                        onClick={() =>
+                          shiftHeld
+                            ? handleDeleteReplacement(idx)
+                            : startEditingReplacement(idx)
+                        }
+                        className="grid min-w-0 grid-cols-[minmax(0,1fr)_14px_minmax(0,1fr)] items-center gap-x-4 py-2 text-left"
+                        title={
+                          shiftHeld
+                            ? t({
+                                id: "dictionary.replacements.delete",
+                                message: `Delete replacement for ${replacement.from}`,
+                              })
+                            : undefined
+                        }
+                      >
+                        <span
+                          className={`min-w-0 truncate ui-text-body ui-color-primary transition-colors duration-100 ${deleteTextClassName}`}
+                        >
+                          {replacement.from}
+                        </span>
+                        <ArrowRight
+                          size={14}
+                          className={`shrink-0 text-content-muted transition-colors duration-100 ${
+                            shiftHeld ? "group-hover:!text-error" : ""
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span
+                          className={`min-w-0 truncate ui-text-body ui-color-muted transition-colors duration-100 ${deleteTextClassName}`}
+                        >
+                          {replacement.to || (
+                            <span className="text-content-muted italic">
+                              {t({
+                                id: "dictionary.replacements.remove_value",
+                                message: "remove",
+                              })}
+                            </span>
+                          )}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteReplacement(idx)}
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md opacity-0 transition-all group-hover:opacity-100 focus-visible:opacity-100 ${deleteHoverClassName}`}
+                        aria-label={t({
+                          id: "dictionary.replacements.delete",
+                          message: `Delete replacement for ${replacement.from}`,
+                        })}
+                      >
+                        <X size={12} aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
-        </div>
+        </section>
       </div>
 
       {resolvedError && (

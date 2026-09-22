@@ -134,6 +134,115 @@ msgstr ""
 #~ msgid "personalization.websites"
 #~ msgstr "Веб-сайты"
 
+#. placeholder {0}: entries.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.multiple"
+#~ msgstr "{0} записей"
+
+#. placeholder {0}: replacements.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.multiple"
+#~ msgstr "{0} замен"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.single"
+#~ msgstr "1 запись"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.single"
+#~ msgstr "1 замена"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.dictionary_description"
+#~ msgstr "Добавьте слова, которые Glimpse должен распознавать."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.combined.description"
+#~ msgstr "Добавьте слова, которые система должна распознавать, и настройте автоматическую замену слов."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none_description"
+#~ msgstr "Добавьте пары слов для автоматической замены в транскрипциях. Регистр не учитывается."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries.description"
+#~ msgstr "Добавьте слова, фразы или имена, которых нет в словаре по умолчанию."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.delete"
+#~ msgstr "Удалить"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.full_hint"
+#~ msgstr "Словарь заполнен"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning"
+#~ msgstr "Словарь работает только с моделями, поддерживающими эту функцию. Текущая модель {0} будет игнорировать эти записи, пока вы не переключитесь на совместимую модель."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries"
+#~ msgstr "Записей пока нет"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_matches"
+#~ msgstr "Совпадений не найдено"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none"
+#~ msgstr "Замен пока нет"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.press_enter_to_add"
+#~ msgstr "Нажмите Enter в любом поле для добавления"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add"
+#~ msgstr "Нажмите Enter для добавления"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add_match"
+#~ msgstr "Нажмите Enter, чтобы добавить это слово"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.edit_hint"
+#~ msgstr "Нажмите Enter для сохранения · Esc для отмены"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.replacements_description"
+#~ msgstr "Автоматически заменять распространённые фразы после транскрипции."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning_aria"
+#~ msgstr "Предупреждение: проблема совместимости модели"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning.inline"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -261,12 +370,6 @@ msgid "onboarding.model.status.download"
 msgstr "{0} загрузка"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: entries.length
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.multiple"
-msgstr "{0} записей"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files"
@@ -304,10 +407,10 @@ msgid "dictionary.search_matches"
 msgstr "{0} из {1} совпадений"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: replacements.length
+#. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.multiple"
-msgstr "{0} замен"
+msgid "dictionary.entry_count.of_limit"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -410,16 +513,6 @@ msgstr "1 аудио- и текстовая пара"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_one"
 msgstr "1 закладка"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.single"
-msgstr "1 запись"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.single"
-msgstr "1 замена"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -582,16 +675,6 @@ msgid "personalization.modal.custom_instructions.placeholder"
 msgstr "Добавить пользовательские инструкции"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.dictionary_description"
-msgstr "Добавьте слова, которые Glimpse должен распознавать."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.combined.description"
-msgstr "Добавьте слова, которые система должна распознавать, и настройте автоматическую замену слов."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.add_files"
 msgstr "Добавить файлы"
@@ -618,13 +701,8 @@ msgstr "Добавить домен сайта"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none_description"
-msgstr "Добавьте пары слов для автоматической замены в транскрипциях. Регистр не учитывается."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries.description"
-msgstr "Добавьте слова, фразы или имена, которых нет в словаре по умолчанию."
+msgid "dictionary.header.description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1099,6 +1177,11 @@ msgstr "Выбрать модель"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "Выбрать модель"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.switch_model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1708,11 +1791,6 @@ msgid "library.modal.delete"
 msgstr "Удалить"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.delete"
-msgstr "Удалить"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: pendingDeletePersonality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.delete_mode.description"
@@ -1890,17 +1968,6 @@ msgid "dictionary.combined.title"
 msgstr "Словарь и замены"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.full_hint"
-msgstr "Словарь заполнен"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: currentModel?.label ?? settings?.local_model
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning"
-msgstr "Словарь работает только с моделями, поддерживающими эту функцию. Текущая модель {0} будет игнорировать эти записи, пока вы не переключитесь на совместимую модель."
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "Отключить"
@@ -2014,6 +2081,11 @@ msgstr "Дублировать"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.edit"
 msgstr "Правка"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.edit_entry"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2575,6 +2647,12 @@ msgstr "Я говорю со скоростью"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "Я говорю со скоростью {wpm} слов в минуту. Оказывается, говорить быстрее, чем печатать. Продиктовано с @try_glimpse_app"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.ignored_by"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3269,11 +3347,6 @@ msgid "onboarding.model.option.no_download"
 msgstr "Без загрузки"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries"
-msgstr "Записей пока нет"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_files"
 msgstr "Нет файлов для импорта"
@@ -3287,11 +3360,6 @@ msgstr "Устройства ввода не найдены"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "Журнал пуст."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_matches"
-msgstr "Совпадений не найдено"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3352,11 +3420,6 @@ msgstr "Других тегов нет"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.no_other_tags"
 msgstr "Других тегов нет"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none"
-msgstr "Замен пока нет"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3725,29 +3788,14 @@ msgstr "Предзагруженная модель"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.press_enter_to_add"
-msgstr "Нажмите Enter в любом поле для добавления"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add"
-msgstr "Нажмите Enter для добавления"
+msgid "dictionary.replacements.empty_hint"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.add_prompt"
 msgstr "Нажмите Enter, чтобы добавить «{0}» как новую запись."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add_match"
-msgstr "Нажмите Enter, чтобы добавить это слово"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.edit_hint"
-msgstr "Нажмите Enter для сохранения · Esc для отмены"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4822,11 +4870,6 @@ msgid "onboarding.model.supports"
 msgstr "Поддерживает"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.replacements_description"
-msgstr "Автоматически заменять распространённые фразы после транскрипции."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "Система"
@@ -5244,6 +5287,11 @@ msgid "settings.stats.post.7"
 msgstr "Оказывается, я думаю быстрее, чем печатаю. {wpm} слов в минуту. @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.empty_hint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.subtitle"
 msgstr "Включает автовставку в любое приложение."
@@ -5423,11 +5471,6 @@ msgstr "Голос — самая быстрая клавиатура из вс�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.title"
 msgstr "Перенести настройки?"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning_aria"
-msgstr "Предупреждение: проблема совместимости модели"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx

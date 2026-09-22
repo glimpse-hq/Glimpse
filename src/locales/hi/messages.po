@@ -134,6 +134,115 @@ msgstr ""
 #~ msgid "personalization.websites"
 #~ msgstr "वेबसाइटें"
 
+#. placeholder {0}: entries.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.multiple"
+#~ msgstr "{0} प्रविष्टियाँ"
+
+#. placeholder {0}: replacements.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.multiple"
+#~ msgstr "{0} प्रतिस्थापन"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.single"
+#~ msgstr "1 प्रविष्टि"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.single"
+#~ msgstr "1 प्रतिस्थापन"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.dictionary_description"
+#~ msgstr "वे अपने शब्द जोड़ें जिन्‍हें Glimpse पहचान सके।"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.combined.description"
+#~ msgstr "वे अपने शब्द जोड़ें जिन्‍हें सिस्टम पहचान सके, और स्वचालित शब्द प्रतिस्थापन सेट करें।"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none_description"
+#~ msgstr "ट्रांसक्रिप्शनों में अपने आप बदलने के लिए शब्दों की युग्म जोड़ें। मिलान में छोटे-बड़े अक्षरों का फ़र्क नहीं माना जाएगा।"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries.description"
+#~ msgstr "ऐसे शब्द, वाक्यांश या नाम जोड़ें जो डिफ़ॉल्ट शब्दकोश में नहीं हैं।"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.delete"
+#~ msgstr "हटाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.full_hint"
+#~ msgstr "शब्दकोश भरा हुआ है"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning"
+#~ msgstr "शब्दकोश केवल उन्हीं मॉडलों के लिए काम करता है जिनमें शब्दकोश समर्थन हो। मौजूदा मॉडल {0} इन प्रविष्टियों को तब तक नज़रअंदाज़ करेगा, जब तक आप किसी संगत मॉडल पर स्विच नहीं करते।"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries"
+#~ msgstr "अभी तक कोई प्रविष्टि नहीं"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_matches"
+#~ msgstr "कोई मेल नहीं मिला"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none"
+#~ msgstr "अभी तक कोई प्रतिस्थापन नहीं"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.press_enter_to_add"
+#~ msgstr "जोड़ने के लिए किसी भी फ़ील्ड में Enter दबाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add"
+#~ msgstr "जोड़ने के लिए Enter दबाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add_match"
+#~ msgstr "यह शब्द जोड़ने के लिए Enter दबाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.edit_hint"
+#~ msgstr "सहेजने के लिए Enter दबाएँ · रद्द करने के लिए Esc दबाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.replacements_description"
+#~ msgstr "ट्रांसक्रिप्शन के बाद सामान्य वाक्यांशों को अपने‑आप बदलें।"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning_aria"
+#~ msgstr "चेतावनी: मॉडल अनुकूलता समस्या"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning.inline"
+#~ msgstr ""
+
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
@@ -261,12 +370,6 @@ msgid "onboarding.model.status.download"
 msgstr "{0} डाउनलोड"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: entries.length
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.multiple"
-msgstr "{0} प्रविष्टियाँ"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files"
@@ -304,10 +407,10 @@ msgid "dictionary.search_matches"
 msgstr "{0}/{1} मेल"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: replacements.length
+#. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.multiple"
-msgstr "{0} प्रतिस्थापन"
+msgid "dictionary.entry_count.of_limit"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -410,16 +513,6 @@ msgstr "1 ऑडियो और टेक्स्ट जोड़ा"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_one"
 msgstr "1 बुकमार्क"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.single"
-msgstr "1 प्रविष्टि"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.single"
-msgstr "1 प्रतिस्थापन"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -582,16 +675,6 @@ msgid "personalization.modal.custom_instructions.placeholder"
 msgstr "कस्टम निर्देश जोड़ें"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.dictionary_description"
-msgstr "वे अपने शब्द जोड़ें जिन्‍हें Glimpse पहचान सके।"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.combined.description"
-msgstr "वे अपने शब्द जोड़ें जिन्‍हें सिस्टम पहचान सके, और स्वचालित शब्द प्रतिस्थापन सेट करें।"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.add_files"
 msgstr "फ़ाइलें जोड़ें"
@@ -618,13 +701,8 @@ msgstr "वेबसाइट डोमेन जोड़ें"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none_description"
-msgstr "ट्रांसक्रिप्शनों में अपने आप बदलने के लिए शब्दों की युग्म जोड़ें। मिलान में छोटे-बड़े अक्षरों का फ़र्क नहीं माना जाएगा।"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries.description"
-msgstr "ऐसे शब्द, वाक्यांश या नाम जोड़ें जो डिफ़ॉल्ट शब्दकोश में नहीं हैं।"
+msgid "dictionary.header.description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1099,6 +1177,11 @@ msgstr "कोई मॉडल चुनें"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "किसी मॉडल का चयन करें"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.switch_model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1708,11 +1791,6 @@ msgid "library.modal.delete"
 msgstr "हटाएँ"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.delete"
-msgstr "हटाएँ"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: pendingDeletePersonality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.delete_mode.description"
@@ -1890,17 +1968,6 @@ msgid "dictionary.combined.title"
 msgstr "शब्दकोश और प्रतिस्थापन"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.full_hint"
-msgstr "शब्दकोश भरा हुआ है"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: currentModel?.label ?? settings?.local_model
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning"
-msgstr "शब्दकोश केवल उन्हीं मॉडलों के लिए काम करता है जिनमें शब्दकोश समर्थन हो। मौजूदा मॉडल {0} इन प्रविष्टियों को तब तक नज़रअंदाज़ करेगा, जब तक आप किसी संगत मॉडल पर स्विच नहीं करते।"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "अक्षम करें"
@@ -2014,6 +2081,11 @@ msgstr "डुप्लिकेट करें"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.edit"
 msgstr "संपादित करें"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.edit_entry"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2575,6 +2647,12 @@ msgstr "मैं बोलता हूँ"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "मैं {wpm} शब्द प्रति मिनट बोलता हूँ। पता चला, बोलना टाइपिंग से बेहतर है। @try_glimpse_app के साथ डिक्टेट किया गया"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.ignored_by"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3269,11 +3347,6 @@ msgid "onboarding.model.option.no_download"
 msgstr "कोई डाउनलोड नहीं"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries"
-msgstr "अभी तक कोई प्रविष्टि नहीं"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_files"
 msgstr "आयात करने के लिए कोई फ़ाइल नहीं बची"
@@ -3287,11 +3360,6 @@ msgstr "कोई इनपुट डिवाइस नहीं मिला"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "अभी तक कोई लॉग नहीं है।"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_matches"
-msgstr "कोई मेल नहीं मिला"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3352,11 +3420,6 @@ msgstr "कोई अन्य टैग नहीं"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.tags.no_other_tags"
 msgstr "कोई अन्य टैग नहीं"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none"
-msgstr "अभी तक कोई प्रतिस्थापन नहीं"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -3725,29 +3788,14 @@ msgstr "पूर्व-लोडेड मॉडल"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.press_enter_to_add"
-msgstr "जोड़ने के लिए किसी भी फ़ील्ड में Enter दबाएँ"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add"
-msgstr "जोड़ने के लिए Enter दबाएँ"
+msgid "dictionary.replacements.empty_hint"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.add_prompt"
 msgstr "नई प्रविष्टि के रूप में \"{0}\" जोड़ने के लिए Enter दबाएँ।"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add_match"
-msgstr "यह शब्द जोड़ने के लिए Enter दबाएँ"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.edit_hint"
-msgstr "सहेजने के लिए Enter दबाएँ · रद्द करने के लिए Esc दबाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4822,11 +4870,6 @@ msgid "onboarding.model.supports"
 msgstr "समर्थन करता है"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.replacements_description"
-msgstr "ट्रांसक्रिप्शन के बाद सामान्य वाक्यांशों को अपने‑आप बदलें।"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "सिस्टम"
@@ -5244,6 +5287,11 @@ msgid "settings.stats.post.7"
 msgstr "लगता है, मैं सोचता टाइप करने से तेज़ हूँ। {wpm} शब्द प्रति मिनट। @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.empty_hint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.subtitle"
 msgstr "किसी भी ऐप में अपने‑आप पेस्ट सक्षम करता है।"
@@ -5423,11 +5471,6 @@ msgstr "आवाज़ मेरे पास मौजूद सबसे त�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.title"
 msgstr "क्या आप अपनी सेटिंग्स आयात करना चाहते हैं?"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning_aria"
-msgstr "चेतावनी: मॉडल अनुकूलता समस्या"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
