@@ -12,19 +12,18 @@ mod macos {
     use core_foundation::base::{CFType, TCFType};
     use core_foundation::string::CFString;
     use std::ffi::c_void;
-    use std::process::{Command, Stdio};
-    use std::time::{Duration, Instant};
 
     #[allow(non_camel_case_types)]
     type pid_t = i32;
 
     // Cap how long any cross-process query may block the caller.
     const AX_TIMEOUT_SECS: f32 = 2.0;
-    const OSASCRIPT_TIMEOUT: Duration = Duration::from_secs(2);
 
     #[link(name = "ApplicationServices", kind = "framework")]
     unsafe extern "C" {
         fn AXUIElementCreateApplication(pid: pid_t) -> *mut c_void;
+        fn AXUIElementCreateSystemWide() -> *mut c_void;
+        fn AXUIElementGetPid(element: *mut c_void, pid: *mut pid_t) -> i32;
         fn AXUIElementCopyAttributeValue(
             element: *mut c_void,
             attribute: *const c_void,
@@ -32,36 +31,6 @@ mod macos {
         ) -> i32;
         fn AXUIElementSetMessagingTimeout(element: *mut c_void, timeout: f32) -> i32;
         fn CFRelease(cf: *const c_void);
-    }
-
-    // Runs a command but kills it if it outlives the deadline, so a wedged
-    // target process (e.g. an unresponsive System Events) can't block us forever.
-    fn output_with_timeout(mut command: Command, timeout: Duration) -> Option<Vec<u8>> {
-        let mut child = command
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .ok()?;
-        let deadline = Instant::now() + timeout;
-        loop {
-            match child.try_wait() {
-                Ok(Some(status)) => {
-                    if !status.success() {
-                        return None;
-                    }
-                    return child.wait_with_output().ok().map(|o| o.stdout);
-                }
-                Ok(None) => {
-                    if Instant::now() >= deadline {
-                        let _ = child.kill();
-                        let _ = child.wait();
-                        return None;
-                    }
-                    std::thread::sleep(Duration::from_millis(20));
-                }
-                Err(_) => return None,
-            }
-        }
     }
 
     unsafe fn copy_attribute(element: *mut c_void, attribute: &str) -> *mut c_void {
@@ -95,33 +64,29 @@ mod macos {
     }
 
     fn get_frontmost_app() -> Option<(String, pid_t)> {
-        let script = r#"
-tell application "System Events"
-    set frontProcess to first application process whose frontmost is true
-    set appName to name of frontProcess
-    set appPID to unix id of frontProcess
-    return appName & "|" & appPID
-end tell
-"#;
-        let mut command = Command::new("osascript");
-        command.args(["-e", script]);
-        let stdout_bytes = output_with_timeout(command, OSASCRIPT_TIMEOUT)?;
-
-        let stdout = String::from_utf8(stdout_bytes).ok()?;
-        let trimmed = stdout.trim();
-        let parts: Vec<&str> = trimmed.splitn(2, '|').collect();
-        if parts.len() != 2 {
-            return None;
-        }
-
-        let name = parts[0].trim().to_string();
-        let pid: pid_t = parts[1].trim().parse().ok()?;
-
-        if name.is_empty() {
-            return None;
-        }
-
-        Some((name, pid))
+        let pid = unsafe {
+            let system = AXUIElementCreateSystemWide();
+            if system.is_null() {
+                return None;
+            }
+            AXUIElementSetMessagingTimeout(system, AX_TIMEOUT_SECS);
+            let focused = copy_attribute(system, "AXFocusedApplication");
+            CFRelease(system);
+            if focused.is_null() {
+                return None;
+            }
+            let mut pid: pid_t = 0;
+            let status = AXUIElementGetPid(focused, &mut pid);
+            CFRelease(focused);
+            if status != 0 || pid <= 0 {
+                return None;
+            }
+            pid
+        };
+        let app =
+            objc2_app_kit::NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
+        let name = app.localizedName()?.to_string().trim().to_string();
+        (!name.is_empty()).then_some((name, pid))
     }
 
     pub fn get_active_context() -> Option<ActiveContext> {
