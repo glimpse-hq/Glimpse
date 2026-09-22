@@ -416,6 +416,7 @@ pub async fn download_model_now(
                 let status = manager.status(&installed).map_err(|err| err.to_string())?;
                 return Ok(map_status(status, &manager));
             }
+            tracing::error!("[speech] download {model} failed: {err:#}");
             let detail = crate::analytics::error_detail(&err);
             let stage = match detail.reason {
                 "verification" => "verify",
@@ -423,14 +424,15 @@ pub async fn download_model_now(
                 _ => "download",
             };
             crate::analytics::track_model_download_failed(&app, &model, stage, detail);
+            let message = format!("{err:#}");
             let _ = app.emit(
                 "download:error",
                 DownloadErrorPayload {
                     model,
-                    error: err.to_string(),
+                    error: message.clone(),
                 },
             );
-            return Err(err.to_string());
+            return Err(message);
         }
     };
 
@@ -450,7 +452,7 @@ pub async fn download_model_now(
         })
         .await
         .map_err(|err| err.to_string())?
-        .map_err(|err: anyhow::Error| err.to_string())?
+        .map_err(|err: anyhow::Error| format!("{err:#}"))?
     } else {
         status
     };
@@ -489,7 +491,7 @@ fn track_download_error(
         stage,
         crate::analytics::error_detail(&err),
     );
-    err.to_string()
+    format!("{err:#}")
 }
 
 /// The manager deletes with `remove_dir_all`, so clear the tree first.

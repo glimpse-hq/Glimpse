@@ -10,9 +10,6 @@ export type WebsiteIcon = {
 };
 
 export const MAX_INSTRUCTIONS_CHARS = 3000;
-export const DEFAULT_INSTRUCTIONS_HEIGHT = 128;
-const MIN_INSTRUCTIONS_HEIGHT = Math.round(DEFAULT_INSTRUCTIONS_HEIGHT * 0.8);
-const MAX_INSTRUCTIONS_HEIGHT = Math.round(DEFAULT_INSTRUCTIONS_HEIGHT * 2.5);
 
 export const normalizeEntry = (value: string) => value.trim();
 
@@ -28,9 +25,6 @@ export const clampInstructionsText = (value: string) => {
   }
   return codePoints.slice(0, MAX_INSTRUCTIONS_CHARS).join("");
 };
-
-export const clampInstructionsHeight = (value: number) =>
-  Math.min(MAX_INSTRUCTIONS_HEIGHT, Math.max(MIN_INSTRUCTIONS_HEIGHT, value));
 
 export const normalizeWebsite = (value: string) => {
   let trimmed = value.trim().toLowerCase();

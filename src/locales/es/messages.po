@@ -100,6 +100,150 @@ msgstr ""
 #~ msgstr "Pensando {0}%"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.drag"
+#~ msgstr "Arrastrar para cambiar el tamaño"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.resize"
+#~ msgstr "Redimensionar instrucciones personalizadas"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.apps"
+#~ msgstr "Apps"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_apps"
+#~ msgstr "Aún no hay apps"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_sites"
+#~ msgstr "Aún no hay sitios"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.notes"
+#~ msgstr "Notas:"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.websites"
+#~ msgstr "Sitios web"
+
+#. placeholder {0}: entries.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.multiple"
+#~ msgstr "{0} entradas"
+
+#. placeholder {0}: replacements.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.multiple"
+#~ msgstr "{0} reemplazos"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.single"
+#~ msgstr "1 entrada"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.single"
+#~ msgstr "1 sustitución"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.dictionary_description"
+#~ msgstr "Añade palabras personalizadas que Glimpse deba reconocer."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.combined.description"
+#~ msgstr "Añade palabras personalizadas que el sistema deba reconocer y configura reemplazos automáticos de palabras."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none_description"
+#~ msgstr "Agrega pares de palabras para sustituirlos automáticamente en las transcripciones. Las coincidencias no distinguen mayúsculas de minúsculas."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries.description"
+#~ msgstr "Agrega palabras, frases o nombres que no estén en el diccionario predeterminado."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.delete"
+#~ msgstr "Eliminar"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.full_hint"
+#~ msgstr "El diccionario está lleno"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning"
+#~ msgstr "El diccionario solo funciona con modelos que lo admiten. El modelo actual {0} ignorará estas entradas hasta que cambies a un modelo compatible."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries"
+#~ msgstr "Aún no hay entradas"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_matches"
+#~ msgstr "No se encontraron coincidencias"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none"
+#~ msgstr "Aún no hay reemplazos"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.press_enter_to_add"
+#~ msgstr "Pulsa Intro en cualquiera de los campos para añadir"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add"
+#~ msgstr "Pulsa Intro para añadir"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add_match"
+#~ msgstr "Pulsa Intro para añadir esta palabra"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.edit_hint"
+#~ msgstr "Pulsa Intro para guardar · Esc para cancelar"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.replacements_description"
+#~ msgstr "Sustituye frases comunes automáticamente después de la transcripción."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning_aria"
+#~ msgstr "Advertencia: problema de compatibilidad del modelo"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning.inline"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -226,12 +370,6 @@ msgid "onboarding.model.status.download"
 msgstr "{0} descargas"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: entries.length
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.multiple"
-msgstr "{0} entradas"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files"
@@ -269,10 +407,10 @@ msgid "dictionary.search_matches"
 msgstr "{0} de {1} coincidencias"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: replacements.length
+#. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.multiple"
-msgstr "{0} reemplazos"
+msgid "dictionary.entry_count.of_limit"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -375,16 +513,6 @@ msgstr "1 par de audio y texto"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_one"
 msgstr "1 marcador"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.single"
-msgstr "1 entrada"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.single"
-msgstr "1 sustitución"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -547,16 +675,6 @@ msgid "personalization.modal.custom_instructions.placeholder"
 msgstr "Agregar instrucciones personalizadas"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.dictionary_description"
-msgstr "Añade palabras personalizadas que Glimpse deba reconocer."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.combined.description"
-msgstr "Añade palabras personalizadas que el sistema deba reconocer y configura reemplazos automáticos de palabras."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.add_files"
 msgstr "Añadir archivos"
@@ -583,13 +701,8 @@ msgstr "Agregar dominio de sitio web"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none_description"
-msgstr "Agrega pares de palabras para sustituirlos automáticamente en las transcripciones. Las coincidencias no distinguen mayúsculas de minúsculas."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries.description"
-msgstr "Agrega palabras, frases o nombres que no estén en el diccionario predeterminado."
+msgid "dictionary.header.description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -710,11 +823,6 @@ msgstr "Aplicaciones"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.apply"
 msgstr "Aplicar de todos modos"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.apps"
-msgstr "Apps"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1069,6 +1177,11 @@ msgstr "Elige un modelo"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "Elige un modelo"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.switch_model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1678,11 +1791,6 @@ msgid "library.modal.delete"
 msgstr "Eliminar"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.delete"
-msgstr "Eliminar"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: pendingDeletePersonality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.delete_mode.description"
@@ -1860,17 +1968,6 @@ msgid "dictionary.combined.title"
 msgstr "Diccionario y sustituciones"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.full_hint"
-msgstr "El diccionario está lleno"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: currentModel?.label ?? settings?.local_model
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning"
-msgstr "El diccionario solo funciona con modelos que lo admiten. El modelo actual {0} ignorará estas entradas hasta que cambies a un modelo compatible."
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "Desactivar"
@@ -1971,11 +2068,6 @@ msgid "library.view.empty_state"
 msgstr "Arrastra archivos aquí para crear tu biblioteca."
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.drag"
-msgstr "Arrastrar para cambiar el tamaño"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Suelta archivos para transcribir"
@@ -1989,6 +2081,11 @@ msgstr "Duplicar"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.edit"
 msgstr "Editar"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.edit_entry"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2550,6 +2647,12 @@ msgstr "Hablo a"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "Hablo a {wpm} palabras por minuto. Resulta que hablar gana a escribir. Dictado con @try_glimpse_app"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.ignored_by"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3215,8 +3318,8 @@ msgstr "No se seleccionaron aplicaciones"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_apps"
-msgstr "Aún no hay apps"
+msgid "personalization.no_targets"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3244,11 +3347,6 @@ msgid "onboarding.model.option.no_download"
 msgstr "Sin descarga"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries"
-msgstr "Aún no hay entradas"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_files"
 msgstr "No quedan archivos por importar"
@@ -3262,11 +3360,6 @@ msgstr "No se encontraron dispositivos de entrada"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "Aún no hay registros."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_matches"
-msgstr "No se encontraron coincidencias"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3329,11 +3422,6 @@ msgid "library.modal.tags.no_other_tags"
 msgstr "No hay otras etiquetas"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none"
-msgstr "Aún no hay reemplazos"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results"
 msgstr "Sin resultados para \"{resultSearchText}\""
@@ -3342,11 +3430,6 @@ msgstr "Sin resultados para \"{resultSearchText}\""
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results_filters"
 msgstr "No hay resultados para los filtros seleccionados"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_sites"
-msgstr "Aún no hay sitios"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3447,11 +3530,6 @@ msgstr "No compatible con este modelo"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "No es compatible con este Mac."
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.notes"
-msgstr "Notas:"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -3710,29 +3788,14 @@ msgstr "Modelo precargado"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.press_enter_to_add"
-msgstr "Pulsa Intro en cualquiera de los campos para añadir"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add"
-msgstr "Pulsa Intro para añadir"
+msgid "dictionary.replacements.empty_hint"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.add_prompt"
 msgstr "Pulsa Intro para añadir \"{0}\" como nueva entrada."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add_match"
-msgstr "Pulsa Intro para añadir esta palabra"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.edit_hint"
-msgstr "Pulsa Intro para guardar · Esc para cancelar"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4094,11 +4157,6 @@ msgstr "requiere un modelo con compatibilidad con diccionario"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle"
 msgstr "Requiere una licencia activa"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.resize"
-msgstr "Redimensionar instrucciones personalizadas"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -4812,11 +4870,6 @@ msgid "onboarding.model.supports"
 msgstr "Compatible con"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.replacements_description"
-msgstr "Sustituye frases comunes automáticamente después de la transcripción."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "Sistema"
@@ -5234,6 +5287,11 @@ msgid "settings.stats.post.7"
 msgstr "Resulta que pienso más rápido de lo que escribo. {wpm} palabras por minuto. @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.empty_hint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.subtitle"
 msgstr "Activa el pegado automático en cualquier aplicación."
@@ -5415,11 +5473,6 @@ msgid "import.title"
 msgstr "¿Quieres traer tu configuración?"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning_aria"
-msgstr "Advertencia: problema de compatibilidad del modelo"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.unknown_count"
 msgstr "No hemos podido contarlos ahora mismo, pero el borrado automático se ejecutará en cuanto guardes este cambio."
@@ -5437,11 +5490,6 @@ msgstr "No reconocemos el modelo de esta app, así que elegirás uno en el sigui
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites"
-msgstr "Sitios web"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.websites"
 msgstr "Sitios web"
 
 #. js-lingui-explicit-id

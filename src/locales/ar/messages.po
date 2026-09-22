@@ -100,6 +100,150 @@ msgstr ""
 #~ msgstr "جارٍ المعالجة {0}%"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.drag"
+#~ msgstr "اسحب لتغيير الحجم"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.resize"
+#~ msgstr "تغيير حجم التعليمات المخصصة"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.apps"
+#~ msgstr "التطبيقات"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_apps"
+#~ msgstr "لا توجد تطبيقات بعد"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_sites"
+#~ msgstr "لا توجد مواقع بعد"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.notes"
+#~ msgstr "ملاحظات:"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.websites"
+#~ msgstr "مواقع الويب"
+
+#. placeholder {0}: entries.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.multiple"
+#~ msgstr "{0} إدخالات"
+
+#. placeholder {0}: replacements.length
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.multiple"
+#~ msgstr "{0} استبدالات"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.entry_count.single"
+#~ msgstr "إدخال واحد"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.count.single"
+#~ msgstr "استبدال واحد"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.dictionary_description"
+#~ msgstr "أضف كلمات مخصصة يجب أن يتعرف عليها Glimpse."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.combined.description"
+#~ msgstr "أضف كلمات مخصصة يجب أن يتعرف عليها النظام، وعيِّن استبدالات الكلمات التلقائية."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none_description"
+#~ msgstr "أضف أزواج كلمات لاستبدالها تلقائيًا في النصوص المُحوَّلة. التطابق غير حساس لحالة الأحرف."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries.description"
+#~ msgstr "أضف كلمات أو عبارات أو أسماء غير موجودة في القاموس الافتراضي."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.delete"
+#~ msgstr "حذف"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.full_hint"
+#~ msgstr "القاموس ممتلئ"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning"
+#~ msgstr "يعمل القاموس فقط مع النماذج التي تدعمه. سيتجاهل النموذج الحالي {0} هذه الإدخالات حتى تتحول إلى نموذج متوافق."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_entries"
+#~ msgstr "لا توجد إدخالات بعد"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.no_matches"
+#~ msgstr "لا توجد نتائج مطابقة"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.none"
+#~ msgstr "لا توجد استبدالات بعد"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.replacements.press_enter_to_add"
+#~ msgstr "اضغط Enter في أيٍّ من الحقلين للإضافة"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add"
+#~ msgstr "اضغط Enter للإضافة"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.press_enter_to_add_match"
+#~ msgstr "اضغط Enter لإضافة هذه الكلمة"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.edit_hint"
+#~ msgstr "اضغط Enter للحفظ · Esc للإلغاء"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.section.replacements_description"
+#~ msgstr "استبدال العبارات الشائعة تلقائيًا بعد التحويل."
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning_aria"
+#~ msgstr "تحذير: مشكلة في توافق النموذج"
+
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+#~ msgid "dictionary.warning.inline"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -226,12 +370,6 @@ msgid "onboarding.model.status.download"
 msgstr "{0} تنزيل"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: entries.length
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.multiple"
-msgstr "{0} إدخالات"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files"
@@ -269,10 +407,10 @@ msgid "dictionary.search_matches"
 msgstr "{0} من أصل {1} تطابقات"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: replacements.length
+#. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.multiple"
-msgstr "{0} استبدالات"
+msgid "dictionary.entry_count.of_limit"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -375,16 +513,6 @@ msgstr "زوج صوت ونص واحد"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_one"
 msgstr "إشارة مرجعية واحدة"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.entry_count.single"
-msgstr "إدخال واحد"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.count.single"
-msgstr "استبدال واحد"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -547,16 +675,6 @@ msgid "personalization.modal.custom_instructions.placeholder"
 msgstr "إضافة تعليمات مخصصة"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.dictionary_description"
-msgstr "أضف كلمات مخصصة يجب أن يتعرف عليها Glimpse."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.combined.description"
-msgstr "أضف كلمات مخصصة يجب أن يتعرف عليها النظام، وعيِّن استبدالات الكلمات التلقائية."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.add_files"
 msgstr "إضافة ملفات"
@@ -583,13 +701,8 @@ msgstr "إضافة نطاق موقع ويب"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none_description"
-msgstr "أضف أزواج كلمات لاستبدالها تلقائيًا في النصوص المُحوَّلة. التطابق غير حساس لحالة الأحرف."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries.description"
-msgstr "أضف كلمات أو عبارات أو أسماء غير موجودة في القاموس الافتراضي."
+msgid "dictionary.header.description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -710,11 +823,6 @@ msgstr "التطبيقات"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.apply"
 msgstr "تطبيق على أي حال"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.apps"
-msgstr "التطبيقات"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1069,6 +1177,11 @@ msgstr "اختر نموذجاً"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.title"
 msgstr "اختر نموذجًا"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.switch_model"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1678,11 +1791,6 @@ msgid "library.modal.delete"
 msgstr "حذف"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.delete"
-msgstr "حذف"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: pendingDeletePersonality.name
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.delete_mode.description"
@@ -1860,17 +1968,6 @@ msgid "dictionary.combined.title"
 msgstr "القاموس والاستبدالات"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.full_hint"
-msgstr "القاموس ممتلئ"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: currentModel?.label ?? settings?.local_model
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning"
-msgstr "يعمل القاموس فقط مع النماذج التي تدعمه. سيتجاهل النموذج الحالي {0} هذه الإدخالات حتى تتحول إلى نموذج متوافق."
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.disable"
 msgstr "تعطيل"
@@ -1971,11 +2068,6 @@ msgid "library.view.empty_state"
 msgstr "اسحب الملفات إلى هنا لإنشاء مكتبتك."
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.drag"
-msgstr "اسحب لتغيير الحجم"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "أفلت الملفات لنسخها"
@@ -1989,6 +2081,11 @@ msgstr "تكرار"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.edit"
 msgstr "تحرير"
+
+#. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.edit_entry"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2550,6 +2647,12 @@ msgstr "أتحدث بسرعة"
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.post.1"
 msgstr "أتحدث بسرعة {wpm} كلمة في الدقيقة. اتضح أن الكلام يتفوق على الكتابة. مُملى باستخدام @try_glimpse_app"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: currentModel?.label ?? settings?.local_model
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.warning.ignored_by"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3215,8 +3318,8 @@ msgstr "لم يتم تحديد أي تطبيقات"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_apps"
-msgstr "لا توجد تطبيقات بعد"
+msgid "personalization.no_targets"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3244,11 +3347,6 @@ msgid "onboarding.model.option.no_download"
 msgstr "لا يوجد تنزيل"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_entries"
-msgstr "لا توجد إدخالات بعد"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_files"
 msgstr "لا توجد ملفات متبقية للاستيراد"
@@ -3262,11 +3360,6 @@ msgstr "لم يتم العثور على أجهزة إدخال"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "لا توجد سجلات بعد."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.no_matches"
-msgstr "لا توجد نتائج مطابقة"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3329,11 +3422,6 @@ msgid "library.modal.tags.no_other_tags"
 msgstr "لا توجد علامات أخرى"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.none"
-msgstr "لا توجد استبدالات بعد"
-
-#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results"
 msgstr "لا توجد نتائج لـ \"{resultSearchText}\""
@@ -3342,11 +3430,6 @@ msgstr "لا توجد نتائج لـ \"{resultSearchText}\""
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.no_results_filters"
 msgstr "لا توجد نتائج للفلاتر المحددة"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_sites"
-msgstr "لا توجد مواقع بعد"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3447,11 +3530,6 @@ msgstr "غير مدعوم من قِبَل هذا النموذج"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "غير مدعوم على هذا الـ Mac."
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.notes"
-msgstr "ملاحظات:"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -3710,29 +3788,14 @@ msgstr "نموذج محمّل مسبقًا"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.replacements.press_enter_to_add"
-msgstr "اضغط Enter في أيٍّ من الحقلين للإضافة"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add"
-msgstr "اضغط Enter للإضافة"
+msgid "dictionary.replacements.empty_hint"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.add_prompt"
 msgstr "اضغط Enter لإضافة \"{0}\" كإدخال جديد."
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.press_enter_to_add_match"
-msgstr "اضغط Enter لإضافة هذه الكلمة"
-
-#. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.edit_hint"
-msgstr "اضغط Enter للحفظ · Esc للإلغاء"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4094,11 +4157,6 @@ msgstr "يتطلب نموذجًا يدعم القاموس"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle"
 msgstr "يتطلب ترخيصًا نشطًا"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.resize"
-msgstr "تغيير حجم التعليمات المخصصة"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -4812,11 +4870,6 @@ msgid "onboarding.model.supports"
 msgstr "يدعم"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.section.replacements_description"
-msgstr "استبدال العبارات الشائعة تلقائيًا بعد التحويل."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.variant.system"
 msgstr "النظام"
@@ -5234,6 +5287,11 @@ msgid "settings.stats.post.7"
 msgstr "اتضح أنني أفكر أسرع مما أكتب. {wpm} كلمة في الدقيقة. @try_glimpse_app"
 
 #. js-lingui-explicit-id
+#: src/features/dictionary/components/DictionaryView.tsx
+msgid "dictionary.empty_hint"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.subtitle"
 msgstr "يُتيح اللصق التلقائي في أي تطبيق."
@@ -5415,11 +5473,6 @@ msgid "import.title"
 msgstr "هل تريد نقل إعداداتك؟"
 
 #. js-lingui-explicit-id
-#: src/features/dictionary/components/DictionaryView.tsx
-msgid "dictionary.warning_aria"
-msgstr "تحذير: مشكلة في توافق النموذج"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.unknown_count"
 msgstr "تعذّر إحصاؤها الآن، لكن سيظل الحذف التلقائي يعمل فور حفظ هذا التغيير."
@@ -5437,11 +5490,6 @@ msgstr "لا يمكن التعرف على نموذج هذا التطبيق، ل�
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites"
-msgstr "مواقع الويب"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.websites"
 msgstr "مواقع الويب"
 
 #. js-lingui-explicit-id
