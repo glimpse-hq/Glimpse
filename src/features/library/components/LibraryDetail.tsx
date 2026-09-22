@@ -439,7 +439,7 @@ const LibraryDetail = ({
     item.status.type === "importing";
   const detectingSpeakersLabel = t({
     id: "library.modal.detecting_speakers",
-    message: "Detecting speakers...",
+    message: "Detecting speakers",
   });
   const transcribingLabel =
     item.status.type !== "transcribing"
@@ -989,6 +989,15 @@ const LibraryDetail = ({
       new Set(speakerTurns.map((turn) => turn.speaker).filter(Boolean)).size,
     [speakerTurns],
   );
+  // Edits are saved to the transcript only, so an edited item keeps the text box.
+  const transcriptEdited = useMemo(() => {
+    const letters = (text: string) =>
+      text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    const segmentText = (item.segments ?? [])
+      .map((segment) => segment.text)
+      .join(" ");
+    return letters(item.transcript ?? "") !== letters(segmentText);
+  }, [item.transcript, item.segments]);
   const visibleTurns = useMemo(
     () =>
       speakerFilter
@@ -1096,7 +1105,7 @@ const LibraryDetail = ({
   const handleCopy = () => {
     if (showSpeakerText) {
       copyTranscript(
-        speakerTurns
+        visibleTurns
           .map((turn) =>
             turn.speaker ? `${turn.speaker.name}: ${turn.text}` : turn.text,
           )
@@ -1223,7 +1232,10 @@ const LibraryDetail = ({
   const showSegmentView = showTimestamps && canShowTimestamps;
   // Read-only script of speaker turns, in place of the editable textarea.
   const showSpeakerText =
-    !showSegmentView && item.status.type === "complete" && speakersUsed >= 2;
+    !showSegmentView &&
+    item.status.type === "complete" &&
+    speakersUsed >= 2 &&
+    !transcriptEdited;
   const transcribingPlaceholder = showStreaming && streamChunks.length === 0;
   const detectingSpeakers =
     rediarizing ||

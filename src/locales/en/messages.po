@@ -1807,7 +1807,7 @@ msgstr "Detecting speakers"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detecting_speakers"
-msgstr "Detecting speakers..."
+msgstr "Detecting speakers"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts

@@ -26,7 +26,7 @@ Glimpse can now tell who is speaking in your Library transcripts. Download the s
 ### Fixes
 
 - Fireworks AI has been updated to use its new endpoint.
-- Long recordings start transcribing much sooner.
+- Long recordings and imported files start transcribing much sooner.
 - Fixed quick shortcut taps sometimes stopping dictation immediately when the microphone was slow to start.
 - The Library shows transcriptions working again. The dots pulse while a recording or import is being transcribed, instead of sitting still.
 - Files imported from the command line show up in the Library while they transcribe, not only once they're done.
