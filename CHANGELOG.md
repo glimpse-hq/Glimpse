@@ -1,5 +1,9 @@
 1.2.6
 
+### Improvements
+
+- The Personalization screen is cleaner: each mode shows a line of its instructions and its apps and websites at a glance, and editing a mode has more room.
+
 ### Fixes
 
 - When a model download fails, the error in Settings says why, like a network error, instead of only naming the file.

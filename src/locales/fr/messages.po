@@ -100,6 +100,41 @@ msgstr ""
 #~ msgstr "Réflexion {0}%"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.drag"
+#~ msgstr "Faire glisser pour redimensionner"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.resize"
+#~ msgstr "Redimensionner les instructions personnalisées"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.apps"
+#~ msgstr "Apps"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_apps"
+#~ msgstr "Aucune application pour l'instant"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_sites"
+#~ msgstr "Aucun site pour l'instant"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.notes"
+#~ msgstr "Notes :"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.websites"
+#~ msgstr "Sites web"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -710,11 +745,6 @@ msgstr "Applications"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.apply"
 msgstr "Appliquer quand même"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.apps"
-msgstr "Apps"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1971,11 +2001,6 @@ msgid "library.view.empty_state"
 msgstr "Faites glisser des fichiers ici pour constituer votre bibliothèque."
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.drag"
-msgstr "Faire glisser pour redimensionner"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Déposez des fichiers à transcrire"
@@ -3215,8 +3240,8 @@ msgstr "Aucune application sélectionnée"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_apps"
-msgstr "Aucune application pour l'instant"
+msgid "personalization.no_targets"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3344,11 +3369,6 @@ msgid "transcriptions.list.no_results_filters"
 msgstr "Aucun résultat pour les filtres sélectionnés"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_sites"
-msgstr "Aucun site pour l'instant"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.filter.no_speakers"
 msgstr "Aucun intervenant pour l'instant"
@@ -3447,11 +3467,6 @@ msgstr "Non pris en charge par ce modèle"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "Non pris en charge sur ce Mac."
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.notes"
-msgstr "Notes :"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -4094,11 +4109,6 @@ msgstr "nécessite un modèle avec prise en charge du dictionnaire"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle"
 msgstr "Nécessite une licence active"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.resize"
-msgstr "Redimensionner les instructions personnalisées"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5437,11 +5447,6 @@ msgstr "Le modèle de cette app n'est pas reconnu ; vous en choisirez un à l'é
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites"
-msgstr "Sites web"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.websites"
 msgstr "Sites web"
 
 #. js-lingui-explicit-id

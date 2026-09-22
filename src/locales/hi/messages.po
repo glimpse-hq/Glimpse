@@ -100,6 +100,41 @@ msgstr ""
 #~ msgstr "{0}% संसाधित किया जा रहा है"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.drag"
+#~ msgstr "आकार बदलने के लिए ड्रैग करें"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.resize"
+#~ msgstr "कस्टम निर्देशों का आकार बदलें"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.apps"
+#~ msgstr "ऐप्स"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_apps"
+#~ msgstr "अभी कोई ऐप नहीं"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_sites"
+#~ msgstr "अभी तक कोई साइट नहीं"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.notes"
+#~ msgstr "टिप्पणियाँ:"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.websites"
+#~ msgstr "वेबसाइटें"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -710,11 +745,6 @@ msgstr "ऐप्लिकेशन"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.apply"
 msgstr "फिर भी लागू करें"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.apps"
-msgstr "ऐप्स"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1971,11 +2001,6 @@ msgid "library.view.empty_state"
 msgstr "अपनी लाइब्रेरी बनाने के लिए फ़ाइलें यहाँ खींचकर छोड़ें।"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.drag"
-msgstr "आकार बदलने के लिए ड्रैग करें"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "ट्रांसक्राइब करने के लिए फ़ाइलें यहाँ छोड़ें"
@@ -3215,8 +3240,8 @@ msgstr "कोई ऐप्लिकेशन चयनित नहीं"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_apps"
-msgstr "अभी कोई ऐप नहीं"
+msgid "personalization.no_targets"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3344,11 +3369,6 @@ msgid "transcriptions.list.no_results_filters"
 msgstr "चयनित फ़िल्टरों के लिए कोई परिणाम नहीं"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_sites"
-msgstr "अभी तक कोई साइट नहीं"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.filter.no_speakers"
 msgstr "अभी तक कोई स्पीकर नहीं"
@@ -3447,11 +3467,6 @@ msgstr "यह मॉडल इसे समर्थित नहीं कर�
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "इस Mac पर समर्थित नहीं है।"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.notes"
-msgstr "टिप्पणियाँ:"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -4094,11 +4109,6 @@ msgstr "शब्दकोश समर्थन वाले मॉडल क�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle"
 msgstr "सक्रिय लाइसेंस आवश्यक"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.resize"
-msgstr "कस्टम निर्देशों का आकार बदलें"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5437,11 +5447,6 @@ msgstr "हम इस ऐप के मॉडल को पहचान नह�
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites"
-msgstr "वेबसाइटें"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.websites"
 msgstr "वेबसाइटें"
 
 #. js-lingui-explicit-id

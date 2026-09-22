@@ -100,6 +100,41 @@ msgstr ""
 #~ msgstr "Denkt {0}%"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.drag"
+#~ msgstr "Sleep om te vergroten"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#~ msgid "personalization.modal.custom_instructions.resize"
+#~ msgstr "Aangepaste instructies vergroten/verkleinen"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.apps"
+#~ msgstr "Apps"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_apps"
+#~ msgstr "Nog geen apps"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.no_sites"
+#~ msgstr "Nog geen sites"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.notes"
+#~ msgstr "Notities:"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.websites"
+#~ msgstr "Websites"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -710,11 +745,6 @@ msgstr "Applicaties"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.apply"
 msgstr "Toch toepassen"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.apps"
-msgstr "Apps"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1971,11 +2001,6 @@ msgid "library.view.empty_state"
 msgstr "Sleep bestanden hierheen om je Bibliotheek op te bouwen."
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.drag"
-msgstr "Sleep om te vergroten"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.drag_import.title"
 msgstr "Zet bestanden hier neer om te transcriberen"
@@ -3215,8 +3240,8 @@ msgstr "Geen apps geselecteerd"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_apps"
-msgstr "Nog geen apps"
+msgid "personalization.no_targets"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3344,11 +3369,6 @@ msgid "transcriptions.list.no_results_filters"
 msgstr "Geen resultaten voor de geselecteerde filters"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.no_sites"
-msgstr "Nog geen sites"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.filter.no_speakers"
 msgstr "Nog geen sprekers"
@@ -3447,11 +3467,6 @@ msgstr "Niet ondersteund door dit model"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.unsupported"
 msgstr "Niet ondersteund op deze Mac."
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.notes"
-msgstr "Notities:"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -4094,11 +4109,6 @@ msgstr "vereist een model met woordenboekondersteuning"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.locked_subtitle"
 msgstr "Vereist een actieve licentie"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalityModal.tsx
-msgid "personalization.modal.custom_instructions.resize"
-msgstr "Aangepaste instructies vergroten/verkleinen"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5437,11 +5447,6 @@ msgstr "We herkennen het model van deze app niet, dus je kiest er één in de vo
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.websites"
-msgstr "Websites"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.websites"
 msgstr "Websites"
 
 #. js-lingui-explicit-id

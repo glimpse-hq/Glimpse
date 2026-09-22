@@ -24,11 +24,7 @@ import {
   usePersonalities,
   useWebsiteIconMap,
 } from "../queries";
-import {
-  createId,
-  formatWebsitePreview,
-  normalizeWebsite,
-} from "./personalization-utils";
+import { createId, normalizeWebsite } from "./personalization-utils";
 import PersonalityModal, {
   AppIconBadge,
   WebsiteFavicon,
@@ -478,19 +474,19 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           </p>
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-1">
+        <div className="-mt-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar scrollbar-gutter pt-1 pb-6 pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
             {personalities.map((personality, index) => {
-              const appsPreview = personality.apps.slice(0, 3);
-              const sitesPreview = personality.websites.slice(0, 2);
-              const moreApps = Math.max(
-                0,
-                personality.apps.length - appsPreview.length,
-              );
-              const moreSites = Math.max(
-                0,
-                personality.websites.length - sitesPreview.length,
-              );
+              const appsPreview = personality.apps.slice(0, 4);
+              const sitesPreview = personality.websites.slice(0, 3);
+              const hiddenCount =
+                personality.apps.length +
+                personality.websites.length -
+                appsPreview.length -
+                sitesPreview.length;
+              const instructionsPreview = personality.instructions
+                .map((line) => line.trim().replace(/^[-*•]\s+/, ""))
+                .find(Boolean);
               return (
                 <div
                   key={personality.id || `personality-${index}`}
@@ -521,13 +517,13 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                   }}
                   role="button"
                   tabIndex={0}
-                  className={`ui-card-liftable group relative p-2.5 text-left ${
+                  className={`ui-card-liftable group relative p-4 text-left ${
                     shiftHeld
                       ? "!border-red-500/30 hover:!border-red-500/60 hover:!bg-red-500/5"
                       : ""
                   }`}
                 >
-                  <div className="relative space-y-2">
+                  <div className="relative flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         {renamingId === personality.id ? (
@@ -599,105 +595,69 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="ui-text-uppercase-micro ui-color-disabled">
-                          {t({
-                            id: "personalization.apps",
-                            message: "Apps",
-                          })}
-                        </p>
-                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                          {appsPreview.length === 0 ? (
-                            <span className="ui-text-meta ui-color-disabled">
-                              {t({
-                                id: "personalization.no_apps",
-                                message: "No apps yet",
-                              })}
-                            </span>
-                          ) : (
-                            appsPreview.map((app, index) => (
-                              <div
-                                key={`app-preview-${index}-${app || "empty"}`}
-                                title={app}
-                              >
-                                <AppIconBadge
-                                  appName={app}
-                                  iconPath={
-                                    installedAppByName.get(app.toLowerCase())
-                                      ?.icon_path
-                                  }
-                                  size="chip"
-                                />
-                              </div>
-                            ))
-                          )}
-                          {moreApps > 0 && (
-                            <span className="ui-text-meta font-mono ui-color-muted">
-                              +{moreApps}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="ui-text-uppercase-micro ui-color-disabled">
-                          {t({
-                            id: "personalization.websites",
-                            message: "Websites",
-                          })}
-                        </p>
-                        <div className="mt-1.5 flex items-center gap-1.5 min-w-0 flex-nowrap">
-                          {sitesPreview.length === 0 ? (
-                            <span className="ui-text-meta ui-color-disabled">
-                              {t({
-                                id: "personalization.no_sites",
-                                message: "No sites yet",
-                              })}
-                            </span>
-                          ) : (
-                            sitesPreview.map((site, index) => (
-                              <span
-                                key={`site-preview-${index}-${site || "empty"}`}
-                                className="min-w-0 max-w-[118px] rounded-md border border-border-primary bg-surface-overlay px-2 py-1 ui-text-micro ui-color-secondary inline-flex items-center gap-1"
-                              >
-                                <WebsiteFavicon
-                                  site={site}
-                                  iconPath={
-                                    websiteIconBySite[normalizeWebsite(site)]
-                                  }
-                                  size="chip"
-                                />
-                                <span className="min-w-0 truncate font-mono">
-                                  {formatWebsitePreview(site)}
-                                </span>
-                              </span>
-                            ))
-                          )}
-                          {moreSites > 0 && (
-                            <span className="shrink-0 ui-text-meta font-mono ui-color-muted">
-                              +{moreSites}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-2 pt-2 border-t border-border-primary ui-text-meta ui-color-muted flex items-center gap-2 min-w-0">
-                      <span className="ui-text-uppercase-micro ui-color-disabled">
-                        {t({
-                          id: "personalization.notes",
-                          message: "Notes:",
+                    <p className="-mt-2 truncate ui-text-body-sm ui-color-muted">
+                      {instructionsPreview ??
+                        t({
+                          id: "personalization.no_notes",
+                          message: "No notes yet",
                         })}
-                      </span>
-                      <span className="font-mono truncate flex-1">
-                        {personality.instructions.length > 0
-                          ? personality.instructions[0]
-                          : t({
-                              id: "personalization.no_notes",
-                              message: "No notes yet",
-                            })}
-                      </span>
+                    </p>
+
+                    <div className="flex h-6 min-w-0 items-center gap-2">
+                      {appsPreview.length === 0 && sitesPreview.length === 0 ? (
+                        <span className="ui-text-meta ui-color-disabled">
+                          {t({
+                            id: "personalization.no_targets",
+                            message: "No apps or websites yet",
+                          })}
+                        </span>
+                      ) : (
+                        <>
+                          {appsPreview.map((app, index) => (
+                            <span
+                              key={`app-preview-${index}-${app || "empty"}`}
+                              title={app}
+                              className="flex"
+                            >
+                              <AppIconBadge
+                                appName={app}
+                                iconPath={
+                                  installedAppByName.get(app.toLowerCase())
+                                    ?.icon_path
+                                }
+                                size="chip"
+                              />
+                            </span>
+                          ))}
+                          {appsPreview.length > 0 &&
+                            sitesPreview.length > 0 && (
+                              <span
+                                className="mx-0.5 h-3.5 w-px shrink-0 bg-border-primary"
+                                aria-hidden="true"
+                              />
+                            )}
+                          {sitesPreview.map((site, index) => (
+                            <span
+                              key={`site-preview-${index}-${site || "empty"}`}
+                              title={site}
+                              className="flex"
+                            >
+                              <WebsiteFavicon
+                                site={site}
+                                iconPath={
+                                  websiteIconBySite[normalizeWebsite(site)]
+                                }
+                                size="list"
+                              />
+                            </span>
+                          ))}
+                          {hiddenCount > 0 && (
+                            <span className="shrink-0 ui-text-meta ui-color-muted tabular-nums">
+                              +{hiddenCount}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>

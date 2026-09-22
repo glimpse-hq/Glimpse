@@ -18,10 +18,8 @@ import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { detectAppPlatform } from "../../../platform/service";
 import type { Personality } from "../../../types";
 import {
-  clampInstructionsHeight,
   clampInstructionsText,
   countInstructionsChars,
-  DEFAULT_INSTRUCTIONS_HEIGHT,
   getInitials,
   getWebsiteFallback,
   isValidDomain,
@@ -39,7 +37,7 @@ export type PendingDeletePersonality = {
 type AppIconBadgeProps = {
   appName: string;
   iconPath?: string | null;
-  size?: "chip" | "list" | "option";
+  size?: "chip" | "list";
 };
 
 const useWindowsAppIconSizing = detectAppPlatform() === "windows";
@@ -50,7 +48,7 @@ const AppIconBadge = ({
   size = "chip",
 }: AppIconBadgeProps) => {
   const iconUrl = iconPath ? convertFileSrc(iconPath) : null;
-  const sizeClass = size === "chip" ? "h-7 w-7" : "h-[18px] w-[18px]";
+  const sizeClass = size === "chip" ? "h-6 w-6" : "h-[18px] w-[18px]";
   const textClass =
     size === "chip" ? "ui-text-micro" : "text-[9px] leading-none";
   const baseClass = `${sizeClass} shrink-0 flex items-center justify-center`;
@@ -74,7 +72,7 @@ const AppIconBadge = ({
 
   return (
     <span
-      className={`${baseClass} rounded-md border border-border-secondary bg-surface-overlay ui-color-secondary`}
+      className={`${baseClass} rounded-md bg-surface-elevated ui-color-muted`}
       aria-hidden="true"
     >
       <span className={`${textClass} font-semibold`}>
@@ -132,7 +130,7 @@ type PersonalityModalProps = {
 };
 
 const PERSONALIZATION_SNIPPETS_WIKI_URL =
-  "https://github.com/glimpse-hq/Glimpse/wiki/Personalization-Snippets";
+  "https://github.com/glimpse-hq/Glimpse/wiki/snippets";
 
 const PersonalityModal = ({
   personality,
@@ -155,12 +153,6 @@ const PersonalityModal = ({
   const [websiteInput, setWebsiteInput] = useState("");
   const [websiteError, setWebsiteError] = useState<string | null>(null);
   const [instructionsText, setInstructionsText] = useState("");
-  const [instructionsHeight, setInstructionsHeight] = useState(
-    DEFAULT_INSTRUCTIONS_HEIGHT,
-  );
-  const [isResizingInstructions, setIsResizingInstructions] = useState(false);
-  const resizeStartYRef = useRef(0);
-  const resizeStartHeightRef = useRef(DEFAULT_INSTRUCTIONS_HEIGHT);
 
   useEffect(() => {
     setNameDraft(personality.name);
@@ -172,7 +164,6 @@ const PersonalityModal = ({
     setInstructionsText(
       clampInstructionsText(personality.instructions.join("\n")),
     );
-    setInstructionsHeight(DEFAULT_INSTRUCTIONS_HEIGHT);
   }, [personality.id]);
 
   const commitName = () => {
@@ -224,7 +215,7 @@ const PersonalityModal = ({
   }, [appOptions, addedAppsSet, appQuery]);
 
   useEffect(() => {
-    setAppHighlightIndex(0);
+    setAppHighlightIndex(appQuery.trim() ? 0 : -1);
   }, [appQuery, isAppMenuOpen]);
 
   useClickOutside(appComboboxRef, () => setIsAppMenuOpen(false), isAppMenuOpen);
@@ -343,56 +334,6 @@ const PersonalityModal = ({
     [instructionsText],
   );
 
-  const handleInstructionsResizeStart = (
-    event: React.PointerEvent<HTMLButtonElement>,
-  ) => {
-    if (event.button !== 0) {
-      return;
-    }
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    resizeStartYRef.current = event.clientY;
-    resizeStartHeightRef.current = instructionsHeight;
-    setIsResizingInstructions(true);
-  };
-
-  useEffect(() => {
-    if (!isResizingInstructions) {
-      return;
-    }
-
-    const handlePointerMove = (event: PointerEvent) => {
-      const deltaY = event.clientY - resizeStartYRef.current;
-      setInstructionsHeight(
-        clampInstructionsHeight(resizeStartHeightRef.current + deltaY),
-      );
-    };
-
-    const handlePointerUp = () => {
-      setIsResizingInstructions(false);
-    };
-
-    const handlePointerCancel = () => {
-      setIsResizingInstructions(false);
-    };
-
-    const handleWindowBlur = () => {
-      setIsResizingInstructions(false);
-    };
-
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
-    window.addEventListener("pointercancel", handlePointerCancel);
-    window.addEventListener("blur", handleWindowBlur);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
-      window.removeEventListener("pointercancel", handlePointerCancel);
-      window.removeEventListener("blur", handleWindowBlur);
-    };
-  }, [isResizingInstructions]);
-
   const handleSaveName = () => {
     commitName();
     setIsEditingName(false);
@@ -405,7 +346,7 @@ const PersonalityModal = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-xs"
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 backdrop-blur-xs"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
@@ -416,92 +357,92 @@ const PersonalityModal = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 20 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="relative w-[540px] h-[640px] max-w-[92vw] max-h-[92vh] bg-surface-overlay border border-border-secondary rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+          className="relative w-[620px] h-[660px] max-w-[92vw] max-h-[92vh] bg-surface-overlay border border-border-primary rounded-2xl ui-shadow-modal-deep flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-b border-border-primary">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <DotMatrix
-                rows={2}
-                cols={3}
-                activeDots={[0, 2, 3]}
-                dotSize={3}
-                gap={3}
-                color="var(--color-section-marker-alt)"
-                aria-hidden="true"
-              />
-              <div className="min-w-0">
-                <div className="h-[26px] flex items-center">
-                  {isEditingName ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        ref={nameInputRef}
-                        value={nameDraft}
-                        onChange={(event) => setNameDraft(event.target.value)}
-                        autoFocus
-                        aria-label={t({
-                          id: "personalization.modal.edit_name",
-                          message: "Edit mode name",
-                        })}
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            handleSaveName();
-                          }
-                          if (event.key === "Escape") {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            setNameDraft(personality.name);
-                            setIsEditingName(false);
-                          }
-                        }}
-                        onBlur={handleSaveName}
-                        className="bg-transparent ui-text-title-lg font-semibold ui-color-primary outline-hidden border-b border-border-hover"
-                      />
-                      <button
-                        onClick={handleSaveName}
-                        className="h-[26px] w-[26px] flex items-center justify-center rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-primary transition-colors"
-                        aria-label={t({
-                          id: "personalization.modal.save_name",
-                          message: "Save name",
-                        })}
-                      >
-                        <Check size={14} aria-hidden="true" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onClick={() => {
-                        if (
-                          personality.name ===
-                          t({
-                            id: "personalization.new_mode.default_name",
-                            message: "New Mode",
-                          })
-                        ) {
-                          setNameDraft("");
+          <header className="flex items-start justify-between gap-4 px-7 pt-6">
+            <div className="flex min-w-0 items-center gap-3.5">
+              <span className="flex shrink-0">
+                <DotMatrix
+                  rows={2}
+                  cols={3}
+                  activeDots={[0, 2, 3]}
+                  dotSize={3}
+                  gap={3}
+                  color="var(--color-section-marker-alt)"
+                  aria-hidden="true"
+                />
+              </span>
+              <div className="h-9 min-w-0 flex items-center">
+                {isEditingName ? (
+                  <div className="flex min-w-0 items-center gap-2">
+                    <input
+                      ref={nameInputRef}
+                      value={nameDraft}
+                      onChange={(event) => setNameDraft(event.target.value)}
+                      autoFocus
+                      aria-label={t({
+                        id: "personalization.modal.edit_name",
+                        message: "Edit mode name",
+                      })}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleSaveName();
                         }
-                        setIsEditingName(true);
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setNameDraft(personality.name);
+                          setIsEditingName(false);
+                        }
                       }}
-                      className="group/title flex items-center gap-2 cursor-pointer"
+                      onBlur={handleSaveName}
+                      className="min-w-0 bg-transparent ui-text-screen-title tracking-tight ui-color-primary outline-hidden border-b border-border-hover"
+                    />
+                    <button
+                      onClick={handleSaveName}
+                      className="h-7 w-7 shrink-0 flex items-center justify-center rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-primary transition-colors"
+                      aria-label={t({
+                        id: "personalization.modal.save_name",
+                        message: "Save name",
+                      })}
                     >
-                      <h2
-                        id="modal-title"
-                        className="ui-text-title-lg font-medium ui-color-primary group-hover/title:text-content-secondary transition-colors"
-                      >
-                        {personality.name}
-                      </h2>
-                      <Pencil
-                        size={11}
-                        className="opacity-0 group-hover/title:opacity-100 transition-opacity text-content-muted"
-                        aria-hidden="true"
-                      />
-                    </div>
-                  )}
-                </div>
+                      <Check size={14} aria-hidden="true" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => {
+                      if (
+                        personality.name ===
+                        t({
+                          id: "personalization.new_mode.default_name",
+                          message: "New Mode",
+                        })
+                      ) {
+                        setNameDraft("");
+                      }
+                      setIsEditingName(true);
+                    }}
+                    className="group/title flex min-w-0 items-center gap-2 cursor-pointer"
+                  >
+                    <h2
+                      id="modal-title"
+                      className="truncate ui-text-screen-title tracking-tight ui-color-primary group-hover/title:text-content-secondary transition-colors"
+                    >
+                      {personality.name}
+                    </h2>
+                    <Pencil
+                      size={13}
+                      className="shrink-0 opacity-0 group-hover/title:opacity-100 transition-opacity text-content-muted"
+                      aria-hidden="true"
+                    />
+                  </div>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1 pt-1">
               <button
                 onClick={onDelete}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted hover:bg-red-500/10 hover:text-red-400 transition-colors"
@@ -514,7 +455,7 @@ const PersonalityModal = ({
                   message: "Delete mode",
                 })}
               >
-                <Trash2 size={13} aria-hidden="true" />
+                <Trash2 size={14} aria-hidden="true" />
               </button>
               <button
                 onClick={onClose}
@@ -524,13 +465,13 @@ const PersonalityModal = ({
                   message: "Close modal",
                 })}
               >
-                <X size={14} aria-hidden="true" />
+                <X size={15} aria-hidden="true" />
               </button>
             </div>
-          </div>
+          </header>
 
-          <div className="flex flex-col gap-5 p-5 flex-1 min-h-0 overflow-hidden">
-            <section className="shrink-0 space-y-2">
+          <div className="flex flex-1 min-h-0 flex-col gap-8 px-7 pt-6 pb-7">
+            <section className="shrink-0 flex flex-col gap-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <h3 className="ui-text-section-label-sm ui-color-muted">
@@ -585,56 +526,25 @@ const PersonalityModal = ({
                   {instructionsCharCount}/{MAX_INSTRUCTIONS_CHARS}
                 </span>
               </div>
-              <div className="rounded-lg bg-surface-surface px-3 py-2.5">
-                <textarea
-                  value={instructionsText}
-                  onChange={(event) =>
-                    handleInstructionsChange(event.target.value)
-                  }
-                  placeholder={t({
-                    id: "personalization.modal.custom_instructions.placeholder",
-                    message: "Add custom instructions",
-                  })}
-                  aria-label={t({
-                    id: "personalization.modal.custom_instructions",
-                    message: "Custom instructions",
-                  })}
-                  className="w-full resize-none bg-transparent ui-text-label font-mono ui-color-primary placeholder-content-disabled outline-hidden instructions-scroll"
-                  style={{ height: `${instructionsHeight}px` }}
-                />
-                <div className="flex items-center justify-end">
-                  <button
-                    type="button"
-                    onPointerDown={handleInstructionsResizeStart}
-                    className="h-4 w-4 rounded-sm text-content-disabled hover:text-content-secondary transition-colors cursor-pointer touch-none"
-                    aria-label={t({
-                      id: "personalization.modal.custom_instructions.resize",
-                      message: "Resize custom instructions",
-                    })}
-                    title={t({
-                      id: "personalization.modal.custom_instructions.drag",
-                      message: "Drag to resize",
-                    })}
-                  >
-                    <svg
-                      viewBox="0 0 20 20"
-                      className="h-full w-full"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M7 13L13 7M9.5 13L13 9.5M12 13L13 12"
-                        stroke="currentColor"
-                        strokeWidth="1.25"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <textarea
+                value={instructionsText}
+                onChange={(event) =>
+                  handleInstructionsChange(event.target.value)
+                }
+                placeholder={t({
+                  id: "personalization.modal.custom_instructions.placeholder",
+                  message: "Add custom instructions",
+                })}
+                aria-label={t({
+                  id: "personalization.modal.custom_instructions",
+                  message: "Custom instructions",
+                })}
+                className="h-[176px] w-full resize-none rounded-xl border border-border-primary bg-transparent px-4 py-3 ui-text-body-sm ui-color-primary placeholder-content-disabled outline-hidden focus:border-border-hover transition-colors instructions-scroll"
+              />
             </section>
 
-            <div className="grid grid-cols-2 gap-4">
-              <section className="flex min-w-0 flex-col gap-2">
+            <div className="grid flex-1 min-h-0 grid-cols-2 gap-8">
+              <section className="flex min-h-0 min-w-0 flex-col gap-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="ui-text-section-label-sm ui-color-muted">
                     {t({
@@ -646,255 +556,255 @@ const PersonalityModal = ({
                     {personality.apps.length}
                   </span>
                 </div>
-                <div className="rounded-lg bg-surface-surface p-2">
-                  <div
-                    ref={appComboboxRef}
-                    className="relative flex items-center gap-1 px-1"
-                  >
-                    <input
-                      ref={appInputRef}
-                      value={appQuery}
-                      onChange={(event) => {
-                        setAppQuery(event.target.value);
-                        setIsAppMenuOpen(true);
-                      }}
-                      onFocus={() => setIsAppMenuOpen(true)}
-                      onKeyDown={handleAppInputKeyDown}
-                      placeholder={t({
-                        id: "personalization.modal.applications.add",
-                        message: "Add application",
-                      })}
-                      aria-label={t({
-                        id: "personalization.modal.applications.add",
-                        message: "Add application",
-                      })}
-                      role="combobox"
-                      aria-expanded={isAppMenuOpen}
-                      aria-autocomplete="list"
-                      className="min-w-0 flex-1 border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsAppMenuOpen((open) => !open);
-                        appInputRef.current?.focus();
-                      }}
-                      aria-label={t({
-                        id: "personalization.modal.applications.toggle_list",
-                        message: "Toggle application list",
-                      })}
-                      aria-expanded={isAppMenuOpen}
-                      className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted hover:text-content-primary hover:bg-surface-overlay transition-colors"
-                    >
-                      <ChevronDown
-                        size={14}
-                        aria-hidden="true"
-                        className={`transition-transform ${
-                          isAppMenuOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                    <AnimatePresence>
-                      {isAppMenuOpen && filteredAppOptions.length > 0 && (
-                        <motion.ul
-                          initial={{ opacity: 0, y: -4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -4 }}
-                          transition={{ duration: 0.12 }}
-                          role="listbox"
-                          className="absolute left-0 right-0 top-full z-30 mt-1 max-h-[220px] overflow-y-auto rounded-md border border-border-secondary bg-surface-overlay px-1 py-1 shadow-lg instructions-scroll"
-                        >
-                          {filteredAppOptions.map((app, index) => (
-                            <li key={`app-option-${app.name}`}>
-                              <button
-                                type="button"
-                                role="option"
-                                aria-selected={index === appHighlightIndex}
-                                onMouseEnter={() => setAppHighlightIndex(index)}
-                                onMouseDown={(event) => event.preventDefault()}
-                                onClick={() => addApp(app.name)}
-                                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left ui-text-meta font-medium ui-color-primary ${
-                                  index === appHighlightIndex
-                                    ? "bg-surface-elevated"
-                                    : "hover:bg-surface-elevated/60"
-                                }`}
-                              >
-                                <AppIconBadge
-                                  appName={app.name}
-                                  iconPath={app.icon_path}
-                                  size="option"
-                                />
-                                <span className="truncate">{app.name}</span>
-                              </button>
-                            </li>
-                          ))}
-                        </motion.ul>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  <div className="mt-1 max-h-[240px] overflow-y-auto instructions-scroll">
-                    {personality.apps.length === 0 ? (
-                      <p className="px-2 py-2 ui-text-meta ui-color-disabled">
-                        {t({
-                          id: "personalization.modal.applications.none",
-                          message: "No applications selected",
-                        })}
-                      </p>
-                    ) : (
-                      <ul className="space-y-0.5">
-                        {personality.apps.map((app, index) => {
-                          const installedApp = installedAppByName.get(
-                            app.toLowerCase(),
-                          );
-                          const isMissing = !installedNameSet.has(
-                            app.toLowerCase(),
-                          );
-                          return (
-                            <li
-                              key={`app-${index}-${app || "empty"}`}
-                              className="group/row flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <AppIconBadge
-                                  appName={app}
-                                  iconPath={installedApp?.icon_path}
-                                  size="list"
-                                />
-                                <span className="ui-text-body-sm ui-color-primary truncate">
-                                  {app}
-                                </span>
-                                {isMissing && (
-                                  <span className="ui-text-meta ui-color-disabled shrink-0">
-                                    {t({
-                                      id: "personalization.modal.applications.not_installed",
-                                      message: "Not installed",
-                                    })}
-                                  </span>
-                                )}
-                              </div>
-                              <button
-                                onClick={() => removeApp(app)}
-                                className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
-                                title={t({
-                                  id: "personalization.modal.remove",
-                                  message: "Remove",
-                                })}
-                                aria-label={t({
-                                  id: "personalization.modal.remove_app",
-                                  message: `Remove ${app}`,
-                                })}
-                              >
-                                <X size={12} />
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              <section className="flex min-w-0 flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="ui-text-section-label-sm ui-color-muted">
-                    {t({
-                      id: "personalization.modal.websites",
-                      message: "Websites",
+                <div
+                  ref={appComboboxRef}
+                  className="relative flex items-center gap-1 border-b border-border-primary focus-within:border-border-hover transition-colors"
+                >
+                  <input
+                    ref={appInputRef}
+                    value={appQuery}
+                    onChange={(event) => {
+                      setAppQuery(event.target.value);
+                      setIsAppMenuOpen(true);
+                    }}
+                    onFocus={() => setIsAppMenuOpen(true)}
+                    onKeyDown={handleAppInputKeyDown}
+                    placeholder={t({
+                      id: "personalization.modal.applications.add",
+                      message: "Add application",
                     })}
-                  </h3>
-                  <span className="ui-text-meta ui-color-disabled tabular-nums">
-                    {personality.websites.length}
-                  </span>
-                </div>
-                <div className="rounded-lg bg-surface-surface p-2">
-                  <div className="flex items-center gap-1 px-1">
-                    <input
-                      value={websiteInput}
-                      onChange={(event) => {
-                        setWebsiteInput(event.target.value);
-                        if (websiteError) {
-                          setWebsiteError(null);
-                        }
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          addWebsite();
-                        }
-                      }}
-                      placeholder={t({
-                        id: "personalization.modal.websites.placeholder",
-                        message: "Add a site like gmail.com",
-                      })}
-                      aria-label={t({
-                        id: "personalization.modal.websites.aria",
-                        message: "Add website domain",
-                      })}
-                      className="min-w-0 flex-1 border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none focus:border-content-primary transition-colors"
+                    aria-label={t({
+                      id: "personalization.modal.applications.add",
+                      message: "Add application",
+                    })}
+                    role="combobox"
+                    aria-expanded={isAppMenuOpen}
+                    aria-autocomplete="list"
+                    className="min-w-0 flex-1 bg-transparent py-2 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAppMenuOpen((open) => !open);
+                      appInputRef.current?.focus();
+                    }}
+                    aria-label={t({
+                      id: "personalization.modal.applications.toggle_list",
+                      message: "Toggle application list",
+                    })}
+                    aria-expanded={isAppMenuOpen}
+                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
+                  >
+                    <ChevronDown
+                      size={14}
+                      aria-hidden="true"
+                      className={`transition-transform ${
+                        isAppMenuOpen ? "rotate-180" : ""
+                      }`}
                     />
-                    <button
-                      onClick={addWebsite}
-                      aria-label={t({
-                        id: "personalization.modal.add",
-                        message: "Add",
-                      })}
-                      className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted hover:text-content-primary hover:bg-surface-overlay transition-colors"
-                    >
-                      <Plus size={14} aria-hidden="true" />
-                    </button>
-                  </div>
-                  {websiteError && (
-                    <p className="shrink-0 px-2 ui-text-meta ui-color-error">
-                      {websiteError}
-                    </p>
-                  )}
-                  <div className="mt-1 max-h-[240px] overflow-y-auto instructions-scroll">
-                    {personality.websites.length === 0 ? (
-                      <p className="px-2 py-2 ui-text-meta ui-color-disabled">
-                        {t({
-                          id: "personalization.modal.websites.none",
-                          message: "No websites added",
-                        })}
-                      </p>
-                    ) : (
-                      <ul className="space-y-0.5">
-                        {personality.websites.map((site, index) => (
-                          <li
-                            key={`site-${index}-${site || "empty"}`}
-                            className="group/row flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-surface-overlay transition-colors"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <WebsiteFavicon
-                                site={site}
-                                iconPath={
-                                  websiteIconBySite[normalizeWebsite(site)]
-                                }
+                  </button>
+                  <AnimatePresence>
+                    {isAppMenuOpen && filteredAppOptions.length > 0 && (
+                      <motion.ul
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
+                        transition={{ duration: 0.12 }}
+                        role="listbox"
+                        className="ui-surface-menu dropdown-list absolute left-0 right-0 top-full z-30 mt-2 max-h-[240px] px-1 py-1"
+                      >
+                        {filteredAppOptions.map((app, index) => (
+                          <li key={`app-option-${app.name}`}>
+                            <button
+                              type="button"
+                              role="option"
+                              aria-selected={index === appHighlightIndex}
+                              onMouseEnter={() => setAppHighlightIndex(index)}
+                              onMouseDown={(event) => event.preventDefault()}
+                              onClick={() => addApp(app.name)}
+                              className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left ui-text-body-sm transition-colors duration-100 ${
+                                index === appHighlightIndex
+                                  ? "bg-[var(--surface-interactive)] text-content-primary"
+                                  : "text-content-secondary"
+                              }`}
+                            >
+                              <AppIconBadge
+                                appName={app.name}
+                                iconPath={app.icon_path}
                                 size="list"
                               />
-                              <span className="ui-text-label font-mono ui-color-primary truncate">
-                                {site}
+                              <span className="truncate">{app.name}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto instructions-scroll">
+                  {personality.apps.length === 0 ? (
+                    <p className="py-2.5 ui-text-body-sm ui-color-disabled">
+                      {t({
+                        id: "personalization.modal.applications.none",
+                        message: "No applications selected",
+                      })}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border-primary">
+                      {personality.apps.map((app, index) => {
+                        const installedApp = installedAppByName.get(
+                          app.toLowerCase(),
+                        );
+                        const isMissing = !installedNameSet.has(
+                          app.toLowerCase(),
+                        );
+                        return (
+                          <li
+                            key={`app-${index}-${app || "empty"}`}
+                            className="group/row flex items-center justify-between gap-2 py-2"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <AppIconBadge
+                                appName={app}
+                                iconPath={installedApp?.icon_path}
+                                size="list"
+                              />
+                              <span className="ui-text-body-sm ui-color-primary truncate">
+                                {app}
                               </span>
+                              {isMissing && (
+                                <span className="ui-text-meta ui-color-disabled shrink-0">
+                                  {t({
+                                    id: "personalization.modal.applications.not_installed",
+                                    message: "Not installed",
+                                  })}
+                                </span>
+                              )}
                             </div>
                             <button
-                              onClick={() => removeWebsite(site)}
-                              className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
+                              onClick={() => removeApp(app)}
+                              className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
                               title={t({
                                 id: "personalization.modal.remove",
                                 message: "Remove",
                               })}
                               aria-label={t({
-                                id: "personalization.modal.remove_site",
-                                message: `Remove ${site}`,
+                                id: "personalization.modal.remove_app",
+                                message: `Remove ${app}`,
                               })}
                             >
                               <X size={12} />
                             </button>
                           </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </section>
+
+              <section className="flex min-h-0 min-w-0 flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="shrink-0 ui-text-section-label-sm ui-color-muted">
+                    {t({
+                      id: "personalization.modal.websites",
+                      message: "Websites",
+                    })}
+                  </h3>
+                  {websiteError ? (
+                    <span
+                      className="min-w-0 truncate ui-text-meta ui-color-error"
+                      title={websiteError}
+                    >
+                      {websiteError}
+                    </span>
+                  ) : (
+                    <span className="ui-text-meta ui-color-disabled tabular-nums">
+                      {personality.websites.length}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 border-b border-border-primary focus-within:border-border-hover transition-colors">
+                  <input
+                    value={websiteInput}
+                    onChange={(event) => {
+                      setWebsiteInput(event.target.value);
+                      if (websiteError) {
+                        setWebsiteError(null);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addWebsite();
+                      }
+                    }}
+                    placeholder={t({
+                      id: "personalization.modal.websites.placeholder",
+                      message: "Add a site like gmail.com",
+                    })}
+                    aria-label={t({
+                      id: "personalization.modal.websites.aria",
+                      message: "Add website domain",
+                    })}
+                    className="min-w-0 flex-1 bg-transparent py-2 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none"
+                  />
+                  <button
+                    onClick={addWebsite}
+                    aria-label={t({
+                      id: "personalization.modal.add",
+                      message: "Add",
+                    })}
+                    className="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
+                  >
+                    <Plus size={14} aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto instructions-scroll">
+                  {personality.websites.length === 0 ? (
+                    <p className="py-2.5 ui-text-body-sm ui-color-disabled">
+                      {t({
+                        id: "personalization.modal.websites.none",
+                        message: "No websites added",
+                      })}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border-primary">
+                      {personality.websites.map((site, index) => (
+                        <li
+                          key={`site-${index}-${site || "empty"}`}
+                          className="group/row flex items-center justify-between gap-2 py-2"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <WebsiteFavicon
+                              site={site}
+                              iconPath={
+                                websiteIconBySite[normalizeWebsite(site)]
+                              }
+                              size="list"
+                            />
+                            <span className="ui-text-body-sm ui-color-primary truncate">
+                              {site}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => removeWebsite(site)}
+                            className="rounded-md p-1 text-content-disabled opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 hover:text-content-primary hover:bg-surface-elevated transition-all"
+                            title={t({
+                              id: "personalization.modal.remove",
+                              message: "Remove",
+                            })}
+                            aria-label={t({
+                              id: "personalization.modal.remove_site",
+                              message: `Remove ${site}`,
+                            })}
+                          >
+                            <X size={12} />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </section>
             </div>
