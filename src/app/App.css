@@ -1318,9 +1318,7 @@ body {
     var(--color-cloud-30) 100%
   );
   color: inherit;
-  border-radius: 0.4em 0.25em 0.35em 0.3em;
-  padding: 0.08em 0.25em;
-  margin: 0 -0.08em;
+  border-radius: 0.2em;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }

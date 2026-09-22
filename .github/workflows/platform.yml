@@ -108,7 +108,7 @@ jobs:
         with:
           key: platform-${{ matrix.platform }}-vulkan-1.4.357.0
           workspaces: src-tauri -> ${{ matrix.cargo-target }}
-          cache-on-failure: true
+          cache-on-failure: false
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: add native DLLs to PATH

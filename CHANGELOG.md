@@ -7,6 +7,9 @@
 - The Record screen is calmer before you start, and the Start Recording button shows a red dot.
 - On Mac, dictation finishes about half a second sooner.
 - Cleanup with Apple Intelligence is ready sooner after a break, because Glimpse loads the model while you're still speaking.
+- Press Cmd+F (Ctrl+F on Windows) to search the Library, or to search the transcript of an open item.
+- Library search finds items that contain all your words, in any order, so "budget meeting" also finds "meeting about the budget".
+- Enter and Shift+Enter step through transcript search results one match at a time, in every view.
 
 ### Fixes
 
@@ -14,6 +17,9 @@
 - Replacements keep the capitals you typed, so "iPhone" no longer becomes "IPhone" at the start of a sentence.
 - Replacements with symbols, like "C++" or "e.g.", now work, and ones like "24/7" are no longer written in all caps.
 - A replacement's result is no longer changed again by another replacement, and longer phrases win over shorter ones inside them.
+- Searching a transcript no longer moves your cursor into the transcript and replaces its text as you type.
+- Library search no longer autocorrects what you type.
+- Search highlights in a transcript no longer push letters apart in the middle of a word.
 
 1.2.5
 

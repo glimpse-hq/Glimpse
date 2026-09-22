@@ -128,6 +128,18 @@ const LibraryView = ({
     );
   }, [selectedItemId]);
   useEffect(() => {
+    if (!isActive || selectedItemId) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "f")
+        return;
+      event.preventDefault();
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isActive, selectedItemId]);
+  useEffect(() => {
     if (!openItemId) return;
     setSearchQuery("");
     setStatusFilter("all");
@@ -392,6 +404,11 @@ const LibraryView = ({
                     <input
                       ref={searchInputRef}
                       type="text"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                      {...{ writingsuggestions: "false" }}
                       placeholder={t({
                         id: "library.view.search_placeholder",
                         message: "Search library...",
@@ -399,7 +416,9 @@ const LibraryView = ({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === "Escape") setSearchQuery("");
+                        if (e.key !== "Escape") return;
+                        if (searchQuery) setSearchQuery("");
+                        else e.currentTarget.blur();
                       }}
                       className="h-8 w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-primary)] rounded-lg focus:border-[var(--color-border-hover)] pl-8 pr-7 ui-text-body-sm ui-color-primary placeholder-[var(--color-text-muted)] outline-none transition-colors duration-100 ease-out"
                     />

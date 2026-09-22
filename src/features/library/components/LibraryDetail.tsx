@@ -106,6 +106,22 @@ type SpeakerTurn = {
 };
 
 // Consecutive segments by the same speaker merge into one turn.
+type RowMatch = { row: number; occurrence: number };
+
+const findRowMatches = (rows: string[], query: string): RowMatch[] => {
+  const needle = query.toLowerCase();
+  const matches: RowMatch[] = [];
+  rows.forEach((text, row) => {
+    const lower = text.toLowerCase();
+    let cursor = lower.indexOf(needle);
+    for (let occurrence = 0; cursor !== -1; occurrence += 1) {
+      matches.push({ row, occurrence });
+      cursor = lower.indexOf(needle, cursor + needle.length);
+    }
+  });
+  return matches;
+};
+
 const buildSpeakerTurns = (
   segments: TranscriptSegment[],
   speakerById: Map<string, Speaker>,
@@ -384,6 +400,9 @@ const LibraryDetail = ({
   const isPlayingRef = useRef(false);
   const lastTimestampNavRef = useRef(0);
   const transcriptAreaRef = useRef<HTMLTextAreaElement | null>(null);
+  const transcriptHighlightsRef = useRef<HTMLDivElement | null>(null);
+  const transcriptScrollRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const segmentsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
   const turnsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
   const streamVirtuosoRef = useRef<VirtuosoHandle | null>(null);
@@ -1346,51 +1365,43 @@ const LibraryDetail = ({
 
   const segmentMatchIndexes = useMemo(() => {
     if (!normalizedSearchQuery || !showSegmentView) return [];
-    const query = normalizedSearchQuery.toLowerCase();
-    const matches: number[] = [];
-    for (let i = 0; i < visibleSegments.length; i += 1) {
-      if (visibleSegments[i].segment.text.toLowerCase().includes(query)) {
-        matches.push(i);
-      }
-    }
-    return matches;
+    return findRowMatches(
+      visibleSegments.map((entry) => entry.segment.text),
+      normalizedSearchQuery,
+    );
   }, [normalizedSearchQuery, visibleSegments, showSegmentView]);
 
   const turnMatchIndexes = useMemo(() => {
     if (!normalizedSearchQuery || !showSpeakerText) return [];
-    const query = normalizedSearchQuery.toLowerCase();
-    const matches: number[] = [];
-    for (let i = 0; i < visibleTurns.length; i += 1) {
-      if (visibleTurns[i].text.toLowerCase().includes(query)) {
-        matches.push(i);
-      }
-    }
-    return matches;
+    return findRowMatches(
+      visibleTurns.map((turn) => turn.text),
+      normalizedSearchQuery,
+    );
   }, [normalizedSearchQuery, visibleTurns, showSpeakerText]);
 
   const streamMatchIndexes = useMemo(() => {
     if (!normalizedSearchQuery || !showStreaming) return [];
-    const query = normalizedSearchQuery.toLowerCase();
-    const matches: number[] = [];
-    for (let i = 0; i < streamChunks.length; i += 1) {
-      if (streamChunks[i].toLowerCase().includes(query)) {
-        matches.push(i);
-      }
-    }
-    return matches;
+    return findRowMatches(streamChunks, normalizedSearchQuery);
   }, [normalizedSearchQuery, showStreaming, streamChunks]);
 
-  const textMatchIndex = useMemo(() => {
+  const textMatchIndexes = useMemo(() => {
     if (
       !normalizedSearchQuery ||
       showSegmentView ||
       showSpeakerText ||
       showStreaming
     ) {
-      return -1;
+      return [];
     }
     const query = normalizedSearchQuery.toLowerCase();
-    return transcriptDraft.toLowerCase().indexOf(query);
+    const text = transcriptDraft.toLowerCase();
+    const matches: number[] = [];
+    let cursor = text.indexOf(query);
+    while (cursor !== -1) {
+      matches.push(cursor);
+      cursor = text.indexOf(query, cursor + query.length);
+    }
+    return matches;
   }, [
     normalizedSearchQuery,
     showSegmentView,
@@ -1401,20 +1412,12 @@ const LibraryDetail = ({
 
   const searchMatchLabel = useMemo(() => {
     if (!normalizedSearchQuery) return null;
-    const indexed = (matches: number[]) =>
+    const indexed = (matches: unknown[]) =>
       `${matches.length ? Math.min(activeSearchIndex, matches.length - 1) + 1 : 0}/${matches.length}`;
     if (showSegmentView) return indexed(segmentMatchIndexes);
     if (showSpeakerText) return indexed(turnMatchIndexes);
     if (showStreaming) return indexed(streamMatchIndexes);
-    const query = normalizedSearchQuery.toLowerCase();
-    const text = transcriptDraft.toLowerCase();
-    let count = 0;
-    let cursor = text.indexOf(query);
-    while (cursor !== -1) {
-      count += 1;
-      cursor = text.indexOf(query, cursor + query.length);
-    }
-    return String(count);
+    return indexed(textMatchIndexes);
   }, [
     normalizedSearchQuery,
     showSegmentView,
@@ -1423,26 +1426,22 @@ const LibraryDetail = ({
     segmentMatchIndexes,
     turnMatchIndexes,
     streamMatchIndexes,
+    textMatchIndexes,
     activeSearchIndex,
-    transcriptDraft,
   ]);
 
-  const activeSegmentMatch = segmentMatchIndexes.length
-    ? segmentMatchIndexes[
-        Math.min(activeSearchIndex, segmentMatchIndexes.length - 1)
-      ]
-    : -1;
-  const activeTurnMatch = turnMatchIndexes.length
-    ? turnMatchIndexes[Math.min(activeSearchIndex, turnMatchIndexes.length - 1)]
-    : -1;
-  const activeStreamMatch = streamMatchIndexes.length
-    ? streamMatchIndexes[
-        Math.min(activeSearchIndex, streamMatchIndexes.length - 1)
-      ]
-    : -1;
+  const pickActiveMatch = (matches: RowMatch[]) =>
+    matches.length
+      ? matches[Math.min(activeSearchIndex, matches.length - 1)]
+      : null;
+  const activeSegmentMatch = pickActiveMatch(segmentMatchIndexes);
+  const activeTurnMatch = pickActiveMatch(turnMatchIndexes);
+  const activeStreamMatch = pickActiveMatch(streamMatchIndexes);
+  const activeOccurrence = (match: RowMatch | null, row: number) =>
+    match?.row === row ? match.occurrence : -1;
 
   const renderHighlightedText = useCallback(
-    (text: string, isActive: boolean) => {
+    (text: string, activeHit: number) => {
       if (!normalizedSearchQuery) return text;
       const query = normalizedSearchQuery.toLowerCase();
       const lower = text.toLowerCase();
@@ -1459,7 +1458,7 @@ const LibraryDetail = ({
         nodes.push(
           <mark
             key={`${matchIndex}-${matchCount}`}
-            className={`transcript-search-hit${isActive ? " transcript-search-hit-active" : ""}`}
+            className={`transcript-search-hit${matchCount === activeHit ? " transcript-search-hit-active" : ""}`}
           >
             {matchText}
           </mark>,
@@ -1483,39 +1482,24 @@ const LibraryDetail = ({
 
   const handleSearchNavigate = useCallback(
     (direction: number) => {
-      if (!normalizedSearchQuery) return;
-      if (showSegmentView && segmentMatchIndexes.length > 0) {
-        setActiveSearchIndex(
-          (prev) =>
-            (prev + direction + segmentMatchIndexes.length) %
-            segmentMatchIndexes.length,
-        );
-        return;
-      }
-      if (showSpeakerText && turnMatchIndexes.length > 0) {
-        setActiveSearchIndex(
-          (prev) =>
-            (prev + direction + turnMatchIndexes.length) %
-            turnMatchIndexes.length,
-        );
-        return;
-      }
-      if (showStreaming && streamMatchIndexes.length > 0) {
-        setActiveSearchIndex(
-          (prev) =>
-            (prev + direction + streamMatchIndexes.length) %
-            streamMatchIndexes.length,
-        );
-      }
+      const count = showSegmentView
+        ? segmentMatchIndexes.length
+        : showSpeakerText
+          ? turnMatchIndexes.length
+          : showStreaming
+            ? streamMatchIndexes.length
+            : textMatchIndexes.length;
+      if (count === 0) return;
+      setActiveSearchIndex((prev) => (prev + direction + count) % count);
     },
     [
-      normalizedSearchQuery,
       showSegmentView,
       showSpeakerText,
       showStreaming,
       segmentMatchIndexes,
       turnMatchIndexes,
       streamMatchIndexes,
+      textMatchIndexes,
     ],
   );
 
@@ -1565,6 +1549,14 @@ const LibraryDetail = ({
         target?.getAttribute("role") === "link" ||
         target?.getAttribute("role") === "menuitem";
 
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        setSearchOpen(true);
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
       if (event.key === "Escape") {
         event.preventDefault();
         if (showDeleteConfirm) {
@@ -1604,56 +1596,54 @@ const LibraryDetail = ({
   useEffect(() => {
     if (!normalizedSearchQuery) return;
     if (showSegmentView) {
-      if (segmentMatchIndexes.length === 0) return;
-      const targetIndex =
-        segmentMatchIndexes[
-          Math.min(activeSearchIndex, segmentMatchIndexes.length - 1)
-        ];
+      if (!activeSegmentMatch) return;
       segmentsVirtuosoRef.current?.scrollToIndex({
-        index: targetIndex,
+        index: activeSegmentMatch.row,
         align: "center",
         behavior: "smooth",
       });
       return;
     }
     if (showSpeakerText) {
-      if (turnMatchIndexes.length === 0) return;
+      if (!activeTurnMatch) return;
       turnsVirtuosoRef.current?.scrollToIndex({
-        index: activeTurnMatch,
+        index: activeTurnMatch.row,
         align: "center",
         behavior: "smooth",
       });
       return;
     }
     if (showStreaming) {
-      if (streamMatchIndexes.length === 0) return;
-      const targetIndex =
-        streamMatchIndexes[
-          Math.min(activeSearchIndex, streamMatchIndexes.length - 1)
-        ];
+      if (!activeStreamMatch) return;
       streamVirtuosoRef.current?.scrollToIndex({
-        index: targetIndex,
+        index: activeStreamMatch.row,
         align: "center",
         behavior: "smooth",
       });
       return;
     }
-    if (textMatchIndex >= 0 && transcriptAreaRef.current) {
-      const endIndex = textMatchIndex + normalizedSearchQuery.length;
-      transcriptAreaRef.current.focus();
-      transcriptAreaRef.current.setSelectionRange(textMatchIndex, endIndex);
-    }
+    const scroller = transcriptScrollRef.current;
+    const activeHit =
+      transcriptHighlightsRef.current?.querySelector<HTMLElement>(
+        "[data-active]",
+      );
+    if (!scroller || !activeHit) return;
+    // Editing the transcript re-runs this; don't yank the view while typing there.
+    if (document.activeElement === transcriptAreaRef.current) return;
+    scroller.scrollTo({
+      top: activeHit.offsetTop - scroller.clientHeight / 2,
+      behavior: "smooth",
+    });
   }, [
     normalizedSearchQuery,
     showSegmentView,
     showSpeakerText,
     showStreaming,
-    segmentMatchIndexes,
-    turnMatchIndexes,
+    activeSegmentMatch,
     activeTurnMatch,
-    streamMatchIndexes,
+    activeStreamMatch,
     activeSearchIndex,
-    textMatchIndex,
+    textMatchIndexes,
   ]);
 
   const stopFollowScroll = useCallback(() => {
@@ -1909,7 +1899,13 @@ const LibraryDetail = ({
                     aria-hidden="true"
                   />
                   <input
+                    ref={searchInputRef}
                     type="text"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    {...{ writingsuggestions: "false" }}
                     value={searchQuery}
                     autoFocus
                     onChange={(event) => handleSearchChange(event.target.value)}
@@ -2684,7 +2680,7 @@ const LibraryDetail = ({
                               {wordSpans ??
                                 renderHighlightedText(
                                   segment.text,
-                                  idx === activeSegmentMatch,
+                                  activeOccurrence(activeSegmentMatch, idx),
                                 )}
                             </span>
                           </div>
@@ -2728,7 +2724,7 @@ const LibraryDetail = ({
                         >
                           {renderHighlightedText(
                             chunk,
-                            idx === activeStreamMatch,
+                            activeOccurrence(activeStreamMatch, idx),
                           )}
                         </motion.p>
                       </div>
@@ -2778,7 +2774,7 @@ const LibraryDetail = ({
                         <p className="select-text">
                           {renderHighlightedText(
                             turn.text,
-                            idx === activeTurnMatch,
+                            activeOccurrence(activeTurnMatch, idx),
                           )}
                         </p>
                       </div>
@@ -2786,17 +2782,65 @@ const LibraryDetail = ({
                   )}
                 />
               ) : (
-                <textarea
-                  ref={transcriptAreaRef}
-                  value={transcriptDraft}
-                  onChange={(event) => setTranscriptDraft(event.target.value)}
-                  disabled={!transcriptEditable}
-                  placeholder={t({
-                    id: "library.modal.transcript_placeholder",
-                    message: "Transcript will appear here.",
-                  })}
-                  className="h-full w-full resize-none bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 custom-scrollbar select-text pt-2 pb-4"
-                />
+                // The textarea grows with the text so it scrolls together with the highlight layer.
+                <div
+                  ref={transcriptScrollRef}
+                  className="h-full w-full overflow-y-scroll custom-scrollbar"
+                >
+                  <div className="relative grid min-h-full">
+                    <div
+                      key={normalizedSearchQuery}
+                      ref={transcriptHighlightsRef}
+                      aria-hidden="true"
+                      className="pointer-events-none col-start-1 row-start-1 whitespace-pre-wrap [overflow-wrap:break-word] px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body leading-relaxed text-transparent pt-2 pb-4"
+                    >
+                      {textMatchIndexes.map((start, idx) => {
+                        const prevEnd =
+                          idx === 0
+                            ? 0
+                            : textMatchIndexes[idx - 1] +
+                              normalizedSearchQuery.length;
+                        const end = start + normalizedSearchQuery.length;
+                        const isActive =
+                          idx ===
+                          Math.min(
+                            activeSearchIndex,
+                            textMatchIndexes.length - 1,
+                          );
+                        return (
+                          <Fragment key={start}>
+                            {transcriptDraft.slice(prevEnd, start)}
+                            <mark
+                              data-active={isActive || undefined}
+                              className={`transcript-search-hit${isActive ? " transcript-search-hit-active" : ""}`}
+                            >
+                              {transcriptDraft.slice(start, end)}
+                            </mark>
+                          </Fragment>
+                        );
+                      })}
+                      {transcriptDraft.slice(
+                        textMatchIndexes.length > 0
+                          ? textMatchIndexes[textMatchIndexes.length - 1] +
+                              normalizedSearchQuery.length
+                          : 0,
+                      )}{" "}
+                    </div>
+                    <textarea
+                      ref={transcriptAreaRef}
+                      value={transcriptDraft}
+                      onChange={(event) =>
+                        setTranscriptDraft(event.target.value)
+                      }
+                      disabled={!transcriptEditable}
+                      placeholder={t({
+                        id: "library.modal.transcript_placeholder",
+                        message: "Transcript will appear here.",
+                      })}
+                      className="col-start-1 row-start-1 w-full resize-none overflow-hidden bg-transparent px-[max(1.75rem,calc((100%-48rem)/2+1.75rem))] ui-text-body text-content-secondary leading-relaxed outline-hidden disabled:opacity-60 select-text pt-2 pb-4"
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
