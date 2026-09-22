@@ -15,8 +15,6 @@ import {
   seedFromLicenseKey,
   seededDotField,
 } from "../licenseFingerprint";
-import type { PurchaseTier } from "../../license/purchaseConfig";
-import { EDITION_COLORS } from "../../../shared/lib/licenseEdition";
 
 export type MemberCardPalette = {
   bg: string;
@@ -200,11 +198,6 @@ export function getCardShellStyle(palette: MemberCardPalette, extraHeight = 0) {
     transformOrigin: "center center",
   };
 }
-
-export const TIER_COLORS: Record<PurchaseTier, { fg: string; bg: string }> = {
-  personal: EDITION_COLORS.personal,
-  commercial: EDITION_COLORS.commercial,
-};
 
 export const MEMBER_CARD_LAYOUT_ID = "glimpse-member-card";
 
@@ -750,17 +743,7 @@ export const CardStampSlot = ({ children }: { children: ReactNode }) => (
   </div>
 );
 
-export const CardHeaderRow = ({
-  stamp,
-  price,
-  priceColor,
-}: {
-  stamp: ReactNode;
-  price?: string | null;
-  priceColor?: string;
-}) => {
-  const palette = useMemberCardPalette();
-
+export const CardHeaderRow = ({ stamp }: { stamp: ReactNode }) => {
   return (
     <div
       className="relative flex shrink-0 items-start justify-end overflow-visible"
@@ -771,20 +754,6 @@ export const CardHeaderRow = ({
         style={{ top: "-11px" }}
       >
         <CardWordmark />
-        {price && priceColor ? (
-          <p
-            className="mt-1.5 truncate font-mono tabular-nums tracking-[0.02em]"
-            style={{
-              fontSize: "13px",
-              fontWeight: 600,
-              lineHeight: 1.2,
-              color: priceColor,
-              textShadow: palette.wordmarkShadow,
-            }}
-          >
-            {price}
-          </p>
-        ) : null}
       </div>
       <CardStampSlot>{stamp}</CardStampSlot>
     </div>

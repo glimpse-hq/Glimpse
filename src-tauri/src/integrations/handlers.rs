@@ -208,7 +208,7 @@ fn library_import(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, St
         detect_speakers: args
             .get("detect_speakers")
             .and_then(Value::as_bool)
-            .unwrap_or(false),
+            .unwrap_or_else(|| crate::speech::installed_diarizer_path(app).is_some()),
     };
 
     let item = crate::library::commands::import_library_file(
@@ -515,7 +515,7 @@ fn record_pause(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
 fn record_resume(app: &AppHandle<AppRuntime>) -> Result<Value, String> {
     require_license(&app.state::<AppState>())?;
     require_recording(app)?;
-    let state = crate::recording::resume_recording_session(app.clone());
+    let state = crate::recording::resume_session(app);
     Ok(record_state_json(&state))
 }
 

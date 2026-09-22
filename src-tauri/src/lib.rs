@@ -171,9 +171,21 @@ where
             continue;
         }
 
-        if let Err(err) = license::handle_deep_link(app) {
-            tracing::error!("{err}");
-        }
+        let app = app.clone();
+        let key = license::deep_link_license_key(raw_url);
+        tauri::async_runtime::spawn(async move {
+            // A link never replaces a license that is already active.
+            if let Some(key) = key
+                && let Some(state) = app.try_state::<AppState>()
+                && !license::has_active_license(&state.settings_store)
+                && let Err(err) = activate_license_and_note(&app, &state, key).await
+            {
+                tracing::warn!("License from checkout link did not activate: {err}");
+            }
+            if let Err(err) = license::handle_deep_link(&app) {
+                tracing::error!("{err}");
+            }
+        });
     }
 }
 
@@ -422,6 +434,10 @@ pub fn run() {
                         Ok(false) => {}
                         Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
                     }
+                    if let Err(err) = license::sync_trial(state.http(), &state.settings_store).await
+                    {
+                        tracing::warn!("Could not confirm the trial with the server: {err}");
+                    }
 
                     // Start after the refresh so the license gate reflects current state.
                     let settings = state.current_settings();
@@ -585,6 +601,7 @@ pub fn run() {
             library::commands::delete_library_item,
             library::commands::cancel_library_transcription,
             library::commands::retry_library_transcription,
+            library::commands::rediarize_library_item,
             library::commands::export_library_item_to_path,
             library::commands::get_library_tags,
             library::commands::probe_library_import_files,
@@ -1453,13 +1470,22 @@ async fn activate_license(
     state: tauri::State<'_, AppState>,
     args: license::ActivateLicenseArgs,
 ) -> Result<license::LicenseState, String> {
-    let input_shape = analytics::activation_input_shape(&args.key);
+    activate_license_and_note(&app, &state, args.key).await
+}
+
+async fn activate_license_and_note(
+    app: &tauri::AppHandle<AppRuntime>,
+    state: &AppState,
+    key: String,
+) -> Result<license::LicenseState, String> {
+    let input_shape = analytics::activation_input_shape(&key);
     let trial_day = license::trial_day(&state.settings_store).ok();
+    let args = license::ActivateLicenseArgs { key };
     match license::activate_license(state.http(), &state.settings_store, args).await {
         Ok(license_state) => {
-            note_license_state(&app, &state, &license_state);
+            note_license_state(app, state, &license_state);
             analytics::track_license_activated(
-                &app,
+                app,
                 license_state.edition.map(|edition| edition.as_str()),
                 trial_day,
                 input_shape,
@@ -1467,7 +1493,7 @@ async fn activate_license(
             Ok(license_state)
         }
         Err(err) => {
-            analytics::track_license_activation_failed(&app, &err, input_shape);
+            analytics::track_license_activation_failed(app, &err, input_shape);
             Err(err)
         }
     }

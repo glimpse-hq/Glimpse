@@ -1,54 +1,17 @@
-import type {
-  PurchaseSource,
-  PurchaseTier,
-} from "../../shared/lib/purchaseConfig";
+import type { PurchaseSource } from "../../shared/lib/purchaseConfig";
+import type { LicenseProvider } from "../../shared/types/license";
 
-export type { PurchaseSource, PurchaseTier };
-export { tierInfo } from "../../shared/lib/purchaseConfig";
+export type { PurchaseSource };
 
-export function personalCheckoutUrl(): string | null {
-  const url = import.meta.env.VITE_GLIMPSE_PERSONAL_CHECKOUT_URL?.trim();
-  return url || null;
+// Plans and prices live on the site, so they change without an app update.
+// The site passes `source` on to checkout, which records it with the sale.
+export function pricingUrlFor(source: PurchaseSource): string {
+  return `https://tryglimpse.cc/?source=${source}#pricing`;
 }
 
-export function commercialCheckoutUrl(): string | null {
-  const url = import.meta.env.VITE_GLIMPSE_COMMERCIAL_CHECKOUT_URL?.trim();
-  return url || null;
-}
-
-export function customerPortalUrl(): string | null {
-  const url = import.meta.env.VITE_GLIMPSE_CUSTOMER_PORTAL?.trim();
-  return url || null;
-}
-
-export function checkoutUrlFor(
-  tier: PurchaseTier,
-  source: PurchaseSource,
-): string | null {
-  const rawUrl =
-    tier === "commercial" ? commercialCheckoutUrl() : personalCheckoutUrl();
-  return withCheckoutTracking(rawUrl, `${tier}_license`, source);
-}
-
-export function customerPortalUrlFor(source: PurchaseSource): string | null {
-  return withCheckoutTracking(customerPortalUrl(), "customer_portal", source);
-}
-
-function withCheckoutTracking(
-  rawUrl: string | null,
-  campaign: string,
-  source: PurchaseSource,
-): string | null {
-  if (!rawUrl) return null;
-
-  try {
-    const url = new URL(rawUrl);
-    url.searchParams.set("utm_source", "glimpse_app");
-    url.searchParams.set("utm_medium", "desktop");
-    url.searchParams.set("utm_campaign", campaign);
-    url.searchParams.set("utm_content", source);
-    return url.toString();
-  } catch {
-    return rawUrl;
-  }
+// The Worker picks the provider's portal, so it changes without an app update.
+export function customerPortalUrlFor(
+  provider: LicenseProvider | null | undefined,
+): string {
+  return `https://api.tryglimpse.cc/v1/portal?provider=${provider ?? "creem"}`;
 }

@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -37,7 +38,8 @@ function patchItemInCache(
   filter: LibraryFilter,
   id: string,
   updater: (item: LibraryItem) => LibraryItem,
-) {
+): boolean {
+  let found = false;
   queryClient.setQueryData<LibraryInfiniteData>(
     libraryKeys.list(filter),
     (old) => {
@@ -46,13 +48,16 @@ function patchItemInCache(
         ...old,
         pages: old.pages.map((page) => ({
           ...page,
-          items: page.items.map((item) =>
-            item.id === id ? updater(item) : item,
-          ),
+          items: page.items.map((item) => {
+            if (item.id !== id) return item;
+            found = true;
+            return updater(item);
+          }),
         })),
       };
     },
   );
+  return found;
 }
 
 export function useLibraryItems(
@@ -72,6 +77,15 @@ export function useLibraryItems(
       status.type === "importing" ||
       status.type === "transcribing";
 
+    // Items created outside this view (e.g. CLI imports) are missing from a
+    // cached list; refetch once per unknown id.
+    const refetchedIds = new Set<string>();
+    const refetchIfMissing = (id: string, found: boolean) => {
+      if (found || refetchedIds.has(id)) return;
+      refetchedIds.add(id);
+      queryClient.invalidateQueries({ queryKey: libraryKeys.list(filter) });
+    };
+
     listen<LibraryProgressPayload>(
       "library:transcription_progress",
       (event) => {
@@ -83,8 +97,9 @@ export function useLibraryItems(
           chunk_segments,
           current_chunk,
           total_chunks,
+          detecting_speakers,
         } = event.payload;
-        patchItemInCache(queryClient, filter, id, (item) => {
+        const found = patchItemInCache(queryClient, filter, id, (item) => {
           if (!isProgressable(item.status)) return item;
           let nextTranscript = item.transcript;
           let updateTranscript = false;
@@ -112,11 +127,17 @@ export function useLibraryItems(
           }
           return {
             ...item,
-            status: { type: "transcribing" as const, progress },
+            status: {
+              type: "transcribing" as const,
+              progress,
+              detecting_speakers,
+            },
+            ...(isReset ? { transcript_edited: false } : {}),
             ...(updateTranscript ? { transcript: nextTranscript } : {}),
             ...(updateSegments ? { segments: nextSegments } : {}),
           };
         });
+        refetchIfMissing(id, found);
       },
     ).then((fn) => {
       if (cancelled) fn();
@@ -161,7 +182,7 @@ export function useLibraryItems(
     listen<LibraryImportProgressPayload>("library:import_progress", (event) => {
       if (cancelled) return;
       const { id, progress } = event.payload;
-      patchItemInCache(queryClient, filter, id, (item) => {
+      const found = patchItemInCache(queryClient, filter, id, (item) => {
         if (
           item.status.type === "transcribing" ||
           item.status.type === "complete" ||
@@ -172,6 +193,7 @@ export function useLibraryItems(
         }
         return { ...item, status: { type: "importing" as const, progress } };
       });
+      refetchIfMissing(id, found);
     }).then((fn) => {
       if (cancelled) fn();
       else unlisteners.push(fn);
@@ -190,6 +212,8 @@ export function useLibraryItems(
     enabled,
     gcTime: 60_000,
     staleTime: LIBRARY_STALE_TIME,
+    // Keep the current results on screen while a new search loads.
+    placeholderData: keepPreviousData,
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.has_more) return undefined;
@@ -254,6 +278,17 @@ export function useRetryLibraryTranscription() {
 
   return useMutation({
     mutationFn: libraryApi.retryLibraryTranscription,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    },
+  });
+}
+
+export function useRediarizeLibraryItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: libraryApi.rediarizeLibraryItem,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },

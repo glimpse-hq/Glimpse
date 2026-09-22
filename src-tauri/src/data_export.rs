@@ -485,6 +485,7 @@ mod tests {
                 store_original: false,
                 status: LibraryItemStatus::Complete,
                 transcript: Some("library text".to_string()),
+                transcript_edited: false,
                 segments: Some(vec![TranscriptSegment {
                     start_ms: 0,
                     end_ms: 900,

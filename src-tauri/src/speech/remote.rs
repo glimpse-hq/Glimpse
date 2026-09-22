@@ -30,13 +30,14 @@ pub(crate) fn resolved_endpoint(settings: &UserSettings) -> String {
 
 pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
     match provider.trim().to_ascii_lowercase().as_str() {
-        "openai" => Some("gpt-4o-mini-transcribe"),
+        "openai" => Some("gpt-transcribe"),
         "groq" => Some("whisper-large-v3-turbo"),
+        "xai" => Some("grok-voice-transcribe-2.0"),
         "mistral" => Some("voxtral-mini-latest"),
-        "fireworks" => Some("whisper-v3"),
-        "openrouter" => Some("openai/whisper-1"),
+        "fireworks" => Some("whisper-v3-turbo"),
+        "openrouter" => Some("openai/gpt-transcribe"),
         "deepgram" => Some("nova-3"),
-        "elevenlabs" => Some("scribe_v1"),
+        "elevenlabs" => Some("scribe_v2"),
         "vllm" => Some("openai/whisper-large-v3-turbo"),
         "localai" | "whisper-cpp" | "llamaedge" | "litellm" => Some("whisper-1"),
         _ => None,
@@ -46,7 +47,14 @@ pub(crate) fn provider_default_model(provider: &str) -> Option<&'static str> {
 pub(crate) fn provider_requires_api_key(provider: &str) -> bool {
     matches!(
         provider.trim().to_ascii_lowercase().as_str(),
-        "openai" | "groq" | "mistral" | "fireworks" | "openrouter" | "deepgram" | "elevenlabs"
+        "openai"
+            | "groq"
+            | "xai"
+            | "mistral"
+            | "fireworks"
+            | "openrouter"
+            | "deepgram"
+            | "elevenlabs"
     )
 }
 

@@ -212,10 +212,16 @@ const LibraryCard = ({
                             id: "library.card.status.converting",
                             message: `Converting ${(progress * 100).toFixed(0)}%`,
                           })
-                        : t({
-                            id: "library.card.status.thinking",
-                            message: `Thinking ${(progress * 100).toFixed(0)}%`,
-                          })
+                        : status.type === "transcribing" &&
+                            status.detecting_speakers
+                          ? t({
+                              id: "library.card.status.detecting_speakers",
+                              message: "Detecting speakers",
+                            })
+                          : t({
+                              id: "library.card.status.transcribing",
+                              message: `Transcribing ${(progress * 100).toFixed(0)}%`,
+                            })
                       : isError
                         ? t({
                             id: "library.card.status.failed",
@@ -680,10 +686,15 @@ const LibraryCard = ({
                       id: "library.card.status.converting",
                       message: `Converting ${(progress * 100).toFixed(0)}%`,
                     })
-                  : t({
-                      id: "library.card.status.thinking",
-                      message: `Thinking ${(progress * 100).toFixed(0)}%`,
-                    })
+                  : status.type === "transcribing" && status.detecting_speakers
+                    ? t({
+                        id: "library.card.status.detecting_speakers",
+                        message: "Detecting speakers",
+                      })
+                    : t({
+                        id: "library.card.status.transcribing",
+                        message: `Transcribing ${(progress * 100).toFixed(0)}%`,
+                      })
                 : isError
                   ? t({
                       id: "library.card.status.failed",

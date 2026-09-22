@@ -34,6 +34,72 @@ msgstr ""
 #~ msgstr "Tijdstempels"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy_team"
+#~ msgstr "Koop je voor een team?"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_personal"
+#~ msgstr "Voor jou. Tot 5 apparaten."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_founder"
+#~ msgstr "Oprichter van het eerste uur. Tot 5 apparaten."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.checkout_return_hint"
+#~ msgstr "Polar heeft je licentiesleutel gemaild. Plak die hier, of plak de hele e-mail."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_purchase_aria"
+#~ msgstr "Koop {label} voor {price}"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.edition_blurb_contributor"
+#~ msgstr "Bedankt voor je bijdrage. Tot 5 apparaten."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.masked_key_error"
+#~ msgstr "Dat is de verkorte sleutel. Kopieer de volledige sleutel van je Polar-aankopenpagina."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.order_id_error"
+#~ msgstr "Dat is je bestelnummer. De licentiesleutel staat in dezelfde e-mail van Polar en begint met GLIMPSE_."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v3"
+#~ msgstr "Kern-dictatie is gratis: lokale transcriptie, woordenboek, vervangingen en geschiedenis. Hiervoor zijn er geen kosten per minuut of abonnementen. Bibliotheek, opruiming en personalisatie met een LLM maken deel uit van Glimpse Personal en je kunt ze 14 dagen gratis proberen. De lokale API-server en de CLI vereisen een licentie en maken geen deel uit van de proefversie. Activeer een persoonlijke licentie (een eenmalige aankoop) of een commerciële licentie (jaarlijks gefactureerd) in Instellingen → Account."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.tile_devices"
+#~ msgstr "Eén licentie, 5 apparaten"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.question"
+#~ msgstr "Hoe kan Glimpse gratis zijn?"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.transcribing"
+#~ msgstr "Bezig met transcriberen..."
+
+#. placeholder {0}: (progress * 100).toFixed(0)
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#~ msgid "library.card.status.thinking"
+#~ msgstr "Denkt {0}%"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -828,14 +894,14 @@ msgid "member_card.draft_idle"
 msgstr "Licentie kopen"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "Koop licentie"
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.buy_glimpse"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy_team"
-msgstr "Koop je voor een team?"
+msgid "onboarding.license_step.buy"
+msgstr "Koop licentie"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1053,6 +1119,11 @@ msgstr "Zoekopdracht wissen"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.search.clear"
 msgstr "Zoekopdracht wissen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.search_clear"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1343,8 +1414,8 @@ msgstr "Kern"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v3"
-msgstr "Kern-dictatie is gratis: lokale transcriptie, woordenboek, vervangingen en geschiedenis. Hiervoor zijn er geen kosten per minuut of abonnementen. Bibliotheek, opruiming en personalisatie met een LLM maken deel uit van Glimpse Personal en je kunt ze 14 dagen gratis proberen. De lokale API-server en de CLI vereisen een licentie en maken geen deel uit van de proefversie. Activeer een persoonlijke licentie (een eenmalige aankoop) of een commerciële licentie (jaarlijks gefactureerd) in Instellingen → Account."
+msgid "faq.free.answer.v4"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1412,6 +1483,11 @@ msgid "library.delete_error.storage_missing"
 msgstr "Dit onderdeel kan niet worden verwijderd. De bibliotheekopslag is niet gevonden."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.rediarize_error"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "Dit bibliotheekitem kon niet worden gevonden. Probeer het opnieuw te openen."
@@ -1450,6 +1526,11 @@ msgstr "Het exportbestand kon niet worden weggeschreven. Probeer een andere loca
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_loading"
 msgstr "Opnamen tellen…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_devices.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1712,6 +1793,21 @@ msgstr "Sprekers detecteren"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.detect_speakers.aria"
 msgstr "Sprekers detecteren"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detect_speakers_again"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.detecting_speakers"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.detecting_speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -1985,6 +2081,7 @@ msgid "settings.speech_model.provider.custom.description"
 msgstr "Voer je eigen endpoint-URL in"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_mode.all"
 msgstr "Volledig systeem"
@@ -2191,8 +2288,8 @@ msgstr "Voor werk. Eén persoon per licentie, jaarlijks gefactureerd."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_personal"
-msgstr "Voor jou. Tot 5 apparaten."
+msgid "member_card.edition_blurb_personal_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2658,8 +2755,8 @@ msgstr "Starten bij inloggen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_founder"
-msgstr "Oprichter van het eerste uur. Tot 5 apparaten."
+msgid "member_card.edition_blurb_founder_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2710,6 +2807,11 @@ msgstr "Licentiesleutel"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.light"
 msgstr "Licht"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers_detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3407,11 +3509,6 @@ msgid "settings.language_model.provider.on_device"
 msgstr "Op het apparaat"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.tile_devices"
-msgstr "Eén licentie, 5 apparaten"
-
-#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "Alleen als je een schrijfmodel instelt onder Instellingen → Providers. Snelkoppelingen met Opschonen ingeschakeld en Personalisatie sturen de relevante tekst dan rechtstreeks naar die provider. Je API-sleutel blijft lokaal opgeslagen in Glimpse. Audio verlaat je apparaat alleen als je in Instellingen → Modellen een cloudspraakmodel kiest."
@@ -3592,11 +3689,6 @@ msgid "library.detail.playback_settings"
 msgstr "Afspeelinstellingen"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.checkout_return_hint"
-msgstr "Polar heeft je licentiesleutel gemaild. Plak die hier, of plak de hele e-mail."
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.port"
 msgstr "Poort"
@@ -3708,11 +3800,6 @@ msgid "settings.general.shortcuts.cleanup_locked.providers_link"
 msgstr "Providers"
 
 #. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_purchase_aria"
-msgstr "Koop {label} voor {price}"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.queued"
 msgstr "In wachtrij"
@@ -3761,6 +3848,11 @@ msgstr "Gereed voor installatie"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "Herkent woorden uit je woordenboek."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.license.unverified"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4560,6 +4652,11 @@ msgid "onboarding.model.supports.speakers"
 msgstr "Sprekerdetectie"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speakers"
 msgstr "Sprekers"
@@ -4832,8 +4929,8 @@ msgstr "dan typen"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.edition_blurb_contributor"
-msgstr "Bedankt voor je bijdrage. Tot 5 apparaten."
+msgid "member_card.edition_blurb_contributor_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4847,13 +4944,13 @@ msgstr "Dat domein is al toegevoegd"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.masked_key_error"
-msgstr "Dat is de verkorte sleutel. Kopieer de volledige sleutel van je Polar-aankopenpagina."
+msgid "settings.account.activate.masked_key_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.order_id_error"
-msgstr "Dat is je bestelnummer. De licentiesleutel staat in dezelfde e-mail van Polar en begint met GLIMPSE_."
+msgid "settings.account.activate.order_id_error_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4891,6 +4988,16 @@ msgid "settings.about.cli.installed_info"
 msgstr "De glimpse-opdracht is geïnstalleerd op {cliInstallPath}. Gebruik deze in Terminal, scripts of automatiseringstools om Glimpse aan te roepen zonder de app-interface te openen."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_lost"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_mic_switched"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.next.anywhere"
 msgstr "Dezelfde sneltoets werkt in elke app waarin je kunt typen."
@@ -4899,12 +5006,6 @@ msgstr "Dezelfde sneltoets werkt in elke app waarin je kunt typen."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "Thema"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: (progress * 100).toFixed(0)
-#: src/features/library/components/LibraryCard.tsx
-msgid "library.card.status.thinking"
-msgstr "Denkt {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -5037,13 +5138,20 @@ msgid "onboarding.license_step.tile_files"
 msgstr "Bestanden transcriberen"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/FirstDictationGuide.tsx
-msgid "onboarding.first_dictation.transcribing"
-msgstr "Bezig met transcriberen..."
+#. placeholder {0}: (progress * 100).toFixed(0)
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.transcribing"
+msgstr ""
 
 #. js-lingui-explicit-id
+#. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.transcribing"
+msgid "library.modal.transcribing_progress"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+msgid "onboarding.first_dictation.transcribing"
 msgstr "Bezig met transcriberen..."
 
 #. js-lingui-explicit-id
@@ -5179,6 +5287,11 @@ msgstr "Niet-ondersteund bestandsformaat."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.language_info.active_model"
 msgstr "Niet-ondersteunde talen zijn niet beschikbaar op je actieve model. Schakel over naar een geschikt model om ze te gebruiken."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.speakers"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5348,8 +5461,8 @@ msgstr "Wekelijkse dicteeractiviteit over het afgelopen jaar"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
-msgid "faq.free.question"
-msgstr "Hoe kan Glimpse gratis zijn?"
+msgid "faq.free.question.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5440,6 +5553,11 @@ msgstr "Je API-server wordt op de achtergrond uitgevoerd."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Ja. In de lokale modus blijven al je audio en transcripties op je apparaat. We verzamelen of versturen je opnamen nooit. Cloudsync is optioneel."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "settings.account.activate.checkout_return_hint_generic"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

@@ -16,6 +16,7 @@ import { save } from "@tauri-apps/plugin-dialog";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import {
   Warning as AlertTriangle,
+  AppWindow,
   ArrowLeft,
   BookmarkSimple,
   Check,
@@ -35,6 +36,7 @@ import {
   Plus,
   ArrowClockwise as RotateCw,
   MagnifyingGlass as Search,
+  Monitor,
   SpeakerHigh,
   SpeakerSlash,
   Trash as Trash2,
@@ -46,7 +48,6 @@ import AudioScrubber from "./AudioScrubber";
 import LibraryRetranscribeModal from "./LibraryRetranscribeModal";
 import {
   clampProgress,
-  describeAudioSources,
   formatDuration,
   formatPlaybackRate,
   formatTimestamp,
@@ -56,9 +57,14 @@ import {
   shouldShowImportProgress,
   formatLibraryName,
 } from "./library-utils";
-import { resolveSpeechModelLabel } from "../../settings/models-queries";
+import {
+  resolveSpeechModelLabel,
+  useDiarizerInstalled,
+} from "../../settings/models-queries";
+import { useInstalledApps } from "../../personalization/queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
+import HoverTip from "../../../shared/ui/HoverTip";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type {
   Bookmark,
@@ -77,6 +83,8 @@ const SPEAKER_COLORS = [
   "#f7768e",
   "#bb9af7",
   "#7dcfff",
+  "#ff9e64",
+  "#73daca",
 ];
 
 const MAX_SPEAKERS = 16;
@@ -90,6 +98,33 @@ const EXPORT_FORMATS: Array<{ value: ExportFormat; needsSegments?: boolean }> =
     { value: "srt", needsSegments: true },
     { value: "vtt", needsSegments: true },
   ];
+
+type SpeakerTurn = {
+  key: number;
+  speaker: Speaker | null;
+  text: string;
+};
+
+// Consecutive segments by the same speaker merge into one turn.
+const buildSpeakerTurns = (
+  segments: TranscriptSegment[],
+  speakerById: Map<string, Speaker>,
+) => {
+  const turns: SpeakerTurn[] = [];
+  for (let index = 0; index < segments.length; index += 1) {
+    const text = segments[index].text.trim();
+    if (!text) continue;
+    const id = segments[index].speaker_id;
+    const speaker = (id && speakerById.get(id)) || null;
+    const last = turns[turns.length - 1];
+    if (last && last.speaker === speaker) {
+      last.text += ` ${text}`;
+    } else {
+      turns.push({ key: index, speaker, text });
+    }
+  }
+  return turns;
+};
 
 const SegmentWordsRow = ({
   tokens,
@@ -253,6 +288,8 @@ const LibraryDetail = ({
   onClose,
   onDelete,
   onRetry,
+  onRediarize,
+  rediarizing,
   onCancel,
   onUpdate,
   onExport,
@@ -264,6 +301,8 @@ const LibraryDetail = ({
   onClose: () => void;
   onDelete: () => Promise<void>;
   onRetry: () => Promise<void>;
+  onRediarize: () => Promise<void>;
+  rediarizing: boolean;
   onCancel: () => void;
   onUpdate: (patch: LibraryItemPatch) => Promise<LibraryItem>;
   onExport: (format: ExportFormat, outputPath: string) => Promise<void>;
@@ -303,6 +342,7 @@ const LibraryDetail = ({
   });
   const [streamChunks, setStreamChunks] = useState<string[]>([]);
   const [showRetranscribe, setShowRetranscribe] = useState(false);
+  const diarizerInstalled = useDiarizerInstalled();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [renamingSpeakerId, setRenamingSpeakerId] = useState<string | null>(
@@ -345,19 +385,30 @@ const LibraryDetail = ({
   const lastTimestampNavRef = useRef(0);
   const transcriptAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const segmentsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
+  const turnsVirtuosoRef = useRef<VirtuosoHandle | null>(null);
   const streamVirtuosoRef = useRef<VirtuosoHandle | null>(null);
   const segmentsScrollerRef = useRef<HTMLElement | null>(null);
   const followScrollRafRef = useRef<number | null>(null);
 
   const modelLabel =
     resolveSpeechModelLabel(models, item.speech_model) ?? item.speech_model;
-  const sourcesLabel = describeAudioSources(item.sources, {
-    microphone: t({ id: "library.sources.microphone", message: "Microphone" }),
-    systemAudio: t({
-      id: "library.sources.system_audio",
-      message: "System Audio",
-    }),
+  const sourceAppNames = item.sources?.system_audio ?? [];
+  const installedApps = useInstalledApps(sourceAppNames.length > 0).data;
+  const microphoneLabel = t({
+    id: "library.sources.microphone",
+    message: "Microphone",
   });
+  const systemAudioLabel = t({
+    id: "library.sources.system_audio",
+    message: "System Audio",
+  });
+  const entireSystemLabel = t({
+    id: "record.setup.system_mode.all",
+    message: "Entire system",
+  });
+  const appIconPath = (name: string) =>
+    installedApps?.find((app) => app.name.toLowerCase() === name.toLowerCase())
+      ?.icon_path ?? null;
   const bookmarks = useMemo(
     () => [...(item.bookmarks ?? [])].sort((a, b) => a.at_ms - b.at_ms),
     [item.bookmarks],
@@ -366,20 +417,39 @@ const LibraryDetail = ({
   const transcriptAvailable =
     transcriptEditable && (item.transcript ?? "").trim().length > 0;
   const canShowTimestamps = !!item.segments && item.segments.length > 0;
-  const speakers = useMemo(
-    () =>
-      (item.speakers ?? []).map((speaker, index) => ({
-        ...speaker,
-        color: speaker.color ?? SPEAKER_COLORS[index % SPEAKER_COLORS.length],
-      })),
-    [item.speakers],
-  );
+  const speakers = useMemo(() => {
+    const list = item.speakers ?? [];
+    // Recording tracks keep fixed colors; detected speakers take the rest.
+    const taken = new Set(list.map((speaker) => speaker.color));
+    const free = SPEAKER_COLORS.filter((color) => !taken.has(color));
+    let next = 0;
+    return list.map((speaker, index) => ({
+      ...speaker,
+      color:
+        speaker.color ??
+        free[next++] ??
+        SPEAKER_COLORS[index % SPEAKER_COLORS.length],
+    }));
+  }, [item.speakers]);
   const canAddSpeaker = speakers.length < MAX_SPEAKERS;
   const isBusy =
     item.status.type === "transcribing" ||
     item.status.type === "cancelling" ||
     item.status.type === "pending" ||
     item.status.type === "importing";
+  const detectingSpeakersLabel = t({
+    id: "library.modal.detecting_speakers",
+    message: "Detecting speakers",
+  });
+  const transcribingLabel =
+    item.status.type !== "transcribing"
+      ? null
+      : item.status.detecting_speakers
+        ? detectingSpeakersLabel
+        : t({
+            id: "library.modal.transcribing_progress",
+            message: `Transcribing ${(clampProgress(item.status.progress) * 100).toFixed(0)}%`,
+          });
   const importStatusText =
     item.status.type === "importing"
       ? shouldShowImportProgress(item.status.progress)
@@ -723,7 +793,9 @@ const LibraryDetail = ({
     transcriptSent.current = written;
     transcriptSaves.current += 1;
     transcriptChain.current = transcriptChain.current
-      .then(() => onUpdateRef.current({ transcript: written }))
+      .then(() =>
+        onUpdateRef.current({ transcript: written, transcript_edited: true }),
+      )
       .then(() => {
         transcriptSaveFailed.current = false;
       })
@@ -910,6 +982,33 @@ const LibraryDetail = ({
     );
   }, [item.segments, speakerFilter]);
 
+  const speakerTurns = useMemo(
+    () => buildSpeakerTurns(item.segments ?? [], speakerById),
+    [item.segments, speakerById],
+  );
+  const speakersUsed = useMemo(
+    () =>
+      new Set(speakerTurns.map((turn) => turn.speaker).filter(Boolean)).size,
+    [speakerTurns],
+  );
+  // Edits and AI cleanup change the transcript but not the segments, so those items keep the text box.
+  const transcriptEdited = useMemo(() => {
+    if (item.transcript_edited) return true;
+    const letters = (text: string) =>
+      text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    const segmentText = (item.segments ?? [])
+      .map((segment) => segment.text)
+      .join(" ");
+    return letters(item.transcript ?? "") !== letters(segmentText);
+  }, [item.transcript_edited, item.transcript, item.segments]);
+  const visibleTurns = useMemo(
+    () =>
+      speakerFilter
+        ? speakerTurns.filter((turn) => turn.speaker?.id === speakerFilter)
+        : speakerTurns,
+    [speakerTurns, speakerFilter],
+  );
+
   // Each bookmark sits under the segment that was playing when it was set.
   const bookmarksBySegment = useMemo(() => {
     const map = new Map<number, Bookmark[]>();
@@ -1007,6 +1106,16 @@ const LibraryDetail = ({
   };
 
   const handleCopy = () => {
+    if (showSpeakerText) {
+      copyTranscript(
+        visibleTurns
+          .map((turn) =>
+            turn.speaker ? `${turn.speaker.name}: ${turn.text}` : turn.text,
+          )
+          .join("\n\n"),
+      );
+      return;
+    }
     if (transcriptDraft.trim()) copyTranscript(transcriptDraft);
   };
 
@@ -1124,6 +1233,22 @@ const LibraryDetail = ({
   const canIncreasePlaybackRate = playbackRate < maxPlaybackRate;
   const showStreaming = item.status.type === "transcribing" && !showTimestamps;
   const showSegmentView = showTimestamps && canShowTimestamps;
+  // Read-only script of speaker turns, in place of the editable textarea.
+  const showSpeakerText =
+    !showSegmentView &&
+    item.status.type === "complete" &&
+    speakersUsed >= 2 &&
+    !transcriptEdited;
+  const transcribingPlaceholder = showStreaming && streamChunks.length === 0;
+  const detectingSpeakers =
+    rediarizing ||
+    (item.status.type === "transcribing" && !!item.status.detecting_speakers);
+  // The placeholder shows progress itself until text arrives.
+  const footerStatus = transcribingPlaceholder
+    ? null
+    : rediarizing
+      ? detectingSpeakersLabel
+      : transcribingLabel;
   // The transcript follows playback until the reader scrolls it themselves.
   const followTimestampsActive =
     followPlayback && showSegmentView && isPlaying && !followPaused;
@@ -1231,6 +1356,18 @@ const LibraryDetail = ({
     return matches;
   }, [normalizedSearchQuery, visibleSegments, showSegmentView]);
 
+  const turnMatchIndexes = useMemo(() => {
+    if (!normalizedSearchQuery || !showSpeakerText) return [];
+    const query = normalizedSearchQuery.toLowerCase();
+    const matches: number[] = [];
+    for (let i = 0; i < visibleTurns.length; i += 1) {
+      if (visibleTurns[i].text.toLowerCase().includes(query)) {
+        matches.push(i);
+      }
+    }
+    return matches;
+  }, [normalizedSearchQuery, visibleTurns, showSpeakerText]);
+
   const streamMatchIndexes = useMemo(() => {
     if (!normalizedSearchQuery || !showStreaming) return [];
     const query = normalizedSearchQuery.toLowerCase();
@@ -1244,16 +1381,30 @@ const LibraryDetail = ({
   }, [normalizedSearchQuery, showStreaming, streamChunks]);
 
   const textMatchIndex = useMemo(() => {
-    if (!normalizedSearchQuery || showSegmentView || showStreaming) return -1;
+    if (
+      !normalizedSearchQuery ||
+      showSegmentView ||
+      showSpeakerText ||
+      showStreaming
+    ) {
+      return -1;
+    }
     const query = normalizedSearchQuery.toLowerCase();
     return transcriptDraft.toLowerCase().indexOf(query);
-  }, [normalizedSearchQuery, showSegmentView, showStreaming, transcriptDraft]);
+  }, [
+    normalizedSearchQuery,
+    showSegmentView,
+    showSpeakerText,
+    showStreaming,
+    transcriptDraft,
+  ]);
 
   const searchMatchLabel = useMemo(() => {
     if (!normalizedSearchQuery) return null;
     const indexed = (matches: number[]) =>
       `${matches.length ? Math.min(activeSearchIndex, matches.length - 1) + 1 : 0}/${matches.length}`;
     if (showSegmentView) return indexed(segmentMatchIndexes);
+    if (showSpeakerText) return indexed(turnMatchIndexes);
     if (showStreaming) return indexed(streamMatchIndexes);
     const query = normalizedSearchQuery.toLowerCase();
     const text = transcriptDraft.toLowerCase();
@@ -1267,8 +1418,10 @@ const LibraryDetail = ({
   }, [
     normalizedSearchQuery,
     showSegmentView,
+    showSpeakerText,
     showStreaming,
     segmentMatchIndexes,
+    turnMatchIndexes,
     streamMatchIndexes,
     activeSearchIndex,
     transcriptDraft,
@@ -1278,6 +1431,9 @@ const LibraryDetail = ({
     ? segmentMatchIndexes[
         Math.min(activeSearchIndex, segmentMatchIndexes.length - 1)
       ]
+    : -1;
+  const activeTurnMatch = turnMatchIndexes.length
+    ? turnMatchIndexes[Math.min(activeSearchIndex, turnMatchIndexes.length - 1)]
     : -1;
   const activeStreamMatch = streamMatchIndexes.length
     ? streamMatchIndexes[
@@ -1336,6 +1492,14 @@ const LibraryDetail = ({
         );
         return;
       }
+      if (showSpeakerText && turnMatchIndexes.length > 0) {
+        setActiveSearchIndex(
+          (prev) =>
+            (prev + direction + turnMatchIndexes.length) %
+            turnMatchIndexes.length,
+        );
+        return;
+      }
       if (showStreaming && streamMatchIndexes.length > 0) {
         setActiveSearchIndex(
           (prev) =>
@@ -1347,8 +1511,10 @@ const LibraryDetail = ({
     [
       normalizedSearchQuery,
       showSegmentView,
+      showSpeakerText,
       showStreaming,
       segmentMatchIndexes,
+      turnMatchIndexes,
       streamMatchIndexes,
     ],
   );
@@ -1450,6 +1616,15 @@ const LibraryDetail = ({
       });
       return;
     }
+    if (showSpeakerText) {
+      if (turnMatchIndexes.length === 0) return;
+      turnsVirtuosoRef.current?.scrollToIndex({
+        index: activeTurnMatch,
+        align: "center",
+        behavior: "smooth",
+      });
+      return;
+    }
     if (showStreaming) {
       if (streamMatchIndexes.length === 0) return;
       const targetIndex =
@@ -1471,8 +1646,11 @@ const LibraryDetail = ({
   }, [
     normalizedSearchQuery,
     showSegmentView,
+    showSpeakerText,
     showStreaming,
     segmentMatchIndexes,
+    turnMatchIndexes,
+    activeTurnMatch,
     streamMatchIndexes,
     activeSearchIndex,
     textMatchIndex,
@@ -1895,7 +2073,7 @@ const LibraryDetail = ({
 
               <button
                 onClick={handleCopy}
-                disabled={!transcriptDraft.trim()}
+                disabled={!showSpeakerText && !transcriptDraft.trim()}
                 aria-label={t({ id: "library.modal.copy", message: "Copy" })}
                 title={t({ id: "library.modal.copy", message: "Copy" })}
                 className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface disabled:opacity-40 ${
@@ -1989,6 +2167,22 @@ const LibraryDetail = ({
                           message: "Retranscribe",
                         })}
                       </button>
+                      {diarizerInstalled && item.status.type === "complete" && (
+                        <button
+                          onClick={() => {
+                            setOverflowOpen(false);
+                            void onRediarize();
+                          }}
+                          disabled={rediarizing}
+                          className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <Users size={11} />
+                          {t({
+                            id: "library.modal.detect_speakers_again",
+                            message: "Detect speakers again",
+                          })}
+                        </button>
+                      )}
                       {isBusy && (
                         <button
                           onClick={() => {
@@ -2056,16 +2250,57 @@ const LibraryDetail = ({
                 ·
               </span>
               <span>{modelLabel}</span>
-              {sourcesLabel && (
-                <>
-                  <span className="opacity-40" aria-hidden="true">
-                    ·
-                  </span>
-                  <span className="truncate" title={sourcesLabel}>
-                    {sourcesLabel}
-                  </span>
-                </>
-              )}
+              {item.sources &&
+                (item.sources.system_audio || item.sources.microphone) && (
+                  <>
+                    <span className="opacity-40" aria-hidden="true">
+                      ·
+                    </span>
+                    <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
+                      {item.sources.system_audio &&
+                        (sourceAppNames.length > 0 ? (
+                          sourceAppNames.map((name) => {
+                            const iconPath = appIconPath(name);
+                            return (
+                              <HoverTip
+                                key={name}
+                                label={name}
+                                detail={systemAudioLabel}
+                                className="flex h-4 w-4 items-center justify-center text-content-muted"
+                              >
+                                {iconPath ? (
+                                  <img
+                                    src={convertFileSrc(iconPath)}
+                                    alt={name}
+                                    className="h-4 w-4 object-contain"
+                                  />
+                                ) : (
+                                  <AppWindow size={14} aria-label={name} />
+                                )}
+                              </HoverTip>
+                            );
+                          })
+                        ) : (
+                          <HoverTip
+                            label={entireSystemLabel}
+                            detail={systemAudioLabel}
+                            className="flex h-4 w-4 items-center justify-center text-content-muted"
+                          >
+                            <Monitor size={14} aria-label={entireSystemLabel} />
+                          </HoverTip>
+                        ))}
+                      {item.sources.microphone && (
+                        <HoverTip
+                          label={item.sources.microphone}
+                          detail={microphoneLabel}
+                          className="flex h-4 w-4 items-center justify-center text-content-muted"
+                        >
+                          <Microphone size={14} aria-label={microphoneLabel} />
+                        </HoverTip>
+                      )}
+                    </span>
+                  </>
+                )}
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2">
@@ -2462,14 +2697,11 @@ const LibraryDetail = ({
                   }}
                 />
               ) : showStreaming ? (
-                streamChunks.length === 0 ? (
+                transcribingPlaceholder ? (
                   <div className="flex flex-col h-full w-full items-center justify-center gap-5">
                     <IntelligencePixel active size="md" />
-                    <div className="ui-text-label font-medium text-content-disabled">
-                      {t({
-                        id: "library.modal.transcribing",
-                        message: "Transcribing...",
-                      })}
+                    <div className="ui-text-label font-medium tabular-nums text-content-disabled">
+                      {transcribingLabel}
                     </div>
                   </div>
                 ) : (
@@ -2511,6 +2743,48 @@ const LibraryDetail = ({
                     {importStatusText}
                   </div>
                 </div>
+              ) : showSpeakerText ? (
+                <Virtuoso
+                  ref={turnsVirtuosoRef}
+                  style={{ height: "100%" }}
+                  data={visibleTurns}
+                  overscan={200}
+                  className="custom-scrollbar ui-text-body text-content-secondary leading-relaxed"
+                  computeItemKey={(_index: number, turn: SpeakerTurn) =>
+                    turn.key
+                  }
+                  components={{
+                    Header: () => <div className="h-2" />,
+                    Footer: () => <div className="h-4" />,
+                  }}
+                  itemContent={(idx, turn) => (
+                    <div className={`${CONTENT_COLUMN} pb-4`}>
+                      <div className="px-2">
+                        {turn.speaker && (
+                          <div className="flex items-center gap-2 ui-text-label font-medium text-content-primary">
+                            <span
+                              className="inline-block h-2 w-2 rounded-full shrink-0"
+                              style={{
+                                backgroundColor:
+                                  turn.speaker.color ?? undefined,
+                              }}
+                              aria-hidden="true"
+                            />
+                            <span className="truncate">
+                              {turn.speaker.name}
+                            </span>
+                          </div>
+                        )}
+                        <p className="select-text">
+                          {renderHighlightedText(
+                            turn.text,
+                            idx === activeTurnMatch,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                />
               ) : (
                 <textarea
                   ref={transcriptAreaRef}
@@ -2529,7 +2803,7 @@ const LibraryDetail = ({
         )}
       </main>
 
-      <footer className="shrink-0 border-t border-[var(--color-border-primary)] px-5 py-2.5">
+      <footer className="shrink-0 border-t border-[var(--color-border-primary)] px-5 pt-2.5 pb-1">
         <div className="flex items-center gap-3">
           <button
             onClick={handleTogglePlayback}
@@ -2751,6 +3025,14 @@ const LibraryDetail = ({
               )}
             </AnimatePresence>
           </div>
+        </div>
+        <div
+          aria-live="polite"
+          className={`h-4 truncate text-center ui-text-meta tabular-nums ${
+            detectingSpeakers ? "text-local" : "text-content-disabled"
+          }`}
+        >
+          {footerStatus}
         </div>
       </footer>
 

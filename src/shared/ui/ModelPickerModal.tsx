@@ -9,6 +9,7 @@ import {
   Download,
   Square,
   Trash as Trash2,
+  UsersThree,
   X,
 } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
@@ -47,6 +48,7 @@ type ModelGroup = {
   label: string;
   category: string;
   englishOnly: boolean;
+  diarizer: boolean;
   variants: ModelInfo[];
   haystack: string;
 };
@@ -56,9 +58,12 @@ const variantRank = (variant: string): number => {
   return index === -1 ? VARIANT_ORDER.length : index;
 };
 
-const groupModels = (catalog: ModelInfo[]): ModelGroup[] => {
+const groupModels = (
+  catalog: ModelInfo[],
+  diarizer: ModelInfo | null,
+): ModelGroup[] => {
   const byId = new Map<string, ModelInfo[]>();
-  for (const model of catalog) {
+  for (const model of diarizer ? [...catalog, diarizer] : catalog) {
     const id = model.family;
     const list = byId.get(id);
     if (list) list.push(model);
@@ -67,17 +72,29 @@ const groupModels = (catalog: ModelInfo[]): ModelGroup[] => {
   const groups: ModelGroup[] = [];
   for (const [id, variants] of byId) {
     variants.sort((a, b) => variantRank(a.variant) - variantRank(b.variant));
-    const englishOnly = deriveModelStats(variants[0]).englishOnly;
-    const category = variants[0].category;
-    const label = variants[0].label.trim();
+    const first = variants[0];
+    const englishOnly = deriveModelStats(first).englishOnly;
+    const isDiarizer = first.key === diarizer?.key;
+    // Speaker detection is not a transcription model but lists as experimental.
+    const category = isDiarizer ? "experimental" : first.category;
+    const label = first.label.trim();
     const haystack = [
       label,
       category,
+      ...(isDiarizer ? [first.category, first.description] : []),
       ...variants.flatMap((v) => [v.engine_id, ...v.tags]),
     ]
       .join(" ")
       .toLowerCase();
-    groups.push({ id, label, category, englishOnly, variants, haystack });
+    groups.push({
+      id,
+      label,
+      category,
+      englishOnly,
+      diarizer: isDiarizer,
+      variants,
+      haystack,
+    });
   }
   return groups.sort((a, b) => a.variants[0].size_mb - b.variants[0].size_mb);
 };
@@ -103,6 +120,7 @@ type ModelPickerData = {
 };
 
 type ModelPickerPanelProps = ModelPickerData & {
+  diarizer?: ModelInfo | null;
   className?: string;
 };
 
@@ -116,6 +134,7 @@ export function ModelPickerPanel({
   onDownload,
   onDelete,
   onCancel,
+  diarizer = null,
   className,
 }: ModelPickerPanelProps) {
   const { t } = useLingui();
@@ -143,13 +162,14 @@ export function ModelPickerPanel({
     }
   };
 
-  const groups = useMemo(
-    () =>
-      groupModels(
-        catalog.filter((model) => model.downloadable || isInstalled(model.key)),
-      ),
-    [catalog, isInstalled],
-  );
+  const groups = useMemo(() => {
+    const listed = (model: ModelInfo) =>
+      model.downloadable || isInstalled(model.key);
+    return groupModels(
+      catalog.filter(listed),
+      diarizer && listed(diarizer) ? diarizer : null,
+    );
+  }, [catalog, diarizer, isInstalled]);
 
   const availableCategories = useMemo(() => {
     const present = new Set(groups.map((group) => group.category));
@@ -208,7 +228,7 @@ export function ModelPickerPanel({
         onSelectVariant={(key) =>
           setQuantByGroup((prev) => ({ ...prev, [group.id]: key }))
         }
-        onUse={() => onUse(selected.key)}
+        onUse={group.diarizer ? undefined : () => onUse(selected.key)}
         onDownload={(ane) => onDownload(selected.key, ane)}
         onDelete={() => onDelete(selected.key)}
         onCancel={() => onCancel(selected.key)}
@@ -415,7 +435,7 @@ function ModelRow({
   shiftHeld: boolean;
   progress?: DownloadEvent;
   onSelectVariant: (key: string) => void;
-  onUse: () => void;
+  onUse?: () => void;
   onDownload: (ane?: boolean) => void;
   onDelete: () => void;
   onCancel: () => void;
@@ -459,6 +479,10 @@ function ModelRow({
           message: "Download Neural Engine encoder",
         })
       : t({ id: "model_picker.download", message: "Download" });
+  const speakersLabel = t({
+    id: "model_picker.diarizer.speakers",
+    message: "Up to 4 speakers",
+  });
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">
@@ -474,7 +498,7 @@ function ModelRow({
         title={
           packageDownloadPending
             ? downloadLabel
-            : installed && !active
+            : installed && !active && onUse
               ? t({ id: "model_picker.use", message: "Use" })
               : undefined
         }
@@ -508,11 +532,31 @@ function ModelRow({
             {hasTimestamps && (
               <ModelCapabilityIcon capability={MODEL_CAPABILITY_TIMESTAMPS} />
             )}
+            {group.diarizer && (
+              <HoverTip
+                label={speakersLabel}
+                detail={t({
+                  id: "model_picker.diarizer.speakers_detail",
+                  message: "Limit applies per audio track.",
+                })}
+                className="-m-1 inline-flex shrink-0 p-1 text-content-muted"
+              >
+                <UsersThree size={13} aria-label={speakersLabel} />
+              </HoverTip>
+            )}
           </span>
-          <span className="mt-0.5 block ui-text-meta tabular-nums text-content-muted">
-            {group.englishOnly
-              ? t({ id: "model_picker.english", message: "English" })
-              : t({ id: "model_picker.multilingual", message: "Multilingual" })}
+          <span className="mt-0.5 block truncate ui-text-meta tabular-nums text-content-muted">
+            {group.diarizer
+              ? t({
+                  id: "model_picker.diarizer.description",
+                  message: "Speaker diarization for Library transcripts.",
+                })
+              : group.englishOnly
+                ? t({ id: "model_picker.english", message: "English" })
+                : t({
+                    id: "model_picker.multilingual",
+                    message: "Multilingual",
+                  })}
             {"  ·  "}
             {isBuiltInModel(selected)
               ? t({ id: "model_picker.built_in", message: "Built in" })

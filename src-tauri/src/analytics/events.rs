@@ -314,8 +314,9 @@ pub fn track_license_activation_failed(
     );
 }
 
-/// Classifies activation input by shape only: a key, a Polar order id (a bare
-/// UUID), the masked key from the portal, a discount code, or something else.
+/// Classifies activation input by shape only: a key, a bare-UUID order id
+/// (including old Polar receipts), the masked key from the portal, a
+/// discount code, or something else.
 pub fn activation_input_shape(raw: &str) -> &'static str {
     let trimmed = raw.trim();
     if crate::license::find_license_key(trimmed).is_some() {
@@ -363,23 +364,10 @@ pub fn track_paywall_shown(app: tauri::AppHandle<AppRuntime>, source: String) {
     capture_event(&app, "paywall_shown", json!({ "source": source }));
 }
 
-/// Records that a locked feature or buy button was clicked, where, and for which tier.
+/// Records that a locked feature or buy button was clicked, and where.
 #[tauri::command]
-pub fn track_paywall_clicked(
-    app: tauri::AppHandle<AppRuntime>,
-    source: String,
-    tier: Option<String>,
-) {
-    let tier = match tier.as_deref() {
-        Some("personal") => Some("personal"),
-        Some("commercial") => Some("commercial"),
-        _ => None,
-    };
-    capture_event(
-        &app,
-        "paywall_clicked",
-        json!({ "source": source, "tier": tier }),
-    );
+pub fn track_paywall_clicked(app: tauri::AppHandle<AppRuntime>, source: String) {
+    capture_event(&app, "paywall_clicked", json!({ "source": source }));
 }
 
 /// Records selected product-setting toggles after settings persist.

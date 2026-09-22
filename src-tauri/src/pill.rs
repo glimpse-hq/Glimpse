@@ -10,7 +10,6 @@ use crate::{
     settings::{MediaAction, UserSettings},
     toast,
 };
-use chrono::{DateTime, Local};
 use parking_lot::Mutex;
 use rustfft::{FftPlanner, num_complex::Complex};
 use serde::Serialize;
@@ -22,7 +21,7 @@ use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager, WebviewWindow};
 
 const MODEL_NOTICE_INTERVAL: Duration = Duration::from_secs(20);
-const SMART_MODE_TAP_THRESHOLD_MS: i64 = 200;
+const SMART_MODE_TAP_THRESHOLD: Duration = Duration::from_millis(200);
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
 const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
@@ -219,7 +218,7 @@ pub struct PillController {
     shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
     recording_options: Mutex<hotkeys::ShortcutOptions>,
     recording_settings: Mutex<Option<UserSettings>>,
-    smart_press_time: Mutex<Option<DateTime<Local>>>,
+    smart_press_time: Mutex<Option<Instant>>,
     hold_key_down: Mutex<bool>,
     paused_media_session: Mutex<Option<music::MediaSession>>,
     recorder: Arc<RecorderManager>,
@@ -809,9 +808,12 @@ impl PillController {
         }
     }
 
-    fn handle_smart_press(&self, app: &AppHandle<AppRuntime>, options: hotkeys::ShortcutOptions) {
-        let press_time = Local::now();
-
+    fn handle_smart_press(
+        &self,
+        app: &AppHandle<AppRuntime>,
+        options: hotkeys::ShortcutOptions,
+        press_time: Instant,
+    ) {
         let origin = hotkeys::ShortcutAction::Smart;
         if !self.prepare_shortcut_press(app, origin) {
             return;
@@ -831,13 +833,22 @@ impl PillController {
         }
     }
 
-    fn handle_smart_release(&self, app: &AppHandle<AppRuntime>) {
+    fn handle_smart_release(&self, app: &AppHandle<AppRuntime>, released_at: Instant) {
         let press_time = self.smart_press_time.lock().take();
 
         if let Some(start_time) = press_time {
-            let held_duration_ms = (Local::now() - start_time).num_milliseconds();
+            let held_duration = released_at.saturating_duration_since(start_time);
+            let release_delay = released_at.elapsed();
+            if release_delay >= Duration::from_millis(100) {
+                tracing::warn!(
+                    held_ms = held_duration.as_millis() as u64,
+                    release_delay_ms = release_delay.as_millis() as u64,
+                    tap = held_duration < SMART_MODE_TAP_THRESHOLD,
+                    "Shortcut release handling delayed"
+                );
+            }
 
-            if held_duration_ms < SMART_MODE_TAP_THRESHOLD_MS {
+            if held_duration < SMART_MODE_TAP_THRESHOLD {
                 if self.active_mode() == Some(RecordingMode::Hold) {
                     self.set_hold_key_down(false);
                     *self.recording_mode.lock() = Some(RecordingMode::Toggle);
@@ -1291,6 +1302,7 @@ pub(crate) fn handle_registered_hotkey_event(
     action: hotkeys::ShortcutAction,
     state: HotkeyState,
     options: hotkeys::ShortcutOptions,
+    occurred_at: Instant,
 ) {
     if shortcuts_paused(app) {
         return;
@@ -1301,8 +1313,8 @@ pub(crate) fn handle_registered_hotkey_event(
 
     match action {
         hotkeys::ShortcutAction::Smart => match state {
-            HotkeyState::Pressed => pill.handle_smart_press(app, options),
-            HotkeyState::Released => pill.handle_smart_release(app),
+            HotkeyState::Pressed => pill.handle_smart_press(app, options, occurred_at),
+            HotkeyState::Released => pill.handle_smart_release(app, occurred_at),
         },
         hotkeys::ShortcutAction::Hold => match state {
             HotkeyState::Pressed => {

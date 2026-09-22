@@ -166,12 +166,8 @@ fn main() {
         "POSTHOG_API_KEY",
         "POSTHOG_HOST",
         "GLIMPSE_FORCE_LICENSE_GATE",
-        "GLIMPSE_POLAR_API_BASE",
-        "GLIMPSE_POLAR_BENEFIT_COMMERCIAL",
-        "GLIMPSE_POLAR_BENEFIT_CONTRIBUTOR",
-        "GLIMPSE_POLAR_BENEFIT_FOUNDER",
-        "GLIMPSE_POLAR_BENEFIT_PERSONAL",
-        "GLIMPSE_POLAR_ORGANIZATION_ID",
+        "GLIMPSE_API_BASE",
+        "GLIMPSE_GRANT_PUBLIC_KEY",
     ];
     let mut forwarded = std::collections::HashSet::new();
     let workspace_env = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../.env");

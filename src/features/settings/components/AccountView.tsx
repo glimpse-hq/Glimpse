@@ -9,21 +9,17 @@ import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
 import { classifyActivationInput } from "../../license/licenseKeyShape";
 import type { LicenseState } from "../../license/api";
-import type { PurchaseTier } from "../../license/purchaseConfig";
-
-type AccountOpeningTarget = PurchaseTier | null;
-
 type AccountViewProps = {
   licenseState: LicenseState | null;
   licenseLoading: boolean;
   activating: boolean;
   deactivating: boolean;
-  openingTarget: AccountOpeningTarget;
+  opening: boolean;
   openError: string | null;
   activationError: string | null;
   deactivationError: string | null;
   checkoutReturned: boolean;
-  onOpenCheckout: (tier: PurchaseTier) => void;
+  onOpenCheckout: () => void;
   onActivateLicense: (key: string) => void;
   onDeactivateLicense: () => void;
 };
@@ -38,7 +34,7 @@ const AccountView = ({
   licenseLoading,
   activating,
   deactivating,
-  openingTarget,
+  opening,
   openError,
   activationError,
   deactivationError,
@@ -55,6 +51,7 @@ const AccountView = ({
   const confirmTimeoutRef = useRef<number | null>(null);
 
   const isActive = licenseState?.status === "active";
+  const isUnverified = licenseState?.status === "unverified";
   const isTrialing = !isActive && (licenseState?.trialActive ?? false);
   const renewsAt =
     isActive && licenseState?.expiresAt
@@ -84,15 +81,15 @@ const AccountView = ({
     switch (classifyActivationInput(attemptedKey)) {
       case "order_id":
         return t({
-          id: "settings.account.activate.order_id_error",
+          id: "settings.account.activate.order_id_error_generic",
           message:
-            "That is your order number. The license key is in the same email from Polar and starts with GLIMPSE_.",
+            "That is your order number. Paste the license key from the same email.",
         });
       case "masked_key":
         return t({
-          id: "settings.account.activate.masked_key_error",
+          id: "settings.account.activate.masked_key_error_generic",
           message:
-            "That is the shortened key. Copy the full one from your Polar purchases page.",
+            "That is the shortened key. Copy the full one from your receipt email.",
         });
       case "discount_code":
         return t({
@@ -107,9 +104,9 @@ const AccountView = ({
 
   const activationHintText = checkoutReturned
     ? t({
-        id: "settings.account.activate.checkout_return_hint",
+        id: "settings.account.activate.checkout_return_hint_generic",
         message:
-          "Polar emailed your license key. Paste it here, or paste the whole email.",
+          "Your license key is in your receipt email. Paste it here, or paste the whole email.",
       })
     : null;
 
@@ -142,6 +139,13 @@ const AccountView = ({
   const trialEndsAt = licenseState?.trialEndsAt ?? null;
   const trialStatusText = (() => {
     if (licenseLoading) return "\u00a0";
+
+    if (isUnverified) {
+      return t({
+        id: "settings.account.license.unverified",
+        message: "Reconnect to the internet to verify your license.",
+      });
+    }
 
     if (isTrialing) {
       if (trialDaysRemaining === 1) {
@@ -177,8 +181,7 @@ const AccountView = ({
           activationAttempt={activationAttempt}
           licenseLoading={licenseLoading}
           licenseState={licenseState}
-          openingTarget={openingTarget}
-          checkoutDisabled={openingTarget !== null}
+          opening={opening}
           onOpenCheckout={onOpenCheckout}
         />
 
@@ -191,7 +194,7 @@ const AccountView = ({
                 </p>
               ) : null}
               <CustomerPortalLink
-                source="settings_account"
+                provider={licenseState?.provider}
                 className={portalLinkClassName}
               />
             </div>
@@ -257,12 +260,7 @@ const AccountView = ({
                 })}
               </button>
             )
-          ) : (
-            <CustomerPortalLink
-              source="settings_account"
-              className={portalLinkClassName}
-            />
-          )}
+          ) : null}
         </div>
 
         {deactivationError ? (
