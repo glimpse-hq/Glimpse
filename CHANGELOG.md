@@ -1,3 +1,9 @@
+1.2.6
+
+### Fixes
+
+- When a model download fails, the error in Settings says why, like a network error, instead of only naming the file.
+
 1.2.5
 
 ### Speaker Detection
