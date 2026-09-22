@@ -410,7 +410,7 @@ msgstr "{0}/{1} मेल"
 #. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.of_limit"
-msgstr ""
+msgstr "{0} / {DICTIONARY_ENTRY_LIMIT}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -702,7 +702,7 @@ msgstr "वेबसाइट डोमेन जोड़ें"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.header.description"
-msgstr ""
+msgstr "वे शब्द जोड़ें जिन्हें Glimpse को पहचानना चाहिए और ट्रांसक्रिप्शन के बाद बदलने वाले वाक्यांश जोड़ें।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1181,7 +1181,7 @@ msgstr "किसी मॉडल का चयन करें"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
-msgstr ""
+msgstr "इन शब्दों का उपयोग करने के लिए शब्दकोश समर्थन वाला मॉडल चुनें।"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2085,7 +2085,7 @@ msgstr "संपादित करें"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.edit_entry"
-msgstr ""
+msgstr "{entry} संपादित करें"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2652,7 +2652,7 @@ msgstr "मैं {wpm} शब्द प्रति मिनट बोलत�
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.ignored_by"
-msgstr ""
+msgstr "{0} द्वारा अनदेखा किया गया"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3319,7 +3319,7 @@ msgstr "कोई ऐप्लिकेशन चयनित नहीं"
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_targets"
-msgstr ""
+msgstr "अभी तक कोई ऐप या वेबसाइट नहीं"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3789,7 +3789,7 @@ msgstr "पूर्व-लोडेड मॉडल"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.empty_hint"
-msgstr ""
+msgstr "जोड़ने के लिए किसी भी फ़ील्ड में Enter दबाएँ। मिलान में बड़े-छोटे अक्षरों का भेद नहीं किया जाता।"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
@@ -5289,7 +5289,7 @@ msgstr "लगता है, मैं सोचता टाइप करने
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.empty_hint"
-msgstr ""
+msgstr "ऊपर कोई शब्द लिखें और उसे जोड़ने के लिए Enter दबाएँ।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx

@@ -410,7 +410,7 @@ msgstr "{0} из {1} совпадений"
 #. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.of_limit"
-msgstr ""
+msgstr "{0} из {DICTIONARY_ENTRY_LIMIT}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -702,7 +702,7 @@ msgstr "Добавить домен сайта"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.header.description"
-msgstr ""
+msgstr "Добавьте слова, которые Glimpse должен распознавать, и фразы для замены после транскрипции."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1181,7 +1181,7 @@ msgstr "Выбрать модель"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
-msgstr ""
+msgstr "Выберите модель с поддержкой словаря, чтобы использовать эти слова."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2085,7 +2085,7 @@ msgstr "Правка"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.edit_entry"
-msgstr ""
+msgstr "Изменить {entry}"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2652,7 +2652,7 @@ msgstr "Я говорю со скоростью {wpm} слов в минуту. 
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.ignored_by"
-msgstr ""
+msgstr "Игнорируется {0}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3319,7 +3319,7 @@ msgstr "Приложения не выбраны"
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_targets"
-msgstr ""
+msgstr "Нет приложений или сайтов"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3789,7 +3789,7 @@ msgstr "Предзагруженная модель"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.empty_hint"
-msgstr ""
+msgstr "Нажмите Enter в любом поле для добавления. Регистр не учитывается."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
@@ -5289,7 +5289,7 @@ msgstr "Оказывается, я думаю быстрее, чем печат�
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.empty_hint"
-msgstr ""
+msgstr "Введите слово выше и нажмите Enter, чтобы добавить его."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
