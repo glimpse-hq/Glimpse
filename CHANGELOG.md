@@ -2,35 +2,35 @@
 
 ### Speaker Detection
 
-Glimpse can now tell who is speaking in your Library transcripts. Download the speaker detection model in Settings under Models, in the Experimental section, and your recordings and imports are labeled by speaker after they transcribe. It runs entirely on your computer.
+Glimpse can now tell who's speaking in your Library. Download the speaker detection model from Settings → Models, under Experimental. It runs on your computer.
 
-- **Made for recordings.** Your microphone and your computer's audio are checked separately, so the people in the room with you and the people on the call each get their own label. It can tell apart up to 4 voices on each side.
-- **Reads like a script.** With timestamps off, each speaker gets their own paragraph with their name.
-- **Detect speakers again.** Run it on anything already in your Library from the item's menu, without transcribing it again.
-- **Cloud models too.** Mistral, xAI, ElevenLabs, Deepgram and OpenAI's diarize model can label speakers themselves when you use them.
+- **Made for recordings.** Your microphone and your computer's audio are labeled separately, up to 4 voices each.
+- **Reads like a script.** Turn timestamps off to see one paragraph per speaker.
+- **Detect speakers again** from any item's menu, without transcribing again.
+- **Cloud models too.** Mistral, xAI, ElevenLabs, Deepgram and OpenAI's diarize model can label speakers themselves.
 
 ### Improvements
 
-- You can now use Grok Voice Transcribe from xAI as a cloud model.
-- ElevenLabs and Deepgram now connect directly with just an API key, no proxy needed.
-- Cloud models default to each provider's latest: OpenAI and OpenRouter use GPT Transcribe, and ElevenLabs uses Scribe v2.
-- Pausing a recording now turns off the microphone, and the menu bar icon turns orange while paused.
-- Recordings take up half the space and still sound clear when you play them back.
-- Long recordings show their transcript as it comes in, in the order it was said.
+- Grok Voice Transcribe from xAI is now available as a cloud model.
+- ElevenLabs and Deepgram connect directly with just an API key.
+- Cloud models default to each provider's latest: GPT Transcribe for OpenAI and OpenRouter, Scribe v2 for ElevenLabs.
+- Recordings are half the size and still sound clear.
+- Long recordings show their transcript as it comes in.
+- Pausing a recording turns off the microphone, and the menu bar icon turns orange.
 - If one side of a recording is silent, Glimpse skips it and finishes sooner.
-- A recording's sources show as app icons.
-- The Library shows "Transcribing" with a percentage, on the recording's page too, and "Detecting speakers" while that runs.
-- Library search updates as you type, and there's an X to clear it.
-- Buying Glimpse now opens the website, where you can compare plans. After you pay, Glimpse activates on its own.
+- Recording sources show as app icons.
+- The Library shows transcription progress as a percentage.
+- Library search updates as you type, with an X to clear it.
+- Buying Glimpse opens the website to compare plans, and Glimpse activates on its own after you pay.
 
 ### Fixes
 
-- Fireworks AI has been updated to use its new endpoint.
-- Long recordings and imported files start transcribing much sooner.
-- Fixed quick shortcut taps sometimes stopping dictation immediately when the microphone was slow to start.
-- The Library shows transcriptions working again. The dots pulse while a recording or import is being transcribed, instead of sitting still.
-- Files imported from the command line show up in the Library while they transcribe, not only once they're done.
-- A few other animations that had stopped moving work again, like the Glimpse logo.
+- Fireworks AI uses its new endpoint.
+- Long recordings and imports start transcribing much sooner.
+- Quick shortcut taps no longer stop dictation when the microphone is slow to start.
+- The Library's transcribing dots pulse again instead of sitting still.
+- Imports from the command line show up in the Library while they transcribe.
+- Other animations that had stopped, like the Glimpse logo, move again.
 
 1.2.1
 
