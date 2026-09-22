@@ -896,7 +896,7 @@ msgstr "Comprar una licencia"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.buy_glimpse"
-msgstr ""
+msgstr "Comprar Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1123,7 +1123,7 @@ msgstr "Borrar búsqueda"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.search_clear"
-msgstr ""
+msgstr "Borrar búsqueda"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1415,7 +1415,7 @@ msgstr "Núcleo"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v4"
-msgstr ""
+msgstr "El dictado básico es gratuito: transcripción local, diccionario, reemplazos e historial. No hay cargos por minuto ni suscripciones por ello. Biblioteca, Limpieza y personalización con un LLM forman parte de todos los planes de pago, y puedes probarlas gratis durante 14 días. El servidor de API local y la CLI requieren una licencia y no forman parte de la prueba. Activa una licencia en Ajustes → Cuenta."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1485,7 +1485,7 @@ msgstr "No se pudo eliminar este elemento. No se encontró el almacenamiento de 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.rediarize_error"
-msgstr ""
+msgstr "No se pudieron detectar los hablantes."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1530,7 +1530,7 @@ msgstr "Contando grabaciones…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
-msgstr ""
+msgstr "Cubre tus dispositivos"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1797,17 +1797,17 @@ msgstr "Detectar oradores"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detect_speakers_again"
-msgstr ""
+msgstr "Detectar hablantes de nuevo"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.detecting_speakers"
-msgstr ""
+msgstr "Detectando hablantes"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detecting_speakers"
-msgstr ""
+msgstr "Detectando hablantes"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2289,7 +2289,7 @@ msgstr "Para trabajar. Una persona por licencia, con facturación anual."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_personal_short"
-msgstr ""
+msgstr "Para ti."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2756,7 +2756,7 @@ msgstr "Abrir al iniciar sesión"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_founder_short"
-msgstr ""
+msgstr "Fundador de Launch."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2811,7 +2811,7 @@ msgstr "Claro"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers_detail"
-msgstr ""
+msgstr "El límite se aplica por pista de audio."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3852,7 +3852,7 @@ msgstr "Reconoce palabras de tu diccionario."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
-msgstr ""
+msgstr "Vuelve a conectarte a internet para verificar tu licencia."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4654,7 +4654,7 @@ msgstr "Detección de hablantes"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.description"
-msgstr ""
+msgstr "Diarización de hablantes para transcripciones de la Biblioteca."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4930,7 +4930,7 @@ msgstr "que escribir"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_contributor_short"
-msgstr ""
+msgstr "Gracias por contribuir."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4945,12 +4945,12 @@ msgstr "Ese dominio ya está añadido"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error_generic"
-msgstr ""
+msgstr "Esa es la clave abreviada. Copia la clave completa del correo electrónico con tu recibo."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error_generic"
-msgstr ""
+msgstr "Ese es tu número de pedido. Pega la clave de licencia del mismo correo electrónico."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4990,12 +4990,12 @@ msgstr "El comando glimpse está instalado en {cliInstallPath}. Úsalo desde Ter
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_lost"
-msgstr ""
+msgstr "El micrófono dejó de responder y no se encontró ningún otro micrófono. Glimpse cambiará a uno en cuanto se conecte."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_switched"
-msgstr ""
+msgstr "El micrófono dejó de responder. La grabación continúa con {name}."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5141,13 +5141,13 @@ msgstr "Transcribir archivos"
 #. placeholder {0}: (progress * 100).toFixed(0)
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.transcribing"
-msgstr ""
+msgstr "Transcribiendo {0}%"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcribing_progress"
-msgstr ""
+msgstr "Transcribiendo {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5291,7 +5291,7 @@ msgstr "Los idiomas no compatibles no están disponibles en tu modelo activo. Ca
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr ""
+msgstr "Hasta 4 hablantes"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5462,7 +5462,7 @@ msgstr "Actividad semanal de dictado durante el último año"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.question.v2"
-msgstr ""
+msgstr "¿Qué es gratis y qué es de pago?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5557,7 +5557,7 @@ msgstr "Sí. En modo local, todo tu audio y tus transcripciones permanecen en tu
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint_generic"
-msgstr ""
+msgstr "Tu clave de licencia está en el correo electrónico con tu recibo. Pégala aquí o pega todo el correo electrónico."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

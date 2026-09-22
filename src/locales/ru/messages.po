@@ -896,7 +896,7 @@ msgstr "Купить лицензию"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.buy_glimpse"
-msgstr ""
+msgstr "Купить Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1123,7 +1123,7 @@ msgstr "Очистить поиск"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.search_clear"
-msgstr ""
+msgstr "Очистить поиск"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1415,7 +1415,7 @@ msgstr "Ядро"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v4"
-msgstr ""
+msgstr "Базовая диктовка бесплатна: локальная транскрипция, словарь, замены и история. Никаких поминутных тарифов или подписок. Библиотека, очистка и персонализация с помощью LLM входят в каждый платный план — их можно бесплатно попробовать в течение 14 дней. Локальный API-сервер и CLI требуют лицензии и не входят в пробный период. Активируйте лицензию в разделе Настройки → Аккаунт."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1485,7 +1485,7 @@ msgstr "Не удалось удалить этот элемент. Хранил
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.rediarize_error"
-msgstr ""
+msgstr "Не удалось определить участников."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1530,7 +1530,7 @@ msgstr "Подсчёт записей…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
-msgstr ""
+msgstr "Для всех ваших устройств"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1797,17 +1797,17 @@ msgstr "Определять говорящих"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detect_speakers_again"
-msgstr ""
+msgstr "Определить участников снова"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.detecting_speakers"
-msgstr ""
+msgstr "Определение участников"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detecting_speakers"
-msgstr ""
+msgstr "Определение участников"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2289,7 +2289,7 @@ msgstr "Для работы. Один человек на лицензию, еж
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_personal_short"
-msgstr ""
+msgstr "Для вас."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2756,7 +2756,7 @@ msgstr "Запуск при входе"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_founder_short"
-msgstr ""
+msgstr "Основатель проекта."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2811,7 +2811,7 @@ msgstr "Светлый"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers_detail"
-msgstr ""
+msgstr "Ограничение применяется к каждой аудиодорожке отдельно."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3852,7 +3852,7 @@ msgstr "Распознаёт слова из вашего словаря."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
-msgstr ""
+msgstr "Подключитесь к интернету для проверки лицензии."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4654,7 +4654,7 @@ msgstr "Определение говорящего"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.description"
-msgstr ""
+msgstr "Диаризация участников для транскриптов Библиотеки."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4930,7 +4930,7 @@ msgstr "чем при наборе текста"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_contributor_short"
-msgstr ""
+msgstr "Спасибо за ваш вклад."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4945,12 +4945,12 @@ msgstr "Этот домен уже добавлен"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error_generic"
-msgstr ""
+msgstr "Это сокращённый ключ. Скопируйте полный из письма с квитанцией."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error_generic"
-msgstr ""
+msgstr "Это ваш номер заказа. Вставьте лицензионный ключ из того же письма."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4990,12 +4990,12 @@ msgstr "Команда glimpse установлена по пути {cliInstallP
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_lost"
-msgstr ""
+msgstr "Микрофон перестал отвечать, и другие микрофоны не найдены. Glimpse переключится на новый, как только он будет подключён."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_switched"
-msgstr ""
+msgstr "Микрофон перестал отвечать. Запись продолжается с {name}."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5141,13 +5141,13 @@ msgstr "Транскрибировать файлы"
 #. placeholder {0}: (progress * 100).toFixed(0)
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.transcribing"
-msgstr ""
+msgstr "Транскрибирование {0}%"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcribing_progress"
-msgstr ""
+msgstr "Транскрибирование {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5291,7 +5291,7 @@ msgstr "Неподдерживаемые языки недоступны в ак
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr ""
+msgstr "До 4 участников"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5462,7 +5462,7 @@ msgstr "Активность диктовки по неделям за посл�
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.question.v2"
-msgstr ""
+msgstr "Что бесплатно, а что платно?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5557,7 +5557,7 @@ msgstr "Да. В локальном режиме все ваши аудиоза�
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint_generic"
-msgstr ""
+msgstr "Лицензионный ключ находится в письме с квитанцией. Вставьте его сюда или вставьте письмо целиком."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
