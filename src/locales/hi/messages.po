@@ -896,7 +896,7 @@ msgstr "लाइसेंस खरीदें"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.buy_glimpse"
-msgstr ""
+msgstr "Glimpse खरीदें"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1123,7 +1123,7 @@ msgstr "खोज मिटाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.search_clear"
-msgstr ""
+msgstr "खोज साफ़ करें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1415,7 +1415,7 @@ msgstr "कोर"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v4"
-msgstr ""
+msgstr "मुख्य श्रुतिलेख निःशुल्क है: स्थानीय ट्रांसक्रिप्शन, शब्दकोश, प्रतिस्थापन और इतिहास। इसके लिए प्रति-मिनट शुल्क या सदस्यता नहीं है। लाइब्रेरी, क्लीनअप और LLM के साथ वैयक्तिकरण हर सशुल्क प्लान का हिस्सा हैं, और आप उन्हें 14 दिनों तक निःशुल्क आज़मा सकते हैं। स्थानीय API सर्वर और CLI के लिए लाइसेंस आवश्यक है और वे परीक्षण का हिस्सा नहीं हैं। Settings → Account में लाइसेंस सक्रिय करें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1485,7 +1485,7 @@ msgstr "यह आइटम हटाया नहीं जा सका। ल
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.rediarize_error"
-msgstr ""
+msgstr "वक्ताओं का पता नहीं लगाया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1530,7 +1530,7 @@ msgstr "रिकॉर्डिंग गिनी जा रही हैं�
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
-msgstr ""
+msgstr "आपके डिवाइस कवर करता है"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1797,17 +1797,17 @@ msgstr "वक्ताओं का पता लगाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detect_speakers_again"
-msgstr ""
+msgstr "वक्ताओं का फिर से पता लगाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.detecting_speakers"
-msgstr ""
+msgstr "वक्ताओं का पता लगाया जा रहा है"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detecting_speakers"
-msgstr ""
+msgstr "वक्ताओं का पता लगाया जा रहा है"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2289,7 +2289,7 @@ msgstr "काम के लिए। हर सीट पर एक व्य�
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_personal_short"
-msgstr ""
+msgstr "आपके लिए।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2756,7 +2756,7 @@ msgstr "लॉगिन पर लॉन्च करें"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_founder_short"
-msgstr ""
+msgstr "Launch संस्थापक।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2811,7 +2811,7 @@ msgstr "हल्का"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers_detail"
-msgstr ""
+msgstr "सीमा प्रत्येक ऑडियो ट्रैक पर लागू होती है।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3852,7 +3852,7 @@ msgstr "आपके शब्दकोश के शब्द पहचान�
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
-msgstr ""
+msgstr "अपने लाइसेंस की पुष्टि करने के लिए इंटरनेट से फिर से कनेक्ट करें।"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4654,7 +4654,7 @@ msgstr "वक्ता पहचान"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.description"
-msgstr ""
+msgstr "लाइब्रेरी ट्रांसक्रिप्ट के लिए वक्ता विभाजन।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4930,7 +4930,7 @@ msgstr "टाइप करने से"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_contributor_short"
-msgstr ""
+msgstr "योगदान देने के लिए धन्यवाद।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4945,12 +4945,12 @@ msgstr "यह डोमेन पहले से जोड़ा जा चु
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error_generic"
-msgstr ""
+msgstr "यह संक्षिप्त कुंजी है। अपनी रसीद वाले ईमेल से पूरी कुंजी कॉपी करें।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error_generic"
-msgstr ""
+msgstr "यह आपका ऑर्डर नंबर है। उसी ईमेल से लाइसेंस कुंजी पेस्ट करें।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4990,12 +4990,12 @@ msgstr "glimpse कमांड {cliInstallPath} पर इंस्टॉल �
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_lost"
-msgstr ""
+msgstr "माइक्रोफ़ोन ने प्रतिसाद देना बंद कर दिया और कोई अन्य माइक्रोफ़ोन नहीं मिला। कनेक्ट होते ही Glimpse उस पर स्विच कर देगा।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_switched"
-msgstr ""
+msgstr "माइक्रोफ़ोन ने प्रतिसाद देना बंद कर दिया। रिकॉर्डिंग {name} के साथ जारी है।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5141,13 +5141,13 @@ msgstr "फ़ाइलों का लिप्यंतरण करें"
 #. placeholder {0}: (progress * 100).toFixed(0)
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.transcribing"
-msgstr ""
+msgstr "ट्रांसक्राइब किया जा रहा है {0}%"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcribing_progress"
-msgstr ""
+msgstr "ट्रांसक्राइब किया जा रहा है {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5291,7 +5291,7 @@ msgstr "असमर्थित भाषाएँ आपके सक्रि
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr ""
+msgstr "अधिकतम 4 वक्ता"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5462,7 +5462,7 @@ msgstr "पिछले वर्ष की साप्ताहिक डि�
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.question.v2"
-msgstr ""
+msgstr "क्या निःशुल्क है और क्या सशुल्क?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5557,7 +5557,7 @@ msgstr "हाँ। लोकल मोड में आपका सारा 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint_generic"
-msgstr ""
+msgstr "आपकी लाइसेंस कुंजी आपके रसीद वाले ईमेल में है। उसे यहाँ पेस्ट करें या पूरा ईमेल पेस्ट करें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

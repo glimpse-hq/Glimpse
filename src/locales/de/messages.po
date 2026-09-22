@@ -896,7 +896,7 @@ msgstr "Lizenz kaufen"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.buy_glimpse"
-msgstr ""
+msgstr "Glimpse kaufen"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1123,7 +1123,7 @@ msgstr "Suche löschen"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.search_clear"
-msgstr ""
+msgstr "Suche löschen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1415,7 +1415,7 @@ msgstr "Core"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v4"
-msgstr ""
+msgstr "Die Kern-Diktierfunktion ist kostenlos: lokale Transkription, Wörterbuch, Ersetzungen und Verlauf. Dafür fallen keine minutengenauen Gebühren oder Abonnements an. Bibliothek, Bereinigung und Personalisierung mit einem LLM sind in jedem kostenpflichtigen Plan enthalten und können 14 Tage kostenlos getestet werden. Der lokale API-Server und die CLI erfordern eine Lizenz und sind nicht Teil der Testversion. Aktivieren Sie eine Lizenz unter Einstellungen → Account."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1485,7 +1485,7 @@ msgstr "Dieses Objekt konnte nicht gelöscht werden. Der Bibliotheksspeicher wur
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.rediarize_error"
-msgstr ""
+msgstr "Sprecher konnten nicht erkannt werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1530,7 +1530,7 @@ msgstr "Aufnahmen werden gezählt…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
-msgstr ""
+msgstr "Gilt für Ihre Geräte"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1797,17 +1797,17 @@ msgstr "Sprecher erkennen"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detect_speakers_again"
-msgstr ""
+msgstr "Sprecher erneut erkennen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.detecting_speakers"
-msgstr ""
+msgstr "Sprecher werden erkannt"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detecting_speakers"
-msgstr ""
+msgstr "Sprecher werden erkannt"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2289,7 +2289,7 @@ msgstr "Für die Arbeit. Eine Person pro Lizenz, jährliche Abrechnung."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_personal_short"
-msgstr ""
+msgstr "Für Sie."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2756,7 +2756,7 @@ msgstr "Beim Anmelden öffnen"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_founder_short"
-msgstr ""
+msgstr "Gründer starten."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2811,7 +2811,7 @@ msgstr "Hell"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers_detail"
-msgstr ""
+msgstr "Das Limit gilt pro Audiospur."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3852,7 +3852,7 @@ msgstr "Erkennt Wörter aus Ihrem Wörterbuch."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
-msgstr ""
+msgstr "Stellen Sie die Internetverbindung wieder her, um Ihre Lizenz zu überprüfen."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4654,7 +4654,7 @@ msgstr "Sprechererkennung"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.description"
-msgstr ""
+msgstr "Sprecherdiarisierung für Bibliothekstranskripte."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4930,7 +4930,7 @@ msgstr "als Tippen"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_contributor_short"
-msgstr ""
+msgstr "Vielen Dank für Ihren Beitrag."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4945,12 +4945,12 @@ msgstr "Diese Domain wurde bereits hinzugefügt."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error_generic"
-msgstr ""
+msgstr "Das ist der verkürzte Schlüssel. Kopieren Sie den vollständigen aus Ihrer Kaufbeleg-E-Mail."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error_generic"
-msgstr ""
+msgstr "Das ist Ihre Bestellnummer. Fügen Sie den Lizenzschlüssel aus derselben E-Mail ein."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4990,12 +4990,12 @@ msgstr "Der glimpse-Befehl ist unter {cliInstallPath} installiert. Verwende ihn 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_lost"
-msgstr ""
+msgstr "Das Mikrofon reagiert nicht mehr und es wurde kein anderes Mikrofon gefunden. Glimpse wechselt zu einem, sobald es verbunden ist."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_switched"
-msgstr ""
+msgstr "Das Mikrofon reagiert nicht mehr. Die Aufnahme wird mit {name} fortgesetzt."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5141,13 +5141,13 @@ msgstr "Dateien transkribieren"
 #. placeholder {0}: (progress * 100).toFixed(0)
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.transcribing"
-msgstr ""
+msgstr "Transkription von {0}%"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcribing_progress"
-msgstr ""
+msgstr "Transkription von {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5291,7 +5291,7 @@ msgstr "Nicht unterstützte Sprachen stehen bei deinem aktiven Modell nicht zur 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr ""
+msgstr "Bis zu 4 Sprecher"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5462,7 +5462,7 @@ msgstr "Wöchentliche Diktieraktivität im letzten Jahr"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.question.v2"
-msgstr ""
+msgstr "Was ist kostenlos und was kostenpflichtig?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5557,7 +5557,7 @@ msgstr "Ja. Im lokalen Modus bleiben alle Ihre Audios und Transkriptionen auf Ih
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint_generic"
-msgstr ""
+msgstr "Ihr Lizenzschlüssel steht in Ihrer Kaufbeleg-E-Mail. Fügen Sie ihn hier ein oder fügen Sie die gesamte E-Mail ein."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

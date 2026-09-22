@@ -896,7 +896,7 @@ msgstr "Licentie kopen"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.buy_glimpse"
-msgstr ""
+msgstr "Koop Glimpse"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1123,7 +1123,7 @@ msgstr "Zoekopdracht wissen"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.search_clear"
-msgstr ""
+msgstr "Wis zoekopdracht"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1415,7 +1415,7 @@ msgstr "Kern"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.answer.v4"
-msgstr ""
+msgstr "Basisdicteren is gratis: lokale transcriptie, woordenboek, vervangingen en geschiedenis. Hiervoor zijn er geen kosten per minuut of abonnementen. Bibliotheek, Opschonen en personalisatie met een LLM maken deel uit van elk betaald abonnement en je kunt ze 14 dagen gratis proberen. De lokale API-server en de CLI vereisen een licentie en maken geen deel uit van de proefperiode. Activeer een licentie in Instellingen → Account."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -1485,7 +1485,7 @@ msgstr "Dit onderdeel kan niet worden verwijderd. De bibliotheekopslag is niet g
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.rediarize_error"
-msgstr ""
+msgstr "Kon sprekers niet detecteren."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1530,7 +1530,7 @@ msgstr "Opnamen tellen…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
-msgstr ""
+msgstr "Dekt je apparaten"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -1797,17 +1797,17 @@ msgstr "Sprekers detecteren"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detect_speakers_again"
-msgstr ""
+msgstr "Sprekers opnieuw detecteren"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.detecting_speakers"
-msgstr ""
+msgstr "Sprekers detecteren"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.detecting_speakers"
-msgstr ""
+msgstr "Sprekers detecteren"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2289,7 +2289,7 @@ msgstr "Voor werk. Eén persoon per licentie, jaarlijks gefactureerd."
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_personal_short"
-msgstr ""
+msgstr "Voor jou."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2756,7 +2756,7 @@ msgstr "Starten bij inloggen"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_founder_short"
-msgstr ""
+msgstr "Oprichter starten."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -2811,7 +2811,7 @@ msgstr "Licht"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers_detail"
-msgstr ""
+msgstr "Limiet geldt per audiotrack."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3852,7 +3852,7 @@ msgstr "Herkent woorden uit je woordenboek."
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.license.unverified"
-msgstr ""
+msgstr "Maak opnieuw verbinding met internet om je licentie te verifiëren."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4654,7 +4654,7 @@ msgstr "Sprekerdetectie"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.description"
-msgstr ""
+msgstr "Sprekersdiarisatie voor transcripties in Bibliotheek."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4930,7 +4930,7 @@ msgstr "dan typen"
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.edition_blurb_contributor_short"
-msgstr ""
+msgstr "Bedankt voor je bijdrage."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4945,12 +4945,12 @@ msgstr "Dat domein is al toegevoegd"
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.masked_key_error_generic"
-msgstr ""
+msgstr "Dat is de verkorte sleutel. Kopieer de volledige sleutel uit je ontvangstbevestigingsmail."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.order_id_error_generic"
-msgstr ""
+msgstr "Dat is je bestelnummer. Plak de licentiesleutel uit dezelfde e-mail."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -4990,12 +4990,12 @@ msgstr "De glimpse-opdracht is geïnstalleerd op {cliInstallPath}. Gebruik deze 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_lost"
-msgstr ""
+msgstr "De microfoon reageert niet meer en er is geen andere microfoon gevonden. Glimpse schakelt over zodra er een is aangesloten."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_switched"
-msgstr ""
+msgstr "De microfoon reageert niet meer. De opname gaat verder met {name}."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5141,13 +5141,13 @@ msgstr "Bestanden transcriberen"
 #. placeholder {0}: (progress * 100).toFixed(0)
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.status.transcribing"
-msgstr ""
+msgstr "Transcriberen: {0}%"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: (clampProgress(item.status.progress) * 100).toFixed(0)
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcribing_progress"
-msgstr ""
+msgstr "Transcriberen: {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5291,7 +5291,7 @@ msgstr "Niet-ondersteunde talen zijn niet beschikbaar op je actieve model. Schak
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr ""
+msgstr "Maximaal 4 sprekers"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -5462,7 +5462,7 @@ msgstr "Wekelijkse dicteeractiviteit over het afgelopen jaar"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.free.question.v2"
-msgstr ""
+msgstr "Wat is gratis en wat is betaald?"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
@@ -5557,7 +5557,7 @@ msgstr "Ja. In de lokale modus blijven al je audio en transcripties op je appara
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint_generic"
-msgstr ""
+msgstr "Je licentiesleutel staat in je ontvangstbevestigingsmail. Plak deze hier, of plak de hele e-mail."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
