@@ -34,9 +34,9 @@ opt-level = 3
 tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
-tauri = { version = "2.11.5", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
-tauri-plugin-opener = "2.5.4"
-tauri-plugin-dialog = "2.7.2"
+tauri = { version = "2.11.6", features = ["protocol-asset", "macos-private-api", "tray-icon", "image-png"] }
+tauri-plugin-opener = "2.5.5"
+tauri-plugin-dialog = "2.7.3"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 chrono = { version = "0.4", features = ["serde", "unstable-locales"] }
@@ -45,7 +45,7 @@ anyhow = "1"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std"] }
 tracing-appender = "0.2"
-symphonia = { version = "0.6.0", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4", "mkv"] }
+symphonia = { version = "0.6.1", default-features = false, features = ["aac", "alac", "flac", "mp3", "ogg", "pcm", "vorbis", "wav", "isomp4", "mkv"] }
 hound = "3.5.1"
 parking_lot = "0.12"
 crossbeam-channel = "0.5"
@@ -55,7 +55,7 @@ reqwest = { version = "0.13", default-features = false, features = ["json", "rus
 posthog-rs = { version = "0.26", default-features = false, features = ["async-client"] }
 arboard = "3"
 glimpse-speech = { git = "https://github.com/glimpse-hq/Glimpse-Speech.git", tag = "1.6.6", features = ["whisper", "nvidia", "transcribe", "api", "cli", "remote", "cleanup-apple", "apple-speech"] }
-uuid = { version = "1.26.0", features = ["v4"] }
+uuid = { version = "1.26.1", features = ["v4"] }
 aes-gcm = "0.11"
 pbkdf2 = "0.13"
 sha2 = "0.11"
@@ -65,14 +65,14 @@ base64 = { version = "0.23", default-features = false, features = ["std"] }
 rusqlite = { version = "0.40", features = ["bundled"] }
 regex = "1"
 fs2 = "0.4"
-tauri-plugin-deep-link = "2.4.9"
+tauri-plugin-deep-link = "2.4.10"
 rubato = "5.0.0"
 interprocess = "2"
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 tauri-plugin-process = "2.3.1"
-tauri-plugin-updater = "2.10.1"
-tauri-plugin-single-instance = "2.4.3"
+tauri-plugin-updater = "2.12.0"
+tauri-plugin-single-instance = "2.4.5"
 tauri-plugin-autostart = "2.5.1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 tokio-util = "0.7"
