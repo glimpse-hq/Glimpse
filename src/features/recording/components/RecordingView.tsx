@@ -704,7 +704,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     appsLoaded && !apps.some((running) => running.id === app.id);
   const closedApps = choices.systemAudio ? selectedApps.filter(isClosed) : [];
   const secondaryButton =
-    "flex h-9 w-[104px] items-center justify-center gap-1.5 rounded-full border border-border-secondary ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover hover:text-content-primary disabled:cursor-default disabled:opacity-30 disabled:hover:border-border-secondary disabled:hover:text-content-secondary";
+    "flex h-9 w-[104px] items-center justify-center gap-1.5 rounded-full border border-border-secondary ui-text-body-sm font-medium text-content-secondary transition-colors hover:border-border-hover hover:text-content-primary disabled:cursor-default disabled:border-transparent disabled:opacity-40 disabled:hover:text-content-secondary";
 
   const microphoneOn = active
     ? Boolean(state.sources.microphone)
@@ -948,7 +948,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         <div
           className={`flex h-24 items-center font-satoshi leading-none tracking-tight tabular-nums ${clockSize} ${
             idle
-              ? "text-content-disabled"
+              ? "text-content-disabled opacity-60"
               : paused
                 ? "text-content-secondary"
                 : "ui-color-primary"
@@ -1092,7 +1092,13 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           ) : starting ? (
             t({ id: "record.setup.starting", message: "Starting..." })
           ) : (
-            t({ id: "record.setup.start", message: "Start Recording" })
+            <>
+              <span
+                className="h-2 w-2 rounded-full bg-[#ff3b30]"
+                aria-hidden="true"
+              />
+              {t({ id: "record.setup.start", message: "Start Recording" })}
+            </>
           )}
         </button>
       </div>

@@ -670,6 +670,7 @@ impl PillController {
         *self.recording_settings.lock() = Some(settings.clone());
 
         crate::speech::warm(app, &settings);
+        crate::llm_cleanup::prewarm_apple_cleanup(&settings);
 
         let generation = self.recording_generation.fetch_add(1, Ordering::SeqCst) + 1;
         // Enter Listening before the device opens for fast visual feedback.

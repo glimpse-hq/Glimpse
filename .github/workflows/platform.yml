@@ -3,8 +3,20 @@ name: Platform
 on:
   push:
     branches: [main]
+    paths:
+      - src-tauri/**
+      - src/locales/**
+      - supported-app-locales.json
+      - rust-toolchain.toml
+      - .github/workflows/platform.yml
   pull_request:
     branches: [main]
+    paths:
+      - src-tauri/**
+      - src/locales/**
+      - supported-app-locales.json
+      - rust-toolchain.toml
+      - .github/workflows/platform.yml
 
 concurrency:
   group: platform-${{ github.workflow }}-${{ github.ref }}
@@ -21,12 +33,15 @@ jobs:
         include:
           - platform: macos-15
             os: macos
-            cargo-cache-dir: src-tauri/target
+            cargo-target: target
           - platform: windows-2025
             os: windows
-            cargo-cache-dir: C:\t
+            cargo-target: ../../../t
 
     runs-on: ${{ matrix.platform }}
+
+    env:
+      CARGO_PROFILE_DEV_DEBUG: line-tables-only
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -51,7 +66,7 @@ jobs:
         if: matrix.os == 'windows'
         shell: pwsh
         run: |
-          $cargoTargetDir = "C:\t"
+          $cargoTargetDir = [IO.Path]::GetFullPath((Join-Path $env:GITHUB_WORKSPACE "..\..\t"))
           $libclangPath = Join-Path $env:RUNNER_TEMP "llvm\bin"
           New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
@@ -92,16 +107,9 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           key: platform-${{ matrix.platform }}-vulkan-1.4.357.0
-          workspaces: src-tauri -> target
-          cache-directories: ${{ matrix.cargo-cache-dir }}
+          workspaces: src-tauri -> ${{ matrix.cargo-target }}
           cache-on-failure: true
-
-      - name: check Rust
-        env:
-          # Disable i8mm matmul intrinsics; they fail to build with the CI Xcode toolchain.
-          CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
-          CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
-        run: cargo check --manifest-path src-tauri/Cargo.toml
+          save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: add native DLLs to PATH
         if: matrix.os == 'windows'
@@ -112,6 +120,7 @@ jobs:
 
       - name: test Rust
         env:
+          # Disable i8mm matmul intrinsics; they fail to build with the CI Xcode toolchain.
           CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
         run: cargo test --manifest-path src-tauri/Cargo.toml

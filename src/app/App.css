@@ -162,8 +162,6 @@
   --color-toggle-on: #fbbf24;
   --color-toggle-on-20: rgba(251, 191, 36, 0.2);
   --color-toggle-on-30: rgba(251, 191, 36, 0.3);
-  --ui-action-card-rest-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
-  --ui-action-card-hover-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
 
   --surface-sunken: var(--color-bg-primary);
   --surface-base: var(--color-bg-secondary);
@@ -321,8 +319,6 @@
   --color-toggle-on: #8f6a47;
   --color-toggle-on-20: rgba(143, 106, 71, 0.18);
   --color-toggle-on-30: rgba(143, 106, 71, 0.26);
-  --ui-action-card-rest-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
-  --ui-action-card-hover-shadow: 0 3px 0 -1px rgba(0, 0, 0, 0.5);
 
   --ui-pill-cleanup-rgb: 180, 83, 9;
 

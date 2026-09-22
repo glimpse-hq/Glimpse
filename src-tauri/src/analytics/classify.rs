@@ -116,6 +116,12 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
         ("timeout", &["timeout", "timed out"]),
         ("network", &["network", "connect", "dns"]),
         (
+            "verification",
+            &["checksum", "verify", "unexpected sha256", "unexpected size"],
+        ),
+        // 4xx/5xx are read from the text first; this catches the rest (e.g. 3xx).
+        ("bad_response", &["download failed with status"]),
+        (
             "model_missing",
             &["not fully installed", "is missing", "no_model"],
         ),
@@ -148,7 +154,6 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
             &["no speech", "empty", "no samples", "no audio"],
         ),
         ("decode", &["decode", "ffmpeg", "wav", "audio processing"]),
-        ("verification", &["checksum", "verify"]),
         ("storage", &["disk", "write", "save", "storage"]),
         ("task_failed", &["task", "join"]),
         ("lock_poisoned", &["poisoned"]),
