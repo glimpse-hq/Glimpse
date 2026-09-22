@@ -997,6 +997,12 @@ impl StorageManager {
             "bookmarks",
             "ALTER TABLE library_items ADD COLUMN bookmarks TEXT",
         )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "transcript_edited",
+            "ALTER TABLE library_items ADD COLUMN transcript_edited INTEGER NOT NULL DEFAULT 0",
+        )?;
 
         let stats_seeded: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM lifetime_stats WHERE id = 1)",
@@ -1079,6 +1085,22 @@ impl StorageManager {
     ) -> Result<Option<LibraryItem>> {
         let mut conn = self.connection.lock();
         crate::library::repo::update_library_item(&mut conn, &self.library_root, id, patch)
+    }
+
+    /// Applies the patch only while `unchanged` holds for the stored item; None otherwise.
+    pub fn update_library_item_if(
+        &self,
+        id: &str,
+        patch: LibraryItemPatch,
+        unchanged: impl FnOnce(&LibraryItem) -> bool,
+    ) -> Result<Option<LibraryItem>> {
+        let mut conn = self.connection.lock();
+        match crate::library::repo::get_library_item(&conn, &self.library_root, id)? {
+            Some(current) if unchanged(&current) => {
+                crate::library::repo::update_library_item(&mut conn, &self.library_root, id, patch)
+            }
+            _ => Ok(None),
+        }
     }
 
     pub fn delete_library_item(&self, id: &str) -> Result<Option<String>> {

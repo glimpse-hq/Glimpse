@@ -8,7 +8,7 @@ use crate::library::{LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemSt
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
     created_at, transcribed_at, tags, llm_cleanup_enabled, speech_model, show_timestamps, \
-    detect_speakers, kind, speakers, secondary_audio_path, sources, bookmarks";
+    detect_speakers, kind, speakers, secondary_audio_path, sources, bookmarks, transcript_edited";
 
 pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Result<LibraryItem> {
     let (status, progress, error_message) = item.status.as_fields();
@@ -46,8 +46,9 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             speakers,
             secondary_audio_path,
             sources,
-            bookmarks
-         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
+            bookmarks,
+            transcript_edited
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27)",
         params![
             item.id,
             item.name,
@@ -75,6 +76,7 @@ pub(crate) fn insert_library_item(conn: &Connection, item: LibraryItem) -> Resul
             item.secondary_audio_path,
             sources,
             bookmarks,
+            if item.transcript_edited { 1 } else { 0 },
         ],
     )?;
 
@@ -151,6 +153,9 @@ pub(crate) fn update_library_item(
     }
     if let Some(transcript) = patch.transcript {
         item.transcript = Some(transcript);
+    }
+    if let Some(edited) = patch.transcript_edited {
+        item.transcript_edited = edited;
     }
     if let Some(segments) = patch.segments {
         item.segments = Some(segments);
@@ -275,8 +280,9 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             detect_speakers = ?22,
             secondary_audio_path = ?23,
             sources = ?24,
-            bookmarks = ?25
-         WHERE id = ?26",
+            bookmarks = ?25,
+            transcript_edited = ?26
+         WHERE id = ?27",
         params![
             item.name,
             item.audio_path,
@@ -303,6 +309,7 @@ fn update_library_item_full(conn: &Connection, item: &LibraryItem) -> Result<()>
             item.secondary_audio_path,
             sources,
             bookmarks,
+            if item.transcript_edited { 1 } else { 0 },
             item.id,
         ],
     )?;
@@ -354,6 +361,10 @@ fn library_item_from_row(root: &Path, row: &Row<'_>) -> rusqlite::Result<Library
         store_original: row.get::<_, i64>("store_original")? == 1,
         status: LibraryItemStatus::from_fields(&status_value, progress, error_message),
         transcript: row.get("transcript")?,
+        transcript_edited: row
+            .get::<_, i64>("transcript_edited")
+            .map(|value| value == 1)
+            .unwrap_or(false),
         segments,
         words,
         duration_seconds: row.get::<_, f64>("duration_seconds")? as f32,

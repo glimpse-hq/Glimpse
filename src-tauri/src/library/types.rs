@@ -44,7 +44,7 @@ pub const EVENT_LIBRARY_OPEN_IMPORT: &str = "library:open_import";
 pub const EVENT_LIBRARY_RENDERER_READY: &str = "library:renderer_ready";
 pub const EVENT_LIBRARY_IMPORT_PROGRESS: &str = "library:import_progress";
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TranscriptSegment {
     pub start_ms: u64,
     pub end_ms: u64,
@@ -53,7 +53,7 @@ pub struct TranscriptSegment {
     pub speaker_id: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Speaker {
     pub id: String,
     pub name: String,
@@ -177,6 +177,9 @@ pub struct LibraryItem {
     pub store_original: bool,
     pub status: LibraryItemStatus,
     pub transcript: Option<String>,
+    /// Set when the user edits the transcript, cleared by a new transcription.
+    #[serde(default)]
+    pub transcript_edited: bool,
     pub segments: Option<Vec<TranscriptSegment>>,
     pub words: Option<Vec<TranscriptSegment>>,
     pub duration_seconds: f32,
@@ -221,6 +224,7 @@ pub struct LibraryItemsPage {
 pub struct LibraryItemPatch {
     pub name: Option<String>,
     pub transcript: Option<String>,
+    pub transcript_edited: Option<bool>,
     pub segments: Option<Vec<TranscriptSegment>>,
     pub words: Option<Vec<TranscriptSegment>>,
     pub tags: Option<Vec<String>>,

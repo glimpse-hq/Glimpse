@@ -43,6 +43,7 @@ export type LibraryItem = {
   store_original: boolean;
   status: LibraryItemStatus;
   transcript?: string | null;
+  transcript_edited: boolean;
   segments?: TranscriptSegment[] | null;
   words?: TranscriptSegment[] | null;
   duration_seconds: number;
@@ -77,6 +78,7 @@ export type LibraryFilter = {
 export type LibraryItemPatch = {
   name?: string | null;
   transcript?: string | null;
+  transcript_edited?: boolean | null;
   segments?: TranscriptSegment[] | null;
   tags?: string[] | null;
   status?: LibraryItemStatus | null;

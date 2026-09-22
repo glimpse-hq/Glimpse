@@ -132,6 +132,7 @@ export function useLibraryItems(
               progress,
               detecting_speakers,
             },
+            ...(isReset ? { transcript_edited: false } : {}),
             ...(updateTranscript ? { transcript: nextTranscript } : {}),
             ...(updateSegments ? { segments: nextSegments } : {}),
           };

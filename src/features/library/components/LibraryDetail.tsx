@@ -793,7 +793,9 @@ const LibraryDetail = ({
     transcriptSent.current = written;
     transcriptSaves.current += 1;
     transcriptChain.current = transcriptChain.current
-      .then(() => onUpdateRef.current({ transcript: written }))
+      .then(() =>
+        onUpdateRef.current({ transcript: written, transcript_edited: true }),
+      )
       .then(() => {
         transcriptSaveFailed.current = false;
       })
@@ -989,15 +991,16 @@ const LibraryDetail = ({
       new Set(speakerTurns.map((turn) => turn.speaker).filter(Boolean)).size,
     [speakerTurns],
   );
-  // Edits are saved to the transcript only, so an edited item keeps the text box.
+  // Edits and AI cleanup change the transcript but not the segments, so those items keep the text box.
   const transcriptEdited = useMemo(() => {
+    if (item.transcript_edited) return true;
     const letters = (text: string) =>
       text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
     const segmentText = (item.segments ?? [])
       .map((segment) => segment.text)
       .join(" ");
     return letters(item.transcript ?? "") !== letters(segmentText);
-  }, [item.transcript, item.segments]);
+  }, [item.transcript_edited, item.transcript, item.segments]);
   const visibleTurns = useMemo(
     () =>
       speakerFilter

@@ -164,6 +164,7 @@ fn start_library_transcription_internal(
         LibraryItemPatch {
             status: Some(LibraryItemStatus::Transcribing { progress: 0.0 }),
             transcript: Some(String::new()),
+            transcript_edited: Some(false),
             segments: Some(Vec::new()),
             // Live rows are streamed as You/Others until diarization relabels them.
             speakers: item.secondary_audio_path.as_ref().map(|_| {

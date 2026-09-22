@@ -258,22 +258,18 @@ pub async fn rediarize_library_item(
     let updated = tauri::async_runtime::spawn_blocking(move || {
         let model_path = crate::speech::installed_diarizer_path(&task_app)
             .ok_or_else(|| "The speaker detection model isn't downloaded".to_string())?;
-        let load = || {
-            storage
-                .get_library_item(&task_id)
-                .map_err(|err| format!("Failed to load library item: {err}"))?
-                .filter(|item| matches!(item.status, LibraryItemStatus::Complete))
-                .ok_or_else(|| "Library item isn't finished transcribing".to_string())
-        };
-        let item = load()?;
+        let item = storage
+            .get_library_item(&task_id)
+            .map_err(|err| format!("Failed to load library item: {err}"))?
+            .filter(|item| matches!(item.status, LibraryItemStatus::Complete))
+            .ok_or_else(|| "Library item isn't finished transcribing".to_string())?;
         let labeled = super::speakers::rediarize(&item, &model_path).map_err(|err| {
             tracing::warn!("[library] speaker detection failed: {err}");
             err.to_string()
         })?;
-        // A transcription started meanwhile owns the item now.
-        load()?;
+        // A transcription or a speaker edit made meanwhile must not be overwritten.
         storage
-            .update_library_item(
+            .update_library_item_if(
                 &task_id,
                 LibraryItemPatch {
                     segments: Some(labeled.segments),
@@ -282,9 +278,15 @@ pub async fn rediarize_library_item(
                     detect_speakers: Some(true),
                     ..Default::default()
                 },
+                |current| {
+                    matches!(current.status, LibraryItemStatus::Complete)
+                        && current.segments == item.segments
+                        && current.words == item.words
+                        && current.speakers == item.speakers
+                },
             )
             .map_err(|err| format!("Failed to update library item: {err}"))?
-            .ok_or_else(|| "Library item not found".to_string())
+            .ok_or_else(|| "Library item changed while detecting speakers".to_string())
     })
     .await
     .map_err(|err| format!("Speaker detection task failed: {err}"))??;
