@@ -410,7 +410,7 @@ msgstr "{0} sur {1} correspondances"
 #. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.of_limit"
-msgstr ""
+msgstr "{0} sur {DICTIONARY_ENTRY_LIMIT}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -702,7 +702,7 @@ msgstr "Ajouter un domaine de site web"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.header.description"
-msgstr ""
+msgstr "Ajoutez des mots que Glimpse doit reconnaître et des expressions à remplacer après la transcription."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1181,7 +1181,7 @@ msgstr "Choisir un modèle"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
-msgstr ""
+msgstr "Choisissez un modèle avec prise en charge du dictionnaire pour utiliser ces mots."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2085,7 +2085,7 @@ msgstr "Modifier"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.edit_entry"
-msgstr ""
+msgstr "Modifier {entry}"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2652,7 +2652,7 @@ msgstr "Je parle à {wpm} mots par minute. Il s'avère que parler surpasse la fr
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.ignored_by"
-msgstr ""
+msgstr "Ignoré par {0}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3319,7 +3319,7 @@ msgstr "Aucune application sélectionnée"
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_targets"
-msgstr ""
+msgstr "Aucune application ni aucun site web pour l'instant"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3789,7 +3789,7 @@ msgstr "Modèle préchargé"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.empty_hint"
-msgstr ""
+msgstr "Appuyez sur Entrée dans l'un ou l'autre champ pour ajouter. Les correspondances ignorent la casse."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
@@ -5289,7 +5289,7 @@ msgstr "Il s'avère que je pense plus vite que je ne tape. {wpm} mots par minute
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.empty_hint"
-msgstr ""
+msgstr "Saisissez un mot ci-dessus et appuyez sur Entrée pour l'ajouter."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx

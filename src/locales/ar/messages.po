@@ -410,7 +410,7 @@ msgstr "{0} من أصل {1} تطابقات"
 #. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.of_limit"
-msgstr ""
+msgstr "{0} من {DICTIONARY_ENTRY_LIMIT}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -702,7 +702,7 @@ msgstr "إضافة نطاق موقع ويب"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.header.description"
-msgstr ""
+msgstr "أضف كلمات يجب أن يتعرف عليها Glimpse وعبارات لاستبدالها بعد النسخ."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1181,7 +1181,7 @@ msgstr "اختر نموذجًا"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
-msgstr ""
+msgstr "اختر نموذجًا يدعم القاموس لاستخدام هذه الكلمات."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2085,7 +2085,7 @@ msgstr "تحرير"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.edit_entry"
-msgstr ""
+msgstr "تعديل {entry}"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2652,7 +2652,7 @@ msgstr "أتحدث بسرعة {wpm} كلمة في الدقيقة. اتضح أن 
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.ignored_by"
-msgstr ""
+msgstr "مُتجاهَل بواسطة {0}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3319,7 +3319,7 @@ msgstr "لم يتم تحديد أي تطبيقات"
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_targets"
-msgstr ""
+msgstr "لا توجد تطبيقات أو مواقع ويب بعد"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3789,7 +3789,7 @@ msgstr "نموذج محمّل مسبقًا"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.empty_hint"
-msgstr ""
+msgstr "اضغط Enter في أي من الحقلين للإضافة. تتجاهل المطابقة حالة الأحرف."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
@@ -5289,7 +5289,7 @@ msgstr "اتضح أنني أفكر أسرع مما أكتب. {wpm} كلمة في
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.empty_hint"
-msgstr ""
+msgstr "اكتب كلمة أعلاه واضغط Enter لإضافتها."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx

@@ -410,7 +410,7 @@ msgstr "{0} van {1} overeenkomsten"
 #. placeholder {0}: entries.length
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.entry_count.of_limit"
-msgstr ""
+msgstr "{0} van {DICTIONARY_ENTRY_LIMIT}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatCompact(totalWords)
@@ -702,7 +702,7 @@ msgstr "Websitedomein toevoegen"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.header.description"
-msgstr ""
+msgstr "Voeg woorden toe die Glimpse moet herkennen en zinnen die na transcriptie moeten worden vervangen."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1181,7 +1181,7 @@ msgstr "Kies een model"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.switch_model"
-msgstr ""
+msgstr "Kies een model met woordenboekondersteuning om deze woorden te gebruiken."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2085,7 +2085,7 @@ msgstr "Wijzig"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.edit_entry"
-msgstr ""
+msgstr "{entry} bewerken"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2652,7 +2652,7 @@ msgstr "Ik spreek met {wpm} woorden per minuut. Blijkt dat praten sneller gaat d
 #. placeholder {0}: currentModel?.label ?? settings?.local_model
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.warning.ignored_by"
-msgstr ""
+msgstr "Genegeerd door {0}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3319,7 +3319,7 @@ msgstr "Geen apps geselecteerd"
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.no_targets"
-msgstr ""
+msgstr "Nog geen apps of websites"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3789,7 +3789,7 @@ msgstr "Vooraf geladen model"
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.empty_hint"
-msgstr ""
+msgstr "Druk op Enter in een van beide velden om toe te voegen. Bij overeenkomsten wordt hoofdlettergebruik genegeerd."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: newEntry.trim()
@@ -5289,7 +5289,7 @@ msgstr "Blijkt dat ik sneller denk dan ik typ. {wpm} woorden per minuut. @try_gl
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.empty_hint"
-msgstr ""
+msgstr "Typ hierboven een woord en druk op Enter om het toe te voegen."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
