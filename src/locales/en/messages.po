@@ -4990,7 +4990,7 @@ msgstr "The glimpse command is installed at {cliInstallPath}. Use it from Termin
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_mic_lost"
-msgstr "The microphone stopped responding and no other microphone was found. The recording continues without it. Pause and resume to try again."
+msgstr "The microphone stopped responding and no other microphone was found. Glimpse will switch to one as soon as it's connected."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

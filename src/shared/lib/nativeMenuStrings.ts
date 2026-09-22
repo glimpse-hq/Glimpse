@@ -88,7 +88,7 @@ export const NATIVE_MENU_STRINGS = [
   msg({
     id: "native.toast.recording_mic_lost",
     message:
-      "The microphone stopped responding and no other microphone was found. The recording continues without it. Pause and resume to try again.",
+      "The microphone stopped responding and no other microphone was found. Glimpse will switch to one as soon as it's connected.",
   }),
   msg({
     id: "native.toast.milestone",

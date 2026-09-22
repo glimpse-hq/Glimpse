@@ -23,7 +23,7 @@ use std::{
 
 use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Local};
-use crossbeam_channel::{Sender, bounded, unbounded};
+use crossbeam_channel::{RecvTimeoutError, Sender, bounded, unbounded};
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
@@ -41,6 +41,8 @@ const LAST_SOURCES_FILE: &str = "last-sources.json";
 const MICROPHONE_FILE: &str = "microphone.wav";
 const SYSTEM_FILE: &str = "system.wav";
 const STATE_TICK: Duration = Duration::from_millis(100);
+// How often a recording without a working microphone looks for one.
+const MICROPHONE_RETRY: Duration = Duration::from_secs(2);
 // RMS window mapped onto the 0..1 level meter.
 const LEVEL_FLOOR: f32 = 0.006;
 const LEVEL_CEILING: f32 = 0.22;
@@ -367,7 +369,15 @@ impl Default for RecordingManager {
                     tx: worker_tx,
                     active: None,
                 };
-                while let Ok(command) = rx.recv() {
+                loop {
+                    let command = match rx.recv_timeout(MICROPHONE_RETRY) {
+                        Ok(command) => command,
+                        Err(RecvTimeoutError::Timeout) => {
+                            worker.retry_microphone();
+                            continue;
+                        }
+                        Err(RecvTimeoutError::Disconnected) => break,
+                    };
                     match command {
                         WorkerCommand::Start {
                             app,
@@ -794,11 +804,11 @@ impl Worker {
             Some(Err(err)) => {
                 tracing::warn!("{err}");
                 if !paused {
-                    self.reopen_microphone();
+                    self.reopen_microphone(false);
                 }
             }
             // Lost while paused; resume is the retry.
-            None if !paused => self.reopen_microphone(),
+            None if !paused => self.reopen_microphone(false),
             None => {}
         }
     }
@@ -815,13 +825,25 @@ impl Worker {
             .microphone_level
             .store(0f32.to_bits(), Ordering::Relaxed);
         if !mic.paused {
-            self.reopen_microphone();
+            self.reopen_microphone(false);
         }
     }
 
     /// Reopens the selected microphone, or the system default when it is gone,
     /// onto the same track. The user is told when the device changed or none opened.
-    fn reopen_microphone(&mut self) {
+    /// Retries quietly while an unpaused recording has no microphone.
+    fn retry_microphone(&mut self) {
+        let missing = self
+            .active
+            .as_ref()
+            .and_then(|s| s.microphone.as_ref())
+            .is_some_and(|mic| mic.capture.is_none() && !mic.paused);
+        if missing {
+            self.reopen_microphone(true);
+        }
+    }
+
+    fn reopen_microphone(&mut self, retrying: bool) {
         let tx = self.tx.clone();
         let Some(session) = self.active.as_mut() else {
             return;
@@ -851,8 +873,12 @@ impl Worker {
         };
         // A dying device can still be listed, and still be the default, for a moment.
         let opened = open(mic.device_id.as_deref()).or_else(|err| {
-            tracing::warn!("Recording microphone reopen failed, retrying on the default: {err}");
-            std::thread::sleep(Duration::from_millis(500));
+            if !retrying {
+                tracing::warn!(
+                    "Recording microphone reopen failed, retrying on the default: {err}"
+                );
+                std::thread::sleep(Duration::from_millis(500));
+            }
             open(None)
         });
         let app = &session.app;
@@ -879,6 +905,7 @@ impl Worker {
                     ),
                 );
             }
+            Err(_) if retrying => {}
             Err(err) => {
                 tracing::warn!("Recording microphone could not be reopened: {err}");
                 crate::toast::show(
