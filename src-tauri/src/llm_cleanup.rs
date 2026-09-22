@@ -187,6 +187,24 @@ pub fn should_refine_transcript(settings: &UserSettings, mode: Option<&Personali
     is_llm_available(settings) && (settings.cleanup_enabled || personality_has_style_guidance(mode))
 }
 
+pub fn prewarm_apple_cleanup(settings: &UserSettings) {
+    if !settings.llm_enabled || !uses_apple_provider(settings) {
+        return;
+    }
+    let settings = settings.clone();
+    std::thread::spawn(move || {
+        let mode = mode_context::resolve_active_personality(&settings);
+        if !should_refine_transcript(&settings, mode.as_ref()) {
+            return;
+        }
+        let guidance = style_guidance(&settings, mode.as_ref());
+        let prompt = build_cleanup_system_prompt(&settings, guidance.as_deref());
+        if let Err(err) = glimpse_speech::cleanup::apple_prewarm(&prompt) {
+            tracing::debug!("[Apple LLM] prewarm skipped: {err}");
+        }
+    });
+}
+
 pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
     if !is_llm_available(settings) {
         None
@@ -533,11 +551,18 @@ Return only the cleaned transcript."
 }
 
 fn resolve_style_guidance(settings: &UserSettings, mode: Option<&Personality>) -> Option<String> {
-    if let Some(personality) = mode {
-        mode_context::format_cleanup_style_guidance_for_personality(personality)
-    } else {
+    if mode.is_none() {
         accessibility_context::log_active_context();
-        mode_context::format_active_cleanup_style_guidance(settings)
+    }
+    style_guidance(settings, mode)
+}
+
+fn style_guidance(settings: &UserSettings, mode: Option<&Personality>) -> Option<String> {
+    match mode {
+        Some(personality) => {
+            mode_context::format_cleanup_style_guidance_for_personality(personality)
+        }
+        None => mode_context::format_active_cleanup_style_guidance(settings),
     }
 }
 
