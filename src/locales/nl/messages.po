@@ -5349,7 +5349,7 @@ msgstr "Niet-ondersteunde talen zijn niet beschikbaar op je actieve model. Schak
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "Maximaal 4 sprekers"
+msgstr "Maximaal 8 sprekers"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

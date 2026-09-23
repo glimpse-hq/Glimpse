@@ -5349,7 +5349,7 @@ msgstr "Les langues non prises en charge ne sont pas disponibles sur votre modè
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "Jusqu'à 4 interlocuteurs"
+msgstr "Jusqu'à 8 interlocuteurs"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

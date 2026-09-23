@@ -74,6 +74,16 @@ where
 }
 
 /// The speaker diarization model, once fully downloaded.
+/// Deletes the replaced Sortformer v2.1 diarizer, if a previous version installed it.
+pub(crate) fn remove_retired_diarizer(models_dir: &std::path::Path) {
+    let dir = models_dir.join(catalog::RETIRED_DIARIZER_MODEL);
+    if dir.exists()
+        && let Err(err) = crate::platform::remove_dir_all_compat(&dir)
+    {
+        tracing::warn!("[speech] could not remove {}: {err}", dir.display());
+    }
+}
+
 pub(crate) fn installed_diarizer_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
     let manager =
         glimpse_speech::models::ModelInstallManager::new(install::model_cache_dir(app).ok()?);

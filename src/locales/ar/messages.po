@@ -5349,7 +5349,7 @@ msgstr "اللغات غير المدعومة غير متاحة في نموذجك
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "حتى 4 متحدثين"
+msgstr "حتى 8 متحدثين"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

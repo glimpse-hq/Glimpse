@@ -5349,7 +5349,7 @@ msgstr "असमर्थित भाषाएँ आपके सक्रि
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "अधिकतम 4 वक्ता"
+msgstr "अधिकतम 8 वक्ता"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

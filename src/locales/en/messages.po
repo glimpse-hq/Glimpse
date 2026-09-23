@@ -5349,7 +5349,7 @@ msgstr "Unsupported languages aren't available on your active model. Switch to a
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "Up to 4 speakers"
+msgstr "Up to 8 speakers"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

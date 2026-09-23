@@ -858,6 +858,8 @@ impl AppState {
 
         let model_cache_dir = model_manager::model_cache_dir(app_handle)
             .expect("Failed to resolve local model cache directory");
+        let retired_models_dir = model_cache_dir.clone();
+        std::thread::spawn(move || speech::remove_retired_diarizer(&retired_models_dir));
         let local_transcriber =
             Arc::new(local_transcription::LocalTranscriber::new(model_cache_dir));
         local_transcriber.start_idle_monitor();

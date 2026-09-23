@@ -5349,7 +5349,7 @@ msgstr "Неподдерживаемые языки недоступны в ак
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "До 4 участников"
+msgstr "До 8 участников"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

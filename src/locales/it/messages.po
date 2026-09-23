@@ -5349,7 +5349,7 @@ msgstr "Le lingue non supportate non sono disponibili sul modello attivo. Passa 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "Fino a 4 parlanti"
+msgstr "Fino a 8 parlanti"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
