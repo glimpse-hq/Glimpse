@@ -105,16 +105,22 @@ pub(crate) fn upgrade_retired_diarizer(app: &AppHandle<AppRuntime>) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
         let upgraded = current_diarizer_path(&models_dir).is_none();
-        if upgraded
-            && let Err(err) = install::download_model_now(
+        if upgraded {
+            if let Err(err) = install::download_model_now(
                 app.clone(),
                 catalog::DIARIZER_MODEL.into(),
                 Some(false),
             )
             .await
-        {
-            tracing::warn!("[speech] speaker model upgrade failed, keeping Sortformer: {err}");
-            return;
+            {
+                tracing::warn!("[speech] speaker model upgrade failed, keeping Sortformer: {err}");
+                return;
+            }
+            // A cancelled download also returns Ok, so only a verified install replaces Sortformer.
+            if current_diarizer_path(&models_dir).is_none() {
+                tracing::warn!("[speech] speaker model upgrade did not finish, keeping Sortformer");
+                return;
+            }
         }
         if let Err(err) = crate::platform::remove_dir_all_compat(&retired) {
             tracing::warn!("[speech] could not remove {}: {err}", retired.display());
