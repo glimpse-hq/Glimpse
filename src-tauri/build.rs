@@ -167,6 +167,7 @@ fn main() {
         "POSTHOG_HOST",
         "GLIMPSE_FORCE_LICENSE_GATE",
         "GLIMPSE_API_BASE",
+        "GLIMPSE_API_FALLBACK_BASE",
         "GLIMPSE_GRANT_PUBLIC_KEY",
     ];
     let mut forwarded = std::collections::HashSet::new();

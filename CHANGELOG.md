@@ -1,3 +1,12 @@
+1.2.7
+
+### Fixes
+
+- Your license now checks in even if your network blocks Glimpse's license server, so it no longer disappears after updating.
+- If Glimpse can't reach the license server when it opens, it keeps trying in the background instead of waiting until you restart it.
+- Your license stays active if you leave Glimpse open for more than a week.
+- Pasting a whole receipt from an older purchase finds the activation code in it.
+
 1.2.6
 
 ### Improvements

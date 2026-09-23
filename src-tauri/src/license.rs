@@ -867,7 +867,7 @@ fn cache_is_fresh(now: DateTime<Utc>, last_validated_at: &str, expires_at: Optio
 pub(crate) fn find_license_key(text: &str) -> Option<&str> {
     static KEY: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
         regex::Regex::new(
-            r"(?i)\b[a-z0-9]{5}(?:-[a-z0-9]{5}){4}\b|[a-z]+_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            r"(?i)\b[a-z0-9]{5}(?:-[a-z0-9]{5}){4}\b|(?:[a-z]+[_-])+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
         )
         .expect("license key regex")
     });
@@ -956,36 +956,60 @@ fn sha256_hex(text: &str) -> String {
 
 const UNAVAILABLE_MESSAGE: &str = "Could not reach the Glimpse license server. Try again shortly.";
 
-/// Calls `POST /v1/{path}`. Only a well-formed `not_found`, `inactive` or
-/// `expired` answer counts as a rejection; anything else keeps the cache.
+/// Calls `POST /v1/{path}` on each API host until one answers. Only a
+/// well-formed `not_found`, `inactive` or `expired` answer counts as a
+/// rejection; anything else keeps the cache.
 async fn license_post<T: serde::de::DeserializeOwned>(
     client: &Client,
     path: &str,
     body: &impl Serialize,
 ) -> Result<T, LicenseFailure> {
-    let response = client
-        .post(format!("{}/v1/{path}", license_api_base()))
+    for base in license_api_bases() {
+        if let Some(result) = license_post_to(client, base, path, body).await {
+            return result;
+        }
+    }
+    Err(LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string()))
+}
+
+/// None when the host can't be reached or something other than the Worker
+/// answered, such as a network's block page.
+async fn license_post_to<T: serde::de::DeserializeOwned>(
+    client: &Client,
+    base: &str,
+    path: &str,
+    body: &impl Serialize,
+) -> Option<Result<T, LicenseFailure>> {
+    let response = match client
+        .post(format!("{base}/v1/{path}"))
         .json(body)
-        .timeout(std::time::Duration::from_secs(20))
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await
-        .map_err(|err| {
-            tracing::warn!("License {path} request failed: {err}");
-            LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string())
-        })?;
+    {
+        Ok(response) => response,
+        Err(err) => {
+            tracing::warn!("License {path} request to {base} failed: {err}");
+            return None;
+        }
+    };
 
     let status = response.status();
     if status.is_success() {
-        return response.json::<T>().await.map_err(|err| {
-            tracing::warn!("License {path} response unreadable: {err}");
-            LicenseFailure::Other("The license server sent an unreadable response.".to_string())
-        });
+        return match response.json::<T>().await {
+            Ok(value) => Some(Ok(value)),
+            Err(err) => {
+                tracing::warn!("License {path} response from {base} unreadable: {err}");
+                None
+            }
+        };
     }
 
     let Ok(error) = response.json::<LicenseApiError>().await else {
-        return Err(LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string()));
+        tracing::warn!("License {path} got a non-API {status} from {base}");
+        return None;
     };
-    Err(match (status.as_u16(), error.error.as_str()) {
+    Some(Err(match (status.as_u16(), error.error.as_str()) {
         (404, "not_found") => {
             LicenseFailure::Rejected("That activation code was not found.".to_string())
         }
@@ -1007,13 +1031,18 @@ async fn license_post<T: serde::de::DeserializeOwned>(
                 .unwrap_or_else(|| "Check the activation code and try again.".to_string()),
         ),
         _ => LicenseFailure::Other(UNAVAILABLE_MESSAGE.to_string()),
-    })
+    }))
 }
 
-fn license_api_base() -> &'static str {
-    option_env!("GLIMPSE_API_BASE")
+/// The main API host, then the optional fallback: the same Worker on other
+/// IPs, for networks that block the main ones.
+fn license_api_bases() -> impl Iterator<Item = &'static str> {
+    let main = option_env!("GLIMPSE_API_BASE")
         .filter(|value| !value.trim().is_empty())
-        .unwrap_or(DEFAULT_LICENSE_API_BASE)
+        .unwrap_or(DEFAULT_LICENSE_API_BASE);
+    let fallback = option_env!("GLIMPSE_API_FALLBACK_BASE")
+        .filter(|value| !value.trim().is_empty() && *value != main);
+    std::iter::once(main).chain(fallback)
 }
 
 fn activation_label() -> &'static str {
