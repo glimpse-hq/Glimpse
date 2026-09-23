@@ -74,21 +74,60 @@ where
 }
 
 /// The speaker diarization model, once fully downloaded.
-/// Deletes the replaced Sortformer v2.1 diarizer, if a previous version installed it.
-pub(crate) fn remove_retired_diarizer(models_dir: &std::path::Path) {
-    let dir = models_dir.join(catalog::RETIRED_DIARIZER_MODEL);
-    if dir.exists()
-        && let Err(err) = crate::platform::remove_dir_all_compat(&dir)
-    {
-        tracing::warn!("[speech] could not remove {}: {err}", dir.display());
-    }
+/// Nemotron-3 once downloaded, otherwise the Sortformer v2.1 diarizer a
+/// previous version installed, which still works until the upgrade lands.
+pub(crate) fn installed_diarizer_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
+    let models_dir = install::model_cache_dir(app).ok()?;
+    current_diarizer_path(&models_dir).or_else(|| {
+        let retired = models_dir
+            .join(catalog::RETIRED_DIARIZER_MODEL)
+            .join(catalog::RETIRED_DIARIZER_FILE);
+        retired.is_file().then_some(retired)
+    })
 }
 
-pub(crate) fn installed_diarizer_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
-    let manager =
-        glimpse_speech::models::ModelInstallManager::new(install::model_cache_dir(app).ok()?);
+fn current_diarizer_path(models_dir: &std::path::Path) -> Option<PathBuf> {
+    let manager = glimpse_speech::models::ModelInstallManager::new(models_dir);
     let spec = catalog::install_spec(catalog::DIARIZER_MODEL, false)?;
     manager.resolve(&spec).ok().map(|resolved| resolved.path)
+}
+
+/// People who installed the Sortformer v2.1 diarizer chose speaker detection,
+/// so download its replacement in the background, then remove the old one.
+pub(crate) fn upgrade_retired_diarizer(app: &AppHandle<AppRuntime>) {
+    let Ok(models_dir) = install::model_cache_dir(app) else {
+        return;
+    };
+    let retired = models_dir.join(catalog::RETIRED_DIARIZER_MODEL);
+    if !retired.exists() {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let upgraded = current_diarizer_path(&models_dir).is_none();
+        if upgraded
+            && let Err(err) = install::download_model_now(
+                app.clone(),
+                catalog::DIARIZER_MODEL.into(),
+                Some(false),
+            )
+            .await
+        {
+            tracing::warn!("[speech] speaker model upgrade failed, keeping Sortformer: {err}");
+            return;
+        }
+        if let Err(err) = crate::platform::remove_dir_all_compat(&retired) {
+            tracing::warn!("[speech] could not remove {}: {err}", retired.display());
+        }
+        if upgraded {
+            crate::toast::show(
+                &app,
+                "success",
+                None,
+                &crate::toast::native(&app, "native.toast.speaker_model_upgraded"),
+            );
+        }
+    });
 }
 
 pub fn warm(app: &AppHandle<AppRuntime>, settings: &UserSettings) {

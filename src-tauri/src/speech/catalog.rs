@@ -19,8 +19,9 @@ pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
 pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
-/// Model directory of the Sortformer v2.1 diarizer that Nemotron-3 replaced.
+/// Model directory and file of the Sortformer v2.1 diarizer that Nemotron-3 replaced.
 pub const RETIRED_DIARIZER_MODEL: &str = "sortformer_4spk_v2_1_q8";
+pub const RETIRED_DIARIZER_FILE: &str = "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf";
 
 pub fn is_legacy_category(category: &str) -> bool {
     category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)

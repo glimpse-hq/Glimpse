@@ -3989,6 +3989,11 @@ msgstr "جارٍ استرداد آخر تسجيل..."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "يستخدم اكتشاف المتحدثين الآن نموذجًا جديدًا يميّز بين الأشخاص بدقة أكبر."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "إعادة"
 

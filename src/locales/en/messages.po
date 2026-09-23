@@ -3989,6 +3989,11 @@ msgstr "Recovering your last recording..."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "Speaker detection now uses a new model that tells people apart more accurately."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "Redo"
 

@@ -4,7 +4,7 @@
 
 - Speaker detection uses NVIDIA's new Nemotron-3 model, which mixes up speakers about four times less often and makes about 40% fewer mistakes overall.
 - Up to 8 speakers are told apart, up from 4.
-- On Mac, detecting speakers is about three times faster, and the model is a smaller download (106 MB instead of 139 MB). Download the new speaker model once from the model picker; the old one is removed for you.
+- On Mac, detecting speakers is about three times faster, and the model is a smaller download (106 MB instead of 139 MB). If you already use speaker detection, Glimpse downloads the new model in the background and removes the old one.
 
 ### Improvements
 

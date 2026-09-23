@@ -3989,6 +3989,11 @@ msgstr "Letzte Aufnahme wird wiederhergestellt..."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "Die Sprechererkennung nutzt jetzt ein neues Modell, das Personen genauer unterscheidet."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "Wiederholen"
 

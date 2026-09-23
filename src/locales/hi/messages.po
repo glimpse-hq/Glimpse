@@ -3989,6 +3989,11 @@ msgstr "आपकी पिछली रिकॉर्डिंग पुनः
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "वक्ता पहचान अब एक नए मॉडल का उपयोग करती है जो लोगों को अधिक सटीकता से अलग पहचानता है।"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "रीडू"
 

@@ -3989,6 +3989,11 @@ msgstr "Восстановление последней записи..."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "Определение участников теперь использует новую модель, которая точнее различает людей."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "Повторить"
 
