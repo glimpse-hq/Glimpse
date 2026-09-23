@@ -1116,7 +1116,7 @@ msgstr "Изменить сочетание клавиш"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.change_line"
-msgstr ""
+msgstr "Изменить говорящего для этой строки"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1346,7 +1346,7 @@ msgstr "Свернуть боковую панель"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.color"
-msgstr ""
+msgstr "Цвет"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2581,7 +2581,7 @@ msgstr "Скрыть сочетания клавиш"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
-msgstr ""
+msgstr "Скрыть говорящего"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3070,7 +3070,7 @@ msgstr "Участник с"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.merge"
-msgstr ""
+msgstr "Объединить с"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4097,7 +4097,7 @@ msgstr "Удалить сочетание клавиш"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.remove"
-msgstr ""
+msgstr "Удалить говорящего"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4107,7 +4107,7 @@ msgstr "Удаляет записи, транскрипции, модели и �
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.rename"
-msgstr ""
+msgstr "Переименовать"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4612,7 +4612,7 @@ msgstr "Показать все"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_all"
-msgstr ""
+msgstr "Показать всех говорящих"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4632,7 +4632,7 @@ msgstr "Показать больше"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_only"
-msgstr ""
+msgstr "Показать только этого говорящего"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4647,7 +4647,7 @@ msgstr "Показать сочетания клавиш"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show"
-msgstr ""
+msgstr "Показать говорящего"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4757,7 +4757,7 @@ msgstr "Определение говорящего"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speaker_model_upgraded"
-msgstr "Определение участников теперь использует новую модель, которая точнее различает людей."
+msgstr "Определение говорящих теперь использует новую модель, которая точнее различает людей."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

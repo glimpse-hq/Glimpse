@@ -1116,7 +1116,7 @@ msgstr "शॉर्टकट बदलें"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.change_line"
-msgstr ""
+msgstr "इस पंक्ति के लिए वक्ता बदलें"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1346,7 +1346,7 @@ msgstr "साइडबार समेटें"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.color"
-msgstr ""
+msgstr "रंग"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2581,7 +2581,7 @@ msgstr "शॉर्टकट छुपाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
-msgstr ""
+msgstr "वक्ता छिपाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3070,7 +3070,7 @@ msgstr "सदस्यता आरंभ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.merge"
-msgstr ""
+msgstr "इसमें विलय करें"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4097,7 +4097,7 @@ msgstr "शॉर्टकट हटाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.remove"
-msgstr ""
+msgstr "वक्ता हटाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4107,7 +4107,7 @@ msgstr "रिकॉर्डिंग, लिप्यंतरण, मॉड�
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.rename"
-msgstr ""
+msgstr "नाम बदलें"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4612,7 +4612,7 @@ msgstr "सब दिखाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_all"
-msgstr ""
+msgstr "सभी वक्ता दिखाएँ"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4632,7 +4632,7 @@ msgstr "अधिक दिखाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_only"
-msgstr ""
+msgstr "केवल यह वक्ता दिखाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4647,7 +4647,7 @@ msgstr "शॉर्टकट दिखाएँ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show"
-msgstr ""
+msgstr "वक्ता दिखाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4757,7 +4757,7 @@ msgstr "वक्ता पहचान"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speaker_model_upgraded"
-msgstr "वक्ता पहचान अब एक नए मॉडल का उपयोग करती है जो लोगों को अधिक सटीकता से अलग पहचानता है।"
+msgstr "वक्ता पहचान अब एक नए मॉडल का उपयोग करती है, जो लोगों के बीच अधिक सटीक रूप से अंतर करता है।"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

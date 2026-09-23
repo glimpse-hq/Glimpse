@@ -1116,7 +1116,7 @@ msgstr "تغيير الاختصار"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.change_line"
-msgstr ""
+msgstr "تغيير المتحدث لهذا السطر"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1346,7 +1346,7 @@ msgstr "طيّ الشريط الجانبي"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.color"
-msgstr ""
+msgstr "اللون"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2581,7 +2581,7 @@ msgstr "إخفاء الاختصارات"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
-msgstr ""
+msgstr "إخفاء المتحدث"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3070,7 +3070,7 @@ msgstr "عضو منذ"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.merge"
-msgstr ""
+msgstr "دمج في"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4097,7 +4097,7 @@ msgstr "إزالة الاختصار"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.remove"
-msgstr ""
+msgstr "إزالة المتحدث"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4107,7 +4107,7 @@ msgstr "يحذف التسجيلات والنصوص والنماذج والإعد
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.rename"
-msgstr ""
+msgstr "إعادة تسمية"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4612,7 +4612,7 @@ msgstr "إظهار الكل"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_all"
-msgstr ""
+msgstr "إظهار جميع المتحدثين"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4632,7 +4632,7 @@ msgstr "عرض المزيد"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_only"
-msgstr ""
+msgstr "إظهار هذا المتحدث فقط"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4647,7 +4647,7 @@ msgstr "عرض الاختصارات"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show"
-msgstr ""
+msgstr "إظهار المتحدث"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4757,7 +4757,7 @@ msgstr "اكتشاف المتحدث"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speaker_model_upgraded"
-msgstr "يستخدم اكتشاف المتحدثين الآن نموذجًا جديدًا يميّز بين الأشخاص بدقة أكبر."
+msgstr "يستخدم اكتشاف المتحدث الآن نموذجًا جديدًا يميّز بين الأشخاص بدقة أعلى."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
