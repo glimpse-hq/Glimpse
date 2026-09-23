@@ -8,6 +8,7 @@ import {
 } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { activateLocale } from "../i18n";
+import { licenseKeys } from "../features/license/queries";
 import { detectAppPlatform } from "../platform/service";
 import {
   parseTextSizeMode,
@@ -18,6 +19,7 @@ import { modelKeys } from "../features/settings/models-queries";
 import { settingsKeys, useSettings } from "../features/settings/queries";
 import { transcriptionKeys } from "../features/transcriptions/queries";
 import { updateKeys } from "../features/updates/queries";
+import type { LicenseState } from "../shared/types/license";
 import type { StoredSettings, TextSizeMode, ThemeMode } from "../types";
 
 const Home = lazy(() => import("../Home"));
@@ -74,6 +76,9 @@ function QuerySyncBridge() {
     register<StoredSettings>("settings:changed", (settings) => {
       queryClient.setQueryData(settingsKeys.detail(), settings);
       queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+    });
+    register<LicenseState>("license:changed", (state) => {
+      queryClient.setQueryData(licenseKeys.state(), state);
     });
     register("update:available", () => {
       queryClient.invalidateQueries({ queryKey: updateKeys.status() });

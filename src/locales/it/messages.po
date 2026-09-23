@@ -244,6 +244,21 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.all"
+#~ msgstr "Tutti gli interlocutori"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.speaker.rename"
+#~ msgstr "Clicca per rinominare"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.aria"
+#~ msgstr "Filtra per parlante"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse trasforma la mia voce in testo.»"
@@ -730,11 +745,6 @@ msgid "news.all_posts"
 msgstr "Tutti i post"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.all"
-msgstr "Tutti gli interlocutori"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests"
 msgstr "Consenti richieste dal browser"
@@ -1104,6 +1114,11 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "Cambia scorciatoia"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.change_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
 msgstr "Modificando l'eliminazione automatica in {policyLabel} potresti eliminare immediatamente {noun} già più vecchi di {threshold}."
@@ -1244,11 +1259,6 @@ msgid "library.detail.speaker.clear"
 msgstr "Rimuovi relatore"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker.rename"
-msgstr "Clicca per rinominare"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
 msgstr "Clicca per mostrare le schede"
@@ -1332,6 +1342,11 @@ msgstr "Comprimi"
 #: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "Comprimi barra laterale"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.color"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2339,11 +2354,6 @@ msgid "library.import_error.file_not_found"
 msgstr "File non trovato. Potrebbe essere stato spostato o eliminato."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.aria"
-msgstr "Filtra per parlante"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.aria_label"
 msgstr "Filtra libreria per stato"
@@ -2567,6 +2577,11 @@ msgstr "Nascondi le altre"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hide_shortcuts"
 msgstr "Nascondi scorciatoie"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.hide"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3051,6 +3066,11 @@ msgstr "Ingrandisci"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.label_member_since"
 msgstr "Membro dal"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.merge"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4075,9 +4095,19 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "Rimuovi scorciatoia"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.remove"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all_description"
 msgstr "Rimuove registrazioni, trascrizioni, modelli e impostazioni, poi esce"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.rename"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4580,6 +4610,11 @@ msgid "native.menu.show_all"
 msgstr "Mostra tutte"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_all"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "Mostra dettagli errore"
@@ -4595,6 +4630,11 @@ msgid "transcriptions.item.show_more"
 msgstr "Mostra altro"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_only"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "Mostra esempi di snippet di personalizzazione"
@@ -4603,6 +4643,11 @@ msgstr "Mostra esempi di snippet di personalizzazione"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "Mostra scorciatoie"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4708,6 +4753,11 @@ msgstr "Oratore 2"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.speakers"
 msgstr "Rilevamento parlante"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "Il rilevamento dei parlanti ora usa un nuovo modello che distingue le persone con più precisione."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -5349,7 +5399,7 @@ msgstr "Le lingue non supportate non sono disponibili sul modello attivo. Passa 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "Fino a 4 parlanti"
+msgstr "Fino a 8 parlanti"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
