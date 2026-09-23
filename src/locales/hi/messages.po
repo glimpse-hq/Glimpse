@@ -244,6 +244,21 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.all"
+#~ msgstr "सभी वक्ता"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.speaker.rename"
+#~ msgstr "नाम बदलने के लिए क्लिक करें"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.aria"
+#~ msgstr "वक्ता के अनुसार फ़िल्टर करें"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -730,11 +745,6 @@ msgid "news.all_posts"
 msgstr "सभी पोस्ट"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.all"
-msgstr "सभी वक्ता"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests"
 msgstr "ब्राउज़र अनुरोधों की अनुमति दें"
@@ -1104,6 +1114,11 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "शॉर्टकट बदलें"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.change_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
 msgstr "ऑटो‑डिलीट को {policyLabel} पर बदलने से तुरंत ही {noun} हट सकता है जो पहले से ही {threshold} से पुराना है।"
@@ -1244,11 +1259,6 @@ msgid "library.detail.speaker.clear"
 msgstr "वक्ता साफ़ करें"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker.rename"
-msgstr "नाम बदलने के लिए क्लिक करें"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
 msgstr "कार्ड दिखाने के लिए क्लिक करें"
@@ -1332,6 +1342,11 @@ msgstr "संकुचित करें"
 #: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "साइडबार समेटें"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.color"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2339,11 +2354,6 @@ msgid "library.import_error.file_not_found"
 msgstr "फ़ाइल नहीं मिली। इसे स्थानांतरित कर दिया गया होगा या हटा दिया गया होगा।"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.aria"
-msgstr "वक्ता के अनुसार फ़िल्टर करें"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.aria_label"
 msgstr "स्थिति के अनुसार लाइब्रेरी फ़िल्टर करें"
@@ -2567,6 +2577,11 @@ msgstr "बाकी सब छुपाएँ"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hide_shortcuts"
 msgstr "शॉर्टकट छुपाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.hide"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3051,6 +3066,11 @@ msgstr "अधिकतम करें"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.label_member_since"
 msgstr "सदस्यता आरंभ"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.merge"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3989,11 +4009,6 @@ msgstr "आपकी पिछली रिकॉर्डिंग पुनः
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.speaker_model_upgraded"
-msgstr "वक्ता पहचान अब एक नए मॉडल का उपयोग करती है जो लोगों को अधिक सटीकता से अलग पहचानता है।"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "रीडू"
 
@@ -4080,9 +4095,19 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "शॉर्टकट हटाएँ"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.remove"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all_description"
 msgstr "रिकॉर्डिंग, लिप्यंतरण, मॉडल और सेटिंग्स हटाकर ऐप बंद करता है"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.rename"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4585,6 +4610,11 @@ msgid "native.menu.show_all"
 msgstr "सब दिखाएँ"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_all"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "त्रुटि विवरण दिखाएँ"
@@ -4600,6 +4630,11 @@ msgid "transcriptions.item.show_more"
 msgstr "अधिक दिखाएँ"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_only"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "पर्सनलाइज़ेशन स्निपेट के उदाहरण दिखाएँ"
@@ -4608,6 +4643,11 @@ msgstr "पर्सनलाइज़ेशन स्निपेट के उ
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "शॉर्टकट दिखाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4713,6 +4753,11 @@ msgstr "वक्ता 2"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.speakers"
 msgstr "वक्ता पहचान"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "वक्ता पहचान अब एक नए मॉडल का उपयोग करती है जो लोगों को अधिक सटीकता से अलग पहचानता है।"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

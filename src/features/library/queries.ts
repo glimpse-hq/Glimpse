@@ -245,7 +245,20 @@ export function useUpdateLibraryItem() {
   return useMutation({
     mutationFn: ({ id, patch }: { id: string; patch: LibraryItemPatch }) =>
       libraryApi.updateLibraryItem(id, patch),
-    onSuccess: () => {
+    onSuccess: (updated) => {
+      queryClient.setQueriesData<LibraryInfiniteData>(
+        { queryKey: [...libraryKeys.all, "list"] },
+        (old) =>
+          old && {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              items: page.items.map((item) =>
+                item.id === updated.id ? updated : item,
+              ),
+            })),
+          },
+      );
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
   });

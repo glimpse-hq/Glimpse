@@ -244,6 +244,21 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.all"
+#~ msgstr "Todos los hablantes"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.speaker.rename"
+#~ msgstr "Haz clic para cambiar el nombre"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.aria"
+#~ msgstr "Filtrar por hablante"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -730,11 +745,6 @@ msgid "news.all_posts"
 msgstr "Todas las publicaciones"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.all"
-msgstr "Todos los hablantes"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests"
 msgstr "Permitir solicitudes del navegador"
@@ -1104,6 +1114,11 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "Cambiar atajo"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.change_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
 msgstr "Cambiar el borrado automático a {policyLabel} puede borrar inmediatamente {noun} que ya tengan más de {threshold}."
@@ -1244,11 +1259,6 @@ msgid "library.detail.speaker.clear"
 msgstr "Altavoz nítido"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker.rename"
-msgstr "Haz clic para cambiar el nombre"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
 msgstr "Haz clic para mostrar tarjetas"
@@ -1332,6 +1342,11 @@ msgstr "Contraer"
 #: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "Contraer barra lateral"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.color"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2339,11 +2354,6 @@ msgid "library.import_error.file_not_found"
 msgstr "Archivo no encontrado. Es posible que se haya movido o eliminado."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.aria"
-msgstr "Filtrar por hablante"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.aria_label"
 msgstr "Filtrar biblioteca por estado"
@@ -2567,6 +2577,11 @@ msgstr "Ocultar otros"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hide_shortcuts"
 msgstr "Ocultar atajos"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.hide"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3051,6 +3066,11 @@ msgstr "Maximizar"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.label_member_since"
 msgstr "Miembro desde"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.merge"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3989,11 +4009,6 @@ msgstr "Recuperando tu última grabación..."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.speaker_model_upgraded"
-msgstr "La detección de hablantes ahora usa un modelo nuevo que distingue a las personas con más precisión."
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.redo"
 msgstr "Rehacer"
 
@@ -4080,9 +4095,19 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "Eliminar atajo"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.remove"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all_description"
 msgstr "Elimina grabaciones, transcripciones, modelos y ajustes, y luego sale"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.rename"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4585,6 +4610,11 @@ msgid "native.menu.show_all"
 msgstr "Mostrar todo"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_all"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "Mostrar detalles del error"
@@ -4600,6 +4630,11 @@ msgid "transcriptions.item.show_more"
 msgstr "Mostrar más"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_only"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "Mostrar ejemplos de fragmentos de personalización"
@@ -4608,6 +4643,11 @@ msgstr "Mostrar ejemplos de fragmentos de personalización"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "Mostrar atajos"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4713,6 +4753,11 @@ msgstr "Hablante 2"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.speakers"
 msgstr "Detección de hablantes"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "La detección de hablantes ahora usa un modelo nuevo que distingue a las personas con más precisión."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx

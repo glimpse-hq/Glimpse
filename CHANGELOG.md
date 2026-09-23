@@ -9,6 +9,9 @@
 ### Improvements
 
 - Renaming a speaker selects their name, so you can just type the new one.
+- Right-click a speaker in the Library to rename them, change their color, merge them into another speaker, show only their lines, or remove them. Right-click the dot beside a line to move just that line to a different speaker.
+- Speaker edits show up right away instead of after a short pause.
+- In the Speakers menu, click the eye next to any speaker to hide their lines, and click it again to bring them back.
 - If a model download is interrupted, even by quitting Glimpse, it picks up where it left off instead of starting over.
 
 ### Fixes
