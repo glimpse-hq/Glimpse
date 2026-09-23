@@ -1116,7 +1116,7 @@ msgstr "Cambiar atajo"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.change_line"
-msgstr ""
+msgstr "Cambiar el hablante de esta línea"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1346,7 +1346,7 @@ msgstr "Contraer barra lateral"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.color"
-msgstr ""
+msgstr "Color"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2581,7 +2581,7 @@ msgstr "Ocultar atajos"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
-msgstr ""
+msgstr "Ocultar hablante"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3070,7 +3070,7 @@ msgstr "Miembro desde"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.merge"
-msgstr ""
+msgstr "Combinar con"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4097,7 +4097,7 @@ msgstr "Eliminar atajo"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.remove"
-msgstr ""
+msgstr "Eliminar hablante"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4107,7 +4107,7 @@ msgstr "Elimina grabaciones, transcripciones, modelos y ajustes, y luego sale"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.rename"
-msgstr ""
+msgstr "Cambiar nombre"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4612,7 +4612,7 @@ msgstr "Mostrar todo"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_all"
-msgstr ""
+msgstr "Mostrar todos los hablantes"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -4632,7 +4632,7 @@ msgstr "Mostrar más"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show_only"
-msgstr ""
+msgstr "Mostrar solo este hablante"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4647,7 +4647,7 @@ msgstr "Mostrar atajos"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show"
-msgstr ""
+msgstr "Mostrar hablante"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4757,7 +4757,7 @@ msgstr "Detección de hablantes"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speaker_model_upgraded"
-msgstr "La detección de hablantes ahora usa un modelo nuevo que distingue a las personas con más precisión."
+msgstr "La detección de hablantes ahora utiliza un nuevo modelo que distingue a las personas con mayor precisión."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
