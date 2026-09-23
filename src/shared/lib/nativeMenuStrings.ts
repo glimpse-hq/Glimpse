@@ -112,7 +112,8 @@ export const NATIVE_MENU_STRINGS = [
 
   msg({
     id: "native.toast.speaker_model_upgraded",
-    message: "Speaker detection now uses a new model that tells people apart more accurately.",
+    message:
+      "Speaker detection now uses a new model that tells people apart more accurately.",
   }),
   msg({
     id: "native.toast.recovering",
