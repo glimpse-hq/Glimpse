@@ -1,5 +1,9 @@
 1.2.7
 
+### Improvements
+
+- Renaming a speaker selects their name, so you can just type the new one.
+
 ### Fixes
 
 - Your license now checks in even if your network blocks Glimpse's license server, so it no longer disappears after updating.

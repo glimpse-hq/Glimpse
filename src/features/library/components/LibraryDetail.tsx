@@ -2491,6 +2491,7 @@ const LibraryDetail = ({
                               onChange={(event) =>
                                 setSpeakerNameDraft(event.target.value)
                               }
+                              onFocus={(event) => event.target.select()}
                               onBlur={() => handleRenameSpeaker(speaker.id)}
                               onKeyDown={(event) => {
                                 if (event.key === "Enter") {
