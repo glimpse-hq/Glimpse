@@ -18,7 +18,10 @@ pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
 pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
-pub const DIARIZER_MODEL: &str = "sortformer_4spk_v2_1_q8";
+pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
+/// Model directory and file of the Sortformer v2.1 diarizer that Nemotron-3 replaced.
+pub const RETIRED_DIARIZER_MODEL: &str = "sortformer_4spk_v2_1_q8";
+pub const RETIRED_DIARIZER_FILE: &str = "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf";
 
 pub fn is_legacy_category(category: &str) -> bool {
     category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)
@@ -209,10 +212,10 @@ const PARAKEET_DECODER_FILE: CatalogFile = CatalogFile {
 };
 
 const DIARIZER_FILES: &[CatalogFile] = &[CatalogFile {
-    url: "https://huggingface.co/handy-computer/diar_streaming_sortformer_4spk-v2.1-gguf/resolve/main/diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf",
-    path: "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf",
-    size_bytes: Some(139_310_336),
-    sha256: Some("a5dacdc650790266c7a362e54e6bf51952015487edaa606c4e11632bc32442a9"),
+    url: "https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf/resolve/main/nemotron-3-diarization-Q8_0.gguf",
+    path: "nemotron-3-diarization-Q8_0.gguf",
+    size_bytes: Some(105_936_416),
+    sha256: Some("877ff9e77e829e30158528cfaabf56188fca11d05349e09821b3033a97d31688"),
 }];
 
 const QWEN3_ASR_0_6B_FILES: &[CatalogFile] = &[CatalogFile {
@@ -819,8 +822,8 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
 // shows up where a transcription model is expected.
 const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
     id: DIARIZER_MODEL,
-    family: "sortformer-4spk-v2.1",
-    label: "Streaming Sortformer",
+    family: "nemotron-3-diarization",
+    label: "Nemotron-3 Diarization",
     description: "Labels who is speaking in Library transcripts.",
     tags: &[],
     category: MODEL_CATEGORY_DIARIZATION,

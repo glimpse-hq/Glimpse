@@ -1,7 +1,7 @@
 // Creem keys are five groups of five (XXXXX-XXXXX-...); older Polar keys are a brand prefix plus a UUID.
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const LICENSE_KEY = new RegExp(
-  `\\b[a-z0-9]{5}(?:-[a-z0-9]{5}){4}\\b|[a-z]+_${UUID}`,
+  `\\b[a-z0-9]{5}(?:-[a-z0-9]{5}){4}\\b|(?:[a-z]+[_-])+${UUID}`,
   "i",
 );
 const BARE_UUID = new RegExp(`^${UUID}$`, "i");

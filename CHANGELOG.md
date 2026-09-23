@@ -1,3 +1,26 @@
+1.2.7
+
+### Speaker Detection
+
+- Speaker detection uses NVIDIA's new Nemotron-3 model, which mixes up speakers about four times less often and makes about 40% fewer mistakes overall.
+- Up to 8 speakers are told apart, up from 4.
+- On Mac, detecting speakers is about three times faster, and the model is a smaller download (106 MB instead of 139 MB). If you already use speaker detection, Glimpse downloads the new model in the background and removes the old one.
+
+### Improvements
+
+- Renaming a speaker selects their name, so you can just type the new one.
+- Right-click a speaker in the Library to rename them, change their color, merge them into another speaker, show only their lines, or remove them. Right-click the dot beside a line to move just that line to a different speaker.
+- Speaker edits show up right away instead of after a short pause.
+- In the Speakers menu, click the eye next to any speaker to hide their lines, and click it again to bring them back.
+- If a model download is interrupted, even by quitting Glimpse, it picks up where it left off instead of starting over.
+
+### Fixes
+
+- Your license now checks in even if your network blocks Glimpse's license server, so it no longer disappears after updating.
+- If Glimpse can't reach the license server when it opens, it keeps trying in the background instead of waiting until you restart it.
+- Your license stays active if you leave Glimpse open for more than a week.
+- Pasting a whole receipt from an older purchase finds the activation code in it.
+
 1.2.6
 
 ### Improvements

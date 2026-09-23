@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "Glimpse"
-version = "1.2.6"
+version = "1.2.7"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -2416,8 +2416,8 @@ dependencies = [
 
 [[package]]
 name = "glimpse-speech"
-version = "1.6.6"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.6.6#98177c6c4a0eeee76b52f0f63e8a517002f3388d"
+version = "1.6.7"
+source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=1.6.7#96f22b6e9de9f10becf711f9bd46c3361b5a9920"
 dependencies = [
  "anyhow",
  "axum",
@@ -4234,9 +4234,9 @@ dependencies = [
 
 [[package]]
 name = "parakeet-rs"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65e81a1a402d3084d30ed835d848e06168c37565738a0aba490785502c22a30a"
+checksum = "4f54545a861dca6b43c8d44e3dd932764ca196d84bcf0d1b48ea212b43b29666"
 dependencies = [
  "eyre",
  "hound",
@@ -6681,7 +6681,6 @@ dependencies = [
  "libc",
  "mio",
  "pin-project-lite",
- "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "windows-sys 0.61.2",
@@ -6966,7 +6965,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp"
 version = "0.2.3"
-source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=2be9c5078633be1a56bead5752d5d042ff1ca91b#2be9c5078633be1a56bead5752d5d042ff1ca91b"
+source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=b893ed29480ea6392fb9859e64aaefaaa475230b#b893ed29480ea6392fb9859e64aaefaaa475230b"
 dependencies = [
  "log",
  "thiserror 2.0.20",
@@ -6976,7 +6975,7 @@ dependencies = [
 [[package]]
 name = "transcribe-cpp-sys"
 version = "0.2.3"
-source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=2be9c5078633be1a56bead5752d5d042ff1ca91b#2be9c5078633be1a56bead5752d5d042ff1ca91b"
+source = "git+https://github.com/LegendarySpy/transcribe.cpp.git?rev=b893ed29480ea6392fb9859e64aaefaaa475230b#b893ed29480ea6392fb9859e64aaefaaa475230b"
 dependencies = [
  "cmake",
  "serde_json",

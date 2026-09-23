@@ -481,7 +481,7 @@ function ModelRow({
       : t({ id: "model_picker.download", message: "Download" });
   const speakersLabel = t({
     id: "model_picker.diarizer.speakers",
-    message: "Up to 4 speakers",
+    message: "Up to 8 speakers",
   });
 
   return (

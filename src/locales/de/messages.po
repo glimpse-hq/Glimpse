@@ -244,6 +244,21 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.all"
+#~ msgstr "Alle Sprecher"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.speaker.rename"
+#~ msgstr "Zum Umbenennen klicken"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.aria"
+#~ msgstr "Nach Sprecher filtern"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -730,11 +745,6 @@ msgid "news.all_posts"
 msgstr "Alle Beiträge"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.all"
-msgstr "Alle Sprecher"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests"
 msgstr "Browseranfragen erlauben"
@@ -1104,6 +1114,11 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "Tastenkürzel ändern"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.change_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
 msgstr "Wenn du die automatische Löschung auf {policyLabel} änderst, werden dadurch möglicherweise {noun}, die bereits älter als {threshold} sind, sofort gelöscht."
@@ -1244,11 +1259,6 @@ msgid "library.detail.speaker.clear"
 msgstr "Lautsprecher löschen"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker.rename"
-msgstr "Zum Umbenennen klicken"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
 msgstr "Klicken, um Karten anzuzeigen"
@@ -1332,6 +1342,11 @@ msgstr "Ausblenden"
 #: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "Seitenleiste einklappen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.color"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2339,11 +2354,6 @@ msgid "library.import_error.file_not_found"
 msgstr "Datei nicht gefunden. Sie wurde möglicherweise verschoben oder gelöscht."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.aria"
-msgstr "Nach Sprecher filtern"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.aria_label"
 msgstr "Bibliothek nach Status filtern"
@@ -2567,6 +2577,11 @@ msgstr "Andere ausblenden"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hide_shortcuts"
 msgstr "Kurzbefehle ausblenden"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.hide"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3051,6 +3066,11 @@ msgstr "Maximieren"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.label_member_since"
 msgstr "Mitglied seit"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.merge"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4075,9 +4095,19 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "Tastenkürzel entfernen"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.remove"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all_description"
 msgstr "Entfernt Aufnahmen, Transkripte, Modelle und Einstellungen und beendet anschließend das Programm"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.rename"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4580,6 +4610,11 @@ msgid "native.menu.show_all"
 msgstr "Alle einblenden"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_all"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "Fehlerdetails anzeigen"
@@ -4595,6 +4630,11 @@ msgid "transcriptions.item.show_more"
 msgstr "Mehr anzeigen"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_only"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "Beispiele für Personalisierungs-Snippets anzeigen"
@@ -4603,6 +4643,11 @@ msgstr "Beispiele für Personalisierungs-Snippets anzeigen"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "Kurzbefehle anzeigen"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4708,6 +4753,11 @@ msgstr "Sprecher 2"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.speakers"
 msgstr "Sprechererkennung"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "Die Sprechererkennung nutzt jetzt ein neues Modell, das Personen genauer unterscheidet."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -5349,7 +5399,7 @@ msgstr "Nicht unterstützte Sprachen stehen bei deinem aktiven Modell nicht zur 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "Bis zu 4 Sprecher"
+msgstr "Bis zu 8 Sprecher"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

@@ -244,6 +244,21 @@ msgstr ""
 #~ msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.all"
+#~ msgstr "Все участники"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.speaker.rename"
+#~ msgstr "Нажмите, чтобы переименовать"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.detail.filter.aria"
+#~ msgstr "Фильтр по диктору"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -730,11 +745,6 @@ msgid "news.all_posts"
 msgstr "Все публикации"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.all"
-msgstr "Все участники"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.allow_browser_requests"
 msgstr "Разрешить запросы из браузера"
@@ -1104,6 +1114,11 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "Изменить сочетание клавиш"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.change_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.threshold.unknown_count"
 msgstr "Изменение автоудаления на {policyLabel} может немедленно удалить {noun}, уже превышающие {threshold}."
@@ -1244,11 +1259,6 @@ msgid "library.detail.speaker.clear"
 msgstr "Очистить говорящего"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker.rename"
-msgstr "Нажмите, чтобы переименовать"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
 msgstr "Нажмите, чтобы показать карточки"
@@ -1332,6 +1342,11 @@ msgstr "Свернуть"
 #: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "Свернуть боковую панель"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.color"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2339,11 +2354,6 @@ msgid "library.import_error.file_not_found"
 msgstr "Файл не найден. Возможно, он был перемещён или удалён."
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.filter.aria"
-msgstr "Фильтр по диктору"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.aria_label"
 msgstr "Фильтровать библиотеку по статусу"
@@ -2567,6 +2577,11 @@ msgstr "Скрыть остальные"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.hide_shortcuts"
 msgstr "Скрыть сочетания клавиш"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.hide"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3051,6 +3066,11 @@ msgstr "Развернуть"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.label_member_since"
 msgstr "Участник с"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.merge"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4075,9 +4095,19 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "Удалить сочетание клавиш"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.remove"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all_description"
 msgstr "Удаляет записи, транскрипции, модели и настройки, затем завершает работу"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.rename"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
@@ -4580,6 +4610,11 @@ msgid "native.menu.show_all"
 msgstr "Показать все"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_all"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.show"
 msgstr "Показать подробности ошибки"
@@ -4595,6 +4630,11 @@ msgid "transcriptions.item.show_more"
 msgstr "Показать больше"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show_only"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.snippets.info"
 msgstr "Показать примеры фрагментов персонализации"
@@ -4603,6 +4643,11 @@ msgstr "Показать примеры фрагментов персонали�
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.show_shortcuts"
 msgstr "Показать сочетания клавиш"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_menu.show"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4708,6 +4753,11 @@ msgstr "Говорящий 2"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.speakers"
 msgstr "Определение говорящего"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speaker_model_upgraded"
+msgstr "Определение участников теперь использует новую модель, которая точнее различает людей."
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -5349,7 +5399,7 @@ msgstr "Неподдерживаемые языки недоступны в ак
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
-msgstr "До 4 участников"
+msgstr "До 8 участников"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx

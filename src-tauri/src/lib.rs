@@ -124,6 +124,9 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
+const EVENT_LICENSE_CHANGED: &str = "license:changed";
+// Only calls the server when the saved license is due for a refresh.
+const LICENSE_SYNC_INTERVAL: Duration = Duration::from_secs(15 * 60);
 #[cfg(target_os = "macos")]
 pub(crate) const FEEDBACK_URL: &str = "https://github.com/glimpse-hq/Glimpse/issues/new/choose";
 #[cfg(target_os = "windows")]
@@ -419,29 +422,21 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            speech::upgrade_retired_diarizer(handle);
             {
                 let h = handle.clone();
                 async_runtime::spawn(async move {
-                    let state = h.state::<AppState>();
-                    match license::secure_grant_refresh_needed(&state.settings_store) {
-                        Ok(true) => {
-                            if let Err(err) =
-                                license::refresh_license(state.http(), &state.settings_store).await
-                            {
-                                tracing::warn!("Could not refresh the saved license: {err}");
-                            }
-                        }
-                        Ok(false) => {}
-                        Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
-                    }
-                    if let Err(err) = license::sync_trial(state.http(), &state.settings_store).await
-                    {
-                        tracing::warn!("Could not confirm the trial with the server: {err}");
-                    }
-
+                    sync_license(&h).await;
                     // Start after the refresh so the license gate reflects current state.
-                    let settings = state.current_settings();
+                    let settings = h.state::<AppState>().current_settings();
                     local_api::start_from_settings(&h, &settings);
+
+                    // Retries a failed launch check, and keeps a long-running app's
+                    // license inside its offline trust window.
+                    loop {
+                        tokio::time::sleep(LICENSE_SYNC_INTERVAL).await;
+                        sync_license(&h).await;
+                    }
                 });
             }
             analytics::set_crash_phase("services");
@@ -1451,6 +1446,37 @@ pub(crate) fn note_license_state(
         && license::take_trial_expiry_report(&state.settings_store, license_state)
     {
         analytics::track_trial_expired(app);
+    }
+}
+
+/// Refreshes the saved license when due and confirms the trial, then pushes
+/// a changed status to Settings.
+async fn sync_license(app: &tauri::AppHandle<AppRuntime>) {
+    let state = app.state::<AppState>();
+    match license::secure_grant_refresh_needed(&state.settings_store) {
+        Ok(true) => {
+            if let Err(err) = license::refresh_license(state.http(), &state.settings_store).await {
+                tracing::warn!("Could not refresh the saved license: {err}");
+            }
+        }
+        Ok(false) => {}
+        Err(err) => tracing::warn!("Could not inspect the saved license: {err}"),
+    }
+    if let Err(err) = license::sync_trial(state.http(), &state.settings_store).await {
+        tracing::warn!("Could not confirm the trial with the server: {err}");
+    }
+
+    match license::get_license_state(&state.settings_store) {
+        Ok(license_state) => {
+            let previous = state.license_snapshot().map(|snapshot| snapshot.status);
+            note_license_state(app, &state, &license_state);
+            if previous.is_some_and(|status| status != license_state.status.as_str()) {
+                let _ = app.emit(EVENT_LICENSE_CHANGED, &license_state);
+                // Gated settings read differently once the license changes.
+                state.emit_settings_changed(app, &state.current_settings_unmasked());
+            }
+        }
+        Err(err) => tracing::warn!("Could not read the license state: {err}"),
     }
 }
 
