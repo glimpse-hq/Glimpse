@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Glimpse</h1>
-  <p>On-device voice dictation. Open-source, private by default.</p>
+  <p>Voice dictation that runs on your computer.<br />Free and unlimited, on Mac and Windows.</p>
   <img
     src="./assets/readme/icon.png"
     width="256"
@@ -25,7 +25,11 @@
 
 ---
 
-Core dictation is free, runs on-device, and has no word limits. A license adds everything else: AI features, media transcription, and automations.
+Hey! Glimpse is made mostly by me. I talk a lot faster than I type, and I wanted dictation that worked everywhere without sending my voice to someone's server or charging me every month. Nothing I tried really did all of that, so I built it.
+
+Press your shortcut, talk, and your words show up wherever you're typing. It works offline, and dictation is free with no word limits on every model. I don't think you should have to pay to talk to your own computer. A license adds the extras, like AI cleanup and transcribing audio and video, and it's how I keep working on Glimpse.
+
+Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/Glimpse/issues) or email me at [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc). I do my best to respond ASAP.
 
 ## Screenshots
 
@@ -48,6 +52,7 @@ Core dictation is free, runs on-device, and has no word limits. A license adds e
 - **Auto Dictionary.** It picks up your custom words on its own.
 - **Replacements.** Say "my address," get 221B Baker Street.
 - **History and search.** Find anything you've dictated.
+- **Import.** Bring your dictionary, replacements, and history over from another dictation app.
 
 **With a license** (14-day trial included)
 
@@ -80,12 +85,17 @@ Start with the 14-day trial, then buy or paste a license key in **Settings → A
 
 Transcription stays on-device by default. Enabling an external speech or LLM provider sends audio or text directly to that provider. Your API keys stay local.
 
-The app sends anonymous usage telemetry to [PostHog EU](https://posthog.com/) to help prioritize development. It's tied to a random install ID, not your identity, and stored in the EU.
+The app sends anonymous usage telemetry to [PostHog EU](https://posthog.com/) to help prioritize development. It's tied to a random install ID, not your identity, and stored in the EU. Opt out anytime in **Settings → App**.
+
+<details>
+<summary>Exactly what's sent, and what isn't</summary>
 
 - **Collected:** app version and platform, launches and uptime, whether the app quit normally, durations and counts, which built-in features you use, whether microphone and accessibility permissions are granted, your dictation and display language settings, a coarse hardware class (memory size range, chip family, graphics vendor), country, and bounded error/crash categories. A crash also records a code location (source file and line, or module and offset) so we can find the bug. If the app crashed, the next launch reads the crash report your OS saved and sends only the error type and module and offset frames.
 - **Never sent:** transcripts, audio, API keys, prompts, raw error text or stacks, full file paths, microphone names, the apps you record, model or provider names you type in, provider endpoints, your IP address, or anything personally identifiable.
 
-Opt out anytime in **Settings → App**. Opting out sends one final ping, then nothing, ever.
+Opting out sends one final ping, then nothing, ever.
+
+</details>
 
 For the full picture, see the [analytics wiki](https://github.com/glimpse-hq/Glimpse/wiki/Analytics) or [`analytics/`](src-tauri/src/analytics). The website is a separate system with its own [privacy policy](https://tryglimpse.cc/privacy).
 
