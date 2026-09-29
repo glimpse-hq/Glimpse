@@ -905,6 +905,7 @@ impl Runner {
 
     fn enable(&mut self) {
         self.running = true;
+        self.shared.live.inner.lock().status = LiveStatus::Starting;
         for track in &mut self.tracks {
             track.clear();
             track.tap.set_enabled(true);
@@ -948,6 +949,13 @@ impl Runner {
                 } else {
                     MIN_WINDOW_FRAMES
                 };
+                // This runner is already off-thread. Windows GPU initialization
+                // must finish before opening the diarizer to avoid a cold-load crash.
+                #[cfg(target_os = "windows")]
+                if let Err(err) = self.state().local_transcriber().preload_and_warm(&model) {
+                    tracing::warn!("Live transcription model warm failed: {err}");
+                }
+                #[cfg(not(target_os = "windows"))]
                 crate::speech::warm_model(&self.app, model.key.clone());
                 Some((setting, model))
             }

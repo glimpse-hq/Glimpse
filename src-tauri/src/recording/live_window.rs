@@ -19,6 +19,7 @@ const COMPACT_HEIGHT: f64 = 52.0;
 const EDGE_INSET: f64 = 12.0;
 
 static EXPANDED_HEIGHT: Mutex<Option<f64>> = Mutex::new(None);
+static OPENING: Mutex<()> = Mutex::new(());
 
 fn build(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppRuntime>> {
     let settings = app.state::<crate::AppState>().current_settings();
@@ -28,7 +29,7 @@ fn build(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppRuntime>
         .min_inner_size(MIN_WIDTH, MIN_HEIGHT)
         .max_inner_size(MAX_WIDTH, 10_000.0)
         .decorations(false)
-        .transparent(true)
+        .transparent(cfg!(target_os = "macos"))
         .shadow(true)
         .always_on_top(true)
         .visible_on_all_workspaces(true)
@@ -70,14 +71,22 @@ fn hide_settings(app: &AppHandle<AppRuntime>) {
     }
 }
 
-fn hide_window(app: &AppHandle<AppRuntime>) {
+pub(super) fn hide_window(app: &AppHandle<AppRuntime>) {
     if let Some(window) = app.get_webview_window(WINDOW_LABEL) {
         crate::platform::live::hide(app, &window);
     }
 }
 
 #[tauri::command]
-pub fn open_live_view(app: AppHandle<AppRuntime>) -> Result<(), String> {
+pub async fn open_live_view(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    // Window creation must run outside Windows' webview callback, and only once.
+    let Some(_opening) = OPENING.try_lock() else {
+        return Ok(());
+    };
+    let session = app.state::<AppState>().recording().state();
+    if !matches!(session.status, "recording" | "paused") || session.finish_requested {
+        return Err("not_recording".into());
+    }
     let window = match app.get_webview_window(WINDOW_LABEL) {
         Some(existing) => existing,
         None => {
@@ -86,6 +95,10 @@ pub fn open_live_view(app: AppHandle<AppRuntime>) -> Result<(), String> {
             window
         }
     };
+    let session = app.state::<AppState>().recording().state();
+    if !matches!(session.status, "recording" | "paused") || session.finish_requested {
+        return Ok(());
+    }
     app.state::<AppState>()
         .recording()
         .shared

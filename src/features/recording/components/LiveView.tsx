@@ -33,6 +33,9 @@ import { getExpandedTextSegments } from "../../../shared/lib/wordReveal";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type { Bookmark, LiveSegment } from "../../../types";
+import { detectAppPlatform } from "../../../platform/service";
+
+const NATIVE_FRAME = detectAppPlatform() === "windows";
 
 type Turn = {
   key: string;
@@ -346,6 +349,13 @@ const LiveView = () => {
     setMenuOpen(false);
     setSpeakerMenu(null);
     window.clearTimeout(compactTimer.current);
+    if (NATIVE_FRAME) {
+      recordingApi
+        .setLiveViewCompact(!compact)
+        .then(() => setCompact(!compact))
+        .catch(() => {});
+      return;
+    }
     if (compact) {
       recordingApi
         .setLiveViewCompact(false)
@@ -554,8 +564,9 @@ const LiveView = () => {
     setSpeakerMenu({ id, x: event.clientX, y: event.clientY });
   };
 
-  const emptyMessage =
-    transcript.status === "unavailable"
+  const emptyMessage = !active
+    ? null
+    : transcript.status === "unavailable"
       ? t({
           id: "live.empty.unavailable",
           message: "Live transcription needs a speech model that supports it.",
@@ -705,7 +716,7 @@ const LiveView = () => {
   return (
     <div className="h-screen w-screen">
       <div
-        className="flex flex-col overflow-hidden rounded-[14px] border border-border-primary bg-[var(--color-bg-secondary)] text-content-primary transition-[height] ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className={`flex flex-col overflow-hidden bg-[var(--color-bg-secondary)] text-content-primary ${NATIVE_FRAME ? "" : "rounded-[14px] border border-border-primary transition-[height] ease-[cubic-bezier(0.16,1,0.3,1)]"}`}
         style={{
           height: compact ? HEADER_HEIGHT : "100%",
           transitionDuration: `${COMPACT_EASE_MS}ms`,
