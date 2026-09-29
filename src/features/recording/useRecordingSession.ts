@@ -8,6 +8,7 @@ const IDLE_STATE: RecordingSessionState = {
   elapsed_ms: 0,
   sources: {},
   levels: { microphone: 0, system_audio: 0 },
+  sound: { microphone: "none", system_audio: "none" },
   bookmarks: [],
   finish_requested: false,
 };

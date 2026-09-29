@@ -24,11 +24,15 @@ export type RecordingSources = {
 
 export type RecordingSessionStatus = "idle" | "recording" | "paused" | "saving";
 
+// "none" is digital silence, "quiet" some signal but never speech-loud.
+export type SourceSound = "none" | "quiet" | "heard";
+
 export type RecordingSessionState = {
   status: RecordingSessionStatus;
   elapsed_ms: number;
   sources: AudioSources;
   levels: { microphone: number; system_audio: number };
+  sound: { microphone: SourceSound; system_audio: SourceSound };
   bookmarks: Bookmark[];
   finish_requested: boolean;
 };

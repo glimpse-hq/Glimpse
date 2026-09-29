@@ -19,7 +19,20 @@ tauri_panel! {
     })
 }
 
+/// Runs on the main thread, since `open_live_view` is async and AppKit traps
+/// panel changes from other threads. `show` queues after it.
 pub fn init(app: &AppHandle<AppRuntime>, live_window: &WebviewWindow<AppRuntime>) -> Result<()> {
+    let app_clone = app.clone();
+    let live_window = live_window.clone();
+    app.run_on_main_thread(move || {
+        if let Err(err) = make_panel(&app_clone, &live_window) {
+            tracing::error!("Failed to initialize macOS live view panel: {err:#}");
+        }
+    })
+    .context("schedule live view panel setup")
+}
+
+fn make_panel(app: &AppHandle<AppRuntime>, live_window: &WebviewWindow<AppRuntime>) -> Result<()> {
     live_window
         .to_panel::<LivePanel>()
         .map_err(|err| anyhow!(format!("{err:?}")))

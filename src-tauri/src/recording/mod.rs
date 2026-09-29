@@ -57,6 +57,11 @@ const LEVEL_CEILING_DB: f32 = -25.0;
 // Capture buffers are ~10 ms and the state tick samples one every 100 ms, so
 // the meter holds peaks and lets them fall by half this often.
 const LEVEL_HALF_LIFE_S: f32 = 0.08;
+// Meter level that counts as speech or playback, about -43 dBFS.
+const HEARD_LEVEL: f32 = 0.4;
+const SOUND_NONE: u8 = 0;
+const SOUND_QUIET: u8 = 1;
+const SOUND_HEARD: u8 = 2;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AudioApp {
@@ -139,12 +144,40 @@ pub struct SessionLevels {
     pub system_audio: f32,
 }
 
+/// What a source has sent so far this recording.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceSound {
+    /// Nothing but digital silence: muted, blocked, or a dead device.
+    None,
+    /// Some signal, but never as loud as speech or playback.
+    Quiet,
+    Heard,
+}
+
+impl SourceSound {
+    fn load(sound: &AtomicU8) -> Self {
+        match sound.load(Ordering::Relaxed) {
+            SOUND_NONE => Self::None,
+            SOUND_QUIET => Self::Quiet,
+            _ => Self::Heard,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SessionSound {
+    pub microphone: SourceSound,
+    pub system_audio: SourceSound,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct RecordingSessionState {
     pub status: &'static str,
     pub elapsed_ms: u64,
     pub sources: AudioSources,
     pub levels: SessionLevels,
+    pub sound: SessionSound,
     pub bookmarks: Vec<Bookmark>,
     pub finish_requested: bool,
 }
@@ -221,6 +254,9 @@ struct Shared {
     paused_by_user: AtomicBool,
     microphone_level: Arc<AtomicU32>,
     system_level: Arc<AtomicU32>,
+    // `SOUND_*` for each source since the recording started.
+    microphone_sound: Arc<AtomicU8>,
+    system_sound: Arc<AtomicU8>,
     sources: Mutex<AudioSources>,
     bookmarks: Mutex<Vec<Bookmark>>,
     session_dir: Mutex<Option<PathBuf>>,
@@ -247,6 +283,10 @@ impl Shared {
             levels: SessionLevels {
                 microphone: f32::from_bits(self.microphone_level.load(Ordering::Relaxed)),
                 system_audio: f32::from_bits(self.system_level.load(Ordering::Relaxed)),
+            },
+            sound: SessionSound {
+                microphone: SourceSound::load(&self.microphone_sound),
+                system_audio: SourceSound::load(&self.system_sound),
             },
             bookmarks: self.bookmarks.lock().clone(),
             finish_requested: self.finish_requested.load(Ordering::Relaxed),
@@ -307,6 +347,8 @@ impl Shared {
         self.microphone_level
             .store(0f32.to_bits(), Ordering::Relaxed);
         self.system_level.store(0f32.to_bits(), Ordering::Relaxed);
+        self.microphone_sound.store(SOUND_NONE, Ordering::Relaxed);
+        self.system_sound.store(SOUND_NONE, Ordering::Relaxed);
         *self.sources.lock() = AudioSources::default();
         self.bookmarks.lock().clear();
         *self.session_dir.lock() = None;
@@ -370,6 +412,8 @@ impl Default for RecordingManager {
             paused_by_user: AtomicBool::new(false),
             microphone_level: Arc::new(AtomicU32::new(0f32.to_bits())),
             system_level: Arc::new(AtomicU32::new(0f32.to_bits())),
+            microphone_sound: Arc::new(AtomicU8::new(SOUND_NONE)),
+            system_sound: Arc::new(AtomicU8::new(SOUND_NONE)),
             sources: Mutex::new(AudioSources::default()),
             bookmarks: Mutex::new(Vec::new()),
             session_dir: Mutex::new(None),
@@ -632,6 +676,12 @@ impl Worker {
         self.shared
             .system_level
             .store(0f32.to_bits(), Ordering::Relaxed);
+        self.shared
+            .microphone_sound
+            .store(SOUND_NONE, Ordering::Relaxed);
+        self.shared
+            .system_sound
+            .store(SOUND_NONE, Ordering::Relaxed);
 
         let mut summary = AudioSources::default();
         let mut session = ActiveSession {
@@ -660,6 +710,7 @@ impl Worker {
                     clock: Arc::clone(&clock),
                     paused: Arc::clone(&self.shared.paused),
                     level: Arc::clone(&self.shared.system_level),
+                    sound: Arc::clone(&self.shared.system_sound),
                     silenced: None,
                 };
                 let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
@@ -712,6 +763,7 @@ impl Worker {
                     clock: Arc::clone(&clock),
                     paused: Arc::clone(&self.shared.paused),
                     level: Arc::clone(&self.shared.microphone_level),
+                    sound: Arc::clone(&self.shared.microphone_sound),
                     silenced: Some(listening),
                 };
                 let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
@@ -904,6 +956,7 @@ impl Worker {
                 clock: Arc::clone(&session.clock),
                 paused: Arc::clone(&self.shared.paused),
                 level: Arc::clone(&self.shared.microphone_level),
+                sound: Arc::clone(&self.shared.microphone_sound),
                 silenced: Some(Arc::clone(&listening)),
             };
             microphone::start(
@@ -995,6 +1048,7 @@ struct SinkParts {
     clock: Arc<SessionClock>,
     paused: Arc<AtomicBool>,
     level: Arc<AtomicU32>,
+    sound: Arc<AtomicU8>,
     // While set, silence is recorded in place of the input. The microphone
     // takes the pill's listening flag so dictation stays out of recordings.
     silenced: Option<Arc<AtomicBool>>,
@@ -1022,9 +1076,18 @@ impl SinkParts {
                 return;
             }
             let now = Instant::now();
+            let level = meter_level(samples);
+            match self.sound.load(Ordering::Relaxed) {
+                SOUND_HEARD => {}
+                _ if level >= HEARD_LEVEL => self.sound.store(SOUND_HEARD, Ordering::Relaxed),
+                SOUND_NONE if samples.iter().any(|&sample| sample != 0.0) => {
+                    self.sound.store(SOUND_QUIET, Ordering::Relaxed);
+                }
+                _ => {}
+            }
             let held =
                 peak * 0.5f32.powf(now.duration_since(peak_at).as_secs_f32() / LEVEL_HALF_LIFE_S);
-            (peak, peak_at) = (meter_level(samples).max(held), now);
+            (peak, peak_at) = (level.max(held), now);
             self.level.store(peak.to_bits(), Ordering::Relaxed);
             input.push(samples, self.clock.elapsed_ms());
         })
