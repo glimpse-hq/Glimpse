@@ -94,7 +94,8 @@ jobs:
           - platform: blacksmith-4vcpu-windows-2025
             os: windows
             rust-targets: x86_64-pc-windows-msvc
-            tauri-args: ""
+            # Verbose shows WiX's own errors when the MSI step fails.
+            tauri-args: --verbose
             cargo-cache-dir: C:\t
 
     runs-on: ${{ matrix.platform }}

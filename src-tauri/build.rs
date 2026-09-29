@@ -158,8 +158,28 @@ fn generate_native_menu_catalog() {
     std::fs::write(&dest, out).expect("write native menu catalog");
 }
 
+/// ggml's Metal `@available` checks call `__isPlatformVersionAtLeast` when the
+/// deployment target is older than the SDK. It lives in clang's runtime, which
+/// rustc doesn't link.
+fn link_clang_runtime() {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("macos") {
+        return;
+    }
+    let output = std::process::Command::new("clang")
+        .arg("--print-resource-dir")
+        .output()
+        .expect("clang --print-resource-dir");
+    let resource_dir = String::from_utf8(output.stdout).expect("clang resource dir");
+    println!(
+        "cargo:rustc-link-search=native={}/lib/darwin",
+        resource_dir.trim()
+    );
+    println!("cargo:rustc-link-lib=static=clang_rt.osx");
+}
+
 fn main() {
     generate_native_menu_catalog();
+    link_clang_runtime();
 
     // Forward build-time env vars from workspace .env and the build environment.
     let compile_time_keys = [
