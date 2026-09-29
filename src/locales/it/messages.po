@@ -976,7 +976,7 @@ msgstr "Serie migliore"
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.blocked"
-msgstr ""
+msgstr "Bloccato dalla tua rete"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -1128,7 +1128,7 @@ msgstr "Informale"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.status.catching_up"
-msgstr ""
+msgstr "Aggiornamento in corso"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1329,7 +1329,7 @@ msgstr "Chiudi le FAQ"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.close"
-msgstr ""
+msgstr "Chiudi la vista live"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1561,7 +1561,7 @@ msgstr "Copia selezione"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.copy"
-msgstr ""
+msgstr "Copia trascrizione"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1666,7 +1666,7 @@ msgstr "Impossibile caricare le versioni"
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.network"
-msgstr ""
+msgstr "Impossibile raggiungere il server"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2068,7 +2068,7 @@ msgstr "Download non riuscito"
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.failed"
-msgstr ""
+msgstr "Download non riuscito"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
@@ -2083,7 +2083,7 @@ msgstr "Scarica il codificatore Neural Engine"
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.damaged"
-msgstr ""
+msgstr "Il download è danneggiato"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2534,12 +2534,12 @@ msgstr "Glimpse"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_write_failed"
-msgstr ""
+msgstr "Glimpse non è riuscito a continuare a scrivere la registrazione, quindi si è interrotto. Ciò che è stato registrato finora è stato salvato."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.retranscribe_failed"
-msgstr ""
+msgstr "Glimpse non è riuscito a trascrivere di nuovo questo contenuto, quindi ha mantenuto la trascrizione precedente."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2644,7 +2644,7 @@ msgstr "Nascondi parlante"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.compact"
-msgstr ""
+msgstr "Nascondi trascrizione"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2867,7 +2867,7 @@ msgstr "Emissione in corso"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.jump"
-msgstr ""
+msgstr "Vai al live"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -2882,7 +2882,7 @@ msgstr "Continua a tenere premuto, poi rilascia quando hai finito."
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.on_top"
-msgstr ""
+msgstr "Mantieni in primo piano"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2902,7 +2902,7 @@ msgstr "Scopri chi ha detto cosa"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size.large"
-msgstr ""
+msgstr "L"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -3027,7 +3027,7 @@ msgstr "Ascolta sulla LAN"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.empty.listening"
-msgstr ""
+msgstr "In ascolto..."
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -3052,17 +3052,17 @@ msgstr "Testo in tempo reale mentre parli"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.empty.unavailable"
-msgstr ""
+msgstr "La trascrizione live richiede un modello vocale che la supporti."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.live"
-msgstr ""
+msgstr "Vista live"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs"
-msgstr ""
+msgstr "Impostazioni vista live"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3138,7 +3138,7 @@ msgstr "Abbassa il volume di sistema durante la registrazione."
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size.medium"
-msgstr ""
+msgstr "M"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -3553,12 +3553,12 @@ msgstr "Nessun risultato per i filtri selezionati"
 #. placeholder {0}: systemApps[0]
 #: src/features/recording/useSilenceWarning.ts
 msgid "live.silent.app"
-msgstr ""
+msgstr "Nessun suono da {0} ancora."
 
 #. js-lingui-explicit-id
 #: src/features/recording/useSilenceWarning.ts
 msgid "live.silent.microphone"
-msgstr ""
+msgstr "Nessun suono dal microfono ancora."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3573,7 +3573,7 @@ msgstr "Nessun parlato rilevato. Registrazione eliminata."
 #. js-lingui-explicit-id
 #: src/features/recording/useSilenceWarning.ts
 msgid "live.silent.system"
-msgstr ""
+msgstr "Nessun audio di sistema ancora."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -3633,12 +3633,12 @@ msgstr "Non disponibile in questa versione"
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.unavailable"
-msgstr ""
+msgstr "Non disponibile al momento"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
 msgid "models.download_failed.disk_full"
-msgstr ""
+msgstr "Spazio su disco insufficiente"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3803,7 +3803,7 @@ msgstr "Apri la documentazione della riga di comando"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.open_on_start"
-msgstr ""
+msgstr "Apri all'avvio della registrazione"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3864,12 +3864,12 @@ msgstr "Metti in pausa la registrazione"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.empty.paused"
-msgstr ""
+msgstr "In pausa"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.status.paused"
-msgstr ""
+msgstr "In pausa"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4393,7 +4393,7 @@ msgstr "Ritrascrizione in corso…"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.retry"
-msgstr ""
+msgstr "Riprova"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -4483,7 +4483,7 @@ msgstr "Esegue l'encoder sul Neural Engine. Più veloce e consuma meno energia. 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size.small"
-msgstr ""
+msgstr "S"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4800,7 +4800,7 @@ msgstr "Mostra parlante"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.timestamps"
-msgstr ""
+msgstr "Mostra timestamp"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4830,7 +4830,7 @@ msgstr "Mostra timestamp"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.expand"
-msgstr ""
+msgstr "Mostra trascrizione"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5025,7 +5025,7 @@ msgstr "Interrompi API"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.stop"
-msgstr ""
+msgstr "Interrompi registrazione"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -5186,7 +5186,7 @@ msgstr "Sostituzioni testo"
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size"
-msgstr ""
+msgstr "Dimensione testo"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5453,7 +5453,7 @@ msgstr "Trascrizione non riuscita"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.transcription_failed"
-msgstr ""
+msgstr "Trascrizione non riuscita"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5828,17 +5828,17 @@ msgstr "Sì. In modalità locale, tutto l'audio e le trascrizioni rimangono sul 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_low_disk"
-msgstr ""
+msgstr "Il disco è quasi pieno. Glimpse interromperà la registrazione se esaurisce lo spazio."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.dictation_disk_full"
-msgstr ""
+msgstr "Il disco è pieno, quindi Glimpse non è riuscito a salvare questa dettatura."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recording_disk_full"
-msgstr ""
+msgstr "Il disco è pieno, quindi Glimpse ha interrotto la registrazione. Ciò che è stato registrato finora è stato salvato."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
