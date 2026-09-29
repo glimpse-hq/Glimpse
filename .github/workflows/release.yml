@@ -177,6 +177,13 @@ jobs:
           cache-directories: ${{ matrix.cargo-cache-dir }}
           cache-on-failure: true
 
+      # The MSI bundler packs every DLL next to the exe, and the cached target
+      # dir still has ones from older builds. Glimpse.exe needs none.
+      - name: remove cached DLLs
+        if: matrix.os == 'windows'
+        shell: pwsh
+        run: Remove-Item "$env:CARGO_TARGET_DIR\release\*.dll" -Force -ErrorAction SilentlyContinue
+
       - name: install frontend dependencies
         run: bun ci
 
