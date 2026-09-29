@@ -41,9 +41,12 @@ import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
 
+// The stock default; Parakeet first, Whisper for languages it doesn't cover.
+const DEFAULT_MODEL_KEY = "parakeet_tdt_v3_gguf";
+
 const ONBOARDING_MODEL_SLOTS = [
+  [DEFAULT_MODEL_KEY],
   ["whisper_large_v3_turbo_q8"],
-  ["parakeet_tdt_v3_gguf"],
 ] as const;
 
 const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
@@ -71,18 +74,48 @@ const pickOnboardingModels = (models: ModelInfo[]) => {
   ].filter((model): model is ModelInfo => Boolean(model));
 };
 
+const baseLanguage = (locale: string) => locale.split(/[-_]/)[0].toLowerCase();
+
+// The system's first language, plus the app's language when set by hand.
+const userLanguages = (appLocale: string) => {
+  const system = navigator.languages?.[0] ?? navigator.language;
+  const locales = [system, appLocale === "system" ? null : appLocale];
+  return [
+    ...new Set(
+      locales.filter((locale): locale is string => !!locale).map(baseLanguage),
+    ),
+  ];
+};
+
+const supportsLanguages = (model: ModelInfo, languages: string[]) =>
+  languages.every((language) =>
+    model.supported_languages.some(
+      (supported) => baseLanguage(supported.code) === language,
+    ),
+  );
+
 const pickDefaultOnboardingModel = (
   models: ModelInfo[],
   persistedModel: string,
+  languages: string[],
 ) => {
   const available = downloadableModels(models);
+  // Anything but the stock default was picked on purpose.
   if (
     persistedModel &&
+    persistedModel !== DEFAULT_MODEL_KEY &&
     available.some((model) => model.key === persistedModel)
   ) {
     return persistedModel;
   }
-  return pickOnboardingModels(models)[0]?.key ?? persistedModel;
+  const picked = pickOnboardingModels(models);
+  // A language no model lists goes to the one with the widest coverage.
+  const fitting =
+    picked.find((model) => supportsLanguages(model, languages)) ??
+    [...picked].sort(
+      (a, b) => b.supported_languages.length - a.supported_languages.length,
+    )[0];
+  return fitting?.key ?? persistedModel;
 };
 
 const checkMicrophonePermission = () =>
@@ -263,6 +296,7 @@ export default function OnboardingScreen({
     pickDefaultOnboardingModel(
       modelCatalogQuery.data ?? [],
       persistedLocalModel,
+      userLanguages(persistedSettings?.app_locale ?? "system"),
     );
   const selectedModelInfo = useMemo(
     () =>
