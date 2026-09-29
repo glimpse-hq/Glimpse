@@ -33,3 +33,5 @@ notes/
 
 # Agent worktrees
 .delta/
+
+.claude/

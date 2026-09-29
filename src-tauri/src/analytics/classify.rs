@@ -114,6 +114,8 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
         ("rate_limited", &["rate limit", "too many requests"]),
         ("quota_exceeded", &["quota", "billing"]),
         ("timeout", &["timeout", "timed out"]),
+        // A block page or captive portal; its message also says "network".
+        ("blocked", &["received a web page"]),
         ("network", &["network", "connect", "dns"]),
         (
             "verification",
@@ -127,13 +129,7 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
         ),
         (
             "model_load",
-            &[
-                "did not load",
-                "whisper context",
-                "state pointer",
-                "load model",
-                "load system language model",
-            ],
+            &["did not load", "load model", "load system language model"],
         ),
         ("out_of_memory", &["out of memory", "alloc"]),
         (
@@ -142,13 +138,14 @@ pub fn classify_failure_reason(message: &str) -> &'static str {
                 "encoder",
                 "decoder",
                 "evaluate model",
-                "generic whisper error",
                 "spectrogram",
                 "null pointer",
-                "onnx runtime",
             ],
         ),
-        ("not_found", &["not found", "no such file"]),
+        (
+            "not_found",
+            &["not found", "no such file", "no longer available"],
+        ),
         (
             "no_speech",
             &["no speech", "empty", "no samples", "no audio"],

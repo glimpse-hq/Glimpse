@@ -259,6 +259,21 @@ msgstr ""
 #~ msgstr "वक्ता के अनुसार फ़िल्टर करें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AneCompileOverlay.tsx
+#~ msgid "ane_compile.body"
+#~ msgstr "macOS Apple Neural Engine के लिए {label} कम्पाइल कर रहा है। यह प्रक्रिया केवल एक बार होती है और इसमें कुछ मिनट लग सकते हैं।"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AneCompileOverlay.tsx
+#~ msgid "ane_compile.title"
+#~ msgstr "Neural Engine के लिए अनुकूलन हो रहा है"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+#~ msgid "onboarding.download.failed"
+#~ msgstr "डाउनलोड विफल हुआ"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -660,6 +675,7 @@ msgid "personalization.modal.add"
 msgstr "जोड़ें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark.note"
 msgstr "नोट जोड़ें"
@@ -841,6 +857,7 @@ msgstr "असाइन करें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.assign_new_speaker"
 msgstr "नए वक्ता को असाइन करें"
 
@@ -957,6 +974,12 @@ msgid "settings.stats.best_streak"
 msgstr "सबसे लंबी श्रृंखला"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.blocked"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.bookmark"
 msgstr "बुकमार्क"
@@ -1103,6 +1126,11 @@ msgid "onboarding.license_step.tile_modes_casual"
 msgstr "अनौपचारिक"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.status.catching_up"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.category"
 msgstr "श्रेणी"
@@ -1114,7 +1142,7 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "शॉर्टकट बदलें"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.change_line"
 msgstr "इस पंक्ति के लिए वक्ता बदलें"
 
@@ -1299,6 +1327,11 @@ msgid "faq.close_aria"
 msgstr "FAQ बंद करें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.close"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.close"
 msgstr "मोडल बंद करें"
@@ -1344,7 +1377,7 @@ msgid "home.sidebar.collapse"
 msgstr "साइडबार समेटें"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.color"
 msgstr "रंग"
 
@@ -1526,6 +1559,11 @@ msgid "transcriptions.item.copy_selection"
 msgstr "चयन कॉपी करें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.copy"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_transcription"
 msgstr "लिप्यंतरण कॉपी करें"
@@ -1624,6 +1662,11 @@ msgstr "यह लाइब्रेरी आइटम नहीं मिल �
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.couldnt_load"
 msgstr "रिलीज़ लोड नहीं हो सकीं"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.network"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2023,9 +2066,9 @@ msgid "model_picker.error.title"
 msgstr "डाउनलोड विफल"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/OnboardingScreen.tsx
-msgid "onboarding.download.failed"
-msgstr "डाउनलोड विफल हुआ"
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/ModelStatCard.tsx
@@ -2036,6 +2079,11 @@ msgstr "मॉडल डाउनलोड करें"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.download"
 msgstr "Neural Engine एन्कोडर डाउनलोड करें"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.damaged"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2484,6 +2532,16 @@ msgid "settings.about.version_label"
 msgstr "Glimpse"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_write_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.retranscribe_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.aria"
 msgstr "Glimpse सदस्य कार्ड"
@@ -2582,6 +2640,11 @@ msgstr "शॉर्टकट छुपाएँ"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
 msgstr "वक्ता छिपाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.compact"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2802,6 +2865,11 @@ msgid "member_card.draft_stamp_issuing"
 msgstr "जारी करना"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.jump"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.store_original.description"
 msgstr "लाइब्रेरी फ़ोल्डर के अंदर एक प्रति रखें"
@@ -2810,6 +2878,11 @@ msgstr "लाइब्रेरी फ़ोल्डर के अंदर �
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
 msgstr "दबाकर रखें, और काम पूरा होने पर छोड़ दें।"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.on_top"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2825,6 +2898,11 @@ msgstr "कीबोर्ड शॉर्टकट"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers"
 msgstr "जानें कि किसने क्या कहा"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size.large"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -2947,6 +3025,11 @@ msgid "settings.local_api.listen_on_lan_aria"
 msgstr "LAN पर सुनें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.listening"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.status.listening"
 msgstr "सुन रहा है..."
@@ -2965,6 +3048,21 @@ msgstr "लाइव टेक्स्ट"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.live"
 msgstr "बोलते समय लाइव टेक्स्ट"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.unavailable"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.live"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3038,14 +3136,14 @@ msgid "settings.app.auto_pause_media.body_duck"
 msgstr "रिकॉर्ड करते समय सिस्टम वॉल्यूम कम करता है।"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size.medium"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices_body"
 msgstr "Mac और Windows"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AneCompileOverlay.tsx
-msgid "ane_compile.body"
-msgstr "macOS Apple Neural Engine के लिए {label} कम्पाइल कर रहा है। यह प्रक्रिया केवल एक बार होती है और इसमें कुछ मिनट लग सकते हैं।"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -3068,7 +3166,7 @@ msgid "member_card.label_member_since"
 msgstr "सदस्यता आरंभ"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.merge"
 msgstr "इसमें विलय करें"
 
@@ -3452,6 +3550,17 @@ msgid "transcriptions.list.no_results_filters"
 msgstr "चयनित फ़िल्टरों के लिए कोई परिणाम नहीं"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.silent.app"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.silent.microphone"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.filter.no_speakers"
 msgstr "अभी तक कोई स्पीकर नहीं"
@@ -3460,6 +3569,11 @@ msgstr "अभी तक कोई स्पीकर नहीं"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_speech"
 msgstr "कोई वाणी नहीं मिली। रिकॉर्डिंग हटाई गई।"
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.silent.system"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -3515,6 +3629,16 @@ msgstr "यह मान्य ऑडियो फ़ाइल नहीं ह�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_subtitle"
 msgstr "इस बिल्ड में उपलब्ध नहीं"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.unavailable"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.disk_full"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3677,9 +3801,9 @@ msgid "settings.about.command_line.open_wiki_aria"
 msgstr "कमांड लाइन दस्तावेज़ खोलें"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AneCompileOverlay.tsx
-msgid "ane_compile.title"
-msgstr "Neural Engine के लिए अनुकूलन हो रहा है"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.open_on_start"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3722,6 +3846,7 @@ msgid "settings.app.auto_pause_media.pause"
 msgstr "रोकें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.pause"
 msgstr "रोकें"
@@ -3735,6 +3860,16 @@ msgstr "ऑडियो रोकें"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_pause"
 msgstr "रिकॉर्डिंग रोकें"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.paused"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.status.paused"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4095,7 +4230,7 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "शॉर्टकट हटाएँ"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.remove"
 msgstr "वक्ता हटाएँ"
 
@@ -4105,11 +4240,6 @@ msgid "settings.about.data.delete_all_description"
 msgstr "रिकॉर्डिंग, लिप्यंतरण, मॉडल और सेटिंग्स हटाकर ऐप बंद करता है"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker_menu.rename"
-msgstr "नाम बदलें"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.rename"
 msgstr "नाम बदलें"
@@ -4117,6 +4247,12 @@ msgstr "नाम बदलें"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.rename"
+msgstr "नाम बदलें"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
+msgid "library.detail.speaker_menu.rename"
 msgstr "नाम बदलें"
 
 #: src/features/settings/components/AccountView.tsx
@@ -4219,6 +4355,7 @@ msgid "transcriptions.item.restore_original"
 msgstr "मूल ट्रांसक्रिप्ट पुनर्स्थापित करें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.resume"
 msgstr "फिर से शुरू करें"
@@ -4252,6 +4389,11 @@ msgstr "दोबारा ट्रांसक्राइब करें"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.loading"
 msgstr "दोबारा ट्रांसक्राइब किया जा रहा है..."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.retry"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -4337,6 +4479,11 @@ msgstr "सेटअप विज़ार्ड फिर से चलाए�
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.detail"
 msgstr "Neural Engine पर एन्कोडर चलाता है। तेज़ है और कम ऊर्जा का उपयोग करता है। macOS के इसे अनुकूलित करने के दौरान पहली बार लोड होने में अधिक समय लगता है।"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size.small"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4611,6 +4758,7 @@ msgstr "सब दिखाएँ"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.show_all"
 msgstr "सभी वक्ता दिखाएँ"
 
@@ -4630,7 +4778,7 @@ msgid "transcriptions.item.show_more"
 msgstr "अधिक दिखाएँ"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.show_only"
 msgstr "केवल यह वक्ता दिखाएँ"
 
@@ -4648,6 +4796,11 @@ msgstr "शॉर्टकट दिखाएँ"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show"
 msgstr "वक्ता दिखाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.timestamps"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4673,6 +4826,11 @@ msgstr "समय‑मुहर दिखाएँ"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.show_timestamps.aria"
 msgstr "समय-मोहरे दिखाएँ"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.expand"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4865,6 +5023,11 @@ msgid "settings.local_api.stop"
 msgstr "API रोकें"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.stop"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.stop_retry"
 msgstr "ट्रांसक्रिप्शन रोकें"
@@ -5019,6 +5182,11 @@ msgstr "आप बोलते समय टेक्स्ट पिल मे�
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements"
 msgstr "पाठ प्रतिस्थापन"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5281,6 +5449,11 @@ msgstr "ट्रांसक्रिप्शन रद्द किया ग
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.error.default"
 msgstr "ट्रांसक्रिप्शन विफल"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.transcription_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5651,6 +5824,21 @@ msgstr "आपका API सर्वर बैकग्राउंड मे�
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "हाँ। लोकल मोड में आपका सारा ऑडियो और ट्रांसक्रिप्शन आपके डिवाइस पर ही रहता है। हम आपकी रिकॉर्डिंग न तो इकट्ठा करते हैं न भेजते हैं। क्लाउड सिंक वैकल्पिक है।"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_low_disk"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dictation_disk_full"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_disk_full"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

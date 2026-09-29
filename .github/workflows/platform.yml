@@ -55,22 +55,13 @@ jobs:
           echo "DEVELOPER_DIR=$DEVELOPER_DIR" >> "$GITHUB_ENV"
           DEVELOPER_DIR="$DEVELOPER_DIR" xcodebuild -version
 
-      - name: install LLVM
-        if: matrix.os == 'windows'
-        uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 # v2
-        with:
-          version: "20.1.8"
-          directory: ${{ runner.temp }}/llvm
-
       - name: configure Windows build paths
         if: matrix.os == 'windows'
         shell: pwsh
         run: |
           $cargoTargetDir = [IO.Path]::GetFullPath((Join-Path $env:GITHUB_WORKSPACE "..\..\t"))
-          $libclangPath = Join-Path $env:RUNNER_TEMP "llvm\bin"
           New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
-          "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
 
       - name: cache Vulkan SDK installer
         if: matrix.os == 'windows'

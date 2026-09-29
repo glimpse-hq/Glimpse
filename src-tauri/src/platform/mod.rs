@@ -54,6 +54,7 @@ macro_rules! native_panel {
     };
 }
 
+native_panel!(live, "live view");
 native_panel!(overlay, "overlay");
 native_panel!(toast, "toast");
 
@@ -88,6 +89,58 @@ fn install_type_for_store_build(store_build: bool) -> &'static str {
     } else {
         "github"
     }
+}
+
+/// Bytes the current user can still write on the volume holding `path`.
+pub fn available_space(path: &Path) -> io::Result<u64> {
+    // statfs leaves out purgeable space, which macOS frees on demand; Finder counts it.
+    #[cfg(target_os = "macos")]
+    {
+        use objc2_foundation::{
+            NSArray, NSNumber, NSString, NSURL, NSURLVolumeAvailableCapacityForImportantUsageKey,
+        };
+        // Callers run on worker threads, which have no autorelease pool.
+        let important = objc2::rc::autoreleasepool(|_| {
+            let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
+            let key = unsafe { NSURLVolumeAvailableCapacityForImportantUsageKey };
+            url.resourceValuesForKeys_error(&NSArray::from_slice(&[key]))
+                .ok()
+                .and_then(|values| values.objectForKey(key))
+                .and_then(|value| value.downcast::<NSNumber>().ok())
+                .map(|number| number.longLongValue())
+                .filter(|&bytes| bytes > 0)
+        });
+        match important {
+            Some(bytes) => Ok(bytes as u64),
+            None => fs2::available_space(path),
+        }
+    }
+    // fs2 uses GetDiskFreeSpaceW, which ignores per-user quotas.
+    #[cfg(target_os = "windows")]
+    {
+        use ::windows::Win32::Storage::FileSystem::GetDiskFreeSpaceExW;
+        let mut available = 0u64;
+        unsafe {
+            GetDiskFreeSpaceExW(
+                &::windows::core::HSTRING::from(path),
+                Some(&mut available),
+                None,
+                None,
+            )
+        }?;
+        Ok(available)
+    }
+}
+
+pub fn is_disk_full(err: &anyhow::Error) -> bool {
+    err.chain()
+        .filter_map(|cause| cause.downcast_ref::<io::Error>())
+        .any(|io| {
+            matches!(
+                io.kind(),
+                io::ErrorKind::StorageFull | io::ErrorKind::QuotaExceeded
+            )
+        })
 }
 
 /// `std::fs::remove_dir_all` deletes through handle-based NT calls that the

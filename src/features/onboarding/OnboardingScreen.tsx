@@ -395,11 +395,12 @@ export default function OnboardingScreen({
       updateDownloadStatus(model, { status: "complete", percent: 100 });
       void refreshModelStatus(queryClient, model);
     },
-    onError: ({ model, error }) => {
+    onError: ({ model, error, reason }) => {
       updateDownloadStatus(model, {
         status: "error",
         percent: 0,
         message: error,
+        reason,
       });
     },
     onCancelled: ({ model }) => {
@@ -429,15 +430,21 @@ export default function OnboardingScreen({
           );
         await invoke("download_model", { model: modelKey, ane: includeAne });
         void refreshModelStatus(queryClient, modelKey);
-      } catch {
-        updateDownloadStatus(modelKey, {
-          status: "error",
-          percent: 0,
-          message: t({
-            id: "onboarding.download.failed",
-            message: "Download failed",
-          }),
-        });
+      } catch (err) {
+        // download:error usually lands first and carries the reason.
+        setDownloadStatus((prev) =>
+          prev[modelKey]?.status === "error"
+            ? prev
+            : {
+                ...prev,
+                [modelKey]: {
+                  status: "error",
+                  percent: 0,
+                  message: String(err),
+                  reason: "failed",
+                },
+              },
+        );
       }
     },
     [modelCatalogQuery.data, queryClient, t, updateDownloadStatus],

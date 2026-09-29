@@ -1,7 +1,7 @@
 import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 import { i18n } from "../../i18n";
-import type { ModelInfo } from "../../types";
+import type { DownloadFailureReason, ModelInfo } from "../../types";
 
 export type ModelStats = {
   langCount: number;
@@ -40,6 +40,39 @@ export const variantLabel = (variant: string): string => {
   const descriptor = VARIANT_LABELS[variant];
   return descriptor ? i18n._(descriptor) : variant;
 };
+
+const DOWNLOAD_FAILURE_LABELS: Record<
+  DownloadFailureReason,
+  MessageDescriptor
+> = {
+  unavailable: msg({
+    id: "models.download_failed.unavailable",
+    message: "Not available right now",
+  }),
+  network: msg({
+    id: "models.download_failed.network",
+    message: "Couldn't reach the server",
+  }),
+  blocked: msg({
+    id: "models.download_failed.blocked",
+    message: "Blocked by your network",
+  }),
+  disk_full: msg({
+    id: "models.download_failed.disk_full",
+    message: "Not enough disk space",
+  }),
+  damaged: msg({
+    id: "models.download_failed.damaged",
+    message: "Download was damaged",
+  }),
+  failed: msg({
+    id: "models.download_failed.failed",
+    message: "Download failed",
+  }),
+};
+
+export const downloadFailureLabel = (reason: DownloadFailureReason): string =>
+  i18n._(DOWNLOAD_FAILURE_LABELS[reason]);
 
 export const formatQuantLabel = (variant: string): string | null => {
   if (!variant) return null;

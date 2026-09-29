@@ -49,103 +49,12 @@ struct DownloadCompletePayload {
 struct DownloadErrorPayload {
     model: String,
     error: String,
+    reason: &'static str,
 }
 
 #[derive(Serialize, Clone)]
 struct DownloadCancelledPayload {
     model: String,
-}
-
-#[derive(Serialize, Clone)]
-struct AneCompilePayload {
-    model: String,
-    label: String,
-    status: &'static str,
-}
-
-fn spawn_ane_compile(app: AppHandle<AppRuntime>, model: String) {
-    std::thread::spawn(move || {
-        let label = super::catalog::model_label(&model);
-        let emit = |status: &'static str| {
-            let _ = app.emit(
-                "ane:compile",
-                AneCompilePayload {
-                    model: model.clone(),
-                    label: label.clone(),
-                    status,
-                },
-            );
-        };
-
-        let result = ensure_model_ready(&app, &model).and_then(|ready| {
-            emit("start");
-            let transcriber = app.state::<crate::AppState>().local_transcriber();
-            let _ = glimpse_speech::take_coreml_log();
-            if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
-                transcriber.preload_and_warm(&ready)
-            } else {
-                use glimpse_speech::TranscriptionEngine;
-                let mut engine = glimpse_speech::engines::whisper::WhisperEngine::new();
-                engine
-                    .load_model(&ready.path)
-                    .map_err(|err| anyhow!("{err}"))
-            }
-        });
-
-        // whisper.cpp falls back to GPU when the Core ML load fails, so a
-        // successful model load alone doesn't prove the encoder engaged.
-        let coreml_failed = || {
-            glimpse_speech::take_coreml_log()
-                .iter()
-                .any(|line| line.contains("failed to load Core ML model"))
-        };
-
-        let compiled = result.is_ok();
-
-        match result {
-            Ok(()) if coreml_failed() => {
-                tracing::error!(
-                    "[speech] Core ML encoder for {model} failed to load; whisper fell back to the GPU"
-                );
-                crate::toast::show(
-                    &app,
-                    "error",
-                    None,
-                    &format!(
-                        "{label} couldn't use the Neural Engine and will run on the GPU instead."
-                    ),
-                );
-                crate::analytics::track_model_download_failed(
-                    &app,
-                    &model,
-                    "ane_compile",
-                    "model_error",
-                );
-                emit("error");
-            }
-            Ok(()) => emit("done"),
-            Err(err) => {
-                tracing::error!("[speech] ANE compile warm-up failed: {err}");
-                crate::analytics::track_model_download_failed(
-                    &app,
-                    &model,
-                    "ane_compile",
-                    crate::analytics::error_detail(&err),
-                );
-                crate::toast::show(
-                    &app,
-                    "error",
-                    None,
-                    &format!("Couldn't optimize {label} for the Neural Engine."),
-                );
-                emit("error");
-            }
-        }
-
-        if compiled {
-            super::warm_model(&app, model.clone());
-        }
-    });
 }
 
 const MODELS_ROOT: &str = "models";
@@ -169,7 +78,29 @@ fn installed_spec(
             return Ok(ane);
         }
     }
+    if let Some(bin) = super::catalog::whisper_bin_install_spec(model, false)
+        && !manager.status(&base)?.installed
+        && manager.status(&bin)?.installed
+    {
+        return Ok(bin);
+    }
     Ok(base)
+}
+
+/// Adding the Neural Engine encoder to a Whisper `.bin` install keeps the
+/// `.bin` instead of downloading the GGUF.
+fn download_spec(
+    model: &str,
+    ane: bool,
+    manager: &speech_models::ModelInstallManager,
+) -> Result<speech_models::InstallSpec> {
+    if ane
+        && let Some(bin) = super::catalog::whisper_bin_install_spec(model, true)
+        && installed_spec(model, manager)?.files == bin.files[..1]
+    {
+        return Ok(bin);
+    }
+    spec_for(model, ane)
 }
 
 fn finish_model_install(
@@ -221,6 +152,14 @@ pub(crate) fn check_model_installed_at(models_dir: &std::path::Path, model: &str
         .unwrap_or(false)
 }
 
+/// Installed with every file matching its checksum.
+pub(crate) fn verify_model_installed_at(models_dir: &Path, model: &str) -> bool {
+    let manager = speech_models::ModelInstallManager::new(models_dir.to_path_buf());
+    installed_spec(model, &manager)
+        .and_then(|spec| manager.verify(&spec))
+        .is_ok_and(|status| status.installed)
+}
+
 pub fn installed_api_model_infos(models_dir: &Path) -> Vec<glimpse_speech::api::ApiModelInfo> {
     api_model_infos()
         .into_iter()
@@ -250,8 +189,9 @@ fn ensure_models_root<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
 
 fn ane_encoder_complete(dir: &std::path::Path) -> bool {
     dir.join("coremldata.bin").is_file()
-        && dir.join("model.mil").is_file()
-        && dir.join("weights").join("weight.bin").is_file()
+        && (dir.join("model.mil").is_file() && dir.join("weights").join("weight.bin").is_file()
+            // A pipeline encoder keeps its stages in model0, model1, ...
+            || dir.join("model0").join("model.mil").is_file())
 }
 
 fn ane_installed_for(model: &str, manager: &speech_models::ModelInstallManager) -> bool {
@@ -294,18 +234,42 @@ pub fn check_model_status<R: Runtime>(
 
 const MODEL_UNAVAILABLE: &str = "This model is no longer available for download.";
 
+/// Legacy models stay downloadable while selected or partly downloaded.
+pub(crate) fn model_download_allowed(
+    app: &AppHandle<AppRuntime>,
+    models_dir: &Path,
+    model: &str,
+) -> bool {
+    if super::catalog::model_is_downloadable(model)
+        || super::replaces_onnx_install(models_dir, model)
+    {
+        return true;
+    }
+    let Ok(spec) = spec_for(model, false) else {
+        return false;
+    };
+    let settings = app.state::<crate::AppState>().current_settings();
+    let dir = models_dir.join(model);
+    settings.local_model == model
+        || spec
+            .files
+            .iter()
+            .any(|file| dir.join(format!("{}.part", file.path)).is_file())
+}
+
 fn ensure_model_downloadable(
+    app: &AppHandle<AppRuntime>,
     model: &str,
     ane: bool,
     manager: &speech_models::ModelInstallManager,
 ) -> Result<(), String> {
-    if super::catalog::model_is_downloadable(model) {
+    if model_download_allowed(app, manager.cache_dir(), model) {
         return Ok(());
     }
     if !ane {
         return Err(MODEL_UNAVAILABLE.to_string());
     }
-    let base_spec = spec_for(model, false).map_err(|err| err.to_string())?;
+    let base_spec = installed_spec(model, manager).map_err(|err| err.to_string())?;
     let installed = manager
         .status(&base_spec)
         .map(|status| status.installed)
@@ -333,17 +297,15 @@ pub async fn download_model_now(
 ) -> Result<ModelStatus, String> {
     let state = app.state::<crate::AppState>();
     let manager =
-        model_manager(&app).map_err(|err| track_download_error(&app, &model, "resolve", err))?;
+        model_manager(&app).map_err(|err| download_failed(&app, &model, "resolve", err))?;
     let ane = ane.unwrap_or_else(|| super::catalog::ane_encoder_dir(&model).is_some());
-    ensure_model_downloadable(&model, ane, &manager)
-        .map_err(|err| track_download_error(&app, &model, "resolve", anyhow!(err)))?;
-    let spec =
-        spec_for(&model, ane).map_err(|err| track_download_error(&app, &model, "resolve", err))?;
-    ensure_models_root(&app).map_err(|err| track_download_error(&app, &model, "install", err))?;
-    let ane_pending = ane
-        && super::catalog::ane_needs_compile_step(&model)
-        && super::catalog::ane_encoder_dir(&model).is_some()
-        && !ane_installed_for(&model, &manager);
+    ensure_model_downloadable(&app, &model, ane, &manager)
+        .map_err(|err| download_failed(&app, &model, "resolve", anyhow!(err)))?;
+    let spec = download_spec(&model, ane, &manager)
+        .map_err(|err| download_failed(&app, &model, "resolve", err))?;
+    ensure_models_root(&app).map_err(|err| download_failed(&app, &model, "install", err))?;
+    ensure_disk_space(&manager.model_dir(&model), &spec)
+        .map_err(|err| download_failed(&app, &model, "install", err))?;
     let cancel_token = state.create_download_token(&model)?;
     struct DownloadGuard<'a>(&'a AppHandle<AppRuntime>, String);
     impl Drop for DownloadGuard<'_> {
@@ -417,32 +379,18 @@ pub async fn download_model_now(
                 return Ok(map_status(status, &manager));
             }
             tracing::error!("[speech] download {model} failed: {err:#}");
-            let detail = crate::analytics::error_detail(&err);
-            let stage = match detail.reason {
-                "verification" => "verify",
-                "storage" => "install",
-                _ => "download",
-            };
-            crate::analytics::track_model_download_failed(&app, &model, stage, detail);
-            let message = format!("{err:#}");
-            let _ = app.emit(
-                "download:error",
-                DownloadErrorPayload {
-                    model,
-                    error: message.clone(),
-                },
-            );
-            return Err(message);
+            return Err(download_failed(&app, &model, "download", err));
         }
     };
 
-    // Release the loaded engine before replacing package files or adding an
-    // encoder, so warm-up reloads the selected package and companion.
-    let status = if super::catalog::ane_replaces_model_files(&model) || ane {
+    let replaces_files = super::catalog::ane_replaces_model_files(&model);
+    let status = if replaces_files || ane {
         let handle = app.clone();
         let spec = spec.clone();
         tauri::async_runtime::spawn_blocking(move || {
-            if let Some(state) = handle.try_state::<crate::AppState>() {
+            // Release the loaded engine before replacing package files, so
+            // warm-up reloads the selected package.
+            if replaces_files && let Some(state) = handle.try_state::<crate::AppState>() {
                 let transcriber = state.local_transcriber();
                 if transcriber.loaded_model_id().as_deref() == Some(spec.id.as_str()) {
                     transcriber.unload();
@@ -466,9 +414,8 @@ pub async fn download_model_now(
 
     crate::analytics::track_model_downloaded(&app, &status.id);
 
-    if ane_pending {
-        // The compile loads the model itself and warms once it lands.
-        spawn_ane_compile(app.clone(), model.clone());
+    if ane && !replaces_files && super::catalog::ane_encoder_dir(&model).is_some() {
+        super::compile_ane_encoder(&app, status.id.clone());
     } else if definition(&model).is_some() {
         super::warm_model(&app, status.id.clone());
     }
@@ -479,19 +426,87 @@ pub async fn download_model_now(
     Ok(map_status(status, &manager))
 }
 
-fn track_download_error(
+/// Free space a download must leave behind, so a model never fills the disk.
+const DISK_HEADROOM_BYTES: u64 = 5 * 1024 * 1024 * 1024;
+
+/// Refuses a download that would leave less than `DISK_HEADROOM_BYTES` free.
+/// Archives count twice: the zip and its extracted copy exist together.
+pub(super) fn ensure_disk_space(dir: &Path, spec: &speech_models::InstallSpec) -> Result<()> {
+    let needed: u64 = spec
+        .files
+        .iter()
+        .filter(|file| !dir.join(&file.path).exists())
+        .map(|file| {
+            let size = file.size_bytes.unwrap_or(0);
+            let partial = dir.join(format!(
+                "{}.{}",
+                file.path,
+                if file.extract { "zip" } else { "part" }
+            ));
+            let remaining = size.saturating_sub(std::fs::metadata(partial).map_or(0, |m| m.len()));
+            if file.extract {
+                remaining + size
+            } else {
+                remaining
+            }
+        })
+        .sum();
+    let volume = dir.ancestors().find(|path| path.exists()).unwrap_or(dir);
+    let available = crate::platform::available_space(volume)
+        .with_context(|| format!("read free space for {}", volume.display()))?;
+    if available < needed + DISK_HEADROOM_BYTES {
+        return Err(anyhow::Error::new(std::io::Error::from(
+            std::io::ErrorKind::StorageFull,
+        ))
+        .context(format!(
+            "Not enough disk space: needs {needed} bytes plus {DISK_HEADROOM_BYTES} spare, {available} available"
+        )));
+    }
+    Ok(())
+}
+
+fn download_failed(
     app: &AppHandle<AppRuntime>,
     model: &str,
     stage: &str,
     err: anyhow::Error,
 ) -> String {
-    crate::analytics::track_model_download_failed(
-        app,
-        model,
-        stage,
-        crate::analytics::error_detail(&err),
+    let detail = crate::analytics::error_detail(&err);
+    let reason = download_failure_reason(&err, &detail);
+    let stage = match (stage, detail.reason) {
+        ("download", "verification") => "verify",
+        ("download", "storage") => "install",
+        _ => stage,
+    };
+    crate::analytics::track_model_download_failed(app, model, stage, detail);
+    let message = format!("{err:#}");
+    let _ = app.emit(
+        "download:error",
+        DownloadErrorPayload {
+            model: model.to_string(),
+            error: message.clone(),
+            reason,
+        },
     );
-    format!("{err:#}")
+    message
+}
+
+/// The reason shown to the user; the raw message stays in the payload.
+fn download_failure_reason(
+    err: &anyhow::Error,
+    detail: &crate::analytics::ErrorDetail,
+) -> &'static str {
+    if crate::platform::is_disk_full(err) {
+        return "disk_full";
+    }
+    match (detail.error_type, detail.reason) {
+        ("io", "not_found") => "failed",
+        (_, "not_found" | "unauthorized" | "http_4xx") => "unavailable",
+        (_, "network" | "timeout" | "http_5xx" | "rate_limited") => "network",
+        (_, "blocked") => "blocked",
+        (_, "verification" | "decode") => "damaged",
+        _ => "failed",
+    }
 }
 
 /// The manager deletes with `remove_dir_all`, so clear the tree first.

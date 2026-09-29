@@ -1,6 +1,8 @@
 //! Long-form recording: microphone and/or system audio captured as separate
 //! tracks, written to disk continuously, then saved as a Library item.
 
+mod live;
+pub mod live_window;
 mod microphone;
 mod track;
 
@@ -16,7 +18,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         Arc,
-        atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU8, AtomicU32, AtomicU64, Ordering},
     },
     time::{Duration, Instant},
 };
@@ -29,8 +31,11 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::analytics::{self, Activity, ErrorDetail, RecordingSessionSummary, error_detail};
-use crate::library::{AudioSources, Bookmark, JobSource, LibraryItem, RecordingOutput};
+use crate::library::{
+    AudioSources, Bookmark, JobSource, LibraryItem, LiveSpeakerHints, RecordingOutput,
+};
 use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
+use live::{LiveTranscript, LiveWorker};
 use track::{TrackInput, TrackWriter};
 
 pub const EVENT_STATE: &str = "recording-session:state";
@@ -41,11 +46,17 @@ const LAST_SOURCES_FILE: &str = "last-sources.json";
 const MICROPHONE_FILE: &str = "microphone.wav";
 const SYSTEM_FILE: &str = "system.wav";
 const STATE_TICK: Duration = Duration::from_millis(100);
+// About three hours of microphone and system audio.
+const LOW_DISK_BYTES: u64 = 1024 * 1024 * 1024;
 // How often a recording without a working microphone looks for one.
 const MICROPHONE_RETRY: Duration = Duration::from_secs(2);
-// RMS window mapped onto the 0..1 level meter.
-const LEVEL_FLOOR: f32 = 0.006;
-const LEVEL_CEILING: f32 = 0.22;
+// Loudness window in dBFS mapped onto the 0..1 level meter. Speech into a
+// laptop microphone sits around the middle; a raised voice fills it.
+const LEVEL_FLOOR_DB: f32 = -55.0;
+const LEVEL_CEILING_DB: f32 = -25.0;
+// Capture buffers are ~10 ms and the state tick samples one every 100 ms, so
+// the meter holds peaks and lets them fall by half this often.
+const LEVEL_HALF_LIFE_S: f32 = 0.08;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct AudioApp {
@@ -144,6 +155,8 @@ struct SessionManifest {
     started_at: DateTime<Local>,
     sources: AudioSources,
     bookmarks: Vec<Bookmark>,
+    #[serde(default)]
+    live: LiveSpeakerHints,
 }
 
 /// Wall clock for one session, minus time spent paused. Lock-free so capture
@@ -213,7 +226,10 @@ struct Shared {
     session_dir: Mutex<Option<PathBuf>>,
     started_at: Mutex<Option<DateTime<Local>>>,
     finish_requested: AtomicBool,
+    // Set by a track writer that stopped writing.
+    write_failure: Arc<AtomicU8>,
     emitter_running: AtomicBool,
+    live: live::LiveState,
 }
 
 impl Shared {
@@ -276,6 +292,7 @@ impl Shared {
             started_at,
             sources: self.sources.lock().clone(),
             bookmarks: self.bookmarks.lock().clone(),
+            live: self.live.hints(),
         };
         if let Err(err) = write_manifest_file(&dir, &manifest) {
             tracing::warn!("Failed to write recording manifest: {err}");
@@ -295,6 +312,8 @@ impl Shared {
         *self.session_dir.lock() = None;
         *self.started_at.lock() = None;
         self.finish_requested.store(false, Ordering::Relaxed);
+        self.write_failure.store(0, Ordering::Relaxed);
+        self.live.end();
     }
 }
 
@@ -313,6 +332,7 @@ struct SessionOutput {
     duration_seconds: f32,
     microphone_path: Option<PathBuf>,
     system_path: Option<PathBuf>,
+    live: LiveSpeakerHints,
 }
 
 enum WorkerCommand {
@@ -355,7 +375,9 @@ impl Default for RecordingManager {
             session_dir: Mutex::new(None),
             started_at: Mutex::new(None),
             finish_requested: AtomicBool::new(false),
+            write_failure: Arc::new(AtomicU8::new(0)),
             emitter_running: AtomicBool::new(false),
+            live: live::LiveState::default(),
         });
         let (tx, rx) = unbounded();
         let worker_shared = Arc::clone(&shared);
@@ -562,6 +584,7 @@ struct ActiveSession {
     clock: Arc<SessionClock>,
     microphone: Option<MicrophoneTrack>,
     system: Option<(system_audio::SystemAudioCapture, TrackWriter)>,
+    live: Option<LiveWorker>,
 }
 
 /// The track outlives its capture: a lost microphone leaves the writer padding
@@ -600,6 +623,7 @@ impl Worker {
 
         let clock = Arc::new(SessionClock::new());
         let started_at = Local::now();
+        let listening = app.state::<AppState>().pill().listening_flag();
         self.shared.paused.store(false, Ordering::Relaxed);
         self.shared.paused_by_user.store(false, Ordering::Relaxed);
         self.shared
@@ -617,6 +641,7 @@ impl Worker {
             clock: Arc::clone(&clock),
             microphone: None,
             system: None,
+            live: None,
         };
 
         let mut stage = "start_system";
@@ -635,10 +660,12 @@ impl Worker {
                     clock: Arc::clone(&clock),
                     paused: Arc::clone(&self.shared.paused),
                     level: Arc::clone(&self.shared.system_level),
+                    silenced: None,
                 };
                 let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
+                let failure = Arc::clone(&self.shared.write_failure);
                 let capture = system_audio::SystemAudioCapture::start(&scope, move |rate| {
-                    match TrackWriter::spawn(path, rate, "glimpse-recording-system") {
+                    match TrackWriter::spawn(path, rate, "glimpse-recording-system", failure) {
                         Ok(writer) => {
                             let callback = sink.into_callback(writer.input());
                             let _ = writer_tx.send(Ok(writer));
@@ -685,12 +712,15 @@ impl Worker {
                     clock: Arc::clone(&clock),
                     paused: Arc::clone(&self.shared.paused),
                     level: Arc::clone(&self.shared.microphone_level),
+                    silenced: Some(listening),
                 };
                 let (writer_tx, writer_rx) = bounded::<Result<TrackWriter>>(1);
+                let failure = Arc::clone(&self.shared.write_failure);
                 let make_sink = move |rate| match TrackWriter::spawn(
                     path,
                     rate,
                     "glimpse-recording-microphone",
+                    failure,
                 ) {
                     Ok(writer) => {
                         let callback = sink.into_callback(writer.input());
@@ -741,6 +771,7 @@ impl Worker {
             started_at,
             sources: summary.clone(),
             bookmarks: Vec::new(),
+            live: LiveSpeakerHints::default(),
         };
         if let Err(err) = write_manifest_file(&dir, &manifest) {
             tracing::warn!("Failed to write recording manifest: {err}");
@@ -753,14 +784,24 @@ impl Worker {
         *self.shared.clock.lock() = Some(clock);
         self.shared.finish_requested.store(false, Ordering::Relaxed);
         *self.shared.status.lock() = Status::Recording;
+        session.live = LiveWorker::spawn(
+            session.app.clone(),
+            Arc::clone(&self.shared),
+            session.microphone.as_ref().map(|mic| mic.writer.tap()),
+            session.system.as_ref().map(|(_, writer)| writer.tap()),
+        );
         self.active = Some(session);
         Ok(())
     }
 
     fn finish(&mut self) -> Result<SessionOutput> {
-        let session = self.active.take().ok_or_else(|| anyhow!("not_recording"))?;
+        let mut session = self.active.take().ok_or_else(|| anyhow!("not_recording"))?;
         *self.shared.status.lock() = Status::Saving;
         let final_ms = session.clock.elapsed_ms();
+        if let Some(live) = session.live.take() {
+            live.stop();
+        }
+        let live = self.shared.live.hints();
 
         let mut microphone_path = None;
         let mut system_path = None;
@@ -785,6 +826,7 @@ impl Worker {
             duration_seconds: final_ms as f32 / 1000.0,
             microphone_path,
             system_path,
+            live,
         })
     }
 }
@@ -848,6 +890,7 @@ impl Worker {
         let Some(session) = self.active.as_mut() else {
             return;
         };
+        let listening = session.app.state::<AppState>().pill().listening_flag();
         let Some(mic) = session.microphone.as_mut() else {
             return;
         };
@@ -861,6 +904,7 @@ impl Worker {
                 clock: Arc::clone(&session.clock),
                 paused: Arc::clone(&self.shared.paused),
                 level: Arc::clone(&self.shared.microphone_level),
+                silenced: Some(Arc::clone(&listening)),
             };
             microphone::start(
                 device_id,
@@ -933,6 +977,9 @@ fn lost_signal(tx: &Sender<WorkerCommand>, generation: u64) -> Box<dyn FnMut() +
 }
 
 fn discard_session(session: ActiveSession) {
+    if let Some(live) = session.live {
+        live.stop();
+    }
     if let Some(mic) = session.microphone {
         drop(mic.capture);
         mic.writer.discard();
@@ -948,17 +995,37 @@ struct SinkParts {
     clock: Arc<SessionClock>,
     paused: Arc<AtomicBool>,
     level: Arc<AtomicU32>,
+    // While set, silence is recorded in place of the input. The microphone
+    // takes the pill's listening flag so dictation stays out of recordings.
+    silenced: Option<Arc<AtomicBool>>,
 }
 
 impl SinkParts {
     fn into_callback(self, input: TrackInput) -> Box<dyn FnMut(&[f32]) + Send> {
+        let (mut peak, mut peak_at) = (0f32, Instant::now());
+        let mut quiet = Vec::new();
         Box::new(move |samples: &[f32]| {
             if self.paused.load(Ordering::Relaxed) {
+                peak = 0.0;
                 self.level.store(0f32.to_bits(), Ordering::Relaxed);
                 return;
             }
-            self.level
-                .store(meter_level(samples).to_bits(), Ordering::Relaxed);
+            if self
+                .silenced
+                .as_ref()
+                .is_some_and(|flag| flag.load(Ordering::Relaxed))
+            {
+                peak = 0.0;
+                self.level.store(0f32.to_bits(), Ordering::Relaxed);
+                quiet.resize(samples.len(), 0.0);
+                input.push(&quiet, self.clock.elapsed_ms());
+                return;
+            }
+            let now = Instant::now();
+            let held =
+                peak * 0.5f32.powf(now.duration_since(peak_at).as_secs_f32() / LEVEL_HALF_LIFE_S);
+            (peak, peak_at) = (meter_level(samples).max(held), now);
+            self.level.store(peak.to_bits(), Ordering::Relaxed);
             input.push(samples, self.clock.elapsed_ms());
         })
     }
@@ -970,9 +1037,8 @@ fn meter_level(samples: &[f32]) -> f32 {
     }
     let energy: f32 = samples.iter().map(|s| s * s).sum();
     let rms = (energy / samples.len() as f32).sqrt();
-    ((rms - LEVEL_FLOOR) / (LEVEL_CEILING - LEVEL_FLOOR))
-        .clamp(0.0, 1.0)
-        .powf(0.7)
+    let db = 20.0 * rms.max(1e-6).log10();
+    ((db - LEVEL_FLOOR_DB) / (LEVEL_CEILING_DB - LEVEL_FLOOR_DB)).clamp(0.0, 1.0)
 }
 
 fn sessions_root(app: &AppHandle<AppRuntime>) -> Result<PathBuf> {
@@ -1008,7 +1074,7 @@ fn refresh_menus(app: &AppHandle<AppRuntime>) {
 }
 
 fn start_state_emitter(app: AppHandle<AppRuntime>, shared: Arc<Shared>) {
-    if shared.emitter_running.swap(true, Ordering::Relaxed) {
+    if shared.emitter_running.swap(true, Ordering::SeqCst) {
         return;
     }
     std::thread::Builder::new()
@@ -1016,6 +1082,15 @@ fn start_state_emitter(app: AppHandle<AppRuntime>, shared: Arc<Shared>) {
         .spawn(move || {
             let mut last_tray_key = None;
             loop {
+                let message = match shared.write_failure.swap(0, Ordering::Relaxed) {
+                    track::DISK_FULL => Some("native.toast.recording_disk_full"),
+                    track::WRITE_FAILED => Some("native.toast.recording_write_failed"),
+                    _ => None,
+                };
+                if let Some(message) = message {
+                    request_finish_from_tray(&app);
+                    crate::toast::show(&app, "error", None, &crate::toast::native(&app, message));
+                }
                 let state = shared.state();
                 let active = state.status != "idle";
                 let tray_key = (state.status, state.elapsed_ms / 1000);
@@ -1025,8 +1100,13 @@ fn start_state_emitter(app: AppHandle<AppRuntime>, shared: Arc<Shared>) {
                 }
                 let _ = app.emit(EVENT_STATE, state);
                 if !active {
-                    shared.emitter_running.store(false, Ordering::Relaxed);
-                    break;
+                    shared.emitter_running.store(false, Ordering::SeqCst);
+                    // A session that started meanwhile saw the flag still set
+                    // and left its updates to this thread.
+                    if !shared.is_active() || shared.emitter_running.swap(true, Ordering::SeqCst) {
+                        break;
+                    }
+                    continue;
                 }
                 std::thread::sleep(STATE_TICK);
             }
@@ -1044,9 +1124,9 @@ fn check_microphone_permission() -> bool {
         let _ = permissions::request_microphone_permission();
         permissions::refresh_microphone_permission()
     }
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(target_os = "windows")]
     {
-        true
+        crate::permissions::check_microphone_permission()
     }
 }
 
@@ -1084,6 +1164,7 @@ fn save_session(
             system_path: output.system_path,
             sources,
             bookmarks,
+            live: output.live,
         },
     )?;
     let _ = fs::remove_dir_all(&output.dir);
@@ -1162,6 +1243,7 @@ pub(crate) fn recover_interrupted_sessions(app: &AppHandle<AppRuntime>) {
             duration_seconds,
             microphone_path: microphone.map(|(path, _)| path),
             system_path: system.map(|(path, _)| path),
+            live: manifest.live,
         };
         let name = default_session_name(app, &manifest.started_at);
         match save_session(
@@ -1264,6 +1346,14 @@ pub(crate) fn start_session(app: &AppHandle<AppRuntime>, sources: RecordingSourc
     if let Ok(json) = serde_json::to_vec(&sources) {
         let _ = fs::create_dir_all(&root);
         let _ = fs::write(root.join(LAST_SOURCES_FILE), json);
+    }
+    if crate::platform::available_space(&root).is_ok_and(|free| free < LOW_DISK_BYTES) {
+        crate::toast::show(
+            app,
+            "warning",
+            None,
+            &crate::toast::native(app, "native.toast.recording_low_disk"),
+        );
     }
     analytics::track_recording_session_started(app, sources.microphone.is_some(), system);
     analytics::set_activity(Activity::RecordingSession);
@@ -1414,6 +1504,7 @@ pub async fn discard_recording_session(app: AppHandle<AppRuntime>) -> RecordingS
     let state = app.state::<AppState>();
     let manager = state.recording();
     manager.shared.reset();
+    manager.shared.live.publish(&app, false);
     if let Some(summary) = summary {
         analytics::set_activity(Activity::Idle);
         analytics::track_recording_session_ended(&app, "discarded", &summary, None);
@@ -1460,6 +1551,7 @@ pub async fn finish_recording_session(
     .map_err(|err| err.to_string())?;
 
     manager.shared.reset();
+    manager.shared.live.publish(&app, false);
     analytics::set_activity(Activity::Idle);
     match &result {
         Ok(_) => analytics::track_recording_session_ended(&app, "saved", &summary, None),
@@ -1474,6 +1566,59 @@ pub async fn finish_recording_session(
     sync_tray(&app, &manager.shared.state());
     emit_state(&app, &manager.shared);
     result.map_err(|(_, err)| err.to_string())
+}
+
+/// The live transcript as last published, for a window opening mid-recording.
+#[tauri::command]
+pub fn get_live_transcript(app: AppHandle<AppRuntime>) -> LiveTranscript {
+    app.state::<AppState>().recording().shared.live.last()
+}
+
+/// Applies a live speaker edit, stores it with the session and publishes the result.
+fn edit_live_speakers(
+    app: &AppHandle<AppRuntime>,
+    edit: impl FnOnce(&live::LiveState) -> bool,
+) -> Result<LiveTranscript, String> {
+    let state = app.state::<AppState>();
+    let shared = &state.recording().shared;
+    if !shared.is_active() {
+        return Err("not_recording".into());
+    }
+    if !edit(&shared.live) {
+        return Err("speaker_not_found".into());
+    }
+    shared.write_manifest();
+    shared.live.publish(app, true);
+    Ok(shared.live.last())
+}
+
+/// An empty name restores the default.
+#[tauri::command]
+pub fn rename_live_speaker(
+    app: AppHandle<AppRuntime>,
+    id: String,
+    name: String,
+) -> Result<LiveTranscript, String> {
+    edit_live_speakers(&app, |live| live.rename(&id, &name))
+}
+
+#[tauri::command]
+pub fn set_live_speaker_color(
+    app: AppHandle<AppRuntime>,
+    id: String,
+    color: Option<String>,
+) -> Result<LiveTranscript, String> {
+    edit_live_speakers(&app, |live| live.set_color(&id, color))
+}
+
+/// Relabels system speaker `from` as `into` for the rest of the recording.
+#[tauri::command]
+pub fn merge_live_speaker(
+    app: AppHandle<AppRuntime>,
+    from: String,
+    into: String,
+) -> Result<LiveTranscript, String> {
+    edit_live_speakers(&app, |live| live.merge(&from, &into))
 }
 
 #[tauri::command]

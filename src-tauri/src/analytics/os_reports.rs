@@ -10,7 +10,7 @@ use super::crash::{capture_exception, crash_context, merge_json_objects};
 use crate::AppRuntime;
 
 #[cfg(target_os = "macos")]
-const MAX_FRAMES: usize = 5;
+const MAX_FRAMES: usize = 20;
 
 struct OsFrame {
     // `module+0xoffset`, file name only.
@@ -30,7 +30,7 @@ struct OsReport {
 
 /// Records the OS crash report (macOS `.ips`, Windows WER) for the previous
 /// run, if one was written after it started: the exception type, signal or
-/// exception code, termination code, and up to 5 frames as module+offset.
+/// exception code, termination code, and up to 20 frames as module+offset.
 /// Paths, thread names, and any message text in the report are dropped.
 pub(super) fn report_os_crash(app: &tauri::AppHandle<AppRuntime>, session_started_at: u64) {
     let Some(report) = newest_report(session_started_at) else {

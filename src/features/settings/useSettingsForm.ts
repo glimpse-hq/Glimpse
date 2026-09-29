@@ -1031,7 +1031,7 @@ export function useSettingsForm({
 
   const refreshPermissionState = useCallback(async () => {
     const [nativeMic, acc, inputMonitoring] = await Promise.allSettled([
-      platformCapabilities.requiresNativeMicrophonePermission
+      platformCapabilities.showsMicrophonePermission
         ? invoke<boolean>("check_microphone_permission")
         : Promise.resolve<boolean | null>(null),
       platformCapabilities.requiresAccessibilityPermission
@@ -1231,12 +1231,13 @@ export function useSettingsForm({
       }));
       invalidateModelStatus(model);
     },
-    onError: ({ model, error }) => {
+    onError: ({ model, error, reason }) => {
       setDownloadState((prev) => ({
         ...prev,
         [model]: {
           status: "error",
           message: error,
+          reason,
           percent: prev[model]?.percent ?? 0,
         },
       }));
@@ -1621,14 +1622,20 @@ export function useSettingsForm({
         void queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
       } catch (err) {
         console.error(err);
-        setDownloadState((prev) => ({
-          ...prev,
-          [modelKey]: {
-            status: "error",
-            message: String(err),
-            percent: prev[modelKey]?.percent ?? 0,
-          },
-        }));
+        // download:error usually lands first and carries the reason.
+        setDownloadState((prev) =>
+          prev[modelKey]?.status === "error"
+            ? prev
+            : {
+                ...prev,
+                [modelKey]: {
+                  status: "error",
+                  message: String(err),
+                  reason: "failed",
+                  percent: prev[modelKey]?.percent ?? 0,
+                },
+              },
+        );
       }
     },
     [queryClient],

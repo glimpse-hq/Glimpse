@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import "./App.css";
 
 const SettingsWindow = lazy(() => import("./SettingsWindow"));
+const LiveWindow = lazy(() => import("./LiveWindow"));
 const PillOverlay = lazy(() => import("../features/pill/PillOverlay"));
 const ToastOverlay = lazy(() => import("../features/toast/ToastOverlay"));
 
@@ -41,6 +42,14 @@ function App() {
         }
       >
         <SettingsWindow />
+      </Suspense>
+    );
+  }
+
+  if (windowLabel === "live") {
+    return (
+      <Suspense fallback={null}>
+        <LiveWindow />
       </Suspense>
     );
   }

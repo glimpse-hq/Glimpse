@@ -3,19 +3,15 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 use std::thread::JoinHandle;
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 use crate::pill;
 use crate::{AppRuntime, AppState, model_manager::ReadyModel};
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 const POLL_INTERVAL: Duration = Duration::from_millis(100);
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 const CHUNK_SAMPLES_16K: usize = 8960;
 
 pub struct StreamingSession {
@@ -76,92 +72,84 @@ fn streaming_thread(
     let state = app.state::<AppState>();
     let transcriber = state.local_transcriber();
 
-    #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-    let _ = (&model, &stop_flag, &result, &transcriber);
+    // Hold the transcriber for the whole session so library transcriptions
+    // can't interleave on the shared runtime and corrupt our transcript.
+    let session = transcriber.begin_streaming_session();
 
-    #[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-    {
-        // Hold the transcriber for the whole session so library transcriptions
-        // can't interleave on the shared runtime and corrupt our transcript.
-        let session = transcriber.begin_streaming_session();
+    if let Err(err) = session.warm(&model) {
+        tracing::error!("[streaming] Failed to preload model: {err}");
+        return;
+    }
+    session.reset();
+    let settings = state.current_settings();
+    let language = (!settings.language.trim().is_empty()).then(|| settings.language.clone());
+    session.configure(&model, language, settings.dictionary.clone());
 
-        if let Err(err) = session.warm(&model) {
-            tracing::error!("[streaming] Failed to preload model: {err}");
-            return;
-        }
-        session.reset();
-        let settings = state.current_settings();
-        let language = (!settings.language.trim().is_empty()).then(|| settings.language.clone());
-        session.configure(&model, language, settings.dictionary.clone());
+    let recorder = state.pill().recorder();
+    let mut buffer_offset: usize = 0;
+    let mut resampler: Option<StreamResampler> = None;
+    let mut pending: Vec<f32> = Vec::new();
+    let mut last_text = String::new();
 
-        let recorder = state.pill().recorder();
-        let mut buffer_offset: usize = 0;
-        let mut resampler: Option<StreamResampler> = None;
-        let mut pending: Vec<f32> = Vec::new();
-        let mut last_text = String::new();
-
-        // Transcribe every whole chunk currently buffered, emitting on change.
-        let transcribe_ready_chunks = |pending: &mut Vec<f32>, last_text: &mut String| {
-            let mut processed = 0;
-            while processed + CHUNK_SAMPLES_16K <= pending.len() {
-                let chunk = &pending[processed..processed + CHUNK_SAMPLES_16K];
-                match session.transcribe_chunk(&model, chunk) {
-                    Ok(transcript) => {
-                        if transcript != *last_text {
-                            last_text.clone_from(&transcript);
-                            pill::emit_pill_mode(&app, true, &transcript);
-                        }
-                    }
-                    Err(err) => {
-                        tracing::error!("[streaming] Chunk transcription failed: {err}");
+    // Transcribe every whole chunk currently buffered, emitting on change.
+    let transcribe_ready_chunks = |pending: &mut Vec<f32>, last_text: &mut String| {
+        let mut processed = 0;
+        while processed + CHUNK_SAMPLES_16K <= pending.len() {
+            let chunk = &pending[processed..processed + CHUNK_SAMPLES_16K];
+            match session.transcribe_chunk(&model, chunk) {
+                Ok(transcript) => {
+                    if transcript != *last_text {
+                        last_text.clone_from(&transcript);
+                        pill::emit_pill_mode(&app, true, &transcript);
                     }
                 }
-                processed += CHUNK_SAMPLES_16K;
+                Err(err) => {
+                    tracing::error!("[streaming] Chunk transcription failed: {err}");
+                }
             }
-            if processed > 0 {
-                pending.drain(..processed);
-            }
+            processed += CHUNK_SAMPLES_16K;
+        }
+        if processed > 0 {
+            pending.drain(..processed);
+        }
+    };
+
+    while !stop_flag.load(Ordering::SeqCst) {
+        std::thread::sleep(POLL_INTERVAL);
+
+        let Some((new_samples, sample_rate, new_offset)) =
+            recorder.read_live_samples(buffer_offset)
+        else {
+            continue;
         };
 
-        while !stop_flag.load(Ordering::SeqCst) {
-            std::thread::sleep(POLL_INTERVAL);
-
-            let Some((new_samples, sample_rate, new_offset)) =
-                recorder.read_live_samples(buffer_offset)
-            else {
-                continue;
-            };
-
-            if new_samples.is_empty() {
-                continue;
-            }
-
-            buffer_offset = new_offset;
-            append_samples(&new_samples, sample_rate, &mut resampler, &mut pending);
-            transcribe_ready_chunks(&mut pending, &mut last_text);
+        if new_samples.is_empty() {
+            continue;
         }
 
-        if let Some((new_samples, sample_rate, _)) = recorder.read_live_samples(buffer_offset)
-            && !new_samples.is_empty()
-        {
-            append_samples(&new_samples, sample_rate, &mut resampler, &mut pending);
-            transcribe_ready_chunks(&mut pending, &mut last_text);
-        }
-
-        if !pending.is_empty() {
-            pending.resize(CHUNK_SAMPLES_16K, 0.0);
-            if let Ok(transcript) = session.transcribe_chunk(&model, &pending)
-                && transcript != last_text
-            {
-                pill::emit_pill_mode(&app, true, &transcript);
-            }
-        }
-
-        *result.lock().unwrap() = session.finish();
+        buffer_offset = new_offset;
+        append_samples(&new_samples, sample_rate, &mut resampler, &mut pending);
+        transcribe_ready_chunks(&mut pending, &mut last_text);
     }
+
+    if let Some((new_samples, sample_rate, _)) = recorder.read_live_samples(buffer_offset)
+        && !new_samples.is_empty()
+    {
+        append_samples(&new_samples, sample_rate, &mut resampler, &mut pending);
+        transcribe_ready_chunks(&mut pending, &mut last_text);
+    }
+
+    // The tail goes in unpadded; finishing the stream flushes it.
+    if !pending.is_empty()
+        && let Ok(transcript) = session.transcribe_chunk(&model, &pending)
+        && transcript != last_text
+    {
+        pill::emit_pill_mode(&app, true, &transcript);
+    }
+
+    *result.lock().unwrap() = session.finish();
 }
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 fn append_samples(
     new_samples: &[f32],
     sample_rate: u32,
@@ -178,7 +166,6 @@ fn append_samples(
     }
 }
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 struct StreamResampler {
     in_rate: u32,
     step: f64,
@@ -187,7 +174,6 @@ struct StreamResampler {
     has_prev: bool,
 }
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 impl StreamResampler {
     fn new(in_rate: u32, out_rate: u32) -> Self {
         Self {

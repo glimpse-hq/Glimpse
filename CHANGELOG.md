@@ -1,3 +1,50 @@
+1.3.0
+
+### New Features
+
+- Live transcripts for recordings. While you record, open a small window that shows what's being said as it happens, labeled by speaker. You can rename speakers, add bookmarks, pause or stop from it, and shrink it down to just the controls.
+- Your dictionary now works with Parakeet and Nemotron. Names and product words you add come out right more often.
+
+### Improvements
+
+- Much more accurate word timings with Whisper: most words now line up within a tenth of a second of when they're spoken, instead of landing about a quarter second late.
+- Whisper on Apple Silicon has a new Neural Engine version: about twice as fast, and Large V3 and Large V3 Turbo now run on the Neural Engine instead of the graphics chip. If your current Whisper model used the Neural Engine, Glimpse downloads the new version once in the background and gets it ready while you keep dictating. Other Whisper models need their Neural Engine version downloaded again.
+- Glimpse opens in your theme without flashing light and dark first, and the home screen appears all at once instead of filling in piece by piece.
+- Dictating while you record no longer ends up in the recording.
+- The microphone meter while recording now moves with your voice at a normal speaking volume.
+- Dictation finishes a little sooner, up to a quarter of a second, after you let go of the shortcut.
+- Local models transcribe faster. On Windows, from about 1.5 times faster with Nemotron to 6 times with Parakeet. On Mac, Whisper is about a quarter faster and Parakeet Unified about twice as fast.
+- Glimpse is smaller: the app itself went from 116 MB to 82 MB on Windows, and from 48 MB to 32 MB on Apple Silicon Macs.
+- Nemotron Streaming and Nemotron 3.5 Streaming are faster and much smaller downloads (about 750 MB instead of 2.5 GB). If you use one of the older Parakeet or Nemotron models, Glimpse downloads its new version once in the background. Other older Parakeet and Nemotron downloads are removed, so download them again to use them.
+- Parakeet Unified and the Nemotron models now work on Intel Macs.
+- New installs on Intel Macs now start with Parakeet TDT V3, like on Apple Silicon and Windows.
+- On Apple Silicon, new Neural Engine downloads of Qwen3-ASR are smaller (about 980 MB instead of 1.2 GB) and use about 220 MB less memory.
+- Parakeet TDT V3 with the Neural Engine now actually runs on the Neural Engine. On an M2 Pro, transcription takes about 40% less time. If it's your current model, Glimpse fetches the new version once in the background.
+- Parakeet Unified can now use the Neural Engine on Apple Silicon when transcribing recordings and files in the Library. On an M2 Pro, that takes about half the time.
+- Detecting speakers again or transcribing a Library item again keeps the names and colors you gave speakers.
+- Transcribing a Library item again works even when the model it was made with is no longer installed. Glimpse uses your current model instead.
+- Full-size Whisper Large V3 and Distil-Whisper Large V3.5 are no longer offered for new downloads. If you already have one, it keeps working.
+- On Windows, Settings now shows whether Glimpse can use your microphone. When Windows blocks it, dictating or recording says so, with a button that opens the right privacy settings page.
+- When a model download fails, Glimpse says why in plain words and offers to retry.
+- Glimpse won't start a model download that would leave less than 5 GB free on your disk.
+- Glimpse warns you when you start a recording with less than 1 GB free on your disk.
+- Warmer, brighter colors in light mode that match the Glimpse logo, and error messages in the Library are easier to read.
+- The Record screen now tells you when your microphone or the app you're recording hasn't made a sound yet.
+
+### Fixes
+
+- On Mac, quitting Glimpse while it's transcribing no longer crashes.
+- Whisper no longer crashes on very short recordings.
+- If your disk fills up while you record, Glimpse stops, keeps what it recorded so far, and tells you. Before, the recording kept going without saving anything new.
+- Dictation tells you when your disk is full instead of failing quietly.
+- If transcribing a Library item again fails or you cancel it, the earlier transcript comes back instead of an empty item.
+- If Glimpse can't keep writing a recording to disk for any reason, it now stops and tells you, like it already did for a full disk, instead of quietly saving a shorter recording.
+- On the Record screen, picking an app while system audio is off records only that app, instead of turning system audio back on for everything or bringing back apps you'd unpicked.
+- If you still use Distil-Whisper Large V3.5, it no longer skips a stretch of text in long recordings.
+- Parakeet Unified no longer returns nothing for very short recordings, and no longer drops the last word.
+- Parakeet TDT V3 no longer skips sentences after long pauses in longer recordings.
+- On Intel Macs, Glimpse now skips silence the same way it does on Apple Silicon, so Whisper types phantom text like "Thank you." much less often.
+
 1.2.7
 
 ### Speaker Detection

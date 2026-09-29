@@ -110,6 +110,26 @@ pub struct Bookmark {
     pub label: Option<String>,
 }
 
+/// A system-audio stretch attributed to one live speaker during recording.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LiveTurn {
+    pub start_ms: u64,
+    pub end_ms: u64,
+    pub speaker_id: String,
+}
+
+/// Live speaker edits and system-track turns, so the final labels keep the edits.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct LiveSpeakerHints {
+    #[serde(default)]
+    pub speakers: Vec<Speaker>,
+    #[serde(default)]
+    pub turns: Vec<LiveTurn>,
+    /// Live speakers another live speaker was merged into.
+    #[serde(default)]
+    pub merged_into: Vec<String>,
+}
+
 /// A finished recording session ready to become a Library item.
 pub(crate) struct RecordingOutput {
     pub name: String,
@@ -119,6 +139,7 @@ pub(crate) struct RecordingOutput {
     pub system_path: Option<std::path::PathBuf>,
     pub sources: AudioSources,
     pub bookmarks: Vec<Bookmark>,
+    pub live: LiveSpeakerHints,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

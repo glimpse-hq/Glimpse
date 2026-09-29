@@ -423,6 +423,10 @@ pub fn run() {
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
             speech::upgrade_retired_diarizer(handle);
+            speech::remove_whisper_cpp_files(handle);
+            speech::compile_pending_ane_encoders(handle);
+            speech::upgrade_parakeet_encoder(handle);
+            speech::replace_onnx_models(handle);
             {
                 let h = handle.clone();
                 async_runtime::spawn(async move {
@@ -613,6 +617,14 @@ pub fn run() {
             recording::remove_recording_bookmark,
             recording::discard_recording_session,
             recording::open_system_audio_settings,
+            recording::live_window::open_live_view,
+            recording::live_window::hide_live_view,
+            recording::live_window::finish_from_live_view,
+            recording::live_window::set_live_view_compact,
+            recording::get_live_transcript,
+            recording::rename_live_speaker,
+            recording::set_live_speaker_color,
+            recording::merge_live_speaker,
             model_manager::list_models,
             model_manager::check_model_status,
             model_manager::download_model,
@@ -706,6 +718,8 @@ pub fn run() {
                     (now - state.session_started_at).as_secs_f64(),
                     counters.transcription_count,
                 );
+                #[cfg(target_os = "macos")]
+                platform::macos::skip_static_destructors();
                 #[cfg(target_os = "windows")]
                 platform::windows::crash::exit_if_session_ending();
             }
@@ -794,7 +808,6 @@ pub struct AppState {
     hotkeys: core::hotkeys::HotkeyCoordinator,
     shortcut_capture_active: AtomicBool,
     pub(crate) tray: parking_lot::Mutex<Option<TrayIcon<AppRuntime>>>,
-    pub(crate) settings_close_handler_registered: AtomicBool,
     transcription_cancelled: AtomicBool,
     transcription_token: parking_lot::Mutex<Option<CancellationToken>>,
     ffmpeg_toast_shown: AtomicBool,
@@ -880,7 +893,6 @@ impl AppState {
             hotkeys: core::hotkeys::HotkeyCoordinator::default(),
             shortcut_capture_active: AtomicBool::new(false),
             tray: parking_lot::Mutex::new(None),
-            settings_close_handler_registered: AtomicBool::new(false),
             transcription_cancelled: AtomicBool::new(false),
             transcription_token: parking_lot::Mutex::new(None),
             ffmpeg_toast_shown: AtomicBool::new(false),
@@ -1192,6 +1204,10 @@ impl AppState {
         let next = queue.pop_front()?;
         *active = Some(next.id.clone());
         Some(next)
+    }
+
+    pub(crate) fn library_job_active(&self) -> bool {
+        self.library_active.lock().is_some()
     }
 
     pub fn clear_active_library_job(&self, id: &str) {
@@ -1616,11 +1632,10 @@ struct AppInfo {
     data_dir_path: String,
     storage_breakdown: StorageBreakdown,
     store_build: bool,
-    os_major: u32,
 }
 
 #[cfg(target_os = "macos")]
-fn macos_major_version() -> u32 {
+pub(crate) fn macos_major_version() -> u32 {
     static MAJOR: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
     *MAJOR.get_or_init(|| {
         std::process::Command::new("sw_vers")
@@ -1634,7 +1649,7 @@ fn macos_major_version() -> u32 {
 }
 
 #[cfg(not(target_os = "macos"))]
-fn macos_major_version() -> u32 {
+pub(crate) fn macos_major_version() -> u32 {
     0
 }
 
@@ -1684,7 +1699,6 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
             total_bytes,
         },
         store_build: platform::is_store_build(),
-        os_major: macos_major_version(),
     })
 }
 
@@ -1970,9 +1984,10 @@ pub(crate) fn persist_recording_async(
                 analytics::error_detail(&err),
                 input,
             );
-            emit_error(
+            persist_failed(
                 &app,
-                format!("Failed to resolve recordings directory: {err}"),
+                format!("Failed to resolve recordings directory: {err:#}"),
+                false,
             );
             return;
         }
@@ -2056,20 +2071,30 @@ pub(crate) fn persist_recording_async(
                     analytics::error_detail(&err),
                     input,
                 );
-                emit_error(&app, format!("Unable to save recording: {err}"));
+                persist_failed(
+                    &app,
+                    format!("Unable to save recording: {err:#}"),
+                    platform::is_disk_full(&err),
+                );
             }
             Err(err) => {
                 analytics::track_recording_failed(&app, "persist", "task_failed", input);
-                emit_error(&app, format!("Recording task failed: {err}"));
+                persist_failed(&app, format!("Recording task failed: {err}"), false);
             }
         }
     });
 }
 
-pub(crate) fn emit_error(app: &AppHandle<AppRuntime>, message: String) {
-    app.state::<AppState>()
-        .pill()
-        .transition_to_error(app, &message);
+// Saving runs while the pill shows Processing, where `transition_to_error` is ignored.
+fn persist_failed(app: &AppHandle<AppRuntime>, message: String, disk_full: bool) {
+    tracing::error!("{message}");
+    let text = if disk_full {
+        toast::native(app, "native.toast.dictation_disk_full")
+    } else {
+        pill::simplify_recording_error(&message)
+    };
+    toast::show(app, "error", None, &text);
+    app.state::<AppState>().pill().finish_processing(app);
 }
 
 pub(crate) fn emit_event<T: Serialize + Clone>(

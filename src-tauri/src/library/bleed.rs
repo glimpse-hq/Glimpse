@@ -21,18 +21,55 @@ const LONE_WORD_MIN_BLEED: usize = 5;
 // Segment fallback when a model gives no word timestamps.
 const SEGMENT_OVERLAP_MS: u64 = 1000;
 const SEGMENT_MATCH_RATIO: f32 = 0.7;
+// System text further than this from microphone text can't match it.
+pub(crate) const BLEED_REACH_MS: u64 = SEGMENT_OVERLAP_MS;
 
 pub(super) fn remove_bleed(
     microphone: &mut LibraryTranscriptionResult,
     system: &LibraryTranscriptionResult,
 ) {
+    remove_bleed_after(microphone, system, 0);
+}
+
+/// `remove_bleed` for a stretch of live microphone text and the system text
+/// around it. `earlier_bleed` is the bleed words found so far in the session.
+/// Returns how many of `words` were bleed.
+pub(crate) fn remove_live_bleed(
+    segments: &mut Vec<TranscriptSegment>,
+    words: Vec<TranscriptSegment>,
+    system_segments: Vec<TranscriptSegment>,
+    system_words: Vec<TranscriptSegment>,
+    earlier_bleed: usize,
+) -> usize {
+    let mut microphone = LibraryTranscriptionResult {
+        segments: Some(std::mem::take(segments)),
+        words: Some(words),
+        ..Default::default()
+    };
+    let system = LibraryTranscriptionResult {
+        segments: Some(system_segments),
+        words: Some(system_words),
+        ..Default::default()
+    };
+    let found = remove_bleed_after(&mut microphone, &system, earlier_bleed);
+    *segments = microphone.segments.unwrap_or_default();
+    found
+}
+
+fn remove_bleed_after(
+    microphone: &mut LibraryTranscriptionResult,
+    system: &LibraryTranscriptionResult,
+    earlier_bleed: usize,
+) -> usize {
+    let mut found = 0;
     match (microphone.words.as_ref(), system.words.as_ref()) {
         (Some(mic_words), Some(system_words))
             if !mic_words.is_empty() && !system_words.is_empty() =>
         {
-            let bleed = bleed_words(mic_words, system_words);
-            if !bleed.iter().any(|&is_bleed| is_bleed) {
-                return;
+            let bleed = bleed_words(mic_words, system_words, earlier_bleed);
+            found = bleed.iter().filter(|&&is_bleed| is_bleed).count();
+            if found == 0 {
+                return 0;
             }
             let mic_words = microphone.words.take().unwrap_or_default();
             if let Some(segments) = microphone.segments.take() {
@@ -51,7 +88,7 @@ pub(super) fn remove_bleed(
             let (Some(segments), Some(system_segments)) =
                 (microphone.segments.as_mut(), system.segments.as_ref())
             else {
-                return;
+                return 0;
             };
             segments.retain(|segment| !segment_is_bleed(segment, system_segments));
         }
@@ -64,9 +101,14 @@ pub(super) fn remove_bleed(
             .collect::<Vec<_>>()
             .join(" ");
     }
+    found
 }
 
-fn bleed_words(mic_words: &[TranscriptSegment], system_words: &[TranscriptSegment]) -> Vec<bool> {
+fn bleed_words(
+    mic_words: &[TranscriptSegment],
+    system_words: &[TranscriptSegment],
+    earlier_bleed: usize,
+) -> Vec<bool> {
     let mut system: Vec<(u64, String)> = system_words
         .iter()
         .map(|word| (word.start_ms, normalize(&word.text)))
@@ -101,7 +143,7 @@ fn bleed_words(mic_words: &[TranscriptSegment], system_words: &[TranscriptSegmen
             hits as f32 / (last - first + 1) as f32 >= BLEED_RATIO
         })
         .collect();
-    if bleed.iter().filter(|&&is_bleed| is_bleed).count() >= LONE_WORD_MIN_BLEED {
+    if earlier_bleed + bleed.iter().filter(|&&is_bleed| is_bleed).count() >= LONE_WORD_MIN_BLEED {
         for (index, is_bleed) in bleed.iter_mut().enumerate() {
             *is_bleed = *is_bleed
                 || (offsets[index].is_some_and(|offset| offset <= LONE_WORD_WINDOW_MS)

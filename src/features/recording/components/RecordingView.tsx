@@ -20,12 +20,16 @@ import {
   Microphone,
   Pause,
   Play,
+  SidebarSimple,
   SpeakerHigh,
   Stop,
+  Warning,
   X,
 } from "@phosphor-icons/react";
 import * as recordingApi from "../api";
 import { useRecordingSession } from "../useRecordingSession";
+import { useSilenceWarning } from "../useSilenceWarning";
+import { readLivePrefs } from "../livePrefs";
 import { useInputDevices, useSettings } from "../../settings/queries";
 import { libraryKeys } from "../../library/queries";
 import { formatTimestamp } from "../../library/components/library-utils";
@@ -67,18 +71,22 @@ const DEFAULT_CHOICES: SourceChoices = {
   apps: [],
 };
 
-const choicesFromSources = (sources: RecordingSources): SourceChoices => ({
-  microphone: sources.microphone !== null,
-  systemAudio: sources.system_audio !== null,
-  // A recording started on the system default is saved with no device id.
-  microphoneDevice: sources.microphone
-    ? (sources.microphone.device_id ?? "")
-    : null,
+const choicesFromSources = (sources: RecordingSources): SourceChoices => {
+  const saved = sources.system_audio?.apps ?? [];
   // Apps without a bundle id are keyed by pid, which won't match next launch.
-  apps: (sources.system_audio?.apps ?? []).filter(
-    (app) => !app.id.startsWith("pid:"),
-  ),
-});
+  const apps = saved.filter((app) => !app.id.startsWith("pid:"));
+  return {
+    microphone: sources.microphone !== null,
+    // Losing every picked app must not widen the capture to the whole system.
+    systemAudio:
+      sources.system_audio !== null && (saved.length === 0 || apps.length > 0),
+    // A recording started on the system default is saved with no device id.
+    microphoneDevice: sources.microphone
+      ? (sources.microphone.device_id ?? "")
+      : null,
+    apps,
+  };
+};
 
 const formatClock = (elapsedMs: number) => {
   const total = Math.floor(elapsedMs / 1000);
@@ -396,6 +404,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   };
   const queryClient = useQueryClient();
   const { state, applyState } = useRecordingSession();
+  const silenceWarning = useSilenceWarning(state);
   const { data: devices = [] } = useInputDevices(isActive);
   const { data: defaultDeviceId = null } = useSettings(
     (settings) => settings.microphone_device ?? null,
@@ -580,10 +589,19 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     setSaved(null);
     try {
       applyState(await recordingApi.startRecordingSession(sources));
+      if (readLivePrefs().openOnStart) void handleOpenLive();
     } catch (err) {
       setStartError(describeError(err));
     } finally {
       setStarting(false);
+    }
+  };
+
+  const handleOpenLive = async () => {
+    try {
+      await recordingApi.openLiveView();
+    } catch (err) {
+      console.error("Failed to open the live view:", err);
     }
   };
 
@@ -690,13 +708,14 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   };
 
   const toggleApp = (app: SelectedApp) => {
-    setChoices((prev) => ({
-      ...prev,
-      systemAudio: true,
-      apps: prev.apps.some((entry) => entry.id === app.id)
-        ? prev.apps.filter((entry) => entry.id !== app.id)
-        : [...prev.apps, { id: app.id, name: app.name, icon: app.icon }],
-    }));
+    setChoices((prev) => {
+      // Apps kept from before system audio was turned off aren't shown as picked.
+      const current = prev.systemAudio ? prev.apps : [];
+      const apps = current.some((entry) => entry.id === app.id)
+        ? current.filter((entry) => entry.id !== app.id)
+        : [...current, { id: app.id, name: app.name, icon: app.icon }];
+      return { ...prev, systemAudio: apps.length > 0, apps };
+    });
   };
 
   const idle = !active && !busy;
@@ -968,13 +987,46 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
               {paused
                 ? t({ id: "record.active.paused", message: "Paused" })
                 : t({ id: "record.active.recording", message: "Recording" })}
+              <span className="text-content-disabled" aria-hidden="true">
+                ·
+              </span>
+              <button
+                type="button"
+                onClick={handleOpenLive}
+                className="-mx-1.5 flex h-6 items-center gap-1.5 rounded-md px-1.5 text-content-secondary transition-colors hover:bg-surface-interactive hover:text-content-primary"
+              >
+                <SidebarSimple size={13} weight="bold" />
+                {t({ id: "record.active.live", message: "Live view" })}
+              </button>
             </>
           )}
         </div>
       </div>
 
+      <div className="mt-3 mb-1 flex h-7 items-center justify-center">
+        <AnimatePresence>
+          {silenceWarning && (
+            <motion.div
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              role="status"
+              className="flex h-7 max-w-full items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--color-interactive)_40%,var(--border-strong))] bg-[var(--color-interactive-10)] px-3 ui-text-label font-medium text-content-primary"
+            >
+              <Warning
+                size={13}
+                weight="fill"
+                className="shrink-0 text-[var(--color-interactive)]"
+              />
+              <span className="truncate">{silenceWarning}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       <div
-        className={`mt-10 divide-y divide-border-primary border-y border-border-primary ${
+        className={`divide-y divide-border-primary border-y border-border-primary ${
           microphoneMenuOpen || systemMenuOpen ? "relative z-dropdown-open" : ""
         }`}
       >

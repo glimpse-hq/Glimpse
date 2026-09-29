@@ -3,12 +3,14 @@ import type {
   AudioApp,
   Bookmark,
   LibraryItem,
+  LiveTranscript,
   RecordingCapabilities,
   RecordingSessionState,
   RecordingSources,
 } from "../../types";
 
 export const RECORDING_STATE_EVENT = "recording-session:state";
+export const LIVE_TRANSCRIPT_EVENT = "recording-session:transcript";
 
 export async function getRecordingCapabilities(): Promise<RecordingCapabilities> {
   return invoke<RecordingCapabilities>("get_recording_capabilities");
@@ -76,4 +78,45 @@ export async function finishRecordingSession(
 
 export async function openSystemAudioSettings(): Promise<void> {
   await invoke("open_system_audio_settings");
+}
+
+export async function openLiveView(): Promise<void> {
+  await invoke("open_live_view");
+}
+
+export async function hideLiveView(expand: boolean): Promise<void> {
+  await invoke("hide_live_view", { expand });
+}
+
+export async function finishFromLiveView(): Promise<void> {
+  await invoke("finish_from_live_view");
+}
+
+export async function getLiveTranscript(): Promise<LiveTranscript> {
+  return invoke<LiveTranscript>("get_live_transcript");
+}
+
+export async function renameLiveSpeaker(
+  id: string,
+  name: string,
+): Promise<void> {
+  await invoke("rename_live_speaker", { id, name });
+}
+
+export async function mergeLiveSpeaker(
+  from: string,
+  into: string,
+): Promise<void> {
+  await invoke("merge_live_speaker", { from, into });
+}
+
+export async function setLiveSpeakerColor(
+  id: string,
+  color: string | null,
+): Promise<void> {
+  await invoke("set_live_speaker_color", { id, color });
+}
+
+export async function setLiveViewCompact(compact: boolean): Promise<void> {
+  await invoke("set_live_view_compact", { compact });
 }

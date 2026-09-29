@@ -1,4 +1,4 @@
-import type { AudioSources, Bookmark } from "./library";
+import type { AudioSources, Bookmark, Speaker } from "./library";
 
 export type RecordingCapabilities = {
   system_audio: boolean;
@@ -31,4 +31,28 @@ export type RecordingSessionState = {
   levels: { microphone: number; system_audio: number };
   bookmarks: Bookmark[];
   finish_requested: boolean;
+};
+
+export type LiveSegment = {
+  id: string;
+  start_ms: number;
+  end_ms: number;
+  text: string;
+  speaker_id: string;
+  settled: boolean;
+};
+
+export type LiveTranscriptStatus =
+  "off" | "starting" | "live" | "catching_up" | "unavailable";
+
+// Payload of `recording-session:transcript`. `segments` replaces the list from
+// `from_index` on; when `revision` skips one, refetch with `get_live_transcript`,
+// which always starts at 0.
+export type LiveTranscript = {
+  revision: number;
+  from_index: number;
+  segments: LiveSegment[];
+  speakers: Speaker[];
+  active_speaker_id: string | null;
+  status: LiveTranscriptStatus;
 };

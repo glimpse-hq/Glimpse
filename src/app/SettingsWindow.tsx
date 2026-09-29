@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import {
   AnimatePresence,
@@ -7,25 +7,18 @@ import {
   PresenceContext,
 } from "framer-motion";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { activateLocale } from "../i18n";
 import { licenseKeys } from "../features/license/queries";
-import { detectAppPlatform } from "../platform/service";
-import {
-  parseTextSizeMode,
-  resolveTextScale,
-  TEXT_SIZE_MODE_STORAGE_KEY,
-} from "../shared/lib/textSize";
+import { useTextScale, useTheme } from "../shared/hooks/useAppearance";
 import { modelKeys } from "../features/settings/models-queries";
+import { getSettings } from "../features/settings/api";
 import { settingsKeys, useSettings } from "../features/settings/queries";
 import { transcriptionKeys } from "../features/transcriptions/queries";
 import { updateKeys } from "../features/updates/queries";
 import type { LicenseState } from "../shared/types/license";
-import type { StoredSettings, TextSizeMode, ThemeMode } from "../types";
+import type { StoredSettings } from "../types";
 
-const Home = lazy(() => import("../Home"));
-const AneCompileOverlay = lazy(
-  () => import("../features/settings/components/AneCompileOverlay"),
-);
+const loadHome = () => import("../Home");
+const Home = lazy(loadHome);
 const OnboardingScreen = lazy(
   () => import("../features/onboarding/OnboardingScreen"),
 );
@@ -40,19 +33,15 @@ const queryClient = new QueryClient({
   },
 });
 
-const parseThemeMode = (value: string | null): ThemeMode =>
-  value === "light" || value === "dark" || value === "system"
-    ? value
-    : "system";
+// Fetch settings and the Home chunk in parallel.
+void queryClient.prefetchQuery({
+  queryKey: settingsKeys.detail(),
+  queryFn: getSettings,
+});
+loadHome().catch(() => {});
 
-const resolveThemeAttribute = (mode: ThemeMode): "light" | "dark" => {
-  if (mode === "system") {
-    return window.matchMedia("(prefers-color-scheme: light)").matches
-      ? "light"
-      : "dark";
-  }
-  return mode;
-};
+// Shows Home anyway if its first screen never reports ready.
+const HOME_READY_TIMEOUT_MS = 2000;
 
 function QuerySyncBridge() {
   useEffect(() => {
@@ -111,76 +100,25 @@ function SettingsContent() {
   // Home builds in only after onboarding, not on a normal launch.
   const [homeEnters, setHomeEnters] = useState(false);
   if (showOnboarding && !homeEnters) setHomeEnters(true);
-  const didActivateInitialLocale = useRef(false);
+  useTextScale();
+  useTheme(settings?.theme_mode ?? null, isLoading);
 
-  useEffect(() => {
-    // Later locale changes activate immediately in the settings form.
-    if (!settings || didActivateInitialLocale.current) return;
-    didActivateInitialLocale.current = true;
-    void activateLocale(settings.app_locale);
-  }, [settings]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const applyTextScale = (mode: TextSizeMode) => {
-      root.style.setProperty(
-        "--ui-text-scale",
-        resolveTextScale(mode, detectAppPlatform()),
-      );
-    };
-
-    applyTextScale(
-      parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
-    );
-    root.classList.add("text-scale-anim-ready");
-
-    const unlistenPromise = listen<{ mode?: TextSizeMode }>(
-      "ui:text_size_changed",
-      (event) => {
-        applyTextScale(parseTextSizeMode(event.payload?.mode ?? null));
-      },
-    );
-
-    return () => {
-      root.classList.remove("text-scale-anim-ready");
-      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
-    };
+  // Home stays invisible until its first screen has its data and fonts, so it
+  // appears in one piece instead of filling in.
+  const [homeReady, setHomeReady] = useState(false);
+  const revealHome = useCallback(() => {
+    void Promise.allSettled([
+      document.fonts.load("400 1em Satoshi"),
+      document.fonts.load("700 1em Satoshi"),
+    ]).then(() => setHomeReady(true));
   }, []);
-
   useEffect(() => {
-    const root = document.documentElement;
-    if (isLoading) {
-      root.dataset.theme = "dark";
-      return;
-    }
-
-    let currentMode = parseThemeMode(settings?.theme_mode ?? null);
-
-    const applyTheme = (mode: ThemeMode) => {
-      currentMode = mode;
-      root.dataset.theme = resolveThemeAttribute(mode);
-    };
-
-    applyTheme(currentMode);
-
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: light)");
-    const handleSystemChange = () => {
-      if (currentMode === "system") applyTheme("system");
-    };
-    mediaQuery.addEventListener("change", handleSystemChange);
-
-    const unlistenPromise = listen<{ mode?: ThemeMode }>(
-      "ui:theme_changed",
-      (event) => {
-        applyTheme(parseThemeMode(event.payload?.mode ?? null));
-      },
+    const timeout = window.setTimeout(
+      () => setHomeReady(true),
+      HOME_READY_TIMEOUT_MS,
     );
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleSystemChange);
-      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
-    };
-  }, [isLoading, settings?.theme_mode]);
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   if (isLoading) {
     return (
@@ -218,20 +156,19 @@ function SettingsContent() {
           ) : (
             <motion.div
               key="home"
-              className={`h-full w-full${homeEnters ? " home-enter" : ""}`}
+              className={`h-full w-full${homeEnters ? " home-enter" : ""}${
+                homeReady || homeEnters ? "" : " invisible"
+              }`}
               exit={{ opacity: 0, transition: { duration: 0.22 } }}
             >
               <PresenceContext.Provider value={null}>
                 <Suspense fallback={null}>
-                  <Home />
+                  <Home onReady={revealHome} />
                 </Suspense>
               </PresenceContext.Provider>
             </motion.div>
           )}
         </AnimatePresence>
-        <Suspense fallback={null}>
-          <AneCompileOverlay />
-        </Suspense>
       </div>
     </MotionConfig>
   );

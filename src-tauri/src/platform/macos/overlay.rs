@@ -1,6 +1,5 @@
 use crate::AppRuntime;
 use anyhow::{Context, Result, anyhow};
-use tauri::Manager;
 use tauri::{AppHandle, WebviewWindow};
 use tauri_nspanel::{
     CollectionBehavior, ManagerExt, PanelLevel, StyleMask, WebviewWindowExt, tauri_panel,
@@ -30,7 +29,9 @@ pub fn init(app: &AppHandle<AppRuntime>, overlay_window: &WebviewWindow<AppRunti
         .context("get macOS overlay panel")?;
 
     let style = StyleMask::empty().borderless().nonactivating_panel();
-    panel.set_style_mask(style.into());
+    if let Err(err) = panel.set_style_mask(style.into()) {
+        tracing::warn!("Failed to set overlay panel style mask: {err}");
+    }
 
     panel.set_level(PanelLevel::Floating.into());
 

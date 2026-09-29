@@ -11,8 +11,8 @@ export interface NewsItem {
   publishedAt: string;
   url: string;
   image?: string;
-  /// Optional per-locale overrides from the feed, keyed by language tag.
-  /// Absent fields fall back to the English ones above.
+  // Optional per-locale overrides from the feed, keyed by language tag.
+  // Absent fields fall back to the English ones above.
   i18n?: Record<string, NewsItemTranslation>;
 }
 
@@ -82,8 +82,8 @@ function parseItem(raw: unknown): NewsItem | null {
   };
 }
 
-/// Applies feed translations for the active locale, exact tag first ("pt-br"),
-/// then its base language ("pt"). Untranslated fields stay English.
+// Applies feed translations for the active locale, exact tag first ("pt-br"),
+// then its base language ("pt"). Untranslated fields stay English.
 export function localizeNews(items: NewsItem[], locale: string): NewsItem[] {
   const tag = locale.trim().toLowerCase();
   const base = tag.split(/[-_]/)[0];

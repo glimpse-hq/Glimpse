@@ -4,7 +4,7 @@ use crate::recent_transcriptions::{
     build_recent_transcriptions_menu, copy_last_transcription_to_clipboard,
     copy_transcription_to_clipboard,
 };
-use crate::settings::UserSettings;
+use crate::settings::{ThemeMode, UserSettings};
 use crate::speech::menu::handle_speech_menu_event;
 use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, audio};
 use parking_lot::Mutex;
@@ -14,7 +14,11 @@ use std::sync::{
 };
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, Submenu, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::window::Color;
+use tauri::{
+    AppHandle, Emitter, Manager, Theme, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    WindowEvent,
+};
 
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
@@ -675,39 +679,68 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
 }
 
 pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    let state = app.state::<AppState>();
-    let mut reset_close_flag = false;
-
     let window = match app.get_webview_window(SETTINGS_WINDOW_LABEL) {
-        Some(existing) => existing,
-        _ => {
-            reset_close_flag = true;
-            let builder =
-                WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
-                    .title("Glimpse")
-                    .inner_size(900.0, 750.0)
-                    .min_inner_size(900.0, 750.0)
-                    .resizable(true)
-                    .visible(false);
-
-            #[cfg(target_os = "macos")]
-            let builder = builder
-                .hidden_title(true)
-                .title_bar_style(tauri::TitleBarStyle::Overlay);
-
-            #[cfg(target_os = "windows")]
-            let builder = builder.decorations(false);
-
-            builder.build()?
-        }
+        Some(window) => window,
+        None => build_settings_window(app)?,
     };
+    show_settings_window(app, &window)
+}
 
-    if reset_close_flag {
-        state
-            .settings_close_handler_registered
-            .store(false, Ordering::SeqCst);
-    }
+fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppRuntime>> {
+    let settings = app.state::<AppState>().current_settings();
+    let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
+        .title("Glimpse")
+        .inner_size(900.0, 750.0)
+        .min_inner_size(900.0, 750.0)
+        .resizable(true)
+        .visible(false)
+        .initialization_script(boot_script(&settings));
 
+    #[cfg(target_os = "macos")]
+    let builder = builder
+        .hidden_title(true)
+        .title_bar_style(tauri::TitleBarStyle::Overlay);
+
+    #[cfg(target_os = "windows")]
+    let builder = builder.decorations(false);
+
+    let window = builder.build()?;
+
+    // Matches --color-bg-primary behind .settings-view, which takes over once
+    // the page paints.
+    let dark = match settings.theme_mode {
+        ThemeMode::Light => false,
+        ThemeMode::Dark => true,
+        ThemeMode::System => window.theme().is_ok_and(|theme| theme == Theme::Dark),
+    };
+    let background = if dark {
+        Color(3, 3, 3, 255)
+    } else {
+        Color(238, 236, 232, 255)
+    };
+    let _ = window.set_background_color(Some(background));
+
+    let app_handle = app.clone();
+    let window_clone = window.clone();
+    window.on_window_event(move |event| {
+        if let WindowEvent::CloseRequested { api, .. } = event {
+            api.prevent_close();
+            let _ = window_clone.hide();
+            app_handle
+                .state::<AppState>()
+                .pill()
+                .stop_microphone_test(&app_handle);
+            #[cfg(target_os = "macos")]
+            let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
+        }
+    });
+    Ok(window)
+}
+
+fn show_settings_window(
+    app: &AppHandle<AppRuntime>,
+    window: &WebviewWindow<AppRuntime>,
+) -> tauri::Result<()> {
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
 
@@ -718,7 +751,7 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
     window.set_focus()?;
 
     // Show a toast if the app just restarted via auto-update
-    if state.take_auto_update_completed() {
+    if app.state::<AppState>().take_auto_update_completed() {
         let current_version = env!("CARGO_PKG_VERSION");
         crate::toast::emit_toast(
             app,
@@ -731,25 +764,16 @@ pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> 
             },
         );
     }
-
-    let already_registered = state
-        .settings_close_handler_registered
-        .swap(true, Ordering::SeqCst);
-    if !already_registered {
-        let app_handle = app.clone();
-        let window_clone = window.clone();
-        window.on_window_event(move |event| {
-            if let WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window_clone.hide();
-                tauri::Manager::state::<crate::AppState>(&app_handle)
-                    .pill()
-                    .stop_microphone_test(&app_handle);
-                #[cfg(target_os = "macos")]
-                let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
-            }
-        });
-    }
-
     Ok(())
+}
+
+/// What the page's first paint needs, before anything arrives over IPC.
+pub(crate) fn boot_script(settings: &UserSettings) -> String {
+    let boot = serde_json::json!({
+        "theme": settings.theme_mode,
+        "locale": settings.app_locale,
+        "version": env!("CARGO_PKG_VERSION"),
+        "osMajor": crate::macos_major_version(),
+    });
+    format!("window.__GLIMPSE_BOOT__ = {boot};")
 }

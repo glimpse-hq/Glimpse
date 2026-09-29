@@ -116,22 +116,13 @@ jobs:
         with:
           bun-version-file: package.json
 
-      - name: install LLVM
-        if: matrix.os == 'windows'
-        uses: KyleMayes/install-llvm-action@ebc0426251bc40c7cd31162802432c68818ab8f0 # v2
-        with:
-          version: "20.1.8"
-          directory: ${{ runner.temp }}/llvm
-
       - name: configure Windows build paths
         if: matrix.os == 'windows'
         shell: pwsh
         run: |
           $cargoTargetDir = "C:\t"
-          $libclangPath = Join-Path $env:RUNNER_TEMP "llvm\bin"
           New-Item -ItemType Directory -Force $cargoTargetDir | Out-Null
           "CARGO_TARGET_DIR=$cargoTargetDir" >> $env:GITHUB_ENV
-          "LIBCLANG_PATH=$libclangPath" >> $env:GITHUB_ENV
 
       - name: cache Vulkan SDK installer
         if: matrix.os == 'windows'
@@ -228,7 +219,7 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: "14.0"
           CMAKE_OSX_DEPLOYMENT_TARGET: "14.0"
           # Apple Clang still defines __ARM_FEATURE_MATMUL_INT8 for ggml's +noi8mm build,
-          # which makes whisper-rs-sys compile the wrong ARM path on GitHub's arm64 runner.
+          # which makes ggml compile the wrong ARM path on GitHub's arm64 runner.
           CFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           CXXFLAGS_aarch64_apple_darwin: "-U__ARM_FEATURE_MATMUL_INT8"
           POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
@@ -264,9 +255,8 @@ jobs:
           # `strip` makes the MSVC linker skip the PDB; a PE never embeds
           # debug info, so the exe stays the same.
           CARGO_PROFILE_RELEASE_STRIP: "none"
-          # Build whisper.cpp/ggml for a portable AVX2 baseline, not the build host
-          GGML_NATIVE: "OFF"
-          GGML_AVX2: "ON"
+          # Build ggml for a portable AVX2 baseline, not the build host
+          TRANSCRIBE_CMAKE_ARGS: "-DGGML_NATIVE=OFF -DGGML_AVX2=ON"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}

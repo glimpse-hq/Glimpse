@@ -22,6 +22,7 @@ export const getPlatformCapabilities = (): PlatformCapabilities => {
   return {
     id,
     requiresNativeMicrophonePermission: id === "macos",
+    showsMicrophonePermission: id === "macos" || id === "windows",
     requiresAccessibilityPermission: id === "macos",
     requiresInputMonitoringPermission: id === "macos",
     supportsAutoPauseMedia: id === "macos" || id === "windows",

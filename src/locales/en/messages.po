@@ -259,6 +259,21 @@ msgstr ""
 #~ msgstr "Filter by speaker"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/AneCompileOverlay.tsx
+#~ msgid "ane_compile.body"
+#~ msgstr "macOS is compiling {label} for the Apple Neural Engine. This happens once and can take a few minutes."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AneCompileOverlay.tsx
+#~ msgid "ane_compile.title"
+#~ msgstr "Optimizing for the Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+#~ msgid "onboarding.download.failed"
+#~ msgstr "Download failed"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -660,6 +675,7 @@ msgid "personalization.modal.add"
 msgstr "Add"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark.note"
 msgstr "Add a note"
@@ -841,6 +857,7 @@ msgstr "Assign"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.assign_new_speaker"
 msgstr "Assign new speaker"
 
@@ -957,6 +974,12 @@ msgid "settings.stats.best_streak"
 msgstr "Best streak"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.blocked"
+msgstr "Blocked by your network"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.bookmark"
 msgstr "Bookmark"
@@ -1103,6 +1126,11 @@ msgid "onboarding.license_step.tile_modes_casual"
 msgstr "Casual"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.status.catching_up"
+msgstr "Catching up"
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.filter.category"
 msgstr "Category"
@@ -1114,7 +1142,7 @@ msgid "onboarding.first_dictation.edit_shortcut_aria"
 msgstr "Change shortcut"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.change_line"
 msgstr "Change speaker for this line"
 
@@ -1299,6 +1327,11 @@ msgid "faq.close_aria"
 msgstr "Close FAQ"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.close"
+msgstr "Close live view"
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.close"
 msgstr "Close modal"
@@ -1344,7 +1377,7 @@ msgid "home.sidebar.collapse"
 msgstr "Collapse sidebar"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.color"
 msgstr "Color"
 
@@ -1526,6 +1559,11 @@ msgid "transcriptions.item.copy_selection"
 msgstr "Copy selection"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.copy"
+msgstr "Copy transcript"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.copy_transcription"
 msgstr "Copy transcription"
@@ -1624,6 +1662,11 @@ msgstr "Couldn't find this library item. Try reopening it."
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.couldnt_load"
 msgstr "Couldn't load releases"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.network"
+msgstr "Couldn't reach the server"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2023,8 +2066,8 @@ msgid "model_picker.error.title"
 msgstr "Download failed"
 
 #. js-lingui-explicit-id
-#: src/features/onboarding/OnboardingScreen.tsx
-msgid "onboarding.download.failed"
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.failed"
 msgstr "Download failed"
 
 #. js-lingui-explicit-id
@@ -2036,6 +2079,11 @@ msgstr "Download model"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.download"
 msgstr "Download Neural Engine encoder"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.damaged"
+msgstr "Download was damaged"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2484,6 +2532,16 @@ msgid "settings.about.version_label"
 msgstr "Glimpse"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_write_failed"
+msgstr "Glimpse couldn't keep writing the recording, so it stopped. What was recorded so far is saved."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.retranscribe_failed"
+msgstr "Glimpse couldn't transcribe this again, so it kept the earlier transcript."
+
+#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.aria"
 msgstr "Glimpse member card"
@@ -2582,6 +2640,11 @@ msgstr "Hide shortcuts"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.hide"
 msgstr "Hide speaker"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.compact"
+msgstr "Hide transcript"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -2802,6 +2865,11 @@ msgid "member_card.draft_stamp_issuing"
 msgstr "Issuing"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.jump"
+msgstr "Jump to live"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.store_original.description"
 msgstr "Keep a copy inside the library folder"
@@ -2810,6 +2878,11 @@ msgstr "Keep a copy inside the library folder"
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.hold"
 msgstr "Keep holding, then release when you are done."
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.on_top"
+msgstr "Keep on top"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -2825,6 +2898,11 @@ msgstr "Keyboard shortcut"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers"
 msgstr "Know who said what"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size.large"
+msgstr "L"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -2947,6 +3025,11 @@ msgid "settings.local_api.listen_on_lan_aria"
 msgstr "Listen on LAN"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.listening"
+msgstr "Listening..."
+
+#. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
 msgid "pill.status.listening"
 msgstr "Listening..."
@@ -2965,6 +3048,21 @@ msgstr "Live text"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.supports.live"
 msgstr "Live text while you speak"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.unavailable"
+msgstr "Live transcription needs a speech model that supports it."
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.active.live"
+msgstr "Live view"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs"
+msgstr "Live view settings"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3038,14 +3136,14 @@ msgid "settings.app.auto_pause_media.body_duck"
 msgstr "Lowers system volume while recording."
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size.medium"
+msgstr "M"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices_body"
 msgstr "Mac and Windows"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/AneCompileOverlay.tsx
-msgid "ane_compile.body"
-msgstr "macOS is compiling {label} for the Apple Neural Engine. This happens once and can take a few minutes."
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
@@ -3068,7 +3166,7 @@ msgid "member_card.label_member_since"
 msgstr "Member since"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.merge"
 msgstr "Merge into"
 
@@ -3452,6 +3550,17 @@ msgid "transcriptions.list.no_results_filters"
 msgstr "No results for selected filters"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: systemApps[0]
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.silent.app"
+msgstr "No sound from {0} yet."
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.silent.microphone"
+msgstr "No sound from the microphone yet."
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.filter.no_speakers"
 msgstr "No speakers yet"
@@ -3460,6 +3569,11 @@ msgstr "No speakers yet"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_speech"
 msgstr "No speech detected. Recording deleted."
+
+#. js-lingui-explicit-id
+#: src/features/recording/useSilenceWarning.ts
+msgid "live.silent.system"
+msgstr "No system audio yet."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -3515,6 +3629,16 @@ msgstr "Not a valid audio file."
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_subtitle"
 msgstr "Not available in this build"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.unavailable"
+msgstr "Not available right now"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/modelStats.ts
+msgid "models.download_failed.disk_full"
+msgstr "Not enough disk space"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -3677,9 +3801,9 @@ msgid "settings.about.command_line.open_wiki_aria"
 msgstr "Open the command line documentation"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AneCompileOverlay.tsx
-msgid "ane_compile.title"
-msgstr "Optimizing for the Neural Engine"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.open_on_start"
+msgstr "Open when recording starts"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -3722,6 +3846,7 @@ msgid "settings.app.auto_pause_media.pause"
 msgstr "Pause"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.pause"
 msgstr "Pause"
@@ -3735,6 +3860,16 @@ msgstr "Pause audio"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_pause"
 msgstr "Pause Recording"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.empty.paused"
+msgstr "Paused"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.status.paused"
+msgstr "Paused"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4095,7 +4230,7 @@ msgid "settings.general.shortcuts.remove_shortcut"
 msgstr "Remove shortcut"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.remove"
 msgstr "Remove speaker"
 
@@ -4105,11 +4240,6 @@ msgid "settings.about.data.delete_all_description"
 msgstr "Removes recordings, transcripts, models, and settings, then quits"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker_menu.rename"
-msgstr "Rename"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.rename"
 msgstr "Rename"
@@ -4117,6 +4247,12 @@ msgstr "Rename"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.rename"
+msgstr "Rename"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
+msgid "library.detail.speaker_menu.rename"
 msgstr "Rename"
 
 #: src/features/settings/components/AccountView.tsx
@@ -4219,6 +4355,7 @@ msgid "transcriptions.item.restore_original"
 msgstr "Restore original transcript"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.active.resume"
 msgstr "Resume"
@@ -4252,6 +4389,11 @@ msgstr "Retranscribe"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.loading"
 msgstr "Retranscribing..."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.retry"
+msgstr "Retry"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -4337,6 +4479,11 @@ msgstr "Runs setup again"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.detail"
 msgstr "Runs the encoder on the Neural Engine. Faster and uses less power. First load takes longer while macOS optimizes it."
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size.small"
+msgstr "S"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/ShareCardModal.tsx
@@ -4497,7 +4644,7 @@ msgstr "Segment start and end times"
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.timestamps_detail"
-msgstr "Segment timing and subtitle export in Library."
+msgstr "Segment times and subtitle export in Library."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -4611,6 +4758,7 @@ msgstr "Show All"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.show_all"
 msgstr "Show all speakers"
 
@@ -4630,7 +4778,7 @@ msgid "transcriptions.item.show_more"
 msgstr "Show more"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/SpeakerContextMenu.tsx
 msgid "library.detail.speaker_menu.show_only"
 msgstr "Show only this speaker"
 
@@ -4648,6 +4796,11 @@ msgstr "Show shortcuts"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speaker_menu.show"
 msgstr "Show speaker"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.timestamps"
+msgstr "Show timestamps"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4673,6 +4826,11 @@ msgstr "Show timestamps"
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.show_timestamps.aria"
 msgstr "Show timestamps"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.expand"
+msgstr "Show transcript"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4865,6 +5023,11 @@ msgid "settings.local_api.stop"
 msgstr "Stop API"
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.stop"
+msgstr "Stop recording"
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.stop_retry"
 msgstr "Stop transcription"
@@ -5019,6 +5182,11 @@ msgstr "Text appears in the pill as you speak."
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements"
 msgstr "Text replacements"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size"
+msgstr "Text size"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5280,6 +5448,11 @@ msgstr "Transcription cancelled"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.error.default"
+msgstr "Transcription failed"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.modal.transcription_failed"
 msgstr "Transcription failed"
 
 #. js-lingui-explicit-id
@@ -5651,6 +5824,21 @@ msgstr "Your API server is running in the background."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_low_disk"
+msgstr "Your disk is almost full. Glimpse will stop recording if it runs out of space."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dictation_disk_full"
+msgstr "Your disk is full, so Glimpse couldn't save this dictation."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.recording_disk_full"
+msgstr "Your disk is full, so Glimpse stopped recording. What was recorded so far is saved."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

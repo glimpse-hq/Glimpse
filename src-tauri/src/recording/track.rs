@@ -1,7 +1,17 @@
-use std::{fs, io::BufWriter, path::PathBuf, thread::JoinHandle};
+use std::{
+    fs,
+    io::BufWriter,
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, AtomicU8, Ordering},
+    },
+    thread::JoinHandle,
+};
 
 use anyhow::{Context, Result, anyhow};
 use crossbeam_channel::{Sender, unbounded};
+use parking_lot::Mutex;
 use rubato::{
     Fft, FixedSync, Resampler, WindowFunction, audioadapter_buffers::direct::InterleavedSlice,
 };
@@ -9,6 +19,7 @@ use rubato::{
 /// Tracks are stored at this rate. Sources at or below it keep their native rate.
 const STORED_RATE: u32 = 24_000;
 const RESAMPLER_CHUNK: usize = 1024;
+pub(crate) const LIVE_RATE: u32 = 16_000;
 
 enum TrackMessage {
     Audio { samples: Vec<f32>, position_ms: u64 },
@@ -35,15 +46,96 @@ impl TrackInput {
     }
 }
 
+/// A 16 kHz copy of what a track writes, on the track's timeline, for live
+/// transcription. Collects nothing until enabled.
+#[derive(Default)]
+pub(crate) struct LiveTap {
+    enabled: AtomicBool,
+    feed: Mutex<Option<LiveFeed>>,
+}
+
+struct LiveFeed {
+    converter: Option<RateConverter>,
+    // 16 kHz index of `samples[0]` on the track's timeline.
+    start: u64,
+    samples: Vec<f32>,
+}
+
+impl LiveTap {
+    pub(crate) fn set_enabled(&self, enabled: bool) {
+        self.enabled.store(enabled, Ordering::Relaxed);
+        if !enabled {
+            *self.feed.lock() = None;
+        }
+    }
+
+    /// Samples since the last call and the 16 kHz index of the first. The
+    /// index jumps when the tap was off in between.
+    pub(crate) fn take(&self) -> Option<(u64, Vec<f32>)> {
+        let mut feed = self.feed.lock();
+        let feed = feed.as_mut()?;
+        let samples = std::mem::take(&mut feed.samples);
+        let start = feed.start;
+        feed.start += samples.len() as u64;
+        Some((start, samples))
+    }
+
+    /// `samples` is `None` for `count` frames of silence starting at stored-rate frame `position`.
+    fn write(&self, samples: Option<&[f32]>, count: u64, position: u64, stored_rate: u32) {
+        if !self.enabled.load(Ordering::Relaxed) {
+            return;
+        }
+        let mut feed = self.feed.lock();
+        let feed = match feed.as_mut() {
+            Some(feed) => feed,
+            None => {
+                let Ok(converter) = RateConverter::for_source(stored_rate, LIVE_RATE, 0) else {
+                    return;
+                };
+                feed.insert(LiveFeed {
+                    converter,
+                    start: position * LIVE_RATE as u64 / stored_rate as u64,
+                    samples: Vec::new(),
+                })
+            }
+        };
+        let result = match (feed.converter.as_mut(), samples) {
+            (Some(conv), Some(samples)) => conv.push(samples, &mut feed.samples),
+            (Some(conv), None) => conv.push_silence(count, &mut feed.samples),
+            (None, Some(samples)) => feed.samples.write(samples),
+            (None, None) => {
+                feed.samples
+                    .resize(feed.samples.len() + count as usize, 0.0);
+                Ok(())
+            }
+        };
+        if let Err(err) = result {
+            tracing::warn!("Live tap stopped: {err}");
+            self.enabled.store(false, Ordering::Relaxed);
+        }
+    }
+}
+
+pub(crate) const WRITE_FAILED: u8 = 1;
+pub(crate) const DISK_FULL: u8 = 2;
+
 /// Writes one source as mono 16-bit WAV at up to `STORED_RATE`, incrementally, on its own thread.
 pub(crate) struct TrackWriter {
     tx: Sender<TrackMessage>,
     handle: JoinHandle<Result<u64>>,
     path: PathBuf,
+    tap: Arc<LiveTap>,
 }
 
 impl TrackWriter {
-    pub(crate) fn spawn(path: PathBuf, source_rate: u32, thread_name: &str) -> Result<Self> {
+    /// A failed write stops the track but keeps what reached the file, and
+    /// sets `failure` to [`WRITE_FAILED`] or [`DISK_FULL`].
+    pub(crate) fn spawn(
+        path: PathBuf,
+        source_rate: u32,
+        thread_name: &str,
+        failure: Arc<AtomicU8>,
+    ) -> Result<Self> {
         if let Some(dir) = path.parent() {
             fs::create_dir_all(dir)
                 .with_context(|| format!("Failed to create {}", dir.display()))?;
@@ -60,12 +152,15 @@ impl TrackWriter {
             .with_context(|| format!("Failed to create {}", path.display()))?;
         let writer = hound::WavWriter::new(BufWriter::new(file), spec)
             .map_err(|err| anyhow!("WAV init failed: {err}"))?;
+        let tap = Arc::new(LiveTap::default());
         let mut output = TrackOutput {
             writer,
             written: 0,
             since_refresh: 0,
             // The WAV header is rewritten about once a second so a crash leaves a readable file.
             refresh_every: stored_rate as u64,
+            tap: Arc::clone(&tap),
+            stored_rate,
         };
 
         let mut rate = source_rate as u64;
@@ -85,7 +180,7 @@ impl TrackWriter {
                 // from a new source is placed exactly instead of within tolerance.
                 let mut place_exact = true;
 
-                while let Ok(message) = rx.recv() {
+                let mut step = |message: TrackMessage| -> Result<()> {
                     match message {
                         TrackMessage::Audio {
                             samples,
@@ -134,20 +229,49 @@ impl TrackWriter {
                             if output.written < target {
                                 output.write_silence(target - output.written)?;
                             }
-                            break;
                         }
+                    }
+                    Ok(())
+                };
+
+                let mut failed = false;
+                while let Ok(message) = rx.recv() {
+                    let finish = matches!(message, TrackMessage::Finish { .. });
+                    if !failed && let Err(err) = step(message) {
+                        tracing::error!("Recording track stopped writing: {err:#}");
+                        let reason = if crate::platform::is_disk_full(&err) {
+                            DISK_FULL
+                        } else {
+                            WRITE_FAILED
+                        };
+                        failure.store(reason, Ordering::Relaxed);
+                        failed = true;
+                    }
+                    if finish {
+                        break;
                     }
                 }
 
-                output
-                    .writer
-                    .finalize()
-                    .map_err(|err| anyhow!("WAV finalize failed: {err}"))?;
+                // Best effort after a failed write: the header refreshed each
+                // second already keeps the file readable.
+                let finalized = output.writer.finalize();
+                if !failed {
+                    finalized.map_err(wav_error)?;
+                }
                 Ok(output.written)
             })
             .map_err(|err| anyhow!("Failed to spawn track writer: {err}"))?;
 
-        Ok(Self { tx, handle, path })
+        Ok(Self {
+            tx,
+            handle,
+            path,
+            tap,
+        })
+    }
+
+    pub(crate) fn tap(&self) -> Arc<LiveTap> {
+        Arc::clone(&self.tap)
     }
 
     pub(crate) fn input(&self) -> TrackInput {
@@ -181,29 +305,56 @@ impl TrackWriter {
 
 type Writer = hound::WavWriter<BufWriter<fs::File>>;
 
+/// Keeps the io error as the source so a full disk can be recognised.
+fn wav_error(err: hound::Error) -> anyhow::Error {
+    match err {
+        hound::Error::IoError(io) => anyhow::Error::new(io).context("WAV write failed"),
+        other => anyhow!("WAV write failed: {other}"),
+    }
+}
+
 struct TrackOutput {
     writer: Writer,
     written: u64,
     since_refresh: u64,
     refresh_every: u64,
+    tap: Arc<LiveTap>,
+    stored_rate: u32,
 }
 
-impl TrackOutput {
+/// Where a `RateConverter` writes its output.
+trait SampleSink {
+    fn write(&mut self, samples: &[f32]) -> Result<()>;
+}
+
+impl SampleSink for Vec<f32> {
     fn write(&mut self, samples: &[f32]) -> Result<()> {
+        self.extend_from_slice(samples);
+        Ok(())
+    }
+}
+
+impl SampleSink for TrackOutput {
+    fn write(&mut self, samples: &[f32]) -> Result<()> {
+        self.tap.write(
+            Some(samples),
+            samples.len() as u64,
+            self.written,
+            self.stored_rate,
+        );
         for &sample in samples {
             let value = (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16;
-            self.writer
-                .write_sample(value)
-                .map_err(|err| anyhow!("WAV write failed: {err}"))?;
+            self.writer.write_sample(value).map_err(wav_error)?;
         }
         self.advance(samples.len() as u64)
     }
+}
 
+impl TrackOutput {
     fn write_silence(&mut self, count: u64) -> Result<()> {
+        self.tap.write(None, count, self.written, self.stored_rate);
         for _ in 0..count {
-            self.writer
-                .write_sample(0i16)
-                .map_err(|err| anyhow!("WAV write failed: {err}"))?;
+            self.writer.write_sample(0i16).map_err(wav_error)?;
         }
         self.advance(count)
     }
@@ -213,9 +364,7 @@ impl TrackOutput {
         self.since_refresh += count;
         if self.since_refresh >= self.refresh_every {
             self.since_refresh = 0;
-            self.writer
-                .flush()
-                .map_err(|err| anyhow!("WAV flush failed: {err}"))?;
+            self.writer.flush().map_err(wav_error)?;
         }
         Ok(())
     }
@@ -259,12 +408,12 @@ impl RateConverter {
         }))
     }
 
-    fn push(&mut self, samples: &[f32], output: &mut TrackOutput) -> Result<()> {
+    fn push(&mut self, samples: &[f32], output: &mut impl SampleSink) -> Result<()> {
         self.pending.extend_from_slice(samples);
         self.drain(output, u64::MAX)
     }
 
-    fn push_silence(&mut self, count: u64, output: &mut TrackOutput) -> Result<()> {
+    fn push_silence(&mut self, count: u64, output: &mut impl SampleSink) -> Result<()> {
         // Bounded pieces keep a long stall from allocating the whole gap at once.
         let mut left = count;
         while left > 0 {
@@ -278,7 +427,7 @@ impl RateConverter {
     }
 
     /// Pushes zeros through until `total` frames have come out, then stops.
-    fn flush(&mut self, total: u64, output: &mut TrackOutput) -> Result<()> {
+    fn flush(&mut self, total: u64, output: &mut impl SampleSink) -> Result<()> {
         while self.emitted < total {
             let chunk = self.resampler.input_frames_next();
             if self.pending.len() < chunk {
@@ -289,7 +438,7 @@ impl RateConverter {
         Ok(())
     }
 
-    fn drain(&mut self, output: &mut TrackOutput, limit: u64) -> Result<()> {
+    fn drain(&mut self, output: &mut impl SampleSink, limit: u64) -> Result<()> {
         let mut start = 0;
         loop {
             let chunk = self.resampler.input_frames_next();

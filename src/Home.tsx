@@ -38,7 +38,10 @@ import { useClickOutside } from "./shared/hooks/useClickOutside";
 import { useCopyToClipboard } from "./shared/hooks/useCopyToClipboard";
 import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeader";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
-import { useTodayDictationStats } from "./features/transcriptions/queries";
+import {
+  transcriptionKeys,
+  useTodayDictationStats,
+} from "./features/transcriptions/queries";
 import { EMPTY_TODAY_DICTATION_STATS } from "./features/transcriptions/todayStats";
 import { useTimeOfDayPeriodTick } from "./features/transcriptions/homeGreeting";
 import DictionaryView from "./features/dictionary/components/DictionaryView";
@@ -55,11 +58,12 @@ import {
   useLicenseGate,
   useLicenseState,
 } from "./features/license/queries";
-import { useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
-import { useSettings, useAppInfo } from "./features/settings/queries";
-import { useUpdateStatus } from "./features/updates/queries";
+import { useSettings } from "./features/settings/queries";
+import { updateKeys, useUpdateStatus } from "./features/updates/queries";
+import { askKeys } from "./features/asks/queries";
 import type { TranscriptionMode } from "./types";
 import { isRemoteSpeechInUse } from "./shared/lib/speechProviders";
 import { isCloudLlmInUse, isLlmInUse } from "./shared/lib/llmProviders";
@@ -135,13 +139,27 @@ const StaticGlimpseLogo = ({
   );
 };
 
+const FIRST_SCREEN_QUERY_ROOTS: readonly string[] = [
+  licenseKeys.state()[0],
+  transcriptionKeys.all[0],
+  updateKeys.status()[0],
+  askKeys.prompt()[0],
+];
+
 const gatedFeatureName = (view: "brain" | "library" | "record") =>
   view === "brain" ? "personalization" : view;
 
-const Home = () => {
+type HomeProps = {
+  onReady: () => void;
+};
+
+const Home = ({ onReady }: HomeProps) => {
   const { t } = useLingui();
   const queryClient = useQueryClient();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // The nav animates when it swaps, not when the window first opens.
+  const [navSwapped, setNavSwapped] = useState(false);
+  if (isSettingsOpen && !navSwapped) setNavSwapped(true);
   const [settingsMounted, setSettingsMounted] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsPane>("account");
   const [accountSource, setAccountSource] =
@@ -155,7 +173,7 @@ const Home = () => {
     null,
   );
   const licenseGateActive = useLicenseGate();
-  const { data: licenseState } = useLicenseState();
+  const { data: licenseState, isFetched: licenseFetched } = useLicenseState();
   const activeLicense = licenseState?.status === "active";
   const [showSupportPopup, setShowSupportPopup] = useState(false);
   const {
@@ -179,7 +197,6 @@ const Home = () => {
 
   const { data: settings } = useSettings();
   const { data: updateStatus } = useUpdateStatus();
-  const { data: appInfoData } = useAppInfo();
 
   const transcriptionMode: TranscriptionMode =
     settings?.transcription_mode ?? "local";
@@ -189,7 +206,7 @@ const Home = () => {
   const localLlmInUse = settings
     ? isLlmInUse(settings) && !cloudLlmInUse
     : false;
-  const appVersion = appInfoData?.version ?? "-";
+  const appVersion = window.__GLIMPSE_BOOT__?.version ?? "-";
   const updateAvailable = updateStatus?.available ?? false;
 
   useEffect(() => {
@@ -298,7 +315,7 @@ const Home = () => {
     }
   }, [activeView, licenseGateActive, licenseState, openAccountSettings]);
 
-  const wideLights = isMac && (appInfoData?.os_major ?? 26) >= 26;
+  const wideLights = isMac && (window.__GLIMPSE_BOOT__?.osMajor ?? 26) >= 26;
   const collapsedWidth = wideLights ? 78 : 68;
   const sidebarIconPl = wideLights ? 21 : isWindows ? 16 : 17;
   const sidebarWidth = isSidebarCollapsed ? collapsedWidth : 200;
@@ -589,6 +606,21 @@ const Home = () => {
     data: todayStats = EMPTY_TODAY_DICTATION_STATS,
     isFetched: todayStatsFetched,
   } = useTodayDictationStats(homeViewActive);
+  // News is remote and can fill in later; the rest is local and quick.
+  const firstScreenFetching =
+    useIsFetching({
+      predicate: (query) =>
+        FIRST_SCREEN_QUERY_ROOTS.includes(String(query.queryKey[0])),
+    }) > 0;
+  // Today's stats only load on Home; a cold open can land on another view.
+  const firstScreenReady =
+    licenseFetched &&
+    (todayStatsFetched || !homeViewActive) &&
+    !firstScreenFetching;
+
+  useEffect(() => {
+    if (firstScreenReady) onReady();
+  }, [firstScreenReady, onReady]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent font-sans ui-color-on-solid select-none">
@@ -635,7 +667,7 @@ const Home = () => {
         <nav className="flex-1 flex flex-col px-2">
           <div
             key={isSettingsOpen ? "settings-nav" : "app-nav"}
-            className="nav-swap space-y-1"
+            className={`${navSwapped ? "nav-swap " : ""}space-y-1`}
           >
             {isSettingsOpen ? (
               SETTINGS_PANE_GROUPS.map((group, groupIndex) => {

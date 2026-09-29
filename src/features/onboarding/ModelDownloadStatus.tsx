@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "@phosphor-icons/react";
+import { downloadFailureLabel } from "../../shared/lib/modelStats";
 import type { DownloadEvent } from "../../types";
 
 // Follows the user through the steps after the model step, so the
@@ -17,6 +18,7 @@ export function ModelDownloadStatus({
   const visible =
     status === "downloading" || status === "complete" || status === "error";
   const percent = Math.round(state?.percent ?? 0);
+  const error = state?.status === "error" ? state : undefined;
   const verifying = state && "verifying" in state && state.verifying;
   const fileIndex = state && "fileIndex" in state ? state.fileIndex : undefined;
   const fileCount = state && "fileCount" in state ? state.fileCount : undefined;
@@ -61,10 +63,14 @@ export function ModelDownloadStatus({
               </>
             ) : (
               <>
-                {t({
-                  id: "onboarding.download_status.failed",
-                  message: "Model download failed",
-                })}
+                <span title={error?.message}>
+                  {error?.reason && error.reason !== "failed"
+                    ? downloadFailureLabel(error.reason)
+                    : t({
+                        id: "onboarding.download_status.failed",
+                        message: "Model download failed",
+                      })}
+                </span>
                 <button
                   type="button"
                   onClick={onRetry}

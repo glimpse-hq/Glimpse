@@ -2,11 +2,12 @@ import { useLingui } from "@lingui/react/macro";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  WarningCircle as AlertCircle,
+  ArrowClockwise,
   MagnifyingGlass as Search,
   Check,
   Copy,
   Download,
+  Info,
   Square,
   Trash as Trash2,
   UsersThree,
@@ -15,6 +16,7 @@ import {
 import { useMemo, useRef, useState } from "react";
 import {
   deriveModelStats,
+  downloadFailureLabel,
   formatModelSize,
   isBuiltInModel,
   modelSizeMb,
@@ -76,7 +78,9 @@ const groupModels = (
     const englishOnly = deriveModelStats(first).englishOnly;
     const isDiarizer = first.key === diarizer?.key;
     // Speaker detection is not a transcription model but lists as experimental.
-    const category = isDiarizer ? "experimental" : first.category;
+    const category = isDiarizer
+      ? "experimental"
+      : (variants.find((v) => v.downloadable) ?? first).category;
     const label = first.label.trim();
     const haystack = [
       label,
@@ -315,7 +319,7 @@ export function ModelPickerPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 model-list-fade">
+      <div className="min-h-0 flex-1 list-fade-y">
         <div className="h-full overflow-y-auto py-3 pl-2 pr-3">
           {filteredGroups.length === 0 ? (
             <p className="py-10 text-center ui-text-body-sm text-content-muted">
@@ -456,11 +460,9 @@ function ModelRow({
   const isDownloading = progress?.status === "downloading";
   const isVerifying =
     progress?.status === "downloading" && progress.verifying === true;
-  const showError = progress?.status === "error";
-  const errorMessage =
-    progress?.status === "error" ? progress.message : undefined;
+  const error = progress?.status === "error" ? progress : undefined;
   const isCancelled = progress?.status === "cancelled";
-  const isBusy = isDownloading || showError || isCancelled;
+  const isBusy = isDownloading || error !== undefined || isCancelled;
   const percent = Math.round(progress?.percent ?? 0);
   const showQuants = group.variants.length > 1 && !isBusy;
   const aneAvailable = selected.ane_size_mb != null;
@@ -638,9 +640,17 @@ function ModelRow({
                     }
                   </p>
                 ) : null}
-                {showError && errorMessage && (
-                  <DownloadErrorPopover message={errorMessage} />
-                )}
+                {error &&
+                  (error.reason ? (
+                    <DownloadErrorPopover
+                      label={downloadFailureLabel(error.reason)}
+                      message={error.message}
+                    />
+                  ) : (
+                    <p className="truncate text-right ui-text-micro text-error">
+                      {error.message}
+                    </p>
+                  ))}
                 {isCancelled && (
                   <p className="text-right ui-text-micro text-content-disabled">
                     {t({ id: "model_picker.cancelled", message: "Cancelled" })}
@@ -657,6 +667,17 @@ function ModelRow({
                   title={t({ id: "model_picker.cancel", message: "Cancel" })}
                 >
                   <Square size={10} fill="currentColor" aria-hidden="true" />
+                </button>
+              )}
+              {error?.reason && (
+                <button
+                  type="button"
+                  onClick={() => onDownload(aneOn)}
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-content-secondary transition-colors hover:bg-surface-elevated/60 hover:text-content-primary"
+                  title={t({ id: "model_picker.retry", message: "Retry" })}
+                  aria-label={t({ id: "model_picker.retry", message: "Retry" })}
+                >
+                  <ArrowClockwise size={13} aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -773,7 +794,13 @@ function AneCheckbox({
   );
 }
 
-function DownloadErrorPopover({ message }: { message: string }) {
+function DownloadErrorPopover({
+  label,
+  message,
+}: {
+  label: string;
+  message: string;
+}) {
   const { t } = useLingui();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -803,8 +830,8 @@ function DownloadErrorPopover({ message }: { message: string }) {
         })}
         className="flex min-w-0 max-w-full items-center gap-1 rounded-sm ui-text-micro text-error transition-opacity hover:opacity-80"
       >
-        <AlertCircle size={9} className="shrink-0" aria-hidden="true" />
-        <span className="truncate">{message}</span>
+        <span className="truncate">{label}</span>
+        <Info size={10} className="shrink-0" aria-hidden="true" />
       </button>
 
       <AnimatePresence>
@@ -858,7 +885,7 @@ function ModelProgressDots({
   const activeDots = Array.from({ length: activeCount }, (_, i) => i);
   const color =
     status === "error"
-      ? "var(--color-error)"
+      ? "var(--color-text-disabled)"
       : status === "complete"
         ? "var(--color-success)"
         : "var(--color-local)";

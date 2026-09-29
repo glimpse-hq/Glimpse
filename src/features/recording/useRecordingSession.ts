@@ -22,7 +22,7 @@ const smooth = (previous: number, next: number) => {
   return value < 0.02 ? 0 : value;
 };
 
-/// Mirrors the backend session; the backend streams state while active.
+// Mirrors the backend session; the backend streams state while active.
 export function useRecordingSession() {
   const [state, setState] = useState<RecordingSessionState>(IDLE_STATE);
   const levelsRef = useRef(IDLE_STATE.levels);

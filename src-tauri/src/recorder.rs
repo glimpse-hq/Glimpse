@@ -15,7 +15,7 @@ use anyhow::{Context, Result, anyhow};
 use chrono::{DateTime, Local, TimeZone};
 use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::{FromSample, Sample, SampleFormat, SizedSample, Stream};
-use crossbeam_channel::{Sender, bounded, unbounded};
+use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, bounded, unbounded};
 use parking_lot::Mutex;
 use rubato::{Fft, FixedSync, Resampler, audioadapter_buffers::direct::InterleavedSlice};
 use uuid::Uuid;
@@ -82,6 +82,12 @@ struct LiveBufferState {
 // Seconds of audio the ring holds if the drain thread stalls.
 const CAPTURE_RING_SECONDS: usize = 4;
 const CAPTURE_DRAIN_INTERVAL: Duration = Duration::from_millis(10);
+const PENDING_WRITE_INTERVAL: Duration = Duration::from_millis(250);
+
+// Waits one interval; true once the paired Sender is dropped, which wakes the wait at once.
+pub(crate) fn stop_requested(stop: &Receiver<()>, interval: Duration) -> bool {
+    !matches!(stop.recv_timeout(interval), Err(RecvTimeoutError::Timeout))
+}
 
 /// Single-producer, single-consumer ring the audio callback writes into.
 /// The callback never locks or allocates; a drain thread moves samples to the Vec.
@@ -141,37 +147,35 @@ impl SampleRing {
 
 struct CaptureDrain {
     ring: Arc<SampleRing>,
-    stop_flag: Arc<AtomicBool>,
+    stop: Option<Sender<()>>,
     handle: Option<JoinHandle<()>>,
 }
 
 impl CaptureDrain {
     fn spawn(ring: Arc<SampleRing>, buffer: Arc<Mutex<Vec<i16>>>) -> Result<Self> {
-        let stop_flag = Arc::new(AtomicBool::new(false));
-        let stop_for_thread = Arc::clone(&stop_flag);
+        let (stop, stopped) = bounded::<()>(0);
         let ring_for_thread = Arc::clone(&ring);
         let handle = std::thread::Builder::new()
             .name("glimpse-capture-drain".into())
             .spawn(move || {
                 loop {
-                    let stopping = stop_for_thread.load(Ordering::Relaxed);
+                    let stopping = stop_requested(&stopped, CAPTURE_DRAIN_INTERVAL);
                     ring_for_thread.drain_into(&mut buffer.lock());
                     if stopping {
                         break;
                     }
-                    std::thread::sleep(CAPTURE_DRAIN_INTERVAL);
                 }
             })
             .map_err(|err| anyhow!("Failed to spawn capture drain thread: {err}"))?;
         Ok(Self {
             ring,
-            stop_flag,
+            stop: Some(stop),
             handle: Some(handle),
         })
     }
 
     fn stop(&mut self) {
-        self.stop_flag.store(true, Ordering::Relaxed);
+        self.stop.take();
         if let Some(handle) = self.handle.take() {
             let _ = handle.join();
         }
@@ -227,8 +231,8 @@ struct ActiveRecording {
 }
 
 struct PendingWriter {
-    stop_flag: Arc<AtomicBool>,
-    handle: Option<JoinHandle<()>>,
+    stop: Sender<()>,
+    handle: JoinHandle<()>,
     path: PathBuf,
 }
 
@@ -254,8 +258,7 @@ impl PendingWriter {
         let mut writer = hound::WavWriter::create(&path, spec)
             .map_err(|err| anyhow!("Failed to create partial WAV: {err}"))?;
 
-        let stop_flag = Arc::new(AtomicBool::new(false));
-        let stop_for_thread = Arc::clone(&stop_flag);
+        let (stop, stopped) = bounded::<()>(0);
         let max_chunk_samples = (sample_rate as usize)
             .saturating_mul(channels as usize)
             .max(1);
@@ -263,8 +266,8 @@ impl PendingWriter {
             .name("glimpse-pending-writer".into())
             .spawn(move || {
                 let mut cursor = 0usize;
+                let mut stopping = false;
                 loop {
-                    let stopping = stop_for_thread.load(Ordering::Relaxed);
                     let (chunk, has_more) = {
                         let buf = buffer.lock();
                         if cursor < buf.len() {
@@ -282,30 +285,24 @@ impl PendingWriter {
                     if !chunk.is_empty() {
                         let _ = writer.flush();
                     }
-                    if stopping && !has_more {
-                        break;
-                    }
                     if has_more {
                         continue;
                     }
-                    std::thread::sleep(Duration::from_millis(250));
+                    if stopping {
+                        break;
+                    }
+                    stopping = stop_requested(&stopped, PENDING_WRITE_INTERVAL);
                 }
                 let _ = writer.finalize();
             })
             .map_err(|err| anyhow!("Failed to spawn pending writer thread: {err}"))?;
 
-        Ok(Self {
-            stop_flag,
-            handle: Some(handle),
-            path,
-        })
+        Ok(Self { stop, handle, path })
     }
 
-    fn finish(mut self) -> PathBuf {
-        self.stop_flag.store(true, Ordering::Relaxed);
-        if let Some(handle) = self.handle.take() {
-            let _ = handle.join();
-        }
+    fn finish(self) -> PathBuf {
+        drop(self.stop);
+        let _ = self.handle.join();
         self.path
     }
 
@@ -762,7 +759,7 @@ fn process_raw_samples(raw_samples: &[i16], sample_rate: u32, channels: u16) -> 
     }
 }
 
-pub const MIN_RECORDING_DURATION_MS: i64 = 300;
+pub const MIN_RECORDING_DURATION_MS: i64 = 150;
 
 pub(crate) const MIN_RMS_ENERGY: f32 = 0.0002;
 const MIN_SPEECH_PERCENTAGE: f32 = 3.0;

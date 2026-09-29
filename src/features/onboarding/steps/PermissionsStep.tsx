@@ -144,7 +144,7 @@ function PermissionRow({
           type="button"
           onClick={onRequest}
           disabled={checking}
-          className="shrink-0 ui-text-body-sm-strong text-cloud underline-offset-4 transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+          className="shrink-0 ui-text-body-sm-strong ui-color-cloud underline-offset-4 transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-50"
         >
           {actionLabel}
         </button>

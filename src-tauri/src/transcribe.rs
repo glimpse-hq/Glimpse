@@ -1808,20 +1808,34 @@ fn transcribe_local_chunked(
         };
         if chunk_speech_percent >= min_chunk_threshold {
             let chunk_text = if strip_hallucinated_thank_you {
-                let result = transcriber.transcribe_with_segments(
-                    model,
-                    chunk,
-                    sample_rate,
-                    dictionary,
-                    language,
-                )?;
+                // Silero only reads the chunk audio, so it runs while the model transcribes.
+                let (result, regions) = std::thread::scope(|scope| {
+                    let regions = std::thread::Builder::new()
+                        .spawn_scoped(scope, || {
+                            glimpse_speech::vad::speech_regions(chunk, sample_rate)
+                        })
+                        .ok();
+                    let result = transcriber.transcribe_with_segments(
+                        model,
+                        chunk,
+                        sample_rate,
+                        dictionary,
+                        language,
+                        glimpse_speech::TimestampGranularity::Segment,
+                    );
+                    let regions = match regions {
+                        Some(handle) => handle.join().ok().flatten(),
+                        None => glimpse_speech::vad::speech_regions(chunk, sample_rate),
+                    };
+                    (result, regions)
+                });
+                let result = result?;
                 if model_label.is_none() {
                     model_label = result.speech_model.clone();
                 }
                 if language_detected.is_none() {
                     language_detected = result.language.clone();
                 }
-                let regions = glimpse_speech::vad::speech_regions(chunk, sample_rate);
                 transcription_api::keep_spoken_segments(
                     &result.transcript,
                     result.segments.as_deref(),

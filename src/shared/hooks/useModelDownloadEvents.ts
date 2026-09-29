@@ -1,12 +1,15 @@
 import { useEffect, useEffectEvent } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { DownloadProgressPayload } from "../../types";
+import type {
+  DownloadErrorPayload,
+  DownloadProgressPayload,
+} from "../../types";
 
 type UseModelDownloadEventsOptions = {
   enabled?: boolean;
   onProgress?: (payload: DownloadProgressPayload) => void;
   onComplete?: (payload: { model: string }) => void;
-  onError?: (payload: { model: string; error: string }) => void;
+  onError?: (payload: DownloadErrorPayload) => void;
   onCancelled?: (payload: { model: string }) => void;
 };
 
@@ -23,11 +26,9 @@ export function useModelDownloadEvents({
   const handleComplete = useEffectEvent((payload: { model: string }) => {
     onComplete?.(payload);
   });
-  const handleError = useEffectEvent(
-    (payload: { model: string; error: string }) => {
-      onError?.(payload);
-    },
-  );
+  const handleError = useEffectEvent((payload: DownloadErrorPayload) => {
+    onError?.(payload);
+  });
   const handleCancelled = useEffectEvent((payload: { model: string }) => {
     onCancelled?.(payload);
   });
@@ -61,7 +62,7 @@ export function useModelDownloadEvents({
 
     register<DownloadProgressPayload>("download:progress", handleProgress);
     register<{ model: string }>("download:complete", handleComplete);
-    register<{ model: string; error: string }>("download:error", handleError);
+    register<DownloadErrorPayload>("download:error", handleError);
     register<{ model: string }>("download:cancelled", handleCancelled);
 
     return () => {

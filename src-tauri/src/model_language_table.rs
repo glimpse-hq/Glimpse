@@ -121,11 +121,10 @@ const NVIDIA_PARAKEET_V3_LANGUAGE_CODES: &[&str] = &[
     "pl", "pt", "ro", "sk", "sl", "es", "sv", "ru", "uk",
 ];
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
+// The languages the Nemotron 3.5 GGUF lists; it detects anything else.
 const NVIDIA_NEMOTRON_35_LANGUAGE_CODES: &[&str] = &[
-    "ar", "bg", "cs", "da", "de", "el", "en", "es", "et", "fi", "fr", "he", "hi", "hr", "hu", "it",
-    "ja", "ko", "lt", "lv", "mt", "nb", "nl", "nn", "pl", "pt", "ro", "ru", "sk", "sl", "sv", "th",
-    "tr", "uk", "vi", "zh",
+    "ar", "bg", "cs", "da", "de", "en", "es", "et", "fi", "fr", "hi", "hr", "hu", "it", "ja", "ko",
+    "nb", "nl", "pl", "pt", "ro", "ru", "sk", "sv", "tr", "uk", "vi", "zh",
 ];
 
 fn language_name(code: &str) -> Option<&'static str> {
@@ -186,12 +185,6 @@ pub fn parakeet_v3_supported_languages() -> Vec<SupportedLanguageInfo> {
     supported_languages_for_codes(NVIDIA_PARAKEET_V3_LANGUAGE_CODES)
 }
 
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
-pub fn nemotron_supported_languages() -> Vec<SupportedLanguageInfo> {
-    english_supported_languages()
-}
-
-#[cfg(not(all(target_os = "macos", target_arch = "x86_64")))]
 pub fn nemotron_35_supported_languages() -> Vec<SupportedLanguageInfo> {
     supported_languages_for_codes(NVIDIA_NEMOTRON_35_LANGUAGE_CODES)
 }

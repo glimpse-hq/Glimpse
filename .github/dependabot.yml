@@ -22,6 +22,9 @@ updates:
     groups:
       rust:
         patterns: ["*"]
+    ignore:
+      # Moves together with the windows crate; bumped by hand.
+      - dependency-name: "windows-core"
 
   - package-ecosystem: github-actions
     directory: /

@@ -1,7 +1,6 @@
 use crate::AppRuntime;
 use crate::toast;
 use anyhow::{Context, Result, anyhow};
-use tauri::Manager;
 use tauri::{AppHandle, WebviewWindow};
 use tauri_nspanel::{
     CollectionBehavior, ManagerExt, PanelLevel, StyleMask, WebviewWindowExt, tauri_panel,
@@ -27,7 +26,9 @@ pub fn init(app: &AppHandle<AppRuntime>, toast_window: &WebviewWindow<AppRuntime
 
     if let Ok(panel) = app.get_webview_panel(toast::WINDOW_LABEL) {
         let style = StyleMask::empty().borderless().nonactivating_panel();
-        panel.set_style_mask(style.into());
+        if let Err(err) = panel.set_style_mask(style.into()) {
+            tracing::warn!("Failed to set toast panel style mask: {err}");
+        }
         panel.set_level(PanelLevel::Floating.into());
 
         let behavior = CollectionBehavior::new()

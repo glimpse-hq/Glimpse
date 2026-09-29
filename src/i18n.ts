@@ -97,6 +97,8 @@ export async function activateLocale(
 
 // Keeps the active locale when HMR re-evaluates this module (catalog edits),
 // and gives main.tsx a handle to await before the first render.
-export const localeReady = activateLocale(i18n.locale || DEFAULT_APP_LOCALE);
+export const localeReady = activateLocale(
+  i18n.locale || window.__GLIMPSE_BOOT__?.locale || DEFAULT_APP_LOCALE,
+);
 
 export { i18n };

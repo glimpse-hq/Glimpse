@@ -159,10 +159,6 @@
   --color-shadow-soft-40: rgba(0, 0, 0, 0.4);
   --color-shadow-soft-50: rgba(0, 0, 0, 0.5);
 
-  --color-toggle-on: #fbbf24;
-  --color-toggle-on-20: rgba(251, 191, 36, 0.2);
-  --color-toggle-on-30: rgba(251, 191, 36, 0.3);
-
   --surface-sunken: var(--color-bg-primary);
   --surface-base: var(--color-bg-secondary);
   --surface-raised: var(--color-bg-surface);
@@ -253,16 +249,16 @@
   --color-text-muted: #66625b;
   --color-text-disabled: #938e86;
 
-  --color-cloud: #b45309;
-  --color-cloud-light: #d97706;
-  --color-cloud-dark: #78350f;
-  --color-cloud-hover: #92400e;
-  --color-cloud-5: rgba(180, 83, 9, 0.05);
-  --color-cloud-10: rgba(180, 83, 9, 0.08);
-  --color-cloud-20: rgba(180, 83, 9, 0.14);
-  --color-cloud-30: rgba(180, 83, 9, 0.22);
-  --color-cloud-50: rgba(180, 83, 9, 0.36);
-  --color-cloud-80: rgba(180, 83, 9, 0.6);
+  --color-cloud: #e5a019;
+  --color-cloud-light: #f0b73e;
+  --color-cloud-dark: #8f5f08;
+  --color-cloud-hover: #d18f0e;
+  --color-cloud-5: rgba(229, 160, 25, 0.05);
+  --color-cloud-10: rgba(229, 160, 25, 0.1);
+  --color-cloud-20: rgba(229, 160, 25, 0.18);
+  --color-cloud-30: rgba(229, 160, 25, 0.28);
+  --color-cloud-50: rgba(229, 160, 25, 0.45);
+  --color-cloud-80: rgba(229, 160, 25, 0.8);
 
   --color-local: #4f46e5;
   --color-local-light: #6366f1;
@@ -291,8 +287,8 @@
 
   --color-success: #047857;
   --color-error: #b91c1c;
-  --color-warning: #b45309;
-  --color-warning-strong: #92400e;
+  --color-warning: var(--color-cloud-dark);
+  --color-warning-strong: #7a5006;
   --color-info: #1d4ed8;
 
   --surface-interactive: rgba(26, 23, 22, 0.05);
@@ -316,11 +312,8 @@
   --color-scrollbar-thumb-subtle-hover: rgba(26, 23, 22, 0.2);
   --color-shadow-soft-40: rgba(20, 17, 16, 0.1);
   --color-shadow-soft-50: rgba(20, 17, 16, 0.14);
-  --color-toggle-on: #8f6a47;
-  --color-toggle-on-20: rgba(143, 106, 71, 0.18);
-  --color-toggle-on-30: rgba(143, 106, 71, 0.26);
 
-  --ui-pill-cleanup-rgb: 180, 83, 9;
+  --ui-pill-cleanup-rgb: 229, 160, 25;
 
   --color-section-marker: var(--color-text-secondary);
   --color-section-marker-alt: var(--color-text-secondary);
@@ -620,6 +613,10 @@
     color: var(--color-cloud);
   }
 
+  :root[data-theme="light"] .ui-color-cloud {
+    color: var(--color-cloud-dark);
+  }
+
   .ui-color-local {
     color: var(--color-local);
   }
@@ -688,6 +685,11 @@
     color: #fecaca;
   }
 
+  :root[data-theme="light"] .ui-color-error-tint,
+  :root[data-theme="light"] .ui-color-error-faint {
+    color: var(--color-error);
+  }
+
   .ui-color-info-strong {
     color: #60a5fa;
   }
@@ -706,10 +708,6 @@
 
   .ui-color-on-warning {
     color: #000000;
-  }
-
-  :root[data-theme="light"] .ui-color-on-warning {
-    color: #ffffff;
   }
 
   .ui-surface-menu {
@@ -857,6 +855,10 @@
     color: #fef2f2;
   }
 
+  :root[data-theme="light"] .ui-hover-error-50:hover {
+    color: #7f1d1d;
+  }
+
   .ui-disabled-gray-600:disabled {
     color: #4b5563;
   }
@@ -886,18 +888,6 @@
     color: #f87171;
   }
 
-  .text-amber-200 {
-    color: #fde68a;
-  }
-
-  .text-amber-400 {
-    color: #fbbf24;
-  }
-
-  .text-amber-400\/90 {
-    color: rgba(251, 191, 36, 0.9);
-  }
-
   .hover\:text-red-400:hover {
     color: #f87171;
   }
@@ -920,10 +910,6 @@
 
   .bg-amber-400\/5 {
     background-color: var(--color-cloud-5);
-  }
-
-  .bg-amber-500\/10 {
-    background-color: rgba(245, 158, 11, 0.1);
   }
 
   .bg-blue-400 {
@@ -1015,11 +1001,11 @@
   }
 
   .border-amber-500\/30 {
-    border-color: rgba(245, 158, 11, 0.3);
+    border-color: var(--color-cloud-30);
   }
 
   .border-amber-500\/40 {
-    border-color: rgba(245, 158, 11, 0.4);
+    border-color: var(--color-cloud-50);
   }
 
   .border-blue-500\/30 {
@@ -1636,7 +1622,7 @@ body {
   background: var(--color-scrollbar-thumb-subtle-hover);
 }
 
-.model-list-fade {
+.list-fade-y {
   mask-image: linear-gradient(
     to bottom,
     transparent,

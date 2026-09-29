@@ -559,7 +559,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       disabled={isRetrying}
                       className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
                     >
-                      <RotateCw size={12} className="text-cloud" />
+                      <RotateCw size={12} className="ui-color-cloud" />
                       <span>
                         {t({
                           id: "transcriptions.item.retry",

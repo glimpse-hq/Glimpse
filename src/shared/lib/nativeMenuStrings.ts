@@ -91,6 +91,30 @@ export const NATIVE_MENU_STRINGS = [
       "The microphone stopped responding and no other microphone was found. Glimpse will switch to one as soon as it's connected.",
   }),
   msg({
+    id: "native.toast.recording_disk_full",
+    message:
+      "Your disk is full, so Glimpse stopped recording. What was recorded so far is saved.",
+  }),
+  msg({
+    id: "native.toast.recording_write_failed",
+    message:
+      "Glimpse couldn't keep writing the recording, so it stopped. What was recorded so far is saved.",
+  }),
+  msg({
+    id: "native.toast.recording_low_disk",
+    message:
+      "Your disk is almost full. Glimpse will stop recording if it runs out of space.",
+  }),
+  msg({
+    id: "native.toast.dictation_disk_full",
+    message: "Your disk is full, so Glimpse couldn't save this dictation.",
+  }),
+  msg({
+    id: "native.toast.retranscribe_failed",
+    message:
+      "Glimpse couldn't transcribe this again, so it kept the earlier transcript.",
+  }),
+  msg({
     id: "native.toast.milestone",
     message: "{count} words dictated with Glimpse!",
   }),

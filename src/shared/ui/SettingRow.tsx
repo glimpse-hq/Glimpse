@@ -61,7 +61,7 @@ const SettingRow = ({
         <div className="flex min-w-[55%] flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="ui-text-label-strong ui-color-primary">{title}</span>
           {inlineDescription != null && (
-            <span className="min-w-0 ui-text-meta ui-color-disabled">
+            <span className="min-w-0 ui-text-meta leading-none ui-color-disabled">
               {inlineDescription}
             </span>
           )}

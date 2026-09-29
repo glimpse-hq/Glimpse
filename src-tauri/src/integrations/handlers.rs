@@ -387,6 +387,7 @@ fn transcribe(app: &AppHandle<AppRuntime>, args: &Value) -> Result<Value, String
                 audio.sample_rate,
                 &dictionary,
                 Some(&settings.language),
+                glimpse_speech::TimestampGranularity::Segment,
             )
         },
     ));

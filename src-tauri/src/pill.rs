@@ -214,6 +214,8 @@ fn cursor_over_pill_window(app: &AppHandle<AppRuntime>) -> Option<bool> {
 
 pub struct PillController {
     status: Mutex<PillStatus>,
+    // Mirrors status == Listening for audio threads, which shouldn't lock.
+    listening: Arc<AtomicBool>,
     recording_mode: Mutex<Option<RecordingMode>>,
     shortcut_origin: Mutex<Option<hotkeys::ShortcutAction>>,
     recording_options: Mutex<hotkeys::ShortcutOptions>,
@@ -236,6 +238,7 @@ impl PillController {
     pub fn new(recorder: Arc<RecorderManager>) -> Self {
         Self {
             status: Mutex::new(PillStatus::Idle),
+            listening: Arc::new(AtomicBool::new(false)),
             recording_mode: Mutex::new(None),
             shortcut_origin: Mutex::new(None),
             recording_options: Mutex::new(hotkeys::ShortcutOptions::default()),
@@ -257,6 +260,10 @@ impl PillController {
 
     pub fn status(&self) -> PillStatus {
         *self.status.lock()
+    }
+
+    pub fn listening_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.listening)
     }
 
     pub fn set_expanded(&self, expanded: bool) {
@@ -427,6 +434,8 @@ impl PillController {
             }
             let previous = *status;
             *status = new_status;
+            self.listening
+                .store(new_status == PillStatus::Listening, Ordering::Relaxed);
             previous
         };
 
@@ -468,7 +477,11 @@ impl PillController {
         self.reset_recording_state();
         self.set_hold_key_down(false);
         self.transition_to(app, PillStatus::Error);
-        let simple_msg = simplify_recording_error(&message);
+        let simple_msg = if crate::platform::is_disk_full(err) {
+            toast::native(app, "native.toast.dictation_disk_full")
+        } else {
+            simplify_recording_error(&message)
+        };
         toast::show(app, "error", None, &simple_msg);
     }
 
@@ -719,7 +732,7 @@ impl PillController {
                 // Drop out of Listening so transition_to_error isn't suppressed.
                 self.transition_to(app, PillStatus::Idle);
 
-                if handle_revoked_mic_permission(app) {
+                if handle_revoked_mic_permission(app, &err) {
                     return false;
                 }
 
@@ -1193,7 +1206,6 @@ fn discard_pending_recording(recording: &crate::recorder::CompletedRecording) {
     }
 }
 
-#[cfg(target_os = "macos")]
 fn show_microphone_permission_toast(app: &AppHandle<AppRuntime>) {
     toast::show_with_action(
         app,
@@ -1206,7 +1218,7 @@ fn show_microphone_permission_toast(app: &AppHandle<AppRuntime>) {
 }
 
 #[cfg(target_os = "macos")]
-fn handle_revoked_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
+fn handle_revoked_mic_permission(app: &AppHandle<AppRuntime>, _err: &anyhow::Error) -> bool {
     if permissions::refresh_microphone_permission() {
         return false;
     }
@@ -1215,15 +1227,19 @@ fn handle_revoked_mic_permission(app: &AppHandle<AppRuntime>) -> bool {
     true
 }
 
+/// Windows privacy settings can block desktop apps from the mic (E_ACCESSDENIED).
 #[cfg(not(target_os = "macos"))]
-fn handle_revoked_mic_permission(_app: &AppHandle<AppRuntime>) -> bool {
-    false
+fn handle_revoked_mic_permission(app: &AppHandle<AppRuntime>, err: &anyhow::Error) -> bool {
+    if analytics::error_detail(err).reason != "permission" {
+        return false;
+    }
+    show_microphone_permission_toast(app);
+    true
 }
 
 fn start_model_download(app: &AppHandle<AppRuntime>, model: &str) -> bool {
-    let downloadable = crate::speech::catalog::local_manifests()
-        .iter()
-        .any(|manifest| manifest.id == model && crate::speech::catalog::is_downloadable(manifest));
+    let downloadable = crate::speech::install::model_cache_dir(app)
+        .is_ok_and(|dir| crate::speech::install::model_download_allowed(app, &dir, model));
     if !downloadable {
         return false;
     }
@@ -1486,7 +1502,7 @@ fn microphone_input_kind(settings: &UserSettings) -> &'static str {
 }
 
 /// Simplifies recording error messages
-fn simplify_recording_error(message: &str) -> String {
+pub(crate) fn simplify_recording_error(message: &str) -> String {
     let msg_lower = message.to_lowercase();
 
     if msg_lower.contains("permission")

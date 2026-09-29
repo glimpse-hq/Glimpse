@@ -58,7 +58,7 @@ const ToggleSwitch = ({
         appearance-none leading-none
         transition-colors duration-150
         focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-        ${enabled ? "bg-[var(--color-toggle-on)]" : "bg-[var(--color-border-secondary)]"}
+        ${enabled ? "bg-[var(--color-interactive)]" : "bg-[var(--color-border-secondary)]"}
         ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}
       `}
       style={{

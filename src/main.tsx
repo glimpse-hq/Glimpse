@@ -11,6 +11,7 @@ import {
   resolveTextScale,
   TEXT_SIZE_MODE_STORAGE_KEY,
 } from "./shared/lib/textSize";
+import { parseThemeMode, resolveThemeAttribute } from "./shared/lib/theme";
 
 type CrashSource = "render" | "window_error" | "unhandled_rejection";
 
@@ -161,20 +162,27 @@ window.addEventListener("unhandledrejection", (event) => {
   }
 });
 
-const applyInitialTextScale = () => {
-  if (getCurrentWindow().label !== "settings") return;
+// Settings load over IPC after the first paint, so the saved copies
+// decide how that paint looks.
+const applyInitialAppearance = () => {
+  const label = getCurrentWindow().label;
+  if (label !== "settings" && label !== "live") return;
 
-  const mode = parseTextSizeMode(
+  const root = document.documentElement;
+  const textSizeMode = parseTextSizeMode(
     localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY),
   );
-  document.documentElement.style.setProperty(
+  root.style.setProperty(
     "--ui-text-scale",
-    resolveTextScale(mode, detectAppPlatform()),
+    resolveTextScale(textSizeMode, detectAppPlatform()),
+  );
+  root.dataset.theme = resolveThemeAttribute(
+    parseThemeMode(window.__GLIMPSE_BOOT__?.theme ?? null),
   );
 };
 
 document.documentElement.dataset.platform = detectAppPlatform();
-applyInitialTextScale();
+applyInitialAppearance();
 
 // Catalogs load on demand, so the first one has to land before the first
 // render or every window would paint untranslated and then swap.

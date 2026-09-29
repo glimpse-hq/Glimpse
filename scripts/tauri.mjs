@@ -1,5 +1,5 @@
 // Windows wrapper for `tauri dev` / `tauri build`:
-// - short CARGO_TARGET_DIR + TEMP to avoid MAX_PATH in whisper Vulkan builds
+// - short CARGO_TARGET_DIR + TEMP to avoid MAX_PATH in native Vulkan builds
 import { spawn } from "node:child_process";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -105,63 +105,6 @@ function findVsDevCmd() {
   return undefined;
 }
 
-function findLibclangPath(vsDevCmd) {
-  const explicit = env.LIBCLANG_PATH;
-  if (
-    explicit &&
-    ["libclang.dll", "clang.dll"].some((name) =>
-      fs.existsSync(path.join(explicit, name)),
-    )
-  ) {
-    return explicit;
-  }
-
-  const localAppData = env.LOCALAPPDATA;
-  const candidates = [
-    env.LLVM_PATH ? path.join(env.LLVM_PATH, "bin") : undefined,
-    env.ProgramFiles ? path.join(env.ProgramFiles, "LLVM", "bin") : undefined,
-    env["ProgramFiles(x86)"]
-      ? path.join(env["ProgramFiles(x86)"], "LLVM", "bin")
-      : undefined,
-    localAppData
-      ? path.join(localAppData, "Programs", "LLVM", "bin")
-      : undefined,
-  ];
-
-  const pythonUserRoot = env.APPDATA
-    ? path.join(env.APPDATA, "Python")
-    : undefined;
-  if (pythonUserRoot && fs.existsSync(pythonUserRoot)) {
-    for (const pythonVersion of fs.readdirSync(pythonUserRoot)) {
-      candidates.push(
-        path.join(
-          pythonUserRoot,
-          pythonVersion,
-          "site-packages",
-          "clang",
-          "native",
-        ),
-      );
-    }
-  }
-
-  if (vsDevCmd) {
-    const visualStudioRoot = path.resolve(path.dirname(vsDevCmd), "..", "..");
-    candidates.push(
-      path.join(visualStudioRoot, "VC", "Tools", "Llvm", "x64", "bin"),
-      path.join(visualStudioRoot, "VC", "Tools", "Llvm", "bin"),
-    );
-  }
-
-  return candidates.find(
-    (candidate) =>
-      candidate &&
-      ["libclang.dll", "clang.dll"].some((name) =>
-        fs.existsSync(path.join(candidate, name)),
-      ),
-  );
-}
-
 function quoteCmd(value) {
   return `"${value.replace(/"/g, '""')}"`;
 }
@@ -183,22 +126,11 @@ function spawnTauriCli() {
 
   if (process.platform === "win32") {
     const vsDevCmd = findVsDevCmd();
-    const libclangPath = findLibclangPath(vsDevCmd);
 
     if (!vsDevCmd && needsNativeBuild) {
       console.warn(
         "Glimpse: VsDevCmd.bat not found. Install Visual Studio 2022 (Desktop development with C++) or Build Tools, or set VSDEVCMD_PATH.",
       );
-    }
-
-    if (!libclangPath && needsNativeBuild) {
-      console.warn(
-        "Glimpse: libclang.dll not found. Install LLVM (`winget install LLVM.LLVM`) or set LIBCLANG_PATH to its bin directory.",
-      );
-    }
-
-    if (libclangPath) {
-      env.LIBCLANG_PATH = libclangPath;
     }
 
     if (vsDevCmd && needsNativeBuild) {
@@ -215,9 +147,6 @@ function spawnTauriCli() {
         `set "CARGO_TARGET_DIR=${env.CARGO_TARGET_DIR}"`,
         `set "TEMP=${env.TEMP}"`,
         `set "TMP=${env.TMP}"`,
-        ...(env.LIBCLANG_PATH
-          ? [`set "LIBCLANG_PATH=${env.LIBCLANG_PATH}"`]
-          : []),
         tauriCommand,
         "",
       ].join("\r\n");

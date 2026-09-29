@@ -94,7 +94,7 @@ const AudioScrubber = ({
       <div ref={trackRef} className="relative h-full w-full">
         <div className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-[var(--color-border-secondary)]">
           <div
-            className="h-full rounded-full bg-[var(--color-toggle-on)]"
+            className="h-full rounded-full bg-[var(--color-interactive)]"
             style={{ width: `${ratio * 100}%` }}
           />
         </div>
@@ -111,7 +111,7 @@ const AudioScrubber = ({
         ))}
 
         <span
-          className={`pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-toggle-on)] ring-2 ring-[var(--color-bg-tertiary)] transition-[width,height] duration-150 group-focus-visible/scrub:ring-[var(--color-toggle-on-30)] ${
+          className={`pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-interactive)] ring-2 ring-[var(--color-bg-tertiary)] transition-[width,height] duration-150 group-focus-visible/scrub:ring-[var(--color-interactive-30)] ${
             dragging
               ? "h-3 w-3"
               : "h-2.5 w-2.5 group-hover/scrub:h-3 group-hover/scrub:w-3"

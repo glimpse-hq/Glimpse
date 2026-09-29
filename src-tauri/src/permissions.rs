@@ -124,11 +124,51 @@ mod other {
     }
 
     pub fn open_microphone_settings() -> Result<(), String> {
-        Err("Microphone settings are only available on macOS".to_string())
+        std::process::Command::new("explorer")
+            .arg("ms-settings:privacy-microphone")
+            .spawn()
+            .map(|_| ())
+            .map_err(|e| format!("Failed to open Windows Settings: {e}"))
     }
 
+    /// Reads the Windows privacy switches (device, all apps, this app) from the registry.
     pub fn check_microphone_permission() -> bool {
-        true
+        const CONSENT: &str = r"Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone";
+
+        let app_key = match crate::platform::windows::store::package_family_name() {
+            Some(family) => format!(r"{CONSENT}\{family}"),
+            None => format!(r"{CONSENT}\NonPackaged"),
+        };
+
+        !is_denied(CONSENT, true) && !is_denied(CONSENT, false) && !is_denied(&app_key, false)
+    }
+
+    // A missing key or value is the Windows default, which allows access.
+    // hklm_only=false reads HKCU and falls back to HKLM.
+    fn is_denied(subkey: &str, hklm_only: bool) -> bool {
+        use windows::Win32::Foundation::ERROR_SUCCESS;
+        use windows::Win32::UI::Shell::SHRegGetUSValueW;
+        use windows::core::HSTRING;
+
+        let mut buffer = [0u16; 16];
+        let mut size = std::mem::size_of_val(&buffer) as u32;
+        let err = unsafe {
+            SHRegGetUSValueW(
+                &HSTRING::from(subkey),
+                &HSTRING::from("Value"),
+                None,
+                Some(buffer.as_mut_ptr().cast()),
+                Some(&mut size as *mut u32),
+                hklm_only,
+                None,
+                0,
+            )
+        };
+        if err != ERROR_SUCCESS {
+            return false;
+        }
+        let len = (size as usize / 2).min(buffer.len());
+        String::from_utf16_lossy(&buffer[..len]).trim_end_matches('\0') == "Deny"
     }
 
     pub fn request_microphone_permission() -> Result<(), String> {

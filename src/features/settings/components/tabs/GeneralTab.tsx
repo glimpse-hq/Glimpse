@@ -1095,7 +1095,7 @@ const ShortcutIconToggle = ({
   const activeClass =
     tone === "local"
       ? "text-[var(--color-local)] bg-[var(--color-local-10)] border-[var(--color-local-30)]"
-      : "text-[var(--color-cloud)] bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]";
+      : "ui-color-cloud bg-[var(--color-cloud-10)] border-[var(--color-cloud-30)]";
 
   return (
     <HoverTip label={label} detail={detail} className="inline-flex shrink-0">

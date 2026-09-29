@@ -76,7 +76,7 @@ pub fn speech_engine(settings: &UserSettings) -> &'static str {
         return "remote";
     }
     crate::speech::catalog::definition(&settings.local_model)
-        .map_or("unknown", |model| model.engine.as_str())
+        .map_or("unknown", crate::speech::catalog::engine_name)
 }
 
 /// Buckets a recording's RMS level around the too-quiet rejection threshold.
