@@ -1,0 +1,58 @@
+name: Microsoft Store
+
+# Sends the MSIX that release.yml attaches to a release to the Microsoft Store through StoreFast.
+# Publishing a release on GitHub runs it. Run it by hand with a tag to resend a release without a new
+# build, including a draft.
+#
+# Releases published with GITHUB_TOKEN from another workflow don't fire `release: published`, so if
+# release.yml ever publishes the release itself, run this from release.yml instead.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to send, like v1.3.1
+        required: true
+
+jobs:
+  store:
+    # Betas are published as prereleases and stay out of the Store.
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    permissions:
+      # Draft releases are only visible to a token that can write, and a manual run may target a draft.
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # The MSIX is only on the release when the GLIMPSE_MSIX_* secrets were set for the build.
+      - name: Download the MSIX from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern "Glimpse_*_x64.msix"
+
+      - name: Send it to StoreFast
+        uses: legendaryspy/storefast-publish@v1
+        with:
+          api-key: ${{ secrets.STOREFAST_API_KEY }}
+          app: 9PJWF4W8V4WG
+          package: Glimpse_*_x64.msix
+          # The notes come from the version's section of CHANGELOG.md, and the job fails without one. The
+          # release description only points at the downloads, so it's never used.
+          changelog-section: true
+          use-release-body: false
+          # The changelog has headings, so StoreFast rewrites it into a short "What's new" that keeps
+          # what Windows users get.
+          summarize: auto
+          platform: windows
+          # Drops Mac-only lines before anything else. Lines that also say "on Windows" stay, and the
+          # summary keeps only their Windows part.
+          exclude-lines-matching: '(?i)^(?!.*\bon windows\b).*(\bmac(os|s)?\b|\bapple\b|\bintel\b|neural engine|\bmetal\b)'
+          translate: true
+          # Replaces an update still open on the dashboard, like one started by hand.
+          replace-open: true
+          # The update waits on the StoreFast dashboard until you press Submit there.
+          submit: false
