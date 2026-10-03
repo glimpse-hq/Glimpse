@@ -1,6 +1,6 @@
 <div align="center">
   <h1>Glimpse</h1>
-  <p>Voice dictation that runs on your computer.<br />Free and unlimited, on Mac and Windows.</p>
+  <p>Voice dictation and meeting transcription that run on your computer.<br />Free and unlimited dictation, on Mac and Windows.</p>
   <img
     src="./assets/readme/icon.png"
     width="256"
@@ -27,7 +27,7 @@
 
 Hey! Glimpse is made mostly by me. I talk a lot faster than I type, and I wanted dictation that worked everywhere without sending my voice to someone's server or charging me every month. Nothing I tried really did all of that, so I built it.
 
-Press your shortcut, talk, and your words show up wherever you're typing. It works offline, and dictation is free with no word limits on every model. I don't think you should have to pay to talk to your own computer. A license adds the extras, like AI cleanup and transcribing audio and video, and it's how I keep working on Glimpse.
+Press your shortcut, talk, and your words show up wherever you're typing. It works offline, and dictation is free with no word limits on every model. I don't think you should have to pay to talk to your own computer. A license adds the extras, like recording meetings, AI cleanup and transcribing audio and video, and it's how I keep working on Glimpse.
 
 Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/Glimpse/issues) or email me at [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc). I do my best to respond ASAP.
 
@@ -56,6 +56,8 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 
 **With a license** (14-day trial included)
 
+- **Recording Mode.** Record meetings, calls and lectures from your microphone and your computer's audio, or only the apps you pick, like Zoom or your browser. No bot joins the call. Follow a live transcript while you record, and drop bookmarks. [More](https://tryglimpse.cc/meeting-transcription)
+- **Speaker detection.** [NVIDIA Nemotron 3 Diarization](https://tryglimpse.cc/nemotron-3-diarization) labels up to 8 speakers on your computer, live and after the recording. Runs on Metal, Vulkan or CPU, no NVIDIA card needed.
 - **Library.** Drop in audio or video, scrub the synced transcript, assign speakers, export to `.txt`, `.md`, `.srt`, or `.vtt`.
 - **AI Cleanup.** Polish dictated text with your own LLM, set up in **Settings → Providers**.
 - **Edit Mode.** Highlight text, say what you want, and watch it rewrite in place.
@@ -120,6 +122,7 @@ Speech models are downloaded in-app from Hugging Face. The live list lives in **
 - **Parakeet TDT V3 GGUF** (CC-BY-4.0), via [`handy-computer`](https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf), with a Neural Engine build from [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml)
 - **Parakeet Unified GGUF** (CC-BY-4.0, English-only), via [`handy-computer`](https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf)
 - **Nemotron Streaming GGUF** (NVIDIA Open Model License), English and 3.5 multilingual, via [`handy-computer`](https://huggingface.co/handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf)
+- **NVIDIA Nemotron 3 Diarization GGUF** (OpenMDW 1.1), speaker detection, via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf) of [`nvidia/Nemotron-3-Diarization`](https://huggingface.co/nvidia/Nemotron-3-Diarization)
 - **Qwen3-ASR GGUF** (Apache-2.0), via [`handy-computer`](https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf)
 
 ## License

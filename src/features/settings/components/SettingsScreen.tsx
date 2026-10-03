@@ -96,15 +96,16 @@ const SettingsScreen = ({
         </h1>
       </header>
 
-      {form.error && (
-        <div className="px-8 pt-2">
+      {/* Floats over the pane so an error doesn't push it down. */}
+      <div className="relative z-10 h-0">
+        <div className="absolute inset-x-8 top-0">
           <SettingsErrorBanner
             error={form.error}
             sourceTab={form.errorSourceTab}
             onOpenTab={handleOpenTab}
           />
         </div>
-      )}
+      </div>
 
       <div
         className="flex flex-1 min-h-0 flex-col px-8 pt-2 pb-6 settings-scroll overflow-y-scroll"
@@ -329,41 +330,45 @@ const SettingsErrorBanner = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 4 }}
           transition={{ duration: 0.12, ease: "easeOut" }}
-          className={`rounded-md border border-error/20 bg-error/5 px-2 py-1.5 ${
-            sourceTab
-              ? "cursor-pointer transition-colors hover:bg-error/10"
-              : ""
-          }`}
-          role={sourceTab ? "button" : undefined}
-          tabIndex={sourceTab ? 0 : undefined}
-          onClick={() => {
-            if (sourceTab) onOpenTab(sourceTab);
-          }}
-          onKeyDown={(event) => {
-            if (!sourceTab) return;
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              onOpenTab(sourceTab);
-            }
-          }}
+          className="rounded-md bg-surface-surface shadow-sm"
         >
-          <p className="break-words [overflow-wrap:anywhere] ui-text-meta ui-color-error leading-snug">
-            <span>{error}</span>
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleCopy();
-              }}
-              className="ml-1 inline-flex align-[-2px] text-error/60 transition-colors hover:text-error"
-              aria-label={t({
-                id: "settings.error.copy",
-                message: "Copy error",
-              })}
-            >
-              {copied ? <Check size={11} /> : <Copy size={11} />}
-            </button>
-          </p>
+          <div
+            className={`rounded-md border border-error/20 bg-error/5 px-2 py-1.5 ${
+              sourceTab
+                ? "cursor-pointer transition-colors hover:bg-error/10"
+                : ""
+            }`}
+            role={sourceTab ? "button" : undefined}
+            tabIndex={sourceTab ? 0 : undefined}
+            onClick={() => {
+              if (sourceTab) onOpenTab(sourceTab);
+            }}
+            onKeyDown={(event) => {
+              if (!sourceTab) return;
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onOpenTab(sourceTab);
+              }
+            }}
+          >
+            <p className="break-words [overflow-wrap:anywhere] ui-text-meta ui-color-error leading-snug">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleCopy();
+                }}
+                className="ml-1 inline-flex align-[-2px] text-error/60 transition-colors hover:text-error"
+                aria-label={t({
+                  id: "settings.error.copy",
+                  message: "Copy error",
+                })}
+              >
+                {copied ? <Check size={11} /> : <Copy size={11} />}
+              </button>
+            </p>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

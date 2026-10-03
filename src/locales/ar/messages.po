@@ -274,6 +274,126 @@ msgstr ""
 #~ msgstr "فشل التنزيل"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.api_key.optional_hint"
+#~ msgstr "(إذا لزم الأمر)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.api_key.optional_hint"
+#~ msgstr "(إذا لزم الأمر)"
+
+#. placeholder {0}: state.bookmarks.length
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.name.bookmarks"
+#~ msgstr "{0} إشارات مرجعية"
+
+#. placeholder {0}: unsupported.length
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+#~ msgid "library.view.unsupported_files"
+#~ msgstr "{0} ملف (ملفات) تم تخطيها بسبب تنسيق غير مدعوم."
+
+#. placeholder {0}: importPaths.length
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+#~ msgid "library.import.summary.multiple"
+#~ msgstr "{0} ملفات"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.name.bookmark_one"
+#~ msgstr "إشارة مرجعية واحدة"
+
+#. placeholder {0}: providerPreset?.defaultModel || "provider default"
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.model.automatic"
+#~ msgstr "تلقائي ({0})"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.subtitle"
+#~ msgstr "تفاصيل الاتصال للنسخ السحابي. حدّده في «النماذج»."
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.empty.description"
+#~ msgstr "أنشئ وضعاً لبدء تخصيص تطبيقاتك ومواقعك الإلكترونية."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+#~ msgid "library.import.timestamps_supported"
+#~ msgstr "مُفعَّل للنماذج المدعومة"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+#~ msgid "library.retranscribe.timestamps_supported"
+#~ msgstr "مُفعَّل للنماذج المدعومة"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+#~ msgid "library.import.detect_speakers.description"
+#~ msgstr "تصنيف المقاطع حسب المتحدث تلقائيًا"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+#~ msgid "library.retranscribe.detect_speakers.description"
+#~ msgstr "تصنيف المقاطع حسب المتحدث تلقائياً"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+#~ msgid "settings.providers.language_label"
+#~ msgstr "اللغة"
+
+#. placeholder {0}: providerPreset?.defaultModel || "auto"
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.model.placeholder"
+#~ msgstr "النموذج (الافتراضي: {0})"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+#~ msgid "library.import.no_models"
+#~ msgstr "لا توجد نماذج متاحة. أعدّ مزوّدًا بعيدًا أو نزّل نموذجًا محليًا من الإعدادات -> النماذج قبل الاستيراد."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+#~ msgid "library.retranscribe.no_models"
+#~ msgstr "لا توجد نماذج متاحة. أعدّ مزوّدًا بعيدًا أو نزّل نموذجًا محليًا من الإعدادات -> النماذج قبل إعادة التفريغ."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+#~ msgid "import.cat.personalities"
+#~ msgstr "الشخصيات"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.title"
+#~ msgstr "موفِّر التعرف على الكلام عن بُعد"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+#~ msgid "library.import_error.model_not_installed"
+#~ msgstr "النموذج المحدد غير مثبَّت. نزِّل نموذجاً من الإعدادات ← النماذج."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+#~ msgid "import.cat.replacements"
+#~ msgstr "استبدالات النص"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#~ msgid "library.modal.delete_confirm.description"
+#~ msgstr "سيؤدي هذا إلى حذف النص المنسوخ والصوت من مكتبتك."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.subtitle"
+#~ msgstr "تستخدمه الاختصارات التي يكون فيها نموذج الكتابة مفعَّلاً، وكذلك ميزة التخصيص."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -284,20 +404,16 @@ msgid "onboarding.license_step.tile_edit_command"
 msgstr "«اجعل هذا أكثر رسمية»"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.api_key.optional_hint"
-msgstr "(إذا لزم الأمر)"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key.optional_hint"
-msgstr "(إذا لزم الأمر)"
-
-#. js-lingui-explicit-id
 #. placeholder {0}: selectedApps.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.count"
 msgstr "{0, plural, one {# تطبيق} other {# تطبيقات}}"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: state.bookmarks.length
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.name.bookmark_count"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.llmCleanedCount
@@ -311,6 +427,12 @@ msgstr "{0, plural, one {# إملاء مُحسَّن بالذكاء الاصطن
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.dictations_words"
 msgstr "{0, plural, one {# إملاء} other {# إملاءات}} · {1, plural, one {# كلمة} other {# كلمات}} اليوم"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: importPaths.length
+#: src/features/library/components/LibraryImportModal.tsx
+msgid "library.import.summary.file_count"
+msgstr ""
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.langCount
@@ -376,16 +498,16 @@ msgid "home.today.stats.longest_words"
 msgstr "{0, plural, one {أطول إملاء اليوم: # كلمة} other {أطول إملاء اليوم: # كلمات}}"
 
 #. js-lingui-explicit-id
+#. placeholder {0}: unsupported.length
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.unsupported_files_skipped"
+msgstr ""
+
+#. js-lingui-explicit-id
 #. placeholder {0}: apps.length
 #: src/features/import/components/ImportStep.tsx
 msgid "import.subtitle"
 msgstr "{0, plural, one {عثرنا على تطبيق إملاء آخر. اختر ما تريد استيراده.} other {عثرنا على تطبيقات إملاء أخرى. اختر ما تريد استيراده.}}"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: state.bookmarks.length
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.name.bookmarks"
-msgstr "{0} إشارات مرجعية"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: personality.name
@@ -398,18 +520,6 @@ msgstr "{0} نسخة"
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.status.download"
 msgstr "{0} تنزيل"
-
-#. js-lingui-explicit-id
-#. placeholder {0}: unsupported.length
-#: src/features/library/components/LibraryView.tsx
-msgid "library.view.unsupported_files"
-msgstr "{0} ملف (ملفات) تم تخطيها بسبب تنسيق غير مدعوم."
-
-#. js-lingui-explicit-id
-#. placeholder {0}: importPaths.length
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.summary.multiple"
-msgstr "{0} ملفات"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: formatDuration(minutesSaved(totalWords, totalDurationMs))
@@ -538,11 +648,6 @@ msgstr "+ إضافة اختصار"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_one"
 msgstr "زوج صوت ونص واحد"
-
-#. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.name.bookmark_one"
-msgstr "إشارة مرجعية واحدة"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -719,6 +824,11 @@ msgstr "إضافة إدخال في القاموس أو البحث عنه"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.add_speaker"
 msgstr "إضافة متحدث"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.add_tag"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -923,10 +1033,9 @@ msgid "settings.app.auto_update"
 msgstr "التحديث التلقائي"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: providerPreset?.defaultModel || "provider default"
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.model.automatic"
-msgstr "تلقائي ({0})"
+msgid "settings.speech_model.model.automatic_default"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1085,6 +1194,7 @@ msgid "library.card.cancel"
 msgstr "إلغاء"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDeleteDialog.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.cancel"
 msgstr "إلغاء"
@@ -1412,11 +1522,6 @@ msgid "settings.local_api.configuration"
 msgstr "الإعداد"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.subtitle"
-msgstr "تفاصيل الاتصال للنسخ السحابي. حدّده في «النماذج»."
-
-#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.continue"
 msgstr "متابعة"
@@ -1599,6 +1704,12 @@ msgid "library.view.import_dialog_error"
 msgstr "تعذّر فتح مربع حوار الاستيراد."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+#: src/features/transcriptions/queries.ts
+msgid "transcriptions.cleanup_retry_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.audio_conversion_failed"
 msgstr "تعذّر تحويل هذا الملف إلى صوت للنسخ."
@@ -1634,6 +1745,11 @@ msgid "library.delete_error.delete_files_failed"
 msgstr "تعذّر حذف ملفات المكتبة. تحقق من الأذونات وحاول مجددًا."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.delete_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.delete_error.outside_folder"
 msgstr "تعذّر حذف هذا العنصر لأن ملفاته خارج مجلد المكتبة."
@@ -1654,6 +1770,11 @@ msgid "library.view.rediarize_error"
 msgstr "تعذّر اكتشاف المتحدثين."
 
 #. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.discard_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.item_not_found"
 msgstr "تعذّر العثور على هذا العنصر في المكتبة. حاول إعادة فتحه."
@@ -1662,6 +1783,32 @@ msgstr "تعذّر العثور على هذا العنصر في المكتبة. 
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.couldnt_load"
 msgstr "تعذّر تحميل الإصدارات"
+
+#. js-lingui-explicit-id
+#: src/features/settings/useSettingsForm.ts
+msgid "settings.error.load_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/useSettingsForm.ts
+msgid "settings.error.speech_models_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/useSettingsForm.ts
+msgid "settings.error.writing_models_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.live_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.pause_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -1675,8 +1822,63 @@ msgstr "تعذّر قراءة تسجيلاتك"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryView.tsx
+msgid "library.detail.rename_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.restore_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.resume_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.retranscribe.failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.retry_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.bookmark_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.bookmarks_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/recording/components/LiveView.tsx
+msgid "library.detail.speakers_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryView.tsx
+msgid "library.detail.tags_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.transcript.save_failed"
 msgstr "تعذّر حفظ هذا النسخ. تغييراتك لا تزال موجودة."
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.save_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -1687,6 +1889,32 @@ msgstr "تعذّر بدء اختبار الميكروفون."
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.start_error"
 msgstr "تعذّر بدء اختبار الميكروفون."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.retry_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/LiveView.tsx
+msgid "record.stop_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionItem.tsx
+msgid "transcriptions.item.stop_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.cancel_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/OnboardingScreen.tsx
+msgid "onboarding.shortcut.failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1702,11 +1930,6 @@ msgstr "جارٍ حساب التسجيلات…"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_devices.v2"
 msgstr "يغطي أجهزتك"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.empty.description"
-msgstr "أنشئ وضعاً لبدء تخصيص تطبيقاتك ومواقعك الإلكترونية."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -1844,6 +2067,7 @@ msgid "library.card.delete"
 msgstr "حذف"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDeleteDialog.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.delete"
 msgstr "حذف"
@@ -1921,7 +2145,7 @@ msgid "dictionary.replacements.delete"
 msgstr "حذف الاستبدال لـ {0}"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "حذف هذا العنصر؟"
 
@@ -2049,6 +2273,11 @@ msgstr "تم"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.done"
 msgstr "تم"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.down"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2194,16 +2423,6 @@ msgstr "تفعيل الوضع"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.permission.enabled"
 msgstr "مُفعَّل"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.timestamps_supported"
-msgstr "مُفعَّل للنماذج المدعومة"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryRetranscribeModal.tsx
-msgid "library.retranscribe.timestamps_supported"
-msgstr "مُفعَّل للنماذج المدعومة"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2452,6 +2671,11 @@ msgid "onboarding.license_step.tile_modes_formal"
 msgstr "رسمي"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.forward_delete"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.tier_founder"
 msgstr "المؤسِّس"
@@ -2540,6 +2764,11 @@ msgstr "تعذّر على Glimpse الاستمرار في كتابة التسج�
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.retranscribe_failed"
 msgstr "تعذّر على Glimpse نسخ هذا المحتوى مجدّدًا، لذا احتفظ بالنص المكتوب السابق."
+
+#. js-lingui-explicit-id
+#: src/main.tsx
+msgid "crash.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2905,23 +3134,8 @@ msgid "live.prefs.text_size.large"
 msgstr "L"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.detect_speakers.description"
-msgstr "تصنيف المقاطع حسب المتحدث تلقائيًا"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryRetranscribeModal.tsx
-msgid "library.retranscribe.detect_speakers.description"
-msgstr "تصنيف المقاطع حسب المتحدث تلقائياً"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
-msgstr "اللغة"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ProvidersTab.tsx
-msgid "settings.providers.language_label"
 msgstr "اللغة"
 
 #. js-lingui-explicit-id
@@ -2963,6 +3177,16 @@ msgstr "التخطيط"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.skip_short_hint"
 msgstr "يستثني المقاطع التي تقل مدتها عن ثانية"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.left"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.left_modifier"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3232,6 +3456,11 @@ msgid "native.menu.mic_unavailable"
 msgstr "الميكروفون غير متاح ({error})"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.mouse_middle"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/WindowControls.tsx
 msgid "window.controls.minimize"
 msgstr "تصغير"
@@ -3268,10 +3497,9 @@ msgid "settings.language_model.model.placeholder"
 msgstr "النموذج (الافتراضي: {0})"
 
 #. js-lingui-explicit-id
-#. placeholder {0}: providerPreset?.defaultModel || "auto"
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.model.placeholder"
-msgstr "النموذج (الافتراضي: {0})"
+msgid "settings.speech_model.model.placeholder_default"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
@@ -3319,6 +3547,11 @@ msgid "settings.about.storage.models"
 msgstr "النماذج"
 
 #. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.modes"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.more_actions"
 msgstr "إجراءات إضافية"
@@ -3347,6 +3580,16 @@ msgstr "خيارات إضافية"
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.more_options"
 msgstr "خيارات إضافية"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.mouse_back"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.mouse_forward"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3382,6 +3625,12 @@ msgstr "يتطلب ترخيص Glimpse. يفتح الحساب."
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_audio.unsupported"
 msgstr "يتطلب macOS 14.2 أو أحدث"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+#: src/features/library/components/LibraryRetranscribeModal.tsx
+msgid "library.detect_speakers_unavailable"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3496,13 +3745,13 @@ msgstr "لا يُحتفظ بأي نموذج في الذاكرة بين الطل�
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.no_models"
-msgstr "لا توجد نماذج متاحة. أعدّ مزوّدًا بعيدًا أو نزّل نموذجًا محليًا من الإعدادات -> النماذج قبل الاستيراد."
+msgid "library.import.no_models_installed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
-msgid "library.retranscribe.no_models"
-msgstr "لا توجد نماذج متاحة. أعدّ مزوّدًا بعيدًا أو نزّل نموذجًا محليًا من الإعدادات -> النماذج قبل إعادة التفريغ."
+msgid "library.retranscribe.no_models_installed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -3897,11 +4146,6 @@ msgid "member_card.tier_personal"
 msgstr "شخصي"
 
 #. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-msgid "import.cat.personalities"
-msgstr "الشخصيات"
-
-#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.personalization"
 msgstr "التخصيص"
@@ -3920,6 +4164,11 @@ msgstr "تشغيل الصوت"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.playback_settings"
 msgstr "إعدادات التشغيل"
+
+#. js-lingui-explicit-id
+#: src/main.tsx
+msgid "crash.body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4006,6 +4255,11 @@ msgstr "الموفّر"
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider"
 msgstr "الخدمة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.model.provider_default"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -4168,11 +4422,6 @@ msgid "settings.speech_model.endpoint.aria"
 msgstr "عنوان URL لنقطة نهاية الكلام عن بُعد"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.title"
-msgstr "موفِّر التعرف على الكلام عن بُعد"
-
-#. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.remove_value"
 msgstr "إزالة"
@@ -4240,6 +4489,11 @@ msgid "settings.about.data.delete_all_description"
 msgstr "يحذف التسجيلات والنصوص والنماذج والإعدادات، ثم يُغلق التطبيق"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.rename"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.mode.rename"
 msgstr "إعادة تسمية"
@@ -4268,6 +4522,11 @@ msgstr "استبدال بـ"
 #: src/features/dictionary/components/DictionaryView.tsx
 msgid "dictionary.replacements.replace_with"
 msgstr "استبدال بـ..."
+
+#. js-lingui-explicit-id
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.replacements_title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -4456,6 +4715,16 @@ msgid "transcriptions.item.reverting"
 msgstr "جارٍ الرجوع..."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.right"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.right_modifier"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.immediately"
 msgstr "الآن"
@@ -4489,6 +4758,11 @@ msgstr "S"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.save"
 msgstr "حفظ"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.rename_save"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -4690,11 +4964,6 @@ msgstr "اختر موفِّرًا..."
 #: src/shared/ui/Dropdown.tsx
 msgid "dropdown.placeholder"
 msgstr "تحديد..."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/library-utils.ts
-msgid "library.import_error.model_not_installed"
-msgstr "النموذج المحدد غير مثبَّت. نزِّل نموذجاً من الإعدادات ← النماذج."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4938,6 +5207,11 @@ msgid "onboarding.done.recap.model.v2"
 msgstr "نموذج الكلام"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+msgid "settings.speech_model.title_provider"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_offline_body"
 msgstr "يبقى الكلام على هذا الكمبيوتر."
@@ -5179,11 +5453,6 @@ msgid "model_capability.live_text_detail"
 msgstr "يظهر النص في الشريط أثناء كلامك."
 
 #. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-msgid "import.cat.replacements"
-msgstr "استبدالات النص"
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.text_size"
 msgstr "حجم النص"
@@ -5207,6 +5476,11 @@ msgstr "شكرًا لمساهمتك."
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_active"
 msgstr "شكراً لدعمك Glimpse!"
+
+#. js-lingui-explicit-id
+#: src/features/toast/ToastOverlay.tsx
+msgid "toast.action_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5244,6 +5518,11 @@ msgid "onboarding.first_dictation.complete.v2"
 msgstr "هذا كل شيء، هذا هو المقصود."
 
 #. js-lingui-explicit-id
+#: src/features/settings/useSettingsForm.ts
+msgid "settings.error.api_server_restart"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.not_ready"
 msgstr "نموذج Apple Intelligence لا يزال قيد التنزيل."
@@ -5274,6 +5553,21 @@ msgid "onboarding.first_dictation.next.anywhere"
 msgstr "يعمل الاختصار نفسه في أي تطبيق يمكنك الكتابة فيه."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/library-utils.ts
+msgid "library.import_error.model_missing"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDeleteDialog.tsx
+msgid "library.delete_confirm.recycle_bin"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDeleteDialog.tsx
+msgid "library.delete_confirm.trash"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "المظهر"
@@ -5297,11 +5591,6 @@ msgstr "لا تتوفر طوابع زمنية لهذا العنصر. أعِد ا
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "يؤدي هذا إلى إزالة ملفات الصوت المحفوظة فقط، وليس النصوص المُحوَّلة."
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.delete_confirm.description"
-msgstr "سيؤدي هذا إلى حذف النص المنسوخ والصوت من مكتبتك."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -5570,6 +5859,11 @@ msgid "settings.general.language_info.active_model"
 msgstr "اللغات غير المدعومة غير متاحة في نموذجك النشط. بدّل إلى نموذج يدعمها لاستخدامها."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/shortcuts.ts
+msgid "shortcuts.key.up"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
 msgstr "حتى 8 متحدثين"
@@ -5638,11 +5932,6 @@ msgstr "استخدم المقتطفات لتمرير سياق مباشر إلى 
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text_aria"
 msgstr "استخدام النصوص الأصلية قبل التنظيف"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.subtitle"
-msgstr "تستخدمه الاختصارات التي يكون فيها نموذج الكتابة مفعَّلاً، وكذلك ميزة التخصيص."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5789,6 +6078,11 @@ msgstr "الكلمات المنطوقة"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_offline"
 msgstr "يعمل بلا إنترنت"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ProvidersTab.tsx
+msgid "settings.providers.writing_label"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx

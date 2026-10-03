@@ -6,8 +6,17 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useLingui } from "@lingui/react/macro";
 import * as transcriptionsApi from "./api";
-import type { TranscriptionFilter, TranscriptionPage } from "../../types";
+import { showErrorToast } from "../../shared/lib/errorToast";
+import type {
+  TranscriptionFilter,
+  TranscriptionPage,
+  TranscriptionRecord,
+} from "../../types";
+
+type CompletePayload = { record?: TranscriptionRecord | null };
+type ErrorPayload = { stage: string };
 
 const PAGE_SIZE = 50;
 const FIRST_PAGE = [0];
@@ -165,12 +174,19 @@ export function useRetryTranscription(enabled: boolean = true) {
     let cancelled = false;
     const unlisteners: UnlistenFn[] = [];
 
-    const clearRetrying = () => {
-      setRetryingIds((current) => (current.length > 0 ? [] : current));
+    const clearRetrying = (id?: string) => {
+      setRetryingIds((current) => {
+        if (current.length === 0) return current;
+        if (!id) return [];
+        return current.includes(id)
+          ? current.filter((entry) => entry !== id)
+          : current;
+      });
     };
 
-    listen("transcription:complete", () => {
-      if (!cancelled) clearRetrying();
+    // Errors carry no record id, so they end every retry.
+    listen<CompletePayload>("transcription:complete", (event) => {
+      if (!cancelled) clearRetrying(event.payload?.record?.id);
     }).then((fn) => {
       if (cancelled) void Promise.resolve(fn()).catch(() => {});
       else unlisteners.push(fn);
@@ -209,10 +225,58 @@ export function useRetryTranscription(enabled: boolean = true) {
   return { retry: mutation, cancelRetry, retryingIds };
 }
 
+// Cleanup runs in the background; an id stays busy until its event arrives.
 export function useRetryLlmCleanup() {
-  return useMutation({
+  const { t } = useLingui();
+  const [cleaningIds, setCleaningIds] = useState<string[]>([]);
+  const listening = cleaningIds.length > 0;
+
+  useEffect(() => {
+    if (!listening) return;
+
+    let cancelled = false;
+    const unlisteners: UnlistenFn[] = [];
+
+    listen<CompletePayload>("transcription:complete", (event) => {
+      const id = event.payload?.record?.id;
+      if (cancelled || !id) return;
+      setCleaningIds((prev) => prev.filter((entry) => entry !== id));
+    }).then((fn) => {
+      if (cancelled) void Promise.resolve(fn()).catch(() => {});
+      else unlisteners.push(fn);
+    });
+
+    listen<ErrorPayload>("transcription:error", (event) => {
+      if (cancelled || event.payload?.stage !== "llm_cleanup") return;
+      setCleaningIds([]);
+      showErrorToast(
+        t({
+          id: "transcriptions.cleanup_retry_failed",
+          message: "Couldn't clean up the transcription.",
+        }),
+      );
+    }).then((fn) => {
+      if (cancelled) void Promise.resolve(fn()).catch(() => {});
+      else unlisteners.push(fn);
+    });
+
+    return () => {
+      cancelled = true;
+      unlisteners.forEach((fn) => void Promise.resolve(fn()).catch(() => {}));
+    };
+  }, [listening, t]);
+
+  const mutation = useMutation({
     mutationFn: transcriptionsApi.retryLlmCleanup,
+    onMutate: (id) => {
+      setCleaningIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    },
+    onError: (_error, id) => {
+      setCleaningIds((prev) => prev.filter((entry) => entry !== id));
+    },
   });
+
+  return { retryLlm: mutation, cleaningIds };
 }
 
 export function useUndoLlmCleanup() {

@@ -23,6 +23,7 @@ import { formatBytes } from "../../../shared/lib/format";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
 import type { LibraryItem } from "../../../types";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 
 export type LibraryLayout = "list" | "grid";
 
@@ -39,8 +40,10 @@ const LibraryCard = ({
   onCommitNameEdit,
   onCancelNameEdit,
   onRetry,
+  onRetranscribe,
   onCancel,
   onDelete,
+  onQuickDelete,
   editingTagId,
   tagDraft,
   onStartTagEdit,
@@ -62,8 +65,11 @@ const LibraryCard = ({
   onCommitNameEdit: () => void;
   onCancelNameEdit: () => void;
   onRetry: () => Promise<void>;
+  onRetranscribe: () => void;
   onCancel: () => Promise<void>;
-  onDelete: () => Promise<void>;
+  onDelete: () => void;
+  // Shift-click deletes without asking.
+  onQuickDelete: () => Promise<void>;
   editingTagId: string | null;
   tagDraft: string;
   onStartTagEdit: () => void;
@@ -126,21 +132,32 @@ const LibraryCard = ({
   useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
   useClickOutside(tagMenuRef, () => setTagMenuOpen(false), tagMenuOpen);
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     setMenuOpen(false);
-    try {
-      await onDelete();
-    } catch (err) {
-      console.error("Failed to delete library item:", err);
-    }
+    onDelete();
+  };
+
+  // Failures already raise a toast from the view.
+  const handleQuickDelete = () => {
+    void onQuickDelete().catch(() => {});
   };
 
   const handleRetry = async () => {
     setMenuOpen(false);
+    if (status.type !== "error") {
+      onRetranscribe();
+      return;
+    }
     try {
       await onRetry();
     } catch (err) {
       console.error("Failed to retry library transcription:", err);
+      showErrorToast(
+        t({
+          id: "library.detail.retry_failed",
+          message: "Couldn't start the transcription again.",
+        }),
+      );
     }
   };
 
@@ -150,6 +167,12 @@ const LibraryCard = ({
       await onCancel();
     } catch (err) {
       console.error("Failed to cancel library transcription:", err);
+      showErrorToast(
+        t({
+          id: "library.card.cancel_failed",
+          message: "Couldn't stop the transcription.",
+        }),
+      );
     }
   };
 
@@ -164,7 +187,7 @@ const LibraryCard = ({
         onContextMenu={(event) => {
           event.preventDefault();
           if (shiftHeld) {
-            void handleDelete();
+            handleQuickDelete();
           } else {
             setMenuOpen(true);
           }
@@ -285,7 +308,7 @@ const LibraryCard = ({
                     e.stopPropagation();
                     e.preventDefault();
                     if (shiftHeld) {
-                      handleDelete();
+                      handleQuickDelete();
                     } else {
                       setMenuOpen((prev) => !prev);
                     }
@@ -296,7 +319,7 @@ const LibraryCard = ({
                       e.preventDefault();
                       if (e.repeat) return;
                       if (shiftHeld) {
-                        handleDelete();
+                        handleQuickDelete();
                       } else {
                         setMenuOpen((prev) => !prev);
                       }
@@ -562,6 +585,10 @@ const LibraryCard = ({
                       event.stopPropagation();
                       onStartTagEdit();
                     }}
+                    aria-label={t({
+                      id: "library.card.add_tag",
+                      message: "Add tag",
+                    })}
                     className="flex items-center justify-center w-[16px] h-[16px] shrink-0 ui-color-primary hover:text-[var(--color-text-secondary)] transition-colors text-[14px] leading-none"
                   >
                     +
@@ -614,7 +641,7 @@ const LibraryCard = ({
       onContextMenu={(event) => {
         event.preventDefault();
         if (shiftHeld) {
-          void handleDelete();
+          handleQuickDelete();
         } else {
           setMenuOpen(true);
         }
@@ -836,6 +863,10 @@ const LibraryCard = ({
                 event.stopPropagation();
                 onStartTagEdit();
               }}
+              aria-label={t({
+                id: "library.card.add_tag",
+                message: "Add tag",
+              })}
               className="flex items-center justify-center w-[16px] h-[16px] shrink-0 ui-color-primary hover:text-[var(--color-text-secondary)] transition-colors text-[14px] leading-none"
             >
               +
@@ -924,7 +955,7 @@ const LibraryCard = ({
             e.stopPropagation();
             e.preventDefault();
             if (shiftHeld) {
-              handleDelete();
+              handleQuickDelete();
             } else {
               setMenuOpen((prev) => !prev);
             }
@@ -935,7 +966,7 @@ const LibraryCard = ({
               e.preventDefault();
               if (e.repeat) return;
               if (shiftHeld) {
-                handleDelete();
+                handleQuickDelete();
               } else {
                 setMenuOpen((prev) => !prev);
               }

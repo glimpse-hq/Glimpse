@@ -77,9 +77,9 @@ export const formatImportErrorMessage = (rawMessage: string) => {
   if (lower.includes("selected model is not installed")) {
     return i18n._(
       msg({
-        id: "library.import_error.model_not_installed",
+        id: "library.import_error.model_missing",
         message:
-          "Selected model isn't installed. Download one in Settings -> Models.",
+          "The selected model isn't installed. Download one in Settings > Models.",
       }),
     );
   }

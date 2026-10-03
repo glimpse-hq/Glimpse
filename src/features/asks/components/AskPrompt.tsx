@@ -117,12 +117,13 @@ export default function AskPrompt({ active }: AskPromptProps) {
   return (
     <AnimatePresence initial={false}>
       {data?.kind && (
+        // Grows into place when it turns up mid-session, so the list eases down.
         <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, height: 0, marginTop: 0 }}
+          animate={{ opacity: 1, height: "auto", marginTop: 8 }}
           exit={{ opacity: 0, height: 0, marginTop: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
-          className="mt-2 shrink-0 overflow-hidden ui-text-body-sm ui-color-quiet"
+          className="shrink-0 overflow-hidden ui-text-body-sm ui-color-quiet"
         >
           {title}{" "}
           <button

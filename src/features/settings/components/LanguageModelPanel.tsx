@@ -98,23 +98,12 @@ const LanguageModelPanel = ({
   return (
     <div className="grid row-span-4 [grid-template-rows:subgrid] gap-3 rounded-lg bg-surface-surface p-2.5">
       <div className="px-2 py-1.5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="ui-text-label-strong ui-color-primary">
-              {t({
-                id: "settings.language_model.title",
-                message: "Writing Model Provider",
-              })}
-            </h3>
-            <p className="mt-0.5 ui-text-meta ui-color-muted">
-              {t({
-                id: "settings.language_model.subtitle",
-                message:
-                  "Used by shortcuts with the writing model turned on, and by Personalization.",
-              })}
-            </p>
-          </div>
-        </div>
+        <h3 className="ui-text-label-strong ui-color-primary">
+          {t({
+            id: "settings.language_model.title",
+            message: "Writing Model Provider",
+          })}
+        </h3>
       </div>
 
       <div className="px-2">
@@ -223,15 +212,7 @@ const LanguageModelPanel = ({
             {t({
               id: "settings.language_model.api_key",
               message: "API Key",
-            })}{" "}
-            {!providerPreset?.apiKeyRequired && (
-              <span className="ui-color-disabled">
-                {t({
-                  id: "settings.language_model.api_key.optional_hint",
-                  message: "(if required)",
-                })}
-              </span>
-            )}
+            })}
           </span>
           <ApiKeyField
             value={llmApiKey}

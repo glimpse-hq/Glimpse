@@ -220,7 +220,9 @@ const AboutTab = ({
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExportConfigOpen(false);
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setExportConfigOpen(false);
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);

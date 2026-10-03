@@ -1,3 +1,31 @@
+1.3.1
+
+### Improvements
+
+- Parakeet TDT V3 on the Neural Engine transcribes about twice as fast. On an M2 Pro, short dictations take less than half as long, and a 9 minute recording takes under 2 seconds instead of about 4.
+- The Parakeet TDT V3 Neural Engine download is about half the size (about 550 MB instead of 1.1 GB). If it's your current model, Glimpse downloads the new version once in the background and keeps using the old one until the new one is ready.
+- On Apple Silicon, Parakeet Unified takes about a third less time to transcribe recordings and files in the Library.
+- On Windows graphics cards, Parakeet TDT V3 and Parakeet Unified take about 15 to 20% less time on short dictations and about a third less on long recordings.
+- Nemotron Streaming and Nemotron 3.5 Streaming transcribe recordings and Library files on your graphics card on Windows. A 9 minute recording takes about 3 to 5 seconds instead of a minute and a half, with far less memory. Live dictation still runs on the processor and feels the same.
+- On Mac, Nemotron Streaming transcribes recordings and Library files on the graphics chip, so a 9 minute recording takes about 6 seconds instead of 47. Nemotron 3.5 Streaming takes about half as long as before, and both use far less memory on long recordings.
+- On Windows PCs without a supported graphics card, long recordings transcribe about twice as fast, and about 3 times as fast on processors with many cores, where short dictations also take about half as long.
+- Deleting a Library item moves its audio to the Trash (Recycle Bin on Windows), so you can get it back.
+- Deleting from the Library list now asks first, and Retranscribe from the list lets you pick the model before it replaces the transcript.
+- When something fails, like a rename, a retry or a toast button, Glimpse now tells you instead of doing nothing.
+
+### Fixes
+
+- Fixed a crash on some Windows PCs every time Glimpse loaded a local model, caused by an older Microsoft Visual C++ runtime that another app installed.
+- Transcribing a long file with Parakeet Unified on Windows or an Intel Mac, for example from Raycast or Shortcuts, no longer comes back empty.
+- Pressing Esc closes only the open menu or dialog, instead of also closing Settings or the Library item behind it.
+- An open Library item stays open when it no longer matches your search or filter.
+- The Library's Active filter now includes queued and importing items.
+- Typing capital letters no longer turns delete buttons red.
+- A microphone picked during setup is now saved.
+- Retrying cleanup on a dictation keeps showing progress until it finishes.
+- The Settings error banner and the ask on Home no longer push the page around.
+- More of Glimpse is translated, including key names, dates in What's New, and error messages.
+
 1.3.0
 
 ### New Features

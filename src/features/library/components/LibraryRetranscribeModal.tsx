@@ -11,8 +11,9 @@ import {
 } from "../../../shared/lib/modelCapabilities";
 import { useDiarizerInstalled } from "../../settings/models-queries";
 import type { LibraryItem, SpeechModel } from "../../../types";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 
-type LibraryRetranscribeOptions = {
+export type LibraryRetranscribeOptions = {
   model_key: string;
   show_timestamps: boolean;
   detect_speakers: boolean;
@@ -89,6 +90,16 @@ const LibraryRetranscribeModal = ({
     }
   }, [timestampsSupported]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      onCancel();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onCancel]);
+
   const handleConfirm = async () => {
     if (!selectedModelKey) return;
     setIsSubmitting(true);
@@ -98,6 +109,14 @@ const LibraryRetranscribeModal = ({
         show_timestamps: timestampsSupported ? showTimestamps : false,
         detect_speakers: detectSpeakers,
       });
+    } catch (err) {
+      console.error("Failed to retranscribe:", err);
+      showErrorToast(
+        t({
+          id: "library.retranscribe.failed",
+          message: "Couldn't retranscribe this item.",
+        }),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -160,9 +179,9 @@ const LibraryRetranscribeModal = ({
               />
               <span>
                 {t({
-                  id: "library.retranscribe.no_models",
+                  id: "library.retranscribe.no_models_installed",
                   message:
-                    "No models available. Configure a remote provider or download a local model in Settings -> Models before retranscribing.",
+                    "No models available. Download one or add a provider in Settings > Models.",
                 })}
               </span>
             </div>
@@ -201,16 +220,13 @@ const LibraryRetranscribeModal = ({
                   message: "Show timestamps",
                 })}
               </div>
-              <div className="ui-text-meta text-content-disabled">
-                {timestampsSupported
-                  ? t({
-                      id: "library.retranscribe.timestamps_supported",
-                      message: "Enabled for supported models",
-                    })
-                  : t({
-                      id: "library.retranscribe.timestamps_unsupported",
-                      message: "Not supported by this model",
-                    })}
+              <div
+                className={`ui-text-meta text-content-disabled ${timestampsSupported ? "invisible" : ""}`}
+              >
+                {t({
+                  id: "library.retranscribe.timestamps_unsupported",
+                  message: "Not supported by this model",
+                })}
               </div>
             </div>
             <ToggleSwitch
@@ -227,33 +243,36 @@ const LibraryRetranscribeModal = ({
             />
           </div>
 
-          {diarizationSupported && (
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <div className="ui-text-body-sm text-content-primary">
-                  {t({
-                    id: "library.retranscribe.detect_speakers",
-                    message: "Detect speakers",
-                  })}
-                </div>
-                <div className="ui-text-meta text-content-disabled">
-                  {t({
-                    id: "library.retranscribe.detect_speakers.description",
-                    message: "Label segments by speaker automatically",
-                  })}
-                </div>
-              </div>
-              <ToggleSwitch
-                enabled={detectSpeakers}
-                onToggle={() => setSpeakersChoice(!detectSpeakers)}
-                ariaLabel={t({
-                  id: "library.retranscribe.detect_speakers.aria",
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="ui-text-body-sm text-content-primary">
+                {t({
+                  id: "library.retranscribe.detect_speakers",
                   message: "Detect speakers",
                 })}
-                size="md"
-              />
+              </div>
+              <div
+                className={`ui-text-meta text-content-disabled ${diarizationSupported ? "invisible" : ""}`}
+              >
+                {t({
+                  id: "library.detect_speakers_unavailable",
+                  message: "Needs the Speaker detection model",
+                })}
+              </div>
             </div>
-          )}
+            <ToggleSwitch
+              enabled={detectSpeakers}
+              onToggle={() =>
+                diarizationSupported && setSpeakersChoice(!detectSpeakers)
+              }
+              ariaLabel={t({
+                id: "library.retranscribe.detect_speakers.aria",
+                message: "Detect speakers",
+              })}
+              disabled={!diarizationSupported}
+              size="md"
+            />
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 px-5 pb-4">

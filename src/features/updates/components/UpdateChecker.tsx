@@ -58,6 +58,7 @@ export function UpdateChecker({
   const queryClient = useQueryClient();
   const { data: updateStatus } = useUpdateStatus();
   const [checking, setChecking] = useState(false);
+  const [checked, setChecked] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -92,8 +93,11 @@ export function UpdateChecker({
       setError(formatError(err));
     } finally {
       setChecking(false);
+      setChecked(true);
     }
   }, [queryClient]);
+  // Not "up to date" until a first check has said so.
+  const awaitingCheck = storeBuild === undefined || (autoCheck && !checked);
 
   useEffect(() => {
     let cancelled = false;
@@ -379,7 +383,7 @@ export function UpdateChecker({
   return (
     <>
       <div className={`${UPDATE_BOX_CLASS} bg-surface-surface`}>
-        {checking ? (
+        {checking || awaitingCheck ? (
           <>
             <Loader2
               size={16}

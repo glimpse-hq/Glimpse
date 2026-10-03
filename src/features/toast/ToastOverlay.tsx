@@ -215,6 +215,18 @@ const ToastOverlay: React.FC = () => {
       if (action !== "copy_last_transcription") dismissWithCleanup();
     } catch (err) {
       console.error("Action failed:", err);
+      setToast((prev) =>
+        prev
+          ? {
+              ...prev,
+              message: t({
+                id: "toast.action_failed",
+                message: "That didn't work. Try again.",
+              }),
+              type: "error",
+            }
+          : null,
+      );
     }
   };
 

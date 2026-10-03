@@ -29,6 +29,7 @@ export const libraryKeys = {
   list: (filter: LibraryFilter) =>
     [...libraryKeys.all, "list", filter] as const,
   tags: () => [...libraryKeys.all, "tags"] as const,
+  item: (id: string) => [...libraryKeys.all, "item", id] as const,
 };
 
 type LibraryInfiniteData = { pages: LibraryItemsPage[]; pageParams: number[] };
@@ -219,6 +220,15 @@ export function useLibraryItems(
       if (!lastPage.has_more) return undefined;
       return allPages.reduce((acc, p) => acc + p.items.length, 0);
     },
+  });
+}
+
+// One item by id, for an open item that has left the filtered list.
+export function useLibraryItem(id: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: libraryKeys.item(id ?? ""),
+    queryFn: () => libraryApi.getLibraryItem(id ?? ""),
+    enabled: enabled && id !== null,
   });
 }
 

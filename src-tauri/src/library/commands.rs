@@ -123,6 +123,17 @@ pub fn get_library_items_page(
 }
 
 #[tauri::command]
+pub fn get_library_item(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<LibraryItem>, String> {
+    state
+        .storage()
+        .get_library_item(&id)
+        .map_err(|err| format!("Failed to load library item: {err}"))
+}
+
+#[tauri::command]
 pub fn update_library_item(
     id: String,
     patch: LibraryItemPatch,
@@ -159,14 +170,16 @@ pub fn delete_library_item(
 
     match determine_delete_scope(&app, &item.audio_path) {
         LibraryDeleteScope::DeleteFile(path) => {
-            if path.exists() {
+            if path.exists() && !trashed(&path) {
                 fs::remove_file(&path)
                     .map_err(|err| format!("Failed to delete library file: {err}"))?;
             }
         }
         LibraryDeleteScope::DeleteDirectory(path) => {
-            crate::platform::remove_dir_all_compat(&path)
-                .map_err(|err| format!("Failed to delete library files: {err}"))?;
+            if !trashed(&path) {
+                crate::platform::remove_dir_all_compat(&path)
+                    .map_err(|err| format!("Failed to delete library files: {err}"))?;
+            }
         }
         LibraryDeleteScope::SkipFilesystemDeletion => {}
     }
@@ -175,6 +188,17 @@ pub fn delete_library_item(
         .delete_library_item(&id)
         .map_err(|err| format!("Failed to delete library item: {err}"))?;
     Ok(())
+}
+
+// Falls back to deleting for good when the volume has no Trash.
+fn trashed(path: &Path) -> bool {
+    match crate::platform::move_to_trash(path) {
+        Ok(()) => true,
+        Err(err) => {
+            tracing::warn!("Couldn't move library files to the Trash, deleting them: {err}");
+            false
+        }
+    }
 }
 
 #[tauri::command]

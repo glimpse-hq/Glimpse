@@ -151,10 +151,14 @@ struct TranscribeAneEncoder {
     // Some models replace the full GGUF with smaller files when using ANE.
     replacement_files: Option<&'static [CatalogFile]>,
     model: &'static str,
+    // First entry for a model that this macOS can load wins.
+    min_macos: u32,
     dir_name: &'static str,
     url: &'static str,
     size_bytes: u64,
     sha256: &'static str,
+    // Tells this encoder apart from older ones in the same directory.
+    unpacked_bytes: Option<u64>,
 }
 
 // `ditto -c -k --keepParent --norsrc --noextattr <dir> <dir>.zip` of the
@@ -165,32 +169,61 @@ const ANE_QWEN3_ASR_0_6B_ZIP_SHA256: &str =
     "cfd2e37a30d0da1b685da0f96e82f05ef6fc208136c85efa5368ddd2ee18ad5d";
 
 const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
+    // int8 (convert-parakeet-gguf-to-coreml.py --int8). The macOS 15 build adds
+    // 10.24 s and 5.12 s functions for short audio, which need multifunction models.
     TranscribeAneEncoder {
         model: "parakeet_tdt_v3_gguf",
         replacement_files: Some(&[PARAKEET_DECODER_FILE]),
+        min_macos: 15,
         dir_name: "parakeet-tdt-0.6b-v3-Q8_0-encoder.mlmodelc",
-        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-encoder-v2.mlmodelc.zip",
-        size_bytes: 1_091_438_144,
-        sha256: "259685a7cc5f602d63fc7d3f3a4ccfa39b3969d775e116a126d156c6c9245914",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-encoder-v3.mlmodelc.zip",
+        size_bytes: 529_136_396,
+        sha256: "74958c61a7040cfe583434c599828819ed648dea5e9a6067421732593c2e51aa",
+        unpacked_bytes: Some(605_651_354),
+    },
+    TranscribeAneEncoder {
+        model: "parakeet_tdt_v3_gguf",
+        replacement_files: Some(&[PARAKEET_DECODER_FILE]),
+        min_macos: 14,
+        dir_name: "parakeet-tdt-0.6b-v3-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-encoder-v3-macos14.mlmodelc.zip",
+        size_bytes: 523_684_020,
+        sha256: "3d530e9cc868be36c4a209c3d8e3328a3e8d03d0f68fe74388104073f5fc4fd3",
+        unpacked_bytes: Some(594_977_730),
     },
     TranscribeAneEncoder {
         model: "qwen3_asr_0_6b_q8",
         replacement_files: Some(&[QWEN3_ASR_0_6B_DECODER_FILE]),
+        min_macos: 14,
         dir_name: "Qwen3-ASR-0.6B-Q8_0-encoder.mlmodelc",
         url: "https://huggingface.co/Glimpse-Dictation/Qwen3-ASR-0.6B-coreml/resolve/main/Qwen3-ASR-0.6B-Q8_0-encoder.mlmodelc.zip",
         size_bytes: ANE_QWEN3_ASR_0_6B_ZIP_BYTES,
         sha256: ANE_QWEN3_ASR_0_6B_ZIP_SHA256,
+        unpacked_bytes: None,
     },
     // Keeps the full GGUF: live streaming still runs its ggml encoder.
     TranscribeAneEncoder {
         model: "parakeet_unified_en_int8",
         replacement_files: None,
+        min_macos: 14,
         dir_name: "parakeet-unified-en-0.6b-Q8_0-encoder.mlmodelc",
         url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Unified-EN-0.6B-coreml/resolve/main/parakeet-unified-en-0.6b-Q8_0-encoder.mlmodelc.zip",
         size_bytes: 1_091_102_158,
         sha256: "0f0db7464c605de1a129a9919da00f5b984274d6ff8d13214db63145ca76b089",
+        unpacked_bytes: None,
     },
 ];
+
+fn transcribe_ane_encoder(model: &str) -> Option<&'static TranscribeAneEncoder> {
+    if !ANE_SUPPORTED {
+        return None;
+    }
+    // Glimpse needs macOS 14, so an unreadable version counts as 14.
+    let macos = crate::macos_major_version().max(14);
+    TRANSCRIBE_ANE_ENCODERS
+        .iter()
+        .find(|encoder| encoder.model == model && encoder.min_macos <= macos)
+}
 
 macro_rules! whisper_files {
     ($family:literal, $quant:literal, $size_bytes:literal, $sha256:literal) => {
@@ -419,17 +452,20 @@ fn ane_companion(manifest: &LocalModelManifest) -> Option<AneCompanion> {
                 size_bytes: encoder.size_bytes,
                 sha256: encoder.sha256,
             }),
-        LocalModelEngine::Transcribe => TRANSCRIBE_ANE_ENCODERS
-            .iter()
-            .find(|encoder| encoder.model == manifest.id)
-            .map(|encoder| AneCompanion {
+        LocalModelEngine::Transcribe => {
+            transcribe_ane_encoder(manifest.id).map(|encoder| AneCompanion {
                 dir_name: encoder.dir_name.to_string(),
                 url: encoder.url.to_string(),
                 size_bytes: encoder.size_bytes,
                 sha256: encoder.sha256,
-            }),
+            })
+        }
         _ => None,
     }
+}
+
+pub(super) fn ane_encoder_unpacked_bytes(model: &str) -> Option<u64> {
+    transcribe_ane_encoder(model)?.unpacked_bytes
 }
 
 pub fn ane_encoder_dir(model: &str) -> Option<String> {
@@ -902,13 +938,7 @@ pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelMan
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {
-    if !ANE_SUPPORTED {
-        return None;
-    }
-    TRANSCRIBE_ANE_ENCODERS
-        .iter()
-        .find(|encoder| encoder.model == model)
-        .and_then(|encoder| encoder.replacement_files)
+    transcribe_ane_encoder(model).and_then(|encoder| encoder.replacement_files)
 }
 
 pub fn ane_replaces_model_files(model: &str) -> bool {

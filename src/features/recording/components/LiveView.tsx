@@ -34,6 +34,7 @@ import SegmentedControl from "../../../shared/ui/SegmentedControl";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import type { Bookmark, LiveSegment } from "../../../types";
 import { detectAppPlatform } from "../../../platform/service";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 
 const NATIVE_FRAME = detectAppPlatform() === "windows";
 
@@ -498,11 +499,37 @@ const LiveView = () => {
 
   const jumpToLive = () => setFollowing(true);
 
+  // Logs the error and tells the user what didn't happen.
+  const failWith = (message: string) => (err: unknown) => {
+    console.error(message, err);
+    showErrorToast(message);
+  };
+  const bookmarkFailedMessage = t({
+    id: "record.bookmark_failed",
+    message: "Couldn't save the bookmark.",
+  });
+  const speakersFailedMessage = t({
+    id: "library.detail.speakers_failed",
+    message: "Couldn't save the speakers.",
+  });
+
   const handleTogglePause = () => {
     (paused
       ? recordingApi.resumeRecordingSession()
       : recordingApi.pauseRecordingSession()
-    ).catch((err) => console.error("Failed to toggle pause:", err));
+    ).catch(
+      failWith(
+        paused
+          ? t({
+              id: "record.resume_failed",
+              message: "Couldn't resume the recording.",
+            })
+          : t({
+              id: "record.pause_failed",
+              message: "Couldn't pause the recording.",
+            }),
+      ),
+    );
   };
 
   const handleBookmark = () => {
@@ -512,13 +539,13 @@ const LiveView = () => {
         setFocusBookmarkId(bookmark.id);
         jumpToLive();
       })
-      .catch((err) => console.error("Failed to add bookmark:", err));
+      .catch(failWith(bookmarkFailedMessage));
   };
 
   const handleBookmarkNote = (id: string, label: string) => {
     recordingApi
       .updateRecordingBookmark(id, label || null)
-      .catch((err) => console.error("Failed to update bookmark:", err));
+      .catch(failWith(bookmarkFailedMessage));
   };
 
   const handleCopy = () => {
@@ -533,27 +560,32 @@ const LiveView = () => {
   };
 
   const handleStop = () => {
-    recordingApi
-      .finishFromLiveView()
-      .catch((err) => console.error("Failed to finish recording:", err));
+    recordingApi.finishFromLiveView().catch(
+      failWith(
+        t({
+          id: "record.stop_failed",
+          message: "Couldn't stop the recording.",
+        }),
+      ),
+    );
   };
 
   const handleRename = (id: string, name: string) => {
     recordingApi
       .renameLiveSpeaker(id, name)
-      .catch((err) => console.error("Failed to rename speaker:", err));
+      .catch(failWith(speakersFailedMessage));
   };
 
   const handleRecolor = (id: string, color: string) => {
     recordingApi
       .setLiveSpeakerColor(id, color)
-      .catch((err) => console.error("Failed to recolor speaker:", err));
+      .catch(failWith(speakersFailedMessage));
   };
 
   const handleMerge = (from: string, into: string) => {
     recordingApi
       .mergeLiveSpeaker(from, into)
-      .catch((err) => console.error("Failed to merge speakers:", err));
+      .catch(failWith(speakersFailedMessage));
   };
 
   const openSpeakerMenu = (

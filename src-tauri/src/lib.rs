@@ -596,6 +596,7 @@ pub fn run() {
             cancel_retry_transcription,
             library::commands::create_library_item,
             library::commands::get_library_items_page,
+            library::commands::get_library_item,
             library::commands::update_library_item,
             library::commands::delete_library_item,
             library::commands::cancel_library_transcription,

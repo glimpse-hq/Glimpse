@@ -266,12 +266,20 @@ pub(crate) fn compile_pending_ane_encoders(app: &AppHandle<AppRuntime>) {
     }
 }
 
-/// The Parakeet TDT V3 encoder earlier versions installed runs on the CPU; the
-/// Neural Engine one is a pipeline in model0..model3. Only the selected model upgrades.
+/// Sum of the file sizes an extraction manifest lists.
+fn unpacked_bytes(manifest: &Path) -> Option<u64> {
+    let entries: Vec<serde_json::Value> =
+        serde_json::from_slice(&std::fs::read(manifest).ok()?).ok()?;
+    entries.iter().map(|entry| entry["size"].as_u64()).sum()
+}
+
+/// Replaces a Parakeet TDT V3 encoder that isn't this build's (older CPU or fp16
+/// ones, or the other macOS variant). Only the selected model upgrades.
 pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
     const MODEL: &str = "parakeet_tdt_v3_gguf";
-    let (Some(dir_name), Some(mut spec), Ok(models_dir)) = (
+    let (Some(dir_name), Some(expected), Some(mut spec), Ok(models_dir)) = (
         catalog::ane_encoder_dir(MODEL),
+        catalog::ane_encoder_unpacked_bytes(MODEL),
         catalog::install_spec(MODEL, true),
         install::model_cache_dir(app),
     ) else {
@@ -279,9 +287,14 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
     };
     let model_dir = models_dir.join(MODEL);
     let encoder = model_dir.join(&dir_name);
-    let is_old = |encoder: &Path| encoder.join("model.mil").is_file();
+    let manifest = format!(".{dir_name}.manifest.json");
+    let installed_manifest = model_dir.join(&manifest);
+    let is_old =
+        move |manifest: &Path| unpacked_bytes(manifest).is_some_and(|bytes| bytes != expected);
     let staging = model_dir.join(".encoder-upgrade");
-    if !is_old(&encoder) || app.state::<AppState>().current_settings().local_model != MODEL {
+    if !is_old(&installed_manifest)
+        || app.state::<AppState>().current_settings().local_model != MODEL
+    {
         // A partial download from an upgrade that no longer applies.
         let _ = crate::platform::remove_dir_all_compat(&staging);
         return;
@@ -300,7 +313,7 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
             Err(err) => return tracing::warn!("[speech] {MODEL} encoder upgrade failed: {err:#}"),
         }
         let swapped = tauri::async_runtime::spawn_blocking(move || {
-            if is_old(&encoder) {
+            if is_old(&installed_manifest) {
                 // Keeps the old encoder loaded for dictation until the new one compiles,
                 // and waits out an in-flight load so the rename can't land mid-load.
                 if app.state::<AppState>().current_settings().local_model == MODEL
@@ -309,7 +322,6 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
                     let transcriber = app.state::<AppState>().local_transcriber();
                     let _ = transcriber.preload_and_warm(&ready);
                 }
-                let manifest = format!(".{dir_name}.manifest.json");
                 let backup = model_dir.join(format!("{dir_name}.old"));
                 crate::platform::remove_dir_all_compat(&backup)?;
                 std::fs::rename(&encoder, &backup)?;
@@ -317,9 +329,7 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
                     std::fs::rename(&backup, &encoder)?;
                     return Err(err);
                 }
-                if let Err(err) =
-                    std::fs::rename(staged_dir.join(&manifest), model_dir.join(&manifest))
-                {
+                if let Err(err) = std::fs::rename(staged_dir.join(&manifest), &installed_manifest) {
                     std::fs::rename(&encoder, staged_dir.join(&dir_name))?;
                     std::fs::rename(&backup, &encoder)?;
                     return Err(err);

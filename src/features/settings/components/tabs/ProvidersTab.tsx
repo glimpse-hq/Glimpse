@@ -117,8 +117,8 @@ const ProvidersTab = ({
         <div className="grid row-span-6 [grid-template-rows:subgrid]">
           <SectionLabel>
             {t({
-              id: "settings.providers.language_label",
-              message: "Language",
+              id: "settings.providers.writing_label",
+              message: "Writing",
             })}
           </SectionLabel>
           <LanguageModelPanel

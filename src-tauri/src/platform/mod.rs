@@ -166,6 +166,44 @@ pub fn remove_dir_all_compat(dir: &Path) -> io::Result<()> {
     fs::remove_dir(dir)
 }
 
+/// Moves a file or folder to the Trash (Recycle Bin on Windows).
+#[cfg(target_os = "macos")]
+pub fn move_to_trash(path: &Path) -> io::Result<()> {
+    use objc2_foundation::{NSFileManager, NSString, NSURL};
+
+    let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
+    NSFileManager::defaultManager()
+        .trashItemAtURL_resultingItemURL_error(&url, None)
+        .map_err(|err| io::Error::other(err.localizedDescription().to_string()))
+}
+
+/// Moves a file or folder to the Trash (Recycle Bin on Windows).
+#[cfg(target_os = "windows")]
+pub fn move_to_trash(path: &Path) -> io::Result<()> {
+    use ::windows::Win32::UI::Shell::{
+        FO_DELETE, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, SHFILEOPSTRUCTW,
+        SHFileOperationW,
+    };
+    use ::windows::core::PCWSTR;
+    use std::os::windows::ffi::OsStrExt;
+
+    // pFrom is a list of paths, so it ends with two nulls.
+    let from: Vec<u16> = path.as_os_str().encode_wide().chain([0, 0]).collect();
+    let mut op = SHFILEOPSTRUCTW {
+        wFunc: FO_DELETE,
+        pFrom: PCWSTR(from.as_ptr()),
+        fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT).0 as u16,
+        ..Default::default()
+    };
+    match unsafe { SHFileOperationW(&mut op) } {
+        0 if op.fAnyOperationsAborted.as_bool() => Err(io::Error::other("Recycle aborted")),
+        0 => Ok(()),
+        code => Err(io::Error::other(format!(
+            "SHFileOperationW failed: {code:#x}"
+        ))),
+    }
+}
+
 fn remove_file_compat(path: &Path) -> io::Result<()> {
     match fs::remove_file(path) {
         // Windows won't delete a read-only file.

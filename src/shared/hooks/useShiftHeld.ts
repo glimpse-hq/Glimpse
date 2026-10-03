@@ -15,7 +15,13 @@ export function useShiftHeld(enabled: boolean = true) {
     let unlistenFocus: UnlistenFn | null = null;
 
     const handleKeyChange = (event: KeyboardEvent) => {
-      setShiftHeld(event.shiftKey);
+      // Shift while typing is for capitals, not delete mode.
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.isContentEditable;
+      setShiftHeld(!typing && event.shiftKey);
     };
     const handlePointerDown = (event: PointerEvent) => {
       setShiftHeld(event.shiftKey);

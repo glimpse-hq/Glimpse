@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import { i18n } from "../../i18n";
 import { detectAppPlatform } from "../../platform/service";
 
 const isMacPlatform = detectAppPlatform() === "macos";
@@ -17,7 +19,7 @@ function isModifierToken(token: string): boolean {
 
 function humanizeModifierToken(token: string): string {
   const modifierDisplay: Record<string, string> = {
-    Cmd: isMacPlatform ? "Command" : "Meta",
+    Cmd: isMacPlatform ? "Command" : "Win",
     Opt: isMacPlatform ? "Option" : "Alt",
     Ctrl: "Ctrl",
     Shift: "Shift",
@@ -28,11 +30,16 @@ function humanizeModifierToken(token: string): string {
     if (token === modifier) {
       return modifierDisplay[modifier];
     }
+    const key = modifierDisplay[modifier];
     if (token === `${modifier}Left`) {
-      return `Left ${modifierDisplay[modifier]}`;
+      return i18n._(
+        msg({ id: "shortcuts.key.left_modifier", message: `Left ${key}` }),
+      );
     }
     if (token === `${modifier}Right`) {
-      return `Right ${modifierDisplay[modifier]}`;
+      return i18n._(
+        msg({ id: "shortcuts.key.right_modifier", message: `Right ${key}` }),
+      );
     }
   }
 
@@ -41,17 +48,30 @@ function humanizeModifierToken(token: string): string {
 
 function humanizeKeyToken(token: string): string {
   const directDisplay: Record<string, string> = {
-    Left: "Left",
-    Right: "Right",
-    Up: "Up",
-    Down: "Down",
+    Left: i18n._(msg({ id: "shortcuts.key.left", message: "Left" })),
+    Right: i18n._(msg({ id: "shortcuts.key.right", message: "Right" })),
+    Up: i18n._(msg({ id: "shortcuts.key.up", message: "Up" })),
+    Down: i18n._(msg({ id: "shortcuts.key.down", message: "Down" })),
     Escape: "Esc",
     Return: "Enter",
-    ForwardDelete: isMacPlatform ? "Forward Delete" : "Delete",
+    ForwardDelete: isMacPlatform
+      ? i18n._(
+          msg({
+            id: "shortcuts.key.forward_delete",
+            message: "Forward Delete",
+          }),
+        )
+      : "Delete",
     Delete: isMacPlatform ? "Delete" : "Backspace",
-    MouseMiddle: "Middle Click",
-    MouseBack: "Mouse Back",
-    MouseForward: "Mouse Forward",
+    MouseMiddle: i18n._(
+      msg({ id: "shortcuts.key.mouse_middle", message: "Middle Click" }),
+    ),
+    MouseBack: i18n._(
+      msg({ id: "shortcuts.key.mouse_back", message: "Mouse Back" }),
+    ),
+    MouseForward: i18n._(
+      msg({ id: "shortcuts.key.mouse_forward", message: "Mouse Forward" }),
+    ),
   };
 
   if (directDisplay[token]) {
