@@ -16,6 +16,15 @@ const WINDOW_INSET_X = 8;
 const WINDOW_INSET_TOP = 16;
 const WINDOW_INSET_BOTTOM = 24;
 
+const DURATIONS: Record<ToastType, number> = {
+  error: 18000,
+  info: 3000,
+  success: 2000,
+  warning: 5000,
+  update: 0,
+  celebration: 6000,
+};
+
 const COLORS: Record<ToastType, { border: string; dot: string }> = {
   error: { border: "border-red-500/40", dot: "bg-red-500" },
   info: { border: "border-blue-500/30", dot: "bg-blue-400" },
@@ -84,6 +93,8 @@ const ToastOverlay: React.FC = () => {
     null,
   );
   const toastRef = useRef<ToastState | null>(null);
+  // Bumped per shown toast, so a slow action can't touch a newer one.
+  const toastGenerationRef = useRef(0);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -202,6 +213,7 @@ const ToastOverlay: React.FC = () => {
   };
 
   const handleToastAction = async (action: string) => {
+    const generation = toastGenerationRef.current;
     try {
       const args =
         toast?.retryId &&
@@ -212,9 +224,30 @@ const ToastOverlay: React.FC = () => {
       await invoke(action, args);
       // copy_last_transcription replaces this toast with its own "Copied" toast,
       // so dismissing here would race and hide that confirmation.
-      if (action !== "copy_last_transcription") dismissWithCleanup();
+      if (
+        action !== "copy_last_transcription" &&
+        generation === toastGenerationRef.current
+      ) {
+        dismissWithCleanup();
+      }
     } catch (err) {
       console.error("Action failed:", err);
+      if (generation !== toastGenerationRef.current) return;
+      // The error gets its own full display time, not the old toast's deadline.
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(dismiss, DURATIONS.error);
+      setToast((prev) =>
+        prev
+          ? {
+              ...prev,
+              message: t({
+                id: "toast.action_failed",
+                message: "That didn't work. Try again.",
+              }),
+              type: "error",
+            }
+          : null,
+      );
     }
   };
 
@@ -236,20 +269,13 @@ const ToastOverlay: React.FC = () => {
         clearTimeout(dismissAnimationTimerRef.current);
         dismissAnimationTimerRef.current = null;
       }
+      toastGenerationRef.current += 1;
       setToast({ ...ev.payload, isLeaving: false });
       setIsRetrying(false);
       resetCopied();
 
-      const durations: Record<ToastType, number> = {
-        error: 18000,
-        info: 3000,
-        success: 2000,
-        warning: 5000,
-        update: 0,
-        celebration: 6000,
-      };
       const autoDismiss = ev.payload.autoDismiss !== false;
-      const dur = ev.payload.duration ?? durations[ev.payload.type];
+      const dur = ev.payload.duration ?? DURATIONS[ev.payload.type];
       if (dur > 0 && autoDismiss) {
         timerRef.current = setTimeout(dismiss, dur);
       }

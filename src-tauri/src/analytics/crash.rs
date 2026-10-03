@@ -424,7 +424,8 @@ pub fn report_unclean_exit(app: &tauri::AppHandle<AppRuntime>, previous: &Previo
         .started_at
         .zip(boot_time())
         .is_some_and(|(started_at, booted_at)| booted_at > started_at);
-    // The Windows updater quits into the installer without a normal exit.
+    // Before 1.3.1 the Windows updater quit into the installer without
+    // ending the session.
     let cause = if rebooted {
         "reboot"
     } else if previous.update_pending {
@@ -454,7 +455,7 @@ pub fn report_unclean_exit(app: &tauri::AppHandle<AppRuntime>, previous: &Previo
         && !previous.had_crash_marker
         && let Some(started_at) = previous.started_at
     {
-        super::os_reports::report_os_crash(app, started_at);
+        super::os_reports::report_os_crash(app, started_at, &previous.version);
     }
 }
 

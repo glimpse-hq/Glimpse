@@ -366,6 +366,8 @@ async fn resolve_available_update(
         // code after it never runs there.
         .on_before_exit(move || {
             write_marker(&marker_app, source);
+            // Quitting into the installer is a clean exit, not a crash.
+            crate::analytics::end_session();
         })
         .build()?
         .check()

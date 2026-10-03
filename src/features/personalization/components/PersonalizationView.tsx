@@ -25,6 +25,7 @@ import {
   useWebsiteIconMap,
 } from "../queries";
 import { createId, normalizeWebsite } from "./personalization-utils";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 import PersonalityModal, {
   AppIconBadge,
   WebsiteFavicon,
@@ -58,7 +59,6 @@ const ModeMenuItem = ({
 const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const { t } = useLingui();
   const queryClient = useQueryClient();
-  const [error, setError] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
   const [modeMenu, setModeMenu] = useState<{
@@ -85,8 +85,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const installedApps = installedAppsQuery.data ?? [];
   const loading = isActive && personalitiesQuery.isLoading;
   const queryError = personalitiesQuery.error ?? installedAppsQuery.error;
-  const errorMessage =
-    error ?? (queryError instanceof Error ? queryError.message : null);
+  const errorMessage = queryError instanceof Error ? queryError.message : null;
 
   const websiteDomains = useMemo(() => {
     const seen = new Set<string>();
@@ -193,7 +192,6 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
       saveTimeoutRef.current = window.setTimeout(async () => {
         saveTimeoutRef.current = null;
-        setError(null);
         try {
           const cleaned = await personalizationApi.setPersonalities(next);
           if (
@@ -211,11 +209,22 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
             return;
           }
           console.error(err);
-          setError(err instanceof Error ? err.message : String(err));
+          // Puts back what's saved, since the edit was already shown.
+          void queryClient.invalidateQueries({
+            queryKey: personalizationKeys.personalities(),
+          });
+          showErrorToast(
+            typeof err === "string" && err
+              ? err
+              : t({
+                  id: "personalization.save_failed",
+                  message: "Couldn't save your modes.",
+                }),
+          );
         }
       }, 500);
     },
-    [queryClient],
+    [queryClient, t],
   );
 
   useEffect(() => {
@@ -458,21 +467,12 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           />
         </div>
       ) : personalities.length === 0 ? (
-        <div className="rounded-xl border border-border-primary bg-surface-secondary px-6 py-8 ui-color-muted">
-          <p className="ui-text-body-lg-strong">
-            {t({
-              id: "personalization.empty.title",
-              message: "No modes yet",
-            })}
-          </p>
-          <p className="ui-text-body-sm ui-color-muted">
-            {t({
-              id: "personalization.empty.description",
-              message:
-                "Create a mode to start customizing your apps and websites.",
-            })}
-          </p>
-        </div>
+        <p className="ui-text-meta ui-color-disabled text-pretty">
+          {t({
+            id: "personalization.empty.title",
+            message: "No modes yet",
+          })}
+        </p>
       ) : (
         <div className="-mt-1 min-h-0 flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar scrollbar-gutter pt-1 pb-6 pr-1">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">

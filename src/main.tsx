@@ -4,7 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import App from "./app/App";
 import { AppProviders } from "./app/providers";
-import { localeReady } from "./i18n";
+import { msg } from "@lingui/core/macro";
+import { i18n, localeReady } from "./i18n";
 import { detectAppPlatform } from "./platform/service";
 import {
   parseTextSizeMode,
@@ -131,8 +132,9 @@ class CrashBoundary extends React.Component<
           display: "grid",
           placeItems: "center",
           padding: 24,
-          background: "#f7f5f0",
-          color: "#181713",
+          colorScheme: "light dark",
+          background: "Canvas",
+          color: "CanvasText",
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           textAlign: "center",
@@ -140,10 +142,14 @@ class CrashBoundary extends React.Component<
       >
         <div>
           <h1 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
-            Glimpse hit an error
+            {i18n._(
+              msg({ id: "crash.title", message: "Glimpse hit an error" }),
+            )}
           </h1>
           <p style={{ margin: "8px 0 0", fontSize: 14 }}>
-            Please restart the app.
+            {i18n._(
+              msg({ id: "crash.body", message: "Please restart the app." }),
+            )}
           </p>
         </div>
       </main>

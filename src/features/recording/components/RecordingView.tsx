@@ -42,6 +42,7 @@ import type {
   RecordingSources,
   SelectedApp,
 } from "../../../types";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 
 type StartError = {
   message: string;
@@ -602,8 +603,27 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       await recordingApi.openLiveView();
     } catch (err) {
       console.error("Failed to open the live view:", err);
+      showErrorToast(
+        t({
+          id: "record.live_failed",
+          message: "Couldn't open the live view.",
+        }),
+      );
     }
   };
+
+  const pauseFailedMessage = t({
+    id: "record.pause_failed",
+    message: "Couldn't pause the recording.",
+  });
+  const resumeFailedMessage = t({
+    id: "record.resume_failed",
+    message: "Couldn't resume the recording.",
+  });
+  const bookmarkFailedMessage = t({
+    id: "record.bookmark_failed",
+    message: "Couldn't save the bookmark.",
+  });
 
   const handleTogglePause = async () => {
     try {
@@ -614,6 +634,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       );
     } catch (err) {
       console.error("Failed to toggle pause:", err);
+      showErrorToast(paused ? resumeFailedMessage : pauseFailedMessage);
     }
   };
 
@@ -623,6 +644,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       setFocusBookmarkId(bookmark.id);
     } catch (err) {
       console.error("Failed to add bookmark:", err);
+      showErrorToast(bookmarkFailedMessage);
     }
   };
 
@@ -631,6 +653,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       applyState(await recordingApi.updateRecordingBookmark(id, label || null));
     } catch (err) {
       console.error("Failed to update bookmark:", err);
+      showErrorToast(bookmarkFailedMessage);
     }
   };
 
@@ -639,6 +662,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       applyState(await recordingApi.removeRecordingBookmark(id));
     } catch (err) {
       console.error("Failed to remove bookmark:", err);
+      showErrorToast(bookmarkFailedMessage);
     }
   };
 
@@ -650,6 +674,12 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       setNaming(null);
     } catch (err) {
       console.error("Failed to discard recording:", err);
+      showErrorToast(
+        t({
+          id: "record.discard_failed",
+          message: "Couldn't discard the recording.",
+        }),
+      );
     } finally {
       setSaving(false);
     }
@@ -662,6 +692,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         applyState(await recordingApi.pauseRecordingSession(true));
       } catch (err) {
         console.error("Failed to pause before naming:", err);
+        showErrorToast(pauseFailedMessage);
       }
     }
     setNameDraft(defaultRecordingName(new Date()));
@@ -680,6 +711,9 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       );
     } catch (err) {
       console.error("Failed to resume after cancel:", err);
+      showErrorToast(
+        dialog.resumeOnCancel ? resumeFailedMessage : pauseFailedMessage,
+      );
     }
   };
 
@@ -903,7 +937,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
     if (saved && idle) {
       return (
         <>
-          <span className="text-content-muted">
+          <span className="min-w-0 truncate text-content-muted">
             {t({
               id: "record.saved",
               message: `Saved “${saved.name}” to Library.`,
@@ -912,7 +946,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           <button
             type="button"
             onClick={() => onOpenLibraryItem(saved.id)}
-            className="text-content-secondary underline decoration-border-hover hover:text-content-primary"
+            className="shrink-0 text-content-secondary underline decoration-border-hover hover:text-content-primary"
           >
             {t({ id: "record.saved.open", message: "Open" })}
           </button>
@@ -1184,14 +1218,14 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                 </p>
                 <p className="mt-0.5 ui-text-label text-content-muted tabular-nums">
                   {formatClock(state.elapsed_ms)}
-                  {state.bookmarks.length === 1
-                    ? ` · ${t({ id: "record.name.bookmark_one", message: "1 bookmark" })}`
-                    : state.bookmarks.length > 1
-                      ? ` · ${t({
-                          id: "record.name.bookmarks",
-                          message: `${state.bookmarks.length} bookmarks`,
-                        })}`
-                      : ""}
+                  {state.bookmarks.length > 0 &&
+                    ` · ${t({
+                      id: "record.name.bookmark_count",
+                      message: plural(state.bookmarks.length, {
+                        one: "# bookmark",
+                        other: "# bookmarks",
+                      }),
+                    })}`}
                 </p>
                 <input
                   value={nameDraft}

@@ -20,7 +20,6 @@ struct OsFrame {
 
 struct OsReport {
     kind: &'static str,
-    crashed_version: Option<String>,
     exception_type: String,
     signal: Option<String>,
     termination_namespace: Option<String>,
@@ -32,7 +31,11 @@ struct OsReport {
 /// run, if one was written after it started: the exception type, signal or
 /// exception code, termination code, and up to 20 frames as module+offset.
 /// Paths, thread names, and any message text in the report are dropped.
-pub(super) fn report_os_crash(app: &tauri::AppHandle<AppRuntime>, session_started_at: u64) {
+pub(super) fn report_os_crash(
+    app: &tauri::AppHandle<AppRuntime>,
+    session_started_at: u64,
+    crashed_version: &str,
+) {
     let Some(report) = newest_report(session_started_at) else {
         return;
     };
@@ -48,7 +51,7 @@ pub(super) fn report_os_crash(app: &tauri::AppHandle<AppRuntime>, session_starte
         .and_then(|frame| frame.label.split('+').next())
         .unwrap_or("unknown");
     let payload = json!({
-        "crashed_version": report.crashed_version,
+        "crashed_version": crashed_version,
         "location": top_frame,
         "crash_type": "native",
         "crash_phase": "unknown",
@@ -168,7 +171,6 @@ fn parse_ips(contents: &str) -> Option<OsReport> {
     let text = |value: &serde_json::Value| value.as_str().map(str::to_string);
     Some(OsReport {
         kind: "ips",
-        crashed_version: text(&header["app_version"]),
         exception_type: text(&body["exception"]["type"]).unwrap_or_else(|| "unknown".into()),
         signal: text(&body["exception"]["signal"]),
         termination_namespace: text(&body["termination"]["namespace"]),
@@ -231,7 +233,6 @@ fn parse_wer(text: &str) -> Option<OsReport> {
     let in_app = module.eq_ignore_ascii_case("Glimpse.exe");
     Some(OsReport {
         kind: "wer",
-        crashed_version: value("Sig[1].Value").map(str::to_string),
         exception_type: format!("{code:#010x}"),
         signal: None,
         termination_namespace: None,

@@ -1,3 +1,4 @@
+import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -25,8 +26,13 @@ import {
 import LibraryImportModal from "./LibraryImportModal";
 import LibraryCard, { type LibraryLayout } from "./LibraryCard";
 import LibraryDetail from "./LibraryDetail";
+import LibraryDeleteDialog from "./LibraryDeleteDialog";
+import LibraryRetranscribeModal, {
+  type LibraryRetranscribeOptions,
+} from "./LibraryRetranscribeModal";
 import {
   useLibraryItems as useLibraryItemsQuery,
+  useLibraryItem,
   useCreateLibraryItem,
   useUpdateLibraryItem,
   useDeleteLibraryItem,
@@ -51,6 +57,7 @@ import type {
   LibraryItem,
   LibraryItemPatch,
 } from "../../../types";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 
 type LibraryViewProps = {
   pendingImportPaths: string[] | null;
@@ -83,6 +90,10 @@ const LibraryView = ({
     localStorage.setItem(LAYOUT_KEY, next);
   };
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [retranscribeItem, setRetranscribeItem] = useState<LibraryItem | null>(
+    null,
+  );
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editingNameDraft, setEditingNameDraft] = useState("");
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
@@ -117,10 +128,24 @@ const LibraryView = ({
     () => data?.pages.flatMap((page) => page.items) ?? [],
     [data],
   );
-  const selectedItem = useMemo(
+  // An open item that stops matching the filter or search stays open and
+  // is loaded by id, showing its last listed state until that arrives.
+  const listedItem = useMemo(
     () => items.find((item) => item.id === selectedItemId) ?? null,
     [items, selectedItemId],
   );
+  const lastSelectedItem = useRef<LibraryItem | null>(null);
+  const { data: unlistedItem } = useLibraryItem(
+    selectedItemId,
+    selectedItemId !== null && !listedItem,
+  );
+  if (listedItem) lastSelectedItem.current = listedItem;
+  const selectedItem =
+    listedItem ??
+    (unlistedItem?.id === selectedItemId ? unlistedItem : null) ??
+    (lastSelectedItem.current?.id === selectedItemId
+      ? lastSelectedItem.current
+      : null);
   useEffect(() => {
     if (!selectedItemId) return;
     void invoke("track_feature_used_command", { feature: "library" }).catch(
@@ -190,6 +215,21 @@ const LibraryView = ({
     },
     [deleteItemMutation, invalidateTags],
   );
+
+  const retranscribe = useCallback(
+    async (id: string, options: LibraryRetranscribeOptions) => {
+      await updateItemWithTags(id, {
+        speech_model: options.model_key,
+        llm_cleanup_enabled: false,
+        show_timestamps: options.show_timestamps,
+        detect_speakers: options.detect_speakers,
+      });
+      await retryMutation.mutateAsync(id);
+    },
+    [updateItemWithTags, retryMutation],
+  );
+  const closeDeleteDialog = useCallback(() => setPendingDeleteId(null), []);
+  const closeRetranscribe = useCallback(() => setRetranscribeItem(null), []);
 
   const rediarizeItem = useCallback(
     async (id: string) => {
@@ -280,7 +320,33 @@ const LibraryView = ({
     setEditingNameId(null);
     setEditingNameDraft("");
     if (!nextName || nextName === original) return;
-    await updateItemWithTags(itemId, { name: nextName });
+    try {
+      await updateItemWithTags(itemId, { name: nextName });
+    } catch (err) {
+      console.error("Failed to rename library item:", err);
+      showErrorToast(
+        t({
+          id: "library.detail.rename_failed",
+          message: "Couldn't rename this item.",
+        }),
+      );
+    }
+  };
+
+  const saveTags = async (itemId: string, tags: string[]) => {
+    try {
+      await updateItemWithTags(itemId, { tags });
+      return true;
+    } catch (err) {
+      console.error("Failed to save library tags:", err);
+      showErrorToast(
+        t({
+          id: "library.detail.tags_failed",
+          message: "Couldn't save the tags.",
+        }),
+      );
+      return false;
+    }
   };
 
   const cancelTagEdit = () => {
@@ -302,7 +368,8 @@ const LibraryView = ({
       setEditingTagId(null);
       return;
     }
-    await updateItemWithTags(itemId, { tags: [...item.tags, nextTag] });
+    // A failed save keeps the editor open with what was typed.
+    if (!(await saveTags(itemId, [...item.tags, nextTag]))) return;
     setTagDraft("");
     setEditingTagId(null);
   };
@@ -311,14 +378,6 @@ const LibraryView = ({
     installedModels.find((model) => model.remote)?.id ??
     installedModels.find((model) => model.key === defaultModelKey)?.id ??
     installedModels[0]?.id;
-  const statusFilterValue = useMemo(() => {
-    if (["transcribing", "importing", "pending"].includes(statusFilter)) {
-      return "active";
-    }
-    if (statusFilter === "complete") return "complete";
-    if (statusFilter === "error") return "error";
-    return "all";
-  }, [statusFilter]);
   const statusFilterOptions = useMemo(
     () => [
       { value: "all", label: t({ id: "library.filter.all", message: "All" }) },
@@ -358,6 +417,7 @@ const LibraryView = ({
               setSelectedItemId(null);
             }}
             onRetry={() => retryMutation.mutateAsync(selectedItem.id)}
+            onRetranscribe={(options) => retranscribe(selectedItem.id, options)}
             onRediarize={() => rediarizeItem(selectedItem.id)}
             rediarizing={
               rediarizeMutation.isPending &&
@@ -489,7 +549,7 @@ const LibraryView = ({
                       id: "library.filter.aria_label",
                       message: "Filter library by status",
                     })}
-                    active={statusFilterValue !== "all"}
+                    active={statusFilter !== "all"}
                     onClear={() => setStatusFilter("all")}
                     triggerClassName="h-8 w-8"
                     sections={[
@@ -502,13 +562,8 @@ const LibraryView = ({
                         items: statusFilterOptions.map((option) => ({
                           key: option.value,
                           label: option.label,
-                          selected: statusFilterValue === option.value,
-                          onSelect: () =>
-                            setStatusFilter(
-                              option.value === "active"
-                                ? "transcribing"
-                                : option.value,
-                            ),
+                          selected: statusFilter === option.value,
+                          onSelect: () => setStatusFilter(option.value),
                         })),
                       },
                     ]}
@@ -579,10 +634,10 @@ const LibraryView = ({
                       layout={layout}
                       onOpen={() => setSelectedItemId(item.id)}
                       onRemoveTag={async (tag) => {
-                        const nextTags = item.tags.filter(
-                          (entry) => entry !== tag,
+                        await saveTags(
+                          item.id,
+                          item.tags.filter((entry) => entry !== tag),
                         );
-                        await updateItemWithTags(item.id, { tags: nextTags });
                       }}
                       onClickTag={(tag) => setSearchQuery(`#${tag}`)}
                       editingNameId={editingNameId}
@@ -592,10 +647,10 @@ const LibraryView = ({
                       onCommitNameEdit={() => commitNameEdit(item.id)}
                       onCancelNameEdit={cancelNameEdit}
                       onRetry={() => retryMutation.mutateAsync(item.id)}
+                      onRetranscribe={() => setRetranscribeItem(item)}
                       onCancel={() => cancelMutation.mutateAsync(item.id)}
-                      onDelete={async () => {
-                        await deleteItemAndRefreshTags(item.id);
-                      }}
+                      onDelete={() => setPendingDeleteId(item.id)}
+                      onQuickDelete={() => deleteItemAndRefreshTags(item.id)}
                       editingTagId={editingTagId}
                       tagDraft={tagDraft}
                       onStartTagEdit={() => startTagEdit(item)}
@@ -642,6 +697,30 @@ const LibraryView = ({
         </>
       )}
 
+      <LibraryDeleteDialog
+        open={pendingDeleteId !== null}
+        onCancel={closeDeleteDialog}
+        onConfirm={() => {
+          const id = pendingDeleteId;
+          setPendingDeleteId(null);
+          if (id) void deleteItemAndRefreshTags(id).catch(() => {});
+        }}
+      />
+
+      <AnimatePresence>
+        {retranscribeItem && (
+          <LibraryRetranscribeModal
+            item={retranscribeItem}
+            models={installedModels}
+            onCancel={closeRetranscribe}
+            onConfirm={async (options) => {
+              await retranscribe(retranscribeItem.id, options);
+              setRetranscribeItem(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {pendingImportPaths !== null && (
           <LibraryImportModal
@@ -662,8 +741,11 @@ const LibraryView = ({
                 invoke("debug_show_toast", {
                   toastType: "warning",
                   message: t({
-                    id: "library.view.unsupported_files",
-                    message: `${unsupported.length} file(s) skipped due to unsupported format.`,
+                    id: "library.view.unsupported_files_skipped",
+                    message: plural(unsupported.length, {
+                      one: "Skipped # file in an unsupported format.",
+                      other: "Skipped # files in an unsupported format.",
+                    }),
                   }),
                 }).catch(() => {});
               }

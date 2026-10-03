@@ -39,6 +39,7 @@ import { useActivateLicense, useLicenseState } from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
+import { showErrorToast } from "../../shared/lib/errorToast";
 import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
 
 // The stock default; Parakeet first, Whisper for languages it doesn't cover.
@@ -512,7 +513,12 @@ export default function OnboardingScreen({
         await invoke("cancel_download", { model: modelKey });
         updateDownloadStatus(modelKey, { status: "cancelled", percent: 0 });
         setTimeout(() => {
-          updateDownloadStatus(modelKey, { status: "idle", percent: 0 });
+          // A download started again in the meantime keeps its status.
+          setDownloadStatus((prev) =>
+            prev[modelKey]?.status === "cancelled"
+              ? { ...prev, [modelKey]: { status: "idle", percent: 0 } }
+              : prev,
+          );
         }, 1500);
       } catch {
         return;
@@ -649,6 +655,7 @@ export default function OnboardingScreen({
     }
   }, [
     ctx.autoLaunch,
+    ctx.microphoneDevice,
     ctx.selectedMode,
     ctx.smartShortcut,
     persistedSettings,
@@ -699,8 +706,14 @@ export default function OnboardingScreen({
           ),
         });
         send({ type: "SET_SHORTCUT", shortcut });
-      } catch {
-        return;
+      } catch (err) {
+        console.error("Failed to set shortcut", err);
+        showErrorToast(
+          t({
+            id: "onboarding.shortcut.failed",
+            message: "Couldn't use that shortcut. Try another one.",
+          }),
+        );
       }
     },
     [
@@ -709,6 +722,7 @@ export default function OnboardingScreen({
       ctx.selectedMode,
       selectedModel,
       send,
+      t,
     ],
   );
 

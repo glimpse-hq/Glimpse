@@ -70,11 +70,16 @@ const NewsMenu = () => {
         aria-label={title}
         className="relative flex h-full w-9 items-center justify-center rounded-l-full text-content-muted transition-colors hover:bg-[var(--surface-interactive)] hover:text-content-primary"
       >
-        <Bell size={18} weight="regular" aria-hidden="true" />
+        <Bell
+          size={18}
+          weight="regular"
+          aria-hidden="true"
+          className={unreadCount > 0 ? "text-content-primary" : undefined}
+        />
         {unreadCount > 0 && (
           <span
             aria-hidden="true"
-            className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full"
+            className="absolute right-[7px] top-[7px] h-2 w-2 rounded-full ring-2 ring-surface-surface"
             style={{ backgroundColor: "var(--color-accent)" }}
           />
         )}

@@ -159,7 +159,10 @@ const SpeakerContextMenu = ({
       onClose();
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      // Keeps the detail view from also closing.
+      event.preventDefault();
+      onClose();
     };
     document.addEventListener("scroll", close, true);
     window.addEventListener("resize", onClose);

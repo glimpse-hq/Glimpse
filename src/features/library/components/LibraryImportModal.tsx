@@ -1,3 +1,4 @@
+import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
@@ -142,8 +143,11 @@ const LibraryImportModal = ({
     importPaths.length === 1
       ? [fileName(importPaths[0]), singleMeta].filter(Boolean).join(" · ")
       : t({
-          id: "library.import.summary.multiple",
-          message: `${importPaths.length} files`,
+          id: "library.import.summary.file_count",
+          message: plural(importPaths.length, {
+            one: "# file",
+            other: "# files",
+          }),
         });
 
   const removePath = (idx: number) => {
@@ -242,9 +246,9 @@ const LibraryImportModal = ({
               />
               <span>
                 {t({
-                  id: "library.import.no_models",
+                  id: "library.import.no_models_installed",
                   message:
-                    "No models available. Configure a remote provider or download a local model in Settings -> Models before importing.",
+                    "No models available. Download one or add a provider in Settings > Models.",
                 })}
               </span>
             </div>
@@ -348,16 +352,13 @@ const LibraryImportModal = ({
                   message: "Show timestamps",
                 })}
               </div>
-              <div className="ui-text-meta text-content-disabled">
-                {timestampsSupported
-                  ? t({
-                      id: "library.import.timestamps_supported",
-                      message: "Enabled for supported models",
-                    })
-                  : t({
-                      id: "library.import.timestamps_unsupported",
-                      message: "Not supported by this model",
-                    })}
+              <div
+                className={`ui-text-meta text-content-disabled ${timestampsSupported ? "invisible" : ""}`}
+              >
+                {t({
+                  id: "library.import.timestamps_unsupported",
+                  message: "Not supported by this model",
+                })}
               </div>
             </div>
             <ToggleSwitch
@@ -374,33 +375,36 @@ const LibraryImportModal = ({
             />
           </div>
 
-          {diarizationSupported && (
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <div className="ui-text-body-sm text-content-primary">
-                  {t({
-                    id: "library.import.detect_speakers",
-                    message: "Detect speakers",
-                  })}
-                </div>
-                <div className="ui-text-meta text-content-disabled">
-                  {t({
-                    id: "library.import.detect_speakers.description",
-                    message: "Label segments by speaker automatically",
-                  })}
-                </div>
-              </div>
-              <ToggleSwitch
-                enabled={detectSpeakers}
-                onToggle={() => setSpeakersChoice(!detectSpeakers)}
-                ariaLabel={t({
-                  id: "library.import.detect_speakers.aria",
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="ui-text-body-sm text-content-primary">
+                {t({
+                  id: "library.import.detect_speakers",
                   message: "Detect speakers",
                 })}
-                size="md"
-              />
+              </div>
+              <div
+                className={`ui-text-meta text-content-disabled ${diarizationSupported ? "invisible" : ""}`}
+              >
+                {t({
+                  id: "library.detect_speakers_unavailable",
+                  message: "Needs the Speaker detection model",
+                })}
+              </div>
             </div>
-          )}
+            <ToggleSwitch
+              enabled={detectSpeakers}
+              onToggle={() =>
+                diarizationSupported && setSpeakersChoice(!detectSpeakers)
+              }
+              ariaLabel={t({
+                id: "library.import.detect_speakers.aria",
+                message: "Detect speakers",
+              })}
+              disabled={!diarizationSupported}
+              size="md"
+            />
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-2 px-5 pb-4">

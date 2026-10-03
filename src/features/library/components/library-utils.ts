@@ -77,9 +77,9 @@ export const formatImportErrorMessage = (rawMessage: string) => {
   if (lower.includes("selected model is not installed")) {
     return i18n._(
       msg({
-        id: "library.import_error.model_not_installed",
+        id: "library.import_error.model_missing",
         message:
-          "Selected model isn't installed. Download one in Settings -> Models.",
+          "The selected model isn't installed. Download one in Settings > Models.",
       }),
     );
   }
@@ -215,6 +215,16 @@ export const formatDeleteErrorMessage = (rawMessage: string) => {
       msg({
         id: "library.delete_error.invalid_path",
         message: "Couldn't delete this item due to an invalid file path.",
+      }),
+    );
+  }
+
+  if (lower.includes("move the audio to the trash")) {
+    return i18n._(
+      msg({
+        id: "library.delete_error.trash_failed",
+        message:
+          "Couldn't move the audio to the Trash or Recycle Bin, so nothing was deleted.",
       }),
     );
   }

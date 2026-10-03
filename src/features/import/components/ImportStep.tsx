@@ -14,6 +14,10 @@ import { settingsKeys } from "../../settings/queries";
 import { transcriptionKeys } from "../../transcriptions/queries";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { formatShortcutForDisplay } from "../../../shared/lib/shortcuts";
+import {
+  resolveSpeechModelLabel,
+  useSpeechModels,
+} from "../../settings/models-queries";
 import { useImportPreview } from "../queries";
 import { applyImport } from "../api";
 import type {
@@ -49,6 +53,16 @@ const ALL_ON: ImportSelections = {
 };
 
 const LIST_SLOT_COUNT = 7;
+
+const languageName = (code: string, locale: string) => {
+  try {
+    return (
+      new Intl.DisplayNames([locale], { type: "language" }).of(code) ?? code
+    );
+  } catch {
+    return code;
+  }
+};
 const ROW_CLASS_NAME = "flex items-center gap-3 py-2.5";
 
 export function ImportStep({
@@ -57,7 +71,8 @@ export function ImportStep({
   onApplied,
   onNext,
 }: ImportStepProps) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
+  const { data: speechModels } = useSpeechModels();
   const queryClient = useQueryClient();
 
   const [selectedAppId, setSelectedAppId] = useState<string | null>(
@@ -97,8 +112,8 @@ export function ImportStep({
       rows.push({
         key: "replacements",
         label: t({
-          id: "import.cat.replacements",
-          message: "Text replacements",
+          id: "import.cat.replacements_title",
+          message: "Replacements",
         }),
         detail: t({
           id: "import.cat.replacements.detail",
@@ -112,7 +127,7 @@ export function ImportStep({
     if (previewForApp.personalitiesCount > 0) {
       rows.push({
         key: "personalities",
-        label: t({ id: "import.cat.personalities", message: "Personalities" }),
+        label: t({ id: "import.cat.modes", message: "Modes" }),
         detail: t({
           id: "import.cat.personalities.detail",
           message: plural(previewForApp.personalitiesCount, {
@@ -146,7 +161,7 @@ export function ImportStep({
       rows.push({
         key: "language",
         label: t({ id: "import.cat.language", message: "Language" }),
-        detail: previewForApp.language,
+        detail: languageName(previewForApp.language, i18n.locale),
       });
     }
     if (previewForApp.autoLaunch !== null) {
@@ -162,11 +177,13 @@ export function ImportStep({
       rows.push({
         key: "model",
         label: t({ id: "import.cat.model", message: "Transcription model" }),
-        detail: previewForApp.modelKey,
+        detail:
+          resolveSpeechModelLabel(speechModels, previewForApp.modelKey) ??
+          previewForApp.modelKey,
       });
     }
     return rows;
-  }, [previewForApp, t]);
+  }, [i18n.locale, previewForApp, speechModels, t]);
 
   const applyMutation = useMutation({
     mutationFn: () => applyImport(selectedAppId as string, selections),

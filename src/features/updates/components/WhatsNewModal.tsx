@@ -171,7 +171,7 @@ const markdownComponents: Components = {
 };
 
 function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const [releases, setReleases] = useState<ReleaseInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -181,6 +181,17 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
       fetchReleases();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      onClose();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isOpen, onClose]);
 
   const fetchReleases = async () => {
     setLoading(true);
@@ -225,12 +236,10 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
     } catch (err) {
       console.error("Failed to fetch releases:", err);
       setError(
-        err instanceof Error
-          ? err.message
-          : t({
-              id: "updates.whats_new.load_failed",
-              message: "Failed to load changelog",
-            }),
+        t({
+          id: "updates.whats_new.load_failed",
+          message: "Failed to load changelog",
+        }),
       );
     } finally {
       setLoading(false);
@@ -239,7 +248,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(i18n.locale, {
       year: "numeric",
       month: "long",
       day: "numeric",

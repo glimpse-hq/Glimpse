@@ -102,6 +102,7 @@ export default tseslint.config(
       "src/app/App.tsx",
       "src/hooks/**/*.ts",
       "src/lib/**/*.ts",
+      "src/shared/lib/errorToast.ts",
     ],
     rules: {
       "no-restricted-imports": "off",

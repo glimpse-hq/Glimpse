@@ -123,6 +123,17 @@ pub fn get_library_items_page(
 }
 
 #[tauri::command]
+pub fn get_library_item(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<Option<LibraryItem>, String> {
+    state
+        .storage()
+        .get_library_item(&id)
+        .map_err(|err| format!("Failed to load library item: {err}"))
+}
+
+#[tauri::command]
 pub fn update_library_item(
     id: String,
     patch: LibraryItemPatch,
@@ -145,7 +156,7 @@ pub fn delete_library_item(
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
-    state.remove_library_job(&id);
+    let was_queued = state.remove_library_job(&id);
     state.cancel_library_transcription(&id);
     release_library_slot(&app, &state, &id);
 
@@ -157,24 +168,40 @@ pub fn delete_library_item(
         return Ok(());
     };
 
-    match determine_delete_scope(&app, &item.audio_path) {
-        LibraryDeleteScope::DeleteFile(path) => {
-            if path.exists() {
-                fs::remove_file(&path)
-                    .map_err(|err| format!("Failed to delete library file: {err}"))?;
-            }
+    let trashed = match determine_delete_scope(&app, &item.audio_path) {
+        LibraryDeleteScope::DeleteFile(path) if path.exists() => move_to_trash(&path),
+        LibraryDeleteScope::DeleteDirectory(path) => move_to_trash(&path),
+        _ => Ok(()),
+    };
+    if let Err(err) = trashed {
+        // The item stays; a job it lost from the queue shows as cancelled, like
+        // the Cancel button, unless a retry has queued it again meanwhile. An
+        // active job reports its own cancellation.
+        if was_queued && !state.library_job_pending(&id) {
+            set_library_status(&storage, &id, LibraryItemStatus::Cancelled);
+            let _ = app.emit(
+                EVENT_LIBRARY_ERROR,
+                LibraryErrorPayload {
+                    id: id.clone(),
+                    message: "Transcription cancelled".to_string(),
+                    cancelled: true,
+                },
+            );
         }
-        LibraryDeleteScope::DeleteDirectory(path) => {
-            crate::platform::remove_dir_all_compat(&path)
-                .map_err(|err| format!("Failed to delete library files: {err}"))?;
-        }
-        LibraryDeleteScope::SkipFilesystemDeletion => {}
+        return Err(err);
     }
 
     storage
         .delete_library_item(&id)
         .map_err(|err| format!("Failed to delete library item: {err}"))?;
     Ok(())
+}
+
+// Never deletes for good: deleting promises the files can be restored, so a
+// failed move keeps the item and its files.
+fn move_to_trash(path: &Path) -> Result<(), String> {
+    crate::platform::move_to_trash(path)
+        .map_err(|err| format!("Couldn't move the audio to the Trash: {err}"))
 }
 
 #[tauri::command]

@@ -91,19 +91,6 @@ export function parseTranscriptionSearch(
   return { text: text.join(" "), sort, after, before };
 }
 
-export function matchesDateRange(
-  timestamp: string | number | Date,
-  after: Date | null,
-  before: Date | null,
-): boolean {
-  if (!after && !before) return true;
-  const time = new Date(timestamp).getTime();
-  if (Number.isNaN(time)) return false;
-  if (after && time < after.getTime()) return false;
-  if (before && time >= before.getTime()) return false;
-  return true;
-}
-
 export function withSortToken(query: string, sort: TranscriptionSort): string {
   const parts = query.split(/\s+/).filter((p) => p && !/^sort:/i.test(p));
   if (sort !== "recent") parts.push(`sort:${sort}`);

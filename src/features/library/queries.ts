@@ -29,6 +29,7 @@ export const libraryKeys = {
   list: (filter: LibraryFilter) =>
     [...libraryKeys.all, "list", filter] as const,
   tags: () => [...libraryKeys.all, "tags"] as const,
+  item: (id: string) => [...libraryKeys.all, "item", id] as const,
 };
 
 type LibraryInfiniteData = { pages: LibraryItemsPage[]; pageParams: number[] };
@@ -57,6 +58,12 @@ function patchItemInCache(
       };
     },
   );
+  // An open item that left the filtered list reads its own query, which may
+  // already hold the saved transcript, so refetch it instead of appending.
+  void queryClient.invalidateQueries({
+    queryKey: libraryKeys.item(id),
+    exact: true,
+  });
   return found;
 }
 
@@ -219,6 +226,15 @@ export function useLibraryItems(
       if (!lastPage.has_more) return undefined;
       return allPages.reduce((acc, p) => acc + p.items.length, 0);
     },
+  });
+}
+
+// One item by id, for an open item that has left the filtered list.
+export function useLibraryItem(id: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: libraryKeys.item(id ?? ""),
+    queryFn: () => libraryApi.getLibraryItem(id ?? ""),
+    enabled: enabled && id !== null,
   });
 }
 

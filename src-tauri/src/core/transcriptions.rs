@@ -109,6 +109,14 @@ pub(crate) fn retry_llm_cleanup(
                     }
                     Err(err) => {
                         warn!(error = ?err, transcription_id = %record_id, "failed to save cleanup");
+                        let _ = app_handle.emit(
+                            EVENT_TRANSCRIPTION_ERROR,
+                            TranscriptionErrorPayload {
+                                message: format!("Cleanup failed: {err}"),
+                                stage: "llm_cleanup".to_string(),
+                                id: Some(record_id.clone()),
+                            },
+                        );
                     }
                 }
             }
@@ -120,6 +128,7 @@ pub(crate) fn retry_llm_cleanup(
                     TranscriptionErrorPayload {
                         message: format!("Cleanup failed: {message}"),
                         stage: "llm_cleanup".to_string(),
+                        id: Some(record_id.clone()),
                     },
                 );
             }

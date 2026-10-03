@@ -420,6 +420,7 @@ export function useSettingsForm({
   );
   const modelStatus = modelStatusesQuery.statusByModel;
   const appInfo = appInfoQuery.data ?? null;
+  const appInfoFailed = appInfoQuery.isError;
   const platformCapabilities = useMemo(() => getPlatformCapabilities(), []);
   const loading =
     isOpen &&
@@ -1127,7 +1128,15 @@ export function useSettingsForm({
 
     if (settingsQuery.error) {
       console.error("Failed to load settings:", settingsQuery.error);
-      showSettingsError("Failed to load settings", "general");
+      showSettingsError(
+        i18n._(
+          msg({
+            id: "settings.error.load_failed",
+            message: "Couldn't load settings.",
+          }),
+        ),
+        "general",
+      );
       return;
     }
 
@@ -1553,7 +1562,16 @@ export function useSettingsForm({
         applyModelDiscoveryFailure(state, requestSeq),
       );
       if (next === previous) return;
-      showSettingsError(`Failed to load writing models: ${err}`, "providers");
+      const detail = String(err);
+      showSettingsError(
+        i18n._(
+          msg({
+            id: "settings.error.writing_models_failed",
+            message: `Couldn't load writing models: ${detail}`,
+          }),
+        ),
+        "providers",
+      );
     }
   }, [
     clearSettingsError,
@@ -1589,7 +1607,16 @@ export function useSettingsForm({
         applyModelDiscoveryFailure(state, requestSeq),
       );
       if (next === previous) return;
-      showSettingsError(`Failed to load speech models: ${err}`, "providers");
+      const detail = String(err);
+      showSettingsError(
+        i18n._(
+          msg({
+            id: "settings.error.speech_models_failed",
+            message: `Couldn't load speech models: ${detail}`,
+          }),
+        ),
+        "providers",
+      );
     }
   }, [
     clearSettingsError,
@@ -1758,7 +1785,10 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "local-api");
+      showSettingsError(
+        err instanceof Error ? err.message : String(err),
+        "local-api",
+      );
     } finally {
       setLocalApiBusy(false);
     }
@@ -1782,7 +1812,10 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "local-api");
+      showSettingsError(
+        err instanceof Error ? err.message : String(err),
+        "local-api",
+      );
     } finally {
       setLocalApiBusy(false);
     }
@@ -1795,7 +1828,14 @@ export function useSettingsForm({
       await modelsApi.stopLocalApi();
       const stopped = await waitForLocalApiStopped();
       if (stopped.running) {
-        throw new Error("API server did not stop before restart");
+        throw new Error(
+          i18n._(
+            msg({
+              id: "settings.error.api_server_restart",
+              message: "The API server didn't stop, so it couldn't restart.",
+            }),
+          ),
+        );
       }
       const status = await modelsApi.startLocalApi({
         host: localApiHost,
@@ -1808,7 +1848,10 @@ export function useSettingsForm({
       clearSettingsError();
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "local-api");
+      showSettingsError(
+        err instanceof Error ? err.message : String(err),
+        "local-api",
+      );
     } finally {
       setLocalApiBusy(false);
     }
@@ -1828,7 +1871,10 @@ export function useSettingsForm({
       setLocalApiStatus(status);
     } catch (err) {
       console.error(err);
-      showSettingsError(String(err), "local-api");
+      showSettingsError(
+        err instanceof Error ? err.message : String(err),
+        "local-api",
+      );
     }
   }, [showSettingsError]);
 
@@ -1895,6 +1941,7 @@ export function useSettingsForm({
     modelStatus,
     downloadState,
     appInfo,
+    appInfoFailed,
 
     captureActive,
     capturePreview,

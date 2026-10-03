@@ -118,6 +118,7 @@ export function Dropdown<T extends string | number>({
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         closeDropdown();
       }
     };

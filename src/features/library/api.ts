@@ -27,6 +27,10 @@ export async function getLibraryItemsPage(
   });
 }
 
+export async function getLibraryItem(id: string): Promise<LibraryItem | null> {
+  return invoke<LibraryItem | null>("get_library_item", { id });
+}
+
 export async function updateLibraryItem(
   id: string,
   patch: LibraryItemPatch,

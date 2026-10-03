@@ -1477,6 +1477,7 @@ fn emit_transcription_error_inner(
         TranscriptionErrorPayload {
             message: message.clone(),
             stage: stage.to_string(),
+            id: None,
         },
     );
 

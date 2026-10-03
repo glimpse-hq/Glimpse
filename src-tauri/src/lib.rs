@@ -596,6 +596,7 @@ pub fn run() {
             cancel_retry_transcription,
             library::commands::create_library_item,
             library::commands::get_library_items_page,
+            library::commands::get_library_item,
             library::commands::update_library_item,
             library::commands::delete_library_item,
             library::commands::cancel_library_transcription,
@@ -1215,6 +1216,16 @@ impl AppState {
         if active.as_deref() == Some(id) {
             *active = None;
         }
+    }
+
+    pub(crate) fn library_job_pending(&self, id: &str) -> bool {
+        self.library_tokens.lock().contains_key(id)
+            || self.library_active.lock().as_deref() == Some(id)
+            || self
+                .library_queue
+                .lock()
+                .iter()
+                .any(|queued| queued.id == id)
     }
 
     pub fn remove_library_job(&self, id: &str) -> bool {
@@ -2341,4 +2352,7 @@ pub(crate) struct TranscriptionCompletePayload {
 pub(crate) struct TranscriptionErrorPayload {
     pub(crate) message: String,
     pub(crate) stage: String,
+    // The record a cleanup retry failed for.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) id: Option<String>,
 }

@@ -3,6 +3,7 @@ import { useLingui } from "@lingui/react/macro";
 import {
   useState,
   useCallback,
+  useEffect,
   useRef,
   type Dispatch,
   type SetStateAction,
@@ -121,6 +122,15 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   const [editingTo, setEditingTo] = useState("");
 
   const [error, setError] = useState<string | null>(null);
+  const [flashIndex, setFlashIndex] = useState<number | null>(null);
+  const flashTimer = useRef<number>(undefined);
+  useEffect(() => () => window.clearTimeout(flashTimer.current), []);
+  // Points at the replacement that already covers a word.
+  const flashReplacement = (idx: number) => {
+    window.clearTimeout(flashTimer.current);
+    setFlashIndex(idx);
+    flashTimer.current = window.setTimeout(() => setFlashIndex(null), 1200);
+  };
 
   const settings = settingsQuery.data ?? null;
   const models = modelsQuery.data ?? [];
@@ -161,23 +171,26 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     : entries;
   const isSearching = searchQuery.length > 0;
 
+  // The add field doubles as search, so only adding clears it.
   const persistEntries = useCallback(
-    async (next: string[]) => {
+    async (next: string[], added = false) => {
       setEditingIndex(null);
       setEditingValue("");
-      setNewEntry("");
+      if (added) setNewEntry("");
       await persistEntriesNext(next);
     },
     [persistEntriesNext],
   );
 
   const persistReplacements = useCallback(
-    async (next: Replacement[]) => {
+    async (next: Replacement[], added = false) => {
       setEditingReplacementIndex(null);
       setEditingFrom("");
       setEditingTo("");
-      setNewFrom("");
-      setNewTo("");
+      if (added) {
+        setNewFrom("");
+        setNewTo("");
+      }
       await persistReplacementsNext(next);
     },
     [persistReplacementsNext],
@@ -192,7 +205,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
       currentEntries.includes(value)
     )
       return;
-    await persistEntries([...currentEntries, value]);
+    await persistEntries([...currentEntries, value], true);
   };
 
   const handleEditCommit = async () => {
@@ -226,11 +239,14 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     const from = normalizeEntry(newFrom);
     const to = normalizeEntry(newTo);
     if (!from) return;
-    const exists = currentReplacements.some(
+    const existing = currentReplacements.findIndex(
       (r) => r.from.toLowerCase() === from.toLowerCase(),
     );
-    if (exists) return;
-    await persistReplacements([...currentReplacements, { from, to }]);
+    if (existing !== -1) {
+      flashReplacement(existing);
+      return;
+    }
+    await persistReplacements([...currentReplacements, { from, to }], true);
   };
 
   const handleEditReplacementCommit = async () => {
@@ -640,7 +656,9 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                   return (
                     <li
                       key={key}
-                      className="group grid min-h-10 grid-cols-[minmax(0,1fr)_24px] items-center gap-x-4"
+                      className={`group grid min-h-10 grid-cols-[minmax(0,1fr)_24px] items-center gap-x-4 rounded-md transition-colors duration-300 ${
+                        flashIndex === idx ? "bg-surface-elevated" : ""
+                      }`}
                     >
                       <button
                         onClick={() =>

@@ -47,7 +47,10 @@ import {
 } from "@phosphor-icons/react";
 import AudioScrubber from "./AudioScrubber";
 import SpeakerContextMenu, { SpeakerMenuItem } from "./SpeakerContextMenu";
-import LibraryRetranscribeModal from "./LibraryRetranscribeModal";
+import LibraryRetranscribeModal, {
+  type LibraryRetranscribeOptions,
+} from "./LibraryRetranscribeModal";
+import LibraryDeleteDialog from "./LibraryDeleteDialog";
 import {
   clampProgress,
   formatDuration,
@@ -78,6 +81,7 @@ import type {
   TranscriptSegment,
 } from "../../../types";
 import { SPEAKER_COLORS, withSpeakerColors } from "../speakerColors";
+import { showErrorToast } from "../../../shared/lib/errorToast";
 
 const MAX_SPEAKERS = 16;
 const FOLLOW_PLAYBACK_KEY = "glimpse.library.follow_playback";
@@ -296,6 +300,7 @@ const LibraryDetail = ({
   onClose,
   onDelete,
   onRetry,
+  onRetranscribe,
   onRediarize,
   rediarizing,
   onCancel,
@@ -309,6 +314,7 @@ const LibraryDetail = ({
   onClose: () => void;
   onDelete: () => Promise<void>;
   onRetry: () => Promise<void>;
+  onRetranscribe: (options: LibraryRetranscribeOptions) => Promise<void>;
   onRediarize: () => Promise<void>;
   rediarizing: boolean;
   onCancel: () => void;
@@ -319,6 +325,7 @@ const LibraryDetail = ({
   const { t } = useLingui();
   const [nameDraft, setNameDraft] = useState(item.name);
   const [isEditingName, setIsEditingName] = useState(false);
+  const nameEditCancelled = useRef(false);
   const [transcriptDraft, setTranscriptDraft] = useState(item.transcript ?? "");
   const [tagInput, setTagInput] = useState("");
   const [tagMenuOpen, setTagMenuOpen] = useState(false);
@@ -328,6 +335,7 @@ const LibraryDetail = ({
   const [isExporting, setIsExporting] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const closeDeleteConfirm = useCallback(() => setShowDeleteConfirm(false), []);
   const { copied: copyConfirmed, copy: copyTranscript } =
     useCopyToClipboard(1400);
   const [audioDuration, setAudioDuration] = useState(
@@ -876,14 +884,55 @@ const LibraryDetail = ({
     speakersMenuOpen && !speakerContext,
   );
 
+  // Returns false after telling the user the save failed.
+  const saveOrToast = async (patch: LibraryItemPatch, failure: string) => {
+    try {
+      await onUpdate(patch);
+      return true;
+    } catch (err) {
+      console.error("failed to save library item:", err);
+      showErrorToast(failure);
+      return false;
+    }
+  };
+  const retryFailedMessage = t({
+    id: "library.detail.retry_failed",
+    message: "Couldn't start the transcription again.",
+  });
+  const tagsFailedMessage = t({
+    id: "library.detail.tags_failed",
+    message: "Couldn't save the tags.",
+  });
+  const speakersFailedMessage = t({
+    id: "library.detail.speakers_failed",
+    message: "Couldn't save the speakers.",
+  });
+  const bookmarksFailedMessage = t({
+    id: "library.detail.bookmarks_failed",
+    message: "Couldn't save the bookmark.",
+  });
+
   const handleNameCommit = async () => {
-    const value = nameDraft.trim();
-    if (!value || value === item.name) {
-      setNameDraft(item.name);
-      setIsEditingName(false);
+    // Escape already closed the editor; a trailing blur shouldn't save.
+    if (nameEditCancelled.current) {
+      nameEditCancelled.current = false;
       return;
     }
-    await onUpdate({ name: value });
+    const value = nameDraft.trim();
+    if (value && value !== item.name) {
+      await saveOrToast(
+        { name: value },
+        t({
+          id: "library.detail.rename_failed",
+          message: "Couldn't rename this item.",
+        }),
+      );
+    }
+    setIsEditingName(false);
+  };
+
+  const cancelNameEdit = () => {
+    nameEditCancelled.current = true;
     setIsEditingName(false);
   };
 
@@ -894,8 +943,9 @@ const LibraryDetail = ({
       setTagInput("");
       return;
     }
-    await onUpdate({ tags: [...item.tags, value] });
-    setTagInput("");
+    if (await saveOrToast({ tags: [...item.tags, value] }, tagsFailedMessage)) {
+      setTagInput("");
+    }
   };
 
   const normalizedTagInput = tagInput.trim().toLowerCase();
@@ -909,7 +959,10 @@ const LibraryDetail = ({
   });
 
   const handleRemoveTag = async (tag: string) => {
-    await onUpdate({ tags: item.tags.filter((entry) => entry !== tag) });
+    await saveOrToast(
+      { tags: item.tags.filter((entry) => entry !== tag) },
+      tagsFailedMessage,
+    );
   };
 
   const handleAddSpeaker = async () => {
@@ -923,8 +976,11 @@ const LibraryDetail = ({
       }),
       color: SPEAKER_COLORS[speakers.length % SPEAKER_COLORS.length],
     };
-    await onUpdate({ speakers: [...speakers, speaker] });
-    return speaker;
+    const saved = await saveOrToast(
+      { speakers: [...speakers, speaker] },
+      speakersFailedMessage,
+    );
+    return saved ? speaker : null;
   };
 
   const handleUpdateSpeaker = async (
@@ -934,7 +990,7 @@ const LibraryDetail = ({
     const next = speakers.map((speaker) =>
       speaker.id === speakerId ? { ...speaker, ...changes } : speaker,
     );
-    await onUpdate({ speakers: next });
+    await saveOrToast({ speakers: next }, speakersFailedMessage);
   };
 
   const handleRenameSpeaker = async (speakerId: string) => {
@@ -957,7 +1013,7 @@ const LibraryDetail = ({
           : segment,
       );
     }
-    await onUpdate(patch);
+    await saveOrToast(patch, speakersFailedMessage);
   };
 
   const openSpeakerContext = (
@@ -990,7 +1046,7 @@ const LibraryDetail = ({
           : segment,
       );
     }
-    await onUpdate(patch);
+    await saveOrToast(patch, speakersFailedMessage);
   };
 
   const handleAssignSpeaker = async (
@@ -1003,7 +1059,7 @@ const LibraryDetail = ({
     const next = segments.map((segment, idx) =>
       idx === segmentIndex ? { ...segment, speaker_id: speakerId } : segment,
     );
-    await onUpdate({ segments: next });
+    await saveOrToast({ segments: next }, speakersFailedMessage);
   };
 
   const speakerById = useMemo(() => {
@@ -1122,12 +1178,10 @@ const LibraryDetail = ({
       const message = err instanceof Error ? err.message : String(err);
       console.error("Export failed:", message);
       const lower = message.toLowerCase();
-      let toastMessage =
-        message ||
-        t({
-          id: "library.modal.export.failed",
-          message: "Export failed. Try again.",
-        });
+      let toastMessage = t({
+        id: "library.modal.export.failed",
+        message: "Export failed. Try again.",
+      });
       if (lower.includes("no timestamp segments")) {
         toastMessage = t({
           id: "library.modal.export.no_timestamps",
@@ -1261,17 +1315,21 @@ const LibraryDetail = ({
   };
 
   const handleRenameBookmark = async (id: string, label: string) => {
-    await onUpdate({
-      bookmarks: bookmarks.map((bookmark) =>
-        bookmark.id === id ? { ...bookmark, label: label || null } : bookmark,
-      ),
-    });
+    await saveOrToast(
+      {
+        bookmarks: bookmarks.map((bookmark) =>
+          bookmark.id === id ? { ...bookmark, label: label || null } : bookmark,
+        ),
+      },
+      bookmarksFailedMessage,
+    );
   };
 
   const handleRemoveBookmark = async (id: string) => {
-    await onUpdate({
-      bookmarks: bookmarks.filter((bookmark) => bookmark.id !== id),
-    });
+    await saveOrToast(
+      { bookmarks: bookmarks.filter((bookmark) => bookmark.id !== id) },
+      bookmarksFailedMessage,
+    );
   };
 
   const handleTimestampClick = (startMs: number) => {
@@ -1599,8 +1657,28 @@ const LibraryDetail = ({
 
       if (event.key === "Escape") {
         event.preventDefault();
+        // Closes the topmost layer only.
         if (showDeleteConfirm) {
           setShowDeleteConfirm(false);
+        } else if (showRetranscribe) {
+          setShowRetranscribe(false);
+        } else if (speakerContext) {
+          setSpeakerContext(null);
+        } else if (speakerMenuSegment !== null) {
+          setSpeakerMenuSegment(null);
+        } else if (speakersMenuOpen) {
+          setSpeakersMenuOpen(false);
+          setRenamingSpeakerId(null);
+          setSpeakerNameDraft("");
+        } else if (exportOpen) {
+          setExportOpen(false);
+        } else if (overflowOpen) {
+          setOverflowOpen(false);
+        } else if (playbackMenuOpen) {
+          setPlaybackMenuOpen(false);
+        } else if (tagMenuOpen) {
+          setTagMenuOpen(false);
+          setTagInput("");
         } else {
           onClose();
         }
@@ -1630,6 +1708,14 @@ const LibraryDetail = ({
     handleTogglePlayback,
     onClose,
     showDeleteConfirm,
+    showRetranscribe,
+    speakerContext,
+    speakerMenuSegment,
+    speakersMenuOpen,
+    exportOpen,
+    overflowOpen,
+    playbackMenuOpen,
+    tagMenuOpen,
     showSegmentView,
   ]);
 
@@ -1909,12 +1995,20 @@ const LibraryDetail = ({
                         event.preventDefault();
                         handleNameCommit();
                       }
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelNameEdit();
+                      }
                     }}
                     className="min-w-0 flex-1 max-w-md bg-transparent border-b border-[var(--color-border-primary)] px-1 py-0.5 ui-text-body-lg font-semibold text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
                     autoFocus
                   />
                   <button
                     onClick={handleNameCommit}
+                    aria-label={t({
+                      id: "library.detail.rename_save",
+                      message: "Save name",
+                    })}
                     className="text-content-muted hover:text-content-primary"
                   >
                     <Check size={12} />
@@ -1926,7 +2020,14 @@ const LibraryDetail = ({
                     {formatLibraryName(item.name)}
                   </h2>
                   <button
-                    onClick={() => setIsEditingName(true)}
+                    onClick={() => {
+                      nameEditCancelled.current = false;
+                      setIsEditingName(true);
+                    }}
+                    aria-label={t({
+                      id: "library.detail.rename",
+                      message: "Rename",
+                    })}
                     className="opacity-0 group-hover:opacity-100 text-content-muted hover:text-content-primary transition-opacity shrink-0"
                   >
                     <Pencil size={11} />
@@ -2150,6 +2251,7 @@ const LibraryDetail = ({
                             setOverflowOpen(false);
                             Promise.resolve(onRetry()).catch((err) => {
                               console.error("failed to retry:", err);
+                              showErrorToast(retryFailedMessage);
                             });
                           }}
                           className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay hover:text-content-primary transition-colors"
@@ -3159,86 +3261,21 @@ const LibraryDetail = ({
         </div>
       </footer>
 
-      {createPortal(
-        <AnimatePresence>
-          {showDeleteConfirm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xs px-6"
-              onClick={(event) => {
-                event.stopPropagation();
-                setShowDeleteConfirm(false);
-              }}
-            >
-              <motion.div
-                initial={{ scale: 0.96, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.96, opacity: 0 }}
-                transition={{ duration: 0.18 }}
-                className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
-                onClick={(event) => event.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <AlertTriangle
-                    size={20}
-                    className="ui-color-warning-strong shrink-0"
-                  />
-                  <div>
-                    <p className="ui-text-body-lg font-semibold text-content-primary">
-                      {t({
-                        id: "library.modal.delete_confirm.title",
-                        message: "Delete this item?",
-                      })}
-                    </p>
-                    <p className="ui-text-label text-content-disabled">
-                      {t({
-                        id: "library.modal.delete_confirm.description",
-                        message:
-                          "This removes the transcript and audio from your library.",
-                      })}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary hover:border-border-hover transition-colors"
-                  >
-                    {t({
-                      id: "library.modal.cancel",
-                      message: "Cancel",
-                    })}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowDeleteConfirm(false);
-                      const audio = releaseAudioSource();
-                      void onDelete().catch(() => {
-                        if (audio) {
-                          audio.src = audioUrl;
-                          audioRef.current = audio;
-                          audio.load();
-                        }
-                      });
-                    }}
-                    className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid hover:bg-red-500 transition-colors"
-                  >
-                    {t({
-                      id: "library.modal.delete",
-                      message: "Delete",
-                    })}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>,
-        document.body,
-      )}
+      <LibraryDeleteDialog
+        open={showDeleteConfirm}
+        onCancel={closeDeleteConfirm}
+        onConfirm={() => {
+          setShowDeleteConfirm(false);
+          const audio = releaseAudioSource();
+          void onDelete().catch(() => {
+            if (audio) {
+              audio.src = audioUrl;
+              audioRef.current = audio;
+              audio.load();
+            }
+          });
+        }}
+      />
 
       {createPortal(
         <AnimatePresence>
@@ -3314,18 +3351,8 @@ const LibraryDetail = ({
               models={models}
               onCancel={() => setShowRetranscribe(false)}
               onConfirm={async (options) => {
-                try {
-                  await onUpdate({
-                    speech_model: options.model_key,
-                    llm_cleanup_enabled: false,
-                    show_timestamps: options.show_timestamps,
-                    detect_speakers: options.detect_speakers,
-                  });
-                  await onRetry();
-                  setShowRetranscribe(false);
-                } catch (err) {
-                  console.error("Failed to retranscribe:", err);
-                }
+                await onRetranscribe(options);
+                setShowRetranscribe(false);
               }}
             />
           )}
