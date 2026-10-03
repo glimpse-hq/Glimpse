@@ -413,7 +413,7 @@ msgstr "{0, plural, one {# App} other {# Apps}}"
 #. placeholder {0}: state.bookmarks.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_count"
-msgstr ""
+msgstr "{0, plural, one {# Lesezeichen} other {# Lesezeichen}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.llmCleanedCount
@@ -432,7 +432,7 @@ msgstr "{0, plural, one {# Diktat} other {# Diktate}} · {1, plural, one {# Wort
 #. placeholder {0}: importPaths.length
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.summary.file_count"
-msgstr ""
+msgstr "{0, plural, one {# Datei} other {# Dateien}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.langCount
@@ -501,7 +501,7 @@ msgstr "{0, plural, one {Längstes Diktat heute: # Wort} other {Längstes Diktat
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files_skipped"
-msgstr ""
+msgstr "{0, plural, one {# Datei in einem nicht unterstützten Format übersprungen.} other {# Dateien in einem nicht unterstützten Format übersprungen.}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: apps.length
@@ -828,7 +828,7 @@ msgstr "Sprecher hinzufügen"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.add_tag"
-msgstr ""
+msgstr "Tag hinzufügen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1707,7 +1707,7 @@ msgstr "Importdialog konnte nicht geöffnet werden."
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 #: src/features/transcriptions/queries.ts
 msgid "transcriptions.cleanup_retry_failed"
-msgstr ""
+msgstr "Die Transkription konnte nicht bereinigt werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -1747,7 +1747,7 @@ msgstr "Die Bibliotheksdateien konnten nicht gelöscht werden. Überprüfen Sie 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.delete_failed"
-msgstr ""
+msgstr "Die Transkription konnte nicht gelöscht werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -1772,7 +1772,7 @@ msgstr "Sprecher konnten nicht erkannt werden."
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.discard_failed"
-msgstr ""
+msgstr "Die Aufnahme konnte nicht verworfen werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1787,33 +1787,33 @@ msgstr "Versionen konnten nicht geladen werden"
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.load_failed"
-msgstr ""
+msgstr "Die Einstellungen konnten nicht geladen werden."
 
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.speech_models_failed"
-msgstr ""
+msgstr "Sprachmodelle konnten nicht geladen werden: {detail}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.writing_models_failed"
-msgstr ""
+msgstr "Schreibmodelle konnten nicht geladen werden: {detail}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.delete_error.trash_failed"
-msgstr ""
+msgstr "Die Audiodatei konnte nicht in den Papierkorb verschoben werden, daher wurde nichts gelöscht."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.live_failed"
-msgstr ""
+msgstr "Die Live-Ansicht konnte nicht geöffnet werden."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.pause_failed"
-msgstr ""
+msgstr "Die Aufnahme konnte nicht angehalten werden."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -1829,51 +1829,51 @@ msgstr "Deine Aufnahmen konnten nicht gelesen werden."
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.detail.rename_failed"
-msgstr ""
+msgstr "Dieses Element konnte nicht umbenannt werden."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.restore_failed"
-msgstr ""
+msgstr "Das ursprüngliche Transkript konnte nicht wiederhergestellt werden."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.resume_failed"
-msgstr ""
+msgstr "Die Aufnahme konnte nicht fortgesetzt werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.failed"
-msgstr ""
+msgstr "Dieses Element konnte nicht erneut transkribiert werden."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.retry_failed"
-msgstr ""
+msgstr "Die Transkription konnte nicht erneut versucht werden."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark_failed"
-msgstr ""
+msgstr "Das Lesezeichen konnte nicht gespeichert werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.bookmarks_failed"
-msgstr ""
+msgstr "Das Lesezeichen konnte nicht gespeichert werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/LiveView.tsx
 msgid "library.detail.speakers_failed"
-msgstr ""
+msgstr "Die Sprecher konnten nicht gespeichert werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.detail.tags_failed"
-msgstr ""
+msgstr "Die Tags konnten nicht gespeichert werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1883,7 +1883,7 @@ msgstr "Dieses Transkript konnte nicht gespeichert werden. Ihre Änderungen sind
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.save_failed"
-msgstr ""
+msgstr "Deine Modi konnten nicht gespeichert werden."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -1899,27 +1899,27 @@ msgstr "Mikrofontest konnte nicht gestartet werden."
 #: src/features/library/components/LibraryCard.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.retry_failed"
-msgstr ""
+msgstr "Die Transkription konnte nicht erneut gestartet werden."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "record.stop_failed"
-msgstr ""
+msgstr "Die Aufnahme konnte nicht beendet werden."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.stop_failed"
-msgstr ""
+msgstr "Die Transkription konnte nicht beendet werden."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.cancel_failed"
-msgstr ""
+msgstr "Die Transkription konnte nicht beendet werden."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.shortcut.failed"
-msgstr ""
+msgstr "Dieser Kurzbefehl konnte nicht verwendet werden. Versuche einen anderen."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2282,7 +2282,7 @@ msgstr "Fertig"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.down"
-msgstr ""
+msgstr "Nach unten"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2678,7 +2678,7 @@ msgstr "Formell"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.forward_delete"
-msgstr ""
+msgstr "Entf"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2773,7 +2773,7 @@ msgstr "Glimpse konnte dies nicht erneut transkribieren und hat daher das frühe
 #. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
-msgstr ""
+msgstr "Bei Glimpse ist ein Fehler aufgetreten"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3186,12 +3186,12 @@ msgstr "Lässt Clips unter einer Sekunde aus"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.left"
-msgstr ""
+msgstr "Links"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.left_modifier"
-msgstr ""
+msgstr "Links {key}"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3463,7 +3463,7 @@ msgstr "Mikrofon nicht verfügbar ({error})"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.mouse_middle"
-msgstr ""
+msgstr "Mittelklick"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/WindowControls.tsx
@@ -3554,7 +3554,7 @@ msgstr "Modelle"
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.modes"
-msgstr ""
+msgstr "Modi"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3589,12 +3589,12 @@ msgstr "Weitere Optionen"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.mouse_back"
-msgstr ""
+msgstr "Maustaste „Zurück“"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.mouse_forward"
-msgstr ""
+msgstr "Maustaste „Vorwärts“"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3635,7 +3635,7 @@ msgstr "Erfordert macOS 14.2 oder neuer"
 #: src/features/library/components/LibraryImportModal.tsx
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.detect_speakers_unavailable"
-msgstr ""
+msgstr "Erfordert das Sprechererkennungsmodell"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3751,12 +3751,12 @@ msgstr "kein Modell verbleibt zwischen Anfragen im Speicher"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_models_installed"
-msgstr ""
+msgstr "Keine Modelle verfügbar. Lade eines herunter oder füge unter Einstellungen > Modelle einen Anbieter hinzu."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.no_models_installed"
-msgstr ""
+msgstr "Keine Modelle verfügbar. Lade eines herunter oder füge unter Einstellungen > Modelle einen Anbieter hinzu."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -4173,7 +4173,7 @@ msgstr "Wiedergabeeinstellungen"
 #. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.body"
-msgstr ""
+msgstr "Bitte starte die App neu."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4264,7 +4264,7 @@ msgstr "Anbieter"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.model.provider_default"
-msgstr ""
+msgstr "Standardanbieter"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -4506,7 +4506,7 @@ msgstr "Umbenennen"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename"
-msgstr ""
+msgstr "Umbenennen"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4531,7 +4531,7 @@ msgstr "Ersetzen durch …"
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements_title"
-msgstr ""
+msgstr "Ersetzungen"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -4722,12 +4722,12 @@ msgstr "Wird zurückgesetzt …"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.right"
-msgstr ""
+msgstr "Rechts"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.right_modifier"
-msgstr ""
+msgstr "Rechts {key}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4772,7 +4772,7 @@ msgstr "Namen speichern"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename_save"
-msgstr ""
+msgstr "Namen speichern"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5214,7 +5214,7 @@ msgstr "Sprachmodell"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.title_provider"
-msgstr ""
+msgstr "Sprachanbieter"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -5485,7 +5485,7 @@ msgstr "Danke, dass du Glimpse unterstützt!"
 #. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
-msgstr ""
+msgstr "Das hat nicht funktioniert. Versuchen Sie es erneut."
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5525,7 +5525,7 @@ msgstr "Das war’s, das ist schon alles."
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.api_server_restart"
-msgstr ""
+msgstr "Der API-Server wurde nicht beendet und konnte daher nicht neu gestartet werden."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -5560,17 +5560,17 @@ msgstr "Dieselbe Tastenkombination funktioniert in jeder App, in der du tippen k
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
-msgstr ""
+msgstr "Das ausgewählte Modell ist nicht installiert. Laden Sie eines unter „Einstellungen > Modelle“ herunter."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.delete_confirm.recycle_bin"
-msgstr ""
+msgstr "Das Transkript wird entfernt und die Audiodatei wird in den Papierkorb verschoben."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.delete_confirm.trash"
-msgstr ""
+msgstr "Das Transkript wird entfernt und die Audiodatei wird in den Papierkorb verschoben."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5866,7 +5866,7 @@ msgstr "Nicht unterstützte Sprachen stehen bei deinem aktiven Modell nicht zur 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.up"
-msgstr ""
+msgstr "Nach oben"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -6087,7 +6087,7 @@ msgstr "Funktioniert offline"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.writing_label"
-msgstr ""
+msgstr "Schreiben"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx

@@ -413,7 +413,7 @@ msgstr "{0, plural, one {# ऐप} other {# ऐप्स}}"
 #. placeholder {0}: state.bookmarks.length
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.bookmark_count"
-msgstr ""
+msgstr "{0, plural, one {# बुकमार्क} other {# बुकमार्क}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.llmCleanedCount
@@ -432,7 +432,7 @@ msgstr "{0, plural, one {# डिक्टेशन} other {# डिक्टे
 #. placeholder {0}: importPaths.length
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.summary.file_count"
-msgstr ""
+msgstr "{0, plural, one {# फ़ाइल} other {# फ़ाइलें}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: stats.langCount
@@ -501,7 +501,7 @@ msgstr "{0, plural, one {आज की सबसे लंबी डिक्ट
 #. placeholder {0}: unsupported.length
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.unsupported_files_skipped"
-msgstr ""
+msgstr "{0, plural, one {असमर्थित प्रारूप में # फ़ाइल छोड़ दी गई।} other {असमर्थित प्रारूप में # फ़ाइलें छोड़ दी गईं।}}"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: apps.length
@@ -828,7 +828,7 @@ msgstr "वक्ता जोड़ें"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.add_tag"
-msgstr ""
+msgstr "टैग जोड़ें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1707,7 +1707,7 @@ msgstr "आयात संवाद खोला नहीं जा सका�
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 #: src/features/transcriptions/queries.ts
 msgid "transcriptions.cleanup_retry_failed"
-msgstr ""
+msgstr "प्रतिलेखन साफ़ नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -1747,7 +1747,7 @@ msgstr "लाइब्रेरी फ़ाइलें हटाई नही
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.delete_failed"
-msgstr ""
+msgstr "प्रतिलेखन हटाया नहीं जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -1772,7 +1772,7 @@ msgstr "वक्ताओं का पता नहीं लगाया ज�
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.discard_failed"
-msgstr ""
+msgstr "रिकॉर्डिंग छोड़ी नहीं जा सकी।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1787,33 +1787,33 @@ msgstr "रिलीज़ लोड नहीं हो सकीं"
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.load_failed"
-msgstr ""
+msgstr "सेटिंग्ज़ लोड नहीं की जा सकीं।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.speech_models_failed"
-msgstr ""
+msgstr "वाक् मॉडल लोड नहीं किए जा सके: {detail}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.writing_models_failed"
-msgstr ""
+msgstr "लेखन मॉडल लोड नहीं किए जा सके: {detail}"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.delete_error.trash_failed"
-msgstr ""
+msgstr "ऑडियो को ट्रैश या रीसायकल बिन में नहीं ले जाया जा सका, इसलिए कुछ भी हटाया नहीं गया।"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.live_failed"
-msgstr ""
+msgstr "लाइव दृश्य नहीं खोला जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.pause_failed"
-msgstr ""
+msgstr "रिकॉर्डिंग रोकी नहीं जा सकी।"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/modelStats.ts
@@ -1829,51 +1829,51 @@ msgstr "आपकी रिकॉर्डिंग पढ़ी नहीं �
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.detail.rename_failed"
-msgstr ""
+msgstr "इस आइटम का नाम बदला नहीं जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.restore_failed"
-msgstr ""
+msgstr "मूल प्रतिलेख पुनर्स्थापित नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.resume_failed"
-msgstr ""
+msgstr "रिकॉर्डिंग फिर से शुरू नहीं की जा सकी।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.failed"
-msgstr ""
+msgstr "इस आइटम का फिर से प्रतिलेखन नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.retry_failed"
-msgstr ""
+msgstr "प्रतिलेखन का पुनः प्रयास नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.bookmark_failed"
-msgstr ""
+msgstr "बुकमार्क सहेजा नहीं जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.bookmarks_failed"
-msgstr ""
+msgstr "बुकमार्क सहेजा नहीं जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/recording/components/LiveView.tsx
 msgid "library.detail.speakers_failed"
-msgstr ""
+msgstr "वक्ताओं को सहेजा नहीं जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/library/components/LibraryView.tsx
 msgid "library.detail.tags_failed"
-msgstr ""
+msgstr "टैग सहेजे नहीं जा सके।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -1883,7 +1883,7 @@ msgstr "यह ट्रांसक्रिप्ट सहेज नहीं
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalizationView.tsx
 msgid "personalization.save_failed"
-msgstr ""
+msgstr "आपके मोड सहेजे नहीं जा सके।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -1899,27 +1899,27 @@ msgstr "माइक्रोफ़ोन परीक्षण शुरू न
 #: src/features/library/components/LibraryCard.tsx
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.retry_failed"
-msgstr ""
+msgstr "प्रतिलेखन फिर से शुरू नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "record.stop_failed"
-msgstr ""
+msgstr "रिकॉर्डिंग बंद नहीं की जा सकी।"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.stop_failed"
-msgstr ""
+msgstr "प्रतिलेखन बंद नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
 msgid "library.card.cancel_failed"
-msgstr ""
+msgstr "प्रतिलेखन बंद नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.shortcut.failed"
-msgstr ""
+msgstr "उस शॉर्टकट का उपयोग नहीं किया जा सका। कोई दूसरा आज़माएँ।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -2282,7 +2282,7 @@ msgstr "हो गया"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.down"
-msgstr ""
+msgstr "नीचे"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -2678,7 +2678,7 @@ msgstr "औपचारिक"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.forward_delete"
-msgstr ""
+msgstr "फ़ॉरवर्ड डिलीट"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2773,7 +2773,7 @@ msgstr "Glimpse इसे फिर से ट्रांसक्राइब 
 #. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
-msgstr ""
+msgstr "Glimpse में एक त्रुटि हुई"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3186,12 +3186,12 @@ msgstr "एक सेकंड से कम के क्लिप छोड़
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.left"
-msgstr ""
+msgstr "बायाँ"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.left_modifier"
-msgstr ""
+msgstr "बायाँ {key}"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3463,7 +3463,7 @@ msgstr "माइक्रोफ़ोन उपलब्ध नहीं है
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.mouse_middle"
-msgstr ""
+msgstr "मध्य क्लिक"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/WindowControls.tsx
@@ -3554,7 +3554,7 @@ msgstr "मॉडल"
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.modes"
-msgstr ""
+msgstr "मोड"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3589,12 +3589,12 @@ msgstr "अधिक विकल्प"
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.mouse_back"
-msgstr ""
+msgstr "माउस पीछे"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.mouse_forward"
-msgstr ""
+msgstr "माउस आगे"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3635,7 +3635,7 @@ msgstr "macOS 14.2 या उसके बाद का संस्करण �
 #: src/features/library/components/LibraryImportModal.tsx
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.detect_speakers_unavailable"
-msgstr ""
+msgstr "स्पीकर पहचान मॉडल आवश्यक है"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -3751,12 +3751,12 @@ msgstr "अनुरोधों के बीच कोई मॉडल मे�
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.no_models_installed"
-msgstr ""
+msgstr "कोई मॉडल उपलब्ध नहीं है। एक डाउनलोड करें या सेटिंग्ज़ > मॉडल में प्रदाता जोड़ें।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
 msgid "library.retranscribe.no_models_installed"
-msgstr ""
+msgstr "कोई मॉडल उपलब्ध नहीं है। एक डाउनलोड करें या सेटिंग्ज़ > मॉडल में प्रदाता जोड़ें।"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -4173,7 +4173,7 @@ msgstr "प्लेबैक सेटिंग्स"
 #. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.body"
-msgstr ""
+msgstr "कृपया ऐप को फिर से शुरू करें।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4264,7 +4264,7 @@ msgstr "प्रदाता"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.model.provider_default"
-msgstr ""
+msgstr "प्रदाता डिफ़ॉल्ट"
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -4506,7 +4506,7 @@ msgstr "नाम बदलें"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename"
-msgstr ""
+msgstr "नाम बदलें"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4531,7 +4531,7 @@ msgstr "इसके साथ बदलें..."
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.replacements_title"
-msgstr ""
+msgstr "प्रतिस्थापन"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -4722,12 +4722,12 @@ msgstr "पिछली स्थिति पर लौटाया जा र�
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.right"
-msgstr ""
+msgstr "दायाँ"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.right_modifier"
-msgstr ""
+msgstr "दायाँ {key}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4772,7 +4772,7 @@ msgstr "नाम सहेजें"
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.rename_save"
-msgstr ""
+msgstr "नाम सहेजें"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5214,7 +5214,7 @@ msgstr "वाक् मॉडल"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.title_provider"
-msgstr ""
+msgstr "वाक् प्रदाता"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -5485,7 +5485,7 @@ msgstr "Glimpse का समर्थन करने के लिए धन�
 #. js-lingui-explicit-id
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
-msgstr ""
+msgstr "यह काम नहीं किया। फिर से कोशिश करें।"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5525,7 +5525,7 @@ msgstr "बस इतना ही, यही पूरी प्रक्रि
 #. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.api_server_restart"
-msgstr ""
+msgstr "API सर्वर बंद नहीं हुआ, इसलिए उसे पुनः प्रारंभ नहीं किया जा सका।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
@@ -5560,17 +5560,17 @@ msgstr "जहाँ भी आप टाइप कर सकते हैं, �
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
 msgid "library.import_error.model_missing"
-msgstr ""
+msgstr "चयनित मॉडल इंस्टॉल नहीं है। Settings > Models में एक डाउनलोड करें।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.delete_confirm.recycle_bin"
-msgstr ""
+msgstr "ट्रांसक्रिप्ट हटा दिया जाता है और ऑडियो Recycle Bin में चला जाता है।"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.delete_confirm.trash"
-msgstr ""
+msgstr "ट्रांसक्रिप्ट हटा दिया जाता है और ऑडियो Trash में चला जाता है।"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5866,7 +5866,7 @@ msgstr "असमर्थित भाषाएँ आपके सक्रि
 #. js-lingui-explicit-id
 #: src/shared/lib/shortcuts.ts
 msgid "shortcuts.key.up"
-msgstr ""
+msgstr "ऊपर"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -6087,7 +6087,7 @@ msgstr "ऑफ़लाइन काम करता है"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.writing_label"
-msgstr ""
+msgstr "लिखना"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
