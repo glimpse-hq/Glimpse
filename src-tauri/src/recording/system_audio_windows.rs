@@ -130,7 +130,7 @@ pub(crate) fn list_apps() -> Result<Vec<AudioApp>> {
             }),
         });
     }
-    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps.sort_by_key(|app| app.name.to_lowercase());
     Ok(apps)
 }
 

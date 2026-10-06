@@ -177,12 +177,11 @@ fn resolve_shortcut_icon_source(shortcut_path: &Path) -> Option<(PathBuf, i32)> 
             shell_link
                 .GetIconLocation(&mut icon_buffer, &mut icon_index)
                 .is_ok()
-        } {
-            if let Some(icon_path) = wide_buffer_to_string(&icon_buffer) {
-                let icon_path = PathBuf::from(icon_path);
-                if icon_path.exists() {
-                    return Some((icon_path, icon_index));
-                }
+        } && let Some(icon_path) = wide_buffer_to_string(&icon_buffer)
+        {
+            let icon_path = PathBuf::from(icon_path);
+            if icon_path.exists() {
+                return Some((icon_path, icon_index));
             }
         }
 
@@ -191,12 +190,11 @@ fn resolve_shortcut_icon_source(shortcut_path: &Path) -> Option<(PathBuf, i32)> 
             shell_link
                 .GetPath(&mut target_buffer, std::ptr::null_mut(), 0)
                 .is_ok()
-        } {
-            if let Some(target_path) = wide_buffer_to_string(&target_buffer) {
-                let target_path = PathBuf::from(target_path);
-                if target_path.exists() {
-                    return Some((target_path, 0));
-                }
+        } && let Some(target_path) = wide_buffer_to_string(&target_buffer)
+        {
+            let target_path = PathBuf::from(target_path);
+            if target_path.exists() {
+                return Some((target_path, 0));
             }
         }
 
@@ -218,11 +216,8 @@ fn encode_bgra_png(width: u32, height: u32, pixels: &[u8]) -> Option<Vec<u8>> {
     }
 
     let mut rgba = Vec::with_capacity(pixels.len());
-    for pixel in pixels.chunks_exact(4) {
-        rgba.push(pixel[2]);
-        rgba.push(pixel[1]);
-        rgba.push(pixel[0]);
-        rgba.push(pixel[3]);
+    for [blue, green, red, alpha] in pixels.as_chunks::<4>().0 {
+        rgba.extend([*red, *green, *blue, *alpha]);
     }
 
     let mut png_bytes = Vec::new();
@@ -321,7 +316,7 @@ fn hicon_bgra(icon: windows::Win32::UI::WindowsAndMessaging::HICON) -> Option<Ve
             if drawn && !bits.is_null() {
                 let len = (WINDOWS_ICON_SIZE * WINDOWS_ICON_SIZE * 4) as usize;
                 pixels = unsafe { std::slice::from_raw_parts(bits as *const u8, len) }.to_vec();
-                for pixel in pixels.chunks_exact_mut(4) {
+                for pixel in pixels.as_chunks_mut::<4>().0 {
                     if pixel[3] == 0 && (pixel[0] != 0 || pixel[1] != 0 || pixel[2] != 0) {
                         pixel[3] = 255;
                     }
@@ -409,13 +404,10 @@ fn extract_icon_handle(
     if result != 0 {
         for image_list_size in [SHIL_JUMBO, SHIL_EXTRALARGE] {
             if let Ok(image_list) = unsafe { SHGetImageList::<IImageList>(image_list_size as i32) }
+                && let Ok(icon) = unsafe { image_list.GetIcon(shell_info.iIcon, ILD_TRANSPARENT.0) }
+                && !icon.is_invalid()
             {
-                if let Ok(icon) = unsafe { image_list.GetIcon(shell_info.iIcon, ILD_TRANSPARENT.0) }
-                {
-                    if !icon.is_invalid() {
-                        return Some(icon);
-                    }
-                }
+                return Some(icon);
             }
         }
     }
@@ -502,7 +494,7 @@ pub fn list_installed_apps(app: &AppHandle<AppRuntime>) -> Result<Vec<InstalledA
         );
     }
 
-    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps.sort_by_key(|app| app.name.to_lowercase());
     if let Some(cache_dir) = icon_cache_dir {
         warm_icon_cache_in_background(pending_icon_warmup, cache_dir);
     }

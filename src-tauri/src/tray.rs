@@ -327,12 +327,11 @@ pub(crate) fn set_recording_indicator(
 
     #[cfg(target_os = "windows")]
     {
-        if changed {
-            if let Some(icon) = tray_icon(app, elapsed_ms.map(|_| rgb))
-                && let Err(err) = tray.set_icon(Some(icon))
-            {
-                tracing::warn!("Failed to update tray icon: {err}");
-            }
+        if changed
+            && let Some(icon) = tray_icon(app, elapsed_ms.map(|_| rgb))
+            && let Err(err) = tray.set_icon(Some(icon))
+        {
+            tracing::warn!("Failed to update tray icon: {err}");
         }
         let app_name = app.package_info().name.clone();
         let tooltip = match elapsed_ms {
