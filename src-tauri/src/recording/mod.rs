@@ -38,6 +38,8 @@ use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
 use live::{LiveTranscript, LiveWorker};
 use track::{TrackInput, TrackWriter};
 
+type SamplesCallback = Box<dyn FnMut(&[f32]) + Send>;
+
 pub const EVENT_STATE: &str = "recording-session:state";
 const SESSIONS_DIR: &str = "recording-sessions";
 const MANIFEST_FILE: &str = "session.json";
@@ -379,7 +381,7 @@ struct SessionOutput {
 
 enum WorkerCommand {
     Start {
-        app: AppHandle<AppRuntime>,
+        app: Box<AppHandle<AppRuntime>>,
         sources: RecordingSources,
         dir: PathBuf,
         reply: Sender<Result<(), StartFailure>>,
@@ -451,7 +453,7 @@ impl Default for RecordingManager {
                             dir,
                             reply,
                         } => {
-                            let _ = reply.send(worker.start(app, sources, dir));
+                            let _ = reply.send(worker.start(*app, sources, dir));
                         }
                         WorkerCommand::Finish { reply } => {
                             let _ = reply.send(worker.finish());
@@ -497,7 +499,7 @@ impl RecordingManager {
         let (reply, rx) = bounded(1);
         self.tx
             .send(WorkerCommand::Start {
-                app: app.clone(),
+                app: Box::new(app.clone()),
                 sources,
                 dir,
                 reply,
@@ -1055,7 +1057,7 @@ struct SinkParts {
 }
 
 impl SinkParts {
-    fn into_callback(self, input: TrackInput) -> Box<dyn FnMut(&[f32]) + Send> {
+    fn into_callback(self, input: TrackInput) -> SamplesCallback {
         let (mut peak, mut peak_at) = (0f32, Instant::now());
         let mut quiet = Vec::new();
         Box::new(move |samples: &[f32]| {

@@ -695,25 +695,25 @@ fn extract_plain_text(response: &str, source: &str) -> Option<String> {
         return Some(trimmed.to_string());
     }
 
-    if parse_output_tags(source.trim()).is_none() {
-        if let Some(output) = parse_output_tags(trimmed) {
-            return extract_plain_text(&output, source);
-        }
+    if parse_output_tags(source.trim()).is_none()
+        && let Some(output) = parse_output_tags(trimmed)
+    {
+        return extract_plain_text(&output, source);
     }
 
-    if !source.trim().starts_with("```") {
-        if let Some(inner) = strip_code_fence(trimmed) {
-            if let Some(unwrapped) = strip_json_wrapper(inner) {
-                return Some(unwrapped);
-            }
-            return Some(inner.to_string());
-        }
-    }
-
-    if strip_json_wrapper(source.trim()).is_none() {
-        if let Some(unwrapped) = strip_json_wrapper(trimmed) {
+    if !source.trim().starts_with("```")
+        && let Some(inner) = strip_code_fence(trimmed)
+    {
+        if let Some(unwrapped) = strip_json_wrapper(inner) {
             return Some(unwrapped);
         }
+        return Some(inner.to_string());
+    }
+
+    if strip_json_wrapper(source.trim()).is_none()
+        && let Some(unwrapped) = strip_json_wrapper(trimmed)
+    {
+        return Some(unwrapped);
     }
 
     let cleaned = strip_control_tokens(trimmed);

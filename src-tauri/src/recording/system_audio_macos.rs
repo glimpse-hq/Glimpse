@@ -27,7 +27,7 @@ use objc2_core_audio_types::{AudioBufferList, AudioStreamBasicDescription, Audio
 use objc2_core_foundation::{CFDictionary, CFString};
 use objc2_foundation::{NSArray, NSDictionary, NSNumber, NSProcessInfo, NSRect, NSString};
 
-use super::{AudioApp, SystemAudioScope};
+use super::{AudioApp, SamplesCallback, SystemAudioScope};
 
 const MIN_MACOS: (isize, isize) = (14, 2);
 const APP_ICON_POINTS: f64 = 32.0;
@@ -150,7 +150,7 @@ pub(crate) fn list_apps() -> Result<Vec<AudioApp>> {
             icon: app.icon().and_then(|icon| icon_data_url(&icon)),
         });
     }
-    apps.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    apps.sort_by_key(|app| app.name.to_lowercase());
     Ok(apps)
 }
 
@@ -192,7 +192,7 @@ fn process_object_ids_for_scope(scope: &SystemAudioScope) -> Result<Vec<AudioObj
 }
 
 struct IoContext {
-    sink: Box<dyn FnMut(&[f32]) + Send>,
+    sink: SamplesCallback,
     mono: Vec<f32>,
 }
 
@@ -250,7 +250,7 @@ impl SystemAudioCapture {
     /// `make_sink` receives the tap sample rate and returns the audio callback.
     pub(crate) fn start(
         scope: &SystemAudioScope,
-        make_sink: impl FnOnce(u32) -> Box<dyn FnMut(&[f32]) + Send>,
+        make_sink: impl FnOnce(u32) -> SamplesCallback,
     ) -> Result<Self> {
         if !supported() {
             return Err(anyhow!(
@@ -317,10 +317,8 @@ impl SystemAudioCapture {
 
             let mut aggregate_id: AudioObjectID = 0;
             // NSDictionary is toll-free bridged to CFDictionary.
-            let cf_dictionary: &CFDictionary = unsafe {
-                &*(Retained::as_ptr(&aggregate) as *const NSDictionary<NSString, AnyObject>
-                    as *const CFDictionary)
-            };
+            let cf_dictionary: &CFDictionary =
+                unsafe { &*(Retained::as_ptr(&aggregate) as *const CFDictionary) };
             check(
                 unsafe {
                     AudioHardwareCreateAggregateDevice(

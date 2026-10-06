@@ -52,7 +52,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 };
 use windows::core::{BOOL, HRESULT, IUnknown, Interface, PCWSTR, PWSTR, Ref, implement};
 
-use super::{AudioApp, SystemAudioScope};
+use super::{AudioApp, SamplesCallback, SystemAudioScope};
 
 const FORMAT_PCM: u16 = 1;
 const FORMAT_IEEE_FLOAT: u16 = 3;
@@ -142,7 +142,7 @@ pub(crate) struct SystemAudioCapture {
 impl SystemAudioCapture {
     pub(crate) fn start(
         scope: &SystemAudioScope,
-        make_sink: impl FnOnce(u32) -> Box<dyn FnMut(&[f32]) + Send> + Send + 'static,
+        make_sink: impl FnOnce(u32) -> SamplesCallback + Send + 'static,
     ) -> Result<Self> {
         let targets = match scope {
             SystemAudioScope::All => None,
@@ -233,7 +233,7 @@ struct Stream {
 fn run_loopback(
     targets: Option<Vec<u32>>,
     stop: Arc<AtomicBool>,
-    make_sink: impl FnOnce(u32) -> Box<dyn FnMut(&[f32]) + Send>,
+    make_sink: impl FnOnce(u32) -> SamplesCallback,
     ready_tx: &Sender<Result<()>>,
 ) -> Result<()> {
     let _com = ComGuard::init()?;
