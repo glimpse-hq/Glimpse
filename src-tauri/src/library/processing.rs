@@ -1495,13 +1495,18 @@ fn build_speaker_transcript(item: &LibraryItem, markdown: bool) -> Option<String
     Some(out)
 }
 
-fn build_srt(item: &LibraryItem) -> Result<String> {
+// A blank cue payload reads as the end of the cue, so blank segments are dropped.
+fn timed_cues(item: &LibraryItem) -> Result<impl Iterator<Item = &TranscriptSegment>> {
     let segments = item
         .segments
         .as_ref()
         .ok_or_else(|| anyhow!("No timestamp segments available"))?;
+    Ok(segments.iter().filter(|s| !s.text.trim().is_empty()))
+}
+
+fn build_srt(item: &LibraryItem) -> Result<String> {
     let mut out = String::new();
-    for (idx, segment) in segments.iter().enumerate() {
+    for (idx, segment) in timed_cues(item)?.enumerate() {
         out.push_str(&(idx + 1).to_string());
         out.push('\n');
         let text = match speaker_name(item, &segment.speaker_id) {
@@ -1537,12 +1542,8 @@ fn escape_vtt_voice(value: &str) -> String {
 }
 
 fn build_vtt(item: &LibraryItem) -> Result<String> {
-    let segments = item
-        .segments
-        .as_ref()
-        .ok_or_else(|| anyhow!("No timestamp segments available"))?;
     let mut out = String::from("WEBVTT\n\n");
-    for segment in segments {
+    for segment in timed_cues(item)? {
         // WebVTT voice spans render as speaker labels in players.
         let text = match speaker_name(item, &segment.speaker_id) {
             Some(name) => format!(
@@ -1866,15 +1867,24 @@ mod export_tests {
     }
 
     #[test]
-    #[ignore = "bug: blank-text segments produce empty SRT/VTT cues"]
     fn timed_formats_skip_blank_text_segments() {
         let mut item = item();
         item.segments = Some(vec![
             segment(0, 1_000, "   ", None),
             segment(1_000, 2_000, "Hi.", None),
+            segment(2_000, 3_000, "", None),
+            segment(3_000, 4_000, "Bye.", None),
         ]);
         let srt = build_export_content(&item, ExportFormat::Srt).unwrap();
-        assert_eq!(srt, "1\n00:00:01,000 --> 00:00:02,000\nHi.");
+        assert_eq!(
+            srt,
+            "1\n00:00:01,000 --> 00:00:02,000\nHi.\n\n2\n00:00:03,000 --> 00:00:04,000\nBye."
+        );
+        let vtt = build_export_content(&item, ExportFormat::Vtt).unwrap();
+        assert_eq!(
+            vtt,
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi.\n\n00:00:03.000 --> 00:00:04.000\nBye."
+        );
     }
 
     #[test]
