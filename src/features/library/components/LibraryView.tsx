@@ -481,6 +481,7 @@ const LibraryView = ({
                     <Search
                       size={13}
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 ui-color-muted"
+                      aria-hidden="true"
                     />
                     <input
                       ref={searchInputRef}
@@ -491,6 +492,10 @@ const LibraryView = ({
                       spellCheck={false}
                       {...{ writingsuggestions: "false" }}
                       placeholder={t({
+                        id: "library.view.search_placeholder",
+                        message: "Search library...",
+                      })}
+                      aria-label={t({
                         id: "library.view.search_placeholder",
                         message: "Search library...",
                       })}
@@ -558,9 +563,9 @@ const LibraryView = ({
                       className="ui-button-ghost h-8 w-8"
                     >
                       {layout === "list" ? (
-                        <ListIcon size={15} />
+                        <ListIcon size={15} aria-hidden="true" />
                       ) : (
-                        <SquaresFour size={15} />
+                        <SquaresFour size={15} aria-hidden="true" />
                       )}
                     </button>
                   </HoverTip>
@@ -594,7 +599,7 @@ const LibraryView = ({
                     onClick={handleImportClick}
                     className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-surface)] px-3 ui-text-body-sm ui-color-primary hover:border-[var(--color-border-secondary)] hover:bg-[var(--color-bg-overlay)] transition-colors shrink-0"
                   >
-                    <Plus size={13} />
+                    <Plus size={13} aria-hidden="true" />
                     {t({ id: "library.view.import_button", message: "Import" })}
                   </button>
                 </>
@@ -602,7 +607,10 @@ const LibraryView = ({
             />
 
             {error && (
-              <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2">
+              <div
+                role="alert"
+                className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2"
+              >
                 {error}
               </div>
             )}
@@ -611,6 +619,11 @@ const LibraryView = ({
             <div key="library-list" className="flex flex-col gap-6 w-full">
               <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
                 <div
+                  role={items.length > 0 ? "list" : undefined}
+                  aria-label={t({
+                    id: "library.view.title",
+                    message: "Library",
+                  })}
                   className={
                     layout === "grid"
                       ? "grid min-w-0 gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))]"
@@ -618,7 +631,14 @@ const LibraryView = ({
                   }
                 >
                   {isLoading && items.length === 0 && (
-                    <div className="py-12 flex items-center justify-center">
+                    <div
+                      role="status"
+                      aria-label={t({
+                        id: "library.view.loading_more",
+                        message: "Loading...",
+                      })}
+                      className="py-12 flex items-center justify-center"
+                    >
                       <DotMatrix
                         rows={2}
                         cols={8}
@@ -649,67 +669,71 @@ const LibraryView = ({
                   )}
 
                   {items.map((item, index) => (
-                    <LibraryCard
+                    <div
                       key={item.id || `library-item-${index}`}
-                      item={item}
-                      layout={layout}
-                      onOpen={setSelectedItemId}
-                      onRemoveTag={removeTag}
-                      onClickTag={searchTag}
-                      editingNameId={editingNameId}
-                      // Only the card being edited re-renders while typing.
-                      editingNameDraft={
-                        editingNameId === item.id ? editingNameDraft : ""
-                      }
-                      onStartNameEdit={startNameEdit}
-                      onChangeNameDraft={setEditingNameDraft}
-                      onCommitNameEdit={commitNameEdit}
-                      onCancelNameEdit={cancelNameEdit}
-                      onRetry={retryItem}
-                      onRetranscribe={setRetranscribeItem}
-                      onCancel={cancelItem}
-                      onDelete={setPendingDeleteId}
-                      onQuickDelete={deleteItemAndRefreshTags}
-                      editingTagId={editingTagId}
-                      tagDraft={editingTagId === item.id ? tagDraft : ""}
-                      onStartTagEdit={startTagEdit}
-                      onChangeTagDraft={setTagDraft}
-                      onCommitTagAdd={commitTagAdd}
-                      onCancelTagEdit={cancelTagEdit}
-                      shiftHeld={shiftHeld}
-                      availableTags={availableTags}
-                    />
+                      role="listitem"
+                      className="min-w-0"
+                    >
+                      <LibraryCard
+                        item={item}
+                        layout={layout}
+                        onOpen={setSelectedItemId}
+                        onRemoveTag={removeTag}
+                        onClickTag={searchTag}
+                        editingNameId={editingNameId}
+                        // Only the card being edited re-renders while typing.
+                        editingNameDraft={
+                          editingNameId === item.id ? editingNameDraft : ""
+                        }
+                        onStartNameEdit={startNameEdit}
+                        onChangeNameDraft={setEditingNameDraft}
+                        onCommitNameEdit={commitNameEdit}
+                        onCancelNameEdit={cancelNameEdit}
+                        onRetry={retryItem}
+                        onRetranscribe={setRetranscribeItem}
+                        onCancel={cancelItem}
+                        onDelete={setPendingDeleteId}
+                        onQuickDelete={deleteItemAndRefreshTags}
+                        editingTagId={editingTagId}
+                        tagDraft={editingTagId === item.id ? tagDraft : ""}
+                        onStartTagEdit={startTagEdit}
+                        onChangeTagDraft={setTagDraft}
+                        onCommitTagAdd={commitTagAdd}
+                        onCancelTagEdit={cancelTagEdit}
+                        shiftHeld={shiftHeld}
+                        availableTags={availableTags}
+                      />
+                    </div>
                   ))}
-
-                  {items.length > 0 && hasNextPage && (
-                    <div className="flex items-center justify-center pt-4">
-                      <button
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-body-sm ui-color-secondary hover:text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isFetchingNextPage ? (
-                          <>
-                            <Loader2 size={14} className="animate-spin" />
-                            <span>
-                              {t({
-                                id: "library.view.loading_more",
-                                message: "Loading...",
-                              })}
-                            </span>
-                          </>
-                        ) : (
+                </div>
+                {items.length > 0 && hasNextPage && (
+                  <div className="flex items-center justify-center">
+                    <button
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-body-sm ui-color-secondary hover:text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isFetchingNextPage ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
                           <span>
                             {t({
-                              id: "library.view.load_more",
-                              message: "Load more",
+                              id: "library.view.loading_more",
+                              message: "Loading...",
                             })}
                           </span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        </>
+                      ) : (
+                        <span>
+                          {t({
+                            id: "library.view.load_more",
+                            message: "Load more",
+                          })}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
