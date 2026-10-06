@@ -1308,10 +1308,15 @@ impl AppState {
         self.library_tokens.lock().remove(id);
     }
 
-    pub fn register_retry_transcription(&self, id: String) -> CancellationToken {
+    /// None while a retry of the same transcription is still running.
+    pub fn register_retry_transcription(&self, id: String) -> Option<CancellationToken> {
+        let mut tokens = self.retry_tokens.lock();
+        if tokens.contains_key(&id) {
+            return None;
+        }
         let token = CancellationToken::new();
-        self.retry_tokens.lock().insert(id, token.clone());
-        token
+        tokens.insert(id, token.clone());
+        Some(token)
     }
 
     pub fn cancel_retry_transcription(&self, id: &str) -> bool {
