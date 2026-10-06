@@ -102,6 +102,81 @@ fn socket_path_in(dir: &std::path::Path) -> std::path::PathBuf {
     dir.join(socket_label())
 }
 
+/// Pipe names are machine-wide, so another account could create this one
+/// first and answer the CLI. True only when the pipe's server process runs as
+/// the current user; any failure to tell counts as false.
+#[cfg(target_os = "windows")]
+pub(crate) fn served_by_current_user(stream: &interprocess::local_socket::Stream) -> bool {
+    use interprocess::local_socket::traits::StreamCommon as _;
+    use windows::Win32::Foundation::CloseHandle;
+    use windows::Win32::Security::EqualSid;
+    use windows::Win32::System::Threading::{
+        GetCurrentProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+
+    let Some(pid) = stream.peer_creds().ok().and_then(|creds| creds.pid()) else {
+        return false;
+    };
+    // SAFETY: OpenProcess takes no pointers; the handle is closed below.
+    let Ok(server) = (unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }) else {
+        return false;
+    };
+    let server_user = process_user(server);
+    // SAFETY: `server` is a handle this function opened and no longer uses.
+    let _ = unsafe { CloseHandle(server) };
+    // SAFETY: GetCurrentProcess returns a pseudo-handle that needs no closing.
+    let current_user = process_user(unsafe { GetCurrentProcess() });
+    let (Ok(server_user), Ok(current_user)) = (server_user, current_user) else {
+        return false;
+    };
+    // SAFETY: both SIDs point into buffers that live until the end of this function.
+    unsafe { EqualSid(token_user_sid(&server_user), token_user_sid(&current_user)) }.is_ok()
+}
+
+/// The process token's `TOKEN_USER`, in a buffer aligned for it.
+#[cfg(target_os = "windows")]
+fn process_user(process: windows::Win32::Foundation::HANDLE) -> windows::core::Result<Vec<u64>> {
+    use windows::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows::Win32::Security::{GetTokenInformation, TOKEN_QUERY, TokenUser};
+    use windows::Win32::System::Threading::OpenProcessToken;
+
+    let mut token = HANDLE::default();
+    // SAFETY: `token` is a valid out pointer; the handle is closed below.
+    unsafe { OpenProcessToken(process, TOKEN_QUERY, &mut token) }?;
+    let mut len = 0u32;
+    // The first call only reports the size it needs, and fails doing so.
+    // SAFETY: no buffer is passed, and `len` is a valid out pointer.
+    let _ = unsafe { GetTokenInformation(token, TokenUser, None, 0, &mut len) };
+    let mut buffer = vec![0u64; (len as usize).div_ceil(8)];
+    // SAFETY: the buffer holds at least `len` writable bytes.
+    let filled = unsafe {
+        GetTokenInformation(
+            token,
+            TokenUser,
+            Some(buffer.as_mut_ptr().cast()),
+            len,
+            &mut len,
+        )
+    };
+    // SAFETY: `token` was opened above and is no longer used.
+    let _ = unsafe { CloseHandle(token) };
+    filled?;
+    Ok(buffer)
+}
+
+#[cfg(target_os = "windows")]
+fn token_user_sid(buffer: &[u64]) -> windows::Win32::Security::PSID {
+    // SAFETY: `process_user` filled the buffer with a TOKEN_USER, and u64 is
+    // aligned enough for it.
+    unsafe {
+        (*buffer
+            .as_ptr()
+            .cast::<windows::Win32::Security::TOKEN_USER>())
+        .User
+        .Sid
+    }
+}
+
 /// `confstr(_CS_DARWIN_USER_TEMP_DIR)`, the private dir `$TMPDIR` normally
 /// points at. Read directly so a missing or changed `$TMPDIR` can't move the
 /// socket back to a shared directory or split the app and CLI apart.
