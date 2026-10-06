@@ -71,6 +71,9 @@ jobs:
       - name: build frontend
         run: bun run build
 
+      - name: test frontend
+        run: bun run test:frontend
+
   audit:
     runs-on: ubuntu-latest
 
