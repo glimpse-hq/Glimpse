@@ -68,6 +68,7 @@ type LibraryViewProps = {
 };
 
 const LAYOUT_KEY = "glimpse.library.layout";
+const NO_TAGS: string[] = [];
 
 const LibraryView = ({
   pendingImportPaths,
@@ -117,7 +118,7 @@ const LibraryView = ({
     error: queryError,
   } = useLibraryItemsQuery(filter, isActive);
 
-  const { data: availableTags = [] } = useLibraryTags(isActive);
+  const { data: availableTags = NO_TAGS } = useLibraryTags(isActive);
   const { data: speechModels = [] } = useSpeechModels(isActive);
   const { data: defaultModelKey = "" } = useSettings(
     (settings) => settings.local_model,
@@ -178,10 +179,10 @@ const LibraryView = ({
     : null;
 
   const createItemMutation = useCreateLibraryItem();
-  const updateItemMutation = useUpdateLibraryItem();
-  const deleteItemMutation = useDeleteLibraryItem();
-  const cancelMutation = useCancelLibraryTranscription();
-  const retryMutation = useRetryLibraryTranscription();
+  const { mutateAsync: updateItem } = useUpdateLibraryItem();
+  const { mutateAsync: deleteItem } = useDeleteLibraryItem();
+  const { mutateAsync: cancelItem } = useCancelLibraryTranscription();
+  const { mutateAsync: retryItem } = useRetryLibraryTranscription();
   const rediarizeMutation = useRediarizeLibraryItem();
   const exportMutation = useExportLibraryItem();
 
@@ -191,17 +192,17 @@ const LibraryView = ({
 
   const updateItemWithTags = useCallback(
     async (id: string, patch: LibraryItemPatch) => {
-      const updated = await updateItemMutation.mutateAsync({ id, patch });
+      const updated = await updateItem({ id, patch });
       if (patch.tags != null) invalidateTags();
       return updated;
     },
-    [updateItemMutation, invalidateTags],
+    [updateItem, invalidateTags],
   );
 
   const deleteItemAndRefreshTags = useCallback(
     async (id: string) => {
       try {
-        await deleteItemMutation.mutateAsync(id);
+        await deleteItem(id);
         invalidateTags();
       } catch (err) {
         console.error("Failed to delete library item:", err);
@@ -213,7 +214,7 @@ const LibraryView = ({
         throw err;
       }
     },
-    [deleteItemMutation, invalidateTags],
+    [deleteItem, invalidateTags],
   );
 
   const retranscribe = useCallback(
@@ -224,9 +225,9 @@ const LibraryView = ({
         show_timestamps: options.show_timestamps,
         detect_speakers: options.detect_speakers,
       });
-      await retryMutation.mutateAsync(id);
+      await retryItem(id);
     },
-    [updateItemWithTags, retryMutation],
+    [updateItemWithTags, retryItem],
   );
   const closeDeleteDialog = useCallback(() => setPendingDeleteId(null), []);
   const closeRetranscribe = useCallback(() => setRetranscribeItem(null), []);
@@ -299,80 +300,100 @@ const LibraryView = ({
     }
   };
 
-  const startTagEdit = (item: LibraryItem) => {
-    setEditingTagId(item.id);
+  const startTagEdit = useCallback((id: string) => {
+    setEditingTagId(id);
     setTagDraft("");
-  };
+  }, []);
 
-  const startNameEdit = (item: LibraryItem) => {
+  const startNameEdit = useCallback((item: LibraryItem) => {
     setEditingNameId(item.id);
     setEditingNameDraft(item.name);
-  };
+  }, []);
 
-  const cancelNameEdit = () => {
+  const cancelNameEdit = useCallback(() => {
     setEditingNameId(null);
     setEditingNameDraft("");
-  };
+  }, []);
 
-  const commitNameEdit = async (itemId: string) => {
-    const nextName = editingNameDraft.trim();
-    const original = items.find((entry) => entry.id === itemId)?.name ?? "";
-    setEditingNameId(null);
-    setEditingNameDraft("");
-    if (!nextName || nextName === original) return;
-    try {
-      await updateItemWithTags(itemId, { name: nextName });
-    } catch (err) {
-      console.error("Failed to rename library item:", err);
-      showErrorToast(
-        t({
-          id: "library.detail.rename_failed",
-          message: "Couldn't rename this item.",
-        }),
-      );
-    }
-  };
+  const commitNameEdit = useCallback(
+    async (item: LibraryItem, draft: string) => {
+      const nextName = draft.trim();
+      setEditingNameId(null);
+      setEditingNameDraft("");
+      if (!nextName || nextName === item.name) return;
+      try {
+        await updateItemWithTags(item.id, { name: nextName });
+      } catch (err) {
+        console.error("Failed to rename library item:", err);
+        showErrorToast(
+          t({
+            id: "library.detail.rename_failed",
+            message: "Couldn't rename this item.",
+          }),
+        );
+      }
+    },
+    [updateItemWithTags, t],
+  );
 
-  const saveTags = async (itemId: string, tags: string[]) => {
-    try {
-      await updateItemWithTags(itemId, { tags });
-      return true;
-    } catch (err) {
-      console.error("Failed to save library tags:", err);
-      showErrorToast(
-        t({
-          id: "library.detail.tags_failed",
-          message: "Couldn't save the tags.",
-        }),
-      );
-      return false;
-    }
-  };
+  const saveTags = useCallback(
+    async (itemId: string, tags: string[]) => {
+      try {
+        await updateItemWithTags(itemId, { tags });
+        return true;
+      } catch (err) {
+        console.error("Failed to save library tags:", err);
+        showErrorToast(
+          t({
+            id: "library.detail.tags_failed",
+            message: "Couldn't save the tags.",
+          }),
+        );
+        return false;
+      }
+    },
+    [updateItemWithTags, t],
+  );
 
-  const cancelTagEdit = () => {
+  const cancelTagEdit = useCallback(() => {
     setEditingTagId(null);
     setTagDraft("");
-  };
+  }, []);
 
-  const commitTagAdd = async (itemId: string, overrideTag?: string) => {
-    const nextTag = (overrideTag ?? tagDraft).trim();
-    if (!nextTag) {
-      setEditingTagId(null);
+  const commitTagAdd = useCallback(
+    async (item: LibraryItem, value: string) => {
+      const nextTag = value.trim();
+      if (!nextTag) {
+        setEditingTagId(null);
+        setTagDraft("");
+        return;
+      }
+      if (
+        item.tags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())
+      ) {
+        setTagDraft("");
+        setEditingTagId(null);
+        return;
+      }
+      // A failed save keeps the editor open with what was typed.
+      if (!(await saveTags(item.id, [...item.tags, nextTag]))) return;
       setTagDraft("");
-      return;
-    }
-    const item = items.find((entry) => entry.id === itemId);
-    if (!item) return;
-    if (item.tags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) {
-      setTagDraft("");
       setEditingTagId(null);
-      return;
-    }
-    // A failed save keeps the editor open with what was typed.
-    if (!(await saveTags(itemId, [...item.tags, nextTag]))) return;
-    setTagDraft("");
-    setEditingTagId(null);
-  };
+    },
+    [saveTags],
+  );
+
+  const removeTag = useCallback(
+    async (item: LibraryItem, tag: string) => {
+      await saveTags(
+        item.id,
+        item.tags.filter((entry) => entry !== tag),
+      );
+    },
+    [saveTags],
+  );
+
+  const searchTag = useCallback((tag: string) => setSearchQuery(`#${tag}`), []);
 
   const defaultSpeechModelKey =
     installedModels.find((model) => model.remote)?.id ??
@@ -416,14 +437,14 @@ const LibraryView = ({
               await deleteItemAndRefreshTags(selectedItem.id);
               setSelectedItemId(null);
             }}
-            onRetry={() => retryMutation.mutateAsync(selectedItem.id)}
+            onRetry={() => retryItem(selectedItem.id)}
             onRetranscribe={(options) => retranscribe(selectedItem.id, options)}
             onRediarize={() => rediarizeItem(selectedItem.id)}
             rediarizing={
               rediarizeMutation.isPending &&
               rediarizeMutation.variables === selectedItem.id
             }
-            onCancel={() => cancelMutation.mutateAsync(selectedItem.id)}
+            onCancel={() => cancelItem(selectedItem.id)}
             onUpdate={(patch) => updateItemWithTags(selectedItem.id, patch)}
             onExport={(format, outputPath) =>
               exportMutation.mutateAsync({
@@ -632,30 +653,28 @@ const LibraryView = ({
                       key={item.id || `library-item-${index}`}
                       item={item}
                       layout={layout}
-                      onOpen={() => setSelectedItemId(item.id)}
-                      onRemoveTag={async (tag) => {
-                        await saveTags(
-                          item.id,
-                          item.tags.filter((entry) => entry !== tag),
-                        );
-                      }}
-                      onClickTag={(tag) => setSearchQuery(`#${tag}`)}
+                      onOpen={setSelectedItemId}
+                      onRemoveTag={removeTag}
+                      onClickTag={searchTag}
                       editingNameId={editingNameId}
-                      editingNameDraft={editingNameDraft}
-                      onStartNameEdit={() => startNameEdit(item)}
+                      // Only the card being edited re-renders while typing.
+                      editingNameDraft={
+                        editingNameId === item.id ? editingNameDraft : ""
+                      }
+                      onStartNameEdit={startNameEdit}
                       onChangeNameDraft={setEditingNameDraft}
-                      onCommitNameEdit={() => commitNameEdit(item.id)}
+                      onCommitNameEdit={commitNameEdit}
                       onCancelNameEdit={cancelNameEdit}
-                      onRetry={() => retryMutation.mutateAsync(item.id)}
-                      onRetranscribe={() => setRetranscribeItem(item)}
-                      onCancel={() => cancelMutation.mutateAsync(item.id)}
-                      onDelete={() => setPendingDeleteId(item.id)}
-                      onQuickDelete={() => deleteItemAndRefreshTags(item.id)}
+                      onRetry={retryItem}
+                      onRetranscribe={setRetranscribeItem}
+                      onCancel={cancelItem}
+                      onDelete={setPendingDeleteId}
+                      onQuickDelete={deleteItemAndRefreshTags}
                       editingTagId={editingTagId}
-                      tagDraft={tagDraft}
-                      onStartTagEdit={() => startTagEdit(item)}
+                      tagDraft={editingTagId === item.id ? tagDraft : ""}
+                      onStartTagEdit={startTagEdit}
                       onChangeTagDraft={setTagDraft}
-                      onCommitTagAdd={(value) => commitTagAdd(item.id, value)}
+                      onCommitTagAdd={commitTagAdd}
                       onCancelTagEdit={cancelTagEdit}
                       shiftHeld={shiftHeld}
                       availableTags={availableTags}

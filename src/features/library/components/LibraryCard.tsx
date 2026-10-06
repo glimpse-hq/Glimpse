@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   WarningCircle as AlertCircle,
@@ -55,26 +55,26 @@ const LibraryCard = ({
 }: {
   item: LibraryItem;
   layout: LibraryLayout;
-  onOpen: () => void;
-  onRemoveTag: (tag: string) => Promise<void>;
+  onOpen: (id: string) => void;
+  onRemoveTag: (item: LibraryItem, tag: string) => Promise<void>;
   onClickTag?: (tag: string) => void;
   editingNameId: string | null;
   editingNameDraft: string;
-  onStartNameEdit: () => void;
+  onStartNameEdit: (item: LibraryItem) => void;
   onChangeNameDraft: (value: string) => void;
-  onCommitNameEdit: () => void;
+  onCommitNameEdit: (item: LibraryItem, draft: string) => void;
   onCancelNameEdit: () => void;
-  onRetry: () => Promise<void>;
-  onRetranscribe: () => void;
-  onCancel: () => Promise<void>;
-  onDelete: () => void;
+  onRetry: (id: string) => Promise<void>;
+  onRetranscribe: (item: LibraryItem) => void;
+  onCancel: (id: string) => Promise<void>;
+  onDelete: (id: string) => void;
   // Shift-click deletes without asking.
-  onQuickDelete: () => Promise<void>;
+  onQuickDelete: (id: string) => Promise<void>;
   editingTagId: string | null;
   tagDraft: string;
-  onStartTagEdit: () => void;
+  onStartTagEdit: (id: string) => void;
   onChangeTagDraft: (value: string) => void;
-  onCommitTagAdd: (value?: string) => void;
+  onCommitTagAdd: (item: LibraryItem, value: string) => void;
   onCancelTagEdit: () => void;
   shiftHeld: boolean;
   availableTags: string[];
@@ -134,22 +134,22 @@ const LibraryCard = ({
 
   const handleDelete = () => {
     setMenuOpen(false);
-    onDelete();
+    onDelete(item.id);
   };
 
   // Failures already raise a toast from the view.
   const handleQuickDelete = () => {
-    void onQuickDelete().catch(() => {});
+    void onQuickDelete(item.id).catch(() => {});
   };
 
   const handleRetry = async () => {
     setMenuOpen(false);
     if (status.type !== "error") {
-      onRetranscribe();
+      onRetranscribe(item);
       return;
     }
     try {
-      await onRetry();
+      await onRetry(item.id);
     } catch (err) {
       console.error("Failed to retry library transcription:", err);
       showErrorToast(
@@ -164,7 +164,7 @@ const LibraryCard = ({
   const handleCancel = async () => {
     setMenuOpen(false);
     try {
-      await onCancel();
+      await onCancel(item.id);
     } catch (err) {
       console.error("Failed to cancel library transcription:", err);
       showErrorToast(
@@ -181,7 +181,7 @@ const LibraryCard = ({
       <div
         onClick={() => {
           if (!isEditingName && !isAddingTag) {
-            onOpen();
+            onOpen(item.id);
           }
         }}
         onContextMenu={(event) => {
@@ -196,7 +196,7 @@ const LibraryCard = ({
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             if (!isEditingName && !isAddingTag) {
-              onOpen();
+              onOpen(item.id);
             }
           }
         }}
@@ -361,7 +361,7 @@ const LibraryCard = ({
                       <button
                         onClick={() => {
                           setMenuOpen(false);
-                          onStartNameEdit();
+                          onStartNameEdit(item);
                         }}
                         className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors"
                       >
@@ -433,14 +433,14 @@ const LibraryCard = ({
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
-                    onCommitNameEdit();
+                    onCommitNameEdit(item, editingNameDraft);
                   }
                   if (event.key === "Escape") {
                     event.preventDefault();
                     onCancelNameEdit();
                   }
                 }}
-                onBlur={onCommitNameEdit}
+                onBlur={() => onCommitNameEdit(item, editingNameDraft)}
                 onClick={(event) => event.stopPropagation()}
                 className="w-full min-w-0 bg-transparent p-0 ui-text-title-lg font-medium leading-snug ui-color-primary border-0 border-b border-[var(--color-border-primary)] outline-hidden focus:border-[var(--color-border-hover)]"
                 autoFocus
@@ -529,7 +529,7 @@ const LibraryCard = ({
                                     event.preventDefault()
                                   }
                                   onClick={() => {
-                                    onCommitTagAdd(tag);
+                                    onCommitTagAdd(item, tag);
                                     setTagMenuOpen(false);
                                   }}
                                   className="w-full text-left px-2.5 py-1.5 ui-text-button-sm ui-color-secondary hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -561,7 +561,7 @@ const LibraryCard = ({
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
-                        onCommitTagAdd();
+                        onCommitTagAdd(item, tagDraft);
                       }
                       if (event.key === "Escape") {
                         event.preventDefault();
@@ -583,7 +583,7 @@ const LibraryCard = ({
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      onStartTagEdit();
+                      onStartTagEdit(item.id);
                     }}
                     aria-label={t({
                       id: "library.card.add_tag",
@@ -599,7 +599,7 @@ const LibraryCard = ({
                       onClick={(event) => {
                         event.stopPropagation();
                         if (shiftHeld) {
-                          void onRemoveTag(tag);
+                          void onRemoveTag(item, tag);
                         } else if (onClickTag) {
                           onClickTag(tag);
                         }
@@ -635,7 +635,7 @@ const LibraryCard = ({
     <div
       onClick={() => {
         if (!isEditingName && !isAddingTag) {
-          onOpen();
+          onOpen(item.id);
         }
       }}
       onContextMenu={(event) => {
@@ -650,7 +650,7 @@ const LibraryCard = ({
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           if (!isEditingName && !isAddingTag) {
-            onOpen();
+            onOpen(item.id);
           }
         }
       }}
@@ -678,14 +678,14 @@ const LibraryCard = ({
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  onCommitNameEdit();
+                  onCommitNameEdit(item, editingNameDraft);
                 }
                 if (event.key === "Escape") {
                   event.preventDefault();
                   onCancelNameEdit();
                 }
               }}
-              onBlur={onCommitNameEdit}
+              onBlur={() => onCommitNameEdit(item, editingNameDraft)}
               onClick={(event) => event.stopPropagation()}
               className="w-full min-w-0 bg-transparent p-0 ui-text-body font-medium ui-color-primary border-0 border-b border-[var(--color-border-primary)] outline-hidden focus:border-[var(--color-border-hover)]"
               autoFocus
@@ -807,7 +807,7 @@ const LibraryCard = ({
                             type="button"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => {
-                              onCommitTagAdd(tag);
+                              onCommitTagAdd(item, tag);
                               setTagMenuOpen(false);
                             }}
                             className="w-full text-left px-2.5 py-1.5 ui-text-button-sm ui-color-secondary hover:bg-[var(--color-bg-elevated)] hover:text-[var(--color-text-primary)] transition-colors"
@@ -839,7 +839,7 @@ const LibraryCard = ({
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
-                  onCommitTagAdd();
+                  onCommitTagAdd(item, tagDraft);
                 }
                 if (event.key === "Escape") {
                   event.preventDefault();
@@ -861,7 +861,7 @@ const LibraryCard = ({
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
-                onStartTagEdit();
+                onStartTagEdit(item.id);
               }}
               aria-label={t({
                 id: "library.card.add_tag",
@@ -877,7 +877,7 @@ const LibraryCard = ({
                 onClick={(event) => {
                   event.stopPropagation();
                   if (shiftHeld) {
-                    void onRemoveTag(tag);
+                    void onRemoveTag(item, tag);
                   } else if (onClickTag) {
                     onClickTag(tag);
                   }
@@ -1005,7 +1005,7 @@ const LibraryCard = ({
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  onStartNameEdit();
+                  onStartNameEdit(item);
                 }}
                 className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-[var(--color-bg-elevated)] transition-colors"
               >
@@ -1067,4 +1067,4 @@ const LibraryCard = ({
   );
 };
 
-export default LibraryCard;
+export default memo(LibraryCard);
