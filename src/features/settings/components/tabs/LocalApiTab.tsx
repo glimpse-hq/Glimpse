@@ -329,6 +329,10 @@ const LocalApiTab = ({
                   className="mt-1.5 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary focus:outline-none focus:border-content-primary transition-colors"
                   type="password"
                   value={apiKey}
+                  aria-label={t({
+                    id: "settings.local_api.api_key",
+                    message: "API key",
+                  })}
                   onChange={(event) => setApiKey(event.target.value)}
                   placeholder={
                     lanEnabled
