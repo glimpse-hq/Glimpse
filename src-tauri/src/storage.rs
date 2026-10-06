@@ -1088,6 +1088,11 @@ impl StorageManager {
         crate::library::repo::get_recoverable_library_items(&conn, &self.library_root)
     }
 
+    pub fn mark_library_item_cancelling(&self, id: &str) -> Result<bool> {
+        let conn = self.connection.lock();
+        crate::library::repo::mark_library_item_cancelling(&conn, id)
+    }
+
     pub fn update_library_item(
         &self,
         id: &str,

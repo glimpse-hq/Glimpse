@@ -222,8 +222,18 @@ pub fn cancel_library_transcription(
         );
         return Ok(());
     }
-    state.cancel_library_transcription(&id);
-    set_library_status(&state.storage(), &id, LibraryItemStatus::Cancelling);
+    // A job that already ended set its own final status, and nothing would
+    // move the item on from Cancelling.
+    if !state.library_job_pending(&id) {
+        return Ok(());
+    }
+    let marked = state
+        .storage()
+        .mark_library_item_cancelling(&id)
+        .map_err(|err| format!("Failed to cancel library item: {err}"))?;
+    if marked {
+        state.cancel_library_transcription(&id);
+    }
     Ok(())
 }
 

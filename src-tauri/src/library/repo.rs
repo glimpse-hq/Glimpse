@@ -119,6 +119,16 @@ pub(crate) fn get_library_items_page(
     Ok((items, has_more))
 }
 
+/// Marks an active item as cancelling; false when it already has another status.
+pub(crate) fn mark_library_item_cancelling(conn: &Connection, id: &str) -> Result<bool> {
+    let changed = conn.execute(
+        "UPDATE library_items SET status = 'cancelling', progress = 0
+         WHERE id = ?1 AND status IN ('pending', 'importing', 'transcribing')",
+        params![id],
+    )?;
+    Ok(changed > 0)
+}
+
 pub(crate) fn get_recoverable_library_items(
     conn: &Connection,
     root: &Path,
