@@ -15,6 +15,29 @@ mod macos {
         unsafe { AXIsProcessTrusted() != 0 }
     }
 
+    static ACCESSIBILITY_WATCH: AtomicBool = AtomicBool::new(false);
+
+    /// Polls until accessibility is granted, then runs `on_granted` once.
+    /// Does nothing while a watch is already running.
+    pub fn watch_accessibility_grant(on_granted: impl FnOnce() + Send + 'static) {
+        if ACCESSIBILITY_WATCH.swap(true, Ordering::AcqRel) {
+            return;
+        }
+
+        let spawned = std::thread::Builder::new()
+            .name("accessibility-watch".to_string())
+            .spawn(move || {
+                while !check_accessibility_permission() {
+                    std::thread::sleep(std::time::Duration::from_secs(1));
+                }
+                ACCESSIBILITY_WATCH.store(false, Ordering::Release);
+                on_granted();
+            });
+        if spawned.is_err() {
+            ACCESSIBILITY_WATCH.store(false, Ordering::Release);
+        }
+    }
+
     /// Open System Settings to the Accessibility privacy pane.
     pub fn open_accessibility_settings() -> Result<(), String> {
         let result = Command::new("open")

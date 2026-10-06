@@ -124,6 +124,8 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
+#[cfg(target_os = "macos")]
+pub(crate) const EVENT_ACCESSIBILITY_GRANTED: &str = "permissions:accessibility-granted";
 const EVENT_LICENSE_CHANGED: &str = "license:changed";
 // Only calls the server when the saved license is due for a refresh.
 const LICENSE_SYNC_INTERVAL: Duration = Duration::from_secs(15 * 60);
@@ -510,6 +512,8 @@ pub fn run() {
             if let Err(err) = pill::register_shortcuts(handle) {
                 tracing::error!("Failed to register shortcuts: {err}");
             }
+            #[cfg(target_os = "macos")]
+            pill::report_missing_accessibility_at_launch(handle);
 
             let state = handle.state::<AppState>();
             if state.should_open_settings_on_startup() {
@@ -670,6 +674,7 @@ pub fn run() {
             analytics::report_frontend_crash,
             analytics::track_onboarding_step_viewed,
             analytics::track_onboarding_source,
+            analytics::track_onboarding_model_chosen,
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
             analytics::track_gate_blocked,
@@ -1417,8 +1422,10 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
 }
 
 #[tauri::command]
-fn open_accessibility_settings() -> Result<(), String> {
-    permissions::open_accessibility_settings()
+fn open_accessibility_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    permissions::open_accessibility_settings()?;
+    analytics::track_permission_prompt_opened(&app, "accessibility");
+    Ok(())
 }
 
 #[tauri::command]

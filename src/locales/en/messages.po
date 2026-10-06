@@ -725,6 +725,11 @@ msgid "settings.modal.tab.about"
 msgstr "About"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_title"
+msgstr "Accessibility"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.accessibility"
 msgstr "Accessibility"
@@ -733,6 +738,11 @@ msgstr "Accessibility"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.title"
 msgstr "Accessibility"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_granted"
+msgstr "Accessibility is on. Your shortcut works now."
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2786,6 +2796,11 @@ msgid "native.toast.retranscribe_failed"
 msgstr "Glimpse couldn't transcribe this again, so it kept the earlier transcript."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_paste"
+msgstr "Glimpse couldn't type this because Accessibility access is off. Your text is on the clipboard, so you can paste it with Command-V."
+
+#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "Glimpse hit an error"
@@ -4073,6 +4088,11 @@ msgstr "Open Settings"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
 msgstr "Open Settings"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.open_system_settings"
+msgstr "Open System Settings"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -6229,6 +6249,11 @@ msgstr "Your model is still downloading. Please wait."
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "Your recent transcriptions will appear here"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_shortcut"
+msgstr "Your shortcut won't work until you allow Glimpse in Accessibility. If Glimpse is already on, turn it off and on again."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

@@ -937,17 +937,25 @@ async fn process_transcript_text(
                     );
                 }
             }
-            Ok(Some((Err(err), _, _))) => emit_auto_paste_error(
-                app,
-                format!("Auto paste failed: {err}"),
-                analytics::error_detail(&err),
-                audio_duration_seconds,
-            ),
+            Ok(Some((Err(err), _, _))) => {
+                #[cfg(target_os = "macos")]
+                let accessibility_missing = err.is::<assistive::AccessibilityMissing>();
+                #[cfg(not(target_os = "macos"))]
+                let accessibility_missing = false;
+                emit_auto_paste_error(
+                    app,
+                    format!("Auto paste failed: {err}"),
+                    analytics::error_detail(&err),
+                    audio_duration_seconds,
+                    accessibility_missing,
+                )
+            }
             Err(err) => emit_auto_paste_error(
                 app,
                 format!("Auto paste task error: {err}"),
                 "task_failed".into(),
                 audio_duration_seconds,
+                false,
             ),
         }
     }
@@ -1450,6 +1458,7 @@ fn emit_auto_paste_error(
     message: String,
     reason: analytics::ErrorDetail,
     audio_duration_seconds: f32,
+    accessibility_missing: bool,
 ) {
     let settings = app.state::<AppState>().current_settings();
     analytics::track_auto_paste_failed(
@@ -1458,8 +1467,18 @@ fn emit_auto_paste_error(
         &resolve_speech_model_label(&settings),
         reason,
         audio_duration_seconds,
-        crate::pill::cached_accessibility_granted(),
+        if accessibility_missing {
+            Some(false)
+        } else {
+            crate::pill::cached_accessibility_granted()
+        },
     );
+
+    #[cfg(target_os = "macos")]
+    if accessibility_missing {
+        crate::pill::show_accessibility_toast(app, "native.toast.accessibility_paste");
+        return;
+    }
 
     toast::emit_toast(
         app,

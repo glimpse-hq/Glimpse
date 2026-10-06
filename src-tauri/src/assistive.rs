@@ -480,9 +480,35 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
     Ok(())
 }
 
+/// The paste was skipped because macOS Accessibility access is off. The text
+/// was left on the clipboard instead.
+#[cfg(target_os = "macos")]
+#[derive(Debug)]
+pub struct AccessibilityMissing;
+
+#[cfg(target_os = "macos")]
+impl std::fmt::Display for AccessibilityMissing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Accessibility permission is not granted")
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl std::error::Error for AccessibilityMissing {}
+
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn paste_text(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+
+    // Without Accessibility access macOS drops the synthetic Cmd+V without an
+    // error, and the clipboard restore below would then lose the text.
+    #[cfg(target_os = "macos")]
+    if !crate::permissions::check_accessibility_permission() {
+        clipboard
+            .set_text(text)
+            .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+        return Err(AccessibilityMissing.into());
+    }
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 

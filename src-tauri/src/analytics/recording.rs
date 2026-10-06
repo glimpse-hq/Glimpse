@@ -132,6 +132,21 @@ pub fn track_permission_prompt_opened(app: &tauri::AppHandle<AppRuntime>, permis
     );
 }
 
+/// Records that a missing system permission was granted while the app was
+/// running, and whether setup was already finished at that point.
+#[cfg(target_os = "macos")]
+pub fn track_permission_granted(
+    app: &tauri::AppHandle<AppRuntime>,
+    permission: &str,
+    onboarded: bool,
+) {
+    capture_event(
+        app,
+        "permission_granted",
+        json!({ "permission": permission, "onboarded": onboarded }),
+    );
+}
+
 static INTEGRATIONS_SEEN: Mutex<Option<HashSet<(&'static str, &'static str)>>> = Mutex::new(None);
 
 /// Records, once per app session, that an outside tool used a Glimpse

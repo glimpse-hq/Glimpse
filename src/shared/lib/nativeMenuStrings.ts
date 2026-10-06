@@ -179,6 +179,26 @@ export const NATIVE_MENU_STRINGS = [
   }),
   msg({ id: "native.toast.model_action", message: "Open Models" }),
 
+  msg({ id: "native.toast.accessibility_title", message: "Accessibility" }),
+  msg({
+    id: "native.toast.accessibility_shortcut",
+    message:
+      "Your shortcut won't work until you allow Glimpse in Accessibility. If Glimpse is already on, turn it off and on again.",
+  }),
+  msg({
+    id: "native.toast.accessibility_paste",
+    message:
+      "Glimpse couldn't type this because Accessibility access is off. Your text is on the clipboard, so you can paste it with Command-V.",
+  }),
+  msg({
+    id: "native.toast.accessibility_granted",
+    message: "Accessibility is on. Your shortcut works now.",
+  }),
+  msg({
+    id: "native.toast.open_system_settings",
+    message: "Open System Settings",
+  }),
+
   msg({
     id: "native.toast.speaker_model_upgraded",
     message:

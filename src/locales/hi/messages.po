@@ -725,6 +725,11 @@ msgid "settings.modal.tab.about"
 msgstr "जानकारी"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.accessibility"
 msgstr "सुलभता"
@@ -733,6 +738,11 @@ msgstr "सुलभता"
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.accessibility.title"
 msgstr "सुलभता"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_granted"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -2786,6 +2796,11 @@ msgid "native.toast.retranscribe_failed"
 msgstr "Glimpse इसे फिर से ट्रांसक्राइब नहीं कर सका, इसलिए उसने पहले वाला ट्रांसक्रिप्ट रखा।"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_paste"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/main.tsx
 msgid "crash.title"
 msgstr "Glimpse में एक त्रुटि हुई"
@@ -4073,6 +4088,11 @@ msgstr "सेटिंग्स खोलें"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.open_settings"
 msgstr "सेटिंग्स खोलें"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.open_system_settings"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -6229,6 +6249,11 @@ msgstr "आपका मॉडल अभी भी डाउनलोड हो 
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "आपके हाल के ट्रांसक्रिप्शन यहाँ दिखेंगे"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.accessibility_shortcut"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
