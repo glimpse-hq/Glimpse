@@ -1,6 +1,6 @@
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -8,6 +8,7 @@ import { X, Warning, Plus } from "@phosphor-icons/react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import {
   hasModelCapability,
   MODEL_CAPABILITY_DIARIZATION,
@@ -176,6 +177,9 @@ const LibraryImportModal = ({
     }
   };
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true, onCancel);
+
   const handleConfirm = async () => {
     if (!selectedModelKey) return;
     setIsImporting(true);
@@ -203,8 +207,10 @@ const LibraryImportModal = ({
       onClick={onCancel}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="import-modal-title"
     >
       <motion.div
+        ref={dialogRef}
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -214,7 +220,10 @@ const LibraryImportModal = ({
       >
         <div className="flex items-start justify-between px-5 pt-4">
           <div className="min-w-0">
-            <h2 className="ui-text-body-lg font-semibold text-content-primary">
+            <h2
+              id="import-modal-title"
+              className="ui-text-body-lg font-semibold text-content-primary"
+            >
               {t({
                 id: "library.import.title",
                 message: "Import to Library",
