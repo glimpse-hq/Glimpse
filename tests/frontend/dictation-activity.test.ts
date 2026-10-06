@@ -43,11 +43,7 @@ describe("dictation activity grid", () => {
     expect(grid[grid.length - 1][6].key).toBe("2026-10-10");
   });
 
-  // Bug: activityStart steps back 370 days and then back again to Sunday, so
-  // on any day but Saturday the grid ends on the previous Saturday. Today (and
-  // the rest of the current week) is never drawn and `future` is never set.
-  // Example: a Wednesday 2026-10-07 builds 2025-09-28..2026-10-03.
-  test.skip("includes today and marks later days in its week as future", () => {
+  test("includes today and marks later days in its week as future", () => {
     const wednesday = new Date(2026, 9, 7);
     const cells = buildActivityGrid(
       [day("2026-10-07", 3, 120), day("2026-10-08", 9, 900)],
@@ -59,6 +55,18 @@ describe("dictation activity grid", () => {
       future: false,
     });
     expect(cells.find((cell) => cell.key === "2026-10-08")?.future).toBe(true);
+  });
+
+  test("the last column holds today on every weekday", () => {
+    for (let offset = 0; offset < 7; offset += 1) {
+      const today = new Date(2026, 9, 4 + offset, 12);
+      const last = buildActivityGrid([], today).at(-1)!;
+      expect(last[today.getDay()]).toMatchObject({
+        key: localDayKey(today),
+        future: false,
+      });
+      expect(last.filter((cell) => cell.future)).toHaveLength(6 - offset);
+    }
   });
 
   test("fills counts by day key and totals each week", () => {
