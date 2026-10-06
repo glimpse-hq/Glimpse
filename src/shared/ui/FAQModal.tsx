@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { detectAppPlatform } from "../../platform/service";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface FAQModalProps {
   isOpen: boolean;
@@ -39,6 +40,7 @@ const FaqLink = ({ href, children }: { href: string; children: ReactNode }) => (
 const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
   const { t } = useLingui();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(false);
 
@@ -48,6 +50,8 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
     setShowTopFade(el.scrollTop > 1);
     setShowBottomFade(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
   }, []);
+
+  useFocusTrap(dialogRef, isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -170,6 +174,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
           aria-labelledby="faq-title"
         >
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -196,6 +201,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-1.5 rounded-md text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
                 aria-label={t({
