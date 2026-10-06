@@ -26,6 +26,19 @@ export function ModelDownloadStatus({
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-6 flex h-5 justify-center">
+      <span className="sr-only" aria-live="polite">
+        {status === "complete"
+          ? t({
+              id: "onboarding.download_status.ready",
+              message: "Model ready",
+            })
+          : status === "error"
+            ? t({
+                id: "onboarding.download_status.failed",
+                message: "Model download failed",
+              })
+            : null}
+      </span>
       <AnimatePresence initial={false} mode="wait">
         {visible ? (
           <motion.div
@@ -55,7 +68,12 @@ export function ModelDownloadStatus({
               </span>
             ) : status === "complete" ? (
               <>
-                <Check size={12} weight="bold" className="text-local" />
+                <Check
+                  size={12}
+                  weight="bold"
+                  className="text-local"
+                  aria-hidden="true"
+                />
                 {t({
                   id: "onboarding.download_status.ready",
                   message: "Model ready",

@@ -2410,6 +2410,11 @@ msgid "onboarding.download_status.downloading_files"
 msgstr "Downloading model {percent}% ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
+#: src/features/updates/components/UpdateChecker.tsx
+msgid "updates.downloading_aria"
+msgstr "Downloading update"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update.body"
 msgstr "downloads and installs updates in the background."

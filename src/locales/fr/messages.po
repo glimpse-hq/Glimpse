@@ -2410,6 +2410,11 @@ msgid "onboarding.download_status.downloading_files"
 msgstr "Téléchargement du modèle {percent} % ({fileIndex}/{fileCount})"
 
 #. js-lingui-explicit-id
+#: src/features/updates/components/UpdateChecker.tsx
+msgid "updates.downloading_aria"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_update.body"
 msgstr "télécharge et installe les mises à jour en arrière-plan."
