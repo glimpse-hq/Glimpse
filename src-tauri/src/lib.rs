@@ -177,6 +177,7 @@ where
         let app = app.clone();
         let key = license::deep_link_license_key(raw_url);
         tauri::async_runtime::spawn(async move {
+            license::note_checkout_returned(&app);
             // A link never replaces a license that is already active.
             if let Some(key) = key
                 && let Some(state) = app.try_state::<AppState>()

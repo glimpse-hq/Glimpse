@@ -295,9 +295,14 @@ pub(crate) fn checkout_returned_this_session() -> bool {
     CHECKOUT_RETURNED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+/// Must run before a key from the link is activated, so the activation counts
+/// as coming from checkout.
+pub fn note_checkout_returned(app: &AppHandle<AppRuntime>) {
     CHECKOUT_RETURNED.store(true, std::sync::atomic::Ordering::Relaxed);
     crate::analytics::track_checkout_returned(app);
+}
+
+pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
     tray::toggle_settings_window(app)
         .map_err(|err| format!("Failed to open settings for license deep link: {err}"))?;
     app.emit(EVENT_LICENSE_CHECKOUT_RETURNED, ())
