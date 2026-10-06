@@ -1222,7 +1222,10 @@ impl AppState {
     }
 
     pub(crate) fn library_job_pending(&self, id: &str) -> bool {
-        self.library_tokens.lock().contains_key(id)
+        // Each lock is released before the next is taken; nesting tokens
+        // inside active here would invert the order cancelling takes them in.
+        let has_token = self.library_tokens.lock().contains_key(id);
+        has_token
             || self.library_active.lock().as_deref() == Some(id)
             || self
                 .library_queue
@@ -1239,7 +1242,13 @@ impl AppState {
     }
 
     pub fn cancel_library_transcription(&self, id: &str) {
-        if let Some(token) = self.library_tokens.lock().get(id) {
+        // A claimed job registers its token only once its task runs, so the
+        // token is created here for it to pick up already cancelled.
+        let active = self.library_active.lock();
+        let mut tokens = self.library_tokens.lock();
+        if active.as_deref() == Some(id) {
+            tokens.entry(id.to_string()).or_default().cancel();
+        } else if let Some(token) = tokens.get(id) {
             token.cancel();
         }
     }
