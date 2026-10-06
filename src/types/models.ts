@@ -93,6 +93,7 @@ export type LocalApiLogEntry = {
 
 export type LocalApiStatus = {
   running: boolean;
+  starting: boolean;
   host: string;
   port: number;
   model: string;

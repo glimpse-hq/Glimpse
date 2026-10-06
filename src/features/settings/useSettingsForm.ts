@@ -117,7 +117,10 @@ async function waitForLocalApiStopped(
 ): Promise<LocalApiStatus> {
   const started = Date.now();
   let latest = await modelsApi.getLocalApiStatus();
-  while (latest.running && Date.now() - started < timeoutMs) {
+  while (
+    (latest.running || latest.starting) &&
+    Date.now() - started < timeoutMs
+  ) {
     await new Promise((resolve) => window.setTimeout(resolve, 100));
     latest = await modelsApi.getLocalApiStatus();
   }

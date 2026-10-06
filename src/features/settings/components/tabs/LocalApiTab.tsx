@@ -68,6 +68,7 @@ const LocalApiTab = ({
     (entry) => modelStatus[entry.key]?.installed,
   );
   const running = status?.running ?? false;
+  const starting = status?.starting ?? false;
   const logs = status?.logs ?? [];
   const effectiveHost = running ? (status?.host ?? host) : host;
   const effectivePort = running ? (status?.port ?? port) : port;
@@ -164,7 +165,7 @@ const LocalApiTab = ({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            {running ? (
+            {running || starting ? (
               <span className="opacity-80">
                 <ActivityDots
                   dotSize={3}
@@ -190,10 +191,15 @@ const LocalApiTab = ({
                     id: "settings.local_api.status.running",
                     message: "Running",
                   })
-                : t({
-                    id: "settings.local_api.status.stopped",
-                    message: "Stopped",
-                  })}
+                : starting
+                  ? t({
+                      id: "settings.local_api.status.starting",
+                      message: "Starting",
+                    })
+                  : t({
+                      id: "settings.local_api.status.stopped",
+                      message: "Stopped",
+                    })}
             </h2>
           </div>
           <button
@@ -257,7 +263,7 @@ const LocalApiTab = ({
           </button>
         </div>
 
-        {running ? (
+        {running || starting ? (
           <button
             className="ml-6 min-w-[92px] shrink-0 whitespace-nowrap px-5 py-1.5 rounded-md bg-red-500 hover:bg-red-400 text-white ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(248,113,113,0.35),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:translate-y-[1px] active:shadow-none"
             onClick={onStop}
