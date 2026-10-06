@@ -201,6 +201,11 @@ impl LicenseFailure {
     }
 }
 
+// Held across each activate, refresh and deactivate, network call included, so
+// a refresh that started earlier can't write its stale answer over a newer key
+// or a deactivation.
+static LICENSE_CHANGE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 static GATE_CACHE: Mutex<Option<(bool, DateTime<Utc>)>> = Mutex::new(None);
 const GATE_CACHE_TTL_SECONDS: i64 = 60;
 
@@ -414,6 +419,7 @@ pub async fn activate_license(
     args: ActivateLicenseArgs,
 ) -> Result<LicenseState, String> {
     let key = normalize_license_key(&args.key)?;
+    let _change = LICENSE_CHANGE.lock().await;
     let body = ActivateRequest {
         key: &key,
         label: activation_label(),
@@ -432,6 +438,7 @@ pub async fn refresh_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
+    let _change = LICENSE_CHANGE.lock().await;
     let Some(key) = read_license_key(store)? else {
         return get_license_state(store);
     };
@@ -458,6 +465,7 @@ pub async fn deactivate_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
+    let _change = LICENSE_CHANGE.lock().await;
     let key = match read_license_key(store) {
         Ok(key) => key,
         Err(err) => {
