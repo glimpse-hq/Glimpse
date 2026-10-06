@@ -520,14 +520,16 @@ const LibraryDetail = ({
   const releaseAudioSource = useCallback(() => {
     stopSeekLoop();
     const audio = audioRef.current;
+    const secondary = secondaryAudioRef.current;
     audioRef.current = null;
-    if (audio) {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
+    for (const element of [audio, secondary]) {
+      if (!element) continue;
+      element.pause();
+      element.removeAttribute("src");
+      element.load();
     }
     updateIsPlaying(false);
-    return audio;
+    return { audio, secondary };
   }, [stopSeekLoop, updateIsPlaying]);
 
   const setPlaybackRateValue = useCallback((value: number) => {
@@ -3266,12 +3268,16 @@ const LibraryDetail = ({
         onCancel={closeDeleteConfirm}
         onConfirm={() => {
           setShowDeleteConfirm(false);
-          const audio = releaseAudioSource();
+          const { audio, secondary } = releaseAudioSource();
           void onDelete().catch(() => {
             if (audio) {
               audio.src = audioUrl;
               audioRef.current = audio;
               audio.load();
+            }
+            if (secondary && secondaryAudioUrl) {
+              secondary.src = secondaryAudioUrl;
+              secondary.load();
             }
           });
         }}
