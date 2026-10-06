@@ -184,7 +184,8 @@ export function useRetryTranscription(enabled: boolean = true) {
       });
     };
 
-    // Errors carry no record id, so they end every retry.
+    // Transcription errors carry no record id, so they end every retry.
+    // Cleanup errors belong to a cleanup retry, not a transcription one.
     listen<CompletePayload>("transcription:complete", (event) => {
       if (!cancelled) clearRetrying(event.payload?.record?.id);
     }).then((fn) => {
@@ -192,8 +193,10 @@ export function useRetryTranscription(enabled: boolean = true) {
       else unlisteners.push(fn);
     });
 
-    listen("transcription:error", () => {
-      if (!cancelled) clearRetrying();
+    listen<ErrorPayload>("transcription:error", (event) => {
+      if (!cancelled && event.payload?.stage !== "llm_cleanup") {
+        clearRetrying();
+      }
     }).then((fn) => {
       if (cancelled) void Promise.resolve(fn()).catch(() => {});
       else unlisteners.push(fn);
