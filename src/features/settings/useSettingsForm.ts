@@ -128,6 +128,12 @@ async function waitForLocalApiStopped(
   return latest;
 }
 
+// The tray and app menu can change these while Settings has a save pending.
+type MenuSettings = Pick<
+  StoredSettings,
+  "microphone_device" | "local_model" | "remote_speech_enabled"
+>;
+
 const defaultShortcutBindings = (): ShortcutBindings => ({
   smart: [
     { shortcut: "Control+Space", temporary: false, cleanup_enabled: false },
@@ -359,6 +365,8 @@ export function useSettingsForm({
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
+  const hydratedSettingsRef = useRef<StoredSettings | null>(null);
+  const sentMenuSettingsRef = useRef<MenuSettings | null>(null);
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve(true));
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -567,6 +575,8 @@ export function useSettingsForm({
 
   const hydrateFromSettings = useCallback(
     (s: StoredSettings) => {
+      hydratedSettingsRef.current = s;
+      sentMenuSettingsRef.current = null;
       const hydratedBindings = bindingsFromSettings(s);
       persistedShortcutBindingsRef.current = hydratedBindings;
       clearInvalidShortcutDraft();
@@ -615,6 +625,35 @@ export function useSettingsForm({
     },
     [clearInvalidShortcutDraft],
   );
+
+  // While a save is pending, takes menu changes the form hasn't touched, so
+  // the save doesn't write the old values back. Our own saves echo back too;
+  // they match what was sent and are skipped.
+  const rebaseMenuSettings = useCallback((s: StoredSettings) => {
+    const base = hydratedSettingsRef.current;
+    hydratedSettingsRef.current = s;
+    if (!base) return;
+    const sent = sentMenuSettingsRef.current;
+    const changedOutside = <K extends keyof MenuSettings>(key: K) =>
+      s[key] !== base[key] && s[key] !== sent?.[key];
+    if (changedOutside("microphone_device")) {
+      setMicrophoneDevice((current) =>
+        current === base.microphone_device ? s.microphone_device : current,
+      );
+    }
+    if (changedOutside("local_model")) {
+      setLocalModel((current) =>
+        current === base.local_model ? s.local_model : current,
+      );
+    }
+    if (changedOutside("remote_speech_enabled")) {
+      setRemoteSpeechEnabled((current) =>
+        current === base.remote_speech_enabled
+          ? s.remote_speech_enabled
+          : current,
+      );
+    }
+  }, []);
 
   const setAutoLaunchEnabled = useCallback((enabled: boolean) => {
     setAutoLaunchEnabledState(enabled);
@@ -857,6 +896,11 @@ export function useSettingsForm({
         .catch(() => false)
         .then(async () => {
           isSavingRef.current = true;
+          sentMenuSettingsRef.current = {
+            microphone_device: args.microphoneDevice,
+            local_model: args.localModel,
+            remote_speech_enabled: args.remoteSpeechEnabled,
+          };
           try {
             const { shortcut_error: shortcutError } =
               await invoke<UpdateSettingsResult>("update_settings", { args });
@@ -1162,12 +1206,16 @@ export function useSettingsForm({
     }
 
     if (!settingsQuery.data) return;
-    if (isSavingRef.current || saveTimeoutRef.current !== null) return;
+    if (isSavingRef.current || saveTimeoutRef.current !== null) {
+      rebaseMenuSettings(settingsQuery.data);
+      return;
+    }
 
     hydrateFromSettings(settingsQuery.data);
   }, [
     hydrateFromSettings,
     isOpen,
+    rebaseMenuSettings,
     settingsQuery.data,
     settingsQuery.error,
     showSettingsError,
