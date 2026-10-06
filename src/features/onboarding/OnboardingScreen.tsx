@@ -15,8 +15,8 @@ import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvent
 import { isBuiltInModel } from "../../shared/lib/modelStats";
 import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
 import { pricingUrlFor } from "../license/purchaseConfig";
-import { useSettings } from "../settings/queries";
-import { getSettings } from "../settings/api";
+import { settingsKeys, useSettings } from "../settings/queries";
+import { checkAccessibilityPermission, getSettings } from "../settings/api";
 import {
   modelKeys,
   useModelCatalog,
@@ -60,8 +60,6 @@ const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
 const onboardingPermissionKeys = {
   all: ["onboarding", "permissions"] as const,
   microphone: () => [...onboardingPermissionKeys.all, "microphone"] as const,
-  accessibility: () =>
-    [...onboardingPermissionKeys.all, "accessibility"] as const,
 };
 
 const downloadableModels = (models: ModelInfo[]) =>
@@ -126,9 +124,6 @@ const pickDefaultOnboardingModel = (
 
 const checkMicrophonePermission = () =>
   invoke<boolean>("check_microphone_permission");
-
-const checkAccessibilityPermission = () =>
-  invoke<boolean>("check_accessibility_permission");
 
 const refreshModelStatus = (queryClient: QueryClient, model: string) =>
   queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
@@ -340,7 +335,7 @@ export default function OnboardingScreen({
   });
 
   const accessibilityPermissionQuery = useQuery({
-    queryKey: onboardingPermissionKeys.accessibility(),
+    queryKey: settingsKeys.accessibility(),
     queryFn: checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
     refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
@@ -385,7 +380,7 @@ export default function OnboardingScreen({
     },
     onSettled: () => {
       void queryClient.invalidateQueries({
-        queryKey: onboardingPermissionKeys.accessibility(),
+        queryKey: settingsKeys.accessibility(),
       });
     },
   });

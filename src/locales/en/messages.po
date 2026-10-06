@@ -2916,6 +2916,11 @@ msgid "settings.general.shortcuts.hold"
 msgstr "Hold"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.reminder.hold"
+msgstr "Hold {shortcutLabel} and speak to dictate in any app."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_empty_body"
 msgstr "Hold a little longer, then try again."
@@ -4090,6 +4095,11 @@ msgid "record.error.open_settings"
 msgstr "Open Settings"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.accessibility_open"
+msgstr "Open System Settings"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_system_settings"
 msgstr "Open System Settings"
@@ -4244,6 +4254,11 @@ msgstr "Practice your first dictation"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.preloaded_model"
 msgstr "Preloaded model"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.reminder.toggle"
+msgstr "Press {shortcutLabel} to dictate in any app, then press it again to stop."
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -6249,6 +6264,11 @@ msgstr "Your model is still downloading. Please wait."
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "Your recent transcriptions will appear here"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.accessibility_missing"
+msgstr "Your shortcut needs Accessibility access to work."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

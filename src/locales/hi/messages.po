@@ -2916,6 +2916,11 @@ msgid "settings.general.shortcuts.hold"
 msgstr "दबाए रखें"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.reminder.hold"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.failed_empty_body"
 msgstr "थोड़ा और देर तक दबाए रखें, फिर दोबारा कोशिश करें।"
@@ -4090,6 +4095,11 @@ msgid "record.error.open_settings"
 msgstr "सेटिंग्स खोलें"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.accessibility_open"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_system_settings"
 msgstr ""
@@ -4244,6 +4254,11 @@ msgstr "अपना पहला डिक्टेशन अभ्यास �
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.preloaded_model"
 msgstr "पूर्व-लोडेड मॉडल"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.reminder.toggle"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -6249,6 +6264,11 @@ msgstr "आपका मॉडल अभी भी डाउनलोड हो 
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.empty"
 msgstr "आपके हाल के ट्रांसक्रिप्शन यहाँ दिखेंगे"
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.accessibility_missing"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
