@@ -275,12 +275,23 @@ pub async fn export_dataset(
     .await
     .map_err(|err| format!("Export task failed: {err}"))??;
 
-    let mut message = format!("Exported {} audio and text pairs", summary.pairs);
-    if summary.skipped_short > 0 {
-        message.push_str(&format!(", skipped {} short clips", summary.skipped_short));
-    }
-    if summary.skipped > 0 {
-        message.push_str(&format!(", {} files could not be copied", summary.skipped));
+    let mut message = crate::toast::native_format(
+        &app,
+        "native.toast.export_done",
+        &[("pairs", &summary.pairs.to_string())],
+    );
+    for (key, count) in [
+        ("native.toast.export_skipped_short", summary.skipped_short),
+        ("native.toast.export_skipped_files", summary.skipped),
+    ] {
+        if count > 0 {
+            message.push(' ');
+            message.push_str(&crate::toast::native_format(
+                &app,
+                key,
+                &[("count", &count.to_string())],
+            ));
+        }
     }
     let toast_type = if summary.skipped > 0 {
         "info"

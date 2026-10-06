@@ -565,6 +565,11 @@ msgstr "{avg, plural, one {Etwa # Wort pro Diktat heute} other {Etwa # Wörter p
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.export_skipped_files"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.milestone"
 msgstr "{count} Wörter mit Glimpse diktiert!"
 
@@ -572,6 +577,11 @@ msgstr "{count} Wörter mit Glimpse diktiert!"
 #: src/features/license/components/MemberCard.tsx
 msgid "member_card.coverage_with_devices"
 msgstr "{coverageBase} · {activeDevices} von {deviceLimit} Geräten aktiv"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.trial_days_left"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2536,6 +2546,11 @@ msgid "settings.about.data.export_confirm"
 msgstr "Exportieren …"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.export_done"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.listen_on_lan_help"
 msgstr "für andere Geräte in deinem Netzwerk freigeben"
@@ -3155,6 +3170,11 @@ msgstr "Groß"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.trial_last_day"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recent"
 msgstr "Letzte Transkriptionen"
 
@@ -3383,6 +3403,11 @@ msgstr "Hauptversion"
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.shortcuts.help_temporary"
 msgstr "Macht ein Kurzbefehl temporär. Es werden weder Audio noch Transkript noch Verlauf gespeichert."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.manage_license"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/WindowControls.tsx
@@ -4916,6 +4941,11 @@ msgid "dropdown.search_placeholder"
 msgstr "Suchen …"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.see_options"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.include_timestamps_hint"
 msgstr "Segmentstart- und -endzeiten"
@@ -5130,6 +5160,11 @@ msgstr "Vorerst überspringen"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.skip_short"
 msgstr "Kurze Clips überspringen"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.export_skipped_short"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5756,6 +5791,11 @@ msgid "library.modal.transcription_failed"
 msgstr "Transkription fehlgeschlagen"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_empty"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.transcription_language"
 msgstr "Transkriptionssprache"
@@ -5764,6 +5804,11 @@ msgstr "Transkriptionssprache"
 #: src/features/import/components/ImportStep.tsx
 msgid "import.cat.model"
 msgstr "Transkriptionsmodell"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_missing"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5823,6 +5868,11 @@ msgstr "Aktiviert das automatische Einfügen in jede App."
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cleanup_before"
 msgstr "Ähm, ja, schick es morgen"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.copy_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6146,6 +6196,11 @@ msgid "native.toast.recording_disk_full"
 msgstr "Ihr Speicherplatz ist voll, daher hat Glimpse die Aufnahme beendet. Das bisher Aufgezeichnete wurde gespeichert."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.license_inactive"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.checkout_return_hint_generic"
 msgstr "Ihr Lizenzschlüssel steht in Ihrer Kaufbeleg-E-Mail. Fügen Sie ihn hier ein oder fügen Sie die gesamte E-Mail ein."
@@ -6179,6 +6234,11 @@ msgstr "Ihr Spracherkennungsanbieter"
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.trial.text_ended_on"
 msgstr "Ihre Testversion endete am"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.trial_expired"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
