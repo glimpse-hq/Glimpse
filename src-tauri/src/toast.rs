@@ -172,7 +172,11 @@ pub fn toast_dismissed(app: AppHandle<AppRuntime>) {
     if state.pill().status() == pill::PillStatus::Error {
         state.pill().reset(&app);
     }
-    hide(&app);
+    // The toast window already cleared itself; emitting the hide event back
+    // would make it dismiss again and call this in a loop.
+    if let Some(toast_window) = app.get_webview_window(WINDOW_LABEL) {
+        crate::platform::toast::hide(&app, &toast_window);
+    }
 }
 
 #[tauri::command]
