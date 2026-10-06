@@ -381,6 +381,12 @@ export function useSettingsForm({
   const activeLicense = licenseStateQuery.data?.status === "active";
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
+  // Settings stays mounted, and only macOS reports device changes, so a mic
+  // plugged in on Windows would otherwise not show up until restart.
+  const refetchInputDevices = inputDevicesQuery.refetch;
+  useEffect(() => {
+    if (active) void refetchInputDevices();
+  }, [active, refetchInputDevices]);
   const modelCatalogQuery = useModelCatalog(isOpen);
   const diarizerModel = useDiarizerModel(isOpen).data ?? null;
   const cliInstallQuery = useCliInstallStatus(isOpen);
