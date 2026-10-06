@@ -906,6 +906,11 @@ msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "क्रॉस‑ओरिजिन ब्राउज़र अनुरोधों की अनुमति दें"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permission.granted"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.section.activate"
 msgstr "पहले ही ख़रीद लिया?"
@@ -1325,6 +1330,11 @@ msgstr "अपडेट जाँचें"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.check_updates_long"
 msgstr "अपडेट जाँचें..."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permission.checking"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -3975,6 +3985,11 @@ msgid "library.error_details.invalid_audio"
 msgstr "यह मान्य ऑडियो फ़ाइल नहीं है।"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permission.not_granted"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_subtitle"
 msgstr "इस बिल्ड में उपलब्ध नहीं"
@@ -5446,6 +5461,11 @@ msgstr "आँकड़े"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.status"
 msgstr "स्थिति"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/shared.tsx
+msgid "onboarding.step_progress"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

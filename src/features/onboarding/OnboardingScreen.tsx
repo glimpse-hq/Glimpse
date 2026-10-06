@@ -998,10 +998,11 @@ export default function OnboardingScreen({
         {currentStep !== "welcome" &&
           steps.indexOf(currentStep as (typeof steps)[number]) !== 0 && (
             <button
+              type="button"
               onClick={goBack}
               className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-primary transition-colors"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={14} aria-hidden="true" />
               {t({
                 id: "onboarding.back",
                 message: "Back",

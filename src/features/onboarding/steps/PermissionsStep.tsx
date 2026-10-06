@@ -160,12 +160,24 @@ function StatusDot({
   granted: boolean;
   checking: boolean;
 }) {
+  const { t } = useLingui();
   return (
     <div
+      aria-live="polite"
       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors ${
         granted ? "bg-emerald-500 text-white" : "border border-border-secondary"
       }`}
     >
+      <span className="sr-only">
+        {checking
+          ? t({ id: "onboarding.permission.checking", message: "Checking" })
+          : granted
+            ? t({ id: "onboarding.permission.granted", message: "Allowed" })
+            : t({
+                id: "onboarding.permission.not_granted",
+                message: "Not allowed yet",
+              })}
+      </span>
       {checking ? (
         <Loader2 size={13} className="animate-spin text-content-muted" />
       ) : granted ? (

@@ -906,6 +906,11 @@ msgid "settings.local_api.allow_browser_requests_aria"
 msgstr "Autoriser les requêtes navigateur cross-origin"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permission.granted"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.section.activate"
 msgstr "Déjà acheté ?"
@@ -1325,6 +1330,11 @@ msgstr "Rechercher des mises à jour"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.check_updates_long"
 msgstr "Rechercher des mises à jour…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permission.checking"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -3975,6 +3985,11 @@ msgid "library.error_details.invalid_audio"
 msgstr "Fichier audio non valide."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+msgid "onboarding.permission.not_granted"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.unavailable_subtitle"
 msgstr "Non disponible dans cette version"
@@ -5446,6 +5461,11 @@ msgstr "Statistiques"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.filter.status"
 msgstr "État"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/shared.tsx
+msgid "onboarding.step_progress"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx

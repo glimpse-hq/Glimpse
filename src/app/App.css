@@ -1758,3 +1758,8 @@ body {
     animation: none !important;
   }
 }
+
+h1[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus {
+  outline: none;
+}
