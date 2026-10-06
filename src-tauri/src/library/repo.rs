@@ -3,7 +3,9 @@ use std::path::Path;
 use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension, Row, ToSql, params};
 
-use crate::library::{LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus};
+use crate::library::{
+    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, PreviousTranscript,
+};
 
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
@@ -208,8 +210,38 @@ pub(crate) fn update_library_item(
     }
 
     update_library_item_full(&tx, &item)?;
+    if let Some(previous) = patch.previous_transcript {
+        let previous = serialize_json_value(&previous)?;
+        tx.execute(
+            "UPDATE library_items SET previous_transcript = ?1 WHERE id = ?2",
+            params![previous, id],
+        )?;
+    }
     tx.commit()?;
     Ok(Some(item))
+}
+
+pub(crate) fn get_previous_transcript(
+    conn: &Connection,
+    id: &str,
+) -> Result<Option<PreviousTranscript>> {
+    let stored: Option<Option<String>> = conn
+        .query_row(
+            "SELECT previous_transcript FROM library_items WHERE id = ?1",
+            params![id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(stored.flatten().and_then(|raw| {
+        serde_json::from_str(&raw)
+            .inspect_err(|err| {
+                tracing::warn!(
+                    "Previous transcript of library item {id} is unreadable ({:?})",
+                    err.classify()
+                );
+            })
+            .ok()
+    }))
 }
 
 pub(crate) fn delete_library_item(

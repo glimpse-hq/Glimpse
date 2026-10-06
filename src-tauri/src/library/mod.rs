@@ -20,6 +20,6 @@ pub(crate) use types::RecordingOutput;
 pub(crate) use types::default_item_kind;
 pub use types::{
     AudioSources, Bookmark, ExportFormat, JobSource, LibraryFilter, LibraryImportOptions,
-    LibraryItem, LibraryItemPatch, LibraryItemStatus, LiveSpeakerHints, LiveTurn, Speaker,
-    TranscriptSegment,
+    LibraryItem, LibraryItemPatch, LibraryItemStatus, LiveSpeakerHints, LiveTurn,
+    PreviousTranscript, Speaker, TranscriptSegment,
 };

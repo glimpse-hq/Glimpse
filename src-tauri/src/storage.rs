@@ -1013,6 +1013,12 @@ impl StorageManager {
             "transcript_edited",
             "ALTER TABLE library_items ADD COLUMN transcript_edited INTEGER NOT NULL DEFAULT 0",
         )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "previous_transcript",
+            "ALTER TABLE library_items ADD COLUMN previous_transcript TEXT",
+        )?;
 
         let stats_seeded: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM lifetime_stats WHERE id = 1)",
@@ -1116,6 +1122,14 @@ impl StorageManager {
             }
             _ => Ok(None),
         }
+    }
+
+    pub fn get_previous_library_transcript(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::library::PreviousTranscript>> {
+        let conn = self.connection.lock();
+        crate::library::repo::get_previous_transcript(&conn, id)
     }
 
     pub fn delete_library_item(&self, id: &str) -> Result<Option<String>> {

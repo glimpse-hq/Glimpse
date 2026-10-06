@@ -445,8 +445,33 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     };
 
     for item in items {
+        // A transcript that was being replaced when the app quit comes back,
+        // and a recovered job keeps it again while it runs.
+        let previous = storage
+            .get_previous_library_transcript(&item.id)
+            .inspect_err(|err| {
+                tracing::warn!(
+                    "Failed to read the previous transcript of library item {}: {err:#}",
+                    item.id
+                );
+            })
+            .ok()
+            .flatten();
         match item.status {
             LibraryItemStatus::Cancelling => {
+                if let Some(previous) = previous {
+                    let _ = storage.update_library_item(
+                        &item.id,
+                        previous.into_patch(LibraryItemStatus::Complete),
+                    );
+                    let _ = app.emit(
+                        EVENT_LIBRARY_COMPLETE,
+                        LibraryCompletePayload {
+                            id: item.id.clone(),
+                        },
+                    );
+                    continue;
+                }
                 set_library_status(&storage, &item.id, LibraryItemStatus::Cancelled);
                 let _ = app.emit(
                     EVENT_LIBRARY_ERROR,
@@ -461,7 +486,15 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
             | LibraryItemStatus::Importing { .. }
             | LibraryItemStatus::Transcribing { .. } => match build_recovery_job(&item) {
                 Ok(kind) => {
-                    set_library_status(&storage, &item.id, LibraryItemStatus::Pending);
+                    match previous {
+                        Some(previous) => {
+                            let _ = storage.update_library_item(
+                                &item.id,
+                                previous.into_patch(LibraryItemStatus::Pending),
+                            );
+                        }
+                        None => set_library_status(&storage, &item.id, LibraryItemStatus::Pending),
+                    }
                     schedule_library_job(
                         app,
                         &state,
@@ -472,9 +505,21 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                         },
                     );
                 }
-                Err(message) => {
-                    set_library_item_error(&storage, &item.id, &message);
-                }
+                Err(message) => match previous {
+                    Some(previous) => {
+                        let _ = storage.update_library_item(
+                            &item.id,
+                            previous.into_patch(LibraryItemStatus::Complete),
+                        );
+                        let _ = app.emit(
+                            EVENT_LIBRARY_COMPLETE,
+                            LibraryCompletePayload {
+                                id: item.id.clone(),
+                            },
+                        );
+                    }
+                    None => set_library_item_error(&storage, &item.id, &message),
+                },
             },
             _ => {}
         }

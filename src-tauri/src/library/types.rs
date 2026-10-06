@@ -259,6 +259,43 @@ pub struct LibraryItemPatch {
     pub kind: Option<String>,
     pub speakers: Option<Option<Vec<Speaker>>>,
     pub bookmarks: Option<Vec<Bookmark>>,
+    #[serde(skip)]
+    pub previous_transcript: Option<Option<PreviousTranscript>>,
+}
+
+/// A finished transcript kept while the item is transcribed again, so a quit
+/// or crash before the new one is saved can't lose it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PreviousTranscript {
+    pub transcript: String,
+    pub transcript_edited: bool,
+    pub segments: Vec<TranscriptSegment>,
+    pub speakers: Option<Vec<Speaker>>,
+}
+
+impl PreviousTranscript {
+    pub(crate) fn of(item: &LibraryItem) -> Option<Self> {
+        let transcript = item.transcript.as_deref().filter(|text| !text.is_empty())?;
+        item.transcribed_at.as_ref()?;
+        Some(Self {
+            transcript: transcript.to_string(),
+            transcript_edited: item.transcript_edited,
+            segments: item.segments.clone().unwrap_or_default(),
+            speakers: item.speakers.clone(),
+        })
+    }
+
+    pub(crate) fn into_patch(self, status: LibraryItemStatus) -> LibraryItemPatch {
+        LibraryItemPatch {
+            status: Some(status),
+            transcript: Some(self.transcript),
+            transcript_edited: Some(self.transcript_edited),
+            segments: Some(self.segments),
+            speakers: Some(self.speakers),
+            previous_transcript: Some(None),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
