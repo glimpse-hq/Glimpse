@@ -412,7 +412,10 @@ pub fn run() {
             }
             analytics::set_crash_phase("settings_load");
             let settings_store = Arc::new(SettingsStore::new(handle)?);
-            let mut settings = settings_store.load().unwrap_or_default();
+            let mut settings = settings_store.load().unwrap_or_else(|err| {
+                tracing::error!("Failed to load settings, starting with defaults: {err:#}");
+                UserSettings::default()
+            });
             if model_manager::definition(&settings.local_model).is_none() {
                 settings.local_model = default_local_model();
                 if let Err(err) = settings_store.save(&settings) {

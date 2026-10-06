@@ -1,4 +1,13 @@
-use std::{collections::HashSet, env, fs, path::PathBuf, sync::OnceLock, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    env, fs,
+    path::{Path, PathBuf},
+    sync::{
+        OnceLock,
+        atomic::{AtomicBool, Ordering},
+    },
+    time::Duration,
+};
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Days, Local, Months};
@@ -8,6 +17,7 @@ use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tauri::{AppHandle, Manager};
 
 const SETTINGS_DB_FILE_NAME: &str = "settings.db";
+const SETTINGS_BACKUP_FILE_NAME: &str = "settings-backup.db";
 const KEY_ONBOARDING_COMPLETED: &str = "onboarding_completed";
 const KEY_SMART_SHORTCUT: &str = "smart_shortcut";
 const KEY_SMART_ENABLED: &str = "smart_enabled";
@@ -758,6 +768,12 @@ pub struct SettingsStore {
     llm_api_key_ciphertext: Mutex<Option<String>>,
     remote_speech_api_key_ciphertext: Mutex<Option<String>>,
     local_api_key_ciphertext: Mutex<Option<String>>,
+    /// Keys `load` could not parse, each with the JSON of the value `load` fell
+    /// back to. `save` leaves them as stored while that value is unchanged, so a
+    /// value written by a newer version survives a downgrade.
+    unreadable: Mutex<HashMap<&'static str, String>>,
+    /// Set until a load reads every value; the next save backs up the DB first.
+    backup_before_save: AtomicBool,
 }
 
 impl SettingsStore {
@@ -785,6 +801,8 @@ impl SettingsStore {
             llm_api_key_ciphertext: Mutex::new(None),
             remote_speech_api_key_ciphertext: Mutex::new(None),
             local_api_key_ciphertext: Mutex::new(None),
+            unreadable: Mutex::new(HashMap::new()),
+            backup_before_save: AtomicBool::new(true),
         };
 
         store.init_schema()?;
@@ -810,111 +828,89 @@ impl SettingsStore {
         let encrypted_remote_speech_api_key: String;
         let encrypted_local_api_key: String;
         let theme_mode_exists: bool;
+        let unreadable_keys;
         {
             let conn = self.conn.lock();
+            let mut loader = Loader {
+                conn: &conn,
+                unreadable: Vec::new(),
+            };
 
-            settings.onboarding_completed = self.read_value(
-                &conn,
-                KEY_ONBOARDING_COMPLETED,
-                settings.onboarding_completed,
-            )?;
+            settings.onboarding_completed =
+                loader.value(KEY_ONBOARDING_COMPLETED, settings.onboarding_completed)?;
             settings.smart_shortcut =
-                self.read_value(&conn, KEY_SMART_SHORTCUT, settings.smart_shortcut.clone())?;
-            settings.smart_enabled =
-                self.read_value(&conn, KEY_SMART_ENABLED, settings.smart_enabled)?;
+                loader.value(KEY_SMART_SHORTCUT, settings.smart_shortcut.clone())?;
+            settings.smart_enabled = loader.value(KEY_SMART_ENABLED, settings.smart_enabled)?;
             settings.hold_shortcut =
-                self.read_value(&conn, KEY_HOLD_SHORTCUT, settings.hold_shortcut.clone())?;
-            settings.hold_enabled =
-                self.read_value(&conn, KEY_HOLD_ENABLED, settings.hold_enabled)?;
+                loader.value(KEY_HOLD_SHORTCUT, settings.hold_shortcut.clone())?;
+            settings.hold_enabled = loader.value(KEY_HOLD_ENABLED, settings.hold_enabled)?;
             settings.toggle_shortcut =
-                self.read_value(&conn, KEY_TOGGLE_SHORTCUT, settings.toggle_shortcut.clone())?;
-            settings.toggle_enabled =
-                self.read_value(&conn, KEY_TOGGLE_ENABLED, settings.toggle_enabled)?;
+                loader.value(KEY_TOGGLE_SHORTCUT, settings.toggle_shortcut.clone())?;
+            settings.toggle_enabled = loader.value(KEY_TOGGLE_ENABLED, settings.toggle_enabled)?;
             if let Some(shortcut_bindings) =
-                self.read_optional_value::<ShortcutBindings>(&conn, KEY_SHORTCUT_BINDINGS)?
+                loader.optional::<ShortcutBindings>(KEY_SHORTCUT_BINDINGS)?
             {
                 settings.shortcut_bindings = shortcut_bindings;
             }
-            settings.transcription_mode = self.read_value(
-                &conn,
-                KEY_TRANSCRIPTION_MODE,
-                settings.transcription_mode.clone(),
-            )?;
-            settings.local_model =
-                self.read_value(&conn, KEY_LOCAL_MODEL, settings.local_model.clone())?;
-            settings.remote_speech_enabled = self.read_value(
-                &conn,
-                KEY_REMOTE_SPEECH_ENABLED,
-                settings.remote_speech_enabled,
-            )?;
-            settings.remote_speech_provider = self.read_value(
-                &conn,
+            settings.transcription_mode =
+                loader.value(KEY_TRANSCRIPTION_MODE, settings.transcription_mode.clone())?;
+            settings.local_model = loader.value(KEY_LOCAL_MODEL, settings.local_model.clone())?;
+            settings.remote_speech_enabled =
+                loader.value(KEY_REMOTE_SPEECH_ENABLED, settings.remote_speech_enabled)?;
+            settings.remote_speech_provider = loader.value(
                 KEY_REMOTE_SPEECH_PROVIDER,
                 settings.remote_speech_provider.clone(),
             )?;
-            settings.remote_speech_endpoint = self.read_value(
-                &conn,
+            settings.remote_speech_endpoint = loader.value(
                 KEY_REMOTE_SPEECH_ENDPOINT,
                 settings.remote_speech_endpoint.clone(),
             )?;
             encrypted_remote_speech_api_key =
-                self.read_value(&conn, KEY_REMOTE_SPEECH_API_KEY, String::new())?;
-            settings.remote_speech_model = self.read_value(
-                &conn,
+                loader.value(KEY_REMOTE_SPEECH_API_KEY, String::new())?;
+            settings.remote_speech_model = loader.value(
                 KEY_REMOTE_SPEECH_MODEL,
                 settings.remote_speech_model.clone(),
             )?;
-            settings.microphone_device = self.read_value(
-                &conn,
-                KEY_MICROPHONE_DEVICE,
-                settings.microphone_device.clone(),
-            )?;
-            settings.language = self.read_value(&conn, KEY_LANGUAGE, settings.language.clone())?;
-            settings.app_locale =
-                self.read_value(&conn, KEY_APP_LOCALE, settings.app_locale.clone())?;
-            let theme_mode = self.read_optional_value::<ThemeMode>(&conn, KEY_THEME_MODE)?;
+            settings.microphone_device =
+                loader.value(KEY_MICROPHONE_DEVICE, settings.microphone_device.clone())?;
+            settings.language = loader.value(KEY_LANGUAGE, settings.language.clone())?;
+            settings.app_locale = loader.value(KEY_APP_LOCALE, settings.app_locale.clone())?;
+            let theme_mode = loader.optional::<ThemeMode>(KEY_THEME_MODE)?;
             theme_mode_exists = theme_mode.is_some();
             settings.theme_mode = theme_mode.unwrap_or(settings.theme_mode);
 
-            settings.llm_enabled = self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
+            settings.llm_enabled = loader.value(KEY_LLM_ENABLED, settings.llm_enabled)?;
             settings.cleanup_enabled =
-                self.read_value(&conn, KEY_CLEANUP_ENABLED, settings.cleanup_enabled)?;
+                loader.value(KEY_CLEANUP_ENABLED, settings.cleanup_enabled)?;
             settings.llm_provider =
-                self.read_value(&conn, KEY_LLM_PROVIDER, settings.llm_provider.clone())?;
+                loader.value(KEY_LLM_PROVIDER, settings.llm_provider.clone())?;
             settings.llm_endpoint =
-                self.read_value(&conn, KEY_LLM_ENDPOINT, settings.llm_endpoint.clone())?;
+                loader.value(KEY_LLM_ENDPOINT, settings.llm_endpoint.clone())?;
 
-            encrypted_llm_api_key = self.read_value(&conn, KEY_LLM_API_KEY, String::new())?;
+            encrypted_llm_api_key = loader.value(KEY_LLM_API_KEY, String::new())?;
 
-            settings.llm_model =
-                self.read_value(&conn, KEY_LLM_MODEL, settings.llm_model.clone())?;
-            settings.personalities_notes_seeded = self.read_value(
-                &conn,
+            settings.llm_model = loader.value(KEY_LLM_MODEL, settings.llm_model.clone())?;
+            settings.personalities_notes_seeded = loader.value(
                 KEY_PERSONALITIES_NOTES_SEEDED,
                 settings.personalities_notes_seeded,
             )?;
-            settings.dictionary =
-                self.read_value(&conn, KEY_DICTIONARY, settings.dictionary.clone())?;
-            settings.auto_dictionary_enabled = self.read_value(
-                &conn,
+            settings.dictionary = loader.value(KEY_DICTIONARY, settings.dictionary.clone())?;
+            settings.auto_dictionary_enabled = loader.value(
                 KEY_AUTO_DICTIONARY_ENABLED,
                 settings.auto_dictionary_enabled,
             )?;
-            settings.auto_dictionary_ignored = self.read_value(
-                &conn,
+            settings.auto_dictionary_ignored = loader.value(
                 KEY_AUTO_DICTIONARY_IGNORED,
                 settings.auto_dictionary_ignored.clone(),
             )?;
             settings.replacements =
-                self.read_value(&conn, KEY_REPLACEMENTS, settings.replacements.clone())?;
+                loader.value(KEY_REPLACEMENTS, settings.replacements.clone())?;
             settings.personalities =
-                self.read_value(&conn, KEY_PERSONALITIES, settings.personalities.clone())?;
-            if let Some(media_action) =
-                self.read_optional_value::<MediaAction>(&conn, KEY_MEDIA_ACTION)?
-            {
+                loader.value(KEY_PERSONALITIES, settings.personalities.clone())?;
+            if let Some(media_action) = loader.optional::<MediaAction>(KEY_MEDIA_ACTION)? {
                 settings.media_action = media_action;
             } else if let Some(legacy_enabled) =
-                self.read_optional_value::<bool>(&conn, LEGACY_KEY_MEDIA_CONTROL_ENABLED)?
+                loader.optional::<bool>(LEGACY_KEY_MEDIA_CONTROL_ENABLED)?
             {
                 settings.media_action = if legacy_enabled {
                     MediaAction::Pause
@@ -924,25 +920,24 @@ impl SettingsStore {
                 should_persist = true;
             }
             settings.auto_update_enabled =
-                self.read_value(&conn, KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
+                loader.value(KEY_AUTO_UPDATE_ENABLED, settings.auto_update_enabled)?;
             settings.auto_launch_enabled =
-                self.read_value(&conn, KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
+                loader.value(KEY_AUTO_LAUNCH_ENABLED, settings.auto_launch_enabled)?;
             settings.start_in_background =
-                self.read_value(&conn, KEY_START_IN_BACKGROUND, settings.start_in_background)?;
+                loader.value(KEY_START_IN_BACKGROUND, settings.start_in_background)?;
             settings.auto_delete_target =
-                self.read_value(&conn, KEY_AUTO_DELETE_TARGET, settings.auto_delete_target)?;
+                loader.value(KEY_AUTO_DELETE_TARGET, settings.auto_delete_target)?;
             let auto_delete_duration =
-                self.read_optional_value::<RecordingPrunePolicy>(&conn, KEY_AUTO_DELETE_DURATION)?;
+                loader.optional::<RecordingPrunePolicy>(KEY_AUTO_DELETE_DURATION)?;
             if let Some(duration) = auto_delete_duration {
                 settings.auto_delete_duration = duration;
-            } else {
-                let legacy_recording = self.read_value(
-                    &conn,
+            } else if !loader.unreadable.contains(&KEY_AUTO_DELETE_DURATION) {
+                // An unreadable duration came from a newer version; the legacy keys are older than it.
+                let legacy_recording = loader.value(
                     LEGACY_KEY_RECORDING_PRUNE_POLICY,
                     RecordingPrunePolicy::Never,
                 )?;
-                let legacy_transcription = self.read_value(
-                    &conn,
+                let legacy_transcription = loader.value(
                     LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY,
                     RecordingPrunePolicy::Never,
                 )?;
@@ -954,26 +949,23 @@ impl SettingsStore {
                 should_persist = true;
             }
             settings.analytics_enabled =
-                self.read_value(&conn, KEY_ANALYTICS_ENABLED, settings.analytics_enabled)?;
-            settings.analytics_install_id = self.read_value(
-                &conn,
+                loader.value(KEY_ANALYTICS_ENABLED, settings.analytics_enabled)?;
+            settings.analytics_install_id = loader.value(
                 KEY_ANALYTICS_INSTALL_ID,
                 settings.analytics_install_id.clone(),
             )?;
-            encrypted_local_api_key = self.read_value(&conn, KEY_LOCAL_API_KEY, String::new())?;
-            settings.local_api_port =
-                self.read_value(&conn, KEY_LOCAL_API_PORT, settings.local_api_port)?;
+            encrypted_local_api_key = loader.value(KEY_LOCAL_API_KEY, String::new())?;
+            settings.local_api_port = loader.value(KEY_LOCAL_API_PORT, settings.local_api_port)?;
             settings.local_api_model =
-                self.read_value(&conn, KEY_LOCAL_API_MODEL, settings.local_api_model.clone())?;
+                loader.value(KEY_LOCAL_API_MODEL, settings.local_api_model.clone())?;
             settings.local_api_host =
-                self.read_value(&conn, KEY_LOCAL_API_HOST, settings.local_api_host.clone())?;
-            settings.local_api_start_on_launch = self.read_value(
-                &conn,
+                loader.value(KEY_LOCAL_API_HOST, settings.local_api_host.clone())?;
+            settings.local_api_start_on_launch = loader.value(
                 KEY_LOCAL_API_START_ON_LAUNCH,
                 settings.local_api_start_on_launch,
             )?;
-            settings.local_api_cors =
-                self.read_value(&conn, KEY_LOCAL_API_CORS, settings.local_api_cors)?;
+            settings.local_api_cors = loader.value(KEY_LOCAL_API_CORS, settings.local_api_cors)?;
+            unreadable_keys = loader.unreadable;
         }
 
         settings.llm_api_key = decrypt_stored_setting(
@@ -1049,8 +1041,23 @@ impl SettingsStore {
             should_persist = true;
         }
 
-        if should_persist {
-            self.save(&settings)?;
+        let mut fallbacks = HashMap::new();
+        if unreadable_keys.is_empty() {
+            self.backup_before_save.store(false, Ordering::Relaxed);
+        } else {
+            match self.stored_entries(&settings) {
+                Ok(entries) => fallbacks.extend(
+                    entries
+                        .into_iter()
+                        .filter(|(key, _)| unreadable_keys.contains(key)),
+                ),
+                Err(err) => tracing::error!("Failed to note unreadable settings: {err:#}"),
+            }
+        }
+        *self.unreadable.lock() = fallbacks;
+
+        if should_persist && let Err(err) = self.save(&settings) {
+            tracing::error!("Failed to save migrated settings: {err}");
         }
 
         Ok(settings)
@@ -1058,6 +1065,38 @@ impl SettingsStore {
 
     /// Persist settings into DB immediately.
     pub fn save(&self, settings: &UserSettings) -> Result<()> {
+        let entries = self.stored_entries(settings)?;
+        let mut connection = self.conn.lock();
+        if self.backup_before_save.swap(false, Ordering::Relaxed)
+            && let Err(err) = back_up_settings_db(&connection)
+        {
+            tracing::error!("{err:#}");
+        }
+        let mut unreadable = self.unreadable.lock();
+        let conn = connection
+            .transaction()
+            .context("Failed to start settings transaction")?;
+        let mut replaced = Vec::new();
+        for (key, value) in entries {
+            match unreadable.get(key) {
+                Some(fallback) if *fallback == value => continue,
+                Some(_) => replaced.push(key),
+                None => {}
+            }
+            self.write_raw_value(&conn, key, &value)?;
+        }
+        conn.commit()
+            .context("Failed to commit settings transaction")?;
+        for key in replaced {
+            unreadable.remove(key);
+        }
+        Ok(())
+    }
+
+    /// Each stored key with the JSON `save` writes for it.
+    fn stored_entries(&self, settings: &UserSettings) -> Result<Vec<(&'static str, String)>> {
+        use serde_json::to_string as json;
+
         let stored_app_locale = canonicalize_app_locale_or_default(&settings.app_locale);
         let stored_key = encrypt_setting_for_storage(
             &settings.llm_api_key,
@@ -1078,127 +1117,105 @@ impl SettingsStore {
         )?
         .unwrap_or_else(|| settings.local_api_key.clone());
 
-        let mut connection = self.conn.lock();
-        let conn = connection
-            .transaction()
-            .context("Failed to start settings transaction")?;
-        self.write_value(
-            &conn,
-            KEY_ONBOARDING_COMPLETED,
-            &settings.onboarding_completed,
-        )?;
-        self.write_value(&conn, KEY_SMART_SHORTCUT, &settings.smart_shortcut)?;
-        self.write_value(&conn, KEY_SMART_ENABLED, &settings.smart_enabled)?;
-        self.write_value(&conn, KEY_HOLD_SHORTCUT, &settings.hold_shortcut)?;
-        self.write_value(&conn, KEY_HOLD_ENABLED, &settings.hold_enabled)?;
-        self.write_value(&conn, KEY_TOGGLE_SHORTCUT, &settings.toggle_shortcut)?;
-        self.write_value(&conn, KEY_TOGGLE_ENABLED, &settings.toggle_enabled)?;
-        self.write_value(&conn, KEY_SHORTCUT_BINDINGS, &settings.shortcut_bindings)?;
-        self.write_value(&conn, KEY_TRANSCRIPTION_MODE, &settings.transcription_mode)?;
-        self.write_value(&conn, KEY_LOCAL_MODEL, &settings.local_model)?;
-        self.write_value(
-            &conn,
-            KEY_REMOTE_SPEECH_ENABLED,
-            &settings.remote_speech_enabled,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_REMOTE_SPEECH_PROVIDER,
-            &settings.remote_speech_provider,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_REMOTE_SPEECH_ENDPOINT,
-            &settings.remote_speech_endpoint,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_REMOTE_SPEECH_API_KEY,
-            &stored_remote_speech_api_key,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_REMOTE_SPEECH_MODEL,
-            &settings.remote_speech_model,
-        )?;
-        self.write_value(&conn, KEY_MICROPHONE_DEVICE, &settings.microphone_device)?;
-        self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
-        self.write_value(&conn, KEY_APP_LOCALE, &stored_app_locale)?;
-        self.write_value(&conn, KEY_THEME_MODE, &settings.theme_mode)?;
-
-        self.write_value(&conn, KEY_LLM_ENABLED, &settings.llm_enabled)?;
-        self.write_value(&conn, KEY_CLEANUP_ENABLED, &settings.cleanup_enabled)?;
-        self.write_value(&conn, KEY_LLM_PROVIDER, &settings.llm_provider)?;
-        self.write_value(&conn, KEY_LLM_ENDPOINT, &settings.llm_endpoint)?;
-        self.write_value(&conn, KEY_LLM_API_KEY, &stored_key)?;
-
-        self.write_value(&conn, KEY_LLM_MODEL, &settings.llm_model)?;
-        self.write_value(
-            &conn,
-            KEY_PERSONALITIES_NOTES_SEEDED,
-            &settings.personalities_notes_seeded,
-        )?;
-        self.write_value(&conn, KEY_DICTIONARY, &settings.dictionary)?;
-        self.write_value(
-            &conn,
-            KEY_AUTO_DICTIONARY_ENABLED,
-            &settings.auto_dictionary_enabled,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_AUTO_DICTIONARY_IGNORED,
-            &settings.auto_dictionary_ignored,
-        )?;
-        self.write_value(&conn, KEY_REPLACEMENTS, &settings.replacements)?;
-        self.write_value(&conn, KEY_PERSONALITIES, &settings.personalities)?;
-        self.write_value(&conn, KEY_MEDIA_ACTION, &settings.media_action)?;
-        self.write_value(
-            &conn,
-            KEY_AUTO_UPDATE_ENABLED,
-            &settings.auto_update_enabled,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_AUTO_LAUNCH_ENABLED,
-            &settings.auto_launch_enabled,
-        )?;
-        self.write_value(
-            &conn,
-            KEY_START_IN_BACKGROUND,
-            &settings.start_in_background,
-        )?;
-        self.write_value(&conn, KEY_AUTO_DELETE_TARGET, &settings.auto_delete_target)?;
-        self.write_value(
-            &conn,
-            KEY_AUTO_DELETE_DURATION,
-            &settings.auto_delete_duration,
-        )?;
-        self.write_value(&conn, KEY_ANALYTICS_ENABLED, &settings.analytics_enabled)?;
-        self.write_value(
-            &conn,
-            KEY_ANALYTICS_INSTALL_ID,
-            &settings.analytics_install_id,
-        )?;
-        self.write_value(&conn, KEY_LOCAL_API_KEY, &stored_local_api_key)?;
-        self.write_value(&conn, KEY_LOCAL_API_PORT, &settings.local_api_port)?;
-        self.write_value(&conn, KEY_LOCAL_API_MODEL, &settings.local_api_model)?;
-        self.write_value(&conn, KEY_LOCAL_API_HOST, &settings.local_api_host)?;
-        self.write_value(
-            &conn,
-            KEY_LOCAL_API_START_ON_LAUNCH,
-            &settings.local_api_start_on_launch,
-        )?;
-        self.write_value(&conn, KEY_LOCAL_API_CORS, &settings.local_api_cors)?;
-        conn.commit()
-            .context("Failed to commit settings transaction")?;
-        Ok(())
+        Ok(vec![
+            (
+                KEY_ONBOARDING_COMPLETED,
+                json(&settings.onboarding_completed)?,
+            ),
+            (KEY_SMART_SHORTCUT, json(&settings.smart_shortcut)?),
+            (KEY_SMART_ENABLED, json(&settings.smart_enabled)?),
+            (KEY_HOLD_SHORTCUT, json(&settings.hold_shortcut)?),
+            (KEY_HOLD_ENABLED, json(&settings.hold_enabled)?),
+            (KEY_TOGGLE_SHORTCUT, json(&settings.toggle_shortcut)?),
+            (KEY_TOGGLE_ENABLED, json(&settings.toggle_enabled)?),
+            (KEY_SHORTCUT_BINDINGS, json(&settings.shortcut_bindings)?),
+            (KEY_TRANSCRIPTION_MODE, json(&settings.transcription_mode)?),
+            (KEY_LOCAL_MODEL, json(&settings.local_model)?),
+            (
+                KEY_REMOTE_SPEECH_ENABLED,
+                json(&settings.remote_speech_enabled)?,
+            ),
+            (
+                KEY_REMOTE_SPEECH_PROVIDER,
+                json(&settings.remote_speech_provider)?,
+            ),
+            (
+                KEY_REMOTE_SPEECH_ENDPOINT,
+                json(&settings.remote_speech_endpoint)?,
+            ),
+            (
+                KEY_REMOTE_SPEECH_API_KEY,
+                json(&stored_remote_speech_api_key)?,
+            ),
+            (
+                KEY_REMOTE_SPEECH_MODEL,
+                json(&settings.remote_speech_model)?,
+            ),
+            (KEY_MICROPHONE_DEVICE, json(&settings.microphone_device)?),
+            (KEY_LANGUAGE, json(&settings.language)?),
+            (KEY_APP_LOCALE, json(&stored_app_locale)?),
+            (KEY_THEME_MODE, json(&settings.theme_mode)?),
+            (KEY_LLM_ENABLED, json(&settings.llm_enabled)?),
+            (KEY_CLEANUP_ENABLED, json(&settings.cleanup_enabled)?),
+            (KEY_LLM_PROVIDER, json(&settings.llm_provider)?),
+            (KEY_LLM_ENDPOINT, json(&settings.llm_endpoint)?),
+            (KEY_LLM_API_KEY, json(&stored_key)?),
+            (KEY_LLM_MODEL, json(&settings.llm_model)?),
+            (
+                KEY_PERSONALITIES_NOTES_SEEDED,
+                json(&settings.personalities_notes_seeded)?,
+            ),
+            (KEY_DICTIONARY, json(&settings.dictionary)?),
+            (
+                KEY_AUTO_DICTIONARY_ENABLED,
+                json(&settings.auto_dictionary_enabled)?,
+            ),
+            (
+                KEY_AUTO_DICTIONARY_IGNORED,
+                json(&settings.auto_dictionary_ignored)?,
+            ),
+            (KEY_REPLACEMENTS, json(&settings.replacements)?),
+            (KEY_PERSONALITIES, json(&settings.personalities)?),
+            (KEY_MEDIA_ACTION, json(&settings.media_action)?),
+            (
+                KEY_AUTO_UPDATE_ENABLED,
+                json(&settings.auto_update_enabled)?,
+            ),
+            (
+                KEY_AUTO_LAUNCH_ENABLED,
+                json(&settings.auto_launch_enabled)?,
+            ),
+            (
+                KEY_START_IN_BACKGROUND,
+                json(&settings.start_in_background)?,
+            ),
+            (KEY_AUTO_DELETE_TARGET, json(&settings.auto_delete_target)?),
+            (
+                KEY_AUTO_DELETE_DURATION,
+                json(&settings.auto_delete_duration)?,
+            ),
+            (KEY_ANALYTICS_ENABLED, json(&settings.analytics_enabled)?),
+            (
+                KEY_ANALYTICS_INSTALL_ID,
+                json(&settings.analytics_install_id)?,
+            ),
+            (KEY_LOCAL_API_KEY, json(&stored_local_api_key)?),
+            (KEY_LOCAL_API_PORT, json(&settings.local_api_port)?),
+            (KEY_LOCAL_API_MODEL, json(&settings.local_api_model)?),
+            (KEY_LOCAL_API_HOST, json(&settings.local_api_host)?),
+            (
+                KEY_LOCAL_API_START_ON_LAUNCH,
+                json(&settings.local_api_start_on_launch)?,
+            ),
+            (KEY_LOCAL_API_CORS, json(&settings.local_api_cors)?),
+        ])
     }
 
     fn read_value<T>(&self, conn: &Connection, key: &str, default: T) -> Result<T>
     where
         T: for<'de> Deserialize<'de>,
     {
-        if let Some(raw) = self.read_optional_raw_value_from_conn(conn, key)? {
+        if let Some(raw) = read_optional_raw_value(conn, key)? {
             serde_json::from_str(&raw).context("Malformed setting JSON in DB")
         } else {
             Ok(default)
@@ -1215,34 +1232,14 @@ impl SettingsStore {
         self.write_value(&conn, key, value)
     }
 
-    fn read_optional_value<T>(&self, conn: &Connection, key: &str) -> Result<Option<T>>
-    where
-        T: for<'de> Deserialize<'de>,
-    {
-        self.read_optional_raw_value_from_conn(conn, key)?
-            .map(|raw| serde_json::from_str(&raw).context("Malformed setting JSON in DB"))
-            .transpose()
-    }
-
-    fn read_optional_raw_value_from_conn(
-        &self,
-        conn: &Connection,
-        key: &str,
-    ) -> Result<Option<String>> {
-        conn.query_row(
-            "SELECT value FROM settings WHERE key = ?1",
-            params![key],
-            |row| row.get(0),
-        )
-        .optional()
-        .context("Failed to read setting from DB")
-    }
-
     fn write_value<T>(&self, conn: &Connection, key: &str, value: &T) -> Result<()>
     where
         T: Serialize,
     {
-        let data = serde_json::to_string(value)?;
+        self.write_raw_value(conn, key, &serde_json::to_string(value)?)
+    }
+
+    fn write_raw_value(&self, conn: &Connection, key: &str, data: &str) -> Result<()> {
         conn.execute(
             "INSERT INTO settings (key, value) VALUES (?1, ?2)
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -1251,6 +1248,61 @@ impl SettingsStore {
         .with_context(|| format!("Failed to upsert setting '{key}' into DB"))?;
         Ok(())
     }
+}
+
+fn read_optional_raw_value(conn: &Connection, key: &str) -> Result<Option<String>> {
+    conn.query_row(
+        "SELECT value FROM settings WHERE key = ?1",
+        params![key],
+        |row| row.get(0),
+    )
+    .optional()
+    .context("Failed to read setting from DB")
+}
+
+/// Reads stored settings for `load`. A value this build can't parse is logged
+/// and treated as missing, and its key recorded so `save` keeps it.
+struct Loader<'a> {
+    conn: &'a Connection,
+    unreadable: Vec<&'static str>,
+}
+
+impl Loader<'_> {
+    fn optional<T: DeserializeOwned>(&mut self, key: &'static str) -> Result<Option<T>> {
+        let Some(raw) = read_optional_raw_value(self.conn, key)? else {
+            return Ok(None);
+        };
+        match serde_json::from_str(&raw) {
+            Ok(value) => Ok(Some(value)),
+            Err(err) => {
+                tracing::warn!(
+                    "Setting '{key}' is unreadable ({:?}), using the default",
+                    err.classify()
+                );
+                self.unreadable.push(key);
+                Ok(None)
+            }
+        }
+    }
+
+    fn value<T: DeserializeOwned>(&mut self, key: &'static str, default: T) -> Result<T> {
+        Ok(self.optional(key)?.unwrap_or(default))
+    }
+}
+
+/// Copies the settings DB next to itself, keeping an earlier backup if one exists.
+fn back_up_settings_db(conn: &Connection) -> Result<()> {
+    let Some(db) = conn.path().filter(|path| !path.is_empty()) else {
+        return Ok(());
+    };
+    let backup = Path::new(db).with_file_name(SETTINGS_BACKUP_FILE_NAME);
+    if backup.exists() {
+        return Ok(());
+    }
+    conn.execute("VACUUM INTO ?1", params![backup.to_string_lossy()])
+        .with_context(|| format!("Failed to back up settings to {}", backup.display()))?;
+    tracing::info!("Backed up settings to {}", backup.display());
+    Ok(())
 }
 
 fn db_path(app: &AppHandle) -> Result<PathBuf> {
@@ -1304,6 +1356,8 @@ mod tests {
             llm_api_key_ciphertext: Mutex::new(None),
             remote_speech_api_key_ciphertext: Mutex::new(None),
             local_api_key_ciphertext: Mutex::new(None),
+            unreadable: Mutex::new(HashMap::new()),
+            backup_before_save: AtomicBool::new(true),
         };
         store.init_schema().expect("init settings schema");
         store
@@ -1369,9 +1423,7 @@ mod tests {
 
     fn raw_setting(store: &SettingsStore, key: &str) -> Option<String> {
         let conn = store.conn.lock();
-        store
-            .read_optional_raw_value_from_conn(&conn, key)
-            .expect("read raw setting")
+        read_optional_raw_value(&conn, key).expect("read raw setting")
     }
 
     #[test]
@@ -1670,12 +1722,9 @@ mod tests {
         );
     }
 
-    // One value this build can't parse, such as an enum variant a newer
-    // version wrote before a downgrade, makes `load` fail. Startup then runs
-    // on `UserSettings::default()`, and the next save overwrites every stored
-    // setting, including the encrypted API keys, with defaults.
+    // A newer version can store a value this build can't parse, for example
+    // an enum variant it doesn't know after a downgrade.
     #[test]
-    #[ignore = "bug: one unreadable setting discards all stored settings"]
     fn one_unreadable_setting_does_not_discard_the_others() {
         let store = test_store();
         write_setting(&store, KEY_DICTIONARY, &vec!["Glimpse".to_string()]);
@@ -1683,5 +1732,88 @@ mod tests {
         let loaded = store.load().expect("load despite one unreadable value");
         assert_eq!(loaded.dictionary, ["Glimpse"]);
         assert_eq!(loaded.theme_mode, ThemeMode::System);
+    }
+
+    #[test]
+    fn unreadable_values_and_keys_survive_saves_until_changed() {
+        let store = test_store();
+        let ciphertext = crate::crypto::encrypt("api-key-value", "different-hardware-id")
+            .expect("encrypt fixture key");
+        write_setting(&store, KEY_LLM_API_KEY, &ciphertext);
+        write_setting(&store, KEY_LOCAL_API_KEY, &42);
+        write_setting(&store, KEY_THEME_MODE, &"sepia");
+        write_setting(&store, KEY_LOCAL_API_PORT, &"not a port");
+        write_setting(&store, KEY_DICTIONARY, &vec!["Glimpse".to_string()]);
+        write_setting(&store, KEY_PERSONALITIES_NOTES_SEEDED, &true);
+
+        let mut loaded = store.load().expect("load despite unreadable values");
+        assert_eq!(loaded.theme_mode, ThemeMode::System);
+        assert_eq!(loaded.local_api_port, default_local_api_port());
+        assert_eq!(loaded.dictionary, ["Glimpse"]);
+        assert!(loaded.llm_api_key.is_empty());
+        assert!(loaded.local_api_key.is_empty());
+
+        loaded.dictionary.push("Tauri".to_string());
+        store.save(&loaded).expect("save");
+        assert_eq!(
+            raw_setting(&store, KEY_DICTIONARY).as_deref(),
+            Some(r#"["Glimpse","Tauri"]"#)
+        );
+        assert_eq!(
+            raw_setting(&store, KEY_THEME_MODE).as_deref(),
+            Some(r#""sepia""#)
+        );
+        assert_eq!(
+            raw_setting(&store, KEY_LOCAL_API_PORT).as_deref(),
+            Some(r#""not a port""#)
+        );
+        assert_eq!(
+            raw_setting(&store, KEY_LOCAL_API_KEY).as_deref(),
+            Some("42")
+        );
+        assert_eq!(
+            raw_setting(&store, KEY_LLM_API_KEY),
+            Some(serde_json::to_string(&ciphertext).unwrap())
+        );
+
+        loaded.theme_mode = ThemeMode::Dark;
+        store.save(&loaded).expect("save changed theme");
+        assert_eq!(
+            raw_setting(&store, KEY_THEME_MODE).as_deref(),
+            Some(r#""dark""#)
+        );
+        assert_eq!(
+            raw_setting(&store, KEY_LOCAL_API_PORT).as_deref(),
+            Some(r#""not a port""#)
+        );
+        assert_eq!(store.load().expect("reload").theme_mode, ThemeMode::Dark);
+    }
+
+    #[test]
+    fn only_a_partial_load_backs_up_the_db_before_saving() {
+        let dir = env::temp_dir().join(format!("glimpse-settings-{}", uuid::Uuid::new_v4()));
+        let backup = dir.join(SETTINGS_BACKUP_FILE_NAME);
+
+        let clean = SettingsStore::open(dir.join(SETTINGS_DB_FILE_NAME)).expect("open DB");
+        clean.load().expect("first load");
+        assert!(!backup.exists());
+
+        write_setting(&clean, KEY_THEME_MODE, &"sepia");
+        drop(clean);
+        let partial = SettingsStore::open(dir.join(SETTINGS_DB_FILE_NAME)).expect("reopen DB");
+        let settings = partial.load().expect("partial load");
+        partial.save(&settings).expect("save after partial load");
+        let backed_up: String = Connection::open(&backup)
+            .expect("open backup")
+            .query_row(
+                "SELECT value FROM settings WHERE key = ?1",
+                params![KEY_THEME_MODE],
+                |row| row.get(0),
+            )
+            .expect("read backed up theme");
+        assert_eq!(backed_up, r#""sepia""#);
+
+        drop(partial);
+        fs::remove_dir_all(&dir).expect("remove test dir");
     }
 }
