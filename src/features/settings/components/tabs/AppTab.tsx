@@ -821,7 +821,7 @@ const AppTab = ({
             </SettingCard>
 
             {permissionRowCount > 0 && (
-              <p className="ui-text-micro ui-color-disabled px-0.5">
+              <p className="ui-text-micro ui-color-muted px-0.5">
                 {t({
                   id: "settings.app.permissions_restart_notice",
                   message: "Permission changes may require a restart.",
@@ -1019,7 +1019,7 @@ const AppTab = ({
                     />
                   </div>
                 </div>
-                <span className="ui-text-micro ui-color-disabled block mt-1">
+                <span className="ui-text-micro ui-color-muted block mt-1">
                   {t({
                     id: "settings.app.auto_delete.body",
                     message:

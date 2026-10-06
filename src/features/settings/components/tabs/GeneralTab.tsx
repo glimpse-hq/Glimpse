@@ -1171,7 +1171,7 @@ const ShortcutRow = ({
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <span className="ui-text-label-strong ui-color-primary">{label}</span>
-          <span className="truncate ui-text-meta ui-color-disabled">
+          <span className="truncate ui-text-meta ui-color-muted">
             {description}
           </span>
         </div>

@@ -587,7 +587,7 @@ const AboutTab = ({
           <div className="grid grid-cols-5 gap-x-6 gap-y-3">
             {storageBreakdown.map((row) => (
               <div key={row.label} className="min-w-0">
-                <p className="ui-text-micro ui-color-disabled">{row.label}</p>
+                <p className="ui-text-micro ui-color-muted">{row.label}</p>
                 <p
                   dir="ltr"
                   className={`mt-1 truncate text-start font-mono tabular-nums ui-text-meta ${

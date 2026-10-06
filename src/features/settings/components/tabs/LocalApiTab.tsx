@@ -370,7 +370,7 @@ const LocalApiTab = ({
                   truncate={false}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-1">
+              <span className="ui-text-micro ui-color-muted block mt-1">
                 {model === "auto"
                   ? running && status?.loaded_model
                     ? t({
@@ -416,7 +416,7 @@ const LocalApiTab = ({
                   })}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
                   id: "settings.local_api.listen_on_lan_help",
                   message: "expose to other devices on your network",
@@ -441,7 +441,7 @@ const LocalApiTab = ({
                   })}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
                   id: "settings.local_api.start_on_launch_help",
                   message: "automatically start when Glimpse opens",
@@ -466,7 +466,7 @@ const LocalApiTab = ({
                   })}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
                   id: "settings.local_api.allow_browser_requests_help",
                   message: "send CORS headers so web apps can call the API",
@@ -539,7 +539,7 @@ const LocalApiTab = ({
 
         <div className="h-[210px] overflow-y-auto">
           {logs.length === 0 ? (
-            <p className="ui-text-label ui-color-disabled">
+            <p className="ui-text-label ui-color-muted">
               {t({
                 id: "settings.local_api.logs.empty",
                 message: "No logs yet.",
