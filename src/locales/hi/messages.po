@@ -1472,6 +1472,11 @@ msgid "toast.close"
 msgstr "सूचना बंद करें"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.support.close_aria"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "विंडो बंद करें"
