@@ -214,27 +214,19 @@ async fn run_auto_update_loop(app: AppHandle<AppRuntime>, state: SharedUpdateSta
                 crate::analytics::set_activity(crate::analytics::Activity::Idle);
                 match installed {
                     Ok(()) => {
+                        info!("auto-update: installed, waiting for restart conditions");
                         // Marker-write failures repeat every poll; report once per install.
                         let mut marker_failure_reported = false;
-                        if should_restart_for_auto_update(&app, &state) {
-                            if restart_after_auto_update(
-                                &app,
-                                &state,
-                                &version,
-                                &mut marker_failure_reported,
-                            ) {
-                                return;
-                            }
-                        } else {
-                            info!("auto-update: installed, waiting for restart conditions");
-                        }
-
-                        // Update is already installed - wait for restart conditions
-                        // without re-downloading.
+                        // Wait for restart conditions without re-downloading.
                         loop {
                             tokio::time::sleep(Duration::from_secs(AUTO_UPDATE_POLL_SECS)).await;
                             if !app.state::<AppState>().is_auto_update_enabled() {
                                 break;
+                            }
+                            // Restart only after the same quiet stretch as the
+                            // download, not right after a dictation ends.
+                            if !wait_for_idle(&app, idle_duration).await {
+                                continue;
                             }
                             if should_restart_for_auto_update(&app, &state)
                                 && restart_after_auto_update(
