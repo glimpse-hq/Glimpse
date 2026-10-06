@@ -428,7 +428,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
             {loading ? (
               loadingIndicator
             ) : filteredEntries.length === 0 ? (
-              <p className="ui-text-meta ui-color-disabled text-pretty">
+              <p
+                role="status"
+                className="ui-text-meta ui-color-muted text-pretty"
+              >
                 {isSearching
                   ? isDictionaryFull
                     ? t({
@@ -583,7 +586,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
             {loading ? (
               loadingIndicator
             ) : replacements.length === 0 ? (
-              <p className="ui-text-meta ui-color-disabled text-pretty">
+              <p className="ui-text-meta ui-color-muted text-pretty">
                 {t({
                   id: "dictionary.replacements.empty_hint",
                   message:
@@ -631,6 +634,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                           onFocus={(e) => e.target.select()}
                           onKeyDown={editKeyDown}
                           onBlur={editBlur}
+                          aria-label={t({
+                            id: "dictionary.replacements.find_aria",
+                            message: "Find word to replace",
+                          })}
                           className="min-w-0 border-b border-border-hover bg-transparent py-0.5 ui-text-body ui-color-primary outline-hidden"
                         />
                         <ArrowRight
@@ -647,6 +654,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
                           placeholder={t({
                             id: "dictionary.replacements.replace_with",
                             message: "Replace with...",
+                          })}
+                          aria-label={t({
+                            id: "dictionary.replacements.replace_with_aria",
+                            message: "Replace with",
                           })}
                           className="min-w-0 border-b border-border-hover bg-transparent py-0.5 ui-text-body ui-color-primary placeholder-content-disabled outline-hidden"
                         />
@@ -721,7 +732,10 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
       </div>
 
       {resolvedError && (
-        <div className="mt-3 border-t border-border-primary pt-3 ui-text-body-sm ui-color-error-soft">
+        <div
+          role="alert"
+          className="mt-3 border-t border-border-primary pt-3 ui-text-body-sm ui-color-error-soft"
+        >
           {resolvedError}
         </div>
       )}
