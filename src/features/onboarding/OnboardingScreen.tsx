@@ -98,10 +98,22 @@ const supportsLanguages = (model: ModelInfo, languages: string[]) =>
     ),
   );
 
+// Parakeet if it covers the user's languages, otherwise Whisper.
+const recommendOnboardingModel = (models: ModelInfo[], languages: string[]) => {
+  const picked = pickOnboardingModels(models);
+  // A language no model lists goes to the one with the widest coverage.
+  const fitting =
+    picked.find((model) => supportsLanguages(model, languages)) ??
+    [...picked].sort(
+      (a, b) => b.supported_languages.length - a.supported_languages.length,
+    )[0];
+  return fitting?.key ?? "";
+};
+
 const pickDefaultOnboardingModel = (
   models: ModelInfo[],
   persistedModel: string,
-  languages: string[],
+  recommendedModel: string,
 ) => {
   const available = downloadableModels(models);
   // Anything but the stock default was picked on purpose.
@@ -112,14 +124,7 @@ const pickDefaultOnboardingModel = (
   ) {
     return persistedModel;
   }
-  const picked = pickOnboardingModels(models);
-  // A language no model lists goes to the one with the widest coverage.
-  const fitting =
-    picked.find((model) => supportsLanguages(model, languages)) ??
-    [...picked].sort(
-      (a, b) => b.supported_languages.length - a.supported_languages.length,
-    )[0];
-  return fitting?.key ?? persistedModel;
+  return recommendedModel || persistedModel;
 };
 
 const checkMicrophonePermission = () =>
@@ -292,12 +297,17 @@ export default function OnboardingScreen({
     });
   }, [persistedSettings, send]);
 
+  const languages = userLanguages(persistedSettings?.app_locale ?? "system");
+  const recommendedModel = recommendOnboardingModel(
+    modelCatalogQuery.data ?? [],
+    languages,
+  );
   const selectedModel =
     ctx.localModelChoice ||
     pickDefaultOnboardingModel(
       modelCatalogQuery.data ?? [],
       persistedLocalModel,
-      userLanguages(persistedSettings?.app_locale ?? "system"),
+      recommendedModel,
     );
   const selectedModelInfo = useMemo(
     () =>
@@ -833,7 +843,14 @@ export default function OnboardingScreen({
             onDownload={handleDownload}
             onDelete={handleDelete}
             onCancelDownload={handleCancelDownload}
-            onNext={goNext}
+            recommendedKey={recommendedModel}
+            onNext={() => {
+              void invoke("track_onboarding_model_chosen", {
+                recommended: recommendedModel,
+                chosen: selectedModel,
+              }).catch(() => {});
+              goNext();
+            }}
           />
         );
       case "import":

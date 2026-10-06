@@ -41,6 +41,7 @@ interface ModelStepProps {
   onDownload: (key: string, ane?: boolean) => void;
   onDelete: (key: string) => void;
   onCancelDownload: (key: string) => void;
+  recommendedKey: string;
   onNext: () => void;
 }
 
@@ -60,6 +61,7 @@ export function ModelStep({
   onDownload,
   onDelete,
   onCancelDownload,
+  recommendedKey,
   onNext,
 }: ModelStepProps) {
   const { t } = useLingui();
@@ -85,11 +87,20 @@ export function ModelStep({
       : undefined;
 
   const optionTier = (option: ModelInfo) => {
+    if (option.key === recommendedKey) {
+      return t({
+        id: "onboarding.model.tier.recommended",
+        message: "Recommended",
+      });
+    }
     if (isBuiltInModel(option)) {
       return t({ id: "onboarding.model.tier.built_in", message: "Built in" });
     }
     if (option.key.startsWith("whisper_large")) {
-      return t({ id: "onboarding.model.tier.accurate", message: "Accurate" });
+      return t({
+        id: "onboarding.model.tier.more_languages",
+        message: "More languages",
+      });
     }
     if (option.key.startsWith("parakeet")) {
       return t({ id: "onboarding.model.tier.fast", message: "Fast" });

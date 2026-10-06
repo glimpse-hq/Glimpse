@@ -227,6 +227,34 @@ pub fn track_onboarding_step_viewed(app: tauri::AppHandle<AppRuntime>, step: Str
     capture_event(&app, "onboarding_step_viewed", json!({ "step": step }));
 }
 
+/// Records which speech model onboarding recommended for your languages and
+/// which one you continued with. Only known catalog model ids are sent.
+#[tauri::command]
+pub fn track_onboarding_model_chosen(
+    app: tauri::AppHandle<AppRuntime>,
+    recommended: String,
+    chosen: String,
+) {
+    let known = |key: &str| {
+        if key.is_empty() {
+            "none".to_string()
+        } else if crate::model_manager::definition(key).is_some() {
+            key.to_string()
+        } else {
+            "unknown".to_string()
+        }
+    };
+    capture_event(
+        &app,
+        "onboarding_model_chosen",
+        json!({
+            "followed": recommended == chosen,
+            "recommended": known(&recommended),
+            "chosen": known(&chosen),
+        }),
+    );
+}
+
 /// Records where you said you heard about Glimpse, from a fixed list.
 #[tauri::command]
 pub fn track_onboarding_source(app: tauri::AppHandle<AppRuntime>, source: String) {

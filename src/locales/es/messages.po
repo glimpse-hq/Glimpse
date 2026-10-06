@@ -394,6 +394,11 @@ msgstr ""
 #~ msgstr "Lo usan los atajos con el modelo de escritura activado y la Personalización."
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.tier.accurate"
+#~ msgstr "Preciso"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse convierte mi voz en texto.\""
@@ -758,11 +763,6 @@ msgstr "Cuenta"
 #: src/features/license/components/AccountPill.tsx
 msgid "home.account.fallback"
 msgstr "Cuenta"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/ModelStep.tsx
-msgid "onboarding.model.tier.accurate"
-msgstr "Preciso"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3627,6 +3627,11 @@ msgid "settings.general.language_info_aria"
 msgstr "Más información sobre las insignias de compatibilidad de idioma de transcripción"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.tier.more_languages"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.more_options"
 msgstr "Más opciones"
@@ -4095,13 +4100,13 @@ msgid "record.error.open_settings"
 msgstr "Abrir Ajustes"
 
 #. js-lingui-explicit-id
-#: src/features/transcriptions/components/HomeTodayHeader.tsx
-msgid "home.today.accessibility_open"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.open_system_settings"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.open_system_settings"
+#: src/features/transcriptions/components/HomeTodayHeader.tsx
+msgid "home.today.accessibility_open"
 msgstr ""
 
 #. js-lingui-explicit-id
@@ -4390,6 +4395,11 @@ msgstr "Listo para instalar"
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.dictionary_detail"
 msgstr "Reconoce palabras de tu diccionario."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+msgid "onboarding.model.tier.recommended"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
