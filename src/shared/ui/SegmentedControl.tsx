@@ -40,6 +40,7 @@ const SegmentedControl = <T extends string>({
   activeIndicatorClassName,
   activeIndicatorLayoutId = "segmented-control-active",
 }: SegmentedControlProps<T>) => {
+  const activeIndex = options.findIndex((option) => option.value === value);
   return (
     <div
       className={[
@@ -48,8 +49,24 @@ const SegmentedControl = <T extends string>({
       ].join(" ")}
       role="radiogroup"
       aria-label={ariaLabel}
+      onKeyDown={(event) => {
+        const step =
+          event.key === "ArrowRight" || event.key === "ArrowDown"
+            ? 1
+            : event.key === "ArrowLeft" || event.key === "ArrowUp"
+              ? -1
+              : 0;
+        if (step === 0 || options.length === 0) return;
+        event.preventDefault();
+        const next =
+          (Math.max(activeIndex, 0) + step + options.length) % options.length;
+        onChange(options[next].value);
+        const buttons =
+          event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]');
+        buttons[next]?.focus();
+      }}
     >
-      {options.map((option) => {
+      {options.map((option, index) => {
         const isActive = option.value === value;
         return (
           <button
@@ -58,6 +75,7 @@ const SegmentedControl = <T extends string>({
             onClick={() => onChange(option.value)}
             role="radio"
             aria-checked={isActive}
+            tabIndex={isActive || (activeIndex === -1 && index === 0) ? 0 : -1}
             className={[
               buttonClassName ?? DEFAULT_BUTTON_CLASS_NAME,
               isActive

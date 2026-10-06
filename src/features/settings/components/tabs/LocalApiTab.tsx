@@ -364,6 +364,10 @@ const LocalApiTab = ({
               <div className="mt-1.5 relative z-10">
                 <Dropdown
                   value={model}
+                  ariaLabel={t({
+                    id: "settings.local_api.preloaded_model",
+                    message: "Preloaded model",
+                  })}
                   onChange={setModel}
                   options={modelOptions}
                   buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"

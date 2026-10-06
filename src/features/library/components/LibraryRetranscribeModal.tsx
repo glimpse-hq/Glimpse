@@ -197,6 +197,10 @@ const LibraryRetranscribeModal = ({
             <div className="mt-1.5">
               <Dropdown
                 value={selectedModelKey || null}
+                ariaLabel={t({
+                  id: "library.retranscribe.model",
+                  message: "Model",
+                })}
                 onChange={(value) => setSelectedModelKey(value)}
                 options={modelOptions}
                 placeholder={t({

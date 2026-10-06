@@ -3,6 +3,7 @@ import { useLingui } from "@lingui/react/macro";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, FunnelSimple } from "@phosphor-icons/react";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useMenuKeyboard } from "../hooks/useMenuKeyboard";
 
 export type FilterMenuItem = {
   key: string;
@@ -37,7 +38,9 @@ const FilterMenu = ({
   const { t } = useLingui();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   useClickOutside(ref, () => setOpen(false), open);
+  useMenuKeyboard(menuRef, open, () => setOpen(false));
 
   return (
     <div className="relative shrink-0" ref={ref}>
@@ -62,7 +65,9 @@ const FilterMenu = ({
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={menuRef}
             role="menu"
+            aria-label={ariaLabel}
             initial={{ opacity: 0, scale: 0.98, y: -2 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -2 }}

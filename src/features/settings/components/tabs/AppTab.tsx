@@ -644,6 +644,10 @@ const AppTab = ({
               </span>
               <Dropdown
                 value={textSizeMode}
+                ariaLabel={t({
+                  id: "settings.app.text_size.label",
+                  message: "Text Size",
+                })}
                 onChange={onTextSizeModeChange}
                 options={textSizeOptions}
               />
@@ -657,6 +661,10 @@ const AppTab = ({
               </span>
               <Dropdown
                 value={themeMode}
+                ariaLabel={t({
+                  id: "settings.app.theme.label",
+                  message: "Theme",
+                })}
                 onChange={onThemeModeChange}
                 options={themeOptions}
               />
@@ -670,6 +678,10 @@ const AppTab = ({
               </span>
               <Dropdown
                 value={appLocale}
+                ariaLabel={t({
+                  id: "settings.app.language.label",
+                  message: "Language",
+                })}
                 onChange={(value) => onAppLocaleChange(value)}
                 options={appLanguageOptions}
                 searchable
@@ -993,6 +1005,10 @@ const AppTab = ({
                   <div className="shrink-0">
                     <Dropdown
                       value={autoDeleteTarget}
+                      ariaLabel={t({
+                        id: "settings.app.auto_delete",
+                        message: "Auto-delete",
+                      })}
                       onChange={(value) => {
                         void applyAutoDeleteChange(value, autoDeleteDuration);
                       }}
@@ -1010,6 +1026,10 @@ const AppTab = ({
                   <div className="shrink-0">
                     <Dropdown
                       value={autoDeleteDuration}
+                      ariaLabel={t({
+                        id: "settings.app.auto_delete.after_aria",
+                        message: "Delete after",
+                      })}
                       onChange={(value) => {
                         void applyAutoDeleteChange(autoDeleteTarget, value);
                       }}

@@ -303,6 +303,10 @@ const LibraryImportModal = ({
             <div className="mt-1.5">
               <Dropdown
                 value={selectedModelKey || null}
+                ariaLabel={t({
+                  id: "library.import.model",
+                  message: "Model",
+                })}
                 onChange={(value) => setSelectedModelKey(value)}
                 options={modelOptions}
                 placeholder={t({

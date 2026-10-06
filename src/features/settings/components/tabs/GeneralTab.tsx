@@ -215,6 +215,10 @@ const GeneralTab = ({
             ) : (
               <Dropdown
                 value={microphoneDevice || ""}
+                ariaLabel={t({
+                  id: "settings.general.microphone",
+                  message: "Microphone",
+                })}
                 onChange={(val) =>
                   onMicrophoneDeviceChange(val === "" ? null : val)
                 }
@@ -278,6 +282,10 @@ const GeneralTab = ({
           <div>
             <Dropdown
               value={language}
+              ariaLabel={t({
+                id: "settings.general.transcription_language",
+                message: "Transcription Language",
+              })}
               onChange={(val) => onLanguageChange(val)}
               onOpenChange={setLanguageDropdownOpen}
               options={languages.map((lang) => ({

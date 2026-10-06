@@ -2109,6 +2109,11 @@ msgid "dictionary.delete_entry"
 msgstr "{entry} löschen"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_delete.after_aria"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all"
 msgstr "Alle Daten löschen"
