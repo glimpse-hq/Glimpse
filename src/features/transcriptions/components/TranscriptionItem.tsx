@@ -23,6 +23,7 @@ import {
 } from "../../settings/models-queries";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import TranscriptText from "../../../shared/ui/TranscriptText";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 
@@ -70,6 +71,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectionText, setSelectionText] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuPanelRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(
@@ -80,6 +82,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
     },
     menuOpen,
   );
+  useMenuKeyboard(menuPanelRef, menuOpen, () => {
+    setMenuOpen(false);
+    setSelectionText("");
+  });
 
   useLayoutEffect(() => {
     if (isExpanded) {
@@ -433,7 +439,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               <motion.button
                 onClick={handleCopy}
                 data-no-press
-                className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 hover:bg-surface-elevated ${
+                className={`p-1.5 rounded-md transition-colors opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-surface-elevated ${
                   copied ? "bg-surface-elevated" : ""
                 }`}
                 title={
@@ -520,7 +526,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                       message: "More options",
                     })
               }
-              aria-haspopup="true"
+              aria-haspopup="menu"
               aria-expanded={menuOpen}
             >
               {shiftHeld ? (
@@ -537,6 +543,12 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
             <AnimatePresence>
               {menuOpen && (
                 <motion.div
+                  ref={menuPanelRef}
+                  role="menu"
+                  aria-label={t({
+                    id: "transcriptions.item.more_options",
+                    message: "More options",
+                  })}
                   initial={{ opacity: 0, scale: 0.95, y: -4 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -4 }}
@@ -573,8 +585,10 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                   {selectionText.trim().length > 0 && (
                     <>
                       <button
+                        type="button"
+                        role="menuitem"
                         onClick={handleCopySelection}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors"
                       >
                         <Copy size={12} className="text-content-muted" />
                         <span>
@@ -589,9 +603,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                   )}
                   {canRetryFromAudio && (
                     <button
+                      type="button"
+                      role="menuitem"
                       onClick={handleRetry}
                       disabled={isRetrying}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
                     >
                       <RotateCw size={12} className="ui-color-cloud" />
                       <span>
@@ -608,9 +624,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     showLlmButtons &&
                     !isCloudModel && (
                       <button
+                        type="button"
+                        role="menuitem"
                         onClick={handleRetryLlm}
                         disabled={isRetryingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
                       >
                         <RotateCw size={12} className="text-local" />
                         <span>
@@ -634,9 +652,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     showLlmButtons &&
                     !isCloudModel && (
                       <button
+                        type="button"
+                        role="menuitem"
                         onClick={handleUndoLlm}
                         disabled={isUndoingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none transition-colors disabled:opacity-50"
                       >
                         <Undo2 size={12} className="text-warning" />
                         <span>
@@ -662,9 +682,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
                     <div className="h-px bg-border-secondary mx-2" />
                   )}
                   <button
+                    type="button"
+                    role="menuitem"
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 focus-visible:bg-red-500/10 focus-visible:outline-none transition-colors disabled:opacity-50"
                   >
                     <Trash2 size={12} />
                     <span>
@@ -681,8 +703,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
         )}
 
         {isRetryingLlm && (
-          <div className="flex items-center gap-1.5 ui-text-meta ui-color-local">
-            <RotateCw size={12} className="animate-spin" />
+          <div
+            role="status"
+            className="flex items-center gap-1.5 ui-text-meta ui-color-local"
+          >
+            <RotateCw size={12} className="animate-spin" aria-hidden="true" />
             <span>
               {t({
                 id: "transcriptions.item.cleaning",
@@ -692,8 +717,11 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
           </div>
         )}
         {isUndoingLlm && (
-          <div className="flex items-center gap-1.5 ui-text-meta ui-color-warning">
-            <Undo2 size={12} className="animate-pulse" />
+          <div
+            role="status"
+            className="flex items-center gap-1.5 ui-text-meta ui-color-warning"
+          >
+            <Undo2 size={12} className="animate-pulse" aria-hidden="true" />
             <span>
               {t({
                 id: "transcriptions.item.reverting",
