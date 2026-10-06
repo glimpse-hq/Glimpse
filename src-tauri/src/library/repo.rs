@@ -527,8 +527,10 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         params.push(Box::new(format!("%\"{}\"%", tag.trim())));
     }
 
-    if let Some(days) = filter.since_days {
-        let cutoff = chrono::Utc::now() - chrono::Duration::days(days as i64);
+    if let Some(cutoff) = filter.since_days.and_then(|days| {
+        chrono::TimeDelta::try_days(days as i64)
+            .and_then(|span| chrono::Utc::now().checked_sub_signed(span))
+    }) {
         clauses.push("created_at >= ?".to_string());
         params.push(Box::new(cutoff.to_rfc3339()));
     }
