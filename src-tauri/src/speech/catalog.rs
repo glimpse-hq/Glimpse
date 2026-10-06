@@ -1365,4 +1365,172 @@ mod tests {
     fn unknown_models_are_not_downloadable() {
         assert!(!model_is_downloadable("not_a_real_model"));
     }
+
+    fn language_codes(key: &str) -> Vec<String> {
+        manifest_to_model_info(definition(key).unwrap())
+            .supported_languages
+            .into_iter()
+            .map(|language| language.code)
+            .collect()
+    }
+
+    #[test]
+    fn manifest_ids_are_unique_and_exclude_the_diarizer() {
+        let mut ids: Vec<_> = local_manifests().iter().map(|m| m.id).collect();
+        let total = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), total);
+        assert!(definition(DIARIZER_MODEL).is_none());
+        assert_eq!(
+            installable_definition(DIARIZER_MODEL).unwrap().id,
+            DIARIZER_MODEL
+        );
+        assert!(installable_definition(RETIRED_DIARIZER_MODEL).is_none());
+    }
+
+    #[test]
+    fn every_downloadable_model_has_an_install_spec_with_hashed_files() {
+        for manifest in local_manifests() {
+            if manifest.engine == LocalModelEngine::Apple || !is_downloadable(manifest) {
+                continue;
+            }
+            for ane in [false, true] {
+                let spec = install_spec(manifest.id, ane)
+                    .unwrap_or_else(|| panic!("{} has no install spec", manifest.id));
+                assert_eq!(spec.id, manifest.id);
+                assert!(!spec.files.is_empty(), "{} has no files", manifest.id);
+                for file in &spec.files {
+                    assert!(file.url.starts_with("https://"), "{}", file.url);
+                    if let Some(hash) = &file.sha256 {
+                        assert_eq!(hash.len(), 64, "{}", file.path);
+                        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+                    }
+                }
+            }
+        }
+        assert!(install_spec("not_a_real_model", false).is_none());
+    }
+
+    #[test]
+    fn single_file_models_install_as_a_file_and_bundles_as_a_directory() {
+        let spec = install_spec("whisper_large_v3_turbo_q8", false).unwrap();
+        assert!(matches!(
+            spec.storage,
+            ModelStorage::File { ref artifact } if artifact == "whisper-large-v3-turbo-Q8_0.gguf"
+        ));
+        assert_eq!(spec.variant.as_deref(), Some("whisper-large-v3-turbo"));
+    }
+
+    #[test]
+    fn english_tagged_models_only_report_english() {
+        for key in [
+            "parakeet_unified_en_int8",
+            "nemotron_streaming_en",
+            "distil_whisper_large_v35",
+            "distil_whisper_small_en",
+        ] {
+            assert_eq!(language_codes(key), ["en"], "{key}");
+        }
+    }
+
+    #[test]
+    fn whisper_covers_languages_parakeet_does_not() {
+        let parakeet = language_codes("parakeet_tdt_v3_gguf");
+        let whisper = language_codes("whisper_large_v3_turbo_q8");
+        assert!(parakeet.iter().any(|code| code == "de"));
+        for code in ["ja", "zh", "ko", "hi", "ar"] {
+            assert!(!parakeet.iter().any(|c| c == code), "parakeet lists {code}");
+            assert!(whisper.iter().any(|c| c == code), "whisper misses {code}");
+        }
+        assert!(parakeet.iter().all(|code| whisper.contains(code)));
+    }
+
+    #[test]
+    fn every_listed_language_code_has_a_display_name() {
+        for manifest in local_manifests() {
+            for language in manifest_to_model_info(manifest).supported_languages {
+                assert_ne!(language.code, language.name, "{}", manifest.id);
+            }
+        }
+    }
+
+    #[test]
+    fn diarizer_lists_no_languages() {
+        assert!(diarizer_model_info().supported_languages.is_empty());
+    }
+
+    #[test]
+    fn capabilities_match_case_insensitively_and_unknown_models_have_none() {
+        assert!(model_supports_capability(
+            "whisper_large_v3_turbo_q8",
+            "DICTIONARY"
+        ));
+        assert!(model_supports_capability(
+            "whisper_large_v3_turbo_q8",
+            MODEL_CAPABILITY_TIMESTAMPS
+        ));
+        assert!(!model_supports_capability(
+            "qwen3_asr_0_6b_q8",
+            MODEL_CAPABILITY_TIMESTAMPS
+        ));
+        assert!(!model_supports_capability(
+            "nope",
+            MODEL_CAPABILITY_DICTIONARY
+        ));
+        assert!(is_streaming_model("nemotron_streaming_en"));
+        assert!(!is_streaming_model("whisper_large_v3_turbo_q8"));
+    }
+
+    #[test]
+    fn nvidia_families_keep_their_legacy_engine_names() {
+        let name = |key| engine_name(definition(key).unwrap());
+        let id = |key| engine_id(definition(key).unwrap());
+        assert_eq!(name("parakeet_unified_en_int8"), "parakeet");
+        assert_eq!(name("nemotron_streaming_en"), "nemotron");
+        assert_eq!(name("nemotron_35_streaming_multilingual"), "nemotron");
+        assert_eq!(id("parakeet_unified_en_int8"), "nvidia");
+        assert_eq!(id("nemotron_streaming_en"), "nvidia");
+        assert_eq!(
+            id("whisper_large_v3_turbo_q8"),
+            name("whisper_large_v3_turbo_q8")
+        );
+    }
+
+    #[test]
+    fn labels_resolve_local_keys_and_remote_tokens() {
+        assert_eq!(label("whisper_large_v3_turbo_q8"), "Whisper Large V3 Turbo");
+        assert_eq!(label("unknown_local"), "unknown_local");
+        assert_eq!(
+            label("remote:openai:gpt-4o-transcribe"),
+            "OpenAI · gpt-4o-transcribe"
+        );
+        assert_eq!(label("  remote:XAI:grok "), "xAI (Grok) · grok");
+        assert_eq!(label("remote:groq"), "Groq");
+        assert_eq!(label("remote:groq:"), "Groq");
+        assert_eq!(label("remote:"), "Remote");
+        assert_eq!(label("remote:acme:model:v2"), "acme · model:v2");
+    }
+
+    #[test]
+    fn quant_suffixes_are_stripped_from_whisper_cpp_encoder_names() {
+        assert_eq!(strip_quant_suffix("large-v3-turbo-q8_0"), "large-v3-turbo");
+        assert_eq!(strip_quant_suffix("small-q5_1"), "small");
+        assert_eq!(strip_quant_suffix("large-v3"), "large-v3");
+        assert_eq!(strip_quant_suffix("base"), "base");
+        assert_eq!(
+            whisper_cpp_encoder_dir(definition("whisper_small_q5").unwrap()).as_deref(),
+            Some("ggml-small-encoder.mlmodelc")
+        );
+        assert!(whisper_cpp_encoder_dir(definition("parakeet_tdt_v3_gguf").unwrap()).is_none());
+    }
+
+    #[test]
+    fn whisper_bin_partial_names_the_old_download() {
+        assert_eq!(
+            whisper_bin_partial(definition("whisper_small_q5").unwrap()).as_deref(),
+            Some("ggml-small-q5_1.bin.part")
+        );
+        assert!(whisper_bin_partial(definition("parakeet_tdt_v3_gguf").unwrap()).is_none());
+    }
 }

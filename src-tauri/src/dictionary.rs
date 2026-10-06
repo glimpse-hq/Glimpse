@@ -183,7 +183,7 @@ pub fn set_replacements(
 
 #[cfg(test)]
 mod tests {
-    use super::apply_replacements;
+    use super::{apply_replacements, sanitize_dictionary_entries, sanitize_replacements};
     use crate::settings::Replacement;
 
     fn rules(pairs: &[(&str, &str)]) -> Vec<Replacement> {
@@ -282,5 +282,111 @@ mod tests {
     fn empty_sources_and_no_rules_leave_text_unchanged() {
         assert_eq!(apply_replacements("hello", &[]), "hello");
         assert_eq!(apply_replacements("hello", &rules(&[("", "bye")])), "hello");
+    }
+
+    fn entries(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| (*value).to_string()).collect()
+    }
+
+    #[test]
+    fn dictionary_entries_are_trimmed_and_blank_ones_dropped() {
+        assert_eq!(
+            sanitize_dictionary_entries(&entries(&["  Glimpse ", "", "   ", "\tParakeet\n"])),
+            entries(&["Glimpse", "Parakeet"])
+        );
+    }
+
+    #[test]
+    fn dictionary_dedupes_case_insensitively_keeping_the_first_spelling() {
+        assert_eq!(
+            sanitize_dictionary_entries(&entries(&["Tauri", "TAURI", " tauri ", "Rust"])),
+            entries(&["Tauri", "Rust"])
+        );
+    }
+
+    #[test]
+    fn dictionary_entries_are_capped_at_160_chars_without_trailing_space() {
+        let long = format!("{}{}", "é".repeat(159), " tail");
+        let cleaned = sanitize_dictionary_entries(&[long]);
+        assert_eq!(cleaned, vec!["é".repeat(159)]);
+
+        let exact = "a".repeat(200);
+        assert_eq!(
+            sanitize_dictionary_entries(&[exact])[0].chars().count(),
+            160
+        );
+    }
+
+    #[test]
+    fn dictionary_keeps_at_most_64_unique_entries() {
+        let mut values: Vec<String> = vec!["dup".to_string(); 10];
+        values.extend((0..100).map(|index| format!("word{index}")));
+        let cleaned = sanitize_dictionary_entries(&values);
+        assert_eq!(cleaned.len(), 64);
+        assert_eq!(cleaned[0], "dup");
+        assert_eq!(cleaned[1], "word0");
+        assert_eq!(cleaned[63], "word62");
+    }
+
+    #[test]
+    fn replacements_are_trimmed_and_need_a_source() {
+        assert_eq!(
+            sanitize_replacements(&rules(&[
+                ("  gonna ", " going to "),
+                ("   ", "x"),
+                ("um", "")
+            ])),
+            rules(&[("gonna", "going to"), ("um", "")])
+        );
+    }
+
+    #[test]
+    fn replacements_dedupe_sources_case_insensitively() {
+        assert_eq!(
+            sanitize_replacements(&rules(&[("Gonna", "going to"), ("GONNA", "gunna")])),
+            rules(&[("Gonna", "going to")])
+        );
+    }
+
+    #[test]
+    fn replacements_cap_source_and_target_lengths() {
+        let from = format!("{} x", "f".repeat(99));
+        let to = "t".repeat(250);
+        let cleaned = sanitize_replacements(&rules(&[(from.as_str(), to.as_str())]));
+        assert_eq!(cleaned[0].from, "f".repeat(99));
+        assert_eq!(cleaned[0].to.chars().count(), 200);
+    }
+
+    #[test]
+    fn replacements_keep_at_most_64_rules() {
+        let sources: Vec<String> = (0..80).map(|index| format!("w{index}")).collect();
+        let pairs: Vec<(&str, &str)> = sources.iter().map(|s| (s.as_str(), "x")).collect();
+        let cleaned = sanitize_replacements(&rules(&pairs));
+        assert_eq!(cleaned.len(), 64);
+        assert_eq!(cleaned[63].from, "w63");
+    }
+
+    #[test]
+    fn sanitized_replacements_round_trip_unchanged() {
+        let once = sanitize_replacements(&rules(&[(" a ", " b "), ("A", "c"), ("d", "e")]));
+        assert_eq!(sanitize_replacements(&once), once);
+    }
+
+    #[test]
+    fn replacements_match_case_insensitively_across_unicode() {
+        let replacements = rules(&[("café", "coffee shop")]);
+        assert_eq!(
+            apply_replacements("Meet at the CAFÉ or the café", &replacements),
+            "Meet at the COFFEE SHOP or the coffee shop"
+        );
+    }
+
+    #[test]
+    fn regex_metacharacters_in_sources_are_literal() {
+        let replacements = rules(&[("a.b", "x"), ("(c)", "y")]);
+        assert_eq!(
+            apply_replacements("a.b aXb (c) c", &replacements),
+            "x aXb y c"
+        );
     }
 }

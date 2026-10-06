@@ -1366,4 +1366,322 @@ mod tests {
         assert_eq!(second.llm_api_key, "api-key-value");
         assert_eq!(store.llm_api_key_ciphertext.lock().clone(), None);
     }
+
+    fn raw_setting(store: &SettingsStore, key: &str) -> Option<String> {
+        let conn = store.conn.lock();
+        store
+            .read_optional_raw_value_from_conn(&conn, key)
+            .expect("read raw setting")
+    }
+
+    #[test]
+    fn first_load_persists_defaults_and_a_stable_install_id() {
+        let store = test_store();
+        let first = store.load().expect("first load");
+        assert!(first.analytics_first_run);
+        assert!(uuid::Uuid::parse_str(&first.analytics_install_id).is_ok());
+        assert!(first.personalities_notes_seeded);
+        assert!(raw_setting(&store, KEY_THEME_MODE).is_some());
+
+        let second = store.load().expect("second load");
+        assert_eq!(second.analytics_install_id, first.analytics_install_id);
+        assert!(!second.analytics_first_run);
+        assert_eq!(second.local_model, default_local_model());
+    }
+
+    #[test]
+    fn save_then_load_round_trips_user_choices() {
+        let store = test_store();
+        let mut settings = store.load().expect("load");
+        settings.dictionary = vec!["Glimpse".to_string()];
+        settings.replacements = vec![Replacement {
+            from: "gonna".to_string(),
+            to: "going to".to_string(),
+        }];
+        settings.theme_mode = ThemeMode::Dark;
+        settings.media_action = MediaAction::Duck25;
+        settings.local_api_port = 9000;
+        settings.local_api_host = "0.0.0.0".to_string();
+        settings.app_locale = "fr".to_string();
+        store.save(&settings).expect("save");
+
+        let loaded = store.load().expect("reload");
+        assert_eq!(loaded.dictionary, settings.dictionary);
+        assert_eq!(loaded.replacements, settings.replacements);
+        assert_eq!(loaded.theme_mode, ThemeMode::Dark);
+        assert_eq!(loaded.media_action, MediaAction::Duck25);
+        assert_eq!(loaded.local_api_port, 9000);
+        assert_eq!(loaded.local_api_host, "0.0.0.0");
+        assert_eq!(loaded.app_locale, "fr");
+    }
+
+    #[test]
+    fn legacy_media_control_flag_becomes_a_media_action() {
+        for (legacy, expected) in [(true, MediaAction::Pause), (false, MediaAction::Off)] {
+            let store = test_store();
+            write_setting(&store, LEGACY_KEY_MEDIA_CONTROL_ENABLED, &legacy);
+            assert_eq!(store.load().expect("load").media_action, expected);
+            assert_eq!(
+                raw_setting(&store, KEY_MEDIA_ACTION),
+                Some(serde_json::to_string(&expected).unwrap())
+            );
+        }
+    }
+
+    #[test]
+    fn media_action_wins_over_the_legacy_flag() {
+        let store = test_store();
+        write_setting(&store, LEGACY_KEY_MEDIA_CONTROL_ENABLED, &true);
+        write_setting(&store, KEY_MEDIA_ACTION, &MediaAction::Duck50);
+        assert_eq!(
+            store.load().expect("load").media_action,
+            MediaAction::Duck50
+        );
+    }
+
+    #[test]
+    fn legacy_prune_policies_migrate_to_one_auto_delete_rule() {
+        let store = test_store();
+        write_setting(
+            &store,
+            LEGACY_KEY_RECORDING_PRUNE_POLICY,
+            &RecordingPrunePolicy::Week,
+        );
+        let loaded = store.load().expect("load");
+        assert_eq!(loaded.auto_delete_target, AutoDeleteTarget::Audio);
+        assert_eq!(loaded.auto_delete_duration, RecordingPrunePolicy::Week);
+        assert!(raw_setting(&store, KEY_AUTO_DELETE_DURATION).is_some());
+
+        let store = test_store();
+        write_setting(
+            &store,
+            LEGACY_KEY_RECORDING_PRUNE_POLICY,
+            &RecordingPrunePolicy::Week,
+        );
+        write_setting(
+            &store,
+            LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY,
+            &RecordingPrunePolicy::Month,
+        );
+        let loaded = store.load().expect("load");
+        assert_eq!(loaded.auto_delete_target, AutoDeleteTarget::Transcripts);
+        assert_eq!(loaded.auto_delete_duration, RecordingPrunePolicy::Month);
+    }
+
+    #[test]
+    fn stored_auto_delete_duration_skips_the_legacy_migration() {
+        let store = test_store();
+        write_setting(
+            &store,
+            LEGACY_KEY_TRANSCRIPTION_PRUNE_POLICY,
+            &RecordingPrunePolicy::Day,
+        );
+        write_setting(
+            &store,
+            KEY_AUTO_DELETE_DURATION,
+            &RecordingPrunePolicy::Never,
+        );
+        let loaded = store.load().expect("load");
+        assert_eq!(loaded.auto_delete_duration, RecordingPrunePolicy::Never);
+        assert_eq!(loaded.auto_delete_target, AutoDeleteTarget::Transcripts);
+    }
+
+    #[test]
+    fn untouched_proxy_presets_move_to_the_native_api() {
+        for (provider, native) in [
+            ("elevenlabs", "https://api.elevenlabs.io/v1"),
+            ("deepgram", "https://api.deepgram.com/v1"),
+        ] {
+            let store = test_store();
+            write_setting(&store, KEY_REMOTE_SPEECH_PROVIDER, &provider);
+            write_setting(
+                &store,
+                KEY_REMOTE_SPEECH_ENDPOINT,
+                &" http://localhost:4000/v1 ",
+            );
+            assert_eq!(store.load().expect("load").remote_speech_endpoint, native);
+        }
+    }
+
+    #[test]
+    fn custom_or_other_provider_endpoints_are_left_alone() {
+        let store = test_store();
+        write_setting(&store, KEY_REMOTE_SPEECH_PROVIDER, &"deepgram");
+        write_setting(
+            &store,
+            KEY_REMOTE_SPEECH_ENDPOINT,
+            &"http://localhost:5000/v1",
+        );
+        assert_eq!(
+            store.load().expect("load").remote_speech_endpoint,
+            "http://localhost:5000/v1"
+        );
+
+        let store = test_store();
+        write_setting(&store, KEY_REMOTE_SPEECH_PROVIDER, &"litellm");
+        write_setting(
+            &store,
+            KEY_REMOTE_SPEECH_ENDPOINT,
+            &"http://localhost:4000/v1",
+        );
+        assert_eq!(
+            store.load().expect("load").remote_speech_endpoint,
+            "http://localhost:4000/v1"
+        );
+    }
+
+    #[test]
+    fn invalid_stored_values_are_repaired_on_load() {
+        let store = test_store();
+        write_setting(&store, KEY_LOCAL_MODEL, &"retired_model");
+        write_setting(&store, KEY_TRANSCRIPTION_MODE, &TranscriptionMode::Cloud);
+        write_setting(&store, KEY_APP_LOCALE, &"klingon");
+        write_setting(&store, KEY_LOCAL_API_PORT, &0u16);
+        write_setting(&store, KEY_LOCAL_API_MODEL, &"retired_model");
+        write_setting(&store, KEY_LOCAL_API_HOST, &"192.168.1.10");
+
+        let loaded = store.load().expect("load");
+        assert_eq!(loaded.local_model, default_local_model());
+        assert_eq!(loaded.transcription_mode, TranscriptionMode::Local);
+        assert_eq!(loaded.app_locale, "system");
+        assert_eq!(loaded.local_api_port, default_local_api_port());
+        assert_eq!(loaded.local_api_model, "auto");
+        assert_eq!(loaded.local_api_host, "127.0.0.1");
+        assert_eq!(
+            raw_setting(&store, KEY_LOCAL_MODEL),
+            Some(serde_json::to_string(&default_local_model()).unwrap())
+        );
+    }
+
+    #[test]
+    fn known_local_api_models_and_locale_spellings_are_kept_canonically() {
+        let store = test_store();
+        write_setting(&store, KEY_LOCAL_API_MODEL, &"whisper_large_v3_turbo_q8");
+        write_setting(&store, KEY_APP_LOCALE, &" FR ");
+        let loaded = store.load().expect("load");
+        assert_eq!(loaded.local_api_model, "whisper_large_v3_turbo_q8");
+        assert_eq!(loaded.app_locale, "fr");
+    }
+
+    #[test]
+    fn legacy_shortcut_fields_follow_the_first_binding() {
+        let store = test_store();
+        let mut bindings = default_shortcut_bindings();
+        bindings.smart[0].shortcut = "Alt+K".to_string();
+        bindings.hold.clear();
+        write_setting(&store, KEY_SHORTCUT_BINDINGS, &bindings);
+        write_setting(&store, KEY_HOLD_SHORTCUT, &"Alt+H");
+
+        let loaded = store.load().expect("load");
+        assert_eq!(loaded.smart_shortcut, "Alt+K");
+        assert_eq!(loaded.hold_shortcut, "Alt+H");
+        assert_eq!(loaded.toggle_shortcut, default_toggle_shortcut());
+    }
+
+    #[test]
+    fn seeding_fills_only_empty_built_in_personality_notes() {
+        let store = test_store();
+        let mut personalities = default_personalities();
+        for personality in personalities.iter_mut() {
+            personality.instructions.clear();
+        }
+        personalities[0].instructions = vec!["keep mine".to_string()];
+        let kept_id = personalities[0].id.clone();
+        personalities.push(Personality {
+            id: "custom".to_string(),
+            name: "Custom".to_string(),
+            enabled: true,
+            apps: Vec::new(),
+            websites: Vec::new(),
+            instructions: Vec::new(),
+        });
+        write_setting(&store, KEY_PERSONALITIES, &personalities);
+
+        let loaded = store.load().expect("load");
+        let by_id = |id: &str| loaded.personalities.iter().find(|p| p.id == id).unwrap();
+        assert_eq!(by_id(&kept_id).instructions, ["keep mine"]);
+        assert!(by_id("custom").instructions.is_empty());
+        assert!(
+            loaded
+                .personalities
+                .iter()
+                .filter(|p| p.id != kept_id && p.id != "custom")
+                .any(|p| !p.instructions.is_empty())
+        );
+    }
+
+    #[test]
+    fn app_locales_canonicalize_case_and_separators() {
+        assert_eq!(canonicalize_app_locale(" EN ").as_deref(), Some("en"));
+        assert_eq!(canonicalize_app_locale("System").as_deref(), Some("system"));
+        assert_eq!(canonicalize_app_locale("en_US"), None);
+        assert_eq!(canonicalize_app_locale(""), None);
+        assert_eq!(canonicalize_app_locale_or_default("xx"), "system");
+    }
+
+    #[test]
+    fn auto_delete_policy_applies_to_one_target_only() {
+        let mut settings = UserSettings {
+            auto_delete_duration: RecordingPrunePolicy::Week,
+            ..UserSettings::default()
+        };
+        assert_eq!(
+            auto_delete_recording_policy(&settings),
+            RecordingPrunePolicy::Never
+        );
+        assert_eq!(
+            auto_delete_transcription_policy(&settings),
+            RecordingPrunePolicy::Week
+        );
+
+        settings.auto_delete_target = AutoDeleteTarget::Audio;
+        assert_eq!(
+            auto_delete_recording_policy(&settings),
+            RecordingPrunePolicy::Week
+        );
+        assert_eq!(
+            auto_delete_transcription_policy(&settings),
+            RecordingPrunePolicy::Never
+        );
+    }
+
+    #[test]
+    fn prune_cutoffs_step_back_by_calendar_units() {
+        use chrono::TimeZone;
+        let now = Local.with_ymd_and_hms(2026, 3, 31, 12, 0, 0).unwrap();
+        let cutoff = |policy| recording_prune_cutoff(policy, now);
+        assert_eq!(cutoff(RecordingPrunePolicy::Never), None);
+        assert_eq!(cutoff(RecordingPrunePolicy::Immediately), Some(now));
+        assert_eq!(
+            cutoff(RecordingPrunePolicy::Day).map(|at| at.date_naive().to_string()),
+            Some("2026-03-30".to_string())
+        );
+        assert_eq!(
+            cutoff(RecordingPrunePolicy::Week).map(|at| at.date_naive().to_string()),
+            Some("2026-03-24".to_string())
+        );
+        assert_eq!(
+            cutoff(RecordingPrunePolicy::Month).map(|at| at.date_naive().to_string()),
+            Some("2026-02-28".to_string())
+        );
+        assert_eq!(
+            cutoff(RecordingPrunePolicy::Year).map(|at| at.date_naive().to_string()),
+            Some("2025-03-31".to_string())
+        );
+    }
+
+    // One value this build can't parse, such as an enum variant a newer
+    // version wrote before a downgrade, makes `load` fail. Startup then runs
+    // on `UserSettings::default()`, and the next save overwrites every stored
+    // setting, including the encrypted API keys, with defaults.
+    #[test]
+    #[ignore = "bug: one unreadable setting discards all stored settings"]
+    fn one_unreadable_setting_does_not_discard_the_others() {
+        let store = test_store();
+        write_setting(&store, KEY_DICTIONARY, &vec!["Glimpse".to_string()]);
+        write_setting(&store, KEY_THEME_MODE, &"sepia");
+        let loaded = store.load().expect("load despite one unreadable value");
+        assert_eq!(loaded.dictionary, ["Glimpse"]);
+        assert_eq!(loaded.theme_mode, ThemeMode::System);
+    }
 }
