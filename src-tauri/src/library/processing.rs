@@ -1460,7 +1460,10 @@ fn bookmark_list(item: &LibraryItem, markdown: bool) -> Option<String> {
     Some(lines.join("\n"))
 }
 
-fn speaker_name<'a>(item: &'a LibraryItem, speaker_id: &Option<String>) -> Option<&'a str> {
+pub(crate) fn speaker_name<'a>(
+    item: &'a LibraryItem,
+    speaker_id: &Option<String>,
+) -> Option<&'a str> {
     let id = speaker_id.as_deref()?;
     item.speakers
         .as_ref()?

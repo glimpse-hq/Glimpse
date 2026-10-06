@@ -68,6 +68,7 @@ fs2 = "0.4"
 tauri-plugin-deep-link = "2.5.0"
 rubato = "5.0.0"
 interprocess = "2"
+rmcp = { version = "3.5.1", default-features = false, features = ["server", "macros", "transport-io"] }
 
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
 tauri-plugin-process = "2.4.0"

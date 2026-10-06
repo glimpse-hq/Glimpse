@@ -262,8 +262,14 @@ pub fn run_cli() -> Result<()> {
         return glimpse_speech::cli::run_blocking();
     }
 
-    let context = app_context();
-    let settings_store = SettingsStore::for_cli(&context.config().identifier)?;
+    require_cli_license(&app_context().config().identifier)?;
+    glimpse_speech::cli::run_blocking()
+}
+
+/// The gate every licensed CLI command passes before it runs: refresh the
+/// saved grant when due, then require an active license (no trial).
+pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
+    let settings_store = SettingsStore::for_cli(identifier)?;
     let cache_active_before_refresh = license::active_license_gate(&settings_store);
     if license::secure_grant_refresh_needed(&settings_store).map_err(anyhow::Error::msg)? {
         let runtime = tokio::runtime::Runtime::new()?;
@@ -283,8 +289,7 @@ pub fn run_cli() -> Result<()> {
              Open Glimpse > Settings > Account to check or activate your license."
         );
     }
-
-    glimpse_speech::cli::run_blocking()
+    Ok(())
 }
 
 fn normalized_integration_args(args: &[String]) -> Option<Vec<String>> {

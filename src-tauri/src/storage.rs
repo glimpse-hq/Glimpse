@@ -1068,6 +1068,14 @@ impl StorageManager {
         crate::library::repo::insert_library_item(&conn, item)
     }
 
+    /// Refuses writes on this connection, for readers like `glimpse mcp`.
+    pub fn set_query_only(&self) -> Result<()> {
+        self.connection
+            .lock()
+            .pragma_update(None, "query_only", true)
+            .context("Failed to make the database read-only")
+    }
+
     pub fn get_library_item(&self, id: &str) -> Result<Option<LibraryItem>> {
         let conn = self.connection.lock();
         crate::library::repo::get_library_item(&conn, &self.library_root, id)

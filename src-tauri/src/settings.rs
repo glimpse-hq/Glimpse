@@ -785,7 +785,7 @@ impl SettingsStore {
         Self::open(settings_db_path(cli_app_config_dir(app_identifier)?))
     }
 
-    fn open(path: PathBuf) -> Result<Self> {
+    pub(crate) fn open(path: PathBuf) -> Result<Self> {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
                 .with_context(|| format!("Failed to create settings dir {}", parent.display()))?;

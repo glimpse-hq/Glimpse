@@ -71,6 +71,7 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 ## Integrations
 
 - **[Raycast](https://www.raycast.com/garon/glimpse)**. Search dictations, transcribe files, switch models, and more, without leaving Raycast. Requires a [license](#pricing).
+- **AI agents.** `glimpse mcp` lets Claude Code, Claude Desktop, Cursor and other MCP clients search and read your Library, on your machine. Connect it with `claude mcp add glimpse -- glimpse mcp`. Requires a [license](#pricing).
 - **Your own.** The [CLI guide](https://github.com/glimpse-hq/Glimpse/wiki/CLI) covers scripting Glimpse from Shortcuts, Finder, or anything else that can run a command.
 
 ## Pricing

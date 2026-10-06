@@ -462,7 +462,7 @@ fn serialize_tags(tags: &[String]) -> Result<String> {
     Ok(serde_json::to_string(tags)?)
 }
 
-fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
+pub(crate) fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
     let mut tag_terms = Vec::new();
     let mut text_terms = Vec::new();
 
