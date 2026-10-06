@@ -136,15 +136,15 @@ pub fn set_dictionary(
     if !cleaned.is_empty() {
         crate::analytics::track_feature_used(&app, "dictionary");
     }
-    let mut settings = state.current_settings();
-    settings.dictionary = cleaned.clone();
-    settings.auto_dictionary_ignored =
-        crate::auto_dictionary::remove_dictionary_entries_from_ignored(
-            settings.auto_dictionary_ignored,
-            &cleaned,
-        );
     state
-        .persist_settings(settings)
+        .persist_settings_with(|_, next| {
+            next.dictionary = cleaned.clone();
+            next.auto_dictionary_ignored =
+                crate::auto_dictionary::remove_dictionary_entries_from_ignored(
+                    std::mem::take(&mut next.auto_dictionary_ignored),
+                    &cleaned,
+                );
+        })
         .map_err(|err| err.to_string())?;
     crate::auto_dictionary::sync_ignored_dictionary_entries(&cleaned);
     Ok(cleaned)
@@ -152,12 +152,11 @@ pub fn set_dictionary(
 
 #[tauri::command]
 pub fn get_replacements(state: tauri::State<AppState>) -> Result<Vec<Replacement>, String> {
-    let mut settings = state.current_settings();
-    let cleaned = sanitize_replacements(&settings.replacements);
-    if cleaned != settings.replacements {
-        settings.replacements = cleaned.clone();
+    let current = state.current_settings_unmasked().replacements;
+    let cleaned = sanitize_replacements(&current);
+    if cleaned != current {
         state
-            .persist_settings(settings)
+            .persist_settings_with(|_, next| next.replacements = cleaned.clone())
             .map_err(|err| err.to_string())?;
     }
     Ok(cleaned)
@@ -173,10 +172,8 @@ pub fn set_replacements(
     if !cleaned.is_empty() {
         crate::analytics::track_feature_used(&app, "replacements");
     }
-    let mut settings = state.current_settings();
-    settings.replacements = cleaned.clone();
     state
-        .persist_settings(settings)
+        .persist_settings_with(|_, next| next.replacements = cleaned.clone())
         .map_err(|err| err.to_string())?;
     Ok(cleaned)
 }
