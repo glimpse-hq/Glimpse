@@ -1341,12 +1341,6 @@ export function useSettingsForm({
         resetCaptureState();
         return;
       }
-      // A modal opened from within settings owns Escape first.
-      if (showFAQModal || whatsNewOpen) {
-        setShowFAQModal(false);
-        setWhatsNewOpen(false);
-        return;
-      }
       onClose();
     };
     window.addEventListener("keydown", handleEscape);
@@ -1357,8 +1351,6 @@ export function useSettingsForm({
     finalizeCapture,
     onClose,
     resetCaptureState,
-    showFAQModal,
-    whatsNewOpen,
   ]);
 
   useEffect(() => {

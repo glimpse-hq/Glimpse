@@ -1477,6 +1477,11 @@ msgid "home.support.close_aria"
 msgstr "Close support"
 
 #. js-lingui-explicit-id
+#: src/features/updates/components/WhatsNewModal.tsx
+msgid "updates.whats_new.close_aria"
+msgstr "Close What's New"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.close_window"
 msgstr "Close Window"
@@ -3357,6 +3362,11 @@ msgstr "LLM Endpoint URL"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.load_more"
 msgstr "Load more"
+
+#. js-lingui-explicit-id
+#: src/features/updates/components/WhatsNewModal.tsx
+msgid "updates.whats_new.loading"
+msgstr "Loading releases"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx

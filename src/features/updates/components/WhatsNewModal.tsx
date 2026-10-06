@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -41,6 +42,8 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
   const [releases, setReleases] = useState<ReleaseInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -50,17 +53,6 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
       fetchReleases();
     }
   }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      onClose();
-    };
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
 
   const fetchReleases = async () => {
     setLoading(true);
@@ -116,8 +108,19 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
   };
 
   const spinner = (
-    <div className="flex items-center justify-center py-12">
-      <Loader2 size={20} className="animate-spin text-content-muted" />
+    <div
+      role="status"
+      aria-label={t({
+        id: "updates.whats_new.loading",
+        message: "Loading releases",
+      })}
+      className="flex items-center justify-center py-12"
+    >
+      <Loader2
+        size={20}
+        className="animate-spin text-content-muted"
+        aria-hidden="true"
+      />
     </div>
   );
 
@@ -144,6 +147,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
           aria-labelledby="whats-new-title"
         >
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -178,14 +182,19 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                       message: "View all releases on GitHub",
                     })}
                   </span>
-                  <ExternalLink size={11} />
+                  <ExternalLink size={11} aria-hidden="true" />
                 </button>
               </div>
               <button
+                type="button"
                 onClick={onClose}
+                aria-label={t({
+                  id: "updates.whats_new.close_aria",
+                  message: "Close What's New",
+                })}
                 className="p-1.5 rounded-md text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -211,10 +220,14 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
 
                 {error && (
                   <div className="flex flex-col items-center gap-3 py-8">
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 w-full">
+                    <div
+                      role="alert"
+                      className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 w-full"
+                    >
                       <AlertCircle
                         size={14}
                         className="ui-color-error-strong shrink-0"
+                        aria-hidden="true"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="ui-text-body ui-color-error-strong font-medium">
