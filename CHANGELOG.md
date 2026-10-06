@@ -1,3 +1,49 @@
+1.3.5
+
+### New Features
+
+- AI agents can search and read your Library. Run `glimpse mcp` to give Claude, ChatGPT, Cursor and other MCP apps your transcripts, with speaker names and timestamps. It runs only on your computer and is read-only unless you allow imports.
+
+### Improvements
+
+- On Mac, your shortcut starts working the moment you allow Accessibility, without restarting Glimpse. If macOS turns the permission off, for example after an update, Glimpse tells you at launch and links straight to the setting.
+- When Glimpse can't paste because Accessibility is off, your text stays on the clipboard and Glimpse tells you, instead of the dictation disappearing.
+- Home shows your dictation shortcut on days you haven't dictated yet.
+- Setup now marks the model that fits your languages as Recommended, instead of calling Whisper Turbo the accurate one.
+- Glimpse works better with a keyboard and screen readers. Menus, dropdowns and dialogs respond to the arrow keys and Escape and keep focus where it belongs, buttons that only appeared on hover show up when focused, and recording, downloads, errors and toasts are read aloud.
+- Dim text in dark mode is easier to read, and the pill and toasts follow Reduce Motion.
+- The Library stays smoother while items transcribe, and reading another app's history to import no longer freezes Glimpse.
+- The API server shows when it's starting, and Stop works while its model loads.
+- Glimpse waits until you've stopped dictating for a while before restarting into a downloaded update.
+- On Windows, the tray icon opens Settings on a left click, toasts no longer take focus from the app you're typing in, the pill and live view land in the right place on monitors with different display scaling, and shortcuts read Ctrl + Alt.
+- License, export and copy messages are now translated.
+
+### Fixes
+
+- Retrying a dictation that finds no words keeps its audio, and a failed retry no longer adds a duplicate entry to History.
+- Auto-delete no longer removes audio that a newer History entry still uses.
+- One setting Glimpse can't read no longer resets all your settings. Glimpse keeps everything else and backs up your settings first.
+- Changing your dictionary, replacements or modes while a license is inactive no longer turns AI cleanup off for good.
+- Fixed deleting Library items on Windows, which failed every time. Items too large for the Recycle Bin now ask before they're deleted.
+- Deleting a recording with system audio from its detail view works on Windows.
+- Deleting a Library item while it transcribes waits for it to stop first.
+- Quitting while a Library item transcribes again keeps its previous transcript.
+- An import interrupted by a quit or crash keeps its original file.
+- Library items that finished while you were on another tab no longer stay stuck transcribing, and Cancel after a job ends no longer leaves an item stuck cancelling.
+- SRT and VTT exports skip empty lines, so subtitles stay in order.
+- The activity grid shows the current week.
+- Imported history keeps its original dates instead of all landing on today.
+- Fixed a crash on Windows when Windows shut down or restarted for an update.
+- On Windows, stopping with Ctrl+Shift+Space no longer sends Ctrl+Shift+C, which opened developer tools in Chrome and Edge.
+- On Windows, importing files no longer flashes a black window, imports no longer leave copies of other apps' history in your temp folder, the `glimpse` command works for user names with accents, and a microphone plugged in after launch shows up in Settings.
+- The FAQ no longer tells Windows users their data stays on their Mac.
+- A microphone or model picked from the menu bar is no longer undone by a Settings save.
+- When a shortcut can't be set, the rest of your settings still apply and Glimpse says which part failed.
+- A license check that was already running no longer undoes a key you just activated or removed.
+- The local API server only loads Glimpse's own models, and the command line connection on Mac is private to your account.
+- A failed rename keeps what you typed, the timestamps switch says when it can't save, and failed toast actions no longer cut a newer toast short.
+- The toast window no longer keeps hiding itself in the background after every toast.
+
 1.3.1
 
 ### Improvements
