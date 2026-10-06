@@ -142,7 +142,7 @@ fn current_db_transcripts(home: &Path) -> Vec<ImportedTranscription> {
         return Vec::new();
     }
 
-    let Ok((conn, _guard)) = open_sqlite_readonly(&db) else {
+    let Ok(conn) = open_sqlite_readonly(&db) else {
         return Vec::new();
     };
     if !sqlite_table_exists(&conn, "recording") || !sqlite_table_exists(&conn, "recording_fts") {

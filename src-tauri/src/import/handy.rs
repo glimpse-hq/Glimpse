@@ -75,7 +75,7 @@ pub fn parse(home: &Path) -> Result<ImportBundle, String> {
 
     let db = db_path(home);
     if db.exists()
-        && let Ok((conn, _guard)) = open_sqlite_readonly(&db)
+        && let Ok(conn) = open_sqlite_readonly(&db)
         && sqlite_table_exists(&conn, "transcription_history")
         && let Ok(mut stmt) = conn.prepare(
             "SELECT COALESCE(NULLIF(TRIM(post_processed_text), ''), transcription_text) \

@@ -238,7 +238,7 @@ fn sidecar_path(path: &Path, suffix: &str) -> PathBuf {
     PathBuf::from(os)
 }
 
-pub fn open_sqlite_readonly(path: &Path) -> Result<(rusqlite::Connection, TempDbGuard), String> {
+pub fn open_sqlite_readonly(path: &Path) -> Result<TempDb, String> {
     if !path.exists() {
         return Err(format!("database not found: {}", path.display()));
     }
@@ -260,10 +260,28 @@ pub fn open_sqlite_readonly(path: &Path) -> Result<(rusqlite::Connection, TempDb
     )
     .map_err(|err| format!("failed to open database: {err}"))?;
 
-    Ok((conn, guard))
+    Ok(TempDb {
+        conn,
+        _guard: guard,
+    })
 }
 
-pub struct TempDbGuard(PathBuf);
+// Fields drop in order: the connection closes before the copy is deleted,
+// since Windows can't delete a file SQLite still has open.
+pub struct TempDb {
+    conn: rusqlite::Connection,
+    _guard: TempDbGuard,
+}
+
+impl std::ops::Deref for TempDb {
+    type Target = rusqlite::Connection;
+
+    fn deref(&self) -> &Self::Target {
+        &self.conn
+    }
+}
+
+struct TempDbGuard(PathBuf);
 
 impl Drop for TempDbGuard {
     fn drop(&mut self) {
