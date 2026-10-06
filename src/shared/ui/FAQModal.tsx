@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { detectAppPlatform } from "../../platform/service";
 
 interface FAQModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface FAQModalProps {
 }
 
 const PRIVACY_URL = "https://tryglimpse.cc/privacy";
+const isWindows = detectAppPlatform() === "windows";
 
 const openExternal = (url: string) => {
   openUrl(url).catch((err) => {
@@ -78,11 +80,17 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
       }),
       answer: (
         <>
-          {t({
-            id: "faq.privacy.answer",
-            message:
-              "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
-          })}{" "}
+          {isWindows
+            ? t({
+                id: "faq.privacy.answer.windows",
+                message:
+                  "Your audio and transcripts stay on your PC. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
+              })
+            : t({
+                id: "faq.privacy.answer",
+                message:
+                  "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
+              })}{" "}
           <FaqLink href={PRIVACY_URL}>
             {t({
               id: "faq.privacy.link",
@@ -134,11 +142,17 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
         id: "faq.permissions.question",
         message: "What permissions does Glimpse need?",
       }),
-      answer: t({
-        id: "faq.permissions.answer.v2",
-        message:
-          "Microphone access to record your voice, and Accessibility access to insert text and to read selected text when a shortcut rewrites it. Glimpse only uses these while you are actively dictating.",
-      }),
+      answer: isWindows
+        ? t({
+            id: "faq.permissions.answer.windows",
+            message:
+              "Microphone access to record your voice. Glimpse inserts text by pasting it where your cursor is, and copies selected text when a shortcut rewrites it. Glimpse only does this while you are actively dictating.",
+          })
+        : t({
+            id: "faq.permissions.answer.v2",
+            message:
+              "Microphone access to record your voice, and Accessibility access to insert text and to read selected text when a shortcut rewrites it. Glimpse only uses these while you are actively dictating.",
+          }),
     },
   ];
 

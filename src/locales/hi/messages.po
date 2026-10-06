@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "आपकी आवाज़ रिकॉर्ड करने के लिए माइक्रोफ़ोन की अनुमति, और टेक्स्ट डालने व चयनित टेक्स्ट को पढ़ने के लिए एक्सेसिबिलिटी की अनुमति, जब कोई शॉर्टकट उसे फिर से लिखता है। Glimpse इन्हें केवल तब उपयोग करता है जब आप सक्रिय रूप से डिक्टेट कर रहे हों।"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "माइक्रोफ़ोन का एक्सेस अस्वीकृत कर दिया गया।"
@@ -6179,6 +6184,11 @@ msgstr "आपका API सर्वर बैकग्राउंड मे�
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "हाँ। लोकल मोड में आपका सारा ऑडियो और ट्रांसक्रिप्शन आपके डिवाइस पर ही रहता है। हम आपकी रिकॉर्डिंग न तो इकट्ठा करते हैं न भेजते हैं। क्लाउड सिंक वैकल्पिक है।"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

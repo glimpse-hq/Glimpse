@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "Mikrofonzugriff, um Ihre Stimme aufzunehmen, und Bedienungshilfen-Zugriff, um Text einzufügen und ausgewählten Text vorzulesen, wenn ein Kurzbefehl ihn umschreibt. Glimpse nutzt diese Zugriffe nur, während Sie aktiv diktieren."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Mikrofonzugriff wurde verweigert."
@@ -6179,6 +6184,11 @@ msgstr "Ihr API-Server wird im Hintergrund ausgeführt."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Ja. Im lokalen Modus bleiben alle Ihre Audios und Transkriptionen auf Ihrem Gerät. Wir erfassen oder übertragen Ihre Aufnahmen niemals. Die Cloud-Synchronisierung ist optional."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "Доступ к микрофону для записи голоса и доступ к функциям специальных возможностей для вставки текста и чтения выделенного текста при его переработке с помощью сочетания клавиш. Glimpse использует эти разрешения только во время активной диктовки."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Доступ к микрофону запрещён."
@@ -6179,6 +6184,11 @@ msgstr "Ваш API-сервер работает в фоновом режиме.
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Да. В локальном режиме все ваши аудиозаписи и транскрипции остаются на устройстве. Мы никогда не собираем и не передаём ваши записи. Облачная синхронизация — по желанию."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

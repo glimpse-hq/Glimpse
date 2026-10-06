@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "يلزم الوصول إلى الميكروفون لتسجيل صوتك، والوصول إلى إمكانية الوصول لإدراج النص وقراءة النص المحدد عند إعادة كتابته باختصار. لا يستخدم Glimpse هذه الأذونات إلا أثناء إملائك الفعلي."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "تم رفض الوصول إلى الميكروفون."
@@ -6179,6 +6184,11 @@ msgstr "خادم API الخاص بك يعمل في الخلفية."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "نعم. في الوضع المحلي، تبقى جميع ملفاتك الصوتية ونصوصك المُفرَّغة على جهازك. لا نجمع تسجيلاتك ولا نرسلها. المزامنة السحابية اختيارية."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

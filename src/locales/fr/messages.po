@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "L'accès au microphone est nécessaire pour enregistrer votre voix, et l'accès à l'Accessibilité pour insérer du texte et lire le texte sélectionné lorsqu'un raccourci le réécrit. Glimpse n'utilise ces autorisations que lorsque vous dictez activement."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "L'accès au microphone a été refusé."
@@ -6179,6 +6184,11 @@ msgstr "Votre serveur API s'exécute en arrière-plan."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Oui. En mode local, vos fichiers audio et transcriptions restent sur votre appareil. Nous ne collectons ni ne transmettons jamais vos enregistrements. La synchronisation dans le cloud est facultative."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

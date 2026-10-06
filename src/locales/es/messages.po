@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "Acceso al micrófono para grabar tu voz y acceso a Accesibilidad para insertar texto y leer el texto seleccionado cuando un atajo lo reescribe. Glimpse solo usa estos permisos mientras estás dictando activamente."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Se denegó el acceso al micrófono."
@@ -6179,6 +6184,11 @@ msgstr "Tu servidor de API se está ejecutando en segundo plano."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Sí. En modo local, todo tu audio y tus transcripciones permanecen en tu dispositivo. Nunca recopilamos ni transmitimos tus grabaciones. La sincronización en la nube es opcional."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

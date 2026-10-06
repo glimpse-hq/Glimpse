@@ -3466,6 +3466,11 @@ msgid "faq.permissions.answer.v2"
 msgstr "Microfoontoegang om je stem op te nemen, en Toegankelijkheidstoegang om tekst in te voegen en geselecteerde tekst voor te lezen wanneer een snelkoppeling die herschrijft. Glimpse gebruikt dit alleen terwijl je actief dicteert."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.permissions.answer.windows"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
 msgid "settings.general.microphone_test.permission_error"
 msgstr "Toegang tot de microfoon is geweigerd."
@@ -6179,6 +6184,11 @@ msgstr "Je API-server wordt op de achtergrond uitgevoerd."
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer"
 msgstr "Ja. In de lokale modus blijven al je audio en transcripties op je apparaat. We verzamelen of versturen je opnamen nooit. Cloudsync is optioneel."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.privacy.answer.windows"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
