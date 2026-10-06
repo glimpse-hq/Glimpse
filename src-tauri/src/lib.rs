@@ -406,8 +406,11 @@ pub fn run() {
             if let Some(path) = crash_marker.clone() {
                 analytics::install_crash_handler(path.clone(), crash_log);
                 #[cfg(target_os = "windows")]
-                if let Ok(log_dir) = handle.path().app_log_dir() {
-                    platform::windows::crash::install(log_dir, path);
+                {
+                    if let Ok(log_dir) = handle.path().app_log_dir() {
+                        platform::windows::crash::install(log_dir, path);
+                    }
+                    platform::windows::crash::watch_session_end();
                 }
             }
             analytics::set_crash_phase("settings_load");
