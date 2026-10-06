@@ -169,14 +169,13 @@ pub fn parse_datetime_millis(raw: &str) -> Option<i64> {
         return None;
     }
 
-    for fmt in [
-        "%Y-%m-%d %H:%M:%S%.f %:z",
-        "%Y-%m-%dT%H:%M:%S%.f%:z",
-        "%Y-%m-%dT%H:%M:%S%.fZ",
-    ] {
-        if let Ok(dt) = chrono::DateTime::parse_from_str(s, fmt) {
-            return Some(dt.timestamp_millis());
-        }
+    // Covers the `Z` suffix that JavaScript and Swift ISO 8601 encoders write.
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
+        return Some(dt.timestamp_millis());
+    }
+
+    if let Ok(dt) = chrono::DateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S%.f %:z") {
+        return Some(dt.timestamp_millis());
     }
 
     for fmt in [
