@@ -178,12 +178,8 @@ pub fn parse_datetime_millis(raw: &str) -> Option<i64> {
         return Some(dt.timestamp_millis());
     }
 
-    for fmt in [
-        "%Y-%m-%d %H:%M:%S%.f",
-        "%Y-%m-%dT%H:%M:%S%.f",
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-    ] {
+    // `%.f` also matches no fraction.
+    for fmt in ["%Y-%m-%d %H:%M:%S%.f", "%Y-%m-%dT%H:%M:%S%.f"] {
         if let Ok(naive) = NaiveDateTime::parse_from_str(s, fmt) {
             return Some(Utc.from_utc_datetime(&naive).timestamp_millis());
         }
