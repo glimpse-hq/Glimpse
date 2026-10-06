@@ -23,6 +23,7 @@ import { formatShortcutForDisplay } from "../../../../shared/lib/shortcuts";
 import type { DeviceInfo } from "../../../../types";
 import type { TranscriptionLanguageOption } from "../../../../shared/lib/transcriptionLanguages";
 import type { ShortcutBinding, ShortcutBindings } from "../../../../types";
+import { detectAppPlatform } from "../../../../platform/service";
 
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureMode = { mode: ShortcutMode; index: number } | null;
@@ -34,6 +35,8 @@ type MicrophoneTestLevels = {
   left: number;
   right: number;
 };
+
+const supportsDictationKey = detectAppPlatform() === "macos";
 
 type GeneralTabProps = {
   variants: Variants;
@@ -309,6 +312,44 @@ const GeneralTab = ({
           </SectionLabel>
 
           <div className="relative space-y-3 rounded-lg bg-surface-surface p-2.5">
+            {supportsDictationKey && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!smartEnabled) setSmartEnabled(true);
+                  updateShortcutBinding("smart", 0, {
+                    shortcut: "Dictation",
+                  });
+                }}
+                className="flex w-full items-center gap-2 rounded-lg border border-border-primary bg-surface-secondary px-2.5 py-2 text-left transition-colors hover:border-border-secondary hover:bg-surface-hover"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-accent-10)] text-[var(--color-accent)]">
+                  <Mic size={14} weight="fill" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block ui-text-body-sm-strong text-content-primary">
+                    {t({
+                      id: "settings.general.shortcuts.dictation_key",
+                      message: "Use Dictation key",
+                    })}
+                  </span>
+                  <span className="block ui-text-meta text-content-muted">
+                    {t({
+                      id: "settings.general.shortcuts.dictation_key.description",
+                      message: "Assigns the microphone key to Smart dictation",
+                    })}
+                  </span>
+                </span>
+                {shortcutBindings.smart[0]?.shortcut === "Dictation" && (
+                  <Check
+                    size={14}
+                    weight="bold"
+                    className="shrink-0 text-[var(--color-accent)]"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+            )}
             <ShortcutRow
               mode="smart"
               isExpanded={expandedShortcut === "smart"}

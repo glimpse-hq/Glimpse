@@ -27,6 +27,10 @@ const KEY_MICROPHONE_DEVICE: &str = "microphone_device";
 const KEY_LANGUAGE: &str = "language";
 const KEY_APP_LOCALE: &str = "app_locale";
 const KEY_THEME_MODE: &str = "theme_mode";
+const KEY_MEETING_DETECTION_ENABLED: &str = "meeting_detection_enabled";
+const KEY_MEETING_DETECTION_APPS: &str = "meeting_detection_apps";
+const KEY_MEETING_DETECTION_VERSION: &str = "meeting_detection_version";
+const MEETING_DETECTION_VERSION: u8 = 2;
 
 const KEY_LLM_ENABLED: &str = "llm_enabled";
 const KEY_CLEANUP_ENABLED: &str = "cleanup_enabled";
@@ -147,6 +151,12 @@ pub struct UserSettings {
     pub app_locale: String,
     #[serde(default)]
     pub theme_mode: ThemeMode,
+    #[serde(default = "default_true")]
+    pub meeting_detection_enabled: bool,
+    #[serde(default = "default_meeting_detection_apps")]
+    pub meeting_detection_apps: Vec<String>,
+    #[serde(skip)]
+    pub meeting_detection_version: u8,
 
     #[serde(default)]
     pub llm_enabled: bool,
@@ -260,7 +270,7 @@ pub fn sync_legacy_shortcuts_from_bindings(settings: &mut UserSettings) {
     }
 }
 
-fn default_true() -> bool {
+pub fn default_true() -> bool {
     true
 }
 
@@ -444,6 +454,9 @@ impl Default for UserSettings {
             language: default_language(),
             app_locale: default_app_locale(),
             theme_mode: ThemeMode::default(),
+            meeting_detection_enabled: true,
+            meeting_detection_apps: default_meeting_detection_apps(),
+            meeting_detection_version: MEETING_DETECTION_VERSION,
 
             llm_enabled: false,
             cleanup_enabled: false,
@@ -478,6 +491,47 @@ impl Default for UserSettings {
 
 pub fn default_local_api_port() -> u16 {
     11435
+}
+
+pub fn default_meeting_detection_apps() -> Vec<String> {
+    [
+        "facetime",
+        "zoom",
+        "teams",
+        "browser_safari",
+        "browser_chrome",
+        "browser_edge",
+        "browser_firefox",
+    ]
+    .into_iter()
+    .map(str::to_string)
+    .collect()
+}
+
+pub fn canonicalize_meeting_detection_apps(apps: &[String]) -> Vec<String> {
+    let mut seen = HashSet::new();
+    apps.iter()
+        .map(|app| match app.trim().to_ascii_lowercase().as_str() {
+            "google_meet_safari" => "browser_safari".to_string(),
+            "google_meet_chrome" => "browser_chrome".to_string(),
+            "google_meet_edge" => "browser_edge".to_string(),
+            "google_meet_firefox" => "browser_firefox".to_string(),
+            app => app.to_string(),
+        })
+        .filter(|app| {
+            matches!(
+                app.as_str(),
+                "facetime"
+                    | "zoom"
+                    | "teams"
+                    | "browser_safari"
+                    | "browser_chrome"
+                    | "browser_edge"
+                    | "browser_firefox"
+            )
+        })
+        .filter(|app| seen.insert(app.clone()))
+        .collect()
 }
 
 pub fn default_local_api_cors() -> bool {
@@ -875,6 +929,18 @@ impl SettingsStore {
             let theme_mode = self.read_optional_value::<ThemeMode>(&conn, KEY_THEME_MODE)?;
             theme_mode_exists = theme_mode.is_some();
             settings.theme_mode = theme_mode.unwrap_or(settings.theme_mode);
+            settings.meeting_detection_enabled = self.read_value(
+                &conn,
+                KEY_MEETING_DETECTION_ENABLED,
+                settings.meeting_detection_enabled,
+            )?;
+            settings.meeting_detection_apps = self.read_value(
+                &conn,
+                KEY_MEETING_DETECTION_APPS,
+                settings.meeting_detection_apps.clone(),
+            )?;
+            settings.meeting_detection_version =
+                self.read_value(&conn, KEY_MEETING_DETECTION_VERSION, 0)?;
 
             settings.llm_enabled = self.read_value(&conn, KEY_LLM_ENABLED, settings.llm_enabled)?;
             settings.cleanup_enabled =
@@ -1008,6 +1074,34 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        if settings.meeting_detection_version < MEETING_DETECTION_VERSION {
+            for (legacy_id, browser_id) in [
+                ("google_meet_safari", "browser_safari"),
+                ("google_meet_chrome", "browser_chrome"),
+                ("google_meet_edge", "browser_edge"),
+                ("google_meet_firefox", "browser_firefox"),
+            ] {
+                let enable_browser = settings.meeting_detection_version == 0
+                    || settings
+                        .meeting_detection_apps
+                        .iter()
+                        .any(|configured| configured == legacy_id);
+                settings
+                    .meeting_detection_apps
+                    .retain(|configured| configured != legacy_id);
+                if enable_browser
+                    && !settings
+                        .meeting_detection_apps
+                        .iter()
+                        .any(|configured| configured == browser_id)
+                {
+                    settings.meeting_detection_apps.push(browser_id.to_string());
+                }
+            }
+            settings.meeting_detection_version = MEETING_DETECTION_VERSION;
+            should_persist = true;
+        }
+
         sync_legacy_shortcuts_from_bindings(&mut settings);
 
         if migrate_proxy_speech_endpoint(&mut settings) {
@@ -1125,6 +1219,21 @@ impl SettingsStore {
         self.write_value(&conn, KEY_LANGUAGE, &settings.language)?;
         self.write_value(&conn, KEY_APP_LOCALE, &stored_app_locale)?;
         self.write_value(&conn, KEY_THEME_MODE, &settings.theme_mode)?;
+        self.write_value(
+            &conn,
+            KEY_MEETING_DETECTION_ENABLED,
+            &settings.meeting_detection_enabled,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_MEETING_DETECTION_APPS,
+            &settings.meeting_detection_apps,
+        )?;
+        self.write_value(
+            &conn,
+            KEY_MEETING_DETECTION_VERSION,
+            &settings.meeting_detection_version,
+        )?;
 
         self.write_value(&conn, KEY_LLM_ENABLED, &settings.llm_enabled)?;
         self.write_value(&conn, KEY_CLEANUP_ENABLED, &settings.cleanup_enabled)?;
@@ -1314,6 +1423,88 @@ mod tests {
         store
             .write_value(&conn, key, value)
             .expect("write test setting");
+    }
+
+    #[test]
+    fn meeting_detection_defaults_to_all_supported_apps() {
+        let settings = UserSettings::default();
+
+        assert!(settings.meeting_detection_enabled);
+        assert_eq!(
+            settings.meeting_detection_apps,
+            vec![
+                "facetime",
+                "zoom",
+                "teams",
+                "browser_safari",
+                "browser_chrome",
+                "browser_edge",
+                "browser_firefox",
+            ]
+        );
+    }
+
+    #[test]
+    fn meeting_detection_app_selection_is_canonicalized() {
+        let apps = vec![
+            " Zoom ".to_string(),
+            "unknown".to_string(),
+            "zoom".to_string(),
+            "TEAMS".to_string(),
+        ];
+
+        assert_eq!(
+            canonicalize_meeting_detection_apps(&apps),
+            vec!["zoom", "teams"]
+        );
+    }
+
+    #[test]
+    fn existing_meeting_settings_gain_browser_detection_once() {
+        let store = test_store();
+        write_setting(
+            &store,
+            KEY_MEETING_DETECTION_APPS,
+            &vec!["zoom".to_string()],
+        );
+
+        let loaded = store.load().expect("load migrated meeting settings");
+
+        assert_eq!(
+            loaded.meeting_detection_apps,
+            vec![
+                "zoom",
+                "browser_safari",
+                "browser_chrome",
+                "browser_edge",
+                "browser_firefox",
+            ]
+        );
+        assert_eq!(
+            store
+                .read_app_value(KEY_MEETING_DETECTION_VERSION, 0u8)
+                .expect("read meeting detection version"),
+            MEETING_DETECTION_VERSION
+        );
+    }
+
+    #[test]
+    fn google_meet_browser_choices_migrate_to_shared_web_meeting_choices() {
+        let store = test_store();
+        write_setting(
+            &store,
+            KEY_MEETING_DETECTION_APPS,
+            &vec!["zoom".to_string(), "google_meet_safari".to_string()],
+        );
+        write_setting(&store, KEY_MEETING_DETECTION_VERSION, &1u8);
+
+        let loaded = store.load().expect("load version one meeting settings");
+
+        assert_eq!(
+            loaded.meeting_detection_apps,
+            vec!["zoom", "browser_safari"]
+        );
+        assert_eq!(loaded.meeting_detection_version, MEETING_DETECTION_VERSION);
     }
 
     #[test]

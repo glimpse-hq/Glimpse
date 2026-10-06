@@ -97,6 +97,10 @@ const LibraryImportModal = ({
   }, [timestampsSupported]);
 
   useEffect(() => {
+    setSpeakersChoice(null);
+  }, [selectedModelKey]);
+
+  useEffect(() => {
     if (importPaths.length > 1) {
       setShowFileList(true);
     }

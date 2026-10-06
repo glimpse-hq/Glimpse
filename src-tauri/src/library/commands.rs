@@ -151,6 +151,46 @@ pub fn update_library_item(
 }
 
 #[tauri::command]
+pub async fn generate_library_item_title(
+    id: String,
+    state: tauri::State<'_, AppState>,
+) -> Result<LibraryItem, String> {
+    require_library_license(&state)?;
+
+    let storage = state.storage();
+    let item = storage
+        .get_library_item(&id)
+        .map_err(|err| format!("Failed to load library item: {err}"))?
+        .ok_or_else(|| "Library item not found".to_string())?;
+    let transcript = item
+        .transcript
+        .as_deref()
+        .filter(|text| !text.trim().is_empty())
+        .ok_or_else(|| "Transcribe this item before generating a title".to_string())?;
+    let settings = state.current_settings_unmasked();
+    let title_settings = crate::llm_cleanup::title_generation_settings(&settings, true)
+        .ok_or_else(|| "title_model_not_configured".to_string())?;
+    let available_tags = storage
+        .get_library_tags()
+        .map_err(|err| format!("Failed to load tags: {err}"))?;
+    let app_locale = crate::native_i18n::ui_locale(&settings);
+    let metadata = crate::llm_cleanup::generate_library_metadata(
+        &state.http(),
+        transcript,
+        &available_tags,
+        app_locale,
+        &title_settings,
+    )
+    .await
+    .map_err(|err| crate::llm_cleanup::title_generation_error_code(&err).to_string())?;
+
+    storage
+        .apply_generated_library_metadata(&id, Some(&item.name), &metadata.title, &metadata.tags)
+        .map_err(|err| format!("Failed to save generated title and tags: {err}"))?
+        .ok_or_else(|| "The item was renamed or deleted while generating its title".to_string())
+}
+
+#[tauri::command]
 pub fn delete_library_item(
     id: String,
     app: AppHandle<AppRuntime>,

@@ -1,11 +1,11 @@
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Bell, ArrowUpRight } from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { getLastSeenId, setLastSeenId } from "../api";
 import { useNewsFeed } from "../queries";
+import FloatingPortal from "../../../shared/ui/FloatingPortal";
 
 const BLOG_URL = "https://tryglimpse.cc/blog";
 const MAX_COMPACT = 4;
@@ -14,6 +14,7 @@ const NewsMenu = () => {
   const { t } = useLingui();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const { data: items = [], isLoading } = useNewsFeed();
   const [lastSeen, setLastSeen] = useState<string | null>(() =>
@@ -46,7 +47,7 @@ const NewsMenu = () => {
   }
 
   const close = useCallback(() => setIsOpen(false), []);
-  useClickOutside(containerRef, close, isOpen);
+  useClickOutside(containerRef, close, isOpen, [menuRef]);
 
   const toggle = () => {
     if (!isOpen && items.length > 0) markSeen(items[0].id);
@@ -85,86 +86,81 @@ const NewsMenu = () => {
         )}
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className="ui-surface-menu absolute right-0 top-full mt-1.5 w-[300px] z-[60]"
-          >
-            <div className="px-3.5 pt-2.5 pb-2">
-              <span className="ui-text-body-sm ui-color-secondary">
-                {title}
-              </span>
+      {isOpen && (
+        <FloatingPortal
+          anchorRef={containerRef}
+          ref={menuRef}
+          placement="bottom-end"
+          className="ui-surface-menu w-[300px]"
+        >
+          <div className="px-3.5 pt-2.5 pb-2">
+            <span className="ui-text-body-sm ui-color-secondary">{title}</span>
+          </div>
+
+          {items.length === 0 ? (
+            <div className="px-3.5 pb-5 ui-text-meta ui-color-secondary">
+              {isLoading
+                ? t({ id: "news.loading", message: "Checking for news…" })
+                : t({ id: "news.empty", message: "Nothing new right now." })}
             </div>
-
-            {items.length === 0 ? (
-              <div className="px-3.5 pb-5 ui-text-meta ui-color-secondary">
-                {isLoading
-                  ? t({ id: "news.loading", message: "Checking for news…" })
-                  : t({ id: "news.empty", message: "Nothing new right now." })}
-              </div>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => openLink(lead.url)}
-                  className="block w-full text-left border-t border-border-primary transition-colors hover:bg-[var(--surface-interactive)]"
-                >
-                  {lead.image && (
-                    <img
-                      src={lead.image}
-                      alt=""
-                      decoding="sync"
-                      className="w-full aspect-[3/1] object-cover"
-                    />
-                  )}
-                  <div className="px-3.5 pt-2.5 pb-3">
-                    <div className="ui-text-meta ui-color-secondary mb-0.5">
-                      {[lead.tag, lead.date].filter(Boolean).join(" · ")}
-                    </div>
-                    <div className="ui-text-body-sm-strong ui-color-primary mb-0.5">
-                      {lead.title}
-                    </div>
-                    {lead.description && (
-                      <div className="ui-text-meta ui-color-secondary line-clamp-2">
-                        {lead.description}
-                      </div>
-                    )}
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => openLink(lead.url)}
+                className="block w-full text-left border-t border-border-primary transition-colors hover:bg-[var(--surface-interactive)]"
+              >
+                {lead.image && (
+                  <img
+                    src={lead.image}
+                    alt=""
+                    decoding="async"
+                    className="w-full aspect-[3/1] object-cover"
+                  />
+                )}
+                <div className="px-3.5 pt-2.5 pb-3">
+                  <div className="ui-text-meta ui-color-secondary mb-0.5">
+                    {[lead.tag, lead.date].filter(Boolean).join(" · ")}
                   </div>
-                </button>
+                  <div className="ui-text-body-sm-strong ui-color-primary mb-0.5">
+                    {lead.title}
+                  </div>
+                  {lead.description && (
+                    <div className="ui-text-meta ui-color-secondary line-clamp-2">
+                      {lead.description}
+                    </div>
+                  )}
+                </div>
+              </button>
 
-                {rest.slice(0, MAX_COMPACT).map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => openLink(item.url)}
-                    className="flex w-full items-baseline gap-2 px-3.5 py-2.5 text-left border-t border-border-primary transition-colors hover:bg-[var(--surface-interactive)]"
-                  >
-                    <span className="ui-text-body-sm ui-color-primary min-w-0 flex-1 truncate">
-                      {item.title}
-                    </span>
-                    <span className="ui-text-meta ui-color-secondary shrink-0">
-                      {item.date}
-                    </span>
-                  </button>
-                ))}
-
+              {rest.slice(0, MAX_COMPACT).map((item) => (
                 <button
+                  key={item.id}
                   type="button"
-                  onClick={() => openLink(BLOG_URL)}
-                  className="flex w-full items-center gap-1 px-3.5 py-2.5 border-t border-border-primary ui-text-meta ui-color-secondary transition-colors hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+                  onClick={() => openLink(item.url)}
+                  className="flex w-full items-baseline gap-2 px-3.5 py-2.5 text-left border-t border-border-primary transition-colors hover:bg-[var(--surface-interactive)]"
                 >
-                  {t({ id: "news.all_posts", message: "All posts" })}
-                  <ArrowUpRight size={11} aria-hidden="true" />
+                  <span className="ui-text-body-sm ui-color-primary min-w-0 flex-1 truncate">
+                    {item.title}
+                  </span>
+                  <span className="ui-text-meta ui-color-secondary shrink-0">
+                    {item.date}
+                  </span>
                 </button>
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              ))}
+
+              <button
+                type="button"
+                onClick={() => openLink(BLOG_URL)}
+                className="flex w-full items-center gap-1 px-3.5 py-2.5 border-t border-border-primary ui-text-meta ui-color-secondary transition-colors hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+              >
+                {t({ id: "news.all_posts", message: "All posts" })}
+                <ArrowUpRight size={11} aria-hidden="true" />
+              </button>
+            </>
+          )}
+        </FloatingPortal>
+      )}
     </div>
   );
 };

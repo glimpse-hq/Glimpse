@@ -181,6 +181,12 @@ fn main() {
     generate_native_menu_catalog();
     link_clang_runtime();
 
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+        compile_diarization_bridge();
+
+        compile_meeting_capture_shim();
+    }
+
     // Forward build-time env vars from workspace .env and the build environment.
     let compile_time_keys = [
         "POSTHOG_API_KEY",
@@ -232,4 +238,103 @@ fn main() {
     }
 
     tauri_build::build()
+}
+
+fn compile_meeting_capture_shim() {
+    use std::path::PathBuf;
+    use std::process::Command;
+
+    println!("cargo:rerun-if-changed=swift/meeting_capture.swift");
+    println!("cargo:rerun-if-changed=swift/keyboard_media.swift");
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR"));
+    let output = out_dir.join("libglimpse_meeting_capture.a");
+    let status = Command::new("swiftc")
+        .args([
+            "-O",
+            "-parse-as-library",
+            "-module-name",
+            "glimpse_meeting_capture",
+            "-emit-library",
+            "-static",
+            "-module-cache-path",
+        ])
+        .arg(out_dir.join("swift-module-cache"))
+        .arg("-target")
+        .arg(swift_target())
+        .args([
+            "swift/meeting_capture.swift",
+            "swift/keyboard_media.swift",
+            "-o",
+        ])
+        .arg(&output)
+        .status()
+        .expect("failed to run swiftc for meeting capture");
+    assert!(status.success(), "swiftc failed for meeting capture");
+
+    println!("cargo:rustc-link-search=native={}", out_dir.display());
+    println!("cargo:rustc-link-lib=static=glimpse_meeting_capture");
+    println!("cargo:rustc-link-lib=framework=AVFoundation");
+    println!("cargo:rustc-link-lib=framework=AppKit");
+    println!("cargo:rustc-link-lib=framework=CoreMedia");
+    println!("cargo:rustc-link-lib=framework=ScreenCaptureKit");
+    println!("cargo:rustc-link-search=native=/usr/lib/swift");
+}
+
+fn compile_diarization_bridge() {
+    use std::path::PathBuf;
+    use std::process::Command;
+
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let scratch_dir =
+        PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR")).join("swift-diarization");
+    let module_cache = scratch_dir.join("module-cache");
+    std::fs::create_dir_all(&module_cache).expect("create Swift module cache");
+    println!("cargo:rerun-if-changed=swift-diarization/Package.swift");
+    println!("cargo:rerun-if-changed=swift-diarization/Package.resolved");
+    println!(
+        "cargo:rerun-if-changed=swift-diarization/Sources/GlimpseDiarizationBridge/Bridge.swift"
+    );
+
+    let status = Command::new("swift")
+        .current_dir(&manifest_dir)
+        .env("CLANG_MODULE_CACHE_PATH", &module_cache)
+        .env("SWIFTPM_MODULECACHE_OVERRIDE", &module_cache)
+        .args(["build", "--package-path", "swift-diarization"])
+        .arg("--scratch-path")
+        .arg(&scratch_dir)
+        .arg("--triple")
+        .arg(swift_target())
+        .args([
+            "-c",
+            "release",
+            "--product",
+            "GlimpseDiarizationBridge",
+            "-Xswiftc",
+            "-swift-version",
+            "-Xswiftc",
+            "5",
+            "-Xswiftc",
+            "-enable-bare-slash-regex",
+        ])
+        .status()
+        .expect("failed to run SwiftPM for local diarization");
+    assert!(status.success(), "SwiftPM failed for local diarization");
+
+    println!(
+        "cargo:rustc-link-search=native={}",
+        scratch_dir.join("release").display()
+    );
+    println!("cargo:rustc-link-lib=static=GlimpseDiarizationBridge");
+    println!("cargo:rustc-link-lib=framework=Accelerate");
+    println!("cargo:rustc-link-lib=framework=CoreML");
+    println!("cargo:rustc-link-lib=framework=Foundation");
+    println!("cargo:rustc-link-lib=framework=OSLog");
+}
+
+fn swift_target() -> &'static str {
+    match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
+        Ok("aarch64") => "arm64-apple-macosx14.0",
+        Ok("x86_64") => "x86_64-apple-macosx14.0",
+        _ => panic!("Unsupported macOS architecture"),
+    }
 }

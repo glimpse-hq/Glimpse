@@ -36,6 +36,10 @@ pub(crate) struct UpdateSettingsArgs {
     pub language: String,
     pub app_locale: String,
     pub theme_mode: ThemeMode,
+    #[serde(default = "crate::settings::default_true")]
+    pub meeting_detection_enabled: bool,
+    #[serde(default = "crate::settings::default_meeting_detection_apps")]
+    pub meeting_detection_apps: Vec<String>,
     pub llm_enabled: bool,
 
     pub cleanup_enabled: bool,
@@ -317,6 +321,9 @@ pub(crate) fn update_settings(
         next.language = args.language;
         next.app_locale = canonicalize_app_locale_or_default(&args.app_locale);
         next.theme_mode = args.theme_mode;
+        next.meeting_detection_enabled = args.meeting_detection_enabled;
+        next.meeting_detection_apps =
+            crate::settings::canonicalize_meeting_detection_apps(&args.meeting_detection_apps);
         if license_active {
             next.llm_enabled = args.llm_enabled;
             next.cleanup_enabled = args.cleanup_enabled;
@@ -452,6 +459,8 @@ mod tests {
             language: "en".to_string(),
             app_locale: "system".to_string(),
             theme_mode: ThemeMode::default(),
+            meeting_detection_enabled: true,
+            meeting_detection_apps: crate::settings::default_meeting_detection_apps(),
             llm_enabled: false,
 
             cleanup_enabled: false,

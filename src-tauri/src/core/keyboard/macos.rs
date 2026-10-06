@@ -47,6 +47,8 @@ pub(super) fn start(
             } else {
                 CGEventTapOptions::ListenOnly
             };
+            let keyboard_tx = tx.clone();
+            let keyboard_blocking_hotkeys = Arc::clone(&blocking_hotkeys);
 
             let event_tap = match CGEventTap::new(
                 CGEventTapLocation::Session,
@@ -63,8 +65,8 @@ pub(super) fn start(
                     handle_event(
                         event_type,
                         event,
-                        &tx,
-                        &blocking_hotkeys,
+                        &keyboard_tx,
+                        &keyboard_blocking_hotkeys,
                         has_blocking_hotkeys,
                         &swallowed_modifiers,
                         &request_reenable,
@@ -93,6 +95,16 @@ pub(super) fn start(
 
             run_loop.add_source(&loop_source, unsafe { kCFRunLoopDefaultMode });
             event_tap.enable();
+            let blocks_dictation = blocking_hotkeys.is_empty()
+                || blocking_hotkeys
+                    .iter()
+                    .any(|hotkey| hotkey.key == Some(Key::Dictation));
+            let Some(dictation_listener) = DictationKeyListener::start(tx, blocks_dictation) else {
+                let _ = ready_tx.send(Err(
+                    "Failed to create macOS Dictation key listener".to_string()
+                ));
+                return;
+            };
             let _ = ready_tx.send(Ok(run_loop.clone()));
 
             loop {
@@ -111,6 +123,7 @@ pub(super) fn start(
                     event_tap.enable();
                 }
             }
+            drop(dictation_listener);
         })
         .map_err(|err| anyhow!("Failed to spawn macOS shortcut listener: {err}"))?;
 
@@ -194,6 +207,58 @@ fn handle_event(
         CallbackResult::Drop
     } else {
         CallbackResult::Keep
+    }
+}
+
+struct DictationKeyListener {
+    handle: *mut std::ffi::c_void,
+    sender: *mut Sender<KeyEvent>,
+}
+
+impl DictationKeyListener {
+    fn start(sender: Sender<KeyEvent>, blocks_system_dictation: bool) -> Option<Self> {
+        type Callback = extern "C" fn(i32, *mut std::ffi::c_void);
+        unsafe extern "C" {
+            fn gm_dictation_key_listener_start(
+                callback: Callback,
+                context: *mut std::ffi::c_void,
+                blocks_system_dictation: bool,
+            ) -> *mut std::ffi::c_void;
+        }
+        extern "C" fn received(state: i32, context: *mut std::ffi::c_void) {
+            let sender = unsafe { &*context.cast::<Sender<KeyEvent>>() };
+            let _ = sender.try_send(KeyEvent {
+                modifiers: Modifiers::empty(),
+                occurred_at: std::time::Instant::now(),
+                key: Some(Key::Dictation),
+                is_key_down: state == 1,
+                changed_modifier: None,
+                repeat: false,
+            });
+        }
+
+        let sender = Box::into_raw(Box::new(sender));
+        let handle = unsafe {
+            gm_dictation_key_listener_start(received, sender.cast(), blocks_system_dictation)
+        };
+        if handle.is_null() {
+            unsafe { drop(Box::from_raw(sender)) };
+            None
+        } else {
+            Some(Self { handle, sender })
+        }
+    }
+}
+
+impl Drop for DictationKeyListener {
+    fn drop(&mut self) {
+        unsafe extern "C" {
+            fn gm_dictation_key_listener_stop(listener: *mut std::ffi::c_void);
+        }
+        unsafe {
+            gm_dictation_key_listener_stop(self.handle);
+            drop(Box::from_raw(self.sender));
+        }
     }
 }
 

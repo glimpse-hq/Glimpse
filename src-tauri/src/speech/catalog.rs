@@ -1002,6 +1002,9 @@ fn spec_from_files(
 }
 
 pub fn model_label(key: &str) -> String {
+    if key == crate::diarization::MODEL_KEY {
+        return crate::diarization::MODEL_LABEL.to_string();
+    }
     definition(key)
         .map(|model| model.label.to_string())
         .unwrap_or_else(|| key.to_string())
@@ -1171,16 +1174,21 @@ pub fn diarizer_model_info() -> ModelInfo {
 
 pub fn list_models(app: &AppHandle<AppRuntime>, settings: &UserSettings) -> Vec<SpeechModel> {
     let mut models = Vec::new();
+    let local_diarization = crate::diarization::is_installed(app);
 
     if remote::is_configured(settings) {
-        models.push(remote_entry(settings));
+        let mut model = remote_entry(settings);
+        add_local_diarization_capability(&mut model, local_diarization);
+        models.push(model);
     }
 
     for info in list_local_models() {
         let installed = install::check_model_status(app.clone(), info.key.clone())
             .map(|status| status.installed)
             .unwrap_or(false);
-        models.push(from_local(info, installed));
+        let mut model = from_local(info, installed);
+        add_local_diarization_capability(&mut model, local_diarization);
+        models.push(model);
     }
 
     models
@@ -1193,17 +1201,36 @@ pub(crate) fn list_models_at(
     settings: &UserSettings,
 ) -> Vec<SpeechModel> {
     let mut models = Vec::new();
+    let local_diarization =
+        crate::diarization::installation_complete(&models_dir.join(crate::diarization::MODEL_KEY));
 
     if remote::is_configured(settings) {
-        models.push(remote_entry(settings));
+        let mut model = remote_entry(settings);
+        add_local_diarization_capability(&mut model, local_diarization);
+        models.push(model);
     }
 
     for info in list_local_models() {
         let installed = install::check_model_installed_at(models_dir, &info.key);
-        models.push(from_local(info, installed));
+        let mut model = from_local(info, installed);
+        add_local_diarization_capability(&mut model, local_diarization);
+        models.push(model);
     }
 
     models
+}
+
+fn add_local_diarization_capability(model: &mut SpeechModel, installed: bool) {
+    if installed
+        && !model
+            .capabilities
+            .iter()
+            .any(|capability| capability == MODEL_CAPABILITY_DIARIZATION)
+    {
+        model
+            .capabilities
+            .push(MODEL_CAPABILITY_DIARIZATION.to_string());
+    }
 }
 
 fn from_local(info: ModelInfo, installed: bool) -> SpeechModel {

@@ -6,6 +6,8 @@ import type {
   LibraryImportOptions,
   LibraryFilter,
   ExportFormat,
+  MeetingState,
+  MeetingLevels,
 } from "../../types";
 
 export async function createLibraryItem(
@@ -38,6 +40,12 @@ export async function updateLibraryItem(
   return invoke<LibraryItem>("update_library_item", { id, patch });
 }
 
+export async function generateLibraryItemTitle(
+  id: string,
+): Promise<LibraryItem> {
+  return invoke<LibraryItem>("generate_library_item_title", { id });
+}
+
 export async function deleteLibraryItem(id: string): Promise<void> {
   await invoke("delete_library_item", { id });
 }
@@ -64,4 +72,22 @@ export async function exportLibraryItemToPath(
 
 export async function getLibraryTags(): Promise<string[]> {
   return invoke<string[]>("get_library_tags");
+}
+
+export async function getMeetingState(): Promise<MeetingState> {
+  return invoke<MeetingState>("get_meeting_state");
+}
+
+export async function getMeetingLevels(): Promise<MeetingLevels> {
+  return invoke<MeetingLevels>("get_meeting_levels");
+}
+
+export async function startMeetingRecording(
+  options: LibraryImportOptions,
+): Promise<MeetingState> {
+  return invoke<MeetingState>("start_meeting_recording", { options });
+}
+
+export async function stopMeetingRecording(): Promise<LibraryItem> {
+  return invoke<LibraryItem>("stop_meeting_recording");
 }

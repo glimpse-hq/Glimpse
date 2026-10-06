@@ -5,6 +5,7 @@ use anyhow::{Context, Result, anyhow};
 use glimpse_speech::models as speech_models;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tokio_util::sync::CancellationToken;
 
 pub use super::catalog::{
     LocalModelEngine, MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS, ModelInfo,
@@ -139,7 +140,9 @@ fn finish_model_install(
 }
 
 fn spec_for(model: &str, ane: bool) -> Result<speech_models::InstallSpec> {
-    super::catalog::install_spec(model, ane).ok_or_else(|| anyhow!("Unknown model: {model}"))
+    super::catalog::install_spec(model, ane)
+        .or_else(|| crate::diarization::install_spec(model))
+        .ok_or_else(|| anyhow!("Unknown model: {model}"))
 }
 
 /// Headless installed-check against a models directory, without an `AppHandle`.
@@ -200,9 +203,21 @@ fn ane_installed_for(model: &str, manager: &speech_models::ModelInstallManager) 
 }
 
 fn map_status(
-    status: speech_models::ModelStatus,
+    mut status: speech_models::ModelStatus,
     manager: &speech_models::ModelInstallManager,
 ) -> ModelStatus {
+    if status.id == crate::diarization::MODEL_KEY
+        && !crate::diarization::installation_complete(&manager.model_dir(&status.id))
+    {
+        status.installed = false;
+        if !status
+            .missing_files
+            .iter()
+            .any(|file| file == "runtime model files")
+        {
+            status.missing_files.push("runtime model files".to_string());
+        }
+    }
     let ane_installed = ane_installed_for(&status.id, manager);
     ModelStatus {
         key: status.id,
@@ -263,7 +278,9 @@ fn ensure_model_downloadable(
     ane: bool,
     manager: &speech_models::ModelInstallManager,
 ) -> Result<(), String> {
-    if model_download_allowed(app, manager.cache_dir(), model) {
+    if model_download_allowed(app, manager.cache_dir(), model)
+        || model == crate::diarization::MODEL_KEY
+    {
         return Ok(());
     }
     if !ane {
@@ -307,16 +324,16 @@ pub async fn download_model_now(
     ensure_disk_space(&manager.model_dir(&model), &spec)
         .map_err(|err| download_failed(&app, &model, "install", err))?;
     let cancel_token = state.create_download_token(&model)?;
-    struct DownloadGuard<'a>(&'a AppHandle<AppRuntime>, String);
+    struct DownloadGuard<'a>(&'a AppHandle<AppRuntime>, String, CancellationToken);
     impl Drop for DownloadGuard<'_> {
         fn drop(&mut self) {
             refresh_model_readiness(self.0, &self.1);
             self.0
                 .state::<crate::AppState>()
-                .clear_download_token(&self.1);
+                .clear_download_token(&self.1, &self.2);
         }
     }
-    let _download_guard = DownloadGuard(&app, model.clone());
+    let _download_guard = DownloadGuard(&app, model.clone(), cancel_token.clone());
     let progress_app = app.clone();
     let files: Vec<(String, Option<u64>)> = spec
         .files
@@ -383,6 +400,10 @@ pub async fn download_model_now(
         }
     };
 
+    if status.id == crate::diarization::MODEL_KEY {
+        crate::diarization::finalize_install(&manager)
+            .map_err(|err| download_failed(&app, &model, "install", err))?;
+    }
     let replaces_files = super::catalog::ane_replaces_model_files(&model);
     let status = if replaces_files || ane {
         let handle = app.clone();

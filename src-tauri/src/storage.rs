@@ -652,6 +652,27 @@ impl StorageManager {
         Ok(record.map(|r| r.audio_path))
     }
 
+    pub fn delete_range(&self, start_millis: i64, end_millis: i64) -> Result<Vec<String>> {
+        let mut conn = self.connection.lock();
+        let transaction = conn.transaction()?;
+        let audio_paths = {
+            let mut stmt = transaction.prepare(
+                "SELECT audio_path FROM transcriptions
+                 WHERE timestamp >= ?1 AND timestamp < ?2",
+            )?;
+            stmt.query_map(params![start_millis, end_millis], |row| {
+                row.get::<_, String>(0)
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?
+        };
+        transaction.execute(
+            "DELETE FROM transcriptions WHERE timestamp >= ?1 AND timestamp < ?2",
+            params![start_millis, end_millis],
+        )?;
+        transaction.commit()?;
+        Ok(audio_paths)
+    }
+
     pub fn count_prunable_before(&self, cutoff_millis: i64) -> Result<u32> {
         let conn = self.connection.lock();
         let count: i64 = conn.query_row(
@@ -979,6 +1000,15 @@ impl StorageManager {
             "detect_speakers",
             "ALTER TABLE library_items ADD COLUMN detect_speakers INTEGER NOT NULL DEFAULT 0",
         )?;
+        // Early meeting recovery builds used the normal meeting kind plus a
+        // generated Recovered tag. Promote those rows to the durable origin so
+        // renaming or removing a tag cannot erase where the item came from.
+        conn.execute(
+            "UPDATE library_items
+             SET kind = 'recovered_meeting'
+             WHERE kind = 'meeting' AND LOWER(tags) LIKE '%\"recovered\"%'",
+            [],
+        )?;
         Self::ensure_column(
             conn,
             "library_items",
@@ -1087,6 +1117,24 @@ impl StorageManager {
         crate::library::repo::update_library_item(&mut conn, &self.library_root, id, patch)
     }
 
+    pub fn apply_generated_library_metadata(
+        &self,
+        id: &str,
+        expected_name: Option<&str>,
+        next_name: &str,
+        generated_tags: &[String],
+    ) -> Result<Option<LibraryItem>> {
+        let mut conn = self.connection.lock();
+        crate::library::repo::apply_generated_library_metadata(
+            &mut conn,
+            &self.library_root,
+            id,
+            expected_name,
+            next_name,
+            generated_tags,
+        )
+    }
+
     /// Applies the patch only while `unchanged` holds for the stored item; None otherwise.
     pub fn update_library_item_if(
         &self,
@@ -1189,6 +1237,46 @@ mod tests {
         assert_eq!(stats.count, 2);
         assert_eq!(stats.words, 7);
         assert_eq!(stats.longest_words, 5);
+
+        drop(storage);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn deleting_a_day_uses_an_exclusive_end_boundary() {
+        let root = std::env::temp_dir().join(format!("glimpse-storage-test-{}", Uuid::new_v4()));
+        let storage = StorageManager::new(root.join("transcriptions.db")).unwrap();
+        let day_start = Local.with_ymd_and_hms(2026, 7, 13, 0, 0, 0).unwrap();
+        let next_day = Local.with_ymd_and_hms(2026, 7, 14, 0, 0, 0).unwrap();
+
+        for (text, timestamp) in [
+            ("first", day_start),
+            ("last", next_day - chrono::Duration::milliseconds(1)),
+            ("next", next_day),
+        ] {
+            storage
+                .save_transcription(
+                    text.to_string(),
+                    String::new(),
+                    TranscriptionStatus::Success,
+                    None,
+                    TranscriptionMetadata::default(),
+                    None,
+                    Some(timestamp),
+                )
+                .unwrap();
+        }
+
+        let deleted = storage
+            .delete_range(day_start.timestamp_millis(), next_day.timestamp_millis())
+            .unwrap();
+        assert_eq!(deleted.len(), 2);
+
+        let remaining = storage
+            .get_transcriptions_page(None, None, None, TranscriptionSort::Recent, 10, 0)
+            .unwrap();
+        assert_eq!(remaining.items.len(), 1);
+        assert_eq!(remaining.items[0].text, "next");
 
         drop(storage);
         fs::remove_dir_all(root).unwrap();

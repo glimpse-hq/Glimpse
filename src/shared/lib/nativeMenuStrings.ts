@@ -158,4 +158,36 @@ export const NATIVE_MENU_STRINGS = [
     message: "Recordings saved to History.",
   }),
   msg({ id: "native.toast.view_history", message: "View History" }),
+  msg({ id: "native.meeting.name", message: "Meeting {date}" }),
+  msg({ id: "native.meeting.recovered_name", message: "Recovered {name}" }),
+  msg({ id: "native.meeting.recovered_title", message: "Meeting recovered" }),
+  msg({
+    id: "native.meeting.recovered_message_one",
+    message:
+      "The interrupted recording was saved in Library and will be transcribed.",
+  }),
+  msg({
+    id: "native.meeting.recovered_message_many",
+    message:
+      "{count} interrupted recordings were saved in Library and will be transcribed.",
+  }),
+  msg({ id: "native.meeting.speaker_you", message: "You" }),
+  msg({ id: "native.meeting.speaker_remote", message: "Meeting" }),
+  msg({ id: "native.meeting.detected_title", message: "Meeting detected" }),
+  msg({
+    id: "native.meeting.detected_message",
+    message:
+      "It looks like a call is active in {app}. Would you like to record it?",
+  }),
+  msg({ id: "native.meeting.detected_record", message: "Record" }),
+  msg({ id: "native.meeting.detected_not_now", message: "Not now" }),
+  msg({ id: "native.library.person_default", message: "Person {nextIndex}" }),
+  msg({ id: "native.meeting.ended_title", message: "Has the meeting ended?" }),
+  msg({
+    id: "native.meeting.ended_message",
+    message:
+      "The call in {app} is no longer active. Would you like to stop the recording?",
+  }),
+  msg({ id: "native.meeting.ended_stop", message: "Stop recording" }),
+  msg({ id: "native.meeting.ended_continue", message: "Keep recording" }),
 ];

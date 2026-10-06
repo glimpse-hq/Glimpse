@@ -72,6 +72,7 @@ function humanizeKeyToken(token: string): string {
     MouseForward: i18n._(
       msg({ id: "shortcuts.key.mouse_forward", message: "Mouse Forward" }),
     ),
+    Dictation: isMacPlatform ? "Dictation key" : "Dictation",
   };
 
   if (directDisplay[token]) {

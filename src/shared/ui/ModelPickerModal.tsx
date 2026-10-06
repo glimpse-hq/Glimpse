@@ -76,7 +76,7 @@ const groupModels = (
     variants.sort((a, b) => variantRank(a.variant) - variantRank(b.variant));
     const first = variants[0];
     const englishOnly = deriveModelStats(first).englishOnly;
-    const isDiarizer = first.key === diarizer?.key;
+    const isDiarizer = first.category === "diarization";
     // Speaker detection is not a transcription model but lists as experimental.
     const category = isDiarizer
       ? "experimental"
@@ -125,6 +125,7 @@ type ModelPickerData = {
 
 type ModelPickerPanelProps = ModelPickerData & {
   diarizer?: ModelInfo | null;
+  auxiliaryModels?: ModelInfo[];
   className?: string;
 };
 
@@ -139,6 +140,7 @@ export function ModelPickerPanel({
   onDelete,
   onCancel,
   diarizer = null,
+  auxiliaryModels = [],
   className,
 }: ModelPickerPanelProps) {
   const { t } = useLingui();
@@ -170,10 +172,10 @@ export function ModelPickerPanel({
     const listed = (model: ModelInfo) =>
       model.downloadable || isInstalled(model.key);
     return groupModels(
-      catalog.filter(listed),
+      [...catalog.filter(listed), ...auxiliaryModels.filter(listed)],
       diarizer && listed(diarizer) ? diarizer : null,
     );
-  }, [catalog, diarizer, isInstalled]);
+  }, [catalog, diarizer, auxiliaryModels, isInstalled]);
 
   const availableCategories = useMemo(() => {
     const present = new Set(groups.map((group) => group.category));

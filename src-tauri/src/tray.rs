@@ -10,7 +10,7 @@ use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, audio};
 use parking_lot::Mutex;
 use std::sync::{
     OnceLock,
-    atomic::{AtomicU8, Ordering},
+    atomic::{AtomicU8, AtomicU64, Ordering},
 };
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, Submenu, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
@@ -22,6 +22,7 @@ use tauri::{
 
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
+use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
 
 pub(crate) const MENU_ID_CHECK_UPDATES: &str = "menu_check_updates";
 const MENU_ID_OPEN_SETTINGS: &str = "open_settings";
@@ -36,6 +37,12 @@ const MENU_ID_RECORDING_FINISH: &str = "menu_recording_finish";
 const RECORDING_ICON_RGB: [u8; 3] = [255, 59, 48];
 const PAUSED_ICON_RGB: [u8; 3] = [255, 146, 48];
 pub(crate) const EVENT_SETTINGS_RENDERER_READY: &str = "settings:renderer_ready";
+const SETTINGS_DEFAULT_WIDTH: f64 = 1040.0;
+const SETTINGS_DEFAULT_HEIGHT: f64 = 750.0;
+const SETTINGS_MIN_WIDTH: f64 = 900.0;
+const SETTINGS_MIN_HEIGHT: f64 = 750.0;
+const SETTINGS_WINDOW_STATE_SAVE_DELAY: std::time::Duration = std::time::Duration::from_millis(500);
+static SETTINGS_WINDOW_STATE_SAVE_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone, Copy)]
 pub(crate) enum SettingsPage {
@@ -354,6 +361,26 @@ struct PendingSettingsNavigation {
 fn pending_settings_navigation() -> &'static Mutex<PendingSettingsNavigation> {
     static PENDING: OnceLock<Mutex<PendingSettingsNavigation>> = OnceLock::new();
     PENDING.get_or_init(|| Mutex::new(PendingSettingsNavigation::default()))
+}
+
+fn settings_window_state_flags() -> StateFlags {
+    StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED
+}
+
+fn save_settings_window_state(app: &AppHandle<AppRuntime>) {
+    if let Err(err) = app.save_window_state(settings_window_state_flags()) {
+        tracing::warn!("Failed to save settings window state: {err}");
+    }
+}
+
+fn schedule_settings_window_state_save(app: AppHandle<AppRuntime>) {
+    let generation = SETTINGS_WINDOW_STATE_SAVE_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(SETTINGS_WINDOW_STATE_SAVE_DELAY).await;
+        if SETTINGS_WINDOW_STATE_SAVE_GENERATION.load(Ordering::SeqCst) == generation {
+            save_settings_window_state(&app);
+        }
+    });
 }
 
 fn flush_pending_settings_navigation(app: &AppHandle<AppRuntime>) {
@@ -690,8 +717,8 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
     let settings = app.state::<AppState>().current_settings();
     let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
         .title("Glimpse")
-        .inner_size(900.0, 750.0)
-        .min_inner_size(900.0, 750.0)
+        .inner_size(SETTINGS_DEFAULT_WIDTH, SETTINGS_DEFAULT_HEIGHT)
+        .min_inner_size(SETTINGS_MIN_WIDTH, SETTINGS_MIN_HEIGHT)
         .resizable(true)
         .visible(false)
         .initialization_script(boot_script(&settings));
@@ -705,6 +732,7 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
     let builder = builder.decorations(false);
 
     let window = builder.build()?;
+    window.restore_state(settings_window_state_flags())?;
 
     // Matches --color-bg-primary behind .settings-view, which takes over once
     // the page paints.
@@ -723,7 +751,11 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
     let app_handle = app.clone();
     let window_clone = window.clone();
     window.on_window_event(move |event| {
+        if matches!(event, WindowEvent::Resized(_) | WindowEvent::Moved(_)) {
+            schedule_settings_window_state_save(app_handle.clone());
+        }
         if let WindowEvent::CloseRequested { api, .. } = event {
+            save_settings_window_state(&app_handle);
             api.prevent_close();
             let _ = window_clone.hide();
             app_handle

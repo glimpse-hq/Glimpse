@@ -322,6 +322,7 @@ pub(crate) enum Key {
     F18,
     F19,
     F20,
+    Dictation,
     Space,
     Return,
     Tab,
@@ -470,6 +471,7 @@ impl fmt::Display for Key {
             Key::F18 => "F18",
             Key::F19 => "F19",
             Key::F20 => "F20",
+            Key::Dictation => "Dictation",
             Key::Space => "Space",
             Key::Return => "Return",
             Key::Tab => "Tab",
@@ -585,6 +587,7 @@ impl FromStr for Key {
             "f18" => Key::F18,
             "f19" => Key::F19,
             "f20" => Key::F20,
+            "dictation" | "voicecommand" => Key::Dictation,
             "space" | "spacebar" | " " => Key::Space,
             "return" | "enter" => Key::Return,
             "tab" => Key::Tab,
@@ -795,6 +798,25 @@ mod tests {
     #[test]
     fn duplicate_keys_are_rejected() {
         assert!("Ctrl+A+B".parse::<Hotkey>().is_err());
+    }
+
+    #[test]
+    fn dictation_key_parses_displays_and_blocks_like_a_native_key() {
+        let hotkey: Hotkey = "Dictation".parse().unwrap();
+        assert_eq!(hotkey.to_string(), "Dictation");
+        let hotkeys = blocking_hotkeys(vec![hotkey]);
+        assert!(should_block_event(
+            &hotkeys,
+            Modifiers::empty(),
+            &KeyEvent {
+                occurred_at: std::time::Instant::now(),
+                modifiers: Modifiers::empty(),
+                key: Some(Key::Dictation),
+                is_key_down: true,
+                changed_modifier: None,
+                repeat: false,
+            }
+        ));
     }
 
     #[test]

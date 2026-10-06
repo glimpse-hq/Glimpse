@@ -15,6 +15,10 @@ export async function listSpeechModels(): Promise<SpeechModel[]> {
   return invoke<SpeechModel[]>("list_speech_models");
 }
 
+export async function getDiarizationModel(): Promise<ModelInfo> {
+  return invoke<ModelInfo>("get_diarization_model");
+}
+
 export async function checkModelStatus(model: string): Promise<ModelStatus> {
   return invoke<ModelStatus>("check_model_status", { model });
 }

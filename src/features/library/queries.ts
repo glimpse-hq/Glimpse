@@ -5,7 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import * as libraryApi from "./api";
 import type {
@@ -17,7 +17,10 @@ import type {
   LibraryItemsPage,
   LibraryProgressPayload,
   LibraryImportProgressPayload,
+  LibraryMetadataProcessingPayload,
   ExportFormat,
+  MeetingState,
+  MeetingLevels,
 } from "../../types";
 
 const PAGE_SIZE = 30;
@@ -29,6 +32,8 @@ export const libraryKeys = {
   list: (filter: LibraryFilter) =>
     [...libraryKeys.all, "list", filter] as const,
   tags: () => [...libraryKeys.all, "tags"] as const,
+  meeting: () => [...libraryKeys.all, "meeting"] as const,
+  meetingLevels: () => [...libraryKeys.meeting(), "levels"] as const,
   item: (id: string) => [...libraryKeys.all, "item", id] as const,
 };
 
@@ -168,6 +173,14 @@ export function useLibraryItems(
       else unlisteners.push(fn);
     });
 
+    listen<{ id: string }>("library:item_updated", () => {
+      if (cancelled) return;
+      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlisteners.push(fn);
+    });
+
     listen<{ id: string; message: string; cancelled: boolean }>(
       "library:transcription_error",
       (event) => {
@@ -229,6 +242,44 @@ export function useLibraryItems(
   });
 }
 
+export function useLibraryMetadataProcessing(enabled: boolean) {
+  const [processingIds, setProcessingIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
+  useEffect(() => {
+    if (!enabled) {
+      setProcessingIds(new Set());
+      return;
+    }
+
+    let cancelled = false;
+    let unlisten: UnlistenFn | undefined;
+    listen<LibraryMetadataProcessingPayload>(
+      "library:metadata_processing",
+      (event) => {
+        if (cancelled || !event.payload?.id) return;
+        setProcessingIds((current) => {
+          const next = new Set(current);
+          if (event.payload.active) next.add(event.payload.id);
+          else next.delete(event.payload.id);
+          return next;
+        });
+      },
+    ).then((fn) => {
+      if (cancelled) fn();
+      else unlisten = fn;
+    });
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, [enabled]);
+
+  return processingIds;
+}
+
 // One item by id, for an open item that has left the filtered list.
 export function useLibraryItem(id: string | null, enabled: boolean) {
   return useQuery({
@@ -275,6 +326,17 @@ export function useUpdateLibraryItem() {
             })),
           },
       );
+      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    },
+  });
+}
+
+export function useGenerateLibraryItemTitle() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: libraryApi.generateLibraryItemTitle,
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
   });
@@ -344,5 +406,72 @@ export function useLibraryTags(enabled: boolean = true) {
     queryFn: libraryApi.getLibraryTags,
     enabled,
     gcTime: 60_000,
+  });
+}
+
+export function useMeetingState(enabled: boolean = true) {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    let unlisten: UnlistenFn | undefined;
+    listen<MeetingState>("meeting:state_changed", (event) => {
+      if (!cancelled) {
+        queryClient.setQueryData(libraryKeys.meeting(), event.payload);
+      }
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlisten = fn;
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, [enabled, queryClient]);
+
+  return useQuery({
+    queryKey: libraryKeys.meeting(),
+    queryFn: libraryApi.getMeetingState,
+    enabled,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
+}
+
+export function useMeetingLevels(enabled: boolean = true) {
+  return useQuery<MeetingLevels>({
+    queryKey: libraryKeys.meetingLevels(),
+    queryFn: libraryApi.getMeetingLevels,
+    enabled,
+    refetchInterval: enabled ? 50 : false,
+    staleTime: 0,
+    gcTime: 5_000,
+  });
+}
+
+export function useStartMeetingRecording() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: libraryApi.startMeetingRecording,
+    onSuccess: (meeting) => {
+      queryClient.setQueryData(libraryKeys.meeting(), meeting);
+    },
+  });
+}
+
+export function useStopMeetingRecording() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: libraryApi.stopMeetingRecording,
+    onSuccess: () => {
+      queryClient.setQueryData(libraryKeys.meeting(), {
+        recording: false,
+        id: null,
+        started_at: null,
+        application_isolated: false,
+      } satisfies MeetingState);
+      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+    },
   });
 }

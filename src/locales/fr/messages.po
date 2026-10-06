@@ -19,11 +19,6 @@ msgstr ""
 #~ msgstr "Copié"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryView.tsx
-#~ msgid "library.view.dropzone"
-#~ msgstr "Déposer des fichiers pour importer"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #~ msgid "library.modal.follow_timestamp"
 #~ msgstr "Suivre l'horodatage"
@@ -92,12 +87,6 @@ msgstr ""
 #: src/features/library/components/LibraryDetail.tsx
 #~ msgid "library.modal.transcribing"
 #~ msgstr "Transcription en cours…"
-
-#. placeholder {0}: (progress * 100).toFixed(0)
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryCard.tsx
-#~ msgid "library.card.status.thinking"
-#~ msgstr "Réflexion {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -394,6 +383,395 @@ msgstr ""
 #~ msgstr "Utilisé par les raccourcis avec le modèle d'écriture activé, et par la Personnalisation."
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.sidebar.collapse_label"
+#~ msgstr "Réduire"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.eyebrow"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.practice_label"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.edit_shortcut"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.hint"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.goal"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.say_this"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.success_title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.body"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.license_active"
+#~ msgstr "Toutes les fonctionnalités sont déverrouillées."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.complete"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.license_active_title"
+#~ msgstr "Licence active"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.more_options"
+#~ msgstr "D'autres options sont disponibles dans Réglages."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.success_body"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.subtitle.speak"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.subtitle.hold"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.waiting"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.cta_downloading"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.dictate_to_continue"
+#~ msgstr "Dictez pour continuer"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.subtitle"
+#~ msgstr "Maintenez votre raccourci et lisez la ligne ci-dessous à voix haute."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.waiting.v2"
+#~ msgstr "En attente de votre prise de parole."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.failed_body"
+#~ msgstr "Vérifiez que le bon microphone est sélectionné, puis réessayez."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.waiting.v3"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.subtitle.v3"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.failed"
+#~ msgstr "Celle-ci n'est pas passée."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.hold_keys"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.waiting.v4"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/FirstDictationGuide.tsx
+#~ msgid "onboarding.first_dictation.subtitle.v4"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.recap.model"
+#~ msgstr "Modèle"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.recap.shortcut_capture"
+#~ msgstr "Appuyez sur un raccourci"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.recap.shortcut"
+#~ msgstr "Raccourci intelligent"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info_aria"
+#~ msgstr "À propos de l'encodeur Apple Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.installed.active"
+#~ msgstr "Actif"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.unconfigured"
+#~ msgstr "Ajoutez d'abord un point de terminaison et un modèle dans Fournisseurs"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.ane.info"
+#~ msgstr "Ajoute un encodeur Core ML qui s'exécute sur l'Apple Neural Engine pour une transcription plus rapide et plus économe en énergie. Le premier chargement est plus long le temps que macOS l'optimise pour votre puce."
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.all"
+#~ msgstr "Tous les modèles"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.already_bought"
+#~ msgstr "Déjà acheté ?"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.close"
+#~ msgstr "Fermer"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud"
+#~ msgstr "Cloud"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.confirm.title"
+#~ msgstr "Continuer sans modèle ?"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v2"
+#~ msgstr "La dictée de base est gratuite : transcription locale, dictionnaire, remplacements et historique. Aucun frais à la minute ni abonnement pour ces fonctionnalités. La Bibliothèque, le Nettoyage, la personnalisation avec un LLM, le serveur API local et l'interface en ligne de commande font partie de Glimpse Personal. Vous bénéficiez d'abord d'un essai de 14 jours ; ensuite, activez une licence Personal (achat unique) ou une licence Commercial (facturée annuellement) dans Réglages → Compte."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.capability.dictionary"
+#~ msgstr "Mots personnalisés"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.free_title"
+#~ msgstr "La dictée est gratuite pour toujours"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.free_title"
+#~ msgstr "La dictée est gratuite pour toujours"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.cloud.disable"
+#~ msgstr "Désactiver le cloud"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.confirm.download"
+#~ msgstr "Télécharger"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.license_active.v2"
+#~ msgstr "Toutes les fonctionnalités sont déverrouillées. À vous de créer !"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.filter.aria"
+#~ msgstr "Filtrer les modèles par catégorie"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.get_license"
+#~ msgstr "Obtenir une licence"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/WelcomeStep.tsx
+#~ msgid "onboarding.welcome.cta"
+#~ msgstr "Commencer"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.confirm.body"
+#~ msgstr "Glimpse en a besoin pour transcrire. Le modèle recommandé peut se télécharger en arrière-plan pendant que vous terminez la configuration."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.placeholder"
+#~ msgstr "GLIMPSE_…"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.dialog_aria"
+#~ msgstr "Licence"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.streaming"
+#~ msgstr "Diffusion en direct"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.streaming"
+#~ msgstr "Diffusion en direct"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.microphone_test.unsupported"
+#~ msgstr "Le test du microphone n'est pas disponible dans cette fenêtre."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.info_aria"
+#~ msgstr "Plus d'informations sur les options de raccourcis"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.no_results"
+#~ msgstr "Aucun modèle ne correspond à votre recherche."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/PermissionsStep.tsx
+#~ msgid "onboarding.permissions.skip"
+#~ msgstr "Ignorer"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.confirm.continue"
+#~ msgstr "Ignorer pour l'instant"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.license_active_title.v2"
+#~ msgstr "Merci de soutenir Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.discount_code_error"
+#~ msgstr "Cela ressemble à un code de réduction. Saisissez-le lors du paiement, puis collez la clé de licence figurant sur votre reçu."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ModelStep.tsx
+#~ msgid "onboarding.model.capability.timestamps"
+#~ msgstr "Horodatages"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.free_body"
+#~ msgstr "Débloquez le nettoyage IA, l'édition vocale, les personnalités par application, la transcription audio et vidéo, et bien plus encore."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/ReadyStep.tsx
+#~ msgid "onboarding.done.license_adds.v2"
+#~ msgstr "Débloquez Nettoyage, Personnalités, Transcription de fichiers et bien plus encore."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseModal.tsx
+#~ msgid "onboarding.license.why_paid"
+#~ msgstr "Pourquoi y a-t-il des fonctionnalités payantes ?"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.capability.timestamps"
+#~ msgstr "Horodatages au niveau du mot"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.capability.timestamps"
+#~ msgstr "Horodatages au niveau des mots"
+
+#. js-lingui-explicit-id
+#~ msgid "library.card.origin.meeting"
+#~ msgstr "Réunion"
+
+#. js-lingui-explicit-id
+#~ msgid "library.card.origin.recording"
+#~ msgstr "Enregistrement"
+
+#. js-lingui-explicit-id
+#~ msgid "library.card.origin.recovered_meeting"
+#~ msgstr "Réunion (récupérée)"
+
+#. js-lingui-explicit-id
+#~ msgid "library.filter.files"
+#~ msgstr "Fichiers"
+
+#. js-lingui-explicit-id
+#~ msgid "library.filter.meetings"
+#~ msgstr "Réunions"
+
+#. js-lingui-explicit-id
+#~ msgid "library.filter.origin_aria_label"
+#~ msgstr "Filtrer la bibliothèque par origine"
+
+#. js-lingui-explicit-id
+#~ msgid "meeting.view.description"
+#~ msgstr "Enregistrez et transcrivez des réunions en ligne."
+
+#. js-lingui-explicit-id
+#~ msgid "meeting.view.search_placeholder"
+#~ msgstr "Rechercher des réunions..."
+
+#. js-lingui-explicit-id
+#~ msgid "settings.models.diarization.description"
+#~ msgstr "Sépare les voix sans téléverser votre audio"
+
+#. js-lingui-explicit-id
+#~ msgid "settings.models.diarization.download"
+#~ msgstr "Télécharger la détection locale des personnes"
+
+#. js-lingui-explicit-id
+#~ msgid "settings.models.local_intelligence"
+#~ msgstr "Modules complémentaires"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -562,6 +940,11 @@ msgstr "{0} mots dictés, aucun tapé. @try_glimpse_app"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.avg_words"
 msgstr "{avg, plural, one {Environ # mot par dictée aujourd'hui} other {Environ # mots par dictée aujourd'hui}}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.recovered_message_many"
+msgstr "{count} enregistrements interrompus ont été sauvegardés dans la bibliothèque et seront transcrits."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -846,6 +1229,11 @@ msgid "dictionary.header.description"
 msgstr "Ajoutez des mots que Glimpse doit reconnaître et des expressions à remplacer après la transcription."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/DiarizationModelCard.tsx
+msgid "settings.models.diarization.addon"
+msgstr "Module complémentaire"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after"
 msgstr "après"
@@ -941,6 +1329,11 @@ msgid "settings.modal.tab.app"
 msgstr "Application"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.system.scope.application"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.appearance"
 msgstr "Apparence"
@@ -949,6 +1342,11 @@ msgstr "Apparence"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.title"
 msgstr "Apple Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.apps.section"
+msgstr "Applications"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -972,6 +1370,11 @@ msgid "library.detail.assign_new_speaker"
 msgstr "Attribuer un nouvel intervenant"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.dictation_key.description"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune_target.audio"
 msgstr "Audio"
@@ -981,6 +1384,11 @@ msgstr "Audio"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.file_filter"
 msgstr "Audio et vidéo"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.capture_failed"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1038,6 +1446,11 @@ msgid "settings.speech_model.model.automatic_default"
 msgstr "Automatique ({defaultModel})"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.detection.section"
+msgstr "Détection automatique"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.start_on_launch_help"
 msgstr "démarrer automatiquement à l'ouverture de Glimpse"
@@ -1063,9 +1476,14 @@ msgid "onboarding.back"
 msgstr "Retour"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
+#: src/features/library/components/LibraryView.tsx
 msgid "library.detail.back"
 msgstr "Retour à la bibliothèque"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "meeting.detail.back"
+msgstr "Retour aux réunions"
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -1097,6 +1515,11 @@ msgstr "Signet"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.unnamed"
 msgstr "Signet"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.subtitle"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
@@ -1159,6 +1582,13 @@ msgid "model_picker.cancel"
 msgstr "Annuler"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryDeleteDialog.tsx
+#: src/features/library/components/LibraryDetail.tsx
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "library.modal.cancel"
+msgstr "Annuler"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.action.deactivate_cancel"
 msgstr "Annuler"
@@ -1194,12 +1624,6 @@ msgid "library.card.cancel"
 msgstr "Annuler"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDeleteDialog.tsx
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.modal.cancel"
-msgstr "Annuler"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.cancel"
 msgstr "Annuler"
@@ -1224,6 +1648,16 @@ msgstr "Annuler le changement de raccourci"
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.cancelled"
 msgstr "Annulé"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.cancelled"
+msgstr "Annulé"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.cancelling"
+msgstr "Annulation en cours"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1392,11 +1826,6 @@ msgid "library.view.search_clear"
 msgstr "Effacer la recherche"
 
 #. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker.clear"
-msgstr "Effacer l'intervenant"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.layout.to_grid"
 msgstr "Cliquer pour afficher les cartes"
@@ -1478,11 +1907,6 @@ msgstr "Transcription dans le cloud"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
-msgid "home.sidebar.collapse_label"
-msgstr "Réduire"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
 msgid "home.sidebar.collapse"
 msgstr "Réduire la barre latérale"
 
@@ -1520,6 +1944,11 @@ msgstr "Questions fréquentes"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.configuration"
 msgstr "Configuration"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.not_configured"
+msgstr "Configurez un modèle d’écriture avant de générer un titre."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -1694,6 +2123,11 @@ msgid "onboarding.complete.failed"
 msgstr "Impossible de terminer la configuration. Vérifiez vos réglages et réessayez."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error"
+msgstr "Impossible de générer un titre et des étiquettes. Réessayez."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.complete.no_model"
 msgstr "Impossible de charger une sélection de modèle local. Essayez de rouvrir l'intégration."
@@ -1702,6 +2136,11 @@ msgstr "Impossible de charger une sélection de modèle local. Essayez de rouvri
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.import_dialog_error"
 msgstr "Impossible d'ouvrir la boîte de dialogue d'importation."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.unreachable"
+msgstr "Impossible de joindre le fournisseur d’écriture. Vérifiez votre connexion et réessayez."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1748,6 +2187,11 @@ msgstr "Impossible de supprimer les fichiers de la bibliothèque. Vérifiez les 
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.delete_failed"
 msgstr "Impossible de supprimer la transcription."
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.group.delete_confirm.error"
+msgstr "Impossible de supprimer les transcriptions. Réessayez."
 
 #. js-lingui-explicit-id
 #: src/features/library/components/library-utils.ts
@@ -2037,6 +2481,11 @@ msgid "settings.app.text_size.default"
 msgstr "Par défaut"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.microphone.default"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.delete"
 msgstr "Supprimer"
@@ -2047,6 +2496,7 @@ msgid "transcriptions.item.delete"
 msgstr "Supprimer"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/DiarizationModelCard.tsx
 #: src/features/settings/components/ModelStatCard.tsx
 msgid "models.card.delete"
 msgstr "Supprimer"
@@ -2089,6 +2539,11 @@ msgid "dictionary.delete_entry"
 msgstr "Supprimer {entry}"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.group.delete_confirm.action"
+msgstr "Tout supprimer"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all"
 msgstr "Supprimer toutes les données"
@@ -2097,6 +2552,11 @@ msgstr "Supprimer toutes les données"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.delete_all_aria"
 msgstr "Supprimer toutes les données. Maintenez appuyé pendant dix secondes pour confirmer."
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.group.delete_day_aria"
+msgstr "Supprimer toutes les transcriptions de ce jour"
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -2112,6 +2572,11 @@ msgstr "Échec de la suppression"
 #: src/features/onboarding/OnboardingScreen.tsx
 msgid "onboarding.delete.failed"
 msgstr "Échec de la suppression"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/DiarizationModelCard.tsx
+msgid "settings.models.diarization.delete"
+msgstr "Supprimer la détection locale des personnes"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -2150,6 +2615,11 @@ msgid "dictionary.replacements.delete"
 msgstr "Supprimer le remplacement de {0}"
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.group.delete_confirm.title"
+msgstr "Supprimer les transcriptions de ce jour ?"
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDeleteDialog.tsx
 msgid "library.modal.delete_confirm.title"
 msgstr "Supprimer cet élément ?"
@@ -2165,9 +2635,19 @@ msgid "settings.app.auto_delete.body"
 msgstr "La suppression des transcriptions supprime également leur audio enregistré."
 
 #. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.group.delete_confirm.deleting"
+msgstr "Suppression..."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.deleting"
 msgstr "Suppression…"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.detection.title"
+msgstr "Détecter les réunions en ligne"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -2363,6 +2843,11 @@ msgstr "Rédiger une carte de membre Glimpse"
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.empty_state"
 msgstr "Faites glisser des fichiers ici pour constituer votre bibliothèque."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.view.dropzone"
+msgstr "Déposer des fichiers pour importer"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2721,6 +3206,12 @@ msgid "settings.modal.tab.general"
 msgstr "Général"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.card.title.generate"
+msgstr "Générer un titre et des étiquettes"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.title_free"
 msgstr "Obtenez tout avec une licence."
@@ -2839,6 +3330,11 @@ msgstr "Vue en grille"
 #: src/features/transcriptions/homeGreeting.ts
 msgid "home.greeting.occasion.leap_day"
 msgstr "Joyeux jour bissextile"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.ended_title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
@@ -3062,6 +3558,11 @@ msgid "settings.about.install_cli"
 msgstr "Installer l'interface CLI"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.meeting.model_required"
+msgstr "Installez ou configurez d’abord un modèle vocal."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_action"
 msgstr "Installé"
@@ -3075,6 +3576,11 @@ msgstr "Installé"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_subtitle"
 msgstr "Installé dans {cliInstallPath}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.apps.installed"
+msgstr "Installée sur ce Mac"
 
 #. js-lingui-explicit-id
 #. placeholder {0}: cliInstallStatus.command
@@ -3099,6 +3605,11 @@ msgid "member_card.draft_stamp_issuing"
 msgstr "Émission en cours"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.detected_message"
+msgstr "Un appel semble être en cours dans {app}. Voulez-vous l’enregistrer ?"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.jump"
 msgstr "Aller au direct"
@@ -3117,6 +3628,11 @@ msgstr "Continuez à maintenir, puis relâchez lorsque vous avez terminé."
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.on_top"
 msgstr "Garder au premier plan"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.ended_continue"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3269,6 +3785,16 @@ msgid "onboarding.first_dictation.listening"
 msgstr "Écoute en cours…"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.system.waveform"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.microphone.waveform"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text"
 msgstr "Texte en direct"
@@ -3319,6 +3845,11 @@ msgid "home.mode.local"
 msgstr "Mode local"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/DiarizationModelCard.tsx
+msgid "settings.models.diarization.local_private"
+msgstr "Local"
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.provider.local"
 msgstr "Local"
@@ -3337,6 +3868,16 @@ msgstr "Mode local"
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.running"
 msgstr "API locale"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/DiarizationModelCard.tsx
+msgid "settings.models.diarization.title"
+msgstr "Détection locale des personnes"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/DiarizationModelCard.tsx
+msgid "settings.models.diarization.aria"
+msgstr "Modèle local de détection des personnes"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3358,6 +3899,11 @@ msgstr "Le plus long"
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.longest_duration"
 msgstr "Enregistrement le plus long aujourd'hui : {0}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.apps.loading"
+msgstr "Recherche des applications de réunion installées"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3388,6 +3934,87 @@ msgstr "Rend un raccourci temporaire. Il ne sauvegardera ni l'audio, ni la trans
 #: src/shared/ui/WindowControls.tsx
 msgid "window.controls.maximize"
 msgstr "Agrandir"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.speaker_remote"
+msgstr "Réunion"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.name"
+msgstr "Réunion {date}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.system"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.detected_title"
+msgstr "Réunion détectée"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.meeting.error"
+msgstr "L’enregistrement de la réunion a échoué. Vérifiez les autorisations et réessayez."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.recovered_title"
+msgstr "Réunion récupérée"
+
+#~ msgid "meeting.active.local"
+#~ msgstr "Enregistré localement · La transcription démarre à l’arrêt de l’enregistrement"
+
+#~ msgid "meeting.active.microphone"
+#~ msgstr "Microphone"
+
+#~ msgid "meeting.active.microphone.default"
+#~ msgstr "Microphone par défaut"
+
+#~ msgid "meeting.active.microphone.no_signal"
+#~ msgstr "Aucun signal de microphone détecté"
+
+#~ msgid "meeting.active.microphone.waveform"
+#~ msgstr "Niveau du microphone en direct"
+
+#~ msgid "meeting.active.subtitle"
+#~ msgstr "Les deux sources audio sont enregistrées séparément"
+
+#~ msgid "meeting.active.system"
+#~ msgstr "Audio de la réunion"
+
+#~ msgid "meeting.active.system.default"
+#~ msgstr "Audio du système"
+
+#~ msgid "meeting.active.system.scope"
+#~ msgstr "Capture du système"
+
+#~ msgid "meeting.active.system.scope.application"
+#~ msgstr "Application uniquement"
+
+#~ msgid "meeting.active.system.waveform"
+#~ msgstr "Niveau audio de la réunion en direct"
+
+#~ msgid "meeting.active.title"
+#~ msgstr "Enregistrement en cours"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.sidebar.meetings"
+msgstr "Réunions"
+
+#. js-lingui-explicit-id
+#: src/features/settings/settingsPanes.ts
+msgid "settings.modal.tab.meetings"
+msgstr "Réunions"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "meeting.view.title"
+msgstr "Réunions"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -3428,6 +4055,11 @@ msgstr "Accès au microphone"
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.microphone"
 msgstr "Microphone"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.microphone"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -3621,6 +4253,18 @@ msgstr "Mon clavier commence à être jaloux. {wpm} mots par minute avec @try_gl
 msgid "record.name.title"
 msgstr "Nommer l'enregistrement"
 
+#~ msgid "native.meeting.ended_continue"
+#~ msgstr "Continuer l’enregistrement"
+
+#~ msgid "native.meeting.ended_message"
+#~ msgstr "L’appel dans {app} n’est plus actif. Voulez-vous arrêter l’enregistrement ?"
+
+#~ msgid "native.meeting.ended_stop"
+#~ msgstr "Arrêter l’enregistrement"
+
+#~ msgid "native.meeting.ended_title"
+#~ msgstr "La réunion est-elle terminée ?"
+
 #. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.locked_hint"
@@ -3709,6 +4353,11 @@ msgid "updates.whats_new.no_changelog"
 msgstr "Aucun journal des modifications disponible."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.apps.empty"
+msgstr "Aucune application de réunion compatible n’a été trouvée."
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.tooltip_empty"
 msgstr "Aucune dictée"
@@ -3732,6 +4381,11 @@ msgstr "Aucun périphérique d'entrée trouvé"
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "Aucun journal pour l'instant."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.microphone.no_signal"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -3905,6 +4559,11 @@ msgid "personalization.modal.applications.not_installed"
 msgstr "Non installé"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.detected_not_now"
+msgstr "Pas maintenant"
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.apps.not_running"
 msgstr "Non en cours d'exécution"
@@ -3988,6 +4647,11 @@ msgstr "Sur l'appareil"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "Uniquement si vous configurez un modèle de rédaction dans Réglages → Fournisseurs. Les raccourcis avec Nettoyage activé, ainsi que la Personnalisation, envoient alors le texte concerné directement à ce fournisseur. Votre clé API reste stockée localement dans Glimpse. L'audio ne quitte votre appareil que si vous choisissez un modèle de reconnaissance vocale cloud dans Réglages → Modèles."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.apps.description"
+msgstr "Seules les applications sélectionnées sont surveillées. La détection dans le navigateur nécessite l’Accessibilité et vérifie uniquement l’onglet actif ; Glimpse ne lit pas le contenu des réunions."
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4075,6 +4739,11 @@ msgid "settings.local_api.api_key.placeholder_optional"
 msgstr "Facultatif - laisser vide pour désactiver"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.title.generating"
+msgstr "Organisation..."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.verbatim_text"
 msgstr "Texte original"
@@ -4144,6 +4813,16 @@ msgstr "Des modifications d'autorisations peuvent nécessiter un redémarrage."
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.title"
 msgstr "Autorisations"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.library.person_default"
+msgstr "Personne {nextIndex}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker_default_name"
+msgstr "Intervenant {nextIndex}"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -4337,9 +5016,24 @@ msgid "home.sidebar.record"
 msgstr "Enregistrer"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.detected_record"
+msgstr "Enregistrer"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.meeting.start"
+msgstr "Enregistrer une réunion"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording"
 msgstr "Enregistrer les réunions"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "meeting.view.empty_state"
+msgstr "Enregistrez votre première réunion."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4365,6 +5059,11 @@ msgstr "Enregistrement - {date}"
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.default_name"
 msgstr "Enregistrement - {day}, {time}"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4395,6 +5094,16 @@ msgstr "Enregistrements récupérés"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.recovered_saved_many"
 msgstr "Enregistrements sauvegardés dans l'historique."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.recovered"
+msgstr "Récupérée"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.recovered_name"
+msgstr "Récupérée : {name}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4477,6 +5186,11 @@ msgstr "Supprimer le signet"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.bookmark.remove"
 msgstr "Supprimer le signet"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryDetail.tsx
+msgid "library.detail.speaker.clear"
+msgstr "Effacer l'intervenant"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4791,6 +5505,11 @@ msgid "record.saved"
 msgstr "« {0} » enregistré dans la bibliothèque."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.local"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.name.saving"
 msgstr "Enregistrement en cours…"
@@ -5000,6 +5719,12 @@ msgstr "Configurer"
 msgid "home.sidebar.settings"
 msgstr "Réglages"
 
+#~ msgid "settings.general.shortcuts.dictation_key"
+#~ msgstr "Utiliser la touche Dictée"
+
+#~ msgid "settings.general.shortcuts.dictation_key.description"
+#~ msgstr "Associe la touche du microphone à la dictée intelligente"
+
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.setup"
@@ -5107,6 +5832,11 @@ msgid "live.expand"
 msgstr "Afficher la transcription"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.detection.description"
+msgstr "Affiche une proposition d’enregistrement au démarrage d’une réunion compatible."
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.later"
 msgstr "Ignorer"
@@ -5165,11 +5895,6 @@ msgstr "Trier"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.list.filter.aria"
 msgstr "Trier et filtrer les transcriptions"
-
-#. js-lingui-explicit-id
-#: src/features/library/components/LibraryDetail.tsx
-msgid "library.detail.speaker_default_name"
-msgstr "Intervenant {nextIndex}"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -5302,9 +6027,20 @@ msgid "settings.local_api.stop"
 msgstr "Arrêter l'API"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.ended_stop"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.stop"
 msgstr "Arrêter l'enregistrement"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+#: src/features/library/components/LibraryView.tsx
+msgid "library.meeting.stop"
+msgstr "Arrêter l’enregistrement"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -5377,6 +6113,11 @@ msgid "settings.app.language.system"
 msgstr "Système"
 
 #. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.system.default"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.system_audio"
 msgstr "Audio système"
@@ -5396,6 +6137,11 @@ msgstr "Le son système est actif pendant l'enregistrement."
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.tracks.system_audio"
 msgstr "Piste audio système"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/ActiveMeetingCard.tsx
+msgid "meeting.active.system.scope"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
@@ -5533,6 +6279,16 @@ msgid "settings.language_model.apple.not_ready"
 msgstr "Le modèle Apple Intelligence est encore en cours de téléchargement."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.ended_message"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.not_found"
+msgstr "Le modèle d’écriture configuré est introuvable. Vérifiez-le dans les réglages."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.externally_managed_info"
 msgstr "La commande glimpse est installée à l'emplacement {cliInstallPath} et gérée en dehors de Glimpse. Utilisez son gestionnaire de paquets pour la mettre à jour ou la supprimer."
@@ -5541,6 +6297,11 @@ msgstr "La commande glimpse est installée à l'emplacement {cliInstallPath} et 
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.installed_info"
 msgstr "La commande glimpse est installée à l'emplacement {cliInstallPath}. Utilisez-la depuis Terminal, des scripts ou des outils d'automatisation pour appeler Glimpse sans ouvrir l'interface de l'app."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.recovered_message_one"
+msgstr "L’enregistrement interrompu a été sauvegardé dans la bibliothèque et sera transcrit."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5573,9 +6334,35 @@ msgid "library.delete_confirm.trash"
 msgstr "La transcription est supprimée et le fichier audio est déplacé vers la Corbeille."
 
 #. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.invalid_response"
+msgstr "Le modèle de rédaction a répondu, mais n’a pas pu organiser cet élément. Réessayez."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.rate_limited"
+msgstr "Le fournisseur d’écriture a atteint sa limite d’utilisation. Réessayez plus tard."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.unauthorized"
+msgstr "Le fournisseur d’écriture a refusé la clé API. Vérifiez-la dans les réglages."
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryView.tsx
+msgid "library.card.title.error.rejected"
+msgstr "Le fournisseur d’écriture a refusé la demande de titre."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.theme.label"
 msgstr "Thème"
+
+#. js-lingui-explicit-id
+#. placeholder {0}: (progress * 100).toFixed(0)
+#: src/features/library/components/LibraryCard.tsx
+msgid "library.card.status.thinking"
+msgstr "Réflexion {0}%"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -5596,6 +6383,11 @@ msgstr "Cet élément ne contient pas d'horodatages. Retranscrivez-le avec des h
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "Seuls les fichiers audio enregistrés sont supprimés, pas vos transcriptions."
+
+#. js-lingui-explicit-id
+#: src/features/transcriptions/components/TranscriptionList.tsx
+msgid "transcriptions.group.delete_confirm.description"
+msgstr "Cette action supprime définitivement toutes les transcriptions et leurs fichiers audio de ce jour."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -5668,6 +6460,11 @@ msgid "settings.app.auto_update.toggle_aria"
 msgstr "Activer/désactiver la mise à jour automatique"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.detection.toggle_aria"
+msgstr "Activer ou désactiver la détection automatique des réunions"
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.fullscreen"
 msgstr "Activer/Désactiver le plein écran"
@@ -5676,6 +6473,11 @@ msgstr "Activer/Désactiver le plein écran"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_launch.toggle_aria"
 msgstr "Activer/désactiver le lancement à l'ouverture de session"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/MeetingsTab.tsx
+msgid "settings.meetings.apps.toggle_aria"
+msgstr "Activer ou désactiver la détection pour cette application"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/Dropdown.tsx
@@ -5924,6 +6726,11 @@ msgid "settings.models.cloud.toggle"
 msgstr "Utiliser la transcription dans le nuage"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.shortcuts.dictation_key"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.cli.default_subtitle"
 msgstr "Utiliser Glimpse depuis Terminal ou des scripts"
@@ -6098,6 +6905,11 @@ msgstr "Fournisseur de modèle de langage"
 #: src/features/transcriptions/components/TranscriptionList.tsx
 msgid "transcriptions.group.yesterday"
 msgstr "Hier"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.meeting.speaker_you"
+msgstr "Vous"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx

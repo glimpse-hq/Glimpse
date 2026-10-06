@@ -444,7 +444,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
             })}
             className="ui-button-primary inline-flex h-8 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 ui-text-body-sm"
           >
-            <Plus size={13} aria-hidden="true" />
+            <Plus size={14} aria-hidden="true" />
             {t({
               id: "personalization.new_mode",
               message: "New mode",

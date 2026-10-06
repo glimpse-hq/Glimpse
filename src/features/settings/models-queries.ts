@@ -14,6 +14,7 @@ export const modelKeys = {
   catalog: () => [...modelKeys.all, "catalog"] as const,
   status: (model: string) => [...modelKeys.all, "status", model] as const,
   speech: () => [...modelKeys.all, "speech"] as const,
+  diarization: () => [...modelKeys.all, "diarization"] as const,
   cli: () => [...modelKeys.all, "cli"] as const,
 };
 
@@ -44,17 +45,37 @@ export function useDiarizerModel(enabled: boolean = true) {
   });
 }
 
-export function useDiarizerInstalled(): boolean {
+export function useDiarizerInstalled(
+  includeAuxiliary: boolean = true,
+): boolean {
   const diarizer = useDiarizerModel().data;
-  const keys = useMemo(() => (diarizer ? [diarizer.key] : []), [diarizer]);
+  const auxiliary = useDiarizationModel().data;
+  const keys = useMemo(
+    () => [
+      ...(diarizer ? [diarizer.key] : []),
+      ...(auxiliary ? [auxiliary.key] : []),
+    ],
+    [diarizer, auxiliary],
+  );
   const { statusByModel } = useModelStatuses(keys);
-  return Boolean(diarizer && statusByModel[diarizer.key]?.installed);
+  return Boolean(
+    (diarizer && statusByModel[diarizer.key]?.installed) ||
+    (includeAuxiliary && auxiliary && statusByModel[auxiliary.key]?.installed),
+  );
 }
 
 export function useSpeechModels(enabled: boolean = true) {
   return useQuery({
     queryKey: modelKeys.speech(),
     queryFn: modelsApi.listSpeechModels,
+    enabled,
+  });
+}
+
+export function useDiarizationModel(enabled: boolean = true) {
+  return useQuery({
+    queryKey: modelKeys.diarization(),
+    queryFn: modelsApi.getDiarizationModel,
     enabled,
   });
 }

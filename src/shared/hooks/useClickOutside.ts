@@ -4,12 +4,18 @@ export function useClickOutside<T extends HTMLElement>(
   ref: RefObject<T | null>,
   onOutsideClick: () => void,
   enabled: boolean = true,
+  additionalRefs: Array<RefObject<HTMLElement | null>> = [],
 ) {
   useEffect(() => {
     if (!enabled) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (!ref.current || ref.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !ref.current ||
+        ref.current.contains(target) ||
+        additionalRefs.some((candidate) => candidate.current?.contains(target))
+      ) {
         return;
       }
       onOutsideClick();
@@ -17,5 +23,5 @@ export function useClickOutside<T extends HTMLElement>(
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [enabled, onOutsideClick, ref]);
+  }, [additionalRefs, enabled, onOutsideClick, ref]);
 }

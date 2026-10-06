@@ -164,6 +164,18 @@ export function useDeleteTranscription() {
   });
 }
 
+export function useDeleteTranscriptionsForDay() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ startMs, endMs }: { startMs: number; endMs: number }) =>
+      transcriptionsApi.deleteTranscriptionsForDay(startMs, endMs),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
+    },
+  });
+}
+
 export function useRetryTranscription(enabled: boolean = true) {
   const [retryingIds, setRetryingIds] = useState<string[]>([]);
   const shouldListen = enabled || retryingIds.length > 0;

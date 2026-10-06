@@ -14,6 +14,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
+import FloatingPortal from "../../../shared/ui/FloatingPortal";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { detectAppPlatform } from "../../../platform/service";
 import type { Personality } from "../../../types";
@@ -149,6 +150,7 @@ const PersonalityModal = ({
   const [isAppMenuOpen, setIsAppMenuOpen] = useState(false);
   const [appHighlightIndex, setAppHighlightIndex] = useState(0);
   const appComboboxRef = useRef<HTMLDivElement>(null);
+  const appMenuRef = useRef<HTMLDivElement>(null);
   const appInputRef = useRef<HTMLInputElement>(null);
   const [websiteInput, setWebsiteInput] = useState("");
   const [websiteError, setWebsiteError] = useState<string | null>(null);
@@ -218,7 +220,12 @@ const PersonalityModal = ({
     setAppHighlightIndex(appQuery.trim() ? 0 : -1);
   }, [appQuery, isAppMenuOpen]);
 
-  useClickOutside(appComboboxRef, () => setIsAppMenuOpen(false), isAppMenuOpen);
+  useClickOutside(
+    appComboboxRef,
+    () => setIsAppMenuOpen(false),
+    isAppMenuOpen,
+    [appMenuRef],
+  );
 
   const addApp = (name: string) => {
     const trimmed = name.trim();
@@ -603,16 +610,16 @@ const PersonalityModal = ({
                       }`}
                     />
                   </button>
-                  <AnimatePresence>
-                    {isAppMenuOpen && filteredAppOptions.length > 0 && (
-                      <motion.ul
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.12 }}
-                        role="listbox"
-                        className="ui-surface-menu dropdown-list absolute left-0 right-0 top-full z-30 mt-2 max-h-[240px] px-1 py-1"
-                      >
+                  {isAppMenuOpen && filteredAppOptions.length > 0 && (
+                    <FloatingPortal
+                      anchorRef={appComboboxRef}
+                      ref={appMenuRef}
+                      placement="bottom-start"
+                      matchAnchorWidth
+                      role="listbox"
+                      className="max-h-[220px] overflow-y-auto rounded-md border border-border-secondary bg-surface-overlay px-1 py-1 shadow-lg instructions-scroll"
+                    >
+                      <ul>
                         {filteredAppOptions.map((app, index) => (
                           <li key={`app-option-${app.name}`}>
                             <button
@@ -622,10 +629,10 @@ const PersonalityModal = ({
                               onMouseEnter={() => setAppHighlightIndex(index)}
                               onMouseDown={(event) => event.preventDefault()}
                               onClick={() => addApp(app.name)}
-                              className={`flex w-full items-center gap-2.5 rounded-md px-2 py-1.5 text-left ui-text-body-sm transition-colors duration-100 ${
+                              className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left ui-text-meta font-medium ui-color-primary ${
                                 index === appHighlightIndex
-                                  ? "bg-[var(--surface-interactive)] text-content-primary"
-                                  : "text-content-secondary"
+                                  ? "bg-surface-elevated"
+                                  : "hover:bg-surface-elevated/60"
                               }`}
                             >
                               <AppIconBadge
@@ -637,9 +644,9 @@ const PersonalityModal = ({
                             </button>
                           </li>
                         ))}
-                      </motion.ul>
-                    )}
-                  </AnimatePresence>
+                      </ul>
+                    </FloatingPortal>
+                  )}
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto instructions-scroll">
                   {personality.apps.length === 0 ? (

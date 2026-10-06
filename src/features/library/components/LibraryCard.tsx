@@ -1,12 +1,14 @@
 import { useLingui } from "@lingui/react/macro";
 import { useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   WarningCircle as AlertCircle,
   CaretDown as ChevronDown,
   BookmarkSimple,
   DotsThree as MoreHorizontal,
   PencilSimple as Pencil,
+  Sparkle,
+  CircleNotch as Loader2,
   ArrowClockwise as RotateCw,
   Trash as Trash2,
   X,
@@ -17,11 +19,13 @@ import {
   getLibraryErrorDetails,
   shouldShowImportProgress,
   formatLibraryName,
+  formatLibraryCardDate,
   describeAudioSources,
 } from "./library-utils";
 import { formatBytes } from "../../../shared/lib/format";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
+import FloatingPortal from "../../../shared/ui/FloatingPortal";
 import type { LibraryItem } from "../../../types";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 
@@ -43,6 +47,8 @@ const LibraryCard = ({
   onRetranscribe,
   onCancel,
   onDelete,
+  onGenerateTitle,
+  isGeneratingTitle,
   onQuickDelete,
   editingTagId,
   tagDraft,
@@ -70,6 +76,8 @@ const LibraryCard = ({
   onDelete: () => void;
   // Shift-click deletes without asking.
   onQuickDelete: () => Promise<void>;
+  onGenerateTitle: () => Promise<void>;
+  isGeneratingTitle: boolean;
   editingTagId: string | null;
   tagDraft: string;
   onStartTagEdit: () => void;
@@ -88,36 +96,68 @@ const LibraryCard = ({
     }),
   });
   const status = item.status;
-  const createdAt = new Date(item.created_at);
-  const createdAtLabel = Number.isNaN(createdAt.getTime())
-    ? null
-    : createdAt.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year:
-          createdAt.getFullYear() === new Date().getFullYear()
-            ? undefined
-            : "numeric",
-      });
   const bookmarkCount = item.bookmarks?.length ?? 0;
 
   const showImportProgress =
     status.type === "importing" && shouldShowImportProgress(status.progress);
   const isTranscribing = status.type === "transcribing" || showImportProgress;
-  const isComplete = status.type === "complete";
   const isError = status.type === "error";
+  const isComplete = status.type === "complete";
 
-  const showProgressBar = isTranscribing;
-  const progress = showProgressBar ? clampProgress(status.progress) : 0;
+  const isProcessing = isTranscribing || isGeneratingTitle;
+  const progress = isTranscribing ? clampProgress(status.progress) : 0;
 
   const isEditingName = editingNameId === item.id;
   const isAddingTag = editingTagId === item.id;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuPopupRef = useRef<HTMLDivElement>(null);
   const [tagMenuOpen, setTagMenuOpen] = useState(false);
   const tagMenuRef = useRef<HTMLDivElement>(null);
+  const tagPopupRef = useRef<HTMLDivElement>(null);
+  const errorTooltipRef = useRef<HTMLDivElement>(null);
+  const [errorTooltipOpen, setErrorTooltipOpen] = useState(false);
   const errorDetails =
     status.type === "error" ? getLibraryErrorDetails(status.message) : null;
+  const displayName = formatLibraryName(item.name);
+  const createdAtLabel = formatLibraryCardDate(item.created_at);
+  const recoveredMeeting =
+    item.kind === "recovered_meeting" ||
+    (item.kind === "meeting" &&
+      item.tags.some((tag) => tag.toLowerCase() === "recovered"));
+  const visibleTags = recoveredMeeting
+    ? item.tags.filter((tag) => tag.toLowerCase() !== "recovered")
+    : item.tags;
+  const statusLabel = isGeneratingTitle
+    ? t({
+        id: "library.card.title.generating",
+        message: "Organizing...",
+      })
+    : status.type === "complete"
+      ? null
+      : status.type === "transcribing"
+        ? t({
+            id: "library.card.status.thinking",
+            message: `Thinking ${(progress * 100).toFixed(0)}%`,
+          })
+        : status.type === "importing" && showImportProgress
+          ? t({
+              id: "library.card.status.converting",
+              message: `Converting ${(progress * 100).toFixed(0)}%`,
+            })
+          : status.type === "error"
+            ? t({ id: "library.card.status.failed", message: "Failed" })
+            : status.type === "cancelling"
+              ? t({
+                  id: "library.card.status.cancelling",
+                  message: "Cancelling",
+                })
+              : status.type === "cancelled"
+                ? t({
+                    id: "library.card.status.cancelled",
+                    message: "Cancelled",
+                  })
+                : t({ id: "library.card.status.queued", message: "Queued" });
 
   const normalizedDraft = tagDraft.trim().toLowerCase();
   const filteredTagOptions = availableTags.filter((tag) => {
@@ -129,8 +169,10 @@ const LibraryCard = ({
     return tagLower.includes(normalizedDraft);
   });
 
-  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
-  useClickOutside(tagMenuRef, () => setTagMenuOpen(false), tagMenuOpen);
+  useClickOutside(menuRef, () => setMenuOpen(false), menuOpen, [menuPopupRef]);
+  useClickOutside(tagMenuRef, () => setTagMenuOpen(false), tagMenuOpen, [
+    tagPopupRef,
+  ]);
 
   const handleDelete = () => {
     setMenuOpen(false);
@@ -175,6 +217,34 @@ const LibraryCard = ({
       );
     }
   };
+
+  const handleGenerateTitle = async () => {
+    setMenuOpen(false);
+    try {
+      await onGenerateTitle();
+    } catch {
+      // The owner displays the localized error toast.
+    }
+  };
+
+  const titleAction = (
+    <button
+      type="button"
+      disabled={!isComplete || isGeneratingTitle || !item.transcript?.trim()}
+      onClick={() => void handleGenerateTitle()}
+      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated disabled:opacity-40"
+    >
+      {isGeneratingTitle ? (
+        <Loader2 size={12} className="animate-spin" />
+      ) : (
+        <Sparkle size={12} />
+      )}
+      {t({
+        id: "library.card.title.generate",
+        message: "Generate title and tags",
+      })}
+    </button>
+  );
 
   if (layout === "grid") {
     return (
@@ -370,6 +440,7 @@ const LibraryCard = ({
                           {t({ id: "library.card.rename", message: "Rename" })}
                         </span>
                       </button>
+                      {titleAction}
 
                       {status.type === "transcribing" ||
                       status.type === "cancelling" ||
@@ -447,7 +518,7 @@ const LibraryCard = ({
               />
             ) : (
               <h3 className="ui-text-title-lg font-medium leading-snug ui-color-primary line-clamp-3 break-words">
-                {formatLibraryName(item.name)}
+                {displayName}
               </h3>
             )}
           </div>
@@ -593,7 +664,7 @@ const LibraryCard = ({
                   >
                     +
                   </button>
-                  {item.tags.map((tag, index) => (
+                  {visibleTags.map((tag, index) => (
                     <span
                       key={`tag-${index}-${tag || "empty"}`}
                       onClick={(event) => {
@@ -692,8 +763,88 @@ const LibraryCard = ({
             />
           ) : (
             <h3 className="truncate ui-text-body font-medium ui-color-primary">
-              {formatLibraryName(item.name)}
+              {displayName}
             </h3>
+          )}
+
+          {recoveredMeeting && (
+            <div className="mt-1 flex min-w-0 items-center gap-1.5 ui-text-micro font-medium ui-color-warning-strong">
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-warning)]"
+                aria-hidden="true"
+              />
+              <span className="truncate">
+                {t({
+                  id: "library.card.recovered",
+                  message: "Recovered",
+                })}
+              </span>
+            </div>
+          )}
+
+          {statusLabel && (
+            <div className="mt-1.5 flex flex-col items-start gap-1">
+              <div className="flex max-w-full min-w-0 items-center gap-1.5">
+                <span
+                  className={`min-w-0 truncate ui-text-label-strong ${
+                    isError
+                      ? "ui-color-error-strong font-semibold"
+                      : isProcessing
+                        ? "ui-color-accent font-semibold"
+                        : "ui-color-muted"
+                  }`}
+                >
+                  {statusLabel}
+                </span>
+                {isError && errorDetails && (
+                  <div
+                    ref={errorTooltipRef}
+                    className="relative flex items-center cursor-default min-w-0"
+                    onClick={(event) => event.stopPropagation()}
+                    onMouseEnter={() => setErrorTooltipOpen(true)}
+                    onMouseLeave={() => setErrorTooltipOpen(false)}
+                  >
+                    <AlertCircle size={12} className="ui-color-error-strong" />
+                    {errorTooltipOpen && (
+                      <FloatingPortal
+                        anchorRef={errorTooltipRef}
+                        placement="bottom-end"
+                        offset={8}
+                        className="pointer-events-none w-56 rounded-lg border border-[var(--color-border-hover)] bg-[var(--color-bg-overlay)] p-3 shadow-xl"
+                        role="tooltip"
+                      >
+                        <p className="ui-text-body-sm ui-color-primary normal-case tracking-normal">
+                          {errorDetails.message}
+                        </p>
+                      </FloatingPortal>
+                    )}
+                  </div>
+                )}
+              </div>
+              {isProcessing && (
+                <div className="w-16 h-[2px] bg-[var(--color-border-hover)] rounded-full overflow-hidden flex">
+                  {isGeneratingTitle ? (
+                    <motion.div
+                      className="h-full w-5 shrink-0 bg-[var(--color-accent)]"
+                      initial={{ x: -20 }}
+                      animate={{ x: 64 }}
+                      transition={{
+                        ease: "linear",
+                        duration: 0.9,
+                        repeat: Infinity,
+                      }}
+                    />
+                  ) : (
+                    <motion.div
+                      className="h-full bg-[var(--color-accent)]"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${progress * 100}%` }}
+                      transition={{ ease: "linear", duration: 0.5 }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
           )}
         </div>
         {!isComplete && (
@@ -871,7 +1022,7 @@ const LibraryCard = ({
             >
               +
             </button>
-            {item.tags.map((tag, index) => (
+            {visibleTags.map((tag, index) => (
               <span
                 key={`tag-${index}-${tag || "empty"}`}
                 onClick={(event) => {
@@ -1014,6 +1165,7 @@ const LibraryCard = ({
                   {t({ id: "library.card.rename", message: "Rename" })}
                 </span>
               </button>
+              {titleAction}
 
               {status.type === "transcribing" ||
               status.type === "cancelling" ||

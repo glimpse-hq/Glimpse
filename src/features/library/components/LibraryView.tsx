@@ -9,6 +9,8 @@ import {
   CircleNotch as Loader2,
   List as ListIcon,
   Plus,
+  Record as RecordIcon,
+  Stop,
   MagnifyingGlass as Search,
   SquaresFour,
   X,
@@ -26,6 +28,7 @@ import {
 import LibraryImportModal from "./LibraryImportModal";
 import LibraryCard, { type LibraryLayout } from "./LibraryCard";
 import LibraryDetail from "./LibraryDetail";
+import ActiveMeetingCard from "./ActiveMeetingCard";
 import LibraryDeleteDialog from "./LibraryDeleteDialog";
 import LibraryRetranscribeModal, {
   type LibraryRetranscribeOptions,
@@ -33,8 +36,10 @@ import LibraryRetranscribeModal, {
 import {
   useLibraryItems as useLibraryItemsQuery,
   useLibraryItem,
+  useLibraryMetadataProcessing,
   useCreateLibraryItem,
   useUpdateLibraryItem,
+  useGenerateLibraryItemTitle,
   useDeleteLibraryItem,
   useCancelLibraryTranscription,
   useRediarizeLibraryItem,
@@ -42,6 +47,9 @@ import {
   useExportLibraryItem,
   useLibraryTags,
   libraryKeys,
+  useMeetingState,
+  useStartMeetingRecording,
+  useStopMeetingRecording,
 } from "../queries";
 import {
   formatDeleteErrorMessage,
@@ -65,6 +73,7 @@ type LibraryViewProps = {
   onOpenItemHandled?: () => void;
   onSetImportPaths: (paths: string[] | null) => void;
   isActive: boolean;
+  scope: "files" | "meetings";
 };
 
 const LAYOUT_KEY = "glimpse.library.layout";
@@ -75,10 +84,14 @@ const LibraryView = ({
   onOpenItemHandled,
   onSetImportPaths,
   isActive,
+  scope,
 }: LibraryViewProps) => {
   const { t } = useLingui();
   const queryClient = useQueryClient();
 
+  const [followTimestamps, setFollowTimestamps] = useState(
+    () => localStorage.getItem("glimpse.library.follow_playback") !== "false",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -99,14 +112,20 @@ const LibraryView = ({
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState("");
   const shiftHeld = useShiftHeld(isActive);
+  const { data: meetingState } = useMeetingState(
+    isActive && scope === "meetings",
+  );
+  const startMeetingMutation = useStartMeetingRecording();
+  const stopMeetingMutation = useStopMeetingRecording();
   const filter = useMemo<LibraryFilter>(() => {
     return {
       search: searchQuery || null,
       status: statusFilter === "all" ? null : statusFilter,
+      kind: scope,
       tag: null,
       since_days: null,
     };
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, scope, statusFilter]);
 
   const {
     data,
@@ -118,6 +137,7 @@ const LibraryView = ({
   } = useLibraryItemsQuery(filter, isActive);
 
   const { data: availableTags = [] } = useLibraryTags(isActive);
+  const automaticallyOrganizingIds = useLibraryMetadataProcessing(isActive);
   const { data: speechModels = [] } = useSpeechModels(isActive);
   const { data: defaultModelKey = "" } = useSettings(
     (settings) => settings.local_model,
@@ -179,6 +199,7 @@ const LibraryView = ({
 
   const createItemMutation = useCreateLibraryItem();
   const updateItemMutation = useUpdateLibraryItem();
+  const generateTitleMutation = useGenerateLibraryItemTitle();
   const deleteItemMutation = useDeleteLibraryItem();
   const cancelMutation = useCancelLibraryTranscription();
   const retryMutation = useRetryLibraryTranscription();
@@ -214,6 +235,69 @@ const LibraryView = ({
       }
     },
     [deleteItemMutation, invalidateTags],
+  );
+
+  const generateItemTitle = useCallback(
+    async (id: string) => {
+      try {
+        await generateTitleMutation.mutateAsync(id);
+      } catch (err) {
+        console.error("Failed to generate library item title and tags:", err);
+        const code = err instanceof Error ? err.message : String(err);
+        const message = code.includes("title_model_not_configured")
+          ? t({
+              id: "library.card.title.error.not_configured",
+              message: "Configure a writing model before generating a title.",
+            })
+          : code.includes("title_rate_limited")
+            ? t({
+                id: "library.card.title.error.rate_limited",
+                message:
+                  "The writing provider has reached its rate or usage limit. Try again later.",
+              })
+            : code.includes("title_unauthorized")
+              ? t({
+                  id: "library.card.title.error.unauthorized",
+                  message:
+                    "The writing provider rejected its API key. Check it in Settings.",
+                })
+              : code.includes("title_model_not_found")
+                ? t({
+                    id: "library.card.title.error.not_found",
+                    message:
+                      "The configured writing model could not be found. Check it in Settings.",
+                  })
+                : code.includes("title_request_rejected")
+                  ? t({
+                      id: "library.card.title.error.rejected",
+                      message:
+                        "The writing provider rejected the title request.",
+                    })
+                  : code.includes("title_unreachable")
+                    ? t({
+                        id: "library.card.title.error.unreachable",
+                        message:
+                          "Could not reach the writing provider. Check your connection and try again.",
+                      })
+                    : code.includes("title_invalid_response")
+                      ? t({
+                          id: "library.card.title.error.invalid_response",
+                          message:
+                            "The writing model responded, but could not organize this item. Try again.",
+                        })
+                      : t({
+                          id: "library.card.title.error",
+                          message:
+                            "Could not generate a title and tags. Try again.",
+                        });
+        invoke("debug_show_toast", {
+          toastType: "error",
+          message,
+        }).catch(() => {});
+        throw err;
+      }
+    },
+    [generateTitleMutation, t],
   );
 
   const retranscribe = useCallback(
@@ -378,25 +462,98 @@ const LibraryView = ({
     installedModels.find((model) => model.remote)?.id ??
     installedModels.find((model) => model.key === defaultModelKey)?.id ??
     installedModels[0]?.id;
+  const meetingBusy =
+    startMeetingMutation.isPending || stopMeetingMutation.isPending;
+  const handleMeetingClick = async () => {
+    try {
+      if (meetingState?.recording) {
+        await stopMeetingMutation.mutateAsync();
+        return;
+      }
+      if (!defaultSpeechModelKey) {
+        invoke("debug_show_toast", {
+          toastType: "error",
+          message: t({
+            id: "library.meeting.model_required",
+            message: "Install or configure a speech model first.",
+          }),
+        }).catch(() => {});
+        return;
+      }
+      await startMeetingMutation.mutateAsync({
+        store_original: false,
+        model_key: defaultSpeechModelKey,
+        llm_cleanup_enabled: false,
+        show_timestamps: true,
+        detect_speakers: true,
+      });
+    } catch (err) {
+      console.error("Meeting recording failed:", err);
+      invoke("debug_show_toast", {
+        toastType: "error",
+        message: t({
+          id: "library.meeting.error",
+          message: "Meeting recording failed. Check permissions and try again.",
+        }),
+      }).catch(() => {});
+    }
+  };
   const statusFilterOptions = useMemo(
     () => [
-      { value: "all", label: t({ id: "library.filter.all", message: "All" }) },
       {
-        value: "active",
+        value: "all" as const,
+        label: t({ id: "library.filter.all", message: "All" }),
+      },
+      {
+        value: "active" as const,
         label: t({ id: "library.filter.active", message: "Active" }),
       },
       {
-        value: "complete",
+        value: "complete" as const,
         label: t({ id: "library.filter.done", message: "Done" }),
       },
       {
-        value: "error",
+        value: "error" as const,
         label: t({ id: "library.filter.failed", message: "Failed" }),
       },
     ],
     [t],
   );
-
+  const headerAction =
+    scope === "files" ? (
+      <button
+        type="button"
+        onClick={handleImportClick}
+        className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-content-primary px-3.5 py-1.5 text-sm leading-5 font-semibold text-surface-secondary transition-all hover:bg-content-secondary shadow-[0_3px_0_-1px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,0.1)] active:translate-y-[1px] active:shadow-none"
+      >
+        <Plus size={14} aria-hidden="true" />
+        {t({ id: "library.view.import_button", message: "Import" })}
+      </button>
+    ) : (
+      <button
+        type="button"
+        onClick={handleMeetingClick}
+        disabled={
+          meetingBusy || (!meetingState?.recording && !defaultSpeechModelKey)
+        }
+        className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-1.5 text-sm leading-5 font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-50 active:translate-y-[1px] active:shadow-none ${
+          meetingState?.recording
+            ? "bg-[var(--color-error)] text-white hover:opacity-90 shadow-[0_3px_0_-1px_rgba(255,255,255,0.2)]"
+            : "bg-content-primary text-surface-secondary hover:bg-content-secondary shadow-[0_3px_0_-1px_rgba(255,255,255,0.25),inset_0_1px_0_0_rgba(255,255,255,0.1)]"
+        }`}
+      >
+        {meetingBusy ? (
+          <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+        ) : meetingState?.recording ? (
+          <Stop size={14} weight="fill" aria-hidden="true" />
+        ) : (
+          <RecordIcon size={14} weight="fill" aria-hidden="true" />
+        )}
+        {meetingState?.recording
+          ? t({ id: "library.meeting.stop", message: "Stop recording" })
+          : t({ id: "library.meeting.start", message: "Record meeting" })}
+      </button>
+    );
   return (
     <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
       {selectedItem ? (
@@ -410,6 +567,8 @@ const LibraryView = ({
           <LibraryDetail
             item={selectedItem}
             models={installedModels}
+            followTimestamps={followTimestamps}
+            onFollowTimestampsChange={setFollowTimestamps}
             shiftHeld={shiftHeld}
             onClose={() => setSelectedItemId(null)}
             onDelete={async () => {
@@ -433,6 +592,23 @@ const LibraryView = ({
               })
             }
             availableTags={availableTags}
+            onGenerateTitle={() => generateItemTitle(selectedItem.id)}
+            isGeneratingTitle={
+              automaticallyOrganizingIds.has(selectedItem.id) ||
+              (generateTitleMutation.isPending &&
+                generateTitleMutation.variables === selectedItem.id)
+            }
+            backLabel={
+              scope === "meetings"
+                ? t({
+                    id: "meeting.detail.back",
+                    message: "Back to meetings",
+                  })
+                : t({
+                    id: "library.detail.back",
+                    message: "Back to library",
+                  })
+            }
           />
         </motion.div>
       ) : (
@@ -449,13 +625,18 @@ const LibraryView = ({
                   color="var(--color-section-marker-alt)"
                 />
               }
-              title={t({ id: "library.view.title", message: "Library" })}
+              title={
+                scope === "meetings"
+                  ? t({ id: "meeting.view.title", message: "Meetings" })
+                  : t({ id: "library.view.title", message: "Library" })
+              }
               description={t({
                 id: "library.view.description",
                 message: "Import audio and video files for transcription.",
               })}
               trailing={
                 <>
+                  {headerAction}
                   <div className="relative w-56 min-w-0">
                     <Search
                       size={13}
@@ -589,6 +770,13 @@ const LibraryView = ({
           <div className="flex-1 min-h-0 overflow-y-scroll overflow-x-hidden custom-scrollbar scrollbar-gutter pb-6 pr-3 pt-1">
             <div key="library-list" className="flex flex-col gap-6 w-full">
               <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
+                {scope === "meetings" && meetingState?.recording && (
+                  <ActiveMeetingCard
+                    meeting={meetingState}
+                    stopping={stopMeetingMutation.isPending}
+                    onStop={() => void handleMeetingClick()}
+                  />
+                )}
                 <div
                   className={
                     layout === "grid"
@@ -611,21 +799,44 @@ const LibraryView = ({
                     </div>
                   )}
 
-                  {!isLoading && items.length === 0 && (
-                    <button
-                      type="button"
-                      onClick={handleImportClick}
-                      className="flex flex-col items-center justify-center py-16 text-center transition-colors hover:text-content-secondary"
-                    >
-                      <FolderOpen size={20} className="text-content-disabled" />
-                      <p className="mt-3 ui-text-body ui-color-muted">
-                        {t({
-                          id: "library.view.empty_state",
-                          message: "Drag files here to build your Library.",
-                        })}
-                      </p>
-                    </button>
-                  )}
+                  {!isLoading &&
+                    items.length === 0 &&
+                    !(scope === "meetings" && meetingState?.recording) && (
+                      <button
+                        type="button"
+                        onClick={
+                          scope === "meetings"
+                            ? handleMeetingClick
+                            : handleImportClick
+                        }
+                        className="col-span-full rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-8 flex flex-col items-center justify-center text-center hover:text-content-secondary hover:border-border-hover transition-colors"
+                      >
+                        {scope === "meetings" ? (
+                          <RecordIcon
+                            size={20}
+                            className="text-content-disabled"
+                            weight="fill"
+                          />
+                        ) : (
+                          <FolderOpen
+                            size={20}
+                            className="text-content-disabled"
+                          />
+                        )}
+                        <p className="mt-3 ui-text-body ui-color-muted">
+                          {scope === "meetings"
+                            ? t({
+                                id: "meeting.view.empty_state",
+                                message: "Record your first meeting.",
+                              })
+                            : t({
+                                id: "library.view.empty_state",
+                                message:
+                                  "Drag files here to build your Library.",
+                              })}
+                        </p>
+                      </button>
+                    )}
 
                   {items.map((item, index) => (
                     <LibraryCard
@@ -651,6 +862,12 @@ const LibraryView = ({
                       onCancel={() => cancelMutation.mutateAsync(item.id)}
                       onDelete={() => setPendingDeleteId(item.id)}
                       onQuickDelete={() => deleteItemAndRefreshTags(item.id)}
+                      onGenerateTitle={() => generateItemTitle(item.id)}
+                      isGeneratingTitle={
+                        automaticallyOrganizingIds.has(item.id) ||
+                        (generateTitleMutation.isPending &&
+                          generateTitleMutation.variables === item.id)
+                      }
                       editingTagId={editingTagId}
                       tagDraft={tagDraft}
                       onStartTagEdit={() => startTagEdit(item)}
@@ -661,6 +878,21 @@ const LibraryView = ({
                       availableTags={availableTags}
                     />
                   ))}
+
+                  {scope === "files" && items.length > 0 && (
+                    <button
+                      onClick={handleImportClick}
+                      className="rounded-xl border border-dashed border-border-secondary bg-surface-secondary p-4 flex flex-col items-center justify-center text-center ui-color-muted hover:text-content-secondary hover:border-border-hover transition-colors"
+                    >
+                      <FolderOpen size={18} />
+                      <span className="mt-2 ui-text-body-sm">
+                        {t({
+                          id: "library.view.dropzone",
+                          message: "Drop files to import",
+                        })}
+                      </span>
+                    </button>
+                  )}
 
                   {items.length > 0 && hasNextPage && (
                     <div className="flex items-center justify-center pt-4">
@@ -722,7 +954,7 @@ const LibraryView = ({
       </AnimatePresence>
 
       <AnimatePresence>
-        {pendingImportPaths !== null && (
+        {scope === "files" && pendingImportPaths !== null && (
           <LibraryImportModal
             paths={pendingImportPaths}
             models={installedModels}

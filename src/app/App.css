@@ -494,6 +494,7 @@
   .ui-text-menu-item {
     font-size: var(--ui-text-size-label);
     line-height: var(--ui-text-line-label);
+    text-align: left;
   }
 
   .ui-text-kbd {
@@ -716,6 +717,11 @@
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     overflow: hidden;
+  }
+
+  .ui-surface-menu
+    :is(button, [role="menuitem"], [role="menuitemradio"], [role="option"]) {
+    text-align: left;
   }
 
   .ui-card-liftable {

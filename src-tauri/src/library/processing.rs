@@ -1,6 +1,6 @@
 use std::env;
 use std::fs;
-use std::io::{BufRead, BufReader, BufWriter, ErrorKind};
+use std::io::{BufRead, BufReader, BufWriter, ErrorKind, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
@@ -71,7 +71,9 @@ pub(crate) fn create_item_from_path(
         options.show_timestamps && model_supports_timestamps(&options.model_key)
     };
     let detect_speakers = options.detect_speakers
-        && (remote_selection || crate::speech::installed_diarizer_path(app).is_some());
+        && (remote_selection
+            || crate::speech::installed_diarizer_path(app).is_some()
+            || crate::diarization::is_installed(app));
 
     let item = LibraryItem {
         id,
@@ -395,6 +397,190 @@ pub(crate) fn library_root(app: &AppHandle<AppRuntime>) -> Result<PathBuf> {
         .context("App data directory not found")?;
     dir.push("library");
     Ok(dir)
+}
+
+/// Normalizes the two independently captured meeting tracks and writes the
+/// mono 16 kHz WAV consumed by the existing long-form transcription queue.
+pub(crate) fn finalize_meeting_tracks(
+    system_path: &Path,
+    microphone_path: &Path,
+    output_path: &Path,
+) -> Result<f32> {
+    let item_dir = output_path
+        .parent()
+        .context("Meeting recording folder not found")?;
+    fs::create_dir_all(item_dir)?;
+
+    let normalized_system = item_dir.join("system-normalized.wav");
+    let normalized_microphone = item_dir.join("microphone-normalized.wav");
+    let mut tracks: Vec<(PathBuf, PathBuf, Option<PathBuf>)> = Vec::new();
+
+    for (source, normalized) in [
+        (system_path, &normalized_system),
+        (microphone_path, &normalized_microphone),
+    ] {
+        if source.exists() && fs::metadata(source)?.len() > 44 {
+            let repaired = match repair_interrupted_wav_copy(source) {
+                Ok(repaired) => repaired,
+                Err(err) => {
+                    tracing::warn!("Skipping an unreadable meeting track: {err}");
+                    continue;
+                }
+            };
+            let input = repaired.as_deref().unwrap_or(source);
+            convert_to_wav(input, normalized, "wav", None, None, None)?;
+            tracks.push((source.to_path_buf(), normalized.clone(), repaired));
+        }
+    }
+
+    if tracks.is_empty() {
+        return Err(anyhow!("The meeting recording did not contain any audio"));
+    }
+
+    if tracks.len() == 1 {
+        fs::copy(&tracks[0].1, output_path)?;
+    } else {
+        mix_normalized_tracks(&tracks[0].1, &tracks[1].1, output_path)?;
+    }
+
+    // Keep the normalized source tracks beside the mixed playback WAV. The
+    // meeting transcription path uses them independently so overlapping
+    // speakers are not flattened into a single signal.
+    for (source, normalized, repaired) in tracks {
+        fs::remove_file(&source)?;
+        fs::rename(&normalized, &source).or_else(|_| fs::copy(&normalized, &source).map(|_| ()))?;
+        let _ = fs::remove_file(normalized);
+        if let Some(repaired) = repaired {
+            let _ = fs::remove_file(repaired);
+        }
+    }
+
+    wav_duration_seconds(output_path)
+}
+
+/// AVAudioFile leaves the RIFF and data sizes at their placeholder values when
+/// the process exits before the writer is closed. The PCM samples are still on
+/// disk, so repair a temporary copy and leave the captured file untouched until
+/// the normal meeting finalizer has successfully normalized it.
+fn repair_interrupted_wav_copy(source: &Path) -> Result<Option<PathBuf>> {
+    if read_wav_info(source)
+        .map(|info| info.total_samples > 0)
+        .unwrap_or(false)
+    {
+        return Ok(None);
+    }
+
+    let file_name = source
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("track.wav");
+    let repaired = source.with_file_name(format!(".{file_name}.recovery"));
+    fs::copy(source, &repaired).with_context(|| {
+        format!(
+            "Failed to copy interrupted meeting track at {}",
+            source.display()
+        )
+    })?;
+
+    let result = (|| -> Result<()> {
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&repaired)?;
+        let file_len = file.metadata()?.len();
+        if file_len < 44 || file_len.saturating_sub(8) > u32::MAX as u64 {
+            return Err(anyhow!("Interrupted meeting track has an invalid WAV size"));
+        }
+
+        let mut riff = [0u8; 12];
+        file.read_exact(&mut riff)?;
+        if &riff[0..4] != b"RIFF" || &riff[8..12] != b"WAVE" {
+            return Err(anyhow!("Interrupted meeting track is not a RIFF WAV"));
+        }
+
+        let mut offset = 12u64;
+        let mut block_align = 1u64;
+        let mut data_size_offset = None;
+        let mut data_start = 0u64;
+        while offset.saturating_add(8) <= file_len {
+            file.seek(SeekFrom::Start(offset))?;
+            let mut chunk = [0u8; 8];
+            file.read_exact(&mut chunk)?;
+            let chunk_size = u32::from_le_bytes(chunk[4..8].try_into().unwrap()) as u64;
+            if &chunk[0..4] == b"fmt " && chunk_size >= 16 {
+                let mut format = [0u8; 16];
+                file.read_exact(&mut format)?;
+                block_align = u16::from_le_bytes([format[12], format[13]]).max(1) as u64;
+            }
+            if &chunk[0..4] == b"data" {
+                data_size_offset = Some(offset + 4);
+                data_start = offset + 8;
+                break;
+            }
+            let padded_size = chunk_size.saturating_add(chunk_size % 2);
+            offset = offset.saturating_add(8).saturating_add(padded_size);
+        }
+
+        let data_size_offset = data_size_offset
+            .ok_or_else(|| anyhow!("Interrupted meeting track has no WAV data chunk"))?;
+        let available = file_len.saturating_sub(data_start);
+        let data_size = available - (available % block_align);
+        if data_size == 0 || data_size > u32::MAX as u64 {
+            return Err(anyhow!(
+                "Interrupted meeting track contains no recoverable audio"
+            ));
+        }
+
+        file.seek(SeekFrom::Start(4))?;
+        file.write_all(&((file_len - 8) as u32).to_le_bytes())?;
+        file.seek(SeekFrom::Start(data_size_offset))?;
+        file.write_all(&(data_size as u32).to_le_bytes())?;
+        file.sync_all()?;
+
+        let info = read_wav_info(&repaired)?;
+        if info.total_samples == 0 {
+            return Err(anyhow!(
+                "Interrupted meeting track contains no readable samples"
+            ));
+        }
+        Ok(())
+    })();
+
+    if let Err(err) = result {
+        let _ = fs::remove_file(&repaired);
+        return Err(err);
+    }
+    Ok(Some(repaired))
+}
+
+fn mix_normalized_tracks(first: &Path, second: &Path, output: &Path) -> Result<()> {
+    let mut first = hound::WavReader::open(first)?;
+    let mut second = hound::WavReader::open(second)?;
+    let expected = hound::WavSpec {
+        channels: 1,
+        sample_rate: TARGET_SAMPLE_RATE,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    if first.spec() != expected || second.spec() != expected {
+        return Err(anyhow!("Meeting tracks could not be normalized"));
+    }
+
+    let mut writer = hound::WavWriter::create(output, expected)?;
+    let mut first_samples = first.samples::<i16>();
+    let mut second_samples = second.samples::<i16>();
+    loop {
+        let left = first_samples.next().transpose()?;
+        let right = second_samples.next().transpose()?;
+        let sample = match (left, right) {
+            (Some(left), Some(right)) => ((left as i32 + right as i32) / 2) as i16,
+            (Some(sample), None) | (None, Some(sample)) => sample,
+            (None, None) => break,
+        };
+        writer.write_sample(sample)?;
+    }
+    writer.finalize()?;
+    Ok(())
 }
 
 pub(crate) fn stored_original_path(item: &LibraryItem) -> Option<PathBuf> {
@@ -1330,9 +1516,13 @@ pub(crate) fn convert_segments_to_ms(
         .collect()
 }
 
-pub(crate) fn diarize_segments(
+pub(crate) fn diarize_segments<F>(
     segments: &[glimpse_speech::remote::DiarizedSegment],
-) -> (Vec<TranscriptSegment>, Option<Vec<Speaker>>) {
+    mut person_name: F,
+) -> (Vec<TranscriptSegment>, Option<Vec<Speaker>>)
+where
+    F: FnMut(usize) -> String,
+{
     let mut labels: Vec<String> = Vec::new();
     for segment in segments {
         if let Some(label) = segment.speaker.as_deref().map(str::trim)
@@ -1348,7 +1538,7 @@ pub(crate) fn diarize_segments(
         .enumerate()
         .map(|(index, _)| Speaker {
             id: format!("speaker_{}", index + 1),
-            name: format!("Speaker {}", index + 1),
+            name: person_name(index + 1),
             color: None,
         })
         .collect();
@@ -1601,6 +1791,20 @@ fn format_duration(seconds: f32) -> String {
 mod native_media_tests {
     use super::*;
 
+    fn write_test_wav(path: &Path, samples: &[i16]) {
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: TARGET_SAMPLE_RATE,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut writer = hound::WavWriter::create(path, spec).expect("create test WAV");
+        for sample in samples {
+            writer.write_sample(*sample).expect("write test sample");
+        }
+        writer.finalize().expect("finalize test WAV");
+    }
+
     fn assert_native_video_audio_decode(file_name: &str) {
         let input = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("src")
@@ -1634,5 +1838,94 @@ mod native_media_tests {
     #[test]
     fn decodes_webm_vorbis_audio_without_ffmpeg() {
         assert_native_video_audio_decode("vorbis.webm");
+    }
+
+    #[test]
+    fn meeting_mix_averages_overlap_and_preserves_the_longer_track() {
+        let suffix = Uuid::new_v4();
+        let first = env::temp_dir().join(format!("glimpse-meeting-first-{suffix}.wav"));
+        let second = env::temp_dir().join(format!("glimpse-meeting-second-{suffix}.wav"));
+        let output = env::temp_dir().join(format!("glimpse-meeting-output-{suffix}.wav"));
+        write_test_wav(&first, &[10_000, -10_000, 3_000]);
+        write_test_wav(&second, &[2_000, 4_000]);
+
+        mix_normalized_tracks(&first, &second, &output).expect("mix meeting tracks");
+        let samples = hound::WavReader::open(&output)
+            .expect("open mixed WAV")
+            .samples::<i16>()
+            .collect::<Result<Vec<_>, _>>()
+            .expect("read mixed WAV");
+        assert_eq!(samples, vec![6_000, -3_000, 3_000]);
+
+        for path in [first, second, output] {
+            fs::remove_file(path).expect("remove test WAV");
+        }
+    }
+
+    #[test]
+    fn meeting_finalize_preserves_normalized_source_tracks() {
+        let suffix = Uuid::new_v4();
+        let directory = env::temp_dir().join(format!("glimpse-meeting-finalize-{suffix}"));
+        fs::create_dir_all(&directory).expect("create meeting test directory");
+        let system = directory.join("system.wav");
+        let microphone = directory.join("microphone.wav");
+        let output = directory.join("meeting.wav");
+        write_test_wav(&system, &[2_000, 4_000]);
+        write_test_wav(&microphone, &[10_000, -10_000, 3_000]);
+
+        let duration = finalize_meeting_tracks(&system, &microphone, &output)
+            .expect("finalize meeting tracks");
+        assert!(duration > 0.0);
+        for path in [&system, &microphone, &output] {
+            let info = read_wav_info(path).expect("preserved track should be readable");
+            assert_eq!(info.sample_rate, TARGET_SAMPLE_RATE);
+            assert!(info.total_samples > 0);
+        }
+
+        fs::remove_dir_all(directory).expect("remove meeting test directory");
+    }
+
+    #[test]
+    fn repairs_unfinalized_av_audio_wav_without_mutating_the_capture() {
+        let suffix = Uuid::new_v4();
+        let source = env::temp_dir().join(format!("glimpse-meeting-crash-{suffix}.wav"));
+        write_test_wav(&source, &[1_000, -1_000, 2_000, -2_000]);
+
+        let mut file = fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&source)
+            .expect("open test WAV");
+        file.seek(SeekFrom::Start(4)).expect("seek RIFF size");
+        file.write_all(&0u32.to_le_bytes()).expect("zero RIFF size");
+        file.seek(SeekFrom::Start(40)).expect("seek data size");
+        file.write_all(&0u32.to_le_bytes()).expect("zero data size");
+        file.sync_all().expect("flush broken header");
+        drop(file);
+
+        assert_eq!(
+            read_wav_info(&source)
+                .expect("placeholder WAV remains parseable")
+                .total_samples,
+            0
+        );
+        let repaired = repair_interrupted_wav_copy(&source)
+            .expect("repair interrupted WAV")
+            .expect("repair should create a copy");
+        assert!(
+            read_wav_info(&repaired)
+                .expect("read repaired WAV")
+                .total_samples
+                > 0
+        );
+        assert_eq!(
+            read_wav_info(&source)
+                .expect("original remains readable")
+                .total_samples,
+            0
+        );
+
+        fs::remove_file(source).expect("remove source WAV");
+        fs::remove_file(repaired).expect("remove repaired WAV");
     }
 }

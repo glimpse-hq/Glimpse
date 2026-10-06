@@ -6,13 +6,21 @@ import {
   HardDrives as Server,
   SquaresFour,
   User,
+  VideoCamera,
   type Icon as PhosphorIcon,
 } from "@phosphor-icons/react";
 import { msg } from "@lingui/core/macro";
 import type { MessageDescriptor } from "@lingui/core";
 
 export type SettingsPane =
-  "account" | "general" | "app" | "about" | "models" | "providers" | "api";
+  | "account"
+  | "general"
+  | "meetings"
+  | "app"
+  | "about"
+  | "models"
+  | "providers"
+  | "api";
 
 export interface SettingsPaneDef {
   id: SettingsPane;
@@ -43,6 +51,15 @@ export const SETTINGS_PANE_GROUPS: SettingsPaneGroup[] = [
         id: "general",
         icon: SquaresFour,
         label: msg({ id: "settings.modal.tab.general", message: "General" }),
+      },
+      {
+        id: "meetings",
+        icon: VideoCamera,
+        label: msg({
+          id: "settings.modal.tab.meetings",
+          message: "Meetings",
+        }),
+        licensed: true,
       },
       {
         id: "app",

@@ -58,6 +58,7 @@ import {
   useFetchRemoteSpeechModels,
   useCliInstallStatus,
   useInstallCli,
+  useDiarizationModel,
   useDiarizerModel,
   useModelCatalog,
   useModelStatuses,
@@ -80,6 +81,7 @@ import type {
   LocalApiStatus,
   ModelStatus,
   RemoteSpeechProvider,
+  MeetingDetectionApp,
 } from "../../types";
 
 type ActiveTab =
@@ -89,7 +91,8 @@ type ActiveTab =
   | "local-api"
   | "about"
   | "account"
-  | "app";
+  | "app"
+  | "meetings";
 type ShortcutMode = "smart" | "hold" | "toggle";
 type CaptureTarget = { mode: ShortcutMode; index: number } | null;
 type ShortcutTarget = { mode: ShortcutMode; index: number };
@@ -345,6 +348,20 @@ export function useSettingsForm({
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
   const [themeMode, setThemeModeRaw] = useState<ThemeMode>("system");
+  const [meetingDetectionEnabled, setMeetingDetectionEnabled] = useState(true);
+  const [meetingDetectionApps, setMeetingDetectionApps] = useState<string[]>([
+    "facetime",
+    "zoom",
+    "teams",
+    "browser_safari",
+    "browser_chrome",
+    "browser_edge",
+    "browser_firefox",
+  ]);
+  const [installedMeetingApps, setInstalledMeetingApps] = useState<
+    MeetingDetectionApp[]
+  >([]);
+  const [meetingAppsLoading, setMeetingAppsLoading] = useState(true);
   const [showFAQModal, setShowFAQModal] = useState(false);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [accessibilityPermission, setAccessibilityPermission] = useState<
@@ -382,6 +399,7 @@ export function useSettingsForm({
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
   const modelCatalogQuery = useModelCatalog(isOpen);
+  const diarizationModelQuery = useDiarizationModel(isOpen);
   const diarizerModel = useDiarizerModel(isOpen).data ?? null;
   const cliInstallQuery = useCliInstallStatus(isOpen);
   const installCliMutation = useInstallCli();
@@ -395,6 +413,7 @@ export function useSettingsForm({
     fetchRemoteSpeechModelsMutation;
   const inputDevices = inputDevicesQuery.data ?? [];
   const modelCatalog = modelCatalogQuery.data ?? [];
+  const diarizationModel = diarizationModelQuery.data ?? null;
   const availableModels = modelDiscovery.models;
   const availableSpeechModels = speechModelDiscovery.models;
   const cliInstallStatus = cliInstallQuery.data ?? null;
@@ -410,9 +429,10 @@ export function useSettingsForm({
   const modelKeysForStatus = useMemo(
     () => [
       ...modelCatalog.map((model) => model.key),
+      ...(diarizationModel ? [diarizationModel.key] : []),
       ...(diarizerModel ? [diarizerModel.key] : []),
     ],
-    [modelCatalog, diarizerModel],
+    [modelCatalog, diarizerModel, diarizationModel],
   );
   const modelStatusesQuery = useModelStatuses(
     modelKeysForStatus,
@@ -426,6 +446,7 @@ export function useSettingsForm({
     isOpen &&
     (settingsQuery.isLoading ||
       modelCatalogQuery.isLoading ||
+      diarizationModelQuery.isLoading ||
       inputDevicesQuery.isLoading ||
       appInfoQuery.isLoading ||
       licenseStateQuery.isLoading);
@@ -602,6 +623,18 @@ export function useSettingsForm({
       setLocalApiStartOnLaunch(s.local_api_start_on_launch ?? false);
       setLocalApiCors(s.local_api_cors ?? false);
       setThemeModeRaw(s.theme_mode ?? "system");
+      setMeetingDetectionEnabled(s.meeting_detection_enabled ?? true);
+      setMeetingDetectionApps(
+        s.meeting_detection_apps ?? [
+          "facetime",
+          "zoom",
+          "teams",
+          "browser_safari",
+          "browser_chrome",
+          "browser_edge",
+          "browser_firefox",
+        ],
+      );
     },
     [clearInvalidShortcutDraft],
   );
@@ -765,6 +798,8 @@ export function useSettingsForm({
         language: persistedLanguage,
         appLocale: overrides.appLocale ?? appLocale,
         themeMode,
+        meetingDetectionEnabled,
+        meetingDetectionApps,
 
         llmEnabled: aiFeaturesReady,
         cleanupEnabled: false,
@@ -812,6 +847,8 @@ export function useSettingsForm({
       language,
       appLocale,
       themeMode,
+      meetingDetectionEnabled,
+      meetingDetectionApps,
       aiFeaturesReady,
       licenseGateActive,
       activeLicense,
@@ -1155,6 +1192,26 @@ export function useSettingsForm({
   useEffect(() => {
     if (!isOpen) return;
     let cancelled = false;
+    setMeetingAppsLoading(true);
+    invoke<MeetingDetectionApp[]>("list_installed_meeting_apps")
+      .then((apps) => {
+        if (!cancelled) setInstalledMeetingApps(apps);
+      })
+      .catch((err) => {
+        console.error("Failed to list installed meeting apps:", err);
+        if (!cancelled) setInstalledMeetingApps([]);
+      })
+      .finally(() => {
+        if (!cancelled) setMeetingAppsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
     let unlistenLog: UnlistenFn | null = null;
     let unlistenStatus: UnlistenFn | null = null;
 
@@ -1257,6 +1314,7 @@ export function useSettingsForm({
         [model]: { status: "cancelled", percent: 0 },
       }));
       invalidateModelStatus(model);
+      scheduleDownloadStateReset(model, "cancelled", 1500);
     },
   });
 
@@ -1753,20 +1811,15 @@ export function useSettingsForm({
   const handleCancelDownload = useCallback(
     async (modelKey: string) => {
       try {
-        await invoke("cancel_download", { model: modelKey });
-        setDownloadState((prev) => ({
-          ...prev,
-          [modelKey]: {
-            status: "cancelled",
-            percent: 0,
-          },
-        }));
-        scheduleDownloadStateReset(modelKey, "cancelled", 1500);
+        const cancelled = await invoke<boolean>("cancel_download", {
+          model: modelKey,
+        });
+        if (!cancelled) invalidateModelStatus(modelKey);
       } catch (err) {
         console.error("Failed to cancel download:", err);
       }
     },
-    [scheduleDownloadStateReset],
+    [invalidateModelStatus],
   );
 
   const handleStartLocalApi = useCallback(async () => {
@@ -1937,6 +1990,7 @@ export function useSettingsForm({
 
     inputDevices,
     modelCatalog,
+    diarizationModel,
     diarizerModel,
     modelStatus,
     downloadState,
@@ -2015,6 +2069,12 @@ export function useSettingsForm({
     setTextSizeMode,
     themeMode,
     setThemeMode,
+    meetingDetectionEnabled,
+    setMeetingDetectionEnabled,
+    meetingDetectionApps,
+    setMeetingDetectionApps,
+    installedMeetingApps,
+    meetingAppsLoading,
 
     showFAQModal,
     setShowFAQModal,

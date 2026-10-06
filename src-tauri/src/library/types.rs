@@ -37,6 +37,8 @@ pub(crate) fn is_ffmpeg_error_message(message: &str) -> bool {
 
 pub const EVENT_LIBRARY_PROGRESS: &str = "library:transcription_progress";
 pub const EVENT_LIBRARY_COMPLETE: &str = "library:transcription_complete";
+pub const EVENT_LIBRARY_UPDATED: &str = "library:item_updated";
+pub const EVENT_LIBRARY_METADATA_PROCESSING: &str = "library:metadata_processing";
 pub const EVENT_LIBRARY_ERROR: &str = "library:transcription_error";
 #[cfg(target_os = "macos")]
 pub const EVENT_LIBRARY_OPEN_IMPORT: &str = "library:open_import";
@@ -65,6 +67,10 @@ pub(crate) fn default_item_kind() -> String {
     "import".to_string()
 }
 
+pub(crate) fn is_meeting_item_kind(kind: &str) -> bool {
+    matches!(kind, "meeting" | "recovered_meeting")
+}
+
 /// Where a Library job's audio came from, as reported in analytics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobSource {
@@ -84,7 +90,7 @@ impl JobSource {
 
     /// Source for a job rebuilt from a stored item (retry, launch recovery).
     pub(crate) fn of_item(item: &LibraryItem) -> Self {
-        if item.kind == "recording" {
+        if item.kind == "recording" || is_meeting_item_kind(&item.kind) {
             JobSource::Recording
         } else {
             JobSource::Upload
@@ -231,6 +237,7 @@ pub struct LibraryItem {
 pub struct LibraryFilter {
     pub search: Option<String>,
     pub status: Option<String>,
+    pub kind: Option<String>,
     pub tag: Option<String>,
     pub since_days: Option<u32>,
 }
@@ -332,6 +339,17 @@ pub(crate) struct LibraryTranscriptionResult {
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct LibraryCompletePayload {
     pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct LibraryUpdatedPayload {
+    pub id: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub(crate) struct LibraryMetadataProcessingPayload {
+    pub id: String,
+    pub active: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]

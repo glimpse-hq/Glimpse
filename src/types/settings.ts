@@ -92,6 +92,8 @@ export type StoredSettings = {
   language: string;
   app_locale: AppLocaleSetting;
   theme_mode: ThemeMode;
+  meeting_detection_enabled: boolean;
+  meeting_detection_apps: string[];
   llm_enabled: boolean;
   cleanup_enabled: boolean;
   llm_provider: LlmProvider;
@@ -117,4 +119,9 @@ export type StoredSettings = {
   local_api_host: string;
   local_api_start_on_launch: boolean;
   local_api_cors: boolean;
+};
+
+export type MeetingDetectionApp = {
+  id: string;
+  name: string;
 };

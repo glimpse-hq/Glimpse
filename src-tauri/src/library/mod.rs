@@ -1,7 +1,7 @@
 mod bleed;
 pub(crate) mod commands;
-mod processing;
-mod queue;
+pub(crate) mod processing;
+pub(crate) mod queue;
 pub(crate) mod repo;
 mod speakers;
 mod types;
@@ -16,6 +16,7 @@ pub(crate) use queue::schedule_library_job;
 pub(crate) use speakers::{recording_speakers, voiced_segments};
 #[cfg(target_os = "macos")]
 pub use types::EVENT_LIBRARY_RENDERER_READY;
+pub(crate) use types::LibraryTranscriptionResult;
 pub(crate) use types::RecordingOutput;
 pub(crate) use types::default_item_kind;
 pub use types::{

@@ -1,13 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { GearSix, type Icon as PhosphorIcon } from "@phosphor-icons/react";
+import { CaretLeft, GearSix } from "@phosphor-icons/react";
 import SidebarTip from "../../../shared/ui/SidebarTip";
 
 const EXPO_OUT = [0.16, 1, 0.3, 1] as const;
 
 interface SettingsNavToggleProps {
   open: boolean;
-  /** Icon of the view this returns to, so the gear turns into the way back. */
-  returnIcon: PhosphorIcon;
   collapsed: boolean;
   openLabel: string;
   closeLabel: string;
@@ -16,7 +14,6 @@ interface SettingsNavToggleProps {
 
 const SettingsNavToggle = ({
   open,
-  returnIcon: ReturnIcon,
   collapsed,
   openLabel,
   closeLabel,
@@ -51,7 +48,7 @@ const SettingsNavToggle = ({
         }}
         transition={{ duration: 0.26, ease: EXPO_OUT }}
       >
-        <ReturnIcon size={20} weight="fill" />
+        <CaretLeft size={20} weight="bold" />
       </motion.span>
     </div>
     <span

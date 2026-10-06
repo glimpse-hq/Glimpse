@@ -1,12 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   CaretDown as ChevronDown,
   MagnifyingGlass as Search,
   Check,
 } from "@phosphor-icons/react";
 import { useClickOutside } from "../hooks/useClickOutside";
+import FloatingPortal from "./FloatingPortal";
 
 export interface DropdownOption<T extends string | number> {
   value: T;
@@ -82,7 +82,6 @@ export function Dropdown<T extends string | number>({
   const { t } = useLingui();
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -105,7 +104,7 @@ export function Dropdown<T extends string | number>({
     setSearchQuery("");
   }, []);
 
-  useClickOutside(containerRef, closeDropdown, isOpen);
+  useClickOutside(containerRef, closeDropdown, isOpen, [menuRef]);
 
   useEffect(() => {
     if (disabled) {
@@ -132,15 +131,6 @@ export function Dropdown<T extends string | number>({
   useEffect(() => {
     onOpenChange?.(isOpen);
   }, [isOpen, onOpenChange]);
-
-  useEffect(() => {
-    if (!isOpen || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const menuHeight = menuRef.current?.offsetHeight ?? 0;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    setOpenUpward(spaceBelow < menuHeight && spaceAbove > spaceBelow);
-  }, [isOpen]);
 
   const query = searchQuery.trim().toLowerCase();
 
@@ -234,7 +224,8 @@ export function Dropdown<T extends string | number>({
     >
       {editableInput ? (
         <div
-          className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary hover:border-border-secondary focus-within:border-border-hover transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
+          className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus-within:border-border-hover transition-colors ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
+          style={{ textAlign: "left" }}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
             {icon && (
@@ -252,7 +243,7 @@ export function Dropdown<T extends string | number>({
               placeholder={editableInput.placeholder}
               aria-label={editableInput.ariaLabel}
               className={classNames(
-                "min-w-0 flex-1 bg-transparent text-content-primary placeholder-content-disabled focus:outline-none",
+                "min-w-0 flex-1 bg-transparent text-left text-content-primary placeholder-content-disabled focus:outline-none",
                 valueClassName,
               )}
             />
@@ -284,9 +275,10 @@ export function Dropdown<T extends string | number>({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           aria-disabled={disabled}
+          style={{ textAlign: "left" }}
           className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border-primary ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
         >
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-left">
             {icon && (
               <span className="text-content-muted shrink-0" aria-hidden="true">
                 {icon}
@@ -298,7 +290,7 @@ export function Dropdown<T extends string | number>({
             {fitButtonToWidestOption ? (
               <span
                 className={classNames(
-                  "inline-grid",
+                  "inline-grid text-left",
                   selectedOption
                     ? "text-content-primary"
                     : "text-content-muted",
@@ -314,19 +306,21 @@ export function Dropdown<T extends string | number>({
                     {label}
                   </span>
                 ))}
-                <span className="col-start-1 row-start-1 whitespace-nowrap">
+                <span className="col-start-1 row-start-1 whitespace-nowrap text-left">
                   {selectedOption ? selectedOption.label : resolvedPlaceholder}
                 </span>
               </span>
             ) : (
               <span
                 className={classNames(
+                  "block min-w-0 flex-1 text-left",
                   truncate && "truncate",
                   selectedOption
                     ? "text-content-primary"
                     : "text-content-muted",
                   valueClassName,
                 )}
+                style={{ textAlign: "left" }}
               >
                 {selectedOption ? selectedOption.label : resolvedPlaceholder}
               </span>
@@ -353,135 +347,150 @@ export function Dropdown<T extends string | number>({
         </button>
       )}
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            ref={menuRef}
-            initial={{ opacity: 0, y: openUpward ? 4 : -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: openUpward ? 4 : -4 }}
-            transition={{ duration: 0.15 }}
-            className={`ui-surface-menu absolute left-0 right-0 flex flex-col max-h-[280px] ${openUpward ? "bottom-full mb-1" : "top-full mt-1"} ${menuClassName}`}
-          >
-            {searchable && (
-              <div className="flex items-center gap-2 px-3 border-b border-border-secondary shrink-0">
-                <Search
-                  size={13}
-                  className="shrink-0 text-content-disabled"
-                  aria-hidden="true"
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={resolvedSearchPlaceholder}
-                  aria-label={t({
-                    id: "dropdown.search_aria",
-                    message: "Search options",
-                  })}
-                  autoFocus
-                  className="w-full bg-transparent border-0 py-2.5 ui-text-body-sm text-content-primary placeholder-content-disabled focus:outline-none"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            )}
+      {isOpen && (
+        <FloatingPortal
+          anchorRef={containerRef}
+          ref={menuRef}
+          placement="bottom-start"
+          matchAnchorWidth
+          className={`ui-surface-menu flex flex-col max-h-[280px] text-left ${menuClassName}`}
+          style={{ textAlign: "left" }}
+        >
+          {searchable && (
+            <div className="flex items-center gap-2 px-3 border-b border-border-secondary shrink-0">
+              <Search
+                size={13}
+                className="shrink-0 text-content-disabled"
+                aria-hidden="true"
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={resolvedSearchPlaceholder}
+                aria-label={t({
+                  id: "dropdown.search_aria",
+                  message: "Search options",
+                })}
+                autoFocus
+                className="w-full bg-transparent border-0 py-2.5 text-left ui-text-body-sm text-content-primary placeholder-content-disabled focus:outline-none"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
 
-            <div
-              className="dropdown-list min-h-[40px] px-1 py-1 flex flex-col"
-              role="listbox"
-            >
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((option, idx) =>
-                  option.isHeader ? (
-                    <div
-                      key={`header-${idx}-${option.value}`}
-                      role="presentation"
-                      className={classNames(
-                        "mx-1 border-t border-border-secondary first:border-t-0 first:mt-0 first:pt-1",
-                        option.prominentHeader
-                          ? "mt-1 px-2 pb-1 pt-2 ui-text-label-strong ui-color-secondary"
-                          : "mt-1 px-2 pb-1 pt-2 ui-text-uppercase-micro ui-color-muted",
-                      )}
+          <div
+            className="overflow-y-scroll min-h-[40px] py-1.5 pl-1.5 pr-0 flex flex-col gap-1"
+            role="listbox"
+          >
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option, idx) =>
+                option.isHeader ? (
+                  <div
+                    key={`header-${idx}-${option.value}`}
+                    role="presentation"
+                    style={{ textAlign: "left" }}
+                    className={classNames(
+                      "mt-1 text-left first:mt-0",
+                      option.prominentHeader
+                        ? "px-2.5 pt-2 pb-1.5 ui-text-label-strong ui-color-secondary"
+                        : "px-2.5 py-1.5 ui-text-uppercase-meta font-semibold ui-color-disabled",
+                    )}
+                  >
+                    <span
+                      className="block w-full text-left"
+                      style={{ textAlign: "left" }}
                     >
                       {option.label}
-                      {option.description && (
-                        <p className="ui-text-meta ui-color-disabled font-normal normal-case mt-0.5">
-                          {option.description}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      key={`opt-${idx}-${option.value}`}
-                      type="button"
-                      role="option"
-                      aria-selected={value === option.value}
-                      disabled={option.locked}
-                      onClick={() => {
-                        onChange(option.value);
-                        closeDropdown();
-                      }}
-                      className={classNames(
-                        "w-full text-left rounded-md px-2 py-1.5 transition-colors duration-100 flex items-center justify-between group",
-                        option.locked
-                          ? "text-content-disabled cursor-default"
-                          : value === option.value
-                            ? "text-content-primary hover:bg-[var(--surface-interactive)]"
-                            : "text-content-secondary hover:bg-[var(--surface-interactive)] hover:text-content-primary",
-                        optionClassName,
-                      )}
-                    >
-                      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
-                        <span
-                          className={classNames(
-                            "flex min-w-0 items-center gap-2",
-                            optionLabelClassName,
-                          )}
-                        >
-                          {option.icon && (
-                            <span aria-hidden="true" className="shrink-0">
-                              {option.icon}
-                            </span>
-                          )}
-                          <span className={classNames(truncate && "truncate")}>
-                            {option.label}
-                          </span>
-                        </span>
-                        {option.description && (
-                          <span
-                            className={`ui-text-meta truncate ${
-                              value === option.value
-                                ? "ui-color-muted"
-                                : "ui-color-disabled group-hover:text-content-muted"
-                            }`}
-                          >
-                            {option.description}
+                    </span>
+                    {option.description && (
+                      <p
+                        className="mt-0.5 block w-full text-left ui-text-meta font-normal normal-case ui-color-disabled"
+                        style={{ textAlign: "left" }}
+                      >
+                        {option.description}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    key={`opt-${idx}-${option.value}`}
+                    type="button"
+                    role="option"
+                    aria-selected={value === option.value}
+                    disabled={option.locked}
+                    style={{ textAlign: "left" }}
+                    onClick={() => {
+                      onChange(option.value);
+                      closeDropdown();
+                    }}
+                    className={classNames(
+                      "group flex w-full items-start justify-between rounded-md px-2.5 py-2 text-left transition-colors duration-100",
+                      option.locked
+                        ? "text-content-disabled cursor-default"
+                        : value === option.value
+                          ? "bg-[var(--color-interactive-10)] text-[var(--color-interactive)]"
+                          : "text-content-secondary hover:bg-surface-elevated hover:text-content-primary",
+                      optionClassName,
+                    )}
+                  >
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+                      <span
+                        className={classNames(
+                          "flex min-w-0 items-start gap-2 text-left",
+                          optionLabelClassName,
+                        )}
+                      >
+                        {option.icon && (
+                          <span aria-hidden="true" className="shrink-0">
+                            {option.icon}
                           </span>
                         )}
-                      </div>
-                      <div className="shrink-0 ml-2 flex items-center gap-2">
-                        {renderBadges(option.badges, option.fixedBadgeSlots)}
-                        <span className="h-3 w-3 flex items-center justify-center">
-                          {!option.locked && value === option.value && (
-                            <Check size={12} aria-hidden="true" />
+                        <span
+                          className={classNames(
+                            "block min-w-0 flex-1 text-left",
+                            truncate && "truncate",
                           )}
+                          style={{ textAlign: "left" }}
+                        >
+                          {option.label}
                         </span>
-                      </div>
-                    </button>
-                  ),
-                )
-              ) : (
-                <div className="px-3 py-4 ui-text-body-sm ui-color-muted text-center">
-                  {t({
-                    id: "dropdown.no_options",
-                    message: "No options found",
-                  })}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                      </span>
+                      {option.description && (
+                        <span
+                          className={`block w-full text-left ui-text-meta truncate ${
+                            value === option.value
+                              ? "text-[var(--color-interactive)] opacity-75"
+                              : "ui-color-disabled group-hover:text-content-muted"
+                          }`}
+                          style={{ textAlign: "left" }}
+                        >
+                          {option.description}
+                        </span>
+                      )}
+                    </div>
+                    <div className="ml-2 mt-0.5 flex shrink-0 items-center gap-2">
+                      {renderBadges(option.badges, option.fixedBadgeSlots)}
+                      <span className="h-3 w-3 flex items-center justify-center">
+                        {!option.locked && value === option.value && (
+                          <Check size={12} aria-hidden="true" />
+                        )}
+                      </span>
+                    </div>
+                  </button>
+                ),
+              )
+            ) : (
+              <div className="px-3 py-4 ui-text-body-sm ui-color-muted text-center">
+                {t({
+                  id: "dropdown.no_options",
+                  message: "No options found",
+                })}
+              </div>
+            )}
+          </div>
+        </FloatingPortal>
+      )}
     </div>
   );
 }

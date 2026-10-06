@@ -7,6 +7,7 @@ import {
   Check,
   Trash as Trash2,
 } from "@phosphor-icons/react";
+import DiarizationModelCard from "../DiarizationModelCard";
 import ModelStatCard from "../ModelStatCard";
 import ModelCapabilityIcon from "../../../../shared/ui/ModelCapabilityIcon";
 import CloudModelCard from "../CloudModelCard";
@@ -46,6 +47,7 @@ type ModelsTabProps = {
   variants: Variants;
   modelCatalog: ModelInfo[];
   diarizerModel: ModelInfo | null;
+  diarizationModel: ModelInfo | null;
   modelStatus: Record<string, ModelStatus>;
   downloadState: Record<string, DownloadEvent>;
   localModel: string;
@@ -250,6 +252,7 @@ const ModelsTab = ({
   variants,
   modelCatalog,
   diarizerModel,
+  diarizationModel,
   modelStatus,
   downloadState,
   localModel,
@@ -344,6 +347,7 @@ const ModelsTab = ({
             className="w-full min-h-0 flex-1"
             catalog={modelCatalog}
             diarizer={diarizerModel}
+            auxiliaryModels={diarizationModel ? [diarizationModel] : []}
             activeKey={localModel}
             isInstalled={(key) => Boolean(modelStatus[key]?.installed)}
             isAneInstalled={(key) => Boolean(modelStatus[key]?.ane_installed)}
@@ -414,6 +418,13 @@ const ModelsTab = ({
             </div>
 
             <div className="-mr-2 flex min-h-0 flex-1 flex-col overflow-y-auto pr-2">
+              {diarizationModel &&
+                modelStatus[diarizationModel.key]?.installed && (
+                  <DiarizationModelCard
+                    model={diarizationModel}
+                    onDelete={() => handleDelete(diarizationModel.key)}
+                  />
+                )}
               {installedModels.map((model) => (
                 <InstalledModelRow
                   key={model.key}

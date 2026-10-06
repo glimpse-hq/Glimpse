@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Copy,
   Trash as Trash2,
@@ -24,6 +24,7 @@ import {
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
 import TranscriptText from "../../../shared/ui/TranscriptText";
+import FloatingPortal from "../../../shared/ui/FloatingPortal";
 import { showErrorToast } from "../../../shared/lib/errorToast";
 
 interface TranscriptionItemProps {
@@ -70,6 +71,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectionText, setSelectionText] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuPopupRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
 
   useClickOutside(
@@ -79,6 +81,7 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
       setSelectionText("");
     },
     menuOpen,
+    [menuPopupRef],
   );
 
   useLayoutEffect(() => {
@@ -534,149 +537,139 @@ const TranscriptionItem: React.FC<TranscriptionItemProps> = ({
               )}
             </motion.button>
 
-            <AnimatePresence>
-              {menuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                  transition={{ duration: 0.12 }}
-                  className="ui-surface-menu absolute right-0 top-full mt-1 z-[100] min-w-[200px] origin-top-right"
-                >
-                  {(speechModelLabel || modeLabel || llmModelLabel) && (
-                    <>
-                      <div className="px-3 pt-2.5 pb-2 space-y-0.5">
-                        <div className="ui-text-meta ui-color-disabled">
-                          {dateStr} · {timeStr}
-                        </div>
-                        {speechModelLabel && (
-                          <div
-                            className={`ui-text-meta truncate ${isCloudModel ? "ui-color-cloud" : "ui-color-secondary"}`}
-                          >
-                            {speechModelLabel}
-                          </div>
-                        )}
-                        {llmModelLabel && record.llm_cleaned && (
-                          <div className="ui-text-meta ui-color-local truncate">
-                            {llmModelLabel}
-                          </div>
-                        )}
-                        {modeLabel && (
-                          <div className="ui-text-meta ui-color-secondary truncate">
-                            {modeLabel}
-                          </div>
-                        )}
+            {menuOpen && (
+              <FloatingPortal
+                anchorRef={menuRef}
+                ref={menuPopupRef}
+                placement="bottom-end"
+                className="ui-surface-menu min-w-[200px]"
+              >
+                {(speechModelLabel || modeLabel || llmModelLabel) && (
+                  <>
+                    <div className="px-3 pt-2.5 pb-2 space-y-0.5">
+                      <div className="ui-text-meta ui-color-disabled">
+                        {dateStr} · {timeStr}
                       </div>
-                      <div className="h-px bg-border-secondary mx-2" />
-                    </>
-                  )}
-                  {selectionText.trim().length > 0 && (
-                    <>
-                      <button
-                        onClick={handleCopySelection}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
-                      >
-                        <Copy size={12} className="text-content-muted" />
-                        <span>
-                          {t({
-                            id: "transcriptions.item.copy_selection",
-                            message: "Copy selection",
-                          })}
-                        </span>
-                      </button>
-                      <div className="h-px bg-border-secondary mx-2" />
-                    </>
-                  )}
-                  {canRetryFromAudio && (
+                      {speechModelLabel && (
+                        <div
+                          className={`ui-text-meta truncate ${isCloudModel ? "ui-color-cloud" : "ui-color-secondary"}`}
+                        >
+                          {speechModelLabel}
+                        </div>
+                      )}
+                      {llmModelLabel && record.llm_cleaned && (
+                        <div className="ui-text-meta ui-color-local truncate">
+                          {llmModelLabel}
+                        </div>
+                      )}
+                      {modeLabel && (
+                        <div className="ui-text-meta ui-color-secondary truncate">
+                          {modeLabel}
+                        </div>
+                      )}
+                    </div>
+                    <div className="h-px bg-border-secondary mx-2" />
+                  </>
+                )}
+                {selectionText.trim().length > 0 && (
+                  <>
                     <button
-                      onClick={handleRetry}
-                      disabled={isRetrying}
-                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                      onClick={handleCopySelection}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors"
                     >
                       <RotateCw size={12} className="ui-color-cloud" />
                       <span>
                         {t({
-                          id: "transcriptions.item.retry",
-                          message: "Retry",
+                          id: "transcriptions.item.copy_selection",
+                          message: "Copy selection",
+                        })}
+                      </span>
+                    </button>
+                    <div className="h-px bg-border-secondary mx-2" />
+                  </>
+                )}
+                {canRetryFromAudio && (
+                  <button
+                    onClick={handleRetry}
+                    disabled={isRetrying}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                  >
+                    <RotateCw size={12} className="text-cloud" />
+                    <span>
+                      {t({
+                        id: "transcriptions.item.retry",
+                        message: "Retry",
+                      })}
+                    </span>
+                  </button>
+                )}
+
+                {!isError && onRetryLlm && showLlmButtons && !isCloudModel && (
+                  <button
+                    onClick={handleRetryLlm}
+                    disabled={isRetryingLlm}
+                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                  >
+                    <RotateCw size={12} className="text-local" />
+                    <span>
+                      {record.llm_cleaned
+                        ? t({
+                            id: "transcriptions.item.retry_cleanup",
+                            message: "Retry cleanup",
+                          })
+                        : t({
+                            id: "transcriptions.item.run_cleanup",
+                            message: "Run cleanup",
+                          })}
+                    </span>
+                  </button>
+                )}
+
+                {!isError &&
+                  record.llm_cleaned &&
+                  record.raw_text &&
+                  onUndoLlm &&
+                  showLlmButtons &&
+                  !isCloudModel && (
+                    <button
+                      onClick={handleUndoLlm}
+                      disabled={isUndoingLlm}
+                      className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
+                    >
+                      <Undo2 size={12} className="text-warning" />
+                      <span>
+                        {t({
+                          id: "transcriptions.item.restore_original",
+                          message: "Restore original transcript",
                         })}
                       </span>
                     </button>
                   )}
-
-                  {!isError &&
-                    onRetryLlm &&
-                    showLlmButtons &&
-                    !isCloudModel && (
-                      <button
-                        onClick={handleRetryLlm}
-                        disabled={isRetryingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
-                      >
-                        <RotateCw size={12} className="text-local" />
-                        <span>
-                          {record.llm_cleaned
-                            ? t({
-                                id: "transcriptions.item.retry_cleanup",
-                                message: "Retry cleanup",
-                              })
-                            : t({
-                                id: "transcriptions.item.run_cleanup",
-                                message: "Run cleanup",
-                              })}
-                        </span>
-                      </button>
-                    )}
-
-                  {!isError &&
+                {(canRetryFromAudio ||
+                  (!isError && onRetryLlm && showLlmButtons && !isCloudModel) ||
+                  (!isError &&
                     record.llm_cleaned &&
                     record.raw_text &&
                     onUndoLlm &&
                     showLlmButtons &&
-                    !isCloudModel && (
-                      <button
-                        onClick={handleUndoLlm}
-                        disabled={isUndoingLlm}
-                        className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-secondary hover:bg-surface-elevated transition-colors disabled:opacity-50"
-                      >
-                        <Undo2 size={12} className="text-warning" />
-                        <span>
-                          {t({
-                            id: "transcriptions.item.restore_original",
-                            message: "Restore original transcript",
-                          })}
-                        </span>
-                      </button>
-                    )}
-
-                  {(canRetryFromAudio ||
-                    (!isError &&
-                      onRetryLlm &&
-                      showLlmButtons &&
-                      !isCloudModel) ||
-                    (!isError &&
-                      record.llm_cleaned &&
-                      record.raw_text &&
-                      onUndoLlm &&
-                      showLlmButtons &&
-                      !isCloudModel)) && (
-                    <div className="h-px bg-border-secondary mx-2" />
-                  )}
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 size={12} />
-                    <span>
-                      {t({
-                        id: "transcriptions.item.delete",
-                        message: "Delete",
-                      })}
-                    </span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    !isCloudModel)) && (
+                  <div className="h-px bg-border-secondary mx-2" />
+                )}
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item ui-color-error-strong hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 size={12} />
+                  <span>
+                    {t({
+                      id: "transcriptions.item.delete",
+                      message: "Delete",
+                    })}
+                  </span>
+                </button>
+              </FloatingPortal>
+            )}
           </div>
         )}
 

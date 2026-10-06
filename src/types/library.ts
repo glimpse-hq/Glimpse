@@ -11,7 +11,8 @@ export type Speaker = {
   color?: string | null;
 };
 
-export type LibraryItemKind = "import" | "recording" | "meeting";
+export type LibraryItemKind =
+  "import" | "recording" | "meeting" | "recovered_meeting";
 
 // Inputs a recording captured. `system_audio` lists app names, or is empty
 // when the whole system was captured.
@@ -71,6 +72,7 @@ export type LibraryItemsPage = {
 export type LibraryFilter = {
   search?: string | null;
   status?: string | null;
+  kind?: "files" | "meetings" | null;
   tag?: string | null;
   since_days?: number | null;
 };
@@ -101,6 +103,22 @@ export type LibraryImportOptions = {
   detect_speakers: boolean;
 };
 
+export type MeetingState = {
+  recording: boolean;
+  id?: string | null;
+  started_at?: string | null;
+  microphone_name?: string | null;
+  source_app_name?: string | null;
+  application_isolated: boolean;
+  capture_error?: string | null;
+};
+
+export type MeetingLevels = {
+  microphone_level: number;
+  system_level: number;
+  capture_error?: string | null;
+};
+
 export type ExportFormat = "txt" | "md" | "srt" | "vtt";
 
 export type LibraryProgressPayload = {
@@ -116,4 +134,9 @@ export type LibraryProgressPayload = {
 export type LibraryImportProgressPayload = {
   id: string;
   progress: number;
+};
+
+export type LibraryMetadataProcessingPayload = {
+  id: string;
+  active: boolean;
 };

@@ -5,7 +5,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion, type Variants } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import {
   ArrowUpRight,
   Check,
@@ -22,6 +22,7 @@ import {
   getDatasetPreview,
   type DatasetExportOptions,
 } from "../../data-api";
+import FloatingPortal from "../../../../shared/ui/FloatingPortal";
 
 const CLI_WIKI_URL = "https://github.com/glimpse-hq/Glimpse/wiki/CLI";
 const REPORT_ISSUE_URL = "https://github.com/glimpse-hq/Glimpse/issues/new";
@@ -213,11 +214,16 @@ const AboutTab = ({
   const [deletingData, setDeletingData] = useState(false);
   const [dataError, setDataError] = useState<string | null>(null);
   const exportConfigRef = useRef<HTMLDivElement>(null);
+  const exportPopupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!exportConfigOpen) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!exportConfigRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        !exportConfigRef.current?.contains(target) &&
+        !exportPopupRef.current?.contains(target)
+      ) {
         setExportConfigOpen(false);
       }
     };
@@ -653,119 +659,114 @@ const AboutTab = ({
                     </span>
                   </button>
 
-                  <AnimatePresence>
-                    {exportConfigOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, x: -4 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="ui-surface-menu absolute start-full top-0 z-20 ms-2 w-52"
-                      >
-                        <div className="space-y-3 p-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <span className="min-w-0">
-                              <span className="block ui-text-meta ui-color-primary">
-                                {t({
-                                  id: "settings.about.data.include_timestamps",
-                                  message: "Timestamps",
-                                })}
-                              </span>
-                              <span className="block ui-text-micro ui-color-muted">
-                                {t({
-                                  id: "settings.about.data.include_timestamps_hint",
-                                  message: "Segment start and end times",
-                                })}
-                              </span>
-                            </span>
-                            <ToggleSwitch
-                              enabled={exportOptions.includeTimestamps}
-                              onToggle={() =>
-                                toggleExportOption("includeTimestamps")
-                              }
-                              size="xs"
-                              ariaLabel={t({
-                                id: "settings.about.data.include_timestamps_aria",
-                                message: "Include timestamps in the export",
+                  {exportConfigOpen && (
+                    <FloatingPortal
+                      anchorRef={exportConfigRef}
+                      ref={exportPopupRef}
+                      placement="bottom-end"
+                      className="ui-surface-menu w-52"
+                    >
+                      <div className="space-y-3 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="min-w-0">
+                            <span className="block ui-text-meta ui-color-primary">
+                              {t({
+                                id: "settings.about.data.include_timestamps",
+                                message: "Timestamps",
                               })}
-                            />
-                          </div>
-
-                          <div className="flex items-start justify-between gap-3">
-                            <span className="min-w-0">
-                              <span className="block ui-text-meta ui-color-primary">
-                                {t({
-                                  id: "settings.about.data.verbatim_text",
-                                  message: "Original text",
-                                })}
-                              </span>
-                              <span className="block ui-text-micro ui-color-muted">
-                                {t({
-                                  id: "settings.about.data.verbatim_text_hint",
-                                  message: "Transcripts before cleanup",
-                                })}
-                              </span>
                             </span>
-                            <ToggleSwitch
-                              enabled={exportOptions.verbatimText}
-                              onToggle={() =>
-                                toggleExportOption("verbatimText")
-                              }
-                              size="xs"
-                              ariaLabel={t({
-                                id: "settings.about.data.verbatim_text_aria",
-                                message:
-                                  "Use the original transcripts before cleanup",
+                            <span className="block ui-text-micro ui-color-muted">
+                              {t({
+                                id: "settings.about.data.include_timestamps_hint",
+                                message: "Segment start and end times",
                               })}
-                            />
-                          </div>
-
-                          <div className="flex items-start justify-between gap-3">
-                            <span className="min-w-0">
-                              <span className="block ui-text-meta ui-color-primary">
-                                {t({
-                                  id: "settings.about.data.skip_short",
-                                  message: "Skip short clips",
-                                })}
-                              </span>
-                              <span className="block ui-text-micro ui-color-muted">
-                                {t({
-                                  id: "settings.about.data.skip_short_hint",
-                                  message: "Leaves out clips under a second",
-                                })}
-                              </span>
                             </span>
-                            <ToggleSwitch
-                              enabled={exportOptions.skipShortClips}
-                              onToggle={() =>
-                                toggleExportOption("skipShortClips")
-                              }
-                              size="xs"
-                              ariaLabel={t({
-                                id: "settings.about.data.skip_short_aria",
-                                message: "Skip clips shorter than one second",
-                              })}
-                            />
-                          </div>
+                          </span>
+                          <ToggleSwitch
+                            enabled={exportOptions.includeTimestamps}
+                            onToggle={() =>
+                              toggleExportOption("includeTimestamps")
+                            }
+                            size="xs"
+                            ariaLabel={t({
+                              id: "settings.about.data.include_timestamps_aria",
+                              message: "Include timestamps in the export",
+                            })}
+                          />
                         </div>
 
-                        <div className="border-t border-border-primary/60" />
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="min-w-0">
+                            <span className="block ui-text-meta ui-color-primary">
+                              {t({
+                                id: "settings.about.data.verbatim_text",
+                                message: "Original text",
+                              })}
+                            </span>
+                            <span className="block ui-text-micro ui-color-muted">
+                              {t({
+                                id: "settings.about.data.verbatim_text_hint",
+                                message: "Transcripts before cleanup",
+                              })}
+                            </span>
+                          </span>
+                          <ToggleSwitch
+                            enabled={exportOptions.verbatimText}
+                            onToggle={() => toggleExportOption("verbatimText")}
+                            size="xs"
+                            ariaLabel={t({
+                              id: "settings.about.data.verbatim_text_aria",
+                              message:
+                                "Use the original transcripts before cleanup",
+                            })}
+                          />
+                        </div>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            void handleExportDataset();
-                          }}
-                          className="flex h-8 w-full items-center justify-center ui-text-button-sm ui-color-secondary transition-colors hover:bg-[var(--surface-interactive)] hover:text-content-primary"
-                        >
-                          {t({
-                            id: "settings.about.data.export_confirm",
-                            message: "Export…",
-                          })}
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="min-w-0">
+                            <span className="block ui-text-meta ui-color-primary">
+                              {t({
+                                id: "settings.about.data.skip_short",
+                                message: "Skip short clips",
+                              })}
+                            </span>
+                            <span className="block ui-text-micro ui-color-muted">
+                              {t({
+                                id: "settings.about.data.skip_short_hint",
+                                message: "Leaves out clips under a second",
+                              })}
+                            </span>
+                          </span>
+                          <ToggleSwitch
+                            enabled={exportOptions.skipShortClips}
+                            onToggle={() =>
+                              toggleExportOption("skipShortClips")
+                            }
+                            size="xs"
+                            ariaLabel={t({
+                              id: "settings.about.data.skip_short_aria",
+                              message: "Skip clips shorter than one second",
+                            })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="border-t border-border-primary/60" />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleExportDataset();
+                        }}
+                        className="flex h-8 w-full items-center justify-center ui-text-button-sm ui-color-secondary transition-colors hover:bg-[var(--surface-interactive)] hover:text-content-primary"
+                      >
+                        {t({
+                          id: "settings.about.data.export_confirm",
+                          message: "Export…",
+                        })}
+                      </button>
+                    </FloatingPortal>
+                  )}
                 </div>
               }
             />

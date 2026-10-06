@@ -202,6 +202,42 @@ pub(crate) fn update_library_item(
     Ok(Some(item))
 }
 
+pub(crate) fn apply_generated_library_metadata(
+    conn: &mut Connection,
+    root: &Path,
+    id: &str,
+    expected_name: Option<&str>,
+    next_name: &str,
+    generated_tags: &[String],
+) -> Result<Option<LibraryItem>> {
+    let tx = conn.transaction()?;
+    let mut item = match get_library_item(&tx, root, id)? {
+        Some(item) => item,
+        None => return Ok(None),
+    };
+    if expected_name.is_some_and(|expected| item.name != expected) {
+        return Ok(None);
+    }
+
+    item.name = next_name.to_string();
+    merge_generated_tags(&mut item.tags, generated_tags);
+
+    update_library_item_full(&tx, &item)?;
+    tx.commit()?;
+    Ok(Some(item))
+}
+
+fn merge_generated_tags(existing: &mut Vec<String>, generated: &[String]) {
+    let mut normalized: std::collections::HashSet<String> =
+        existing.iter().map(|tag| tag.to_lowercase()).collect();
+    for tag in generated {
+        let trimmed = tag.trim();
+        if !trimmed.is_empty() && normalized.insert(trimmed.to_lowercase()) {
+            existing.push(trimmed.to_string());
+        }
+    }
+}
+
 pub(crate) fn delete_library_item(
     conn: &Connection,
     root: &Path,
@@ -470,11 +506,21 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         let trimmed = status.trim();
         if !trimmed.is_empty() {
             if trimmed == "active" {
-                clauses.push("status IN ('pending', 'importing', 'transcribing')".to_string());
+                clauses.push(
+                    "status IN ('pending', 'importing', 'transcribing', 'cancelling')".to_string(),
+                );
             } else {
                 clauses.push("status = ?".to_string());
                 params.push(Box::new(trimmed.to_string()));
             }
+        }
+    }
+
+    if let Some(kind) = filter.kind.as_deref() {
+        match kind.trim() {
+            "files" => clauses.push("kind NOT IN ('meeting', 'recovered_meeting')".to_string()),
+            "meetings" => clauses.push("kind IN ('meeting', 'recovered_meeting')".to_string()),
+            _ => {}
         }
     }
 
@@ -495,5 +541,48 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         ("".to_string(), params)
     } else {
         (format!("WHERE {}", clauses.join(" AND ")), params)
+    }
+}
+
+#[cfg(test)]
+mod filter_tests {
+    use super::*;
+
+    #[test]
+    fn filters_files_and_meetings_by_persisted_origin() {
+        let (files, _) = build_library_filter(&LibraryFilter {
+            kind: Some("files".to_string()),
+            ..Default::default()
+        });
+        assert!(files.contains("NOT IN ('meeting', 'recovered_meeting')"));
+
+        let (meetings, _) = build_library_filter(&LibraryFilter {
+            kind: Some("meetings".to_string()),
+            ..Default::default()
+        });
+        assert!(meetings.contains("IN ('meeting', 'recovered_meeting')"));
+    }
+
+    #[test]
+    fn active_filter_includes_cancelling_work() {
+        let (active, _) = build_library_filter(&LibraryFilter {
+            status: Some("active".to_string()),
+            ..Default::default()
+        });
+        assert!(active.contains("'cancelling'"));
+    }
+
+    #[test]
+    fn generated_tags_merge_without_overwriting_or_case_duplicates() {
+        let mut existing = vec!["Personal".to_string(), "Manual".to_string()];
+        merge_generated_tags(
+            &mut existing,
+            &[
+                "personal".to_string(),
+                " Gimnasio ".to_string(),
+                "".to_string(),
+            ],
+        );
+        assert_eq!(existing, vec!["Personal", "Manual", "Gimnasio"]);
     }
 }

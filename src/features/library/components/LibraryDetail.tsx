@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
+import FloatingPortal from "../../../shared/ui/FloatingPortal";
 import {
   Warning as AlertTriangle,
   AppWindow,
@@ -33,6 +34,8 @@ import {
   MicrophoneSlash,
   Pause,
   PencilSimple as Pencil,
+  Sparkle,
+  CircleNotch as Loader2,
   Play,
   Plus,
   ArrowClockwise as RotateCw,
@@ -296,6 +299,8 @@ const BookmarkRow = ({
 const LibraryDetail = ({
   item,
   models,
+  followTimestamps,
+  onFollowTimestampsChange,
   shiftHeld,
   onClose,
   onDelete,
@@ -307,9 +312,16 @@ const LibraryDetail = ({
   onUpdate,
   onExport,
   availableTags,
+  backLabel,
+  onGenerateTitle,
+  isGeneratingTitle,
 }: {
   item: LibraryItem;
   models: SpeechModel[];
+  followTimestamps: boolean;
+  onFollowTimestampsChange: (
+    value: boolean | ((prev: boolean) => boolean),
+  ) => void;
   shiftHeld: boolean;
   onClose: () => void;
   onDelete: () => Promise<void>;
@@ -321,6 +333,9 @@ const LibraryDetail = ({
   onUpdate: (patch: LibraryItemPatch) => Promise<LibraryItem>;
   onExport: (format: ExportFormat, outputPath: string) => Promise<void>;
   availableTags: string[];
+  backLabel: string;
+  onGenerateTitle: () => Promise<void>;
+  isGeneratingTitle: boolean;
 }) => {
   const { t } = useLingui();
   const [nameDraft, setNameDraft] = useState(item.name);
@@ -344,9 +359,8 @@ const LibraryDetail = ({
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [followPaused, setFollowPaused] = useState(false);
-  const [followPlayback, setFollowPlayback] = useState(
-    () => localStorage.getItem(FOLLOW_PLAYBACK_KEY) !== "off",
-  );
+  const followPlayback = followTimestamps;
+  const setFollowPlayback = onFollowTimestampsChange;
   const playbackMenuRef = useRef<HTMLDivElement>(null);
   const [playbackMenuOpen, setPlaybackMenuOpen] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
@@ -358,7 +372,7 @@ const LibraryDetail = ({
   });
   const [streamChunks, setStreamChunks] = useState<string[]>([]);
   const [showRetranscribe, setShowRetranscribe] = useState(false);
-  const diarizerInstalled = useDiarizerInstalled();
+  const diarizerInstalled = useDiarizerInstalled(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const [renamingSpeakerId, setRenamingSpeakerId] = useState<string | null>(
@@ -389,12 +403,17 @@ const LibraryDetail = ({
   const trackMutedRef = useRef(trackMuted);
   trackMutedRef.current = trackMuted;
   const tagMenuRef = useRef<HTMLDivElement>(null);
-  const overflowMenuRef = useRef<HTMLDivElement>(null);
+  const tagPopupRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const exportPopupRef = useRef<HTMLDivElement>(null);
+  const overflowMenuRef = useRef<HTMLDivElement>(null);
+  const overflowPopupRef = useRef<HTMLDivElement>(null);
+  const speakerMenuRef = useRef<HTMLButtonElement>(null);
+  const speakerPopupRef = useRef<HTMLDivElement>(null);
+  const speakersMenuRef = useRef<HTMLDivElement>(null);
+  const speakersPopupRef = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const speakerMenuRef = useRef<HTMLDivElement>(null);
-  const speakersMenuRef = useRef<HTMLDivElement>(null);
   const playbackRateRef = useRef(1);
   const streamTranscriptRef = useRef(item.transcript ?? "");
   const scrubWasPlayingRef = useRef(false);
@@ -861,9 +880,15 @@ const LibraryDetail = ({
   }, [transcriptDraft, transcriptEditable, item.transcript, writeTranscript]);
 
   useEffect(() => writeTranscript, [writeTranscript]);
-  useClickOutside(tagMenuRef, () => setTagMenuOpen(false), tagMenuOpen);
-  useClickOutside(overflowMenuRef, () => setOverflowOpen(false), overflowOpen);
-  useClickOutside(exportMenuRef, () => setExportOpen(false), exportOpen);
+  useClickOutside(tagMenuRef, () => setTagMenuOpen(false), tagMenuOpen, [
+    tagPopupRef,
+  ]);
+  useClickOutside(exportMenuRef, () => setExportOpen(false), exportOpen, [
+    exportPopupRef,
+  ]);
+  useClickOutside(overflowMenuRef, () => setOverflowOpen(false), overflowOpen, [
+    overflowPopupRef,
+  ]);
   useClickOutside(
     playbackMenuRef,
     () => setPlaybackMenuOpen(false),
@@ -873,6 +898,7 @@ const LibraryDetail = ({
     speakerMenuRef,
     () => setSpeakerMenuSegment(null),
     speakerMenuSegment !== null,
+    [speakerPopupRef],
   );
   useClickOutside(
     speakersMenuRef,
@@ -882,6 +908,7 @@ const LibraryDetail = ({
       setSpeakerNameDraft("");
     },
     speakersMenuOpen && !speakerContext,
+    [speakersPopupRef],
   );
 
   // Returns false after telling the user the save failed.
@@ -972,7 +999,7 @@ const LibraryDetail = ({
       id: crypto.randomUUID(),
       name: t({
         id: "library.detail.speaker_default_name",
-        message: `Speaker ${nextIndex}`,
+        message: `Person ${nextIndex}`,
       }),
       color: SPEAKER_COLORS[speakers.length % SPEAKER_COLORS.length],
     };
@@ -1857,6 +1884,7 @@ const LibraryDetail = ({
     return (
       <div className="relative max-w-full">
         <button
+          ref={menuOpen ? speakerMenuRef : undefined}
           type="button"
           onClick={(event) => {
             event.stopPropagation();
@@ -1883,7 +1911,7 @@ const LibraryDetail = ({
                   message: "Assign",
                 })
           }
-          className={`flex items-center justify-center p-1 -m-1 transition-opacity hover:opacity-80 ${
+          className={`flex items-center justify-center gap-1.5 p-1 -m-1 transition-opacity hover:opacity-80 ${
             speaker
               ? ""
               : menuOpen
@@ -1900,69 +1928,71 @@ const LibraryDetail = ({
             }}
             aria-hidden="true"
           />
+          {(item.kind === "meeting" || item.kind === "recovered_meeting") &&
+            speaker && (
+              <span className="max-w-20 truncate ui-text-label font-medium text-content-muted">
+                {speaker.name}
+              </span>
+            )}
         </button>
-        <AnimatePresence>
-          {menuOpen && (
-            <motion.div
-              ref={speakerMenuRef}
-              initial={{ opacity: 0, scale: 0.98, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.98, y: -4 }}
-              transition={{ duration: 0.12 }}
-              className="absolute left-0 top-full mt-1 z-[120] w-36 rounded-md border border-border-secondary/80 bg-surface-overlay shadow-lg shadow-black/40 overflow-hidden"
-            >
-              {speakers.map((entry) => (
-                <button
-                  key={entry.id}
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleAssignSpeaker(idx, entry.id);
-                  }}
-                  className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 ui-text-meta font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
-                >
-                  <span
-                    className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
-                    style={{ backgroundColor: entry.color ?? undefined }}
-                    aria-hidden="true"
-                  />
-                  {entry.name}
-                </button>
-              ))}
-              {segment.speaker_id && (
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    handleAssignSpeaker(idx, null);
-                  }}
-                  className="w-full text-left px-2.5 py-1.5 ui-text-meta text-content-muted hover:bg-surface-elevated/70 hover:text-content-primary transition-colors border-t border-border-primary"
-                >
-                  {t({
-                    id: "library.detail.speaker.clear",
-                    message: "Clear speaker",
-                  })}
-                </button>
-              )}
+        {menuOpen && (
+          <FloatingPortal
+            anchorRef={speakerMenuRef}
+            ref={speakerPopupRef}
+            placement="bottom-start"
+            className="w-36 rounded-md border border-border-secondary/80 bg-surface-overlay shadow-lg shadow-black/40 overflow-hidden"
+          >
+            {speakers.map((entry) => (
+              <button
+                key={entry.id}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleAssignSpeaker(idx, entry.id);
+                }}
+                className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 ui-text-meta font-medium text-content-secondary hover:bg-surface-elevated/70 hover:text-content-primary transition-colors"
+              >
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
+                  style={{ backgroundColor: entry.color ?? undefined }}
+                  aria-hidden="true"
+                />
+                {entry.name}
+              </button>
+            ))}
+            {segment.speaker_id && (
               <button
                 type="button"
-                onClick={async (event) => {
+                onClick={(event) => {
                   event.stopPropagation();
-                  const created = await handleAddSpeaker();
-                  if (created) await handleAssignSpeaker(idx, created.id);
+                  handleAssignSpeaker(idx, null);
                 }}
-                disabled={!canAddSpeaker}
-                className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 ui-text-meta text-content-muted hover:bg-surface-elevated/70 hover:text-content-primary transition-colors border-t border-border-primary disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-content-muted"
+                className="w-full text-left px-2.5 py-1.5 ui-text-meta text-content-muted hover:bg-surface-elevated/70 hover:text-content-primary transition-colors border-t border-border-primary"
               >
-                <UserPlus size={11} />
                 {t({
-                  id: "library.detail.assign_new_speaker",
-                  message: "Assign new speaker",
+                  id: "library.detail.speaker.clear",
+                  message: "Remove person",
                 })}
               </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+            <button
+              type="button"
+              onClick={async (event) => {
+                event.stopPropagation();
+                const created = await handleAddSpeaker();
+                if (created) await handleAssignSpeaker(idx, created.id);
+              }}
+              disabled={!canAddSpeaker}
+              className="w-full flex items-center gap-2 text-left px-2.5 py-1.5 ui-text-meta text-content-muted hover:bg-surface-elevated/70 hover:text-content-primary transition-colors border-t border-border-primary disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-content-muted"
+            >
+              <UserPlus size={11} />
+              {t({
+                id: "library.detail.assign_new_speaker",
+                message: "Assign new speaker",
+              })}
+            </button>
+          </FloatingPortal>
+        )}
       </div>
     );
   };
@@ -1976,10 +2006,7 @@ const LibraryDetail = ({
               <button
                 onClick={onClose}
                 className="flex items-center justify-center rounded-md p-1.5 -ml-1.5 text-content-muted hover:text-content-primary hover:bg-surface-surface transition-colors"
-                aria-label={t({
-                  id: "library.detail.back",
-                  message: "Back to library",
-                })}
+                aria-label={backLabel}
               >
                 <ArrowLeft size={15} />
               </button>
@@ -2201,6 +2228,29 @@ const LibraryDetail = ({
                       transition={{ duration: 0.1 }}
                       className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120] py-1"
                     >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOverflowOpen(false);
+                          void onGenerateTitle().catch(() => {});
+                        }}
+                        disabled={
+                          isBusy ||
+                          isGeneratingTitle ||
+                          !item.transcript?.trim()
+                        }
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left ui-text-meta text-content-secondary hover:bg-surface-overlay disabled:opacity-40"
+                      >
+                        {isGeneratingTitle ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <Sparkle size={11} />
+                        )}
+                        {t({
+                          id: "library.card.title.generate",
+                          message: "Generate title and tags",
+                        })}
+                      </button>
                       <button
                         onClick={() => {
                           setOverflowOpen(false);

@@ -56,6 +56,42 @@ export const getFileExtension = (path: string) => {
 
 export const uniquePaths = (paths: string[]) => Array.from(new Set(paths));
 export const formatLibraryName = (name: string) => name.replace(/[_.]/g, " ");
+export const formatLibraryCardDate = (
+  value: string,
+  now: Date = new Date(),
+) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const locale = i18n.locale || undefined;
+  const calendarDay = (input: Date) =>
+    Date.UTC(input.getFullYear(), input.getMonth(), input.getDate());
+  const dayDifference = Math.round(
+    (calendarDay(date) - calendarDay(now)) / 86_400_000,
+  );
+  const time = new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  let day: string;
+  if (dayDifference === 0 || dayDifference === -1) {
+    day = new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
+      dayDifference,
+      "day",
+    );
+  } else {
+    day = new Intl.DateTimeFormat(locale, {
+      day: "numeric",
+      month: "short",
+      ...(date.getFullYear() === now.getFullYear()
+        ? {}
+        : { year: "numeric" as const }),
+    }).format(date);
+  }
+
+  return `${day}, ${time}`;
+};
 export const sanitizeFileName = (value: string) =>
   value
     .trim()

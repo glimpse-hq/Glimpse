@@ -34,6 +34,13 @@ export async function deleteTranscription(id: string): Promise<void> {
   await invoke("delete_transcription", { id });
 }
 
+export async function deleteTranscriptionsForDay(
+  startMs: number,
+  endMs: number,
+): Promise<number> {
+  return invoke<number>("delete_transcriptions_for_day", { startMs, endMs });
+}
+
 export async function retryTranscription(id: string): Promise<void> {
   await invoke("retry_transcription", { id });
 }

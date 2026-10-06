@@ -42,10 +42,15 @@ type ModelCardShellProps = {
   accent: string;
   glowStrong: string;
   glowSoft: string;
-  dots: number[];
+  dots?: number[];
+  heroContent?: ReactNode;
   animated?: boolean;
   ariaLabel: string;
   width?: number;
+  heroHeight?: number;
+  borderRadius?: number;
+  dotSize?: number;
+  dotGap?: number;
   onClick?: () => void;
   children: ReactNode;
 };
@@ -54,10 +59,15 @@ const ModelCardShell = ({
   accent,
   glowStrong,
   glowSoft,
-  dots,
+  dots = [],
+  heroContent,
   animated = false,
   ariaLabel,
   width = CARD_WIDTH,
+  heroHeight = 92,
+  borderRadius = 18,
+  dotSize = 3,
+  dotGap = 5,
   onClick,
   children,
 }: ModelCardShellProps) => (
@@ -69,7 +79,7 @@ const ModelCardShell = ({
     }`}
     style={{
       width: `${width}px`,
-      borderRadius: "18px",
+      borderRadius: `${borderRadius}px`,
       border: "1px solid var(--color-border-secondary, rgba(0,0,0,0.08))",
       boxShadow:
         "0 1px 2px rgba(0,0,0,0.05), 0 16px 40px -20px rgba(0,0,0,0.45)",
@@ -92,7 +102,7 @@ const ModelCardShell = ({
     <div
       className="relative flex items-center justify-center overflow-hidden"
       style={{
-        height: "92px",
+        height: `${heroHeight}px`,
         background: `radial-gradient(120% 140% at 50% -20%, ${glowStrong}, transparent 70%), linear-gradient(180deg, ${glowSoft}, transparent)`,
       }}
     >
@@ -103,15 +113,17 @@ const ModelCardShell = ({
           maskImage: FEATHER_MASK,
         }}
       >
-        <DotMatrix
-          rows={WAVE_ROWS}
-          cols={WAVE_COLS}
-          activeDots={dots}
-          dotSize={3}
-          gap={5}
-          color={accent}
-          animated={animated}
-        />
+        {heroContent ?? (
+          <DotMatrix
+            rows={WAVE_ROWS}
+            cols={WAVE_COLS}
+            activeDots={dots}
+            dotSize={dotSize}
+            gap={dotGap}
+            color={accent}
+            animated={animated}
+          />
+        )}
       </div>
 
       {BLUR_LAYERS.map((layer) => (

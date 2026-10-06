@@ -82,7 +82,10 @@ const LibraryRetranscribeModal = ({
     hasModelCapability(selectedModel, MODEL_CAPABILITY_DIARIZATION);
   const detectSpeakers =
     diarizationSupported &&
-    (speakersChoice ?? (item.detect_speakers || diarizerInstalled));
+    (speakersChoice ??
+      (selectedModelKey === item.speech_model
+        ? item.detect_speakers
+        : diarizerInstalled));
 
   useEffect(() => {
     if (!timestampsSupported) {
@@ -90,6 +93,9 @@ const LibraryRetranscribeModal = ({
     }
   }, [timestampsSupported]);
 
+  useEffect(() => {
+    setSpeakersChoice(null);
+  }, [selectedModelKey]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return;

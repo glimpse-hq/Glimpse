@@ -12,6 +12,7 @@ import LocalApiTab from "./tabs/LocalApiTab";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
 import ProvidersTab from "./tabs/ProvidersTab";
+import MeetingsTab from "./tabs/MeetingsTab";
 import type { PurchaseSource } from "../../license/purchaseConfig";
 import type { TranscriptionMode } from "../../../types";
 import { useSettingsForm } from "../useSettingsForm";
@@ -24,11 +25,13 @@ type LegacyTab =
   | "providers"
   | "local-api"
   | "about"
-  | "app";
+  | "app"
+  | "meetings";
 
 const paneForLegacyTab: Record<LegacyTab, SettingsPane> = {
   account: "account",
   general: "general",
+  meetings: "meetings",
   app: "app",
   about: "about",
   models: "models",
@@ -160,6 +163,7 @@ const SettingsScreen = ({
                 key="models"
                 variants={paneVariants}
                 modelCatalog={form.modelCatalog}
+                diarizationModel={form.diarizationModel}
                 diarizerModel={form.diarizerModel}
                 modelStatus={form.modelStatus}
                 downloadState={form.downloadState}
@@ -175,6 +179,19 @@ const SettingsScreen = ({
                 handleDelete={form.handleDelete}
                 handleCancelDownload={form.handleCancelDownload}
                 onOpenProvidersTab={() => onPaneChange("providers")}
+              />
+            )}
+
+            {pane === "meetings" && (
+              <MeetingsTab
+                key="meetings"
+                variants={paneVariants}
+                enabled={form.meetingDetectionEnabled}
+                onEnabledChange={form.setMeetingDetectionEnabled}
+                selectedAppIds={form.meetingDetectionApps}
+                onSelectedAppIdsChange={form.setMeetingDetectionApps}
+                installedApps={form.installedMeetingApps}
+                loading={form.meetingAppsLoading}
               />
             )}
 

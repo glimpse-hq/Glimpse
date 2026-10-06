@@ -554,6 +554,32 @@ mod tests {
         );
     }
 
+    #[test]
+    fn dictation_key_preserves_press_and_release_for_smart_mode() {
+        let mut state = RegisteredShortcutState::new(vec![RegisteredHotkey {
+            hotkey: Hotkey::new(Modifiers::empty(), Key::Dictation).unwrap(),
+            action: ShortcutAction::Smart,
+            options: ShortcutOptions::default(),
+        }]);
+
+        assert_eq!(
+            state.process(event(Modifiers::empty(), Some(Key::Dictation), true)),
+            vec![(
+                ShortcutAction::Smart,
+                HotkeyState::Pressed,
+                ShortcutOptions::default()
+            )]
+        );
+        assert_eq!(
+            state.process(event(Modifiers::empty(), Some(Key::Dictation), false)),
+            vec![(
+                ShortcutAction::Smart,
+                HotkeyState::Released,
+                ShortcutOptions::default()
+            )]
+        );
+    }
+
     fn modifier_only_press() -> KeyEvent {
         KeyEvent {
             occurred_at: std::time::Instant::now(),

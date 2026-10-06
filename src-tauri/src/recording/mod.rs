@@ -1381,6 +1381,10 @@ pub(crate) fn start_session(app: &AppHandle<AppRuntime>, sources: RecordingSourc
     let state = app.state::<AppState>();
     crate::license::require_license_gate(&state.settings_store, "Recording")
         .map_err(|err| anyhow!(err))?;
+    let meeting_guard = state.meeting_session.lock();
+    if meeting_guard.is_some() {
+        return Err(anyhow!("already_recording"));
+    }
     let manager = state.recording();
     if manager.is_active() {
         return Err(anyhow!("already_recording"));
