@@ -459,6 +459,7 @@ const LibraryCard = ({
                 }}
                 onBlur={() => onCommitNameEdit(item, editingNameDraft)}
                 onClick={(event) => event.stopPropagation()}
+                aria-label={t({ id: "library.card.rename", message: "Rename" })}
                 className="w-full min-w-0 bg-transparent p-0 ui-text-title-lg font-medium leading-snug ui-color-primary border-0 border-b border-[var(--color-border-primary)] outline-hidden focus:border-[var(--color-border-hover)]"
                 autoFocus
               />
@@ -586,6 +587,10 @@ const LibraryCard = ({
                       }
                     }}
                     onBlur={onCancelTagEdit}
+                    aria-label={t({
+                      id: "library.card.add_tag",
+                      message: "Add tag",
+                    })}
                     placeholder={t({
                       id: "library.card.new_tag",
                       message: "New tag...",
@@ -707,6 +712,7 @@ const LibraryCard = ({
               }}
               onBlur={() => onCommitNameEdit(item, editingNameDraft)}
               onClick={(event) => event.stopPropagation()}
+              aria-label={t({ id: "library.card.rename", message: "Rename" })}
               className="w-full min-w-0 bg-transparent p-0 ui-text-body font-medium ui-color-primary border-0 border-b border-[var(--color-border-primary)] outline-hidden focus:border-[var(--color-border-hover)]"
               autoFocus
             />
@@ -872,6 +878,7 @@ const LibraryCard = ({
                 }
               }}
               onBlur={onCancelTagEdit}
+              aria-label={t({ id: "library.card.add_tag", message: "Add tag" })}
               placeholder={t({
                 id: "library.card.new_tag",
                 message: "New tag...",
