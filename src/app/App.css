@@ -1742,3 +1742,19 @@ body {
     box-shadow: 0 0 0 4px rgba(255, 59, 48, 0);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-toast-in,
+  .animate-toast-out,
+  .animate-pulse,
+  .recording-pulse,
+  .hover-tip,
+  .tag-input-intro {
+    animation: none;
+  }
+
+  .twinkling-grid > div {
+    animation: none !important;
+  }
+}
