@@ -1468,16 +1468,26 @@ fn position_overlay_on_cursor_screen(window: &WebviewWindow<AppRuntime>) {
 
 /// Centers the window horizontally near the bottom edge of the monitor.
 fn place_on_monitor(window: &WebviewWindow<AppRuntime>, monitor: &tauri::Monitor) {
+    let place = |size: tauri::PhysicalSize<u32>| {
+        let scale_factor = monitor.scale_factor();
+        let screen = monitor.size();
+        let mon_pos = monitor.position();
+        let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
+        let bottom_padding_physical = (69.0 * scale_factor) as i32;
+        let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
+        let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    };
     let Ok(size) = window.outer_size() else {
         return;
     };
-    let scale_factor = monitor.scale_factor();
-    let screen = monitor.size();
-    let mon_pos = monitor.position();
-    let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
-    let bottom_padding_physical = (69.0 * scale_factor) as i32;
-    let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
-    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    place(size);
+    // Moving onto a monitor with other display scaling resizes the window and
+    // keeps its top-left corner, so center it again at the new size.
+    if let Ok(resized) = window.outer_size()
+        && resized != size
+    {
+        place(resized);
+    }
 }
 
 pub fn start_hold_recording(app: &AppHandle<AppRuntime>) -> bool {
