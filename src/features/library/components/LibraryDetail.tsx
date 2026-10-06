@@ -922,13 +922,15 @@ const LibraryDetail = ({
     }
     const value = nameDraft.trim();
     if (value && value !== item.name) {
-      await saveOrToast(
+      const saved = await saveOrToast(
         { name: value },
         t({
           id: "library.detail.rename_failed",
           message: "Couldn't rename this item.",
         }),
       );
+      // Keeps the typed name so it can be saved again.
+      if (!saved) return;
     }
     setIsEditingName(false);
   };
@@ -1215,8 +1217,14 @@ const LibraryDetail = ({
     if (!canShowTimestamps) return;
     const nextValue = !showTimestamps;
     setShowTimestamps(nextValue);
-    Promise.resolve(onUpdate({ show_timestamps: nextValue })).catch((err) => {
-      console.error("failed to save timestamps setting:", err);
+    void saveOrToast(
+      { show_timestamps: nextValue },
+      t({
+        id: "toast.action_failed",
+        message: "That didn't work. Try again.",
+      }),
+    ).then((saved) => {
+      if (!saved) setShowTimestamps(!nextValue);
     });
   };
 
