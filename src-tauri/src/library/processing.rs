@@ -257,6 +257,9 @@ pub(crate) fn convert_library_item(
 
     fs::create_dir_all(item_dir)
         .with_context(|| format!("Failed to create library folder at {}", item_dir.display()))?;
+    // Recovering an interrupted import reads the original already stored in
+    // the item folder.
+    let source_is_stored = source_path.parent() == Some(item_dir);
 
     let result = (|| -> Result<f32> {
         report_import_progress(app, storage.clone(), id, 0.0);
@@ -264,7 +267,8 @@ pub(crate) fn convert_library_item(
             return Err(cancelled_error());
         }
 
-        if store_original {
+        // Copying a file onto itself truncates it.
+        if store_original && !source_is_stored {
             let original_target = item_dir.join(format!("source.{}", ext));
             let source_size = fs::metadata(source_path)
                 .with_context(|| format!("Failed to read file size for {}", source_path.display()))?
@@ -318,7 +322,11 @@ pub(crate) fn convert_library_item(
     let duration_seconds = match result {
         Ok(duration_seconds) => duration_seconds,
         Err(err) => {
-            let _ = fs::remove_dir_all(item_dir);
+            if source_is_stored {
+                let _ = fs::remove_file(&audio_path);
+            } else {
+                let _ = fs::remove_dir_all(item_dir);
+            }
             return Err(err);
         }
     };
