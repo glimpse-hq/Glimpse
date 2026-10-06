@@ -672,24 +672,31 @@ impl StorageManager {
         Ok(count.max(0) as u32)
     }
 
-    pub fn prune_before(&self, cutoff_millis: i64) -> Result<Vec<String>> {
+    /// Deletes the entries up to the cutoff and returns how many went, with the
+    /// audio paths no remaining entry uses.
+    fn prune_before(&self, cutoff_millis: i64) -> Result<(u32, Vec<String>)> {
         let conn = self.connection.lock();
-        let mut stmt =
-            conn.prepare("SELECT audio_path FROM transcriptions WHERE timestamp <= ?1")?;
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT audio_path FROM transcriptions AS pruned
+             WHERE timestamp <= ?1
+               AND NOT EXISTS (
+                   SELECT 1 FROM transcriptions AS kept
+                   WHERE kept.audio_path = pruned.audio_path AND kept.timestamp > ?1
+               )",
+        )?;
         let audio_paths: Vec<String> = stmt
             .query_map(params![cutoff_millis], |row| row.get::<_, String>(0))?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         drop(stmt);
-        conn.execute(
+        let count = conn.execute(
             "DELETE FROM transcriptions WHERE timestamp <= ?1",
             params![cutoff_millis],
         )?;
-        Ok(audio_paths)
+        Ok((count as u32, audio_paths))
     }
 
     pub fn prune_before_and_remove_files(&self, cutoff_millis: i64) -> Result<u32> {
-        let audio_paths = self.prune_before(cutoff_millis)?;
-        let count = audio_paths.len() as u32;
+        let (count, audio_paths) = self.prune_before(cutoff_millis)?;
         for audio_path in audio_paths {
             let path = PathBuf::from(audio_path);
             if path.exists() {
