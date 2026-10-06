@@ -469,9 +469,17 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   const wantsApps = !active && (systemMenuOpen || selectedApps.length > 0);
   useEffect(() => {
     if (!isActive || !wantsApps) return;
+    // Closing the window only hides it, so skip polls nobody can see.
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") refreshApps();
+    };
     refreshApps();
-    const timer = setInterval(refreshApps, 4000);
-    return () => clearInterval(timer);
+    const timer = setInterval(refreshIfVisible, 4000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
   }, [isActive, wantsApps, refreshApps]);
 
   // Selections made before icons were saved pick theirs up once the app runs.
