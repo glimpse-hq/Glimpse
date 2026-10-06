@@ -1464,7 +1464,7 @@ fn update_settings(
     args: core::settings::UpdateSettingsArgs,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
-) -> Result<UserSettings, String> {
+) -> Result<core::settings::UpdateSettingsResult, String> {
     core::settings::update_settings(args, &app, &state)
 }
 

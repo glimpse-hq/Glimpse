@@ -80,6 +80,7 @@ import type {
   LocalApiStatus,
   ModelStatus,
   RemoteSpeechProvider,
+  UpdateSettingsResult,
 } from "../../types";
 
 type ActiveTab =
@@ -857,8 +858,19 @@ export function useSettingsForm({
         .then(async () => {
           isSavingRef.current = true;
           try {
-            await invoke("update_settings", { args });
+            const { shortcut_error: shortcutError } =
+              await invoke<UpdateSettingsResult>("update_settings", { args });
             persistedShortcutBindingsRef.current = args.shortcutBindings;
+            if (shortcutError) {
+              if (overrides?.shortcutDraftTarget) {
+                setInvalidShortcutDraft(
+                  overrides.shortcutDraftTarget,
+                  shortcutError,
+                );
+              }
+              showSettingsError(shortcutError);
+              return true;
+            }
             if (overrides?.shortcutDraftTarget) {
               clearInvalidShortcutDraft();
             }

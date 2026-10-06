@@ -40,7 +40,12 @@ import FAQModal from "../../shared/ui/FAQModal";
 import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import { showErrorToast } from "../../shared/lib/errorToast";
-import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
+import type {
+  DownloadEvent,
+  ModelInfo,
+  ModelStatus,
+  UpdateSettingsResult,
+} from "../../types";
 
 // The stock default; Parakeet first, Whisper for languages it doesn't cover.
 const DEFAULT_MODEL_KEY = "parakeet_tdt_v3_gguf";
@@ -627,16 +632,18 @@ export default function OnboardingScreen({
 
     try {
       const latestSettings = await getSettings();
-      await invoke("update_settings", {
-        args: buildSettingsArgs(
-          latestSettings,
-          ctx.smartShortcut,
-          ctx.selectedMode,
-          resolvedLocalModel,
-          ctx.autoLaunch,
-          ctx.microphoneDevice,
-        ),
-      });
+      const { shortcut_error: shortcutError } =
+        await invoke<UpdateSettingsResult>("update_settings", {
+          args: buildSettingsArgs(
+            latestSettings,
+            ctx.smartShortcut,
+            ctx.selectedMode,
+            resolvedLocalModel,
+            ctx.autoLaunch,
+            ctx.microphoneDevice,
+          ),
+        });
+      if (shortcutError) throw shortcutError;
       send({ type: "COMPLETE_SUCCESS" });
       send({ type: "START_PRACTICE" });
     } catch (err) {
@@ -695,16 +702,18 @@ export default function OnboardingScreen({
     async (shortcut: string) => {
       try {
         const latest = await getSettings();
-        await invoke("update_settings", {
-          args: buildSettingsArgs(
-            latest,
-            shortcut,
-            ctx.selectedMode,
-            selectedModel,
-            ctx.autoLaunch,
-            ctx.microphoneDevice,
-          ),
-        });
+        const { shortcut_error: shortcutError } =
+          await invoke<UpdateSettingsResult>("update_settings", {
+            args: buildSettingsArgs(
+              latest,
+              shortcut,
+              ctx.selectedMode,
+              selectedModel,
+              ctx.autoLaunch,
+              ctx.microphoneDevice,
+            ),
+          });
+        if (shortcutError) throw new Error(shortcutError);
         send({ type: "SET_SHORTCUT", shortcut });
       } catch (err) {
         console.error("Failed to set shortcut", err);

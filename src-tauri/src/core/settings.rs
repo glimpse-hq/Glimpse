@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
 use super::hotkeys;
@@ -258,11 +258,19 @@ pub(crate) fn reset_onboarding(
     Ok(())
 }
 
+/// Saved settings, plus why their shortcuts couldn't be registered when
+/// that failed after saving.
+#[derive(Debug, Serialize)]
+pub struct UpdateSettingsResult {
+    pub settings: UserSettings,
+    pub shortcut_error: Option<String>,
+}
+
 pub(crate) fn update_settings(
     args: UpdateSettingsArgs,
     app: &AppHandle<AppRuntime>,
     state: &AppState,
-) -> Result<UserSettings, String> {
+) -> Result<UpdateSettingsResult, String> {
     validate_update_settings_args(&args)?;
     let license_gated_requested =
         args.llm_enabled || args.cleanup_enabled || args.shortcut_bindings.any_cleanup_enabled();
@@ -382,10 +390,10 @@ pub(crate) fn update_settings(
 
     state.request_preflight_refresh();
 
-    pill::register_shortcuts(app).map_err(|err| {
+    let shortcut_error = pill::register_shortcuts(app).err().map(|err| {
         crate::analytics::track_shortcut_failed("register", crate::analytics::error_detail(&err));
         err.to_string()
-    })?;
+    });
 
     if prev.transcription_mode != next.transcription_mode
         || prev.local_model != next.local_model
@@ -424,7 +432,10 @@ pub(crate) fn update_settings(
         crate::schedule_transcription_prune(app.clone(), next.clone());
     }
 
-    Ok(state.settings_for_response(next))
+    Ok(UpdateSettingsResult {
+        settings: state.settings_for_response(next),
+        shortcut_error,
+    })
 }
 
 #[cfg(test)]
