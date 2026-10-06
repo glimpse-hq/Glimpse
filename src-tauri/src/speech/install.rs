@@ -67,6 +67,27 @@ pub fn local_resolver(models_dir: PathBuf) -> glimpse_speech::service::ModelReso
     })
 }
 
+/// `local_resolver` for request-driven callers like the API server. When a
+/// resolver returns `None`, glimpse-speech falls back to treating the model id
+/// as a file path and loads whatever it points at, so a client could make the
+/// engine parse any file on disk. Ids outside the catalog get a spec whose id
+/// fails glimpse-speech's validation instead, which rejects them before any
+/// disk access.
+pub fn catalog_only_resolver(models_dir: PathBuf) -> glimpse_speech::service::ModelResolver {
+    let resolver = local_resolver(models_dir);
+    std::sync::Arc::new(move |model| {
+        resolver(model).or_else(|| {
+            Some(speech_models::InstallSpec {
+                id: format!("{model} (not a Glimpse model id)"),
+                engine: speech_models::ModelEngine::Whisper,
+                storage: speech_models::ModelStorage::Directory,
+                files: Vec::new(),
+                variant: None,
+            })
+        })
+    })
+}
+
 fn installed_spec(
     model: &str,
     manager: &speech_models::ModelInstallManager,
@@ -691,5 +712,72 @@ mod parakeet_package_tests {
             assert!(manager.verify(spec)?.installed);
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod catalog_only_resolver_tests {
+    use super::*;
+    use glimpse_speech::service::{SpeechConfig, SpeechService};
+
+    fn scratch_dir(name: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("glimpse-resolver-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn service(resolver: glimpse_speech::service::ModelResolver, dir: &Path) -> SpeechService {
+        SpeechService::new(SpeechConfig {
+            resolver,
+            model_cache_dir: dir.to_path_buf(),
+        })
+    }
+
+    #[test]
+    fn rejects_file_paths_and_unknown_ids() {
+        let dir = scratch_dir("strict");
+        let models = dir.join("models");
+        let planted = dir.join("planted.gguf");
+        std::fs::write(&planted, b"not a model").unwrap();
+        std::fs::create_dir_all(models.join("stray")).unwrap();
+        std::fs::write(models.join("stray/model.gguf"), b"not a model").unwrap();
+        let service = service(catalog_only_resolver(models.clone()), &models);
+
+        for model in [
+            planted.to_str().unwrap(),
+            "../planted.gguf",
+            "stray",
+            "whisper-1",
+        ] {
+            let err = service.resolve(model).unwrap_err().to_string();
+            assert!(err.contains("not a Glimpse model id"), "{model}: {err}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rejects_installing_unknown_ids_without_touching_disk() {
+        let dir = scratch_dir("install");
+        let models = dir.join("models");
+        let service = service(catalog_only_resolver(models.clone()), &models);
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        assert!(
+            runtime
+                .block_on(service.install("whisper-1", Default::default()))
+                .is_err()
+        );
+        assert!(!models.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn still_resolves_catalog_models() {
+        let dir = scratch_dir("catalog");
+        let resolver = catalog_only_resolver(dir.clone());
+        let spec = resolver("whisper_small_q5").unwrap();
+        assert_eq!(spec.id, "whisper_small_q5");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
