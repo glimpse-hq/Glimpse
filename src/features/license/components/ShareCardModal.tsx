@@ -1,6 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import { motion, AnimatePresence } from "framer-motion";
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
@@ -27,8 +28,9 @@ const ShareCardModal = ({
   data,
   shareTexts,
 }: ShareCardModalProps) => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [styleIndex, setStyleIndex] = useState(0);
   const [postIndex, setPostIndex] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -56,26 +58,21 @@ const ShareCardModal = ({
     };
   }, [isOpen, styleIndex, data]);
 
+  useFocusTrap(dialogRef, isOpen, onClose);
+
   useEffect(() => {
     if (!isOpen) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        event.stopPropagation();
-        onClose();
-        return;
-      }
-      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-        event.preventDefault();
-        setStyleIndex((index) => {
-          const delta = event.key === "ArrowRight" ? 1 : -1;
-          return (index + delta + SHARE_STYLES.length) % SHARE_STYLES.length;
-        });
-      }
+      if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+      event.preventDefault();
+      setStyleIndex((index) => {
+        const delta = event.key === "ArrowRight" ? 1 : -1;
+        return (index + delta + SHARE_STYLES.length) % SHARE_STYLES.length;
+      });
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleSave = async () => {
     setError(null);
@@ -154,6 +151,13 @@ const ShareCardModal = ({
           />
 
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t({
+              id: "settings.stats.share.open",
+              message: "Share",
+            })}
             className="relative flex w-[min(430px,calc(100vw-64px))] flex-col rounded-[6px] bg-white p-3 pb-0 shadow-[0_28px_64px_rgba(0,0,0,0.6)]"
             initial={{ opacity: 0, scale: 0.94, y: 14, rotate: -1.5 }}
             animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
@@ -161,6 +165,7 @@ const ShareCardModal = ({
             transition={{ type: "spring", stiffness: 380, damping: 28 }}
           >
             <button
+              type="button"
               onClick={onClose}
               className="absolute -top-3 -right-3 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-[#1a1716] text-[#f7f5f1] shadow-md transition-transform hover:scale-105"
               aria-label={t({
@@ -168,12 +173,14 @@ const ShareCardModal = ({
                 message: "Close",
               })}
             >
-              <X size={13} weight="bold" />
+              <X size={13} weight="bold" aria-hidden="true" />
             </button>
 
             <div className="relative overflow-hidden rounded-[2px] ring-1 ring-black/10">
               <canvas
                 ref={canvasRef}
+                role="img"
+                aria-label={i18n._(SHARE_STYLES[styleIndex].label)}
                 className="block w-full"
                 style={{ aspectRatio: "1 / 1" }}
               />
@@ -184,8 +191,9 @@ const ShareCardModal = ({
                 {SHARE_STYLES.map((style, index) => (
                   <button
                     key={style.id}
+                    type="button"
                     onClick={() => setStyleIndex(index)}
-                    aria-label={style.label}
+                    aria-label={i18n._(style.label)}
                     aria-pressed={index === styleIndex}
                     className={`flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-[11px] font-semibold transition-colors ${
                       index === styleIndex
@@ -227,7 +235,10 @@ const ShareCardModal = ({
             </div>
 
             {error && (
-              <p className="pb-3 text-center text-[11px] leading-tight text-[#b91c1c]">
+              <p
+                role="alert"
+                className="pb-3 text-center text-[11px] leading-tight text-[#b91c1c]"
+              >
                 {error}
               </p>
             )}
@@ -249,12 +260,13 @@ const LipAction = ({
   onClick: () => void;
 }) => (
   <button
+    type="button"
     onClick={onClick}
     title={label}
     aria-label={label}
     className="flex h-8 w-8 items-center justify-center rounded-full text-[#46433d] transition-colors hover:bg-[#e3e0da] hover:text-[#1a1716]"
   >
-    <Icon size={15} />
+    <Icon size={15} aria-hidden="true" />
   </button>
 );
 

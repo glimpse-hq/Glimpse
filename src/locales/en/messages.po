@@ -4025,6 +4025,11 @@ msgid "settings.language_model.apple.unsupported"
 msgstr "Not supported on this Mac."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+msgid "settings.stats.share.style.note"
+msgstr "Note"
+
+#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.empty"
 msgstr "Nothing new right now."
@@ -4299,6 +4304,11 @@ msgstr "Port"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.post"
 msgstr "Post"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+msgid "settings.stats.share.style.poster"
+msgstr "Poster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5142,6 +5152,7 @@ msgstr "Setup"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.open"
 msgstr "Share"
 
@@ -6259,6 +6270,11 @@ msgstr "Writing"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.title"
 msgstr "Writing Model Provider"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+msgid "settings.stats.share.style.year"
+msgstr "Year"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts

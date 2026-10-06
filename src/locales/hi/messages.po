@@ -4025,6 +4025,11 @@ msgid "settings.language_model.apple.unsupported"
 msgstr "इस Mac पर समर्थित नहीं है।"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+msgid "settings.stats.share.style.note"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.empty"
 msgstr "अभी कुछ नया नहीं है।"
@@ -4299,6 +4304,11 @@ msgstr "पोर्ट"
 #: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.post"
 msgstr "पोस्ट"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+msgid "settings.stats.share.style.poster"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -5142,6 +5152,7 @@ msgstr "सेटअप"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
+#: src/features/license/components/ShareCardModal.tsx
 msgid "settings.stats.share.open"
 msgstr "शेयर करें"
 
@@ -6259,6 +6270,11 @@ msgstr "लिखना"
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.title"
 msgstr "भाषा मॉडल प्रदाता"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/shareCard.ts
+msgid "settings.stats.share.style.year"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts

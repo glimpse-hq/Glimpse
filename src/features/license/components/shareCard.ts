@@ -1,3 +1,5 @@
+import { msg } from "@lingui/core/macro";
+import type { MessageDescriptor } from "@lingui/core";
 import {
   activityLevel,
   type ActivityCell,
@@ -34,7 +36,7 @@ export type ShareCardData = {
 
 export type ShareStyle = {
   id: string;
-  label: string;
+  label: MessageDescriptor;
   draw: (ctx: CanvasRenderingContext2D, data: ShareCardData) => void;
 };
 
@@ -461,9 +463,21 @@ const drawPosterStyle: ShareStyle["draw"] = (ctx, data) => {
 };
 
 export const SHARE_STYLES: ShareStyle[] = [
-  { id: "note", label: "Note", draw: drawNoteStyle },
-  { id: "year", label: "Year", draw: drawYearStyle },
-  { id: "poster", label: "Poster", draw: drawPosterStyle },
+  {
+    id: "note",
+    label: msg({ id: "settings.stats.share.style.note", message: "Note" }),
+    draw: drawNoteStyle,
+  },
+  {
+    id: "year",
+    label: msg({ id: "settings.stats.share.style.year", message: "Year" }),
+    draw: drawYearStyle,
+  },
+  {
+    id: "poster",
+    label: msg({ id: "settings.stats.share.style.poster", message: "Poster" }),
+    draw: drawPosterStyle,
+  },
 ];
 
 let fontsReady: Promise<unknown> | null = null;
