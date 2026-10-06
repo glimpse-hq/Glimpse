@@ -365,33 +365,42 @@ pub fn export_library_item_to_path(
         .map_err(|err| format!("Failed to load library item: {err}"))?
         .ok_or_else(|| "Library item not found".to_string())?;
 
-    let content = build_export_content(&item, format.clone())
-        .map_err(|err| format!("Failed to build export: {err}"))?;
-
     let output_path = PathBuf::from(&output_path);
+    check_export_path(&output_path, &format)?;
 
-    // Validate output path is absolute and doesn't contain path traversal
-    if !output_path.is_absolute() {
-        return Err("Export path must be absolute".to_string());
-    }
-    if output_path
-        .components()
-        .any(|c| matches!(c, std::path::Component::ParentDir))
-    {
-        return Err("Export path contains invalid components".to_string());
-    }
-
-    if let Some(parent) = output_path.parent() {
-        fs::create_dir_all(parent)
-            .context("Failed to create export directory")
-            .map_err(|err| err.to_string())?;
-    }
+    let content = build_export_content(&item, format)
+        .map_err(|err| format!("Failed to build export: {err}"))?;
 
     fs::write(&output_path, content.as_bytes())
         .with_context(|| "Failed to write export file".to_string())
         .map_err(|err| err.to_string())?;
 
     crate::analytics::track_feature_used(&app, "library");
+    Ok(())
+}
+
+fn check_export_path(path: &Path, format: &ExportFormat) -> Result<(), String> {
+    let extension = match format {
+        ExportFormat::Txt => "txt",
+        ExportFormat::Md => "md",
+        ExportFormat::Srt => "srt",
+        ExportFormat::Vtt => "vtt",
+    };
+    let matches_format = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case(extension));
+    if !path.is_absolute() || !matches_format {
+        return Err(format!(
+            "This export can only be saved as a .{extension} file"
+        ));
+    }
+    if path
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err("Export path contains invalid components".to_string());
+    }
     Ok(())
 }
 
