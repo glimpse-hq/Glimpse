@@ -645,6 +645,11 @@ msgid "home.today.stats.seconds_spoken"
 msgstr "{seconds, plural, one {# seconde vandaag gesproken} other {# seconden vandaag gesproken}}"
 
 #. js-lingui-explicit-id
+#: src/features/news/components/NewsMenu.tsx
+msgid "news.unread"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
 msgid "home.today.stats.pace_wpm"
 msgstr "{wpm, plural, one {Ongeveer # woord per minuut vandaag} other {Ongeveer # woorden per minuut vandaag}}"
