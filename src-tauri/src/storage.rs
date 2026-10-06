@@ -643,13 +643,23 @@ impl StorageManager {
         Ok(())
     }
 
-    pub fn delete(&self, id: &str) -> Result<Option<String>> {
+    /// None when there is no such entry. Otherwise the audio path to remove, or
+    /// None when another entry still uses that audio.
+    pub fn delete(&self, id: &str) -> Result<Option<Option<String>>> {
         let conn = self.connection.lock();
         let record = Self::get_record(&conn, id)?;
-        if record.is_some() {
-            conn.execute("DELETE FROM transcriptions WHERE id = ?1", params![id])?;
-        }
-        Ok(record.map(|r| r.audio_path))
+        let Some(record) = record else {
+            return Ok(None);
+        };
+        conn.execute("DELETE FROM transcriptions WHERE id = ?1", params![id])?;
+        // Failed retries from older versions saved a second entry for the same
+        // audio, so keep the file while another entry still uses it.
+        let shared: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM transcriptions WHERE audio_path = ?1)",
+            params![record.audio_path],
+            |row| row.get(0),
+        )?;
+        Ok(Some((!shared).then_some(record.audio_path)))
     }
 
     pub fn count_prunable_before(&self, cutoff_millis: i64) -> Result<u32> {

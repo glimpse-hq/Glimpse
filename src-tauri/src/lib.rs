@@ -1905,9 +1905,10 @@ fn delete_transcription(
     state: tauri::State<AppState>,
 ) -> Result<bool, String> {
     let result = match state.storage().delete(&id) {
-        Ok(Some(audio_path)) => {
-            let path = PathBuf::from(audio_path);
-            if path.exists() {
+        Ok(Some(unused_audio)) => {
+            if let Some(path) = unused_audio.map(PathBuf::from)
+                && path.exists()
+            {
                 let _ = std::fs::remove_file(path);
             }
             Ok(true)
