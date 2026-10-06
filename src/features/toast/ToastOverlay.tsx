@@ -171,6 +171,7 @@ const ToastOverlay: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (!toast?.retryId) return;
+    const generation = toastGenerationRef.current;
     setIsRetrying(true);
     try {
       await invoke("retry_transcription", { id: toast.retryId });
@@ -178,7 +179,10 @@ const ToastOverlay: React.FC = () => {
       // (either success, error, or quota exceeded) which replaces this one
     } catch (err) {
       console.error("Retry failed:", err);
+      if (generation !== toastGenerationRef.current) return;
       setIsRetrying(false);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(dismiss, DURATIONS.error);
       setToast((prev) =>
         prev
           ? {
