@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
@@ -1109,6 +1111,9 @@ fn convert_with_ffmpeg(
         .arg(TARGET_SAMPLE_RATE.to_string())
         .args(["-ac", "1"])
         .arg(output);
+    // Without this, each run opens a console window from the windowed app.
+    #[cfg(target_os = "windows")]
+    command.creation_flags(crate::crypto::CREATE_NO_WINDOW);
 
     let mut child = command.spawn().map_err(|err| match err.kind() {
         ErrorKind::NotFound => anyhow!("FFmpeg not found on PATH."),
@@ -1229,7 +1234,10 @@ fn find_tool_in_path(name: &str) -> Option<PathBuf> {
 
 pub(crate) fn probe_media_duration_ms(path: &Path) -> Option<u64> {
     if let Some(ffprobe) = find_tool_in_path("ffprobe") {
-        let output = Command::new(ffprobe)
+        let mut command = Command::new(ffprobe);
+        #[cfg(target_os = "windows")]
+        command.creation_flags(crate::crypto::CREATE_NO_WINDOW);
+        let output = command
             .arg("-v")
             .arg("error")
             .arg("-show_entries")
