@@ -740,6 +740,43 @@ pub fn run() {
 }
 
 #[cfg(test)]
+mod share_image_tests {
+    use super::{PNG_SIGNATURE, check_share_image};
+    use std::path::Path;
+
+    fn png() -> Vec<u8> {
+        [PNG_SIGNATURE, b"rest"].concat()
+    }
+
+    #[test]
+    fn accepts_png_bytes_at_an_absolute_png_path() {
+        let path = std::env::temp_dir().join("glimpse-share.PNG");
+        assert!(check_share_image(&path, &png()).is_ok());
+    }
+
+    #[test]
+    fn rejects_paths_that_are_not_png_files() {
+        let home = std::env::temp_dir();
+        for path in [
+            home.join(".zshrc"),
+            home.join("Library/LaunchAgents/evil.plist"),
+            home.join("share.png.command"),
+            home.join("noext"),
+        ] {
+            assert!(check_share_image(&path, &png()).is_err(), "{path:?}");
+        }
+        assert!(check_share_image(Path::new("relative.png"), &png()).is_err());
+    }
+
+    #[test]
+    fn rejects_bytes_that_are_not_png() {
+        let path = std::env::temp_dir().join("glimpse-share.png");
+        assert!(check_share_image(&path, b"#!/bin/sh\nrm -rf ~\n").is_err());
+        assert!(check_share_image(&path, &[]).is_err());
+    }
+}
+
+#[cfg(test)]
 mod cli_tests {
     use super::{cli_help_requested, is_top_level_help, normalized_integration_args};
     use std::ffi::OsString;
@@ -1897,7 +1934,26 @@ fn get_today_dictation_stats(
 
 #[tauri::command]
 fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
+    check_share_image(std::path::Path::new(&path), &bytes)?;
     std::fs::write(&path, bytes).map_err(|err| format!("Failed to save image: {err}"))
+}
+
+const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
+
+/// The save dialog always yields a `.png` path, so anything else means the
+/// webview is asking to write somewhere it shouldn't, like a shell profile.
+fn check_share_image(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    let is_png_path = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("png"));
+    if !path.is_absolute() || !is_png_path {
+        return Err("Share images can only be saved as .png files".to_string());
+    }
+    if !bytes.starts_with(PNG_SIGNATURE) {
+        return Err("Share image is not a PNG".to_string());
+    }
+    Ok(())
 }
 
 #[tauri::command]
