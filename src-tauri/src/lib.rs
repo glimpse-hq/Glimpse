@@ -1497,7 +1497,9 @@ fn complete_onboarding(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
-    core::settings::complete_onboarding(&app, &state, first_dictation)
+    core::settings::complete_onboarding(&app, &state, first_dictation)?;
+    speech::install_diarizer_in_background(&app);
+    Ok(())
 }
 
 #[tauri::command]

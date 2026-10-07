@@ -10,6 +10,8 @@
 - When Glimpse can't paste because Accessibility is off, your text stays on the clipboard and Glimpse tells you, instead of the dictation disappearing.
 - Home shows your dictation shortcut on days you haven't dictated yet.
 - Setup now marks the model that fits your languages as Recommended, instead of calling Whisper Turbo the accurate one.
+- Setup downloads the speaker detection model for you, so Library transcripts show who said what without a trip to Settings.
+- In setup, you can click anywhere on a permission row to allow it, not just the link.
 - Glimpse works better with a keyboard and screen readers. Menus, dropdowns and dialogs respond to the arrow keys and Escape and keep focus where it belongs, buttons that only appeared on hover show up when focused, and recording, downloads, errors and toasts are read aloud.
 - Dim text in dark mode is easier to read, and the pill and toasts follow Reduce Motion.
 - The Library stays smoother while items transcribe, and reading another app's history to import no longer freezes Glimpse.
@@ -37,6 +39,7 @@
 - On Windows, stopping with Ctrl+Shift+Space no longer sends Ctrl+Shift+C, which opened developer tools in Chrome and Edge.
 - On Windows, importing files no longer flashes a black window, imports no longer leave copies of other apps' history in your temp folder, the `glimpse` command works for user names with accents, and a microphone plugged in after launch shows up in Settings.
 - The FAQ no longer tells Windows users their data stays on their Mac.
+- Buying a license during setup now shows it as active right away, instead of only after you skip ahead.
 - A microphone or model picked from the menu bar is no longer undone by a Settings save.
 - When a shortcut can't be set, the rest of your settings still apply and Glimpse says which part failed.
 - A license check that was already running no longer undoes a key you just activated or removed.

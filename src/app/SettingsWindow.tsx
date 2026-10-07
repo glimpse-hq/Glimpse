@@ -69,6 +69,11 @@ function QuerySyncBridge() {
     register<LicenseState>("license:changed", (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);
     });
+    // The backend may have just activated the key from the link. Onboarding
+    // has no Home mounted to pick that up.
+    register("license:checkout-returned", () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
+    });
     register("update:available", () => {
       queryClient.invalidateQueries({ queryKey: updateKeys.status() });
     });

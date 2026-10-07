@@ -98,6 +98,22 @@ fn current_diarizer_path(models_dir: &std::path::Path) -> Option<PathBuf> {
     manager.resolve(&spec).ok().map(|resolved| resolved.path)
 }
 
+/// Speaker detection is hard to find in Settings, so new installs get the
+/// diarizer in the background once setup is done.
+pub(crate) fn install_diarizer_in_background(app: &AppHandle<AppRuntime>) {
+    if installed_diarizer_path(app).is_some() {
+        return;
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(err) =
+            install::download_model_now(app, catalog::DIARIZER_MODEL.into(), Some(false)).await
+        {
+            tracing::warn!("[speech] speaker model download failed: {err}");
+        }
+    });
+}
+
 /// People who installed the Sortformer v2.1 diarizer chose speaker detection,
 /// so download its replacement in the background, then remove the old one.
 pub(crate) fn upgrade_retired_diarizer(app: &AppHandle<AppRuntime>) {

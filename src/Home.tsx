@@ -59,7 +59,7 @@ import {
   useLicenseGate,
   useLicenseState,
 } from "./features/license/queries";
-import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { useIsFetching } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings } from "./features/settings/queries";
@@ -156,7 +156,6 @@ type HomeProps = {
 
 const Home = ({ onReady }: HomeProps) => {
   const { t } = useLingui();
-  const queryClient = useQueryClient();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // The nav animates when it swaps, not when the window first opens.
   const [navSwapped, setNavSwapped] = useState(false);
@@ -512,8 +511,7 @@ const Home = ({ onReady }: HomeProps) => {
       .catch(() => {});
 
     listen("license:checkout-returned", () => {
-      // The backend may have just activated the key from the link.
-      void queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
+      // QuerySyncBridge refetches the license state.
       setAccountSource("checkout_return");
       setSettingsTab("account");
       setIsSettingsOpen(true);
@@ -539,7 +537,7 @@ const Home = ({ onReady }: HomeProps) => {
       unlistenOpenImport?.();
       unlistenLicenseReturn?.();
     };
-  }, [queryClient]);
+  }, []);
 
   useClickOutside(
     supportMenuRef,

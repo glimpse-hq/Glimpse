@@ -130,26 +130,46 @@ function PermissionRow({
   actionLabel: string;
   onRequest: () => void;
 }) {
-  return (
-    <div className="flex items-center gap-4 py-4 text-left">
+  const content = (
+    <>
       <StatusDot granted={granted} checking={checking} />
 
       <div className="min-w-0 flex-1">
-        <h3 className="ui-text-body-lg-strong text-content-primary">{title}</h3>
-        <p className="mt-0.5 ui-text-body-sm text-content-muted">{body}</p>
+        <span className="block ui-text-body-lg-strong text-content-primary">
+          {title}
+        </span>
+        <span className="mt-0.5 block ui-text-body-sm text-content-muted">
+          {body}
+        </span>
       </div>
+    </>
+  );
 
-      {!granted && (
-        <button
-          type="button"
-          onClick={onRequest}
-          disabled={checking}
-          className="shrink-0 ui-text-body-sm-strong ui-color-cloud underline-offset-4 transition-colors hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {actionLabel}
-        </button>
-      )}
-    </div>
+  if (granted) {
+    return (
+      <div className="flex w-full items-center gap-4 py-4 text-left">
+        {content}
+      </div>
+    );
+  }
+
+  // The whole row is the target, so a click on the dot or the title works too.
+  return (
+    <button
+      type="button"
+      onClick={onRequest}
+      disabled={checking}
+      className="group flex w-full items-center gap-4 py-4 text-left disabled:cursor-default"
+    >
+      {content}
+      <span
+        className={`shrink-0 ui-text-body-sm-strong ui-color-cloud underline-offset-4 group-hover:underline ${
+          checking ? "opacity-50" : ""
+        }`}
+      >
+        {actionLabel}
+      </span>
+    </button>
   );
 }
 
