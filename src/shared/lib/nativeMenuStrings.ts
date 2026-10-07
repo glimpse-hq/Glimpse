@@ -200,6 +200,10 @@ export const NATIVE_MENU_STRINGS = [
   }),
 
   msg({
+    id: "native.toast.model_switched",
+    message: "Glimpse now uses {model} for dictation.",
+  }),
+  msg({
     id: "native.toast.speaker_model_upgraded",
     message:
       "Speaker detection now uses a new model that tells people apart more accurately.",

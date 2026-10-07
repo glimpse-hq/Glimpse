@@ -17,9 +17,12 @@ pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
 pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
-/// Model directory and file of the Sortformer v2.1 diarizer that Nemotron-3 replaced.
-pub const RETIRED_DIARIZER_MODEL: &str = "sortformer_4spk_v2_1_q8";
-pub const RETIRED_DIARIZER_FILE: &str = "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf";
+/// (directory, file) of speaker models earlier versions installed. Each keeps
+/// working until `DIARIZER_MODEL` is installed, and is then removed.
+pub const RETIRED_DIARIZERS: &[(&str, &str)] = &[(
+    "sortformer_4spk_v2_1_q8",
+    "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf",
+)];
 
 pub fn is_legacy_category(category: &str) -> bool {
     category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)
@@ -1050,6 +1053,21 @@ pub fn successor_of(model: &str) -> Option<&'static str> {
         .map(|manifest| manifest.id)
 }
 
+pub fn is_recommended(settings: &UserSettings) -> bool {
+    settings.local_model == recommended_model(&user_languages(settings))
+}
+
+/// The model to move to: the recommendation on Automatic, otherwise a
+/// retiring model's successor.
+pub fn model_upgrade_target(settings: &UserSettings) -> Option<&'static str> {
+    let target = if settings.local_model_auto {
+        Some(recommended_model(&user_languages(settings)))
+    } else {
+        successor_of(&settings.local_model)
+    };
+    target.filter(|target| *target != settings.local_model)
+}
+
 #[derive(Debug, Serialize)]
 pub struct ModelRecommendation {
     pub key: &'static str,
@@ -1472,6 +1490,34 @@ mod tests {
     }
 
     #[test]
+    fn automatic_moves_to_a_model_for_the_language_and_pinned_stays() {
+        let ja = langs(&["ja"]);
+        let start = MODEL_MANIFESTS
+            .iter()
+            .find(|manifest| {
+                !supported_languages(manifest).is_empty()
+                    && covers(manifest, &ja) == 0
+                    && successor_of(manifest.id).is_none()
+            })
+            .expect("a model without Japanese");
+        let mut settings = UserSettings {
+            language: "ja".to_string(),
+            local_model: start.id.to_string(),
+            ..UserSettings::default()
+        };
+
+        settings.local_model_auto = false;
+        assert_eq!(model_upgrade_target(&settings), None);
+
+        settings.local_model_auto = true;
+        let target = model_upgrade_target(&settings).expect("Automatic should move");
+        assert_eq!(covers(definition(target).unwrap(), &ja), 1);
+
+        settings.local_model = target.to_string();
+        assert_eq!(model_upgrade_target(&settings), None);
+    }
+
+    #[test]
     fn parakeet_gguf_has_platform_appropriate_packages() {
         let full = install_spec("parakeet_tdt_v3_gguf", false).unwrap();
         let ane = install_spec("parakeet_tdt_v3_gguf", true).unwrap();
@@ -1553,7 +1599,9 @@ mod tests {
             installable_definition(DIARIZER_MODEL).unwrap().id,
             DIARIZER_MODEL
         );
-        assert!(installable_definition(RETIRED_DIARIZER_MODEL).is_none());
+        for (dir, _) in RETIRED_DIARIZERS {
+            assert!(installable_definition(dir).is_none());
+        }
     }
 
     #[test]

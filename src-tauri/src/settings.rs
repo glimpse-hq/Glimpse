@@ -28,6 +28,7 @@ const KEY_TOGGLE_ENABLED: &str = "toggle_enabled";
 const KEY_SHORTCUT_BINDINGS: &str = "shortcut_bindings";
 const KEY_TRANSCRIPTION_MODE: &str = "transcription_mode";
 const KEY_LOCAL_MODEL: &str = "local_model";
+const KEY_LOCAL_MODEL_AUTO: &str = "local_model_auto";
 const KEY_REMOTE_SPEECH_ENABLED: &str = "remote_speech_enabled";
 const KEY_REMOTE_SPEECH_PROVIDER: &str = "remote_speech_provider";
 const KEY_REMOTE_SPEECH_ENDPOINT: &str = "remote_speech_endpoint";
@@ -140,6 +141,9 @@ pub struct UserSettings {
     pub transcription_mode: TranscriptionMode,
     #[serde(default = "default_local_model")]
     pub local_model: String,
+    /// Follows the recommended model for the user's languages.
+    #[serde(default = "default_true")]
+    pub local_model_auto: bool,
     #[serde(default)]
     pub remote_speech_enabled: bool,
     #[serde(default = "default_remote_speech_provider")]
@@ -445,6 +449,7 @@ impl Default for UserSettings {
             shortcut_bindings: default_shortcut_bindings(),
             transcription_mode: default_transcription_mode(),
             local_model: default_local_model(),
+            local_model_auto: true,
             remote_speech_enabled: false,
             remote_speech_provider: default_remote_speech_provider(),
             remote_speech_endpoint: default_remote_speech_endpoint(),
@@ -647,6 +652,16 @@ fn default_llm_provider() -> String {
     "none".to_string()
 }
 
+impl UserSettings {
+    /// A model the user picked. Picking another one turns Automatic off.
+    pub fn choose_local_model(&mut self, model: String) {
+        if self.local_model != model {
+            self.local_model_auto = false;
+        }
+        self.local_model = model;
+    }
+}
+
 pub fn default_local_model() -> String {
     let languages: Vec<String> = crate::native_i18n::system_language().into_iter().collect();
     crate::speech::catalog::recommended_model(&languages).to_string()
@@ -829,6 +844,7 @@ impl SettingsStore {
         let encrypted_remote_speech_api_key: String;
         let encrypted_local_api_key: String;
         let theme_mode_exists: bool;
+        let local_model_auto: Option<bool>;
         let unreadable_keys;
         {
             let conn = self.conn.lock();
@@ -856,6 +872,7 @@ impl SettingsStore {
             settings.transcription_mode =
                 loader.value(KEY_TRANSCRIPTION_MODE, settings.transcription_mode.clone())?;
             settings.local_model = loader.value(KEY_LOCAL_MODEL, settings.local_model.clone())?;
+            local_model_auto = loader.optional::<bool>(KEY_LOCAL_MODEL_AUTO)?;
             settings.remote_speech_enabled =
                 loader.value(KEY_REMOTE_SPEECH_ENABLED, settings.remote_speech_enabled)?;
             settings.remote_speech_provider = loader.value(
@@ -1015,6 +1032,13 @@ impl SettingsStore {
             should_persist = true;
         }
 
+        // Settings from before Automatic follow the recommendation only if
+        // they're already on it, so upgrading switches nobody.
+        settings.local_model_auto = local_model_auto.unwrap_or_else(|| {
+            should_persist = true;
+            crate::speech::catalog::is_recommended(&settings)
+        });
+
         if matches!(settings.transcription_mode, TranscriptionMode::Cloud) {
             settings.transcription_mode = TranscriptionMode::Local;
             should_persist = true;
@@ -1135,6 +1159,7 @@ impl SettingsStore {
             (KEY_SHORTCUT_BINDINGS, json(&settings.shortcut_bindings)?),
             (KEY_TRANSCRIPTION_MODE, json(&settings.transcription_mode)?),
             (KEY_LOCAL_MODEL, json(&settings.local_model)?),
+            (KEY_LOCAL_MODEL_AUTO, json(&settings.local_model_auto)?),
             (
                 KEY_REMOTE_SPEECH_ENABLED,
                 json(&settings.remote_speech_enabled)?,
@@ -1607,6 +1632,56 @@ mod tests {
             raw_setting(&store, KEY_LOCAL_MODEL),
             Some(serde_json::to_string(&default_local_model()).unwrap())
         );
+    }
+
+    #[test]
+    fn upgrading_pins_a_picked_model_and_remembers_the_choice() {
+        let store = test_store();
+        store.load().expect("first load");
+        // Settings saved by a version from before Automatic.
+        store
+            .conn
+            .lock()
+            .execute(
+                "DELETE FROM settings WHERE key = ?1",
+                [KEY_LOCAL_MODEL_AUTO],
+            )
+            .expect("delete");
+        write_setting(&store, KEY_LOCAL_MODEL, &"whisper_small_q8");
+
+        let loaded = store.load().expect("load");
+        assert!(!loaded.local_model_auto);
+        assert_eq!(
+            raw_setting(&store, KEY_LOCAL_MODEL_AUTO).as_deref(),
+            Some("false")
+        );
+    }
+
+    #[test]
+    fn a_saved_choice_is_not_recomputed_on_load() {
+        let store = test_store();
+        let recommended = default_local_model();
+        write_setting(&store, KEY_LOCAL_MODEL, &recommended);
+        write_setting(&store, KEY_LOCAL_MODEL_AUTO, &false);
+        assert!(!store.load().expect("load").local_model_auto);
+
+        write_setting(&store, KEY_LOCAL_MODEL, &"whisper_small_q8");
+        write_setting(&store, KEY_LOCAL_MODEL_AUTO, &true);
+        assert!(store.load().expect("load").local_model_auto);
+    }
+
+    #[test]
+    fn saving_the_same_model_keeps_automatic() {
+        let mut settings = UserSettings::default();
+        settings.choose_local_model(settings.local_model.clone());
+        assert!(settings.local_model_auto);
+        settings.choose_local_model(format!("{}-other", settings.local_model));
+        assert!(!settings.local_model_auto);
+    }
+
+    #[test]
+    fn a_new_install_starts_on_automatic() {
+        assert!(test_store().load().expect("load").local_model_auto);
     }
 
     #[test]

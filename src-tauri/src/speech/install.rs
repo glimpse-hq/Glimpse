@@ -447,6 +447,28 @@ pub async fn download_model_now(
     Ok(map_status(status, &manager))
 }
 
+/// Downloads `model` and checks every file, since a cancelled download also
+/// returns Ok.
+pub(crate) async fn download_verified(
+    app: &AppHandle<AppRuntime>,
+    models_dir: &Path,
+    model: &str,
+) -> bool {
+    if let Err(err) = download_model_now(app.clone(), model.to_string(), None).await {
+        tracing::warn!("[speech] {model} download failed: {err}");
+        return false;
+    }
+    let (dir, key) = (models_dir.to_path_buf(), model.to_string());
+    let verified =
+        tauri::async_runtime::spawn_blocking(move || verify_model_installed_at(&dir, &key))
+            .await
+            .unwrap_or(false);
+    if !verified {
+        tracing::warn!("[speech] {model} download did not finish");
+    }
+    verified
+}
+
 /// Free space a download must leave behind, so a model never fills the disk.
 const DISK_HEADROOM_BYTES: u64 = 5 * 1024 * 1024 * 1024;
 

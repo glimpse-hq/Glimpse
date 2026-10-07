@@ -153,7 +153,7 @@ pub fn apply_import(
                     .map(|m| m.key)
                     .collect();
                 if let Some(key) = resolve_glimpse_model(family, &keys) {
-                    settings.local_model = key.clone();
+                    settings.choose_local_model(key.clone());
                     settings.transcription_mode = crate::settings::TranscriptionMode::Local;
                     result.model_key = Some(key);
                 } else {

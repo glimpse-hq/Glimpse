@@ -227,6 +227,7 @@ pub(crate) fn complete_onboarding(
 ) -> Result<(), String> {
     let mut settings = state.current_settings_unmasked();
     settings.onboarding_completed = true;
+    settings.local_model_auto = crate::speech::catalog::is_recommended(&settings);
     let next = state
         .persist_settings(settings)
         .map_err(|err| err.to_string())?;
@@ -315,7 +316,7 @@ pub(crate) fn update_settings(
             .unwrap_or(args.toggle_shortcut);
         next.toggle_enabled = args.toggle_enabled;
         next.transcription_mode = args.transcription_mode;
-        next.local_model = args.local_model;
+        next.choose_local_model(args.local_model);
         next.remote_speech_enabled = args.remote_speech_enabled;
         next.remote_speech_provider = args.remote_speech_provider;
         next.remote_speech_endpoint = args.remote_speech_endpoint.trim().to_string();

@@ -428,7 +428,8 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
-            speech::upgrade_retired_diarizer(handle);
+            speech::upgrade_retired_diarizers(handle);
+            speech::follow_model_upgrade(handle);
             speech::remove_whisper_cpp_files(handle);
             speech::compile_pending_ane_encoders(handle);
             speech::upgrade_parakeet_encoder(handle);

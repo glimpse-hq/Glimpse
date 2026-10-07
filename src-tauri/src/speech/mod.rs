@@ -74,20 +74,19 @@ where
     }
 }
 
-/// The speaker diarization model, once fully downloaded.
-/// Nemotron-3 once downloaded, otherwise the Sortformer v2.1 diarizer a
-/// previous version installed, which still works until the upgrade lands.
+/// The current speaker model once fully downloaded, else a retired one that
+/// still works until the upgrade lands.
 pub(crate) fn installed_diarizer_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
     let models_dir = install::model_cache_dir(app).ok()?;
     current_diarizer_path(&models_dir).or_else(|| {
-        let retired = models_dir
-            .join(catalog::RETIRED_DIARIZER_MODEL)
-            .join(catalog::RETIRED_DIARIZER_FILE);
-        retired.is_file().then_some(retired)
+        catalog::RETIRED_DIARIZERS
+            .iter()
+            .map(|(dir, file)| models_dir.join(dir).join(file))
+            .find(|path| path.is_file())
     })
 }
 
-/// The Nemotron-3 diarizer, once fully downloaded. Sortformer v2.1 has no live mode.
+/// Only the current speaker model runs live; retired ones may have no live mode.
 pub(crate) fn live_diarizer_path(app: &AppHandle<AppRuntime>) -> Option<PathBuf> {
     current_diarizer_path(&install::model_cache_dir(app).ok()?)
 }
@@ -114,14 +113,18 @@ pub(crate) fn install_diarizer_in_background(app: &AppHandle<AppRuntime>) {
     });
 }
 
-/// People who installed the Sortformer v2.1 diarizer chose speaker detection,
-/// so download its replacement in the background, then remove the old one.
-pub(crate) fn upgrade_retired_diarizer(app: &AppHandle<AppRuntime>) {
+/// People who installed a retired speaker model chose speaker detection, so
+/// download the current one in the background, then remove the old ones.
+pub(crate) fn upgrade_retired_diarizers(app: &AppHandle<AppRuntime>) {
     let Ok(models_dir) = install::model_cache_dir(app) else {
         return;
     };
-    let retired = models_dir.join(catalog::RETIRED_DIARIZER_MODEL);
-    if !retired.exists() {
+    let retired: Vec<PathBuf> = catalog::RETIRED_DIARIZERS
+        .iter()
+        .map(|(dir, _)| models_dir.join(dir))
+        .filter(|dir| dir.exists())
+        .collect();
+    if retired.is_empty() {
         return;
     }
     let app = app.clone();
@@ -135,17 +138,21 @@ pub(crate) fn upgrade_retired_diarizer(app: &AppHandle<AppRuntime>) {
             )
             .await
             {
-                tracing::warn!("[speech] speaker model upgrade failed, keeping Sortformer: {err}");
+                tracing::warn!("[speech] speaker model upgrade failed, keeping the old one: {err}");
                 return;
             }
-            // A cancelled download also returns Ok, so only a verified install replaces Sortformer.
+            // A cancelled download also returns Ok, so only a verified install replaces it.
             if current_diarizer_path(&models_dir).is_none() {
-                tracing::warn!("[speech] speaker model upgrade did not finish, keeping Sortformer");
+                tracing::warn!(
+                    "[speech] speaker model upgrade did not finish, keeping the old one"
+                );
                 return;
             }
         }
-        if let Err(err) = crate::platform::remove_dir_all_compat(&retired) {
-            tracing::warn!("[speech] could not remove {}: {err}", retired.display());
+        for dir in retired {
+            if let Err(err) = crate::platform::remove_dir_all_compat(&dir) {
+                tracing::warn!("[speech] could not remove {}: {err}", dir.display());
+            }
         }
         if upgraded {
             crate::toast::show(
@@ -154,6 +161,66 @@ pub(crate) fn upgrade_retired_diarizer(app: &AppHandle<AppRuntime>) {
                 None,
                 &crate::toast::native(&app, "native.toast.speaker_model_upgraded"),
             );
+        }
+    });
+}
+
+/// Moves the user to [`catalog::model_upgrade_target`] in the background. The
+/// current model keeps working until the new one is installed and verified.
+pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
+    let settings = app.state::<AppState>().current_settings();
+    if !settings.onboarding_completed {
+        return;
+    }
+    let Some(target) = catalog::model_upgrade_target(&settings) else {
+        return;
+    };
+    let Ok(models_dir) = install::model_cache_dir(app) else {
+        return;
+    };
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if !install::check_model_installed_at(&models_dir, target)
+            && !install::download_verified(&app, &models_dir, target).await
+        {
+            return;
+        }
+
+        let state = app.state::<AppState>();
+        // Loading during a Neural Engine compile would compile the encoder twice.
+        let compiling = ane_compile_marker(&models_dir, target);
+        while state.pill().status() != crate::pill::PillStatus::Idle
+            || !state.is_backend_idle()
+            || compiling.as_ref().is_some_and(|marker| marker.is_file())
+        {
+            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+        }
+
+        let mut settings = state.current_settings_unmasked();
+        // The user may have picked a model while this downloaded.
+        if catalog::model_upgrade_target(&settings) != Some(target) {
+            return;
+        }
+        let previous = std::mem::replace(&mut settings.local_model, target.to_string());
+        let Some(saved) = menu::persist_menu_settings(&app, settings) else {
+            return;
+        };
+        crate::tray::refresh_menus(&app, &saved);
+        warm_model(&app, target.to_string());
+        crate::toast::show(
+            &app,
+            "success",
+            None,
+            &crate::toast::native_format(
+                &app,
+                "native.toast.model_switched",
+                &[("model", &catalog::model_label(target))],
+            ),
+        );
+        if previous != saved.local_api_model
+            && let Err(err) = install::delete_model(app.clone(), previous.clone()).await
+        {
+            tracing::warn!("[speech] could not remove {previous}: {err}");
         }
     });
 }
@@ -308,8 +375,11 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
     let is_old =
         move |manifest: &Path| unpacked_bytes(manifest).is_some_and(|bytes| bytes != expected);
     let staging = model_dir.join(".encoder-upgrade");
+    let settings = app.state::<AppState>().current_settings();
+    // A model about to be replaced is deleted, staging directory included.
     if !is_old(&installed_manifest)
-        || app.state::<AppState>().current_settings().local_model != MODEL
+        || settings.local_model != MODEL
+        || catalog::model_upgrade_target(&settings).is_some()
     {
         // A partial download from an upgrade that no longer applies.
         let _ = crate::platform::remove_dir_all_compat(&staging);
@@ -448,24 +518,9 @@ pub(crate) fn replace_onnx_models(app: &AppHandle<AppRuntime>) {
             if *replacement == selected
                 && onnx_installed(&models_dir, id, files)
                 && !install::check_model_installed_at(&models_dir, replacement)
+                && !install::download_verified(&app, &models_dir, replacement).await
             {
-                if let Err(err) =
-                    install::download_model_now(app.clone(), replacement.to_string(), None).await
-                {
-                    tracing::warn!("[speech] {replacement} download failed, keeping ONNX: {err}");
-                    continue;
-                }
-                let dir = models_dir.clone();
-                let verified = tauri::async_runtime::spawn_blocking(move || {
-                    install::verify_model_installed_at(&dir, replacement)
-                })
-                .await
-                .unwrap_or(false);
-                // A cancelled download also returns Ok.
-                if !verified {
-                    tracing::warn!("[speech] {replacement} is not installed, keeping ONNX");
-                    continue;
-                }
+                continue;
             }
             for path in leftovers {
                 if let Err(err) = std::fs::remove_file(&path) {
