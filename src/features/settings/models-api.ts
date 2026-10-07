@@ -11,6 +11,15 @@ export async function listModels(): Promise<ModelInfo[]> {
   return invoke<ModelInfo[]>("list_models");
 }
 
+export type ModelRecommendation = {
+  key: string;
+  recommended: string[];
+};
+
+export async function getModelRecommendation(): Promise<ModelRecommendation> {
+  return invoke<ModelRecommendation>("model_recommendation");
+}
+
 export async function listSpeechModels(): Promise<SpeechModel[]> {
   return invoke<SpeechModel[]>("list_speech_models");
 }

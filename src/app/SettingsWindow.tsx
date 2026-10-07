@@ -65,6 +65,8 @@ function QuerySyncBridge() {
     register<StoredSettings>("settings:changed", (settings) => {
       queryClient.setQueryData(settingsKeys.detail(), settings);
       queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+      // The app and dictation languages feed the recommendation.
+      queryClient.invalidateQueries({ queryKey: modelKeys.recommendation() });
     });
     register<LicenseState>("license:changed", (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);

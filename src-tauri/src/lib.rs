@@ -57,9 +57,7 @@ use pill::PillController;
 use recorder::{CompletedRecording, RecorderManager, RecordingRejectionReason, validate_recording};
 use reqwest::Client;
 use serde::Serialize;
-use settings::{
-    RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings, default_local_model,
-};
+use settings::{RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings};
 use tauri::Emitter;
 use tauri::Listener;
 use tauri::async_runtime;
@@ -423,16 +421,10 @@ pub fn run() {
             }
             analytics::set_crash_phase("settings_load");
             let settings_store = Arc::new(SettingsStore::new(handle)?);
-            let mut settings = settings_store.load().unwrap_or_else(|err| {
+            let settings = settings_store.load().unwrap_or_else(|err| {
                 tracing::error!("Failed to load settings, starting with defaults: {err:#}");
                 UserSettings::default()
             });
-            if model_manager::definition(&settings.local_model).is_none() {
-                settings.local_model = default_local_model();
-                if let Err(err) = settings_store.save(&settings) {
-                    tracing::error!("Failed to persist default local model: {err}");
-                }
-            }
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
@@ -667,6 +659,7 @@ pub fn run() {
             open_llm_cleanup_settings,
             open_ffmpeg_install,
             complete_onboarding,
+            model_recommendation,
             start_hold_recording,
             pill::stop_hold_recording,
             cancel_recording,
@@ -1500,6 +1493,11 @@ fn complete_onboarding(
     core::settings::complete_onboarding(&app, &state, first_dictation)?;
     speech::install_diarizer_in_background(&app);
     Ok(())
+}
+
+#[tauri::command]
+fn model_recommendation(state: tauri::State<AppState>) -> speech::catalog::ModelRecommendation {
+    speech::catalog::model_recommendation(&state.current_settings())
 }
 
 #[tauri::command]

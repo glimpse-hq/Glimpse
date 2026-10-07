@@ -20,8 +20,10 @@ import { checkAccessibilityPermission, getSettings } from "../settings/api";
 import {
   modelKeys,
   useModelCatalog,
+  useModelRecommendation,
   useModelStatuses,
 } from "../settings/models-queries";
+import type { ModelRecommendation } from "../settings/models-api";
 import { onboardingMachine, getSteps } from "./machine";
 import { getDefaultShortcuts, getOnboardingPlatform } from "./platform";
 import { useImportableApps } from "../import/queries";
@@ -47,14 +49,6 @@ import type {
   UpdateSettingsResult,
 } from "../../types";
 
-// The stock default; Parakeet first, Whisper for languages it doesn't cover.
-const DEFAULT_MODEL_KEY = "parakeet_tdt_v3_gguf";
-
-const ONBOARDING_MODEL_SLOTS = [
-  [DEFAULT_MODEL_KEY],
-  ["whisper_large_v3_turbo_q8"],
-] as const;
-
 const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
 
 const onboardingPermissionKeys = {
@@ -65,66 +59,33 @@ const onboardingPermissionKeys = {
 const downloadableModels = (models: ModelInfo[]) =>
   models.filter((model) => model.downloadable);
 
-const pickOnboardingModels = (models: ModelInfo[]) => {
+const pickOnboardingModels = (models: ModelInfo[], recommended: string[]) => {
   const available = downloadableModels(models);
   const byKey = (key: string) =>
     available.find((model) => model.key === key) ?? null;
 
   return [
-    ...ONBOARDING_MODEL_SLOTS.map(
-      (keys) => keys.map(byKey).find(Boolean) ?? null,
-    ),
+    ...recommended.map(byKey),
     available.find(isBuiltInModel) ?? byKey(ONBOARDING_COMPACT_MODEL_KEY),
   ].filter((model): model is ModelInfo => Boolean(model));
-};
-
-const baseLanguage = (locale: string) => locale.split(/[-_]/)[0].toLowerCase();
-
-// The system's first language, plus the app's language when set by hand.
-const userLanguages = (appLocale: string) => {
-  const system = navigator.languages?.[0] ?? navigator.language;
-  const locales = [system, appLocale === "system" ? null : appLocale];
-  return [
-    ...new Set(
-      locales.filter((locale): locale is string => !!locale).map(baseLanguage),
-    ),
-  ];
-};
-
-const supportsLanguages = (model: ModelInfo, languages: string[]) =>
-  languages.every((language) =>
-    model.supported_languages.some(
-      (supported) => baseLanguage(supported.code) === language,
-    ),
-  );
-
-// Parakeet if it covers the user's languages, otherwise Whisper.
-const recommendOnboardingModel = (models: ModelInfo[], languages: string[]) => {
-  const picked = pickOnboardingModels(models);
-  // A language no model lists goes to the one with the widest coverage.
-  const fitting =
-    picked.find((model) => supportsLanguages(model, languages)) ??
-    [...picked].sort(
-      (a, b) => b.supported_languages.length - a.supported_languages.length,
-    )[0];
-  return fitting?.key ?? "";
 };
 
 const pickDefaultOnboardingModel = (
   models: ModelInfo[],
   persistedModel: string,
-  recommendedModel: string,
+  recommendation: ModelRecommendation | undefined,
 ) => {
   const available = downloadableModels(models);
-  // Anything but the stock default was picked on purpose.
+  // A default is always a recommended model, so anything else was picked on purpose.
   if (
     persistedModel &&
-    persistedModel !== DEFAULT_MODEL_KEY &&
+    recommendation &&
+    !recommendation.recommended.includes(persistedModel) &&
     available.some((model) => model.key === persistedModel)
   ) {
     return persistedModel;
   }
-  return recommendedModel || persistedModel;
+  return recommendation?.key || persistedModel;
 };
 
 const checkMicrophonePermission = () =>
@@ -271,19 +232,23 @@ export default function OnboardingScreen({
   }, [currentStep]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
+  const recommendationQuery = useModelRecommendation();
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
 
   const onboardingModelCatalog = useMemo(() => {
     const catalog = modelCatalogQuery.data ?? [];
-    const picked = pickOnboardingModels(catalog);
+    const picked = pickOnboardingModels(
+      catalog,
+      recommendationQuery.data?.recommended ?? [],
+    );
     const importedKey = ctx.localModelChoice;
     if (importedKey && !picked.some((model) => model.key === importedKey)) {
       const imported = catalog.find((model) => model.key === importedKey);
       if (imported) return [...picked, imported];
     }
     return picked;
-  }, [modelCatalogQuery.data, ctx.localModelChoice]);
+  }, [modelCatalogQuery.data, recommendationQuery.data, ctx.localModelChoice]);
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedSettings = settingsQuery.data;
 
@@ -297,17 +262,13 @@ export default function OnboardingScreen({
     });
   }, [persistedSettings, send]);
 
-  const languages = userLanguages(persistedSettings?.app_locale ?? "system");
-  const recommendedModel = recommendOnboardingModel(
-    modelCatalogQuery.data ?? [],
-    languages,
-  );
+  const recommendedModel = recommendationQuery.data?.key ?? "";
   const selectedModel =
     ctx.localModelChoice ||
     pickDefaultOnboardingModel(
       modelCatalogQuery.data ?? [],
       persistedLocalModel,
-      recommendedModel,
+      recommendationQuery.data,
     );
   const selectedModelInfo = useMemo(
     () =>
@@ -600,7 +561,9 @@ export default function OnboardingScreen({
     (accessibilityPermissionQuery.isPending ||
       isRequestingAccessibilityPermission);
   const isModelCatalogLoading =
-    modelCatalogQuery.isLoading || settingsQuery.isLoading;
+    modelCatalogQuery.isLoading ||
+    settingsQuery.isLoading ||
+    recommendationQuery.isLoading;
   const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleStartPractice = useCallback(async () => {

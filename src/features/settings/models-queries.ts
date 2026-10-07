@@ -15,6 +15,7 @@ export const modelKeys = {
   status: (model: string) => [...modelKeys.all, "status", model] as const,
   speech: () => [...modelKeys.all, "speech"] as const,
   cli: () => [...modelKeys.all, "cli"] as const,
+  recommendation: () => [...modelKeys.all, "recommendation"] as const,
 };
 
 // The speaker diarization model shares the catalog but never transcribes.
@@ -32,6 +33,13 @@ export function useModelCatalog(enabled: boolean = true) {
     queryFn: modelsApi.listModels,
     enabled,
     select: selectTranscriptionModels,
+  });
+}
+
+export function useModelRecommendation() {
+  return useQuery({
+    queryKey: modelKeys.recommendation(),
+    queryFn: modelsApi.getModelRecommendation,
   });
 }
 

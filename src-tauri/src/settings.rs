@@ -648,7 +648,8 @@ fn default_llm_provider() -> String {
 }
 
 pub fn default_local_model() -> String {
-    "parakeet_tdt_v3_gguf".to_string()
+    let languages: Vec<String> = crate::native_i18n::system_language().into_iter().collect();
+    crate::speech::catalog::recommended_model(&languages).to_string()
 }
 
 fn default_language() -> String {
@@ -1007,7 +1008,10 @@ impl SettingsStore {
         }
 
         if crate::model_manager::definition(&settings.local_model).is_none() {
-            settings.local_model = default_local_model();
+            use crate::speech::catalog::{recommended_model, successor_of, user_languages};
+            settings.local_model = successor_of(&settings.local_model)
+                .unwrap_or_else(|| recommended_model(&user_languages(&settings)))
+                .to_string();
             should_persist = true;
         }
 
@@ -1602,6 +1606,20 @@ mod tests {
         assert_eq!(
             raw_setting(&store, KEY_LOCAL_MODEL),
             Some(serde_json::to_string(&default_local_model()).unwrap())
+        );
+    }
+
+    #[test]
+    fn a_removed_model_is_replaced_by_one_that_speaks_the_dictation_language() {
+        let store = test_store();
+        write_setting(&store, KEY_LOCAL_MODEL, &"retired_model");
+        write_setting(&store, KEY_LANGUAGE, &"ja");
+
+        let loaded = store.load().expect("load");
+        let model = crate::speech::catalog::definition(&loaded.local_model).unwrap();
+        assert_eq!(
+            crate::speech::catalog::covers(model, &["ja".to_string()]),
+            1
         );
     }
 

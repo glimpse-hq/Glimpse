@@ -83,10 +83,24 @@ pub struct LocalModelManifest {
     pub category: &'static str,
     pub tags: &'static [&'static str],
     pub engine: LocalModelEngine,
+    pub languages: Languages,
     pub family: &'static str,
     pub variant: &'static str,
     files: &'static [CatalogFile],
     pub capabilities: &'static [&'static str],
+}
+
+/// Which language list a model supports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Languages {
+    /// The diarizer, which doesn't transcribe.
+    None,
+    English,
+    ParakeetV3,
+    Nemotron35,
+    Qwen3,
+    Whisper,
+    Apple,
 }
 
 const PARAKEET_UNIFIED_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
@@ -489,6 +503,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Fast"],
         category: "standard",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::ParakeetV3,
         variant: "Q8_0",
         files: PARAKEET_GGUF_FILES,
         capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
@@ -502,6 +517,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Built in"],
         category: "standard",
         engine: LocalModelEngine::Apple,
+        languages: Languages::Apple,
         variant: "System",
         files: &[],
         capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
@@ -514,6 +530,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Dictionary", "Multilingual"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "large-v3-turbo",
@@ -531,6 +548,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Fast"],
         category: "experimental",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::Qwen3,
         variant: "Q8_0",
         files: QWEN3_ASR_0_6B_FILES,
         capabilities: &[MODEL_CAPABILITY_DICTIONARY],
@@ -543,6 +561,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast", "Streaming"],
         category: "experimental",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::English,
         variant: "Q8_0",
         files: PARAKEET_UNIFIED_GGUF_FILES,
         capabilities: &[
@@ -559,6 +578,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Streaming"],
         category: "experimental",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::Nemotron35,
         variant: "Q8_0",
         files: NEMOTRON_35_STREAMING_GGUF_FILES,
         capabilities: &[
@@ -575,6 +595,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Streaming"],
         category: "legacy",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::English,
         variant: "Q8_0",
         files: NEMOTRON_STREAMING_EN_GGUF_FILES,
         capabilities: &[
@@ -591,6 +612,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
             "small",
@@ -608,6 +630,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::English,
         variant: "Q8_0",
         files: distil_whisper_files!(
             "Glimpse-Dictation/Distil-Whisper-Large-V3.5-gguf",
@@ -625,6 +648,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::English,
         variant: "Q8_0",
         files: distil_whisper_files!(
             "Glimpse-Dictation/Distil-Whisper-Medium.en-gguf",
@@ -642,6 +666,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::English,
         variant: "Q8_0",
         files: distil_whisper_files!(
             "Glimpse-Dictation/Distil-Whisper-Small.en-gguf",
@@ -659,6 +684,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
             "tiny",
@@ -676,6 +702,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "tiny",
@@ -693,6 +720,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "tiny",
@@ -710,6 +738,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
             "base",
@@ -727,6 +756,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "base",
@@ -744,6 +774,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "base",
@@ -761,6 +792,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "small",
@@ -778,6 +810,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "small",
@@ -795,6 +828,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_0",
         files: whisper_files!(
             "medium",
@@ -812,6 +846,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "medium",
@@ -829,6 +864,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "medium",
@@ -846,6 +882,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_0",
         // Measured more accurate and smaller than the Q5_K_M GGUF.
         files: &[CatalogFile {
@@ -864,6 +901,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "large-v3",
@@ -881,6 +919,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_0",
         files: whisper_files!(
             "large-v3-turbo",
@@ -898,6 +937,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "large-v3-turbo",
@@ -919,10 +959,109 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
     tags: &[],
     category: MODEL_CATEGORY_DIARIZATION,
     engine: LocalModelEngine::Transcribe,
+    languages: Languages::None,
     variant: "Q8_0",
     files: DIARIZER_FILES,
     capabilities: &[],
 };
+
+/// Automatic walks this in order and takes the first model that covers the
+/// user's languages. The first one usable here is also the stock default.
+pub const RECOMMENDED: &[&str] = &["parakeet_tdt_v3_gguf", "whisper_large_v3_turbo_q8"];
+
+/// (old, new): `old` is being retired in favor of `new`. Any line is safe to
+/// delete, since a stale model falls back to [`recommended_model`].
+pub const SUCCESSORS: &[(&str, &str)] = &[];
+
+fn usable_here(manifest: &LocalModelManifest) -> bool {
+    match manifest.engine {
+        LocalModelEngine::Apple => apple_engine_available(),
+        _ => is_downloadable(manifest),
+    }
+}
+
+fn base_language(code: &str) -> String {
+    code.split(['-', '_'])
+        .next()
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+}
+
+/// Base codes of the system's first language, the app language when set by
+/// hand, and the dictation language unless it is left to detection.
+pub(crate) fn user_languages(settings: &UserSettings) -> Vec<String> {
+    let app_locale = (settings.app_locale != "system").then_some(settings.app_locale.as_str());
+    let dictation = settings.language.trim();
+    let dictation =
+        (!dictation.is_empty() && !dictation.eq_ignore_ascii_case("auto")).then_some(dictation);
+    let mut languages: Vec<String> = Vec::new();
+    for code in crate::native_i18n::system_language().into_iter().chain(
+        [app_locale, dictation]
+            .into_iter()
+            .flatten()
+            .map(base_language),
+    ) {
+        if !languages.contains(&code) {
+            languages.push(code);
+        }
+    }
+    languages
+}
+
+pub(crate) fn covers(manifest: &LocalModelManifest, languages: &[String]) -> usize {
+    let supported: Vec<String> = supported_languages(manifest)
+        .iter()
+        .map(|language| base_language(&language.code))
+        .collect();
+    languages
+        .iter()
+        .filter(|language| supported.contains(language))
+        .count()
+}
+
+/// The first recommended model that covers all `languages`, else the one that
+/// covers the most.
+pub fn recommended_model(languages: &[String]) -> &'static str {
+    let candidates: Vec<&LocalModelManifest> = RECOMMENDED
+        .iter()
+        .filter_map(|id| definition(id))
+        .filter(|manifest| usable_here(manifest))
+        .collect();
+    candidates
+        .iter()
+        .find(|manifest| covers(manifest, languages) == languages.len())
+        // max_by_key keeps the last of equals, so walk backwards to prefer earlier entries.
+        .or_else(|| {
+            candidates
+                .iter()
+                .rev()
+                .max_by_key(|manifest| covers(manifest, languages))
+        })
+        .map(|manifest| manifest.id)
+        .unwrap_or(MODEL_MANIFESTS[0].id)
+}
+
+pub fn successor_of(model: &str) -> Option<&'static str> {
+    SUCCESSORS
+        .iter()
+        .find(|(old, _)| *old == model)
+        .and_then(|(_, new)| definition(new))
+        .filter(|manifest| usable_here(manifest))
+        .map(|manifest| manifest.id)
+}
+
+#[derive(Debug, Serialize)]
+pub struct ModelRecommendation {
+    pub key: &'static str,
+    pub recommended: &'static [&'static str],
+}
+
+pub fn model_recommendation(settings: &UserSettings) -> ModelRecommendation {
+    ModelRecommendation {
+        key: recommended_model(&user_languages(settings)),
+        recommended: RECOMMENDED,
+    }
+}
 
 pub fn local_manifests() -> &'static [LocalModelManifest] {
     MODEL_MANIFESTS
@@ -1022,35 +1161,15 @@ pub fn is_streaming_model(model_key: &str) -> bool {
     model_supports_capability(model_key, MODEL_CAPABILITY_STREAMING)
 }
 
-fn supports_only_english(manifest: &LocalModelManifest) -> bool {
-    manifest
-        .tags
-        .iter()
-        .any(|tag| tag.eq_ignore_ascii_case("English"))
-        && !manifest
-            .tags
-            .iter()
-            .any(|tag| tag.eq_ignore_ascii_case("Multilingual"))
-}
-
 fn supported_languages(manifest: &LocalModelManifest) -> Vec<SupportedLanguageInfo> {
-    if manifest.id == DIARIZER_MODEL {
-        return Vec::new();
-    }
-    if supports_only_english(manifest) {
-        return english_supported_languages();
-    }
-
-    match manifest.engine {
-        LocalModelEngine::Whisper => whisper_supported_languages(),
-        LocalModelEngine::Apple => apple_supported_languages(),
-        LocalModelEngine::Transcribe if manifest.id == "parakeet_tdt_v3_gguf" => {
-            parakeet_v3_supported_languages()
-        }
-        LocalModelEngine::Transcribe if manifest.id == "nemotron_35_streaming_multilingual" => {
-            nemotron_35_supported_languages()
-        }
-        LocalModelEngine::Transcribe => qwen3_asr_supported_languages(),
+    match manifest.languages {
+        Languages::None => Vec::new(),
+        Languages::English => english_supported_languages(),
+        Languages::ParakeetV3 => parakeet_v3_supported_languages(),
+        Languages::Nemotron35 => nemotron_35_supported_languages(),
+        Languages::Qwen3 => qwen3_asr_supported_languages(),
+        Languages::Whisper => whisper_supported_languages(),
+        Languages::Apple => apple_supported_languages(),
     }
 }
 
@@ -1305,6 +1424,53 @@ fn provider_display(provider: &str) -> String {
 mod tests {
     use super::*;
 
+    fn langs(codes: &[&str]) -> Vec<String> {
+        codes.iter().map(|code| code.to_string()).collect()
+    }
+
+    #[test]
+    fn recommendation_and_successor_lists_point_at_usable_models() {
+        for id in RECOMMENDED {
+            assert!(
+                definition(id).is_some_and(is_downloadable),
+                "RECOMMENDED lists {id}, which can't be downloaded"
+            );
+        }
+        for (old, new) in SUCCESSORS {
+            assert!(
+                definition(new).is_some_and(is_downloadable),
+                "{old} is replaced by {new}, which can't be downloaded"
+            );
+            assert!(
+                !SUCCESSORS.iter().any(|(other, _)| other == new),
+                "{new} is itself replaced; point {old} at the final model"
+            );
+        }
+    }
+
+    #[test]
+    fn automatic_prefers_earlier_models_and_speaks_the_language() {
+        let usable: Vec<_> = RECOMMENDED
+            .iter()
+            .filter_map(|id| definition(id))
+            .filter(|manifest| usable_here(manifest))
+            .collect();
+        for language in supported_languages(usable[0]) {
+            let code = langs(&[&base_language(&language.code)]);
+            assert_eq!(recommended_model(&code), usable[0].id, "{code:?}");
+        }
+        for manifest in &usable {
+            for language in supported_languages(manifest) {
+                let code = langs(&[&base_language(&language.code)]);
+                let picked = definition(recommended_model(&code)).unwrap();
+                assert_eq!(covers(picked, &code), 1, "{code:?}");
+            }
+        }
+        // Nothing covers Klingon, so the model that covers Japanese wins.
+        let picked = definition(recommended_model(&langs(&["ja", "tlh"]))).unwrap();
+        assert_eq!(covers(picked, &langs(&["ja"])), 1);
+    }
+
     #[test]
     fn parakeet_gguf_has_platform_appropriate_packages() {
         let full = install_spec("parakeet_tdt_v3_gguf", false).unwrap();
@@ -1339,6 +1505,7 @@ mod tests {
             category: MODEL_CATEGORY_LEGACY,
             tags: &[],
             engine: LocalModelEngine::Whisper,
+            languages: Languages::Whisper,
             family: "whisper-tiny",
             variant: "Full",
             files: whisper_files!(
