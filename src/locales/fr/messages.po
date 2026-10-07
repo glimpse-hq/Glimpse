@@ -1034,6 +1034,11 @@ msgid "settings.app.auto_delete.after"
 msgstr "après"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_agents"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.ai"
 msgstr "Assistant IA"
@@ -1553,6 +1558,11 @@ msgstr "Choisir le mode d'affichage de l'activité"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "Choisir l'emplacement d'enregistrement du jeu de données"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_agents_body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -3472,6 +3482,11 @@ msgid "onboarding.model.caveat.less_accurate"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_live_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.library"
 msgstr "Bibliothèque"
@@ -3550,6 +3565,11 @@ msgstr "Texte en direct pendant que vous parlez"
 #: src/features/recording/components/LiveView.tsx
 msgid "live.empty.unavailable"
 msgstr "La transcription en direct nécessite un modèle vocal compatible."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_live"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5169,6 +5189,11 @@ msgid "onboarding.source.search"
 msgstr "Moteur de recherche"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_search"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.search_models"
 msgstr "Rechercher des modèles installés…"
@@ -5524,6 +5549,11 @@ msgstr "Intervenant 1"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers_two"
 msgstr "Intervenant 2"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_live_speaker"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts

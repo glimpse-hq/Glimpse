@@ -10,9 +10,12 @@ import {
   Devices,
   Export,
   HardDrives,
+  MagnifyingGlass,
   Microphone,
   PenNib,
   Record,
+  Robot,
+  Subtitles,
   TerminalWindow,
   TextAa,
   UsersThree,
@@ -188,6 +191,7 @@ export function LicenseStep({
 function FeatureMarquee() {
   const { t } = useLingui();
   const shortcut = shortcutDisplayParts(getDefaultShortcuts(PLATFORM).smart);
+  const searchShortcut = shortcutDisplayParts("CommandOrControl+F");
   const freeTag = t({
     id: "onboarding.license_step.tag_free",
     message: "Free",
@@ -237,6 +241,27 @@ function FeatureMarquee() {
         })}
         level={0.45}
       />
+    </Tile>,
+    <Tile
+      key="live"
+      icon={Subtitles}
+      title={t({
+        id: "onboarding.license_step.tile_live",
+        message: "Live transcripts",
+      })}
+    >
+      <p className="ui-text-body-sm text-content-primary">
+        <span className="text-content-muted">
+          {t({
+            id: "onboarding.license_step.tile_live_speaker",
+            message: "Speaker 2:",
+          })}
+        </span>{" "}
+        {t({
+          id: "onboarding.license_step.tile_live_line",
+          message: "Let's ship it on Friday.",
+        })}
+      </p>
     </Tile>,
     <Tile
       key="files"
@@ -380,6 +405,31 @@ function FeatureMarquee() {
         })}
         apps="0:31"
       />
+    </Tile>,
+    <Tile
+      key="agents"
+      icon={Robot}
+      title={t({
+        id: "onboarding.license_step.tile_agents",
+        message: "AI agents",
+      })}
+    >
+      <p className="ui-text-body-sm text-content-muted">
+        {t({
+          id: "onboarding.license_step.tile_agents_body",
+          message: "Claude, ChatGPT and Cursor can search your transcripts.",
+        })}
+      </p>
+    </Tile>,
+    <Tile
+      key="search"
+      icon={MagnifyingGlass}
+      title={t({
+        id: "onboarding.license_step.tile_search",
+        message: "Search everything",
+      })}
+    >
+      <ShortcutKeys parts={searchShortcut} size="sm" />
     </Tile>,
     <Tile
       key="cli"

@@ -1034,6 +1034,11 @@ msgid "settings.app.auto_delete.after"
 msgstr "के बाद"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_agents"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
 msgid "onboarding.source.ai"
 msgstr "AI सहायक"
@@ -1553,6 +1558,11 @@ msgstr "गतिविधि को चार्ट करने का तर�
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "डेटासेट सहेजने का स्थान चुनें"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_agents_body"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -3472,6 +3482,11 @@ msgid "onboarding.model.caveat.less_accurate"
 msgstr ""
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_live_line"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.library"
 msgstr "लाइब्रेरी"
@@ -3550,6 +3565,11 @@ msgstr "बोलते समय लाइव टेक्स्ट"
 #: src/features/recording/components/LiveView.tsx
 msgid "live.empty.unavailable"
 msgstr "लाइव ट्रांसक्रिप्शन के लिए उसे समर्थित करने वाला स्पीच मॉडल आवश्यक है।"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_live"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -5169,6 +5189,11 @@ msgid "onboarding.source.search"
 msgstr "खोज इंजन"
 
 #. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_search"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
 msgid "library.import.search_models"
 msgstr "इंस्टॉल किए गए मॉडल खोजें..."
@@ -5524,6 +5549,11 @@ msgstr "वक्ता 1"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_speakers_two"
 msgstr "वक्ता 2"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.tile_live_speaker"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
