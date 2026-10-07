@@ -165,6 +165,23 @@ pub(crate) fn upgrade_retired_diarizers(app: &AppHandle<AppRuntime>) {
     });
 }
 
+/// Turning Automatic off keeps the current model and stops a switch in progress.
+#[tauri::command]
+pub(crate) fn set_local_model_auto(
+    app: AppHandle<AppRuntime>,
+    enabled: bool,
+) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let mut settings = state.current_settings_unmasked();
+    if !enabled && let Some(target) = catalog::model_upgrade_target(&settings) {
+        state.cancel_download(target);
+    }
+    settings.local_model_auto = enabled;
+    menu::persist_menu_settings(&app, settings).ok_or("Failed to save settings")?;
+    follow_model_upgrade(&app);
+    Ok(())
+}
+
 /// Moves the user to [`catalog::model_upgrade_target`] in the background. The
 /// current model keeps working until the new one is installed and verified.
 pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {

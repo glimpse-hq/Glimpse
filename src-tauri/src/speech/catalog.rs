@@ -1072,12 +1072,15 @@ pub fn model_upgrade_target(settings: &UserSettings) -> Option<&'static str> {
 pub struct ModelRecommendation {
     pub key: &'static str,
     pub recommended: &'static [&'static str],
+    pub languages: Vec<String>,
 }
 
 pub fn model_recommendation(settings: &UserSettings) -> ModelRecommendation {
+    let languages = user_languages(settings);
     ModelRecommendation {
-        key: recommended_model(&user_languages(settings)),
+        key: recommended_model(&languages),
         recommended: RECOMMENDED,
+        languages,
     }
 }
 

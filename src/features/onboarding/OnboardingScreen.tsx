@@ -12,18 +12,19 @@ import { CaretLeft as ChevronLeft } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
-import { isBuiltInModel } from "../../shared/lib/modelStats";
 import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
 import { pricingUrlFor } from "../license/purchaseConfig";
 import { settingsKeys, useSettings } from "../settings/queries";
 import { checkAccessibilityPermission, getSettings } from "../settings/api";
 import {
   modelKeys,
+  pickDefaultOnboardingModel,
+  useDiarizerInstalled,
+  useDiarizerModel,
   useModelCatalog,
   useModelRecommendation,
   useModelStatuses,
 } from "../settings/models-queries";
-import type { ModelRecommendation } from "../settings/models-api";
 import { onboardingMachine, getSteps } from "./machine";
 import { getDefaultShortcuts, getOnboardingPlatform } from "./platform";
 import { useImportableApps } from "../import/queries";
@@ -37,55 +38,24 @@ import { SourceStep, type OnboardingSource } from "./steps/SourceStep";
 import { ModelDownloadStatus } from "./ModelDownloadStatus";
 import FirstDictationGuide from "./FirstDictationGuide";
 import { StepIndicator } from "./steps/shared";
-import { useActivateLicense, useLicenseState } from "../license/queries";
+import {
+  useActivateLicense,
+  useLicenseGate,
+  useLicenseState,
+} from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import { showErrorToast } from "../../shared/lib/errorToast";
 import type {
   DownloadEvent,
-  ModelInfo,
   ModelStatus,
   UpdateSettingsResult,
 } from "../../types";
 
-const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
-
 const onboardingPermissionKeys = {
   all: ["onboarding", "permissions"] as const,
   microphone: () => [...onboardingPermissionKeys.all, "microphone"] as const,
-};
-
-const downloadableModels = (models: ModelInfo[]) =>
-  models.filter((model) => model.downloadable);
-
-const pickOnboardingModels = (models: ModelInfo[], recommended: string[]) => {
-  const available = downloadableModels(models);
-  const byKey = (key: string) =>
-    available.find((model) => model.key === key) ?? null;
-
-  return [
-    ...recommended.map(byKey),
-    available.find(isBuiltInModel) ?? byKey(ONBOARDING_COMPACT_MODEL_KEY),
-  ].filter((model): model is ModelInfo => Boolean(model));
-};
-
-const pickDefaultOnboardingModel = (
-  models: ModelInfo[],
-  persistedModel: string,
-  recommendation: ModelRecommendation | undefined,
-) => {
-  const available = downloadableModels(models);
-  // A default is always a recommended model, so anything else was picked on purpose.
-  if (
-    persistedModel &&
-    recommendation &&
-    !recommendation.recommended.includes(persistedModel) &&
-    available.some((model) => model.key === persistedModel)
-  ) {
-    return persistedModel;
-  }
-  return recommendation?.key || persistedModel;
 };
 
 const checkMicrophonePermission = () =>
@@ -232,23 +202,13 @@ export default function OnboardingScreen({
   }, [currentStep]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
+  const diarizer = useDiarizerModel().data;
+  const licensed = useLicenseGate();
+  const diarizerInstalled = useDiarizerInstalled();
   const recommendationQuery = useModelRecommendation();
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
 
-  const onboardingModelCatalog = useMemo(() => {
-    const catalog = modelCatalogQuery.data ?? [];
-    const picked = pickOnboardingModels(
-      catalog,
-      recommendationQuery.data?.recommended ?? [],
-    );
-    const importedKey = ctx.localModelChoice;
-    if (importedKey && !picked.some((model) => model.key === importedKey)) {
-      const imported = catalog.find((model) => model.key === importedKey);
-      if (imported) return [...picked, imported];
-    }
-    return picked;
-  }, [modelCatalogQuery.data, recommendationQuery.data, ctx.localModelChoice]);
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedSettings = settingsQuery.data;
 
@@ -270,13 +230,9 @@ export default function OnboardingScreen({
       persistedLocalModel,
       recommendationQuery.data,
     );
-  const selectedModelInfo = useMemo(
-    () =>
-      onboardingModelCatalog.find((model) => model.key === selectedModel) ??
-      modelCatalogQuery.data?.find((model) => model.key === selectedModel) ??
-      null,
-    [onboardingModelCatalog, modelCatalogQuery.data, selectedModel],
-  );
+  const selectedModelInfo =
+    modelCatalogQuery.data?.find((model) => model.key === selectedModel) ??
+    null;
   const statusModelKeys = useMemo(
     () =>
       Array.from(
@@ -745,11 +701,38 @@ export default function OnboardingScreen({
   );
 
   const selectedModelState = displayStateByModel[selectedModel] ?? null;
-  const showDownloadStatus =
-    Boolean(downloadStatus[selectedModel]) &&
+  const pastModelStep =
     currentStep !== "welcome" &&
     currentStep !== "import" &&
     currentStep !== "model";
+  const speakerState = diarizer ? (downloadStatus[diarizer.key] ?? null) : null;
+  const showDownloadStatus =
+    pastModelStep &&
+    (Boolean(downloadStatus[selectedModel]) || Boolean(speakerState));
+
+  // Speaker detection downloads after the dictation model, so it never slows
+  // the first dictation, and only with a license or trial, since only
+  // licensed features use it. Setup's end retries it if this doesn't finish.
+  useEffect(() => {
+    if (!licensed || !diarizer || diarizerInstalled || speakerState) return;
+    if (!pastModelStep || !selectedModelReady) return;
+    updateDownloadStatus(diarizer.key, {
+      status: "downloading",
+      percent: 0,
+      file: "",
+    });
+    void invoke("download_model", { model: diarizer.key, ane: false }).catch(
+      () => {},
+    );
+  }, [
+    licensed,
+    diarizer,
+    diarizerInstalled,
+    speakerState,
+    pastModelStep,
+    selectedModelReady,
+    updateDownloadStatus,
+  ]);
   const practiceModelState = selectedModelReady
     ? "ready"
     : selectedModelState?.status === "error"
@@ -787,7 +770,6 @@ export default function OnboardingScreen({
           <ModelStep
             key="model"
             stepMotionProps={stepMotionProps}
-            options={onboardingModelCatalog}
             selectedModel={selectedModelInfo}
             catalog={modelCatalogQuery.data ?? []}
             modelStatus={modelStatus}
@@ -807,6 +789,7 @@ export default function OnboardingScreen({
             onDelete={handleDelete}
             onCancelDownload={handleCancelDownload}
             recommendedKey={recommendedModel}
+            userLanguages={recommendationQuery.data?.languages ?? []}
             onNext={() => {
               void invoke("track_onboarding_model_chosen", {
                 recommended: recommendedModel,
@@ -975,7 +958,8 @@ export default function OnboardingScreen({
 
         {showDownloadStatus ? (
           <ModelDownloadStatus
-            state={selectedModelState}
+            state={downloadStatus[selectedModel] ? selectedModelState : null}
+            speakerState={speakerState}
             onRetry={() => void handleDownload(selectedModel)}
           />
         ) : null}

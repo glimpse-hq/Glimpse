@@ -14,10 +14,15 @@ export async function listModels(): Promise<ModelInfo[]> {
 export type ModelRecommendation = {
   key: string;
   recommended: string[];
+  languages: string[];
 };
 
 export async function getModelRecommendation(): Promise<ModelRecommendation> {
   return invoke<ModelRecommendation>("model_recommendation");
+}
+
+export async function setLocalModelAuto(enabled: boolean): Promise<void> {
+  await invoke("set_local_model_auto", { enabled });
 }
 
 export async function listSpeechModels(): Promise<SpeechModel[]> {

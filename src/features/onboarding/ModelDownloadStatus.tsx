@@ -8,15 +8,27 @@ import type { DownloadEvent } from "../../types";
 // download never has to block anything.
 export function ModelDownloadStatus({
   state,
+  speakerState,
   onRetry,
 }: {
   state: DownloadEvent | null;
+  speakerState: DownloadEvent | null;
   onRetry: () => void;
 }) {
   const { t } = useLingui();
-  const status = state?.status;
+  // The speaker model follows once the dictation model is done.
+  const speakerDownloading =
+    speakerState?.status === "downloading" &&
+    (!state || state.status === "complete");
+  const speakerPercent = Math.round(speakerState?.percent ?? 0);
+  const status = speakerDownloading
+    ? "speaker"
+    : (state?.status ?? (speakerState ? "complete" : undefined));
   const visible =
-    status === "downloading" || status === "complete" || status === "error";
+    status === "downloading" ||
+    status === "speaker" ||
+    status === "complete" ||
+    status === "error";
   const percent = Math.round(state?.percent ?? 0);
   const error = state?.status === "error" ? state : undefined;
   const verifying = state && "verifying" in state && state.verifying;
@@ -49,7 +61,14 @@ export function ModelDownloadStatus({
             transition={{ duration: 0.18 }}
             className="pointer-events-auto flex items-center gap-2 ui-text-meta text-content-muted"
           >
-            {status === "downloading" ? (
+            {status === "speaker" ? (
+              <span className="tabular-nums">
+                {t({
+                  id: "onboarding.download_status.speakers",
+                  message: `Downloading speaker detection ${speakerPercent}%`,
+                })}
+              </span>
+            ) : status === "downloading" ? (
               <span className="tabular-nums">
                 {verifying
                   ? t({

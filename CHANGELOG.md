@@ -9,7 +9,7 @@
 - On Mac, your shortcut starts working the moment you allow Accessibility, without restarting Glimpse. If macOS turns the permission off, for example after an update, Glimpse tells you at launch and links straight to the setting.
 - When Glimpse can't paste because Accessibility is off, your text stays on the clipboard and Glimpse tells you, instead of the dictation disappearing.
 - Home shows your dictation shortcut on days you haven't dictated yet.
-- Setup now marks the model that fits your languages as Recommended, instead of calling Whisper Turbo the accurate one.
+- Setup starts you on Automatic, which picks the model for your language and moves you to newer models as they come out. You can still pick a model yourself, and Automatic can be turned off in Settings > Models.
 - Setup downloads the speaker detection model for you, so Library transcripts show who said what without a trip to Settings.
 - In setup, you can click anywhere on a permission row to allow it, not just the link.
 - Glimpse works better with a keyboard and screen readers. Menus, dropdowns and dialogs respond to the arrow keys and Escape and keep focus where it belongs, buttons that only appeared on hover show up when focused, and recording, downloads, errors and toasts are read aloud.

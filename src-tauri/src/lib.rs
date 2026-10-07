@@ -661,6 +661,7 @@ pub fn run() {
             open_ffmpeg_install,
             complete_onboarding,
             model_recommendation,
+            speech::set_local_model_auto,
             start_hold_recording,
             pill::stop_hold_recording,
             cancel_recording,
@@ -1492,7 +1493,10 @@ fn complete_onboarding(
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
     core::settings::complete_onboarding(&app, &state, first_dictation)?;
-    speech::install_diarizer_in_background(&app);
+    // Speaker detection only serves licensed features, which a trial includes.
+    if license::license_gate_active(&state.settings_store) {
+        speech::install_diarizer_in_background(&app);
+    }
     Ok(())
 }
 

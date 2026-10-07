@@ -2,16 +2,13 @@ import { useLingui } from "@lingui/react/macro";
 import { plural } from "@lingui/core/macro";
 import {
   hasModelCapability,
-  MODEL_CAPABILITY_DIARIZATION,
   MODEL_CAPABILITY_DICTIONARY,
   MODEL_CAPABILITY_STREAMING,
-  MODEL_CAPABILITY_TIMESTAMPS,
 } from "../../../shared/lib/modelCapabilities";
 import { useState } from "react";
 import { Check } from "@phosphor-icons/react";
 import ModelPickerModal from "../../../shared/ui/ModelPickerModal";
 import {
-  deriveModelStats,
   downloadFailureLabel,
   formatModelSize,
   isBuiltInModel,
@@ -25,9 +22,17 @@ import {
   type StepMotionProps,
 } from "./shared";
 
+type OptionCard = {
+  id: string;
+  opensList?: boolean;
+  title: string;
+  detail: string;
+  selected: boolean;
+  onClick: () => void;
+};
+
 interface ModelStepProps {
   stepMotionProps: StepMotionProps;
-  options: ModelInfo[];
   selectedModel: ModelInfo | null;
   catalog: ModelInfo[];
   modelStatus: Record<string, ModelStatus>;
@@ -42,12 +47,12 @@ interface ModelStepProps {
   onDelete: (key: string) => void;
   onCancelDownload: (key: string) => void;
   recommendedKey: string;
+  userLanguages: string[];
   onNext: () => void;
 }
 
 export function ModelStep({
   stepMotionProps,
-  options,
   selectedModel,
   catalog,
   modelStatus: modelStatusByKey,
@@ -62,54 +67,111 @@ export function ModelStep({
   onDelete,
   onCancelDownload,
   recommendedKey,
+  userLanguages,
   onNext,
 }: ModelStepProps) {
   const { t } = useLingui();
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const title = t({ id: "onboarding.model.title", message: "Choose a model" });
 
-  const realStatus = selectedModel
-    ? modelStatusByKey[selectedModel.key]
-    : undefined;
-  const status: ModelStatus | undefined = selectedModel
-    ? {
-        key: selectedModel.key,
-        installed:
-          Boolean(realStatus?.installed) || displayState.status === "complete",
-        ane_installed: Boolean(realStatus?.ane_installed),
-        bytes_on_disk: realStatus?.bytes_on_disk ?? 0,
-        missing_files: realStatus?.missing_files ?? [],
-        directory: realStatus?.directory ?? "",
-      }
-    : undefined;
+  const installed = (key: string) =>
+    Boolean(modelStatusByKey[key]?.installed) ||
+    displayStateByModel[key]?.status === "complete";
   const progress =
     displayState.status !== "idle" && displayState.status !== "complete"
       ? displayState
       : undefined;
 
-  const optionTier = (option: ModelInfo) => {
-    if (option.key === recommendedKey) {
-      return t({
-        id: "onboarding.model.tier.recommended",
+  // Only offered when it covers every language the user speaks.
+  const builtIn = catalog.find(
+    (model) =>
+      isBuiltInModel(model) &&
+      model.key !== recommendedKey &&
+      userLanguages.every((language) =>
+        model.supported_languages.some(
+          (supported) => supported.code.split(/[-_]/)[0] === language,
+        ),
+      ),
+  );
+  const isListed = (key: string) =>
+    key !== "" && key !== recommendedKey && key !== builtIn?.key;
+  // The last model picked from the full list, shown on the third card.
+  const [listedKey, setListedKey] = useState(activeModelKey);
+  const listed = isListed(listedKey)
+    ? catalog.find((model) => model.key === listedKey)
+    : undefined;
+
+  const cards = [
+    recommendedKey && {
+      id: "auto",
+      title: t({
+        id: "onboarding.model.option.automatic",
+        message: "Automatic",
+      }),
+      detail: t({
+        id: "onboarding.model.option.recommended",
         message: "Recommended",
-      });
-    }
-    if (isBuiltInModel(option)) {
-      return t({ id: "onboarding.model.tier.built_in", message: "Built in" });
-    }
-    if (option.key.startsWith("whisper_large")) {
-      return t({
-        id: "onboarding.model.tier.more_languages",
-        message: "More languages",
-      });
-    }
-    if (option.key.startsWith("parakeet")) {
-      return t({ id: "onboarding.model.tier.fast", message: "Fast" });
-    }
-    if (option.key === "whisper_small_q8") {
-      return t({ id: "onboarding.model.tier.small", message: "Small" });
-    }
-    return null;
+      }),
+      selected: activeModelKey === recommendedKey,
+      onClick: () => onUse(recommendedKey),
+    },
+    builtIn && {
+      id: "built_in",
+      title: t({ id: "onboarding.model.tier.built_in", message: "Built in" }),
+      detail: friendlyModelName(builtIn.label),
+      selected: activeModelKey === builtIn.key,
+      onClick: () => onUse(builtIn.key),
+    },
+    {
+      id: "listed",
+      title: listed
+        ? friendlyModelName(listed.label)
+        : t({
+            id: "onboarding.model.option.other",
+            message: "Other models",
+          }),
+      detail: t({ id: "onboarding.model.option.see_all", message: "See all" }),
+      selected: Boolean(listed) && activeModelKey === listedKey,
+      opensList: true,
+      onClick: () =>
+        listed && activeModelKey !== listedKey
+          ? onUse(listedKey)
+          : setShowAdvanced(true),
+    },
+  ].filter((card): card is OptionCard => Boolean(card));
+
+  const pickFromList = (key: string) => {
+    onUse(key);
+    setListedKey(key);
+    setShowAdvanced(false);
   };
+
+  const capabilities = (model: ModelInfo) =>
+    [
+      t({
+        id: "onboarding.model.supports.languages",
+        message: plural(model.supported_languages.length, {
+          one: "# language",
+          other: "# languages",
+        }),
+      }),
+      model.ane_size_mb != null &&
+        (!installed(model.key) || modelStatusByKey[model.key]?.ane_installed) &&
+        t({
+          id: "onboarding.model.capability.neural_engine",
+          message: "Apple Neural Engine",
+        }),
+      hasModelCapability(model, MODEL_CAPABILITY_DICTIONARY) &&
+        t({
+          id: "onboarding.model.supports.words",
+          message: "Custom words",
+        }),
+      hasModelCapability(model, MODEL_CAPABILITY_STREAMING) &&
+        t({
+          id: "onboarding.model.supports.live",
+          message: "Live text while you speak",
+        }),
+    ].filter((point): point is string => Boolean(point));
 
   const handleContinue = () => {
     if (isLoading) return;
@@ -139,51 +201,40 @@ export function ModelStep({
           >
             {t({ id: "onboarding.model.continue", message: "Continue" })}
           </button>
-          <div className="flex h-5 items-center justify-center">
-            {catalog.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setShowAdvanced(true)}
-                className="ui-text-body-sm text-content-muted underline-offset-4 transition-colors hover:text-content-primary hover:underline"
-              >
-                {t({
-                  id: "onboarding.model.browse",
-                  message: "Browse all models",
-                })}
-              </button>
-            )}
-          </div>
         </>
       }
     >
-      <OnboardingHeader
-        title={t({ id: "onboarding.model.title", message: "Choose a model" })}
-      />
+      <OnboardingHeader title={title} />
 
       <div className="flex w-full items-stretch justify-center">
-        <div className="flex w-[240px] shrink-0 flex-col gap-2 pr-8">
-          {options.map((option) => {
-            const selected = selectedModel?.key === option.key;
-            return (
+        <div
+          role="radiogroup"
+          aria-label={title}
+          className="grid w-[240px] shrink-0 auto-rows-fr gap-2 self-start pr-8"
+        >
+          {!isLoading &&
+            cards.map((card) => (
               <button
-                key={option.key}
+                key={card.id}
                 type="button"
-                onClick={() => onUse(option.key)}
-                aria-pressed={selected}
-                className={`group flex h-[52px] w-full items-center gap-3 rounded-xl border px-3.5 text-left transition-[background-color,border-color,transform] duration-150 active:scale-[0.99] ${
-                  selected
+                onClick={card.onClick}
+                role="radio"
+                aria-checked={card.selected}
+                aria-haspopup={card.opensList ? "dialog" : undefined}
+                className={`group flex min-h-[52px] w-full items-center gap-3 rounded-xl border px-3.5 py-2 text-left transition-[background-color,border-color,transform] duration-150 active:scale-[0.99] ${
+                  card.selected
                     ? "border-cloud bg-cloud-10"
                     : "border-border-primary hover:border-cloud-50 hover:bg-[var(--surface-interactive)] active:bg-[var(--surface-interactive-pressed)]"
                 }`}
               >
                 <span
                   className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors duration-150 ${
-                    selected
+                    card.selected
                       ? "border-cloud bg-cloud"
                       : "border-border-secondary group-hover:border-cloud-50"
                   }`}
                 >
-                  {selected ? (
+                  {card.selected ? (
                     <Check
                       size={10}
                       weight="bold"
@@ -192,21 +243,15 @@ export function ModelStep({
                   ) : null}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate ui-text-body-lg-strong leading-tight text-content-primary">
-                    {optionTier(option) ?? friendlyModelName(option.label)}
+                  <span className="block ui-text-body-lg-strong leading-tight text-content-primary text-balance">
+                    {card.title}
                   </span>
-                  <span className="block truncate ui-text-meta text-content-muted">
-                    {isBuiltInModel(option)
-                      ? t({
-                          id: "onboarding.model.option.no_download",
-                          message: "No download",
-                        })
-                      : formatModelSize(modelSizeMb(option, true))}
+                  <span className="block ui-text-meta text-content-muted text-balance">
+                    {card.detail}
                   </span>
                 </span>
               </button>
-            );
-          })}
+            ))}
         </div>
 
         <div className="min-h-[236px] w-[240px] shrink-0 border-l border-border-primary pl-8 pt-1 text-left">
@@ -234,7 +279,16 @@ export function ModelStep({
           ) : (
             <ModelDetails
               model={selectedModel}
-              installed={Boolean(status?.installed)}
+              capabilities={capabilities(selectedModel)}
+              caveat={
+                selectedModel.key === builtIn?.key
+                  ? t({
+                      id: "onboarding.model.caveat.less_accurate",
+                      message: "Less accurate than Automatic.",
+                    })
+                  : null
+              }
+              installed={installed(selectedModel.key)}
               progress={progress}
               onCancel={() => onCancelDownload(selectedModel.key)}
             />
@@ -253,8 +307,11 @@ export function ModelStep({
         }
         isAneInstalled={(key) => Boolean(modelStatusByKey[key]?.ane_installed)}
         progressFor={(key) => displayStateByModel[key]}
-        onUse={onUse}
-        onDownload={onDownload}
+        onUse={pickFromList}
+        onDownload={(key, ane) => {
+          pickFromList(key);
+          onDownload(key, ane);
+        }}
         onDelete={onDelete}
         onCancel={onCancelDownload}
       />
@@ -262,10 +319,13 @@ export function ModelStep({
   );
 }
 
+// "Whisper Large V3 Turbo" becomes "Whisper": the family without size,
+// version or variant.
 function friendlyModelName(label: string): string {
   return label
     .replace(/\s*\([^)]*\)/g, "")
-    .replace(/\bTDT\b/g, "")
+    .replace(/\b(TDT|Large|Medium|Small|Base|Tiny|Turbo)\b/gi, "")
+    .replace(/\bV\d+(\.\d+)?\b/gi, "")
     .replace(/\b\d+(\.\d+)?B\b/g, "")
     .replace(/\s+/g, " ")
     .trim();
@@ -273,17 +333,20 @@ function friendlyModelName(label: string): string {
 
 function ModelDetails({
   model,
+  capabilities,
+  caveat,
   installed,
   progress,
   onCancel,
 }: {
   model: ModelInfo;
+  capabilities: string[];
+  caveat: string | null;
   installed: boolean;
   progress: DownloadEvent | undefined;
   onCancel: () => void;
 }) {
   const { t } = useLingui();
-  const stats = deriveModelStats(model);
   const builtIn = isBuiltInModel(model);
   const downloading = progress?.status === "downloading";
   const percent = Math.round(progress?.percent ?? 0);
@@ -292,38 +355,12 @@ function ModelDetails({
   const fileCount =
     progress && "fileCount" in progress ? progress.fileCount : undefined;
 
-  const supports = [
-    stats.englishOnly
-      ? t({ id: "onboarding.model.supports.english", message: "English" })
-      : t({
-          id: "onboarding.model.supports.languages",
-          message: plural(stats.langCount, {
-            one: "# language",
-            other: "# languages",
-          }),
-        }),
-    hasModelCapability(model, MODEL_CAPABILITY_STREAMING) &&
-      t({
-        id: "onboarding.model.supports.live",
-        message: "Live text while you speak",
-      }),
-    hasModelCapability(model, MODEL_CAPABILITY_DICTIONARY) &&
-      t({ id: "onboarding.model.supports.words", message: "Custom words" }),
-    hasModelCapability(model, MODEL_CAPABILITY_TIMESTAMPS) &&
-      t({ id: "onboarding.model.supports.timestamps", message: "Timestamps" }),
-    hasModelCapability(model, MODEL_CAPABILITY_DIARIZATION) &&
-      t({
-        id: "onboarding.model.supports.speakers",
-        message: "Speaker detection",
-      }),
-  ].filter((item): item is string => Boolean(item));
-
   return (
     <div>
       <h3 className="text-[17px] font-semibold leading-snug tracking-tight text-content-primary">
         {friendlyModelName(model.label)}
       </h3>
-      <div className="mt-1 flex h-5 items-center gap-2 ui-text-body-sm text-content-muted">
+      <div className="mt-1 flex min-h-5 flex-wrap items-center gap-x-2 ui-text-body-sm text-content-muted">
         {downloading ? (
           <>
             {/* Fixed width so Cancel doesn't move as the percent grows. */}
@@ -347,7 +384,7 @@ function ModelDetails({
             </button>
           </>
         ) : progress?.status === "error" && progress.reason ? (
-          <span className="truncate text-error" title={progress.message}>
+          <span className="text-error text-pretty" title={progress.message}>
             {downloadFailureLabel(progress.reason)}
           </span>
         ) : builtIn ? (
@@ -364,21 +401,26 @@ function ModelDetails({
           })
         )}
       </div>
-
-      <p className="mt-6 ui-text-meta font-medium text-content-disabled">
-        {t({ id: "onboarding.model.supports", message: "Supports" })}
-      </p>
-      <ul className="mt-2 flex flex-col gap-1.5">
-        {supports.map((item) => (
+      <ul className="mt-5 flex flex-col gap-2">
+        {capabilities.map((capability) => (
           <li
-            key={item}
+            key={capability}
             className="flex items-center gap-2 ui-text-body-sm text-content-primary"
           >
-            <Check size={12} weight="bold" className="ui-color-cloud" />
-            {item}
+            <Check
+              size={12}
+              weight="bold"
+              className="shrink-0 ui-color-cloud"
+            />
+            {capability}
           </li>
         ))}
       </ul>
+      {caveat && (
+        <p className="mt-4 ui-text-body-sm text-content-muted text-pretty">
+          {caveat}
+        </p>
+      )}
     </div>
   );
 }
