@@ -1246,6 +1246,11 @@ msgid "settings.speech_model.model.automatic_default"
 msgstr "Automatisch ({defaultModel})"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_switched"
+msgstr "Automatisch hat ein neueres Modell für dich gewählt. Du kannst es jederzeit in den Einstellungen ändern."
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.start_on_launch_help"
 msgstr "automatisch starten, wenn Glimpse geöffnet wird"
@@ -3054,11 +3059,6 @@ msgid "onboarding.permissions.subtitle"
 msgstr "Glimpse benötigt diese Berechtigungen, um dich zu hören und für dich zu tippen."
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.model_switched"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.activate.placeholder"
 msgstr "GLIMPSE_…"
@@ -4248,6 +4248,11 @@ msgid "import.empty"
 msgstr "Aus dieser App gibt es nichts zu übernehmen."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_switched_title"
+msgstr "Jetzt mit {model}"
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.of_dictating"
 msgstr "an Diktierzeit in diesem Jahr"
@@ -5362,6 +5367,11 @@ msgstr "Dienste"
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.cloud.set_up"
 msgstr "Einrichten"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.open_settings"
+msgstr "Einstellungen"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
