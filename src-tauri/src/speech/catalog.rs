@@ -548,7 +548,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
     },
     LocalModelManifest {
         id: "parakeet_ultra_gguf",
-        family: "parakeet-tdt-0.6b-v3",
+        family: "parakeet-ultra",
         label: "Parakeet Ultra",
         description: "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size.",
         tags: &["Multilingual", "Fast", "Accurate"],
