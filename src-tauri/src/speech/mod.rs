@@ -247,17 +247,23 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
         };
         crate::tray::refresh_menus(&app, &saved);
         let label = catalog::model_label(target);
-        crate::toast::show_with_action(
+        // Longer than a plain success toast: a title, a sentence and a button.
+        crate::toast::emit_toast(
             &app,
-            "success",
-            Some(&crate::toast::native_format(
-                &app,
-                "native.toast.model_switched_title",
-                &[("model", &label)],
-            )),
-            &crate::toast::native(&app, "native.toast.model_switched"),
-            "open_models_page",
-            &crate::toast::native(&app, "native.toast.open_settings"),
+            crate::toast::Payload {
+                toast_type: "success".to_string(),
+                title: Some(crate::toast::native_format(
+                    &app,
+                    "native.toast.model_switched_title",
+                    &[("model", &label)],
+                )),
+                message: crate::toast::native(&app, "native.toast.model_switched"),
+                auto_dismiss: Some(true),
+                duration: Some(8000),
+                action: Some("open_models_page".to_string()),
+                action_label: Some(crate::toast::native(&app, "native.toast.open_settings")),
+                ..Default::default()
+            },
         );
         if previous != saved.local_api_model
             && let Err(err) = install::delete_model(app.clone(), previous.clone()).await
