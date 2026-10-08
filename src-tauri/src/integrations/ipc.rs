@@ -62,18 +62,28 @@ static SOCKET_LABEL: OnceLock<String> = OnceLock::new();
 
 pub(crate) fn init_socket_label(identifier: &str) {
     SOCKET_LABEL.get_or_init(|| {
-        let raw = std::env::var("USER")
+        let user = std::env::var("USER")
             .or_else(|_| std::env::var("USERNAME"))
             .unwrap_or_default();
-        let user: String = raw.chars().filter(char::is_ascii_alphanumeric).collect();
-        let user = if user.is_empty() { "default" } else { &user };
-        let id: String = identifier
-            .chars()
-            .filter(char::is_ascii_alphanumeric)
-            .collect();
-        format!("glimpse-cli-{user}-{id}.sock")
+        socket_label_for(&user, identifier)
     });
 }
+
+/// Pipe names are machine-wide, so they carry the account. macOS sockets sit in
+/// the account's private temp dir instead, and `sun_path` holds only 104 bytes,
+/// so the name there leaves the account out and stays short.
+fn socket_label_for(user: &str, identifier: &str) -> String {
+    let alnum = |s: &str| -> String { s.chars().filter(char::is_ascii_alphanumeric).collect() };
+    let id = alnum(identifier);
+    if cfg!(target_os = "macos") {
+        return format!("glimpse-{}.sock", &id[..id.len().min(MAX_MACOS_ID)]);
+    }
+    let user = alnum(user);
+    let user = if user.is_empty() { "default" } else { &user };
+    format!("glimpse-cli-{user}-{id}.sock")
+}
+
+const MAX_MACOS_ID: usize = 24;
 
 fn socket_label() -> &'static str {
     SOCKET_LABEL
@@ -208,6 +218,15 @@ fn user_temp_dir() -> std::io::Result<std::path::PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_socket_name_ignores_long_account_names() {
+        let label = socket_label_for(&"a".repeat(64), "com.glimpse.data");
+        assert_eq!(label, "glimpse-comglimpsedata.sock");
+        let long = socket_label_for("me", &"x".repeat(80));
+        assert!(long.len() <= "glimpse-.sock".len() + MAX_MACOS_ID);
+    }
 
     #[test]
     fn socket_path_stays_inside_the_given_dir() {
