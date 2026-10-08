@@ -1,8 +1,11 @@
 1.3.5
 
+### New Models
+
+- **Parakeet Ultra** More accurate than Parakeet TDT V3 in all 25 of its languages at the same size and speed (on our tests, about 17% fewer errors across European languages). It is the new Automatic pick, so if you use Automatic, Glimpse downloads it once in the background and switches over. Parakeet TDT V3 stays available in Settings > Models.
+
 ### New Features
 
-- Parakeet Ultra, a new local model, is more accurate than Parakeet TDT V3 in all 25 of its languages at the same size and speed (on our tests, about 17% fewer errors across European languages). It is the new Automatic pick, so if you use Automatic, Glimpse downloads it once in the background and switches over. Parakeet TDT V3 stays available in Settings > Models.
 - AI agents can search and read your Library. Run `glimpse mcp` to give Claude, ChatGPT, Cursor and other MCP apps your transcripts, with speaker names and timestamps. It runs only on your computer and is read-only unless you allow imports.
 
 ### Improvements
