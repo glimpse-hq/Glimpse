@@ -281,6 +281,7 @@ const SettingsScreen = ({
                 setCors={form.setLocalApiCors}
                 status={form.localApiStatus}
                 busy={form.localApiBusy}
+                stopping={form.localApiStopping}
                 onStart={form.handleStartLocalApi}
                 onStop={form.handleStopLocalApi}
                 onRestart={form.handleRestartLocalApi}

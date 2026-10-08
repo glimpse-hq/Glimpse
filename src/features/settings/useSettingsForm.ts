@@ -351,6 +351,10 @@ export function useSettingsForm({
     null,
   );
   const [localApiBusy, setLocalApiBusy] = useState(false);
+  // Stop stays usable while a start waits for its model to load.
+  const [localApiStopping, setLocalApiStopping] = useState(false);
+  // A start the user stopped fails on purpose; don't report that as an error.
+  const localApiStopRequestedRef = useRef(false);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
@@ -1833,6 +1837,7 @@ export function useSettingsForm({
   const handleStartLocalApi = useCallback(async () => {
     flushPendingSettingsSave();
     setLocalApiBusy(true);
+    localApiStopRequestedRef.current = false;
     try {
       if (!(await saveSettingsNowRef.current())) return;
       const status = await modelsApi.startLocalApi({
@@ -1845,6 +1850,7 @@ export function useSettingsForm({
       setLocalApiStatus(status);
       clearSettingsError();
     } catch (err) {
+      if (localApiStopRequestedRef.current) return;
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
@@ -1866,6 +1872,8 @@ export function useSettingsForm({
 
   const handleStopLocalApi = useCallback(async () => {
     setLocalApiBusy(true);
+    setLocalApiStopping(true);
+    localApiStopRequestedRef.current = true;
     try {
       await modelsApi.stopLocalApi();
       const status = await waitForLocalApiStopped();
@@ -1879,6 +1887,7 @@ export function useSettingsForm({
       );
     } finally {
       setLocalApiBusy(false);
+      setLocalApiStopping(false);
     }
   }, [clearSettingsError, showSettingsError]);
 
@@ -2058,6 +2067,7 @@ export function useSettingsForm({
     setLocalApiCors,
     localApiStatus,
     localApiBusy,
+    localApiStopping,
     cliInstallStatus,
     cliInstallBusy,
     handleStartLocalApi,

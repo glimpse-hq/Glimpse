@@ -27,6 +27,7 @@ type LocalApiTabProps = {
   setCors: (value: boolean) => void;
   status: LocalApiStatus | null;
   busy: boolean;
+  stopping: boolean;
   onStart: () => void;
   onStop: () => void;
   onRestart: () => void;
@@ -51,6 +52,7 @@ const LocalApiTab = ({
   setCors,
   status,
   busy,
+  stopping,
   onStart,
   onStop,
   onRestart,
@@ -269,7 +271,7 @@ const LocalApiTab = ({
           <button
             className="ml-6 min-w-[92px] shrink-0 whitespace-nowrap px-5 py-1.5 rounded-md bg-red-500 hover:bg-red-400 text-white ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(248,113,113,0.35),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:translate-y-[1px] active:shadow-none"
             onClick={onStop}
-            disabled={busy}
+            disabled={stopping}
           >
             {t({
               id: "settings.local_api.stop",
