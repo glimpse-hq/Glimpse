@@ -208,7 +208,7 @@ export function ModelStep({
 
       <div className="flex w-full items-stretch justify-center">
         <div
-          role="radiogroup"
+          role="group"
           aria-label={title}
           className="grid w-[240px] shrink-0 auto-rows-fr gap-2 self-start pr-8"
         >
@@ -218,8 +218,7 @@ export function ModelStep({
                 key={card.id}
                 type="button"
                 onClick={card.onClick}
-                role="radio"
-                aria-checked={card.selected}
+                aria-pressed={card.selected}
                 aria-haspopup={card.opensList ? "dialog" : undefined}
                 className={`group flex min-h-[52px] w-full items-center gap-3 rounded-xl border px-3.5 py-2 text-left transition-[background-color,border-color,transform] duration-150 active:scale-[0.99] ${
                   card.selected
