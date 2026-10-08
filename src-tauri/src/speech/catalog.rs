@@ -141,6 +141,20 @@ const PARAKEET_DECODER_FILE: CatalogFile = CatalogFile {
     sha256: Some("dfcf670a00df8d49474fddea707bcfc77339789f65dde115aeb79570fc813744"),
 };
 
+const PARAKEET_ULTRA_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0.gguf",
+    path: "parakeet-ultra-Q8_0.gguf",
+    size_bytes: Some(739_508_608),
+    sha256: Some("37611717bcb235e7cc9dbdd24e19e055c41adc9fd4dafee878304af4a16bcb1a"),
+}];
+
+const PARAKEET_ULTRA_DECODER_FILE: CatalogFile = CatalogFile {
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0-decoder.gguf",
+    path: "parakeet-ultra-Q8_0-decoder.gguf",
+    size_bytes: Some(19_479_936),
+    sha256: Some("5a68f1b297c07436aa7c6bef26712d7ee8bb9db6911741fd6225956cd6d3ef44"),
+};
+
 const DIARIZER_FILES: &[CatalogFile] = &[CatalogFile {
     url: "https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf/resolve/main/nemotron-3-diarization-Q8_0.gguf",
     path: "nemotron-3-diarization-Q8_0.gguf",
@@ -206,6 +220,27 @@ const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
         url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-encoder-v3-macos14.mlmodelc.zip",
         size_bytes: 523_684_020,
         sha256: "3d530e9cc868be36c4a209c3d8e3328a3e8d03d0f68fe74388104073f5fc4fd3",
+        unpacked_bytes: Some(594_977_730),
+    },
+    // Parakeet Ultra: same int8 layout as V3 above.
+    TranscribeAneEncoder {
+        model: "parakeet_ultra_gguf",
+        replacement_files: Some(&[PARAKEET_ULTRA_DECODER_FILE]),
+        min_macos: 15,
+        dir_name: "parakeet-ultra-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0-encoder-mf3.mlmodelc.zip",
+        size_bytes: 529_137_703,
+        sha256: "e5e36aca6827b2c78ad33f61c30b1e1d7b7a6ab0a8f268c6b6fac6f7b4274e1e",
+        unpacked_bytes: Some(605_651_354),
+    },
+    TranscribeAneEncoder {
+        model: "parakeet_ultra_gguf",
+        replacement_files: Some(&[PARAKEET_ULTRA_DECODER_FILE]),
+        min_macos: 14,
+        dir_name: "parakeet-ultra-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0-encoder-macos14.mlmodelc.zip",
+        size_bytes: 523_680_980,
+        sha256: "63903e2d1dd039017cf02b82208fca2c72f770dfef10c4d67f56b6b438e90fb1",
         unpacked_bytes: Some(594_977_730),
     },
     TranscribeAneEncoder {
@@ -509,6 +544,19 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         languages: Languages::ParakeetV3,
         variant: "Q8_0",
         files: PARAKEET_GGUF_FILES,
+        capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
+    },
+    LocalModelManifest {
+        id: "parakeet_ultra_gguf",
+        family: "parakeet-tdt-0.6b-v3",
+        label: "Parakeet Ultra",
+        description: "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size.",
+        tags: &["Multilingual", "Fast", "Accurate"],
+        category: "experimental",
+        engine: LocalModelEngine::Transcribe,
+        languages: Languages::ParakeetV3,
+        variant: "Q8_0",
+        files: PARAKEET_ULTRA_GGUF_FILES,
         capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
     },
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
