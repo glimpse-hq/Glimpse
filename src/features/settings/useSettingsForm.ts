@@ -1893,6 +1893,7 @@ export function useSettingsForm({
 
   const handleRestartLocalApi = useCallback(async () => {
     setLocalApiBusy(true);
+    localApiStopRequestedRef.current = false;
     try {
       if (!(await saveSettingsNowRef.current())) return;
       await modelsApi.stopLocalApi();
@@ -1907,6 +1908,8 @@ export function useSettingsForm({
           ),
         );
       }
+      // Stop pressed while the old server shut down: leave it off.
+      if (localApiStopRequestedRef.current) return;
       const status = await modelsApi.startLocalApi({
         host: localApiHost,
         port: localApiPort,
@@ -1917,6 +1920,7 @@ export function useSettingsForm({
       setLocalApiStatus(status);
       clearSettingsError();
     } catch (err) {
+      if (localApiStopRequestedRef.current) return;
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
