@@ -615,6 +615,14 @@ pub async fn delete_model(
     .map_err(|err| err.to_string())??;
 
     crate::analytics::track_model_deleted(&app, &status.key);
+    // Background deletes (Automatic moving to a newer model) bypass the
+    // window's own mutation, so it refreshes from this.
+    let _ = app.emit(
+        "model:deleted",
+        DownloadCompletePayload {
+            model: status.key.clone(),
+        },
+    );
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();

@@ -82,6 +82,10 @@ function QuerySyncBridge() {
     register("update:cleared", () => {
       queryClient.invalidateQueries({ queryKey: updateKeys.status() });
     });
+    register<{ model: string }>("model:deleted", ({ model }) => {
+      queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
+      queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+    });
     register("transcription:complete", () => {
       queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
     });
