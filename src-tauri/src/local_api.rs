@@ -43,6 +43,7 @@ pub struct LocalApiStatus {
     pub cors: bool,
     pub requests_total: u64,
     pub logs: Vec<LocalApiLogEntry>,
+    pub lan_ip: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -388,6 +389,7 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             cors: running.cors,
             requests_total: running.requests_total,
             logs,
+            lan_ip: lan_ip(),
         }
     } else {
         LocalApiStatus {
@@ -402,8 +404,17 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             cors: crate::settings::default_local_api_cors(),
             requests_total: 0,
             logs,
+            lan_ip: lan_ip(),
         }
     }
+}
+
+// Connecting a UDP socket sends nothing; it only asks the OS which interface routes outward.
+fn lan_ip() -> Option<String> {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("192.0.2.1:80").ok()?;
+    let ip = socket.local_addr().ok()?.ip();
+    (!ip.is_loopback() && !ip.is_unspecified()).then(|| ip.to_string())
 }
 
 #[tauri::command]

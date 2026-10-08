@@ -16,6 +16,7 @@
 - Dim text in dark mode is easier to read, and the pill and toasts follow Reduce Motion.
 - The Library stays smoother while items transcribe, and reading another app's history to import no longer freezes Glimpse.
 - The API server shows when it's starting, and Stop works while its model loads.
+- When the API server is open to your network, it shows your computer's network address instead of 0.0.0.0, so the URL you copy works from other devices.
 - Glimpse waits until you've stopped dictating for a while before restarting into a downloaded update.
 - On Windows, the tray icon opens Settings on a left click, toasts no longer take focus from the app you're typing in, the pill and live view land in the right place on monitors with different display scaling, and shortcuts read Ctrl + Alt.
 - License, export and copy messages are now translated.

@@ -70,7 +70,9 @@ const LocalApiTab = ({
   const running = status?.running ?? false;
   const starting = status?.starting ?? false;
   const logs = status?.logs ?? [];
-  const effectiveHost = running ? (status?.host ?? host) : host;
+  const boundHost = running ? (status?.host ?? host) : host;
+  const effectiveHost =
+    boundHost === "0.0.0.0" ? (status?.lan_ip ?? boundHost) : boundHost;
   const effectivePort = running ? (status?.port ?? port) : port;
   const baseUrl = `http://${effectiveHost}:${effectivePort}/v1`;
   const requireApiKey = apiKey.trim().length > 0;

@@ -103,6 +103,7 @@ export type LocalApiStatus = {
   cors: boolean;
   requests_total: number;
   logs: LocalApiLogEntry[];
+  lan_ip: string | null;
 };
 
 export type CliInstallStatus = {
