@@ -213,6 +213,29 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
             tokio::time::sleep(std::time::Duration::from_secs(30)).await;
         }
 
+        // Switch only to a model that loads: the old one is deleted below, so a
+        // failure here keeps it and retries on the next launch.
+        let loader = app.clone();
+        let loaded = tauri::async_runtime::spawn_blocking(move || {
+            let ready = install::ensure_model_ready(&loader, target)?;
+            loader
+                .state::<AppState>()
+                .local_transcriber()
+                .preload_and_warm_if_needed(&ready)
+        })
+        .await;
+        match loaded {
+            Ok(Ok(())) => {}
+            Ok(Err(err)) => {
+                tracing::error!("[speech] not moving to {target}: it failed to load: {err:#}");
+                return;
+            }
+            Err(err) => {
+                tracing::error!("[speech] not moving to {target}: {err}");
+                return;
+            }
+        }
+
         let mut settings = state.current_settings_unmasked();
         // The user may have picked a model while this downloaded.
         if catalog::model_upgrade_target(&settings) != Some(target) {
@@ -223,7 +246,6 @@ pub(crate) fn follow_model_upgrade(app: &AppHandle<AppRuntime>) {
             return;
         };
         crate::tray::refresh_menus(&app, &saved);
-        warm_model(&app, target.to_string());
         crate::toast::show(
             &app,
             "success",
