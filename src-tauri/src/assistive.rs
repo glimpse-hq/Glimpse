@@ -451,7 +451,7 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
     .filter(|(vk, _)| unsafe { GetAsyncKeyState(vk.0 as i32) } as u16 & 0x8000 != 0)
     .collect();
 
-    let mut inputs = Vec::with_capacity(held.len() + 6);
+    let mut inputs = Vec::with_capacity(held.len() * 2 + 6);
     if held
         .iter()
         .any(|(vk, _)| ![VK_LSHIFT, VK_RSHIFT].contains(vk))
@@ -459,7 +459,7 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
         inputs.push(keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)));
         inputs.push(keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP));
     }
-    for (vk, flags) in held {
+    for &(vk, flags) in &held {
         inputs.push(keyboard_input(vk, flags | KEYEVENTF_KEYUP));
     }
     inputs.extend([
@@ -468,6 +468,15 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
         keyboard_input(key, KEYEVENTF_KEYUP),
         keyboard_input(VK_CONTROL, KEYEVENTF_KEYUP),
     ]);
+    // A Shift still held would otherwise read as released, so the next letters
+    // typed come out lowercase. Alt and Win stay released: pressing them again
+    // would make the user's own release a bare tap, which opens the menu bar or
+    // the Start menu.
+    for &(vk, flags) in &held {
+        if [VK_LSHIFT, VK_RSHIFT].contains(&vk) {
+            inputs.push(keyboard_input(vk, flags));
+        }
+    }
 
     let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
     if sent != inputs.len() as u32 {
