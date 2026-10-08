@@ -552,7 +552,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         label: "Parakeet Ultra",
         description: "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size.",
         tags: &["Multilingual", "Fast", "Accurate"],
-        category: "experimental",
+        category: "standard",
         engine: LocalModelEngine::Transcribe,
         languages: Languages::ParakeetV3,
         variant: "Q8_0",
@@ -1018,7 +1018,11 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
 
 /// Automatic walks this in order and takes the first model that covers the
 /// user's languages. The first one usable here is also the stock default.
-pub const RECOMMENDED: &[&str] = &["parakeet_tdt_v3_gguf", "whisper_large_v3_turbo_q8"];
+pub const RECOMMENDED: &[&str] = &[
+    "parakeet_ultra_gguf",
+    "parakeet_tdt_v3_gguf",
+    "whisper_large_v3_turbo_q8",
+];
 
 /// (old, new): `old` is being retired in favor of `new`. Any line is safe to
 /// delete, since a stale model falls back to [`recommended_model`].
