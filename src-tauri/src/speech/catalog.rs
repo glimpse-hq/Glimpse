@@ -103,6 +103,8 @@ pub enum Languages {
     Nemotron35,
     Qwen3,
     Whisper,
+    /// Only the macOS Apple Speech model uses this.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     Apple,
 }
 
