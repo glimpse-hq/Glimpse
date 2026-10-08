@@ -105,7 +105,7 @@ pub fn copy_last_transcription_to_clipboard(app: &AppHandle<AppRuntime>) {
         },
         Err(err) => {
             tracing::error!("Failed to load the last transcription: {err}");
-            emit_copy_error_toast(app, "Unable to copy to clipboard");
+            emit_copy_error_toast(app, "native.toast.copy_failed");
         }
     }
 }
@@ -116,19 +116,19 @@ pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcriptio
         .storage()
         .get_by_id(transcription_id);
     let Some(record) = record else {
-        emit_copy_error_toast(app, "Transcription no longer available");
+        emit_copy_error_toast(app, "native.toast.copy_missing");
         refresh_recent_menus(app);
         return;
     };
     let text = record.text.trim();
     if text.is_empty() {
-        emit_copy_error_toast(app, "Transcription is empty");
+        emit_copy_error_toast(app, "native.toast.copy_empty");
         refresh_recent_menus(app);
         return;
     }
     if let Err(err) = assistive::copy_text_to_clipboard(text) {
         tracing::error!("Failed to copy transcription to clipboard: {err}");
-        emit_copy_error_toast(app, "Unable to copy to clipboard");
+        emit_copy_error_toast(app, "native.toast.copy_failed");
         return;
     }
 
@@ -144,12 +144,12 @@ pub fn copy_transcription_to_clipboard(app: &AppHandle<AppRuntime>, transcriptio
     );
 }
 
-fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message: &str) {
+fn emit_copy_error_toast(app: &AppHandle<AppRuntime>, message_key: &'static str) {
     toast::emit_toast(
         app,
         toast::Payload {
             toast_type: "error".to_string(),
-            message: message.to_string(),
+            message: toast::native(app, message_key),
             auto_dismiss: Some(true),
             duration: Some(1600),
             ..Default::default()

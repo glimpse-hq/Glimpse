@@ -232,6 +232,8 @@ pub fn install_crash_handler(marker_path: PathBuf, crash_log_path: Option<PathBu
             .location()
             .map(|l| format!("{}:{}", l.file(), l.line()))
             .unwrap_or_else(|| "unknown".to_string());
+        #[cfg(target_os = "windows")]
+        crate::platform::windows::crash::exit_if_session_end_panic(&location);
         let message = info
             .payload()
             .downcast_ref::<&str>()

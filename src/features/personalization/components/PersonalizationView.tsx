@@ -12,6 +12,8 @@ import {
   Trash,
 } from "@phosphor-icons/react";
 import { useShiftHeld } from "../../../shared/hooks/useShiftHeld";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import ToggleSwitch from "../../../shared/ui/ToggleSwitch";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import ScreenHeader from "../../../shared/ui/ScreenHeader";
@@ -47,11 +49,13 @@ const ModeMenuItem = ({
     type="button"
     role="menuitem"
     onClick={onClick}
-    className={`flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item transition-colors hover:bg-surface-elevated ${
+    className={`flex w-full items-center gap-2.5 px-3 py-2 ui-text-menu-item transition-colors hover:bg-surface-elevated focus-visible:bg-surface-elevated focus-visible:outline-none ${
       destructive ? "ui-color-error" : "ui-color-secondary"
     }`}
   >
-    {icon}
+    <span aria-hidden="true" className="flex">
+      {icon}
+    </span>
     <span>{label}</span>
   </button>
 );
@@ -78,6 +82,12 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
   const lastPendingPersonalitiesRef = useRef<Personality[] | null>(null);
   const mountedRef = useRef(true);
   const shiftHeld = useShiftHeld(isActive);
+  const modeMenuRef = useRef<HTMLDivElement>(null);
+  const deleteDialogRef = useRef<HTMLDivElement>(null);
+  useMenuKeyboard(modeMenuRef, modeMenu !== null, () => setModeMenu(null));
+  useFocusTrap(deleteDialogRef, pendingDeletePersonality !== null, () =>
+    setPendingDeletePersonality(null),
+  );
 
   const personalitiesQuery = usePersonalities();
   const installedAppsQuery = useInstalledApps();
@@ -384,18 +394,6 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         return;
       }
 
-      if (modeMenu) {
-        event.preventDefault();
-        setModeMenu(null);
-        return;
-      }
-
-      if (pendingDeletePersonality) {
-        event.preventDefault();
-        setPendingDeletePersonality(null);
-        return;
-      }
-
       if (activePersonalityId) {
         event.preventDefault();
         setActivePersonalityId(null);
@@ -404,13 +402,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    activePersonalityId,
-    isActive,
-    modeMenu,
-    pendingDeletePersonality,
-    renamingId,
-  ]);
+  }, [activePersonalityId, isActive, renamingId]);
 
   return (
     <div className="flex h-full min-h-0 w-full max-w-7xl flex-col text-left mx-auto px-0">
@@ -506,6 +498,19 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
                     setActivePersonalityId(personality.id);
                   }}
                   onKeyDown={(e) => {
+                    if (
+                      e.key === "ContextMenu" ||
+                      (e.shiftKey && e.key === "F10")
+                    ) {
+                      e.preventDefault();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      setModeMenu({
+                        personality,
+                        x: rect.left + 16,
+                        y: rect.top + 32,
+                      });
+                      return;
+                    }
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       if (shiftHeld) {
@@ -679,7 +684,9 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
               }}
             />
             <div
+              ref={modeMenuRef}
               role="menu"
+              aria-label={modeMenu.personality.name}
               className="ui-surface-menu fixed z-[120] min-w-[168px] py-1"
               style={{
                 left: Math.min(modeMenu.x, window.innerWidth - 184),
@@ -753,7 +760,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
         )}
 
       {errorMessage && (
-        <div className="mt-4 ui-text-body-sm ui-color-error-soft">
+        <div role="alert" className="mt-4 ui-text-body-sm ui-color-error-soft">
           {errorMessage}
         </div>
       )}
@@ -783,13 +790,14 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
             onClick={() => setPendingDeletePersonality(null)}
           >
             <motion.div
+              ref={deleteDialogRef}
               initial={{ opacity: 0, scale: 0.96, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 14 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               onClick={(event) => event.stopPropagation()}
               className="w-[380px] max-w-[92vw] rounded-2xl border border-border-secondary bg-surface-overlay p-5 shadow-2xl"
-              role="dialog"
+              role="alertdialog"
               aria-modal="true"
               aria-labelledby="delete-mode-title"
             >

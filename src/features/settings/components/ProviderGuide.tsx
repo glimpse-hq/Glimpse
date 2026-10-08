@@ -50,7 +50,7 @@ export const CloudCardIllustration = ({
 export const CleanupShortcutIllustration = () => (
   <div className="flex items-center gap-1.5 border-b border-border-secondary py-0.5 ui-text-kbd ui-color-secondary">
     <span className="whitespace-nowrap">
-      {detectAppPlatform() === "macos" ? "⌥ Space" : "Alt Space"}
+      {detectAppPlatform() === "macos" ? "⌥ Space" : "Ctrl Shift Space"}
     </span>
     <span className="flex h-5 w-5 items-center justify-center rounded-md border border-transparent ui-color-muted">
       <Ghost size={13} />

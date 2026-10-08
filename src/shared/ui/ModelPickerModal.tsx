@@ -30,6 +30,8 @@ import {
 } from "../lib/modelCapabilities";
 import { useShiftHeld } from "../hooks/useShiftHeld";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useFocusTrap } from "../hooks/useFocusTrap";
+import { useMenuKeyboard } from "../hooks/useMenuKeyboard";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import DotMatrix from "./DotMatrix";
 import FilterMenu from "./FilterMenu";
@@ -244,7 +246,11 @@ export function ModelPickerPanel({
     <div className={`flex min-h-0 flex-col ${className ?? ""}`}>
       <div className="px-2 pb-3 pt-0.5">
         <div className="flex items-center gap-2 rounded-lg bg-[var(--surface-interactive)] px-3 py-1.5 transition-colors focus-within:bg-[var(--surface-interactive-strong)]">
-          <Search size={14} className="shrink-0 text-content-muted" />
+          <Search
+            size={14}
+            className="shrink-0 text-content-muted"
+            aria-hidden="true"
+          />
           <input
             value={modelSearch}
             onChange={(event) => setModelSearch(event.target.value)}
@@ -365,6 +371,8 @@ export default function ModelPickerModal({
   ...data
 }: ModelPickerModalProps) {
   const { t } = useLingui();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, open, onClose);
 
   return createPortal(
     <AnimatePresence>
@@ -378,6 +386,7 @@ export default function ModelPickerModal({
           onClick={onClose}
         >
           <motion.div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="model-picker-title"
@@ -402,7 +411,7 @@ export default function ModelPickerModal({
                 className="flex h-7 w-7 items-center justify-center rounded-md text-content-muted transition-colors hover:bg-surface-elevated hover:text-content-primary"
                 aria-label={t({ id: "model_picker.close", message: "Close" })}
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -618,7 +627,18 @@ function ModelRow({
         {isBusy ? (
           <>
             <div className="flex w-[140px] flex-col items-end justify-center">
-              <ModelProgressDots percent={percent} status={progress!.status} />
+              <span
+                role={isDownloading ? "progressbar" : undefined}
+                aria-label={isDownloading ? group.label : undefined}
+                aria-valuemin={isDownloading ? 0 : undefined}
+                aria-valuemax={isDownloading ? 100 : undefined}
+                aria-valuenow={isDownloading ? percent : undefined}
+              >
+                <ModelProgressDots
+                  percent={percent}
+                  status={progress!.status}
+                />
+              </span>
               <div className="mt-1 flex h-3 w-full items-center justify-end">
                 {isVerifying ? (
                   <p className="truncate text-right ui-text-micro tabular-nums text-content-disabled">
@@ -665,6 +685,10 @@ function ModelRow({
                   onClick={onCancel}
                   className="flex h-6 w-6 items-center justify-center rounded-md text-error transition-colors hover:bg-error/10"
                   title={t({ id: "model_picker.cancel", message: "Cancel" })}
+                  aria-label={t({
+                    id: "model_picker.cancel",
+                    message: "Cancel",
+                  })}
                 >
                   <Square size={10} fill="currentColor" aria-hidden="true" />
                 </button>
@@ -804,15 +828,14 @@ function DownloadErrorPopover({
   const { t } = useLingui();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const { copied, copy, reset } = useCopyToClipboard(1500);
-  useClickOutside(
-    ref,
-    () => {
-      setOpen(false);
-      reset();
-    },
-    open,
-  );
+  const close = () => {
+    setOpen(false);
+    reset();
+  };
+  useClickOutside(ref, close, open);
+  useMenuKeyboard(popoverRef, open, close);
 
   const copyLabel = copied
     ? t({ id: "model_picker.error.copied", message: "Copied" })
@@ -837,6 +860,7 @@ function DownloadErrorPopover({
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={popoverRef}
             role="dialog"
             aria-label={t({
               id: "model_picker.error.title",

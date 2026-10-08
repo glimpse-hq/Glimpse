@@ -25,8 +25,8 @@ use super::types::{
     CHUNK_OVERLAP_SECONDS, DIRECT_TRANSCRIBE_MINUTES, EVENT_LIBRARY_COMPLETE, EVENT_LIBRARY_ERROR,
     EVENT_LIBRARY_PROGRESS, JobSource, LibraryCompletePayload, LibraryErrorPayload, LibraryItem,
     LibraryItemPatch, LibraryItemStatus, LibraryProgressPayload, LibraryProgressUpdate,
-    LibraryTranscriptionResult, MAX_CHUNK_MINUTES, TranscriptSegment, cancelled_error,
-    is_cancelled_error, is_ffmpeg_error_message,
+    LibraryTranscriptionResult, MAX_CHUNK_MINUTES, PreviousTranscript, TranscriptSegment,
+    cancelled_error, is_cancelled_error, is_ffmpeg_error_message,
 };
 use crate::speech::{
     VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE, WHISPER_CHUNK_OVERLAP_SECONDS,
@@ -174,6 +174,7 @@ fn start_library_transcription_internal(
                         .to_vec(),
                 )
             }),
+            previous_transcript: PreviousTranscript::of(&item).map(Some),
             ..Default::default()
         },
     );
@@ -293,6 +294,7 @@ fn start_library_transcription_internal(
                             speech_model: result.speech_model.take(),
                             speakers: Some(result.speakers.take()),
                             transcribed_at: Some(Utc::now().to_rfc3339()),
+                            previous_transcript: Some(None),
                             ..Default::default()
                         },
                     );
@@ -799,20 +801,11 @@ fn restore_previous_transcript(
     item: &LibraryItem,
     cancelled: bool,
 ) -> bool {
-    if item.transcribed_at.is_none() || item.transcript.as_deref().is_none_or(str::is_empty) {
+    let Some(previous) = PreviousTranscript::of(item) else {
         return false;
-    }
-    let restored = storage.update_library_item(
-        &item.id,
-        LibraryItemPatch {
-            status: Some(LibraryItemStatus::Complete),
-            transcript: Some(item.transcript.clone().unwrap_or_default()),
-            transcript_edited: Some(item.transcript_edited),
-            segments: Some(item.segments.clone().unwrap_or_default()),
-            speakers: Some(item.speakers.clone()),
-            ..Default::default()
-        },
-    );
+    };
+    let restored =
+        storage.update_library_item(&item.id, previous.into_patch(LibraryItemStatus::Complete));
     if !matches!(restored, Ok(Some(_))) {
         return false;
     }

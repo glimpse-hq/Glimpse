@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -15,6 +15,7 @@ import {
 } from "@phosphor-icons/react";
 import DotMatrix from "../../../shared/ui/DotMatrix";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import { detectAppPlatform } from "../../../platform/service";
 import type { Personality } from "../../../types";
 import {
@@ -150,6 +151,9 @@ const PersonalityModal = ({
   const [appHighlightIndex, setAppHighlightIndex] = useState(0);
   const appComboboxRef = useRef<HTMLDivElement>(null);
   const appInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const appListId = useId();
+  useFocusTrap(dialogRef, true);
   const [websiteInput, setWebsiteInput] = useState("");
   const [websiteError, setWebsiteError] = useState<string | null>(null);
   const [instructionsText, setInstructionsText] = useState("");
@@ -353,6 +357,7 @@ const PersonalityModal = ({
         aria-labelledby="modal-title"
       >
         <motion.div
+          ref={dialogRef}
           initial={{ opacity: 0, scale: 0.96, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 20 }}
@@ -412,33 +417,37 @@ const PersonalityModal = ({
                     </button>
                   </div>
                 ) : (
-                  <div
-                    onClick={() => {
-                      if (
-                        personality.name ===
-                        t({
-                          id: "personalization.new_mode.default_name",
-                          message: "New Mode",
-                        })
-                      ) {
-                        setNameDraft("");
-                      }
-                      setIsEditingName(true);
-                    }}
-                    className="group/title flex min-w-0 items-center gap-2 cursor-pointer"
-                  >
-                    <h2
-                      id="modal-title"
-                      className="truncate ui-text-screen-title tracking-tight ui-color-primary group-hover/title:text-content-secondary transition-colors"
+                  <h2 id="modal-title" className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (
+                          personality.name ===
+                          t({
+                            id: "personalization.new_mode.default_name",
+                            message: "New Mode",
+                          })
+                        ) {
+                          setNameDraft("");
+                        }
+                        setIsEditingName(true);
+                      }}
+                      title={t({
+                        id: "personalization.modal.edit_name",
+                        message: "Edit mode name",
+                      })}
+                      className="group/title flex min-w-0 max-w-full items-center gap-2 cursor-pointer text-left"
                     >
-                      {personality.name}
-                    </h2>
-                    <Pencil
-                      size={13}
-                      className="shrink-0 opacity-0 group-hover/title:opacity-100 transition-opacity text-content-muted"
-                      aria-hidden="true"
-                    />
-                  </div>
+                      <span className="truncate ui-text-screen-title tracking-tight ui-color-primary group-hover/title:text-content-secondary transition-colors">
+                        {personality.name}
+                      </span>
+                      <Pencil
+                        size={13}
+                        className="shrink-0 opacity-0 group-hover/title:opacity-100 group-focus-visible/title:opacity-100 transition-opacity text-content-muted"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </h2>
                 )}
               </div>
             </div>
@@ -578,7 +587,15 @@ const PersonalityModal = ({
                       message: "Add application",
                     })}
                     role="combobox"
-                    aria-expanded={isAppMenuOpen}
+                    aria-expanded={
+                      isAppMenuOpen && filteredAppOptions.length > 0
+                    }
+                    aria-controls={appListId}
+                    aria-activedescendant={
+                      isAppMenuOpen && filteredAppOptions[appHighlightIndex]
+                        ? `${appListId}-${appHighlightIndex}`
+                        : undefined
+                    }
                     aria-autocomplete="list"
                     className="min-w-0 flex-1 bg-transparent py-2 ui-text-body-sm ui-color-primary placeholder-content-disabled focus:outline-none"
                   />
@@ -610,14 +627,21 @@ const PersonalityModal = ({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.12 }}
+                        id={appListId}
                         role="listbox"
+                        aria-label={t({
+                          id: "personalization.modal.applications",
+                          message: "Applications",
+                        })}
                         className="ui-surface-menu dropdown-list absolute left-0 right-0 top-full z-30 mt-2 max-h-[240px] px-1 py-1"
                       >
                         {filteredAppOptions.map((app, index) => (
                           <li key={`app-option-${app.name}`}>
                             <button
+                              id={`${appListId}-${index}`}
                               type="button"
                               role="option"
+                              tabIndex={-1}
                               aria-selected={index === appHighlightIndex}
                               onMouseEnter={() => setAppHighlightIndex(index)}
                               onMouseDown={(event) => event.preventDefault()}
@@ -713,6 +737,7 @@ const PersonalityModal = ({
                   </h3>
                   {websiteError ? (
                     <span
+                      role="alert"
                       className="min-w-0 truncate ui-text-meta ui-color-error"
                       title={websiteError}
                     >

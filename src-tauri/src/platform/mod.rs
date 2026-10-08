@@ -181,18 +181,25 @@ pub fn move_to_trash(path: &Path) -> io::Result<()> {
 #[cfg(target_os = "windows")]
 pub fn move_to_trash(path: &Path) -> io::Result<()> {
     use ::windows::Win32::UI::Shell::{
-        FO_DELETE, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT, SHFILEOPSTRUCTW,
-        SHFileOperationW,
+        FO_DELETE, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_NOERRORUI, FOF_SILENT,
+        FOF_WANTNUKEWARNING, SHFILEOPSTRUCTW, SHFileOperationW,
     };
     use ::windows::core::PCWSTR;
     use std::os::windows::ffi::OsStrExt;
 
+    // The Shell rejects verbatim (\\?\) paths, which is what canonicalize returns.
+    let plain = dunce::simplified(path);
+
     // pFrom is a list of paths, so it ends with two nulls.
-    let from: Vec<u16> = path.as_os_str().encode_wide().chain([0, 0]).collect();
+    let from: Vec<u16> = plain.as_os_str().encode_wide().chain([0, 0]).collect();
+    // FOF_NOCONFIRMATION alone deletes for good when an item can't be recycled
+    // (too large, or no Recycle Bin on that drive); the nuke warning asks first.
+    let flags =
+        FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING | FOF_NOERRORUI | FOF_SILENT;
     let mut op = SHFILEOPSTRUCTW {
         wFunc: FO_DELETE,
         pFrom: PCWSTR(from.as_ptr()),
-        fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT).0 as u16,
+        fFlags: flags.0 as u16,
         ..Default::default()
     };
     match unsafe { SHFileOperationW(&mut op) } {

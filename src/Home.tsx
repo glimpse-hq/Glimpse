@@ -35,6 +35,7 @@ import {
 import { i18n } from "./i18n";
 import { detectAppPlatform } from "./platform/service";
 import { useClickOutside } from "./shared/hooks/useClickOutside";
+import { useMenuKeyboard } from "./shared/hooks/useMenuKeyboard";
 import { useCopyToClipboard } from "./shared/hooks/useCopyToClipboard";
 import HomeTodayHeader from "./features/transcriptions/components/HomeTodayHeader";
 import TranscriptionList from "./features/transcriptions/components/TranscriptionList";
@@ -58,7 +59,7 @@ import {
   useLicenseGate,
   useLicenseState,
 } from "./features/license/queries";
-import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { useIsFetching } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings } from "./features/settings/queries";
@@ -155,7 +156,6 @@ type HomeProps = {
 
 const Home = ({ onReady }: HomeProps) => {
   const { t } = useLingui();
-  const queryClient = useQueryClient();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   // The nav animates when it swaps, not when the window first opens.
   const [navSwapped, setNavSwapped] = useState(false);
@@ -184,6 +184,7 @@ const Home = ({ onReady }: HomeProps) => {
   const [showFAQ, setShowFAQ] = useState(false);
   const [faqOpened, setFaqOpened] = useState(false);
   const supportMenuRef = useRef<HTMLDivElement>(null);
+  const supportPopupRef = useRef<HTMLDivElement>(null);
 
   const [dragActive, setDragActive] = useState(false);
   const [localApiStatus, setLocalApiStatus] = useState<LocalApiStatus | null>(
@@ -510,8 +511,7 @@ const Home = ({ onReady }: HomeProps) => {
       .catch(() => {});
 
     listen("license:checkout-returned", () => {
-      // The backend may have just activated the key from the link.
-      void queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
+      // QuerySyncBridge refetches the license state.
       setAccountSource("checkout_return");
       setSettingsTab("account");
       setIsSettingsOpen(true);
@@ -537,12 +537,15 @@ const Home = ({ onReady }: HomeProps) => {
       unlistenOpenImport?.();
       unlistenLicenseReturn?.();
     };
-  }, [queryClient]);
+  }, []);
 
   useClickOutside(
     supportMenuRef,
     () => setShowSupportPopup(false),
     showSupportPopup,
+  );
+  useMenuKeyboard(supportPopupRef, showSupportPopup, () =>
+    setShowSupportPopup(false),
   );
 
   useEffect(() => {
@@ -827,7 +830,7 @@ const Home = ({ onReady }: HomeProps) => {
                   animate={{ rotate: isSidebarCollapsed ? 180 : 0 }}
                   transition={{ type: "tween", duration: 0.2 }}
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={18} aria-hidden="true" />
                 </motion.div>
               </div>
               <span
@@ -856,14 +859,14 @@ const Home = ({ onReady }: HomeProps) => {
                   isSidebarCollapsed ? "gap-0" : "gap-3"
                 }`}
                 aria-expanded={showSupportPopup}
-                aria-haspopup="menu"
+                aria-haspopup="dialog"
                 aria-label={t({
                   id: "home.support.menu_aria",
                   message: "Support menu",
                 })}
               >
                 <div className="flex items-center justify-center w-[20px] shrink-0 group-hover:text-content-secondary">
-                  <Info size={20} weight="regular" />
+                  <Info size={20} weight="regular" aria-hidden="true" />
                 </div>
                 <span
                   style={{
@@ -886,6 +889,9 @@ const Home = ({ onReady }: HomeProps) => {
               <AnimatePresence>
                 {showSupportPopup && (
                   <motion.div
+                    ref={supportPopupRef}
+                    role="dialog"
+                    aria-labelledby="home-support-title"
                     initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.95 }}
@@ -894,17 +900,25 @@ const Home = ({ onReady }: HomeProps) => {
                   >
                     <div className="px-3 pt-3 pb-1">
                       <div className="flex items-center justify-between">
-                        <span className="ui-text-body-sm-strong ui-color-primary">
+                        <span
+                          id="home-support-title"
+                          className="ui-text-body-sm-strong ui-color-primary"
+                        >
                           {t({
                             id: "home.support.title",
                             message: "Get Support",
                           })}
                         </span>
                         <button
+                          type="button"
                           onClick={() => setShowSupportPopup(false)}
+                          aria-label={t({
+                            id: "home.support.close_aria",
+                            message: "Close support",
+                          })}
                           className="p-1 rounded-md hover:bg-surface-elevated text-content-muted hover:text-content-secondary transition-colors"
                         >
-                          <X size={14} />
+                          <X size={14} aria-hidden="true" />
                         </button>
                       </div>
                     </div>
@@ -919,6 +933,7 @@ const Home = ({ onReady }: HomeProps) => {
                         <HelpCircle
                           size={16}
                           style={{ color: "var(--color-support-help)" }}
+                          aria-hidden="true"
                         />
                         <div>
                           <div className="ui-text-body-sm-strong ui-color-primary">
@@ -939,6 +954,7 @@ const Home = ({ onReady }: HomeProps) => {
                         <Bug
                           size={16}
                           className="ui-color-secondary shrink-0"
+                          aria-hidden="true"
                         />
                         <div className="min-w-0">
                           <div className="ui-text-body-sm-strong ui-color-primary">
@@ -998,6 +1014,7 @@ const Home = ({ onReady }: HomeProps) => {
                         <Info
                           size={16}
                           style={{ color: "var(--color-support-info)" }}
+                          aria-hidden="true"
                         />
                         <div>
                           <div className="ui-text-body-sm-strong ui-color-primary">
@@ -1030,7 +1047,11 @@ const Home = ({ onReady }: HomeProps) => {
                 style={{ color: "var(--color-accent)" }}
               >
                 <div className="flex items-center justify-center w-[20px] shrink-0">
-                  <ArrowUpCircle size={20} weight="regular" />
+                  <ArrowUpCircle
+                    size={20}
+                    weight="regular"
+                    aria-hidden="true"
+                  />
                 </div>
                 <span
                   style={{

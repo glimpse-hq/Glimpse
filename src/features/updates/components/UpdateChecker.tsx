@@ -280,6 +280,7 @@ export function UpdateChecker({
           </p>
           {downloadError ? (
             <p
+              role="alert"
               className="ui-text-meta ui-color-error-subtle truncate"
               title={downloadError}
             >
@@ -298,6 +299,14 @@ export function UpdateChecker({
           {downloading ? (
             <motion.div
               key="downloading"
+              role="progressbar"
+              aria-label={t({
+                id: "updates.downloading_aria",
+                message: "Downloading update",
+              })}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={progress}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

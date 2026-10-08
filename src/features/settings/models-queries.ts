@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { useMemo } from "react";
 import * as modelsApi from "./models-api";
+import type { ModelRecommendation } from "./models-api";
 import { formatTranscriptionSpeechModel } from "../../shared/lib/speechProviders";
 import type { ModelInfo, ModelStatus, SpeechModel } from "../../types";
 
@@ -15,6 +16,7 @@ export const modelKeys = {
   status: (model: string) => [...modelKeys.all, "status", model] as const,
   speech: () => [...modelKeys.all, "speech"] as const,
   cli: () => [...modelKeys.all, "cli"] as const,
+  recommendation: () => [...modelKeys.all, "recommendation"] as const,
 };
 
 // The speaker diarization model shares the catalog but never transcribes.
@@ -32,6 +34,13 @@ export function useModelCatalog(enabled: boolean = true) {
     queryFn: modelsApi.listModels,
     enabled,
     select: selectTranscriptionModels,
+  });
+}
+
+export function useModelRecommendation() {
+  return useQuery({
+    queryKey: modelKeys.recommendation(),
+    queryFn: modelsApi.getModelRecommendation,
   });
 }
 
@@ -180,3 +189,24 @@ export function useFetchRemoteSpeechModels() {
     mutationFn: modelsApi.fetchRemoteSpeechModels,
   });
 }
+
+const downloadableModels = (models: ModelInfo[]) =>
+  models.filter((model) => model.downloadable);
+
+export const pickDefaultOnboardingModel = (
+  models: ModelInfo[],
+  persistedModel: string,
+  recommendation: ModelRecommendation | undefined,
+) => {
+  const available = downloadableModels(models);
+  // A default is always a recommended model, so anything else was picked on purpose.
+  if (
+    persistedModel &&
+    recommendation &&
+    !recommendation.recommended.includes(persistedModel) &&
+    available.some((model) => model.key === persistedModel)
+  ) {
+    return persistedModel;
+  }
+  return recommendation?.key || persistedModel;
+};

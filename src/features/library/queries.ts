@@ -73,6 +73,16 @@ export function useLibraryItems(
 ) {
   const queryClient = useQueryClient();
 
+  // Progress and completion events aren't heard while the view is hidden, so
+  // reload the list on return.
+  useEffect(() => {
+    if (!enabled) return;
+    void queryClient.invalidateQueries(
+      { queryKey: libraryKeys.all },
+      { cancelRefetch: false },
+    );
+  }, [enabled, queryClient]);
+
   useEffect(() => {
     if (!enabled) return;
 

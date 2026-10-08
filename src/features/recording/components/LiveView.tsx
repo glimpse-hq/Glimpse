@@ -1,5 +1,12 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
@@ -28,6 +35,7 @@ import { withSpeakerColors } from "../../library/speakerColors";
 import { formatTimestamp } from "../../library/components/library-utils";
 import SpeakerContextMenu from "../../library/components/SpeakerContextMenu";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { getExpandedTextSegments } from "../../../shared/lib/wordReveal";
 import SegmentedControl from "../../../shared/ui/SegmentedControl";
@@ -219,9 +227,11 @@ const BookmarkRow = ({
 const PrefsMenu = ({
   prefs,
   onChange,
+  panelRef,
 }: {
   prefs: LivePrefs;
   onChange: (patch: Partial<LivePrefs>) => void;
+  panelRef: RefObject<HTMLDivElement | null>;
 }) => {
   const { t } = useLingui();
   const row = (label: string, control: ReactNode) => (
@@ -232,7 +242,9 @@ const PrefsMenu = ({
   );
   return (
     <motion.div
-      role="menu"
+      ref={panelRef}
+      role="dialog"
+      aria-label={t({ id: "live.prefs", message: "Live view settings" })}
       initial={{ opacity: 0, y: -2 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -2 }}
@@ -329,7 +341,9 @@ const LiveView = () => {
   const seenWords = useRef(new Map<string, Set<number>>());
   const reduceMotion = useReducedMotion();
   const sawActive = useRef(false);
+  const prefsRef = useRef<HTMLDivElement>(null);
   useClickOutside(menuRef, () => setMenuOpen(false), menuOpen);
+  useMenuKeyboard(prefsRef, menuOpen, () => setMenuOpen(false));
 
   const active = state.status === "recording" || state.status === "paused";
   const paused = state.status === "paused";
@@ -787,7 +801,10 @@ const LiveView = () => {
               aria-label={silenceWarning}
             />
           ) : (
-            <span className="pointer-events-none truncate ui-text-label text-content-muted">
+            <span
+              aria-live="polite"
+              className="pointer-events-none truncate ui-text-label text-content-muted"
+            >
               {transcript.status === "catching_up"
                 ? t({ id: "live.status.catching_up", message: "Catching up" })
                 : paused
@@ -817,7 +834,7 @@ const LiveView = () => {
                 <button
                   type="button"
                   onClick={() => setMenuOpen((open) => !open)}
-                  aria-haspopup="menu"
+                  aria-haspopup="dialog"
                   aria-expanded={menuOpen}
                   aria-label={t({
                     id: "live.prefs",
@@ -843,7 +860,13 @@ const LiveView = () => {
             </button>
           </div>
           <AnimatePresence>
-            {menuOpen && <PrefsMenu prefs={prefs} onChange={updatePrefs} />}
+            {menuOpen && (
+              <PrefsMenu
+                prefs={prefs}
+                onChange={updatePrefs}
+                panelRef={prefsRef}
+              />
+            )}
           </AnimatePresence>
         </header>
 
@@ -911,7 +934,7 @@ const LiveView = () => {
                   onClick={jumpToLive}
                   className="ui-surface-menu absolute bottom-2 left-1/2 flex h-7 -translate-x-1/2 items-center gap-1.5 rounded-full px-3 ui-text-label font-medium text-content-secondary hover:text-content-primary"
                 >
-                  <ArrowDown size={11} />
+                  <ArrowDown size={11} aria-hidden="true" />
                   {t({ id: "live.jump", message: "Jump to live" })}
                 </motion.button>
               )}

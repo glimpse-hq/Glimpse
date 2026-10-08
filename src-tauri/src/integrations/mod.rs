@@ -10,6 +10,7 @@ mod handlers;
 mod history;
 mod ipc;
 mod library;
+mod mcp;
 mod model;
 mod open;
 mod output;
@@ -70,6 +71,11 @@ const COMMANDS: &[CliCommand] = &[
         name: "models",
         help: "Install or remove speech models.",
         owned: false,
+    },
+    CliCommand {
+        name: "mcp",
+        help: "Let AI agents search and read your Library.",
+        owned: true,
     },
     CliCommand {
         name: "status",
@@ -171,6 +177,7 @@ fn run(identifier: &str, args: &[String], json: bool) -> Result<()> {
         "replacements" => replacements::run(identifier, rest, json),
         "model" => model::run(identifier, rest, json),
         "library" => library::run(identifier, rest, json),
+        "mcp" => mcp::run(identifier, rest),
         "record" => record::run(rest, json),
         "open" => open::run(rest, json),
         "status" => status::run(rest, json),

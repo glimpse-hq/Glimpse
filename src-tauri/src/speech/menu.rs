@@ -26,7 +26,7 @@ pub(crate) fn cli_set_local_model(
 
     let state = app.state::<AppState>();
     let mut settings = state.current_settings_unmasked();
-    settings.local_model = model_key.to_string();
+    settings.choose_local_model(model_key.to_string());
     settings.remote_speech_enabled = false;
     persist_menu_settings(app, settings).ok_or_else(|| "Failed to persist settings".to_string())?;
     Ok(())
@@ -168,7 +168,7 @@ fn set_local_model_from_menu(app: &AppHandle<AppRuntime>, model_key: &str) -> Op
     if settings.local_model == model_key && !settings.remote_speech_enabled {
         return None;
     }
-    settings.local_model = model_key.to_string();
+    settings.choose_local_model(model_key.to_string());
     settings.remote_speech_enabled = false;
     persist_menu_settings(app, settings)
 }
@@ -187,7 +187,7 @@ fn toggle_remote_model_from_menu(app: &AppHandle<AppRuntime>) -> Option<UserSett
     persist_menu_settings(app, settings)
 }
 
-fn persist_menu_settings(
+pub(super) fn persist_menu_settings(
     app: &AppHandle<AppRuntime>,
     settings: UserSettings,
 ) -> Option<UserSettings> {

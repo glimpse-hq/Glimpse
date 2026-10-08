@@ -65,9 +65,16 @@ function QuerySyncBridge() {
     register<StoredSettings>("settings:changed", (settings) => {
       queryClient.setQueryData(settingsKeys.detail(), settings);
       queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+      // The app and dictation languages feed the recommendation.
+      queryClient.invalidateQueries({ queryKey: modelKeys.recommendation() });
     });
     register<LicenseState>("license:changed", (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);
+    });
+    // The backend may have just activated the key from the link. Onboarding
+    // has no Home mounted to pick that up.
+    register("license:checkout-returned", () => {
+      queryClient.invalidateQueries({ queryKey: licenseKeys.state() });
     });
     register("update:available", () => {
       queryClient.invalidateQueries({ queryKey: updateKeys.status() });
@@ -75,11 +82,18 @@ function QuerySyncBridge() {
     register("update:cleared", () => {
       queryClient.invalidateQueries({ queryKey: updateKeys.status() });
     });
+    register<{ model: string }>("model:deleted", ({ model }) => {
+      queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
+      queryClient.invalidateQueries({ queryKey: modelKeys.speech() });
+    });
     register("transcription:complete", () => {
       queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
     });
     register("transcription:error", () => {
       queryClient.invalidateQueries({ queryKey: transcriptionKeys.all });
+    });
+    register("permissions:accessibility-granted", () => {
+      queryClient.setQueryData(settingsKeys.accessibility(), true);
     });
     register("audio:input-devices-changed", () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.devices() });

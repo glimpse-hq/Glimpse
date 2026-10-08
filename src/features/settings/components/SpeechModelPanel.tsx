@@ -69,6 +69,10 @@ const SpeechModelPanel = ({
         </label>
         <Dropdown
           value={provider}
+          ariaLabel={t({
+            id: "settings.speech_model.provider",
+            message: "Provider",
+          })}
           onChange={(val) => {
             setProvider(val);
             const preset = getSpeechProviderPreset(val);
@@ -184,6 +188,10 @@ const SpeechModelPanel = ({
         </span>
         <Dropdown
           value={modelValue}
+          ariaLabel={t({
+            id: "settings.speech_model.model",
+            message: "Model",
+          })}
           onChange={(val) => setModel(val)}
           onOpen={
             hasSelectedProvider && canDiscoverModels

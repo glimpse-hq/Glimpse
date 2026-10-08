@@ -34,6 +34,8 @@ import { useInputDevices, useSettings } from "../../settings/queries";
 import { libraryKeys } from "../../library/queries";
 import { formatTimestamp } from "../../library/components/library-utils";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import type {
   AudioApp,
   Bookmark,
@@ -169,11 +171,13 @@ const SourceMenu = ({
 }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const change = (next: boolean) => {
     setOpen(next);
     onOpenChange(next);
   };
   useClickOutside(ref, () => change(false), open);
+  useMenuKeyboard(menuRef, open, () => change(false));
 
   return (
     <div className="relative flex min-w-0 flex-1 justify-end" ref={ref}>
@@ -200,7 +204,9 @@ const SourceMenu = ({
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={menuRef}
             role="menu"
+            aria-label={ariaLabel}
             initial={{ opacity: 0, scale: 0.98, y: -2 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: -2 }}
@@ -316,7 +322,7 @@ const BookmarkNoteRow = ({
         })}
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-content-disabled opacity-0 transition-[opacity,color,background-color] hover:bg-surface-interactive hover:text-red-500 group-hover/bookmark:opacity-100 focus-visible:opacity-100"
       >
-        <X size={12} />
+        <X size={12} aria-hidden="true" />
       </button>
     </li>
   );
@@ -324,7 +330,8 @@ const BookmarkNoteRow = ({
 
 const HOLD_DELETE_MS = 1500;
 
-// Press and hold; releasing early cancels. The fill shows how far along it is.
+// Press and hold with the pointer, Space, or Enter; releasing early cancels.
+// The fill shows how far along it is.
 const HoldToDeleteButton = ({
   label,
   onConfirm,
@@ -376,6 +383,15 @@ const HoldToDeleteButton = ({
       onPointerUp={cancel}
       onPointerLeave={cancel}
       onPointerCancel={cancel}
+      onKeyDown={(event) => {
+        if (event.key !== " " && event.key !== "Enter") return;
+        event.preventDefault();
+        if (!event.repeat && startedAt.current === null) start();
+      }}
+      onKeyUp={(event) => {
+        if (event.key === " " || event.key === "Enter") cancel();
+      }}
+      onBlur={cancel}
       className="relative overflow-hidden rounded-lg px-3 py-2 ui-text-body-sm font-medium text-content-muted transition-colors hover:text-red-500 disabled:opacity-50 select-none"
     >
       <span
@@ -423,6 +439,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<StartError | null>(null);
   const [naming, setNaming] = useState<NamingDialog | null>(null);
+  const namingDialogRef = useRef<HTMLDivElement>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<LibraryItem | null>(null);
@@ -469,9 +486,17 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
   const wantsApps = !active && (systemMenuOpen || selectedApps.length > 0);
   useEffect(() => {
     if (!isActive || !wantsApps) return;
+    // Closing the window only hides it, so skip polls nobody can see.
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") refreshApps();
+    };
     refreshApps();
-    const timer = setInterval(refreshApps, 4000);
-    return () => clearInterval(timer);
+    const timer = setInterval(refreshIfVisible, 4000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
   }, [isActive, wantsApps, refreshApps]);
 
   // Selections made before icons were saved pick theirs up once the app runs.
@@ -716,6 +741,9 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
       );
     }
   };
+  useFocusTrap(namingDialogRef, naming !== null, () => {
+    void handleCancelNaming();
+  });
 
   const handleSave = async () => {
     if (saving) return;
@@ -1009,7 +1037,10 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         >
           {formatClock(state.elapsed_ms)}
         </div>
-        <div className="mt-4 flex h-5 items-center gap-2 ui-text-body-sm text-content-muted">
+        <div
+          aria-live="polite"
+          className="mt-4 flex h-5 items-center gap-2 ui-text-body-sm text-content-muted"
+        >
           {active && (
             <>
               <span
@@ -1029,7 +1060,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                 onClick={handleOpenLive}
                 className="-mx-1.5 flex h-6 items-center gap-1.5 rounded-md px-1.5 text-content-secondary transition-colors hover:bg-surface-interactive hover:text-content-primary"
               >
-                <SidebarSimple size={13} weight="bold" />
+                <SidebarSimple size={13} weight="bold" aria-hidden="true" />
                 {t({ id: "record.active.live", message: "Live view" })}
               </button>
             </>
@@ -1147,9 +1178,9 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           className={secondaryButton}
         >
           {paused ? (
-            <Play size={13} className="fill-current" />
+            <Play size={13} className="fill-current" aria-hidden="true" />
           ) : (
-            <Pause size={13} className="fill-current" />
+            <Pause size={13} className="fill-current" aria-hidden="true" />
           )}
           {paused
             ? t({ id: "record.active.resume", message: "Resume" })
@@ -1161,7 +1192,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           disabled={!active || busy}
           className={secondaryButton}
         >
-          <BookmarkSimple size={13} />
+          <BookmarkSimple size={13} aria-hidden="true" />
           {t({ id: "record.active.bookmark", message: "Bookmark" })}
         </button>
         <button
@@ -1172,7 +1203,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         >
           {active ? (
             <>
-              <Stop size={12} weight="fill" />
+              <Stop size={12} weight="fill" aria-hidden="true" />
               {t({ id: "record.active.done", message: "Done" })}
             </>
           ) : starting ? (
@@ -1189,7 +1220,10 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
         </button>
       </div>
 
-      <div className="mt-3 mb-8 flex h-5 items-center justify-center gap-2 ui-text-label">
+      <div
+        role="status"
+        className="mt-3 mb-8 flex h-5 items-center justify-center gap-2 ui-text-label"
+      >
         {renderStatusSlot()}
       </div>
 
@@ -1204,6 +1238,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
               onClick={handleCancelNaming}
             >
               <motion.div
+                ref={namingDialogRef}
                 initial={{ scale: 0.96, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.96, opacity: 0 }}
@@ -1212,8 +1247,12 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                 onClick={(event) => event.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
+                aria-labelledby="record-name-title"
               >
-                <p className="ui-text-body-lg font-semibold text-content-primary">
+                <p
+                  id="record-name-title"
+                  className="ui-text-body-lg font-semibold text-content-primary"
+                >
                   {t({ id: "record.name.title", message: "Name recording" })}
                 </p>
                 <p className="mt-0.5 ui-text-label text-content-muted tabular-nums">
@@ -1235,12 +1274,12 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                       event.preventDefault();
                       void handleSave();
                     }
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      void handleCancelNaming();
-                    }
                   }}
                   onFocus={(event) => event.target.select()}
+                  aria-label={t({
+                    id: "record.name.title",
+                    message: "Name recording",
+                  })}
                   className="mt-4 h-10 w-full rounded-lg border border-border-primary bg-[var(--color-bg-surface)] px-3 ui-text-body text-content-primary outline-hidden focus:border-border-hover"
                   autoFocus
                 />

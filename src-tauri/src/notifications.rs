@@ -121,7 +121,7 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
         return;
     }
 
-    let (message, action_label) = notice_copy(notice, license_state.trial_days_remaining);
+    let (message, action_label) = notice_copy(app, notice, license_state.trial_days_remaining);
     toast::emit_toast(
         app,
         toast::Payload {
@@ -130,7 +130,7 @@ pub fn evaluate_after_use(app: &AppHandle<AppRuntime>, show_notice: bool) {
             auto_dismiss: Some(true),
             duration: Some(9000),
             action: Some("open_account_page".to_string()),
-            action_label: Some(action_label.to_string()),
+            action_label: Some(action_label),
             ..Default::default()
         },
     );
@@ -204,30 +204,28 @@ fn budget_allows(
     true
 }
 
-fn notice_copy(notice: &str, days_remaining: i64) -> (String, &'static str) {
+fn notice_copy(app: &AppHandle<AppRuntime>, notice: &str, days_remaining: i64) -> (String, String) {
+    let see_options = || toast::native(app, "native.toast.see_options");
     match notice {
         NOTICE_LICENSE_INACTIVE => (
-            "Your license is inactive. Dictation stays free. Some features need \
-             an active license."
-                .to_string(),
-            "Manage license",
+            toast::native(app, "native.toast.license_inactive"),
+            toast::native(app, "native.toast.manage_license"),
         ),
         NOTICE_TRIAL_EXPIRED => (
-            "Your trial ended. Dictation stays free. Some features need a license.".to_string(),
-            "See options",
+            toast::native(app, "native.toast.trial_expired"),
+            see_options(),
         ),
-        _ => {
-            let message = if days_remaining <= 1 {
-                "Last day of your trial. Dictation stays free. Some features need \
-                 a license."
-                    .to_string()
-            } else {
-                format!(
-                    "{days_remaining} days left in your trial. Dictation stays free. \
-                     Some features need a license."
-                )
-            };
-            (message, "See options")
-        }
+        _ if days_remaining <= 1 => (
+            toast::native(app, "native.toast.trial_last_day"),
+            see_options(),
+        ),
+        _ => (
+            toast::native_format(
+                app,
+                "native.toast.trial_days_left",
+                &[("days", &days_remaining.to_string())],
+            ),
+            see_options(),
+        ),
     }
 }

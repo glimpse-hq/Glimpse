@@ -17,9 +17,12 @@ pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
 pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
-/// Model directory and file of the Sortformer v2.1 diarizer that Nemotron-3 replaced.
-pub const RETIRED_DIARIZER_MODEL: &str = "sortformer_4spk_v2_1_q8";
-pub const RETIRED_DIARIZER_FILE: &str = "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf";
+/// (directory, file) of speaker models earlier versions installed. Each keeps
+/// working until `DIARIZER_MODEL` is installed, and is then removed.
+pub const RETIRED_DIARIZERS: &[(&str, &str)] = &[(
+    "sortformer_4spk_v2_1_q8",
+    "diar_streaming_sortformer_4spk-v2.1-Q8_0.gguf",
+)];
 
 pub fn is_legacy_category(category: &str) -> bool {
     category.eq_ignore_ascii_case(MODEL_CATEGORY_LEGACY)
@@ -83,10 +86,26 @@ pub struct LocalModelManifest {
     pub category: &'static str,
     pub tags: &'static [&'static str],
     pub engine: LocalModelEngine,
+    pub languages: Languages,
     pub family: &'static str,
     pub variant: &'static str,
     files: &'static [CatalogFile],
     pub capabilities: &'static [&'static str],
+}
+
+/// Which language list a model supports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Languages {
+    /// The diarizer, which doesn't transcribe.
+    None,
+    English,
+    ParakeetV3,
+    Nemotron35,
+    Qwen3,
+    Whisper,
+    /// Only the macOS Apple Speech model uses this.
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    Apple,
 }
 
 const PARAKEET_UNIFIED_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
@@ -122,6 +141,20 @@ const PARAKEET_DECODER_FILE: CatalogFile = CatalogFile {
     path: "parakeet-tdt-0.6b-v3-Q8_0-decoder.gguf",
     size_bytes: Some(19_479_904),
     sha256: Some("dfcf670a00df8d49474fddea707bcfc77339789f65dde115aeb79570fc813744"),
+};
+
+const PARAKEET_ULTRA_GGUF_FILES: &[CatalogFile] = &[CatalogFile {
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0.gguf",
+    path: "parakeet-ultra-Q8_0.gguf",
+    size_bytes: Some(739_508_608),
+    sha256: Some("37611717bcb235e7cc9dbdd24e19e055c41adc9fd4dafee878304af4a16bcb1a"),
+}];
+
+const PARAKEET_ULTRA_DECODER_FILE: CatalogFile = CatalogFile {
+    url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0-decoder.gguf",
+    path: "parakeet-ultra-Q8_0-decoder.gguf",
+    size_bytes: Some(19_479_936),
+    sha256: Some("5a68f1b297c07436aa7c6bef26712d7ee8bb9db6911741fd6225956cd6d3ef44"),
 };
 
 const DIARIZER_FILES: &[CatalogFile] = &[CatalogFile {
@@ -189,6 +222,27 @@ const TRANSCRIBE_ANE_ENCODERS: &[TranscribeAneEncoder] = &[
         url: "https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml/resolve/main/parakeet-tdt-0.6b-v3-Q8_0-encoder-v3-macos14.mlmodelc.zip",
         size_bytes: 523_684_020,
         sha256: "3d530e9cc868be36c4a209c3d8e3328a3e8d03d0f68fe74388104073f5fc4fd3",
+        unpacked_bytes: Some(594_977_730),
+    },
+    // Parakeet Ultra: same int8 layout as V3 above.
+    TranscribeAneEncoder {
+        model: "parakeet_ultra_gguf",
+        replacement_files: Some(&[PARAKEET_ULTRA_DECODER_FILE]),
+        min_macos: 15,
+        dir_name: "parakeet-ultra-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0-encoder-mf3.mlmodelc.zip",
+        size_bytes: 529_137_703,
+        sha256: "e5e36aca6827b2c78ad33f61c30b1e1d7b7a6ab0a8f268c6b6fac6f7b4274e1e",
+        unpacked_bytes: Some(605_651_354),
+    },
+    TranscribeAneEncoder {
+        model: "parakeet_ultra_gguf",
+        replacement_files: Some(&[PARAKEET_ULTRA_DECODER_FILE]),
+        min_macos: 14,
+        dir_name: "parakeet-ultra-Q8_0-encoder.mlmodelc",
+        url: "https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml/resolve/main/parakeet-ultra-Q8_0-encoder-macos14.mlmodelc.zip",
+        size_bytes: 523_680_980,
+        sha256: "63903e2d1dd039017cf02b82208fca2c72f770dfef10c4d67f56b6b438e90fb1",
         unpacked_bytes: Some(594_977_730),
     },
     TranscribeAneEncoder {
@@ -489,8 +543,22 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Fast"],
         category: "standard",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::ParakeetV3,
         variant: "Q8_0",
         files: PARAKEET_GGUF_FILES,
+        capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
+    },
+    LocalModelManifest {
+        id: "parakeet_ultra_gguf",
+        family: "parakeet-ultra",
+        label: "Parakeet Ultra",
+        description: "Multilingual (25 languages) fine-tune of Parakeet TDT V3 by Moondream. More accurate than V3 at the same speed and size.",
+        tags: &["Multilingual", "Fast", "Accurate"],
+        category: "standard",
+        engine: LocalModelEngine::Transcribe,
+        languages: Languages::ParakeetV3,
+        variant: "Q8_0",
+        files: PARAKEET_ULTRA_GGUF_FILES,
         capabilities: &[MODEL_CAPABILITY_DICTIONARY, MODEL_CAPABILITY_TIMESTAMPS],
     },
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -502,6 +570,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Built in"],
         category: "standard",
         engine: LocalModelEngine::Apple,
+        languages: Languages::Apple,
         variant: "System",
         files: &[],
         capabilities: &[MODEL_CAPABILITY_TIMESTAMPS],
@@ -514,6 +583,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Dictionary", "Multilingual"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "large-v3-turbo",
@@ -531,6 +601,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Fast"],
         category: "experimental",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::Qwen3,
         variant: "Q8_0",
         files: QWEN3_ASR_0_6B_FILES,
         capabilities: &[MODEL_CAPABILITY_DICTIONARY],
@@ -543,6 +614,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast", "Streaming"],
         category: "experimental",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::English,
         variant: "Q8_0",
         files: PARAKEET_UNIFIED_GGUF_FILES,
         capabilities: &[
@@ -559,6 +631,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Streaming"],
         category: "experimental",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::Nemotron35,
         variant: "Q8_0",
         files: NEMOTRON_35_STREAMING_GGUF_FILES,
         capabilities: &[
@@ -575,6 +648,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Streaming"],
         category: "legacy",
         engine: LocalModelEngine::Transcribe,
+        languages: Languages::English,
         variant: "Q8_0",
         files: NEMOTRON_STREAMING_EN_GGUF_FILES,
         capabilities: &[
@@ -591,6 +665,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
             "small",
@@ -608,6 +683,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::English,
         variant: "Q8_0",
         files: distil_whisper_files!(
             "Glimpse-Dictation/Distil-Whisper-Large-V3.5-gguf",
@@ -625,6 +701,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::English,
         variant: "Q8_0",
         files: distil_whisper_files!(
             "Glimpse-Dictation/Distil-Whisper-Medium.en-gguf",
@@ -642,6 +719,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["English", "Fast", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::English,
         variant: "Q8_0",
         files: distil_whisper_files!(
             "Glimpse-Dictation/Distil-Whisper-Small.en-gguf",
@@ -659,6 +737,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
             "tiny",
@@ -676,6 +755,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "tiny",
@@ -693,6 +773,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "tiny",
@@ -710,6 +791,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_1",
         files: whisper_files!(
             "base",
@@ -727,6 +809,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "base",
@@ -744,6 +827,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "base",
@@ -761,6 +845,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary", "Compute Friendly"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "small",
@@ -778,6 +863,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "small",
@@ -795,6 +881,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_0",
         files: whisper_files!(
             "medium",
@@ -812,6 +899,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q8_0",
         files: whisper_files!(
             "medium",
@@ -829,6 +917,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "medium",
@@ -846,6 +935,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "standard",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_0",
         // Measured more accurate and smaller than the Q5_K_M GGUF.
         files: &[CatalogFile {
@@ -864,6 +954,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "large-v3",
@@ -881,6 +972,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Q5_0",
         files: whisper_files!(
             "large-v3-turbo",
@@ -898,6 +990,7 @@ const MODEL_MANIFESTS: &[LocalModelManifest] = &[
         tags: &["Multilingual", "Dictionary"],
         category: "legacy",
         engine: LocalModelEngine::Whisper,
+        languages: Languages::Whisper,
         variant: "Full",
         files: whisper_files!(
             "large-v3-turbo",
@@ -919,10 +1012,131 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
     tags: &[],
     category: MODEL_CATEGORY_DIARIZATION,
     engine: LocalModelEngine::Transcribe,
+    languages: Languages::None,
     variant: "Q8_0",
     files: DIARIZER_FILES,
     capabilities: &[],
 };
+
+/// Automatic walks this in order and takes the first model that covers the
+/// user's languages. The first one usable here is also the stock default.
+pub const RECOMMENDED: &[&str] = &[
+    "parakeet_ultra_gguf",
+    "parakeet_tdt_v3_gguf",
+    "whisper_large_v3_turbo_q8",
+];
+
+/// (old, new): `old` is being retired in favor of `new`. Any line is safe to
+/// delete, since a stale model falls back to [`recommended_model`].
+pub const SUCCESSORS: &[(&str, &str)] = &[];
+
+fn usable_here(manifest: &LocalModelManifest) -> bool {
+    match manifest.engine {
+        LocalModelEngine::Apple => apple_engine_available(),
+        _ => is_downloadable(manifest),
+    }
+}
+
+fn base_language(code: &str) -> String {
+    code.split(['-', '_'])
+        .next()
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+}
+
+/// Base codes of the system's first language, the app language when set by
+/// hand, and the dictation language unless it is left to detection.
+pub(crate) fn user_languages(settings: &UserSettings) -> Vec<String> {
+    let app_locale = (settings.app_locale != "system").then_some(settings.app_locale.as_str());
+    let dictation = settings.language.trim();
+    let dictation =
+        (!dictation.is_empty() && !dictation.eq_ignore_ascii_case("auto")).then_some(dictation);
+    let mut languages: Vec<String> = Vec::new();
+    for code in crate::native_i18n::system_language().into_iter().chain(
+        [app_locale, dictation]
+            .into_iter()
+            .flatten()
+            .map(base_language),
+    ) {
+        if !languages.contains(&code) {
+            languages.push(code);
+        }
+    }
+    languages
+}
+
+pub(crate) fn covers(manifest: &LocalModelManifest, languages: &[String]) -> usize {
+    let supported: Vec<String> = supported_languages(manifest)
+        .iter()
+        .map(|language| base_language(&language.code))
+        .collect();
+    languages
+        .iter()
+        .filter(|language| supported.contains(language))
+        .count()
+}
+
+/// The first recommended model that covers all `languages`, else the one that
+/// covers the most.
+pub fn recommended_model(languages: &[String]) -> &'static str {
+    let candidates: Vec<&LocalModelManifest> = RECOMMENDED
+        .iter()
+        .filter_map(|id| definition(id))
+        .filter(|manifest| usable_here(manifest))
+        .collect();
+    candidates
+        .iter()
+        .find(|manifest| covers(manifest, languages) == languages.len())
+        // max_by_key keeps the last of equals, so walk backwards to prefer earlier entries.
+        .or_else(|| {
+            candidates
+                .iter()
+                .rev()
+                .max_by_key(|manifest| covers(manifest, languages))
+        })
+        .map(|manifest| manifest.id)
+        .unwrap_or(MODEL_MANIFESTS[0].id)
+}
+
+pub fn successor_of(model: &str) -> Option<&'static str> {
+    SUCCESSORS
+        .iter()
+        .find(|(old, _)| *old == model)
+        .and_then(|(_, new)| definition(new))
+        .filter(|manifest| usable_here(manifest))
+        .map(|manifest| manifest.id)
+}
+
+pub fn is_recommended(settings: &UserSettings) -> bool {
+    settings.local_model == recommended_model(&user_languages(settings))
+}
+
+/// The model to move to: the recommendation on Automatic, otherwise a
+/// retiring model's successor.
+pub fn model_upgrade_target(settings: &UserSettings) -> Option<&'static str> {
+    let target = if settings.local_model_auto {
+        Some(recommended_model(&user_languages(settings)))
+    } else {
+        successor_of(&settings.local_model)
+    };
+    target.filter(|target| *target != settings.local_model)
+}
+
+#[derive(Debug, Serialize)]
+pub struct ModelRecommendation {
+    pub key: &'static str,
+    pub recommended: &'static [&'static str],
+    pub languages: Vec<String>,
+}
+
+pub fn model_recommendation(settings: &UserSettings) -> ModelRecommendation {
+    let languages = user_languages(settings);
+    ModelRecommendation {
+        key: recommended_model(&languages),
+        recommended: RECOMMENDED,
+        languages,
+    }
+}
 
 pub fn local_manifests() -> &'static [LocalModelManifest] {
     MODEL_MANIFESTS
@@ -1022,35 +1236,15 @@ pub fn is_streaming_model(model_key: &str) -> bool {
     model_supports_capability(model_key, MODEL_CAPABILITY_STREAMING)
 }
 
-fn supports_only_english(manifest: &LocalModelManifest) -> bool {
-    manifest
-        .tags
-        .iter()
-        .any(|tag| tag.eq_ignore_ascii_case("English"))
-        && !manifest
-            .tags
-            .iter()
-            .any(|tag| tag.eq_ignore_ascii_case("Multilingual"))
-}
-
 fn supported_languages(manifest: &LocalModelManifest) -> Vec<SupportedLanguageInfo> {
-    if manifest.id == DIARIZER_MODEL {
-        return Vec::new();
-    }
-    if supports_only_english(manifest) {
-        return english_supported_languages();
-    }
-
-    match manifest.engine {
-        LocalModelEngine::Whisper => whisper_supported_languages(),
-        LocalModelEngine::Apple => apple_supported_languages(),
-        LocalModelEngine::Transcribe if manifest.id == "parakeet_tdt_v3_gguf" => {
-            parakeet_v3_supported_languages()
-        }
-        LocalModelEngine::Transcribe if manifest.id == "nemotron_35_streaming_multilingual" => {
-            nemotron_35_supported_languages()
-        }
-        LocalModelEngine::Transcribe => qwen3_asr_supported_languages(),
+    match manifest.languages {
+        Languages::None => Vec::new(),
+        Languages::English => english_supported_languages(),
+        Languages::ParakeetV3 => parakeet_v3_supported_languages(),
+        Languages::Nemotron35 => nemotron_35_supported_languages(),
+        Languages::Qwen3 => qwen3_asr_supported_languages(),
+        Languages::Whisper => whisper_supported_languages(),
+        Languages::Apple => apple_supported_languages(),
     }
 }
 
@@ -1305,6 +1499,81 @@ fn provider_display(provider: &str) -> String {
 mod tests {
     use super::*;
 
+    fn langs(codes: &[&str]) -> Vec<String> {
+        codes.iter().map(|code| code.to_string()).collect()
+    }
+
+    #[test]
+    fn recommendation_and_successor_lists_point_at_usable_models() {
+        for id in RECOMMENDED {
+            assert!(
+                definition(id).is_some_and(is_downloadable),
+                "RECOMMENDED lists {id}, which can't be downloaded"
+            );
+        }
+        for (old, new) in SUCCESSORS {
+            assert!(
+                definition(new).is_some_and(is_downloadable),
+                "{old} is replaced by {new}, which can't be downloaded"
+            );
+            assert!(
+                !SUCCESSORS.iter().any(|(other, _)| other == new),
+                "{new} is itself replaced; point {old} at the final model"
+            );
+        }
+    }
+
+    #[test]
+    fn automatic_prefers_earlier_models_and_speaks_the_language() {
+        let usable: Vec<_> = RECOMMENDED
+            .iter()
+            .filter_map(|id| definition(id))
+            .filter(|manifest| usable_here(manifest))
+            .collect();
+        for language in supported_languages(usable[0]) {
+            let code = langs(&[&base_language(&language.code)]);
+            assert_eq!(recommended_model(&code), usable[0].id, "{code:?}");
+        }
+        for manifest in &usable {
+            for language in supported_languages(manifest) {
+                let code = langs(&[&base_language(&language.code)]);
+                let picked = definition(recommended_model(&code)).unwrap();
+                assert_eq!(covers(picked, &code), 1, "{code:?}");
+            }
+        }
+        // Nothing covers Klingon, so the model that covers Japanese wins.
+        let picked = definition(recommended_model(&langs(&["ja", "tlh"]))).unwrap();
+        assert_eq!(covers(picked, &langs(&["ja"])), 1);
+    }
+
+    #[test]
+    fn automatic_moves_to_a_model_for_the_language_and_pinned_stays() {
+        let ja = langs(&["ja"]);
+        let start = MODEL_MANIFESTS
+            .iter()
+            .find(|manifest| {
+                !supported_languages(manifest).is_empty()
+                    && covers(manifest, &ja) == 0
+                    && successor_of(manifest.id).is_none()
+            })
+            .expect("a model without Japanese");
+        let mut settings = UserSettings {
+            language: "ja".to_string(),
+            local_model: start.id.to_string(),
+            ..UserSettings::default()
+        };
+
+        settings.local_model_auto = false;
+        assert_eq!(model_upgrade_target(&settings), None);
+
+        settings.local_model_auto = true;
+        let target = model_upgrade_target(&settings).expect("Automatic should move");
+        assert_eq!(covers(definition(target).unwrap(), &ja), 1);
+
+        settings.local_model = target.to_string();
+        assert_eq!(model_upgrade_target(&settings), None);
+    }
+
     #[test]
     fn parakeet_gguf_has_platform_appropriate_packages() {
         let full = install_spec("parakeet_tdt_v3_gguf", false).unwrap();
@@ -1339,6 +1608,7 @@ mod tests {
             category: MODEL_CATEGORY_LEGACY,
             tags: &[],
             engine: LocalModelEngine::Whisper,
+            languages: Languages::Whisper,
             family: "whisper-tiny",
             variant: "Full",
             files: whisper_files!(
@@ -1364,5 +1634,175 @@ mod tests {
     #[test]
     fn unknown_models_are_not_downloadable() {
         assert!(!model_is_downloadable("not_a_real_model"));
+    }
+
+    fn language_codes(key: &str) -> Vec<String> {
+        manifest_to_model_info(definition(key).unwrap())
+            .supported_languages
+            .into_iter()
+            .map(|language| language.code)
+            .collect()
+    }
+
+    #[test]
+    fn manifest_ids_are_unique_and_exclude_the_diarizer() {
+        let mut ids: Vec<_> = local_manifests().iter().map(|m| m.id).collect();
+        let total = ids.len();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), total);
+        assert!(definition(DIARIZER_MODEL).is_none());
+        assert_eq!(
+            installable_definition(DIARIZER_MODEL).unwrap().id,
+            DIARIZER_MODEL
+        );
+        for (dir, _) in RETIRED_DIARIZERS {
+            assert!(installable_definition(dir).is_none());
+        }
+    }
+
+    #[test]
+    fn every_downloadable_model_has_an_install_spec_with_hashed_files() {
+        for manifest in local_manifests() {
+            if manifest.engine == LocalModelEngine::Apple || !is_downloadable(manifest) {
+                continue;
+            }
+            for ane in [false, true] {
+                let spec = install_spec(manifest.id, ane)
+                    .unwrap_or_else(|| panic!("{} has no install spec", manifest.id));
+                assert_eq!(spec.id, manifest.id);
+                assert!(!spec.files.is_empty(), "{} has no files", manifest.id);
+                for file in &spec.files {
+                    assert!(file.url.starts_with("https://"), "{}", file.url);
+                    if let Some(hash) = &file.sha256 {
+                        assert_eq!(hash.len(), 64, "{}", file.path);
+                        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+                    }
+                }
+            }
+        }
+        assert!(install_spec("not_a_real_model", false).is_none());
+    }
+
+    #[test]
+    fn single_file_models_install_as_a_file_and_bundles_as_a_directory() {
+        let spec = install_spec("whisper_large_v3_turbo_q8", false).unwrap();
+        assert!(matches!(
+            spec.storage,
+            ModelStorage::File { ref artifact } if artifact == "whisper-large-v3-turbo-Q8_0.gguf"
+        ));
+        assert_eq!(spec.variant.as_deref(), Some("whisper-large-v3-turbo"));
+    }
+
+    #[test]
+    fn english_tagged_models_only_report_english() {
+        for key in [
+            "parakeet_unified_en_int8",
+            "nemotron_streaming_en",
+            "distil_whisper_large_v35",
+            "distil_whisper_small_en",
+        ] {
+            assert_eq!(language_codes(key), ["en"], "{key}");
+        }
+    }
+
+    #[test]
+    fn whisper_covers_languages_parakeet_does_not() {
+        let parakeet = language_codes("parakeet_tdt_v3_gguf");
+        let whisper = language_codes("whisper_large_v3_turbo_q8");
+        assert!(parakeet.iter().any(|code| code == "de"));
+        for code in ["ja", "zh", "ko", "hi", "ar"] {
+            assert!(!parakeet.iter().any(|c| c == code), "parakeet lists {code}");
+            assert!(whisper.iter().any(|c| c == code), "whisper misses {code}");
+        }
+        assert!(parakeet.iter().all(|code| whisper.contains(code)));
+    }
+
+    #[test]
+    fn every_listed_language_code_has_a_display_name() {
+        for manifest in local_manifests() {
+            for language in manifest_to_model_info(manifest).supported_languages {
+                assert_ne!(language.code, language.name, "{}", manifest.id);
+            }
+        }
+    }
+
+    #[test]
+    fn diarizer_lists_no_languages() {
+        assert!(diarizer_model_info().supported_languages.is_empty());
+    }
+
+    #[test]
+    fn capabilities_match_case_insensitively_and_unknown_models_have_none() {
+        assert!(model_supports_capability(
+            "whisper_large_v3_turbo_q8",
+            "DICTIONARY"
+        ));
+        assert!(model_supports_capability(
+            "whisper_large_v3_turbo_q8",
+            MODEL_CAPABILITY_TIMESTAMPS
+        ));
+        assert!(!model_supports_capability(
+            "qwen3_asr_0_6b_q8",
+            MODEL_CAPABILITY_TIMESTAMPS
+        ));
+        assert!(!model_supports_capability(
+            "nope",
+            MODEL_CAPABILITY_DICTIONARY
+        ));
+        assert!(is_streaming_model("nemotron_streaming_en"));
+        assert!(!is_streaming_model("whisper_large_v3_turbo_q8"));
+    }
+
+    #[test]
+    fn nvidia_families_keep_their_legacy_engine_names() {
+        let name = |key| engine_name(definition(key).unwrap());
+        let id = |key| engine_id(definition(key).unwrap());
+        assert_eq!(name("parakeet_unified_en_int8"), "parakeet");
+        assert_eq!(name("nemotron_streaming_en"), "nemotron");
+        assert_eq!(name("nemotron_35_streaming_multilingual"), "nemotron");
+        assert_eq!(id("parakeet_unified_en_int8"), "nvidia");
+        assert_eq!(id("nemotron_streaming_en"), "nvidia");
+        assert_eq!(
+            id("whisper_large_v3_turbo_q8"),
+            name("whisper_large_v3_turbo_q8")
+        );
+    }
+
+    #[test]
+    fn labels_resolve_local_keys_and_remote_tokens() {
+        assert_eq!(label("whisper_large_v3_turbo_q8"), "Whisper Large V3 Turbo");
+        assert_eq!(label("unknown_local"), "unknown_local");
+        assert_eq!(
+            label("remote:openai:gpt-4o-transcribe"),
+            "OpenAI · gpt-4o-transcribe"
+        );
+        assert_eq!(label("  remote:XAI:grok "), "xAI (Grok) · grok");
+        assert_eq!(label("remote:groq"), "Groq");
+        assert_eq!(label("remote:groq:"), "Groq");
+        assert_eq!(label("remote:"), "Remote");
+        assert_eq!(label("remote:acme:model:v2"), "acme · model:v2");
+    }
+
+    #[test]
+    fn quant_suffixes_are_stripped_from_whisper_cpp_encoder_names() {
+        assert_eq!(strip_quant_suffix("large-v3-turbo-q8_0"), "large-v3-turbo");
+        assert_eq!(strip_quant_suffix("small-q5_1"), "small");
+        assert_eq!(strip_quant_suffix("large-v3"), "large-v3");
+        assert_eq!(strip_quant_suffix("base"), "base");
+        assert_eq!(
+            whisper_cpp_encoder_dir(definition("whisper_small_q5").unwrap()).as_deref(),
+            Some("ggml-small-encoder.mlmodelc")
+        );
+        assert!(whisper_cpp_encoder_dir(definition("parakeet_tdt_v3_gguf").unwrap()).is_none());
+    }
+
+    #[test]
+    fn whisper_bin_partial_names_the_old_download() {
+        assert_eq!(
+            whisper_bin_partial(definition("whisper_small_q5").unwrap()).as_deref(),
+            Some("ggml-small-q5_1.bin.part")
+        );
+        assert!(whisper_bin_partial(definition("parakeet_tdt_v3_gguf").unwrap()).is_none());
     }
 }

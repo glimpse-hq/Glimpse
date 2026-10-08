@@ -18,3 +18,4 @@ These look wrong or redundant but are deliberate. Don't "fix" them. Add one line
 - **`transcription_mode` stays although the Cloud/Local UI is gone.** It's a placeholder for a possible managed service.
 - **CLI writes and the local API check the license at call time**, not only at install.
 - **Windows exits right after `RunEvent::Exit` when no `ExitRequested` came first** (`platform/windows/crash.rs`). Logoff and shutdown end tao's loop from `WM_ENDSESSION`, and tao keeps pumping into the destroyed loop until it panics.
+- **A Windows panic inside tao's event loop exits cleanly once Windows has asked the app to end its session** (`platform/windows/crash.rs`). Store updates and restarts send `WM_ENDSESSION`, which tao handles even while its event handler is running and then panics as re-entrant (`runner.rs:246`).

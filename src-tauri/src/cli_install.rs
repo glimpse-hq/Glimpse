@@ -283,10 +283,28 @@ fn windows_cli_target_for_install(source: &Path, packaged: bool) -> PathBuf {
 #[cfg(windows)]
 fn write_windows_shim(destination: &Path, source: &Path) -> Result<(), String> {
     let source_display = source.to_string_lossy();
+    let command = windows_shim_command_path(source);
     let content = format!(
-        "@echo off\r\n{WINDOWS_SHIM_TARGET_MARKER}{source_display}\r\nset \"{WINDOWS_CLI_SHIM_ENV}=1\"\r\n\"{source_display}\" %*\r\n"
+        "@echo off\r\n{WINDOWS_SHIM_TARGET_MARKER}{source_display}\r\nset \"{WINDOWS_CLI_SHIM_ENV}=1\"\r\n\"{command}\" %*\r\n"
     );
     fs::write(destination, content).map_err(|err| format!("Failed to install CLI: {err}"))
+}
+
+// cmd reads a batch file in the console code page, not UTF-8, so a literal
+// path under a non-ASCII user name breaks. Variables expand from the Unicode
+// environment, so the per-user install dir goes through %LOCALAPPDATA%, or
+// %USERPROFILE% when it isn't under %LOCALAPPDATA%.
+#[cfg(windows)]
+fn windows_shim_command_path(source: &Path) -> String {
+    let escape = |path: &Path| path.to_string_lossy().replace('%', "%%");
+    for var in ["LOCALAPPDATA", "USERPROFILE"] {
+        if let Some(base) = env::var_os(var).filter(|base| !base.is_empty())
+            && let Ok(rest) = source.strip_prefix(&base)
+        {
+            return format!("%{var}%\\{}", escape(rest));
+        }
+    }
+    escape(source)
 }
 
 #[cfg(windows)]

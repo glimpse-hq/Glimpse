@@ -259,6 +259,43 @@ pub struct LibraryItemPatch {
     pub kind: Option<String>,
     pub speakers: Option<Option<Vec<Speaker>>>,
     pub bookmarks: Option<Vec<Bookmark>>,
+    #[serde(skip)]
+    pub previous_transcript: Option<Option<PreviousTranscript>>,
+}
+
+/// A finished transcript kept while the item is transcribed again, so a quit
+/// or crash before the new one is saved can't lose it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PreviousTranscript {
+    pub transcript: String,
+    pub transcript_edited: bool,
+    pub segments: Vec<TranscriptSegment>,
+    pub speakers: Option<Vec<Speaker>>,
+}
+
+impl PreviousTranscript {
+    pub(crate) fn of(item: &LibraryItem) -> Option<Self> {
+        let transcript = item.transcript.as_deref().filter(|text| !text.is_empty())?;
+        item.transcribed_at.as_ref()?;
+        Some(Self {
+            transcript: transcript.to_string(),
+            transcript_edited: item.transcript_edited,
+            segments: item.segments.clone().unwrap_or_default(),
+            speakers: item.speakers.clone(),
+        })
+    }
+
+    pub(crate) fn into_patch(self, status: LibraryItemStatus) -> LibraryItemPatch {
+        LibraryItemPatch {
+            status: Some(status),
+            transcript: Some(self.transcript),
+            transcript_edited: Some(self.transcript_edited),
+            segments: Some(self.segments),
+            speakers: Some(self.speakers),
+            previous_transcript: Some(None),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -345,4 +382,95 @@ pub(crate) struct LibraryErrorPayload {
 pub(crate) struct LibraryImportProgressPayload {
     pub id: String,
     pub progress: f32,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn statuses_round_trip_through_stored_fields() {
+        for status in [
+            LibraryItemStatus::Pending,
+            LibraryItemStatus::Importing { progress: 0.25 },
+            LibraryItemStatus::Transcribing { progress: 0.5 },
+            LibraryItemStatus::Complete,
+            LibraryItemStatus::Cancelling,
+            LibraryItemStatus::Cancelled,
+            LibraryItemStatus::Error {
+                message: "boom".to_string(),
+            },
+        ] {
+            let (name, progress, message) = status.as_fields();
+            let restored = LibraryItemStatus::from_fields(&name, progress, message);
+            assert_eq!(restored.as_fields(), status.as_fields());
+        }
+    }
+
+    #[test]
+    fn unknown_or_messageless_errors_get_a_fallback_message() {
+        let (_, _, message) = LibraryItemStatus::from_fields("error", 0.0, None).as_fields();
+        assert_eq!(message.as_deref(), Some("Transcription failed"));
+        let (name, _, message) = LibraryItemStatus::from_fields("paused", 0.3, None).as_fields();
+        assert_eq!(name, "error");
+        assert_eq!(message.as_deref(), Some("Unknown status"));
+    }
+
+    #[test]
+    fn complete_reports_full_progress() {
+        assert_eq!(LibraryItemStatus::Complete.as_fields().1, 1.0);
+    }
+
+    #[test]
+    fn status_serializes_with_a_lowercase_type_tag() {
+        let json = serde_json::to_value(LibraryItemStatus::Transcribing { progress: 0.5 }).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({ "type": "transcribing", "progress": 0.5 })
+        );
+    }
+
+    #[test]
+    fn ffmpeg_errors_are_recognized_case_insensitively() {
+        assert!(is_ffmpeg_error_message("FFmpeg not found on PATH"));
+        assert!(is_ffmpeg_error_message(
+            "Please install FFmpeg to import video"
+        ));
+        assert!(is_ffmpeg_error_message("ffmpeg is required for .mkv"));
+        assert!(!is_ffmpeg_error_message("ffmpeg exited with status 1"));
+    }
+
+    #[test]
+    fn cancellation_survives_anyhow_context() {
+        let err = cancelled_error().context("while transcribing chunk 3");
+        assert!(is_cancelled_error(&err));
+        assert!(!is_cancelled_error(&anyhow::anyhow!(
+            "Transcription cancelled"
+        )));
+    }
+
+    #[test]
+    fn progress_updates_clamp_progress_and_chunk_index() {
+        let update = LibraryProgressUpdate::with_chunk_counts(1.5, 7, 4);
+        assert_eq!(update.progress, 1.0);
+        assert_eq!(update.current_chunk, 4);
+        assert_eq!(update.total_chunks, 4);
+    }
+
+    #[test]
+    fn items_from_older_versions_default_new_fields() {
+        let item: LibraryItem = serde_json::from_value(serde_json::json!({
+            "id": "id", "name": "n", "audio_path": "", "source_path": "",
+            "store_original": false, "status": { "type": "complete" },
+            "transcript": null, "segments": null, "words": null,
+            "duration_seconds": 1.0, "file_size_bytes": 0, "original_format": "wav",
+            "created_at": "", "transcribed_at": null, "tags": [],
+            "llm_cleanup_enabled": false, "speech_model": "", "show_timestamps": false
+        }))
+        .unwrap();
+        assert_eq!(item.kind, "import");
+        assert!(!item.transcript_edited && !item.detect_speakers);
+        assert!(item.speakers.is_none() && item.bookmarks.is_none());
+        assert_eq!(JobSource::of_item(&item), JobSource::Upload);
+    }
 }

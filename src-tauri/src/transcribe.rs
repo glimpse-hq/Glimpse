@@ -345,7 +345,7 @@ pub(crate) fn queue_transcription(
                         "edit_mode",
                         audio_duration_seconds,
                         "microphone",
-                        saved_for_task.path.display().to_string(),
+                        Some(saved_for_task.path.display().to_string()),
                         saved_for_task.pending_path.as_deref(),
                         true,
                         temporary,
@@ -456,7 +456,7 @@ pub(crate) fn queue_transcription(
                     "transcription",
                     audio_duration_seconds,
                     "microphone",
-                    saved_for_task.path.display().to_string(),
+                    Some(saved_for_task.path.display().to_string()),
                     saved_for_task.pending_path.as_deref(),
                     true,
                     temporary,
@@ -650,7 +650,7 @@ async fn transcribe_recovered_recording(
                 "transcription",
                 audio_duration_seconds,
                 "microphone",
-                saved.path.display().to_string(),
+                Some(saved.path.display().to_string()),
                 saved.pending_path.as_deref(),
                 false,
                 false,
@@ -937,17 +937,25 @@ async fn process_transcript_text(
                     );
                 }
             }
-            Ok(Some((Err(err), _, _))) => emit_auto_paste_error(
-                app,
-                format!("Auto paste failed: {err}"),
-                analytics::error_detail(&err),
-                audio_duration_seconds,
-            ),
+            Ok(Some((Err(err), _, _))) => {
+                #[cfg(target_os = "macos")]
+                let accessibility_missing = err.is::<assistive::AccessibilityMissing>();
+                #[cfg(not(target_os = "macos"))]
+                let accessibility_missing = false;
+                emit_auto_paste_error(
+                    app,
+                    format!("Auto paste failed: {err}"),
+                    analytics::error_detail(&err),
+                    audio_duration_seconds,
+                    accessibility_missing,
+                )
+            }
             Err(err) => emit_auto_paste_error(
                 app,
                 format!("Auto paste task error: {err}"),
                 "task_failed".into(),
                 audio_duration_seconds,
+                false,
             ),
         }
     }
@@ -999,19 +1007,25 @@ pub(crate) fn retry_transcription_async(
         struct RetryTokenGuard {
             app: AppHandle<AppRuntime>,
             id: String,
+            token: CancellationToken,
         }
 
         impl Drop for RetryTokenGuard {
             fn drop(&mut self) {
-                self.app
-                    .state::<AppState>()
-                    .clear_retry_transcription(&self.id);
+                // Cancelling already removed this token, and the id may now
+                // belong to a newer retry.
+                if !self.token.is_cancelled() {
+                    self.app
+                        .state::<AppState>()
+                        .clear_retry_transcription(&self.id);
+                }
             }
         }
 
         let _guard = RetryTokenGuard {
             app: app_handle.clone(),
             id: retry_id.clone(),
+            token: cancel_token.clone(),
         };
 
         if cancel_token.is_cancelled() {
@@ -1054,7 +1068,7 @@ pub(crate) fn retry_transcription_async(
                 let raw_transcript = result.transcript.clone();
 
                 if count_words(&raw_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path, None);
+                    handle_empty_retry(&app_handle, &retry_id);
                     return;
                 }
 
@@ -1102,7 +1116,7 @@ pub(crate) fn retry_transcription_async(
                     dictionary::apply_replacements(&final_transcript, &settings.replacements);
 
                 if count_words(&final_transcript) == 0 {
-                    handle_empty_transcription(&app_handle, &saved_for_task.path, None);
+                    handle_empty_retry(&app_handle, &retry_id);
                     return;
                 }
 
@@ -1200,9 +1214,9 @@ pub(crate) fn retry_transcription_async(
                     "transcription",
                     audio_duration_seconds,
                     "microphone",
-                    saved_for_task.path.display().to_string(),
                     None,
-                    true,
+                    None,
+                    false,
                     false,
                     show_toast,
                 );
@@ -1353,6 +1367,30 @@ fn discard_pending_recording(path: Option<&Path>) {
     }
 }
 
+// The record and its audio stay as they were; only the retry ends.
+fn handle_empty_retry(app: &AppHandle<AppRuntime>, id: &str) {
+    crate::emit_event(
+        app,
+        EVENT_TRANSCRIPTION_COMPLETE,
+        TranscriptionCompletePayload {
+            transcript: String::new(),
+            auto_paste: false,
+            record: app.state::<AppState>().storage().get_by_id(id),
+        },
+    );
+
+    toast::emit_toast(
+        app,
+        toast::Payload {
+            toast_type: "warning".to_string(),
+            message: toast::native(app, "native.toast.no_words"),
+            auto_dismiss: Some(true),
+            duration: Some(3000),
+            ..Default::default()
+        },
+    );
+}
+
 fn handle_empty_transcription(
     app: &AppHandle<AppRuntime>,
     audio_path: &Path,
@@ -1420,6 +1458,7 @@ fn emit_auto_paste_error(
     message: String,
     reason: analytics::ErrorDetail,
     audio_duration_seconds: f32,
+    accessibility_missing: bool,
 ) {
     let settings = app.state::<AppState>().current_settings();
     analytics::track_auto_paste_failed(
@@ -1428,8 +1467,18 @@ fn emit_auto_paste_error(
         &resolve_speech_model_label(&settings),
         reason,
         audio_duration_seconds,
-        crate::pill::cached_accessibility_granted(),
+        if accessibility_missing {
+            Some(false)
+        } else {
+            crate::pill::cached_accessibility_granted()
+        },
     );
+
+    #[cfg(target_os = "macos")]
+    if accessibility_missing {
+        crate::pill::show_accessibility_toast(app, "native.toast.accessibility_paste");
+        return;
+    }
 
     toast::emit_toast(
         app,
@@ -1452,7 +1501,7 @@ fn emit_transcription_error_inner(
     stage: &str,
     audio_duration_seconds: f32,
     audio_source: &str,
-    audio_path: String,
+    audio_path: Option<String>,
     pending_path: Option<&Path>,
     reset_state: bool,
     temporary: bool,
@@ -1488,23 +1537,27 @@ fn emit_transcription_error_inner(
         ..Default::default()
     };
 
-    if temporary {
-        let _ = std::fs::remove_file(&audio_path);
-        discard_pending_recording(pending_path);
-    } else {
-        let record_result = state.storage().save_transcription(
-            String::new(),
-            audio_path.clone(),
-            storage::TranscriptionStatus::Error,
-            Some(toast_message.clone()),
-            metadata,
-            None,
-            None,
-        );
+    // A retry passes no path: its audio belongs to the existing record, so it
+    // is neither saved again nor deleted.
+    if let Some(audio_path) = audio_path {
+        if temporary {
+            let _ = std::fs::remove_file(&audio_path);
+            discard_pending_recording(pending_path);
+        } else {
+            let record_result = state.storage().save_transcription(
+                String::new(),
+                audio_path,
+                storage::TranscriptionStatus::Error,
+                Some(toast_message.clone()),
+                metadata,
+                None,
+                None,
+            );
 
-        match record_result {
-            Ok(_) => discard_pending_recording(pending_path),
-            Err(err) => tracing::error!("Failed to persist failed transcription: {err}"),
+            match record_result {
+                Ok(_) => discard_pending_recording(pending_path),
+                Err(err) => tracing::error!("Failed to persist failed transcription: {err}"),
+            }
         }
     }
 

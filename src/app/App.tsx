@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { MotionConfig } from "framer-motion";
 import "./App.css";
 
 const SettingsWindow = lazy(() => import("./SettingsWindow"));
@@ -57,9 +58,11 @@ function App() {
   if (windowLabel !== "toast") {
     return (
       <div className="flex h-screen w-screen items-center justify-center overflow-hidden">
-        <Suspense fallback={null}>
-          <PillOverlay />
-        </Suspense>
+        <MotionConfig reducedMotion="user">
+          <Suspense fallback={null}>
+            <PillOverlay />
+          </Suspense>
+        </MotionConfig>
       </div>
     );
   }

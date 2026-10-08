@@ -119,6 +119,51 @@ export const NATIVE_MENU_STRINGS = [
     message: "{count} words dictated with Glimpse!",
   }),
   msg({ id: "native.toast.copied", message: "Copied to clipboard" }),
+  msg({
+    id: "native.toast.copy_failed",
+    message: "Unable to copy to clipboard",
+  }),
+  msg({
+    id: "native.toast.copy_missing",
+    message: "Transcription no longer available",
+  }),
+  msg({ id: "native.toast.copy_empty", message: "Transcription is empty" }),
+
+  msg({
+    id: "native.toast.export_done",
+    message: "Exported {pairs} audio and text pairs.",
+  }),
+  msg({
+    id: "native.toast.export_skipped_short",
+    message: "Skipped {count} short clips.",
+  }),
+  msg({
+    id: "native.toast.export_skipped_files",
+    message: "{count} files couldn't be copied.",
+  }),
+
+  msg({
+    id: "native.toast.license_inactive",
+    message:
+      "Your license is inactive. Dictation stays free. Some features need an active license.",
+  }),
+  msg({
+    id: "native.toast.trial_expired",
+    message:
+      "Your trial ended. Dictation stays free. Some features need a license.",
+  }),
+  msg({
+    id: "native.toast.trial_last_day",
+    message:
+      "Last day of your trial. Dictation stays free. Some features need a license.",
+  }),
+  msg({
+    id: "native.toast.trial_days_left",
+    message:
+      "{days} days left in your trial. Dictation stays free. Some features need a license.",
+  }),
+  msg({ id: "native.toast.manage_license", message: "Manage license" }),
+  msg({ id: "native.toast.see_options", message: "See options" }),
 
   msg({
     id: "native.toast.model_downloading",
@@ -134,6 +179,36 @@ export const NATIVE_MENU_STRINGS = [
   }),
   msg({ id: "native.toast.model_action", message: "Open Models" }),
 
+  msg({ id: "native.toast.accessibility_title", message: "Accessibility" }),
+  msg({
+    id: "native.toast.accessibility_shortcut",
+    message:
+      "Your shortcut won't work until you allow Glimpse in Accessibility. If Glimpse is already on, turn it off and on again.",
+  }),
+  msg({
+    id: "native.toast.accessibility_paste",
+    message:
+      "Glimpse couldn't type this because Accessibility access is off. Your text is on the clipboard, so you can paste it with Command-V.",
+  }),
+  msg({
+    id: "native.toast.accessibility_granted",
+    message: "Accessibility is on. Your shortcut works now.",
+  }),
+  msg({
+    id: "native.toast.open_system_settings",
+    message: "Open System Settings",
+  }),
+
+  msg({
+    id: "native.toast.model_switched_title",
+    message: "Now using {model}",
+  }),
+  msg({
+    id: "native.toast.model_switched",
+    message:
+      "Automatic picked a newer model for you. Change it anytime in Settings.",
+  }),
+  msg({ id: "native.toast.open_settings", message: "Settings" }),
   msg({
     id: "native.toast.speaker_model_upgraded",
     message:

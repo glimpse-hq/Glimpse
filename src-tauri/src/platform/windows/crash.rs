@@ -3,19 +3,23 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use windows::Win32::Foundation::{HANDLE, HMODULE};
+use windows::Win32::Foundation::{HANDLE, HMODULE, HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::Diagnostics::Debug::{
     EXCEPTION_POINTERS, MINIDUMP_EXCEPTION_INFORMATION, MINIDUMP_TYPE, MiniDumpWithThreadInfo,
     MiniDumpWriteDump, SetUnhandledExceptionFilter,
 };
 use windows::Win32::System::LibraryLoader::{
     GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-    GetModuleFileNameW, GetModuleHandleExW,
+    GetModuleFileNameW, GetModuleHandleExW, GetModuleHandleW,
 };
 use windows::Win32::System::Threading::{
     GetCurrentProcess, GetCurrentProcessId, GetCurrentThreadId,
 };
-use windows::core::PCWSTR;
+use windows::Win32::UI::WindowsAndMessaging::{
+    CreateWindowExW, DefWindowProcW, DispatchMessageW, GetMessageW, MSG, RegisterClassW,
+    WINDOW_EX_STYLE, WM_ENDSESSION, WM_QUERYENDSESSION, WNDCLASSW, WS_OVERLAPPED,
+};
+use windows::core::{PCWSTR, w};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const EXCEPTION_CONTINUE_SEARCH: i32 = 0;
@@ -31,6 +35,7 @@ struct CrashPaths {
 static PATHS: OnceLock<CrashPaths> = OnceLock::new();
 static PREV_FILTER: OnceLock<Option<ExceptionFilter>> = OnceLock::new();
 static EXIT_REQUESTED: AtomicBool = AtomicBool::new(false);
+static SESSION_ENDING: AtomicBool = AtomicBool::new(false);
 
 pub fn note_exit_requested() {
     EXIT_REQUESTED.store(true, Ordering::Relaxed);
@@ -41,6 +46,94 @@ pub fn note_exit_requested() {
 // the process, which panics in runner.rs ("cannot move state from Destroyed").
 pub fn exit_if_session_ending() {
     if !EXIT_REQUESTED.load(Ordering::Relaxed) {
+        std::process::exit(0);
+    }
+}
+
+// tao ends its loop on WM_ENDSESSION even when its event handler is on the
+// stack (a nested message loop, or a blocking call that dispatches sent
+// messages), which panics in runner.rs ("event handler is re-entrant").
+// Store updates and restarts send it. This window runs on its own thread, so
+// it gets WM_QUERYENDSESSION even while the main thread is busy, and the query
+// reaches every window before any WM_ENDSESSION does.
+pub fn watch_session_end() {
+    let spawned = std::thread::Builder::new()
+        .name("glimpse-session-end".to_string())
+        .spawn(|| {
+            let class_name = w!("GlimpseSessionEnd");
+            let instance = unsafe { GetModuleHandleW(None) }.unwrap_or_default();
+            let class = WNDCLASSW {
+                lpfnWndProc: Some(session_end_proc),
+                hInstance: instance.into(),
+                lpszClassName: class_name,
+                ..Default::default()
+            };
+            if unsafe { RegisterClassW(&class) } == 0 {
+                tracing::warn!(
+                    "Failed to register the Windows session-end window: {}",
+                    windows::core::Error::from_thread()
+                );
+                return;
+            }
+            // Not message-only: those windows don't get session-end messages.
+            let created = unsafe {
+                CreateWindowExW(
+                    WINDOW_EX_STYLE(0),
+                    class_name,
+                    w!(""),
+                    WS_OVERLAPPED,
+                    0,
+                    0,
+                    0,
+                    0,
+                    None,
+                    None,
+                    Some(instance.into()),
+                    None,
+                )
+            };
+            if let Err(err) = created {
+                tracing::warn!("Failed to create the Windows session-end window: {err}");
+                return;
+            }
+            let mut message = MSG::default();
+            while unsafe { GetMessageW(&mut message, None, 0, 0) }.into() {
+                unsafe { DispatchMessageW(&message) };
+            }
+        });
+    if let Err(err) = spawned {
+        tracing::warn!("Failed to start the Windows session-end watcher: {err}");
+    }
+}
+
+unsafe extern "system" fn session_end_proc(
+    hwnd: HWND,
+    msg: u32,
+    wparam: WPARAM,
+    lparam: LPARAM,
+) -> LRESULT {
+    match msg {
+        WM_QUERYENDSESSION => {
+            SESSION_ENDING.store(true, Ordering::Relaxed);
+            LRESULT(1)
+        }
+        // wParam is FALSE when the shutdown was cancelled.
+        WM_ENDSESSION => {
+            SESSION_ENDING.store(wparam.0 != 0, Ordering::Relaxed);
+            LRESULT(0)
+        }
+        _ => unsafe { DefWindowProcW(hwnd, msg, wparam, lparam) },
+    }
+}
+
+// Windows is closing the app, so a panic in tao's event loop is a clean exit.
+pub fn exit_if_session_end_panic(location: &str) {
+    if SESSION_ENDING.load(Ordering::Relaxed)
+        && location.contains("tao-")
+        && location.contains("event_loop")
+    {
+        crate::analytics::set_crash_phase("shutdown");
+        crate::analytics::end_session();
         std::process::exit(0);
     }
 }

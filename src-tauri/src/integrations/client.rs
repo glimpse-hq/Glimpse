@@ -86,7 +86,10 @@ fn exchange(stream: Stream, command: &str, args: Value) -> Result<Response> {
 
 fn try_connect() -> Option<Stream> {
     let name = socket_name().ok()?;
-    Stream::connect(name).ok()
+    let stream = Stream::connect(name).ok();
+    #[cfg(target_os = "windows")]
+    let stream = stream.filter(super::ipc::served_by_current_user);
+    stream
 }
 
 fn connect_or_launch() -> Result<Stream> {

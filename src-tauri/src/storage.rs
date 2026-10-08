@@ -643,13 +643,23 @@ impl StorageManager {
         Ok(())
     }
 
-    pub fn delete(&self, id: &str) -> Result<Option<String>> {
+    /// None when there is no such entry. Otherwise the audio path to remove, or
+    /// None when another entry still uses that audio.
+    pub fn delete(&self, id: &str) -> Result<Option<Option<String>>> {
         let conn = self.connection.lock();
         let record = Self::get_record(&conn, id)?;
-        if record.is_some() {
-            conn.execute("DELETE FROM transcriptions WHERE id = ?1", params![id])?;
-        }
-        Ok(record.map(|r| r.audio_path))
+        let Some(record) = record else {
+            return Ok(None);
+        };
+        conn.execute("DELETE FROM transcriptions WHERE id = ?1", params![id])?;
+        // Failed retries from older versions saved a second entry for the same
+        // audio, so keep the file while another entry still uses it.
+        let shared: bool = conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM transcriptions WHERE audio_path = ?1)",
+            params![record.audio_path],
+            |row| row.get(0),
+        )?;
+        Ok(Some((!shared).then_some(record.audio_path)))
     }
 
     pub fn count_prunable_before(&self, cutoff_millis: i64) -> Result<u32> {
@@ -662,24 +672,31 @@ impl StorageManager {
         Ok(count.max(0) as u32)
     }
 
-    pub fn prune_before(&self, cutoff_millis: i64) -> Result<Vec<String>> {
+    /// Deletes the entries up to the cutoff and returns how many went, with the
+    /// audio paths no remaining entry uses.
+    fn prune_before(&self, cutoff_millis: i64) -> Result<(u32, Vec<String>)> {
         let conn = self.connection.lock();
-        let mut stmt =
-            conn.prepare("SELECT audio_path FROM transcriptions WHERE timestamp <= ?1")?;
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT audio_path FROM transcriptions AS pruned
+             WHERE timestamp <= ?1
+               AND NOT EXISTS (
+                   SELECT 1 FROM transcriptions AS kept
+                   WHERE kept.audio_path = pruned.audio_path AND kept.timestamp > ?1
+               )",
+        )?;
         let audio_paths: Vec<String> = stmt
             .query_map(params![cutoff_millis], |row| row.get::<_, String>(0))?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         drop(stmt);
-        conn.execute(
+        let count = conn.execute(
             "DELETE FROM transcriptions WHERE timestamp <= ?1",
             params![cutoff_millis],
         )?;
-        Ok(audio_paths)
+        Ok((count as u32, audio_paths))
     }
 
     pub fn prune_before_and_remove_files(&self, cutoff_millis: i64) -> Result<u32> {
-        let audio_paths = self.prune_before(cutoff_millis)?;
-        let count = audio_paths.len() as u32;
+        let (count, audio_paths) = self.prune_before(cutoff_millis)?;
         for audio_path in audio_paths {
             let path = PathBuf::from(audio_path);
             if path.exists() {
@@ -1003,6 +1020,12 @@ impl StorageManager {
             "transcript_edited",
             "ALTER TABLE library_items ADD COLUMN transcript_edited INTEGER NOT NULL DEFAULT 0",
         )?;
+        Self::ensure_column(
+            conn,
+            "library_items",
+            "previous_transcript",
+            "ALTER TABLE library_items ADD COLUMN previous_transcript TEXT",
+        )?;
 
         let stats_seeded: bool = conn.query_row(
             "SELECT EXISTS(SELECT 1 FROM lifetime_stats WHERE id = 1)",
@@ -1052,6 +1075,14 @@ impl StorageManager {
         crate::library::repo::insert_library_item(&conn, item)
     }
 
+    /// Refuses writes on this connection, for readers like `glimpse mcp`.
+    pub fn set_query_only(&self) -> Result<()> {
+        self.connection
+            .lock()
+            .pragma_update(None, "query_only", true)
+            .context("Failed to make the database read-only")
+    }
+
     pub fn get_library_item(&self, id: &str) -> Result<Option<LibraryItem>> {
         let conn = self.connection.lock();
         crate::library::repo::get_library_item(&conn, &self.library_root, id)
@@ -1078,6 +1109,11 @@ impl StorageManager {
         crate::library::repo::get_recoverable_library_items(&conn, &self.library_root)
     }
 
+    pub fn mark_library_item_cancelling(&self, id: &str) -> Result<bool> {
+        let conn = self.connection.lock();
+        crate::library::repo::mark_library_item_cancelling(&conn, id)
+    }
+
     pub fn update_library_item(
         &self,
         id: &str,
@@ -1101,6 +1137,14 @@ impl StorageManager {
             }
             _ => Ok(None),
         }
+    }
+
+    pub fn get_previous_library_transcript(
+        &self,
+        id: &str,
+    ) -> Result<Option<crate::library::PreviousTranscript>> {
+        let conn = self.connection.lock();
+        crate::library::repo::get_previous_transcript(&conn, id)
     }
 
     pub fn delete_library_item(&self, id: &str) -> Result<Option<String>> {

@@ -68,6 +68,7 @@ import {
 } from "../../settings/models-queries";
 import { useInstalledApps } from "../../personalization/queries";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import HoverTip from "../../../shared/ui/HoverTip";
 import { IntelligencePixel } from "../../../shared/ui/IntelligencePixel";
@@ -284,9 +285,9 @@ const BookmarkRow = ({
             id: "library.bookmark.remove",
             message: "Remove bookmark",
           })}
-          className="shrink-0 text-content-disabled opacity-0 transition-opacity hover:text-red-500 group-hover/bookmark:opacity-100"
+          className="shrink-0 text-content-disabled opacity-0 transition-opacity hover:text-red-500 group-hover/bookmark:opacity-100 focus-visible:opacity-100"
         >
-          <X size={10} />
+          <X size={10} aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -348,6 +349,7 @@ const LibraryDetail = ({
     () => localStorage.getItem(FOLLOW_PLAYBACK_KEY) !== "off",
   );
   const playbackMenuRef = useRef<HTMLDivElement>(null);
+  const playbackMenuPanelRef = useRef<HTMLDivElement>(null);
   const [playbackMenuOpen, setPlaybackMenuOpen] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -390,11 +392,14 @@ const LibraryDetail = ({
   trackMutedRef.current = trackMuted;
   const tagMenuRef = useRef<HTMLDivElement>(null);
   const overflowMenuRef = useRef<HTMLDivElement>(null);
+  const overflowMenuPanelRef = useRef<HTMLDivElement>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const exportMenuPanelRef = useRef<HTMLDivElement>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const speakerMenuRef = useRef<HTMLDivElement>(null);
   const speakersMenuRef = useRef<HTMLDivElement>(null);
+  const speakersMenuPanelRef = useRef<HTMLDivElement>(null);
   const playbackRateRef = useRef(1);
   const streamTranscriptRef = useRef(item.transcript ?? "");
   const scrubWasPlayingRef = useRef(false);
@@ -520,14 +525,16 @@ const LibraryDetail = ({
   const releaseAudioSource = useCallback(() => {
     stopSeekLoop();
     const audio = audioRef.current;
+    const secondary = secondaryAudioRef.current;
     audioRef.current = null;
-    if (audio) {
-      audio.pause();
-      audio.removeAttribute("src");
-      audio.load();
+    for (const element of [audio, secondary]) {
+      if (!element) continue;
+      element.pause();
+      element.removeAttribute("src");
+      element.load();
     }
     updateIsPlaying(false);
-    return audio;
+    return { audio, secondary };
   }, [stopSeekLoop, updateIsPlaying]);
 
   const setPlaybackRateValue = useCallback((value: number) => {
@@ -883,6 +890,29 @@ const LibraryDetail = ({
     },
     speakersMenuOpen && !speakerContext,
   );
+  useMenuKeyboard(tagMenuRef, tagMenuOpen, () => {
+    setTagMenuOpen(false);
+    setTagInput("");
+  });
+  useMenuKeyboard(overflowMenuPanelRef, overflowOpen, () =>
+    setOverflowOpen(false),
+  );
+  useMenuKeyboard(exportMenuPanelRef, exportOpen, () => setExportOpen(false));
+  useMenuKeyboard(playbackMenuPanelRef, playbackMenuOpen, () =>
+    setPlaybackMenuOpen(false),
+  );
+  useMenuKeyboard(speakerMenuRef, speakerMenuSegment !== null, () =>
+    setSpeakerMenuSegment(null),
+  );
+  useMenuKeyboard(
+    speakersMenuPanelRef,
+    speakersMenuOpen && !speakerContext,
+    () => {
+      setSpeakersMenuOpen(false);
+      setRenamingSpeakerId(null);
+      setSpeakerNameDraft("");
+    },
+  );
 
   // Returns false after telling the user the save failed.
   const saveOrToast = async (patch: LibraryItemPatch, failure: string) => {
@@ -920,13 +950,15 @@ const LibraryDetail = ({
     }
     const value = nameDraft.trim();
     if (value && value !== item.name) {
-      await saveOrToast(
+      const saved = await saveOrToast(
         { name: value },
         t({
           id: "library.detail.rename_failed",
           message: "Couldn't rename this item.",
         }),
       );
+      // Keeps the typed name so it can be saved again.
+      if (!saved) return;
     }
     setIsEditingName(false);
   };
@@ -1213,8 +1245,14 @@ const LibraryDetail = ({
     if (!canShowTimestamps) return;
     const nextValue = !showTimestamps;
     setShowTimestamps(nextValue);
-    Promise.resolve(onUpdate({ show_timestamps: nextValue })).catch((err) => {
-      console.error("failed to save timestamps setting:", err);
+    void saveOrToast(
+      { show_timestamps: nextValue },
+      t({
+        id: "toast.action_failed",
+        message: "That didn't work. Try again.",
+      }),
+    ).then((saved) => {
+      if (!saved) setShowTimestamps(!nextValue);
     });
   };
 
@@ -1657,28 +1695,10 @@ const LibraryDetail = ({
 
       if (event.key === "Escape") {
         event.preventDefault();
-        // Closes the topmost layer only.
-        if (showDeleteConfirm) {
-          setShowDeleteConfirm(false);
-        } else if (showRetranscribe) {
-          setShowRetranscribe(false);
-        } else if (speakerContext) {
-          setSpeakerContext(null);
-        } else if (speakerMenuSegment !== null) {
+        // A segment's speaker menu unmounts, still open, when its row scrolls
+        // out of the list.
+        if (speakerMenuSegment !== null) {
           setSpeakerMenuSegment(null);
-        } else if (speakersMenuOpen) {
-          setSpeakersMenuOpen(false);
-          setRenamingSpeakerId(null);
-          setSpeakerNameDraft("");
-        } else if (exportOpen) {
-          setExportOpen(false);
-        } else if (overflowOpen) {
-          setOverflowOpen(false);
-        } else if (playbackMenuOpen) {
-          setPlaybackMenuOpen(false);
-        } else if (tagMenuOpen) {
-          setTagMenuOpen(false);
-          setTagInput("");
         } else {
           onClose();
         }
@@ -1707,15 +1727,7 @@ const LibraryDetail = ({
     handleTimestampStep,
     handleTogglePlayback,
     onClose,
-    showDeleteConfirm,
-    showRetranscribe,
-    speakerContext,
     speakerMenuSegment,
-    speakersMenuOpen,
-    exportOpen,
-    overflowOpen,
-    playbackMenuOpen,
-    tagMenuOpen,
     showSegmentView,
   ]);
 
@@ -1905,6 +1917,7 @@ const LibraryDetail = ({
           {menuOpen && (
             <motion.div
               ref={speakerMenuRef}
+              role="menu"
               initial={{ opacity: 0, scale: 0.98, y: -4 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98, y: -4 }}
@@ -1915,6 +1928,7 @@ const LibraryDetail = ({
                 <button
                   key={entry.id}
                   type="button"
+                  role="menuitem"
                   onClick={(event) => {
                     event.stopPropagation();
                     handleAssignSpeaker(idx, entry.id);
@@ -1932,6 +1946,7 @@ const LibraryDetail = ({
               {segment.speaker_id && (
                 <button
                   type="button"
+                  role="menuitem"
                   onClick={(event) => {
                     event.stopPropagation();
                     handleAssignSpeaker(idx, null);
@@ -1946,6 +1961,7 @@ const LibraryDetail = ({
               )}
               <button
                 type="button"
+                role="menuitem"
                 onClick={async (event) => {
                   event.stopPropagation();
                   const created = await handleAddSpeaker();
@@ -2000,10 +2016,15 @@ const LibraryDetail = ({
                         cancelNameEdit();
                       }
                     }}
+                    aria-label={t({
+                      id: "library.detail.rename",
+                      message: "Rename",
+                    })}
                     className="min-w-0 flex-1 max-w-md bg-transparent border-b border-[var(--color-border-primary)] px-1 py-0.5 ui-text-body-lg font-semibold text-content-primary focus:border-[var(--color-border-hover)] outline-hidden"
                     autoFocus
                   />
                   <button
+                    type="button"
                     onClick={handleNameCommit}
                     aria-label={t({
                       id: "library.detail.rename_save",
@@ -2011,7 +2032,7 @@ const LibraryDetail = ({
                     })}
                     className="text-content-muted hover:text-content-primary"
                   >
-                    <Check size={12} />
+                    <Check size={12} aria-hidden="true" />
                   </button>
                 </div>
               ) : (
@@ -2028,9 +2049,9 @@ const LibraryDetail = ({
                       id: "library.detail.rename",
                       message: "Rename",
                     })}
-                    className="opacity-0 group-hover:opacity-100 text-content-muted hover:text-content-primary transition-opacity shrink-0"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-content-muted hover:text-content-primary transition-opacity shrink-0"
                   >
-                    <Pencil size={11} />
+                    <Pencil size={11} aria-hidden="true" />
                   </button>
                 </div>
               )}
@@ -2135,6 +2156,7 @@ const LibraryDetail = ({
 
               <div className="relative" ref={exportMenuRef}>
                 <button
+                  type="button"
                   onClick={() => setExportOpen((prev) => !prev)}
                   disabled={isExporting || !transcriptAvailable}
                   aria-haspopup="menu"
@@ -2155,6 +2177,7 @@ const LibraryDetail = ({
                 <AnimatePresence>
                   {exportOpen && (
                     <motion.div
+                      ref={exportMenuPanelRef}
                       role="menu"
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -2165,6 +2188,7 @@ const LibraryDetail = ({
                       {EXPORT_FORMATS.map((format) => (
                         <button
                           key={format.value}
+                          type="button"
                           role="menuitem"
                           onClick={() => handleExport(format.value)}
                           disabled={
@@ -2183,18 +2207,27 @@ const LibraryDetail = ({
 
               <div className="relative" ref={overflowMenuRef}>
                 <button
+                  type="button"
                   onClick={() => setOverflowOpen((prev) => !prev)}
+                  aria-haspopup="menu"
+                  aria-expanded={overflowOpen}
                   className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-surface-surface text-content-muted hover:text-content-primary"
                   aria-label={t({
                     id: "library.detail.more_actions",
                     message: "More actions",
                   })}
                 >
-                  <DotsThreeVertical size={14} weight="bold" />
+                  <DotsThreeVertical
+                    size={14}
+                    weight="bold"
+                    aria-hidden="true"
+                  />
                 </button>
                 <AnimatePresence>
                   {overflowOpen && (
                     <motion.div
+                      ref={overflowMenuPanelRef}
+                      role="menu"
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 4 }}
@@ -2202,6 +2235,8 @@ const LibraryDetail = ({
                       className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-[var(--color-border-secondary)] bg-[var(--color-bg-overlay)] shadow-xl overflow-hidden z-[120] py-1"
                     >
                       <button
+                        type="button"
+                        role="menuitem"
                         onClick={() => {
                           setOverflowOpen(false);
                           setShowRetranscribe(true);
@@ -2217,6 +2252,8 @@ const LibraryDetail = ({
                       </button>
                       {diarizerInstalled && item.status.type === "complete" && (
                         <button
+                          type="button"
+                          role="menuitem"
                           onClick={() => {
                             setOverflowOpen(false);
                             void onRediarize();
@@ -2233,6 +2270,8 @@ const LibraryDetail = ({
                       )}
                       {isBusy && (
                         <button
+                          type="button"
+                          role="menuitem"
                           onClick={() => {
                             setOverflowOpen(false);
                             onCancel();
@@ -2247,6 +2286,8 @@ const LibraryDetail = ({
                       )}
                       {item.status.type === "error" && (
                         <button
+                          type="button"
+                          role="menuitem"
                           onClick={() => {
                             setOverflowOpen(false);
                             Promise.resolve(onRetry()).catch((err) => {
@@ -2264,6 +2305,8 @@ const LibraryDetail = ({
                         </button>
                       )}
                       <button
+                        type="button"
+                        role="menuitem"
                         onClick={() => {
                           setOverflowOpen(false);
                           setShowDeleteConfirm(true);
@@ -2432,6 +2475,10 @@ const LibraryDetail = ({
                             id: "library.modal.tags.new_tag",
                             message: "New tag...",
                           })}
+                          aria-label={t({
+                            id: "library.modal.tags.new_tag",
+                            message: "New tag...",
+                          })}
                           className="w-full bg-transparent ui-text-meta text-content-secondary outline-hidden placeholder:text-content-disabled"
                           autoFocus
                         />
@@ -2454,9 +2501,9 @@ const LibraryDetail = ({
                                   id: "library.modal.tags.remove",
                                   message: `Remove ${tag}`,
                                 })}
-                                className="opacity-0 group-hover/tagrow:opacity-100 text-content-disabled hover:text-red-500 transition-opacity shrink-0"
+                                className="opacity-0 group-hover/tagrow:opacity-100 focus-visible:opacity-100 text-content-disabled hover:text-red-500 transition-opacity shrink-0"
                               >
-                                <X size={10} />
+                                <X size={10} aria-hidden="true" />
                               </button>
                             </div>
                           ))}
@@ -2536,6 +2583,7 @@ const LibraryDetail = ({
                 <AnimatePresence>
                   {speakersMenuOpen && (
                     <motion.div
+                      ref={speakersMenuPanelRef}
                       role="menu"
                       initial={{ opacity: 0, scale: 0.95, y: -4 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2597,6 +2645,10 @@ const LibraryDetail = ({
                                       setSpeakerNameDraft(event.target.value)
                                     }
                                     onFocus={(event) => event.target.select()}
+                                    aria-label={t({
+                                      id: "library.detail.speaker_menu.rename",
+                                      message: "Rename",
+                                    })}
                                     onBlur={() =>
                                       handleRenameSpeaker(speaker.id)
                                     }
@@ -3195,6 +3247,7 @@ const LibraryDetail = ({
             <AnimatePresence>
               {playbackMenuOpen && (
                 <motion.div
+                  ref={playbackMenuPanelRef}
                   role="menu"
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -3266,12 +3319,16 @@ const LibraryDetail = ({
         onCancel={closeDeleteConfirm}
         onConfirm={() => {
           setShowDeleteConfirm(false);
-          const audio = releaseAudioSource();
+          const { audio, secondary } = releaseAudioSource();
           void onDelete().catch(() => {
             if (audio) {
               audio.src = audioUrl;
               audioRef.current = audio;
               audio.load();
+            }
+            if (secondary && secondaryAudioUrl) {
+              secondary.src = secondaryAudioUrl;
+              secondary.load();
             }
           });
         }}

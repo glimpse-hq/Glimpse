@@ -281,6 +281,7 @@ const SettingsScreen = ({
                 setCors={form.setLocalApiCors}
                 status={form.localApiStatus}
                 busy={form.localApiBusy}
+                stopping={form.localApiStopping}
                 onStart={form.handleStartLocalApi}
                 onStop={form.handleStopLocalApi}
                 onRestart={form.handleRestartLocalApi}
@@ -332,6 +333,7 @@ const SettingsErrorBanner = ({
           exit={{ opacity: 0, y: 4 }}
           transition={{ duration: 0.12, ease: "easeOut" }}
           className="rounded-md bg-surface-surface shadow-sm"
+          role="alert"
         >
           <div
             className={`rounded-md border border-error/20 bg-error/5 px-2 py-1.5 ${
@@ -339,21 +341,25 @@ const SettingsErrorBanner = ({
                 ? "cursor-pointer transition-colors hover:bg-error/10"
                 : ""
             }`}
-            role={sourceTab ? "button" : undefined}
-            tabIndex={sourceTab ? 0 : undefined}
             onClick={() => {
               if (sourceTab) onOpenTab(sourceTab);
             }}
-            onKeyDown={(event) => {
-              if (!sourceTab) return;
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onOpenTab(sourceTab);
-              }
-            }}
           >
             <p className="break-words [overflow-wrap:anywhere] ui-text-meta ui-color-error leading-snug">
-              <span>{error}</span>
+              {sourceTab ? (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenTab(sourceTab);
+                  }}
+                  className="text-left"
+                >
+                  {error}
+                </button>
+              ) : (
+                <span>{error}</span>
+              )}
               <button
                 type="button"
                 onClick={(event) => {
@@ -366,7 +372,11 @@ const SettingsErrorBanner = ({
                   message: "Copy error",
                 })}
               >
-                {copied ? <Check size={11} /> : <Copy size={11} />}
+                {copied ? (
+                  <Check size={11} aria-hidden="true" />
+                ) : (
+                  <Copy size={11} aria-hidden="true" />
+                )}
               </button>
             </p>
           </div>

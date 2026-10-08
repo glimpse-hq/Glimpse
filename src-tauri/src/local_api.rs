@@ -32,6 +32,8 @@ pub struct LocalApiLogEntry {
 #[derive(Debug, Clone, Serialize)]
 pub struct LocalApiStatus {
     pub running: bool,
+    // Warming the model before the server listens.
+    pub starting: bool,
     pub host: String,
     pub port: u16,
     pub model: String,
@@ -41,6 +43,7 @@ pub struct LocalApiStatus {
     pub cors: bool,
     pub requests_total: u64,
     pub logs: Vec<LocalApiLogEntry>,
+    pub lan_ip: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -64,16 +67,24 @@ pub struct LocalApiController {
 struct LocalApiState {
     running: Option<RunningLocalApi>,
     starting: bool,
+    // Stop was pressed while starting; the start gives up once warm-up ends.
+    start_cancelled: bool,
     logs: VecDeque<LocalApiLogEntry>,
 }
 
 struct StartingGuard<'a> {
-    inner: &'a parking_lot::Mutex<LocalApiState>,
+    controller: &'a LocalApiController,
+    app: &'a AppHandle<AppRuntime>,
 }
 
 impl Drop for StartingGuard<'_> {
     fn drop(&mut self) {
-        self.inner.lock().starting = false;
+        {
+            let mut state = self.controller.inner.lock();
+            state.starting = false;
+            state.start_cancelled = false;
+        }
+        self.controller.emit_status(self.app);
     }
 }
 
@@ -122,12 +133,16 @@ impl LocalApiController {
             }
             state.starting = true;
         }
-        let _starting_guard = StartingGuard { inner: &self.inner };
+        let _starting_guard = StartingGuard {
+            controller: self,
+            app: &app,
+        };
+        self.emit_status(&app);
         let model_cache_dir =
             crate::model_manager::model_cache_dir(&app).map_err(|err| err.to_string())?;
         let api_models_dir = model_cache_dir.clone();
         let service = Arc::new(SpeechService::new(SpeechConfig {
-            resolver: crate::model_manager::local_resolver(model_cache_dir.clone()),
+            resolver: crate::model_manager::catalog_only_resolver(model_cache_dir.clone()),
             model_cache_dir,
         }));
         if let Some(warm_id) = warm_model.as_deref() {
@@ -148,6 +163,11 @@ impl LocalApiController {
             let mut state = self.inner.lock();
             if state.running.is_some() {
                 return Err("Local API is already running".to_string());
+            }
+            if state.start_cancelled {
+                drop(state);
+                self.push_log(&app, "info", "Local API stopped".to_string());
+                return Err("The API server was stopped before it started.".to_string());
             }
             state.running = Some(RunningLocalApi {
                 host: host.clone(),
@@ -248,10 +268,17 @@ impl LocalApiController {
 
     pub async fn stop(&self, app: &AppHandle<AppRuntime>) -> Result<LocalApiStatus, String> {
         let (shutdown, stopped) = {
-            let mut state = self.inner.lock();
+            let mut guard = self.inner.lock();
+            let state = &mut *guard;
             match state.running.as_mut() {
                 Some(running) => (running.shutdown.take(), running.stopped.take()),
-                None => return Ok(status_from_state(&state)),
+                None if state.starting && !state.start_cancelled => {
+                    state.start_cancelled = true;
+                    drop(guard);
+                    self.push_log(app, "info", "Stopping local API".to_string());
+                    return Ok(self.status());
+                }
+                None => return Ok(status_from_state(state)),
             }
         };
 
@@ -352,6 +379,7 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
     if let Some(running) = &state.running {
         LocalApiStatus {
             running: true,
+            starting: false,
             host: running.host.clone(),
             port: running.port,
             model: running.model.clone(),
@@ -361,10 +389,12 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             cors: running.cors,
             requests_total: running.requests_total,
             logs,
+            lan_ip: lan_ip(),
         }
     } else {
         LocalApiStatus {
             running: false,
+            starting: state.starting,
             host: "127.0.0.1".to_string(),
             port: 0,
             model: "auto".to_string(),
@@ -374,8 +404,17 @@ fn status_from_state(state: &LocalApiState) -> LocalApiStatus {
             cors: crate::settings::default_local_api_cors(),
             requests_total: 0,
             logs,
+            lan_ip: lan_ip(),
         }
     }
+}
+
+// Connecting a UDP socket sends nothing; it only asks the OS which interface routes outward.
+fn lan_ip() -> Option<String> {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("192.0.2.1:80").ok()?;
+    let ip = socket.local_addr().ok()?.ip();
+    (!ip.is_loopback() && !ip.is_unspecified()).then(|| ip.to_string())
 }
 
 #[tauri::command]

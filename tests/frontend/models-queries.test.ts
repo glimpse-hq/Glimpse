@@ -1,11 +1,16 @@
 import { describe, expect, mock, test } from "bun:test";
+import type { ModelInfo } from "../../src/types";
 
 mock.module("@tauri-apps/api/core", () => ({
   invoke: mock(async () => []),
 }));
 
-const { modelKeys, resolveLocalFallbackModel, resolveSpeechModelLabel } =
-  await import("../../src/features/settings/models-queries");
+const {
+  modelKeys,
+  pickDefaultOnboardingModel,
+  resolveLocalFallbackModel,
+  resolveSpeechModelLabel,
+} = await import("../../src/features/settings/models-queries");
 
 describe("settings model query helpers", () => {
   test("keeps provider credentials out of model query keys", () => {
@@ -131,5 +136,47 @@ describe("settings model query helpers", () => {
         "preferred",
       )?.key,
     ).toBe("preferred");
+  });
+});
+
+describe("pickDefaultOnboardingModel", () => {
+  const model = (key: string, downloadable = true) =>
+    ({ key, downloadable }) as ModelInfo;
+  const catalog = [
+    model("stock_a"),
+    model("stock_b"),
+    model("picked"),
+    model("legacy", false),
+  ];
+  const recommendation = {
+    key: "stock_b",
+    recommended: ["stock_a", "stock_b"],
+  };
+
+  test("keeps a deliberate pick and replaces a stock default", () => {
+    expect(pickDefaultOnboardingModel(catalog, "picked", recommendation)).toBe(
+      "picked",
+    );
+    expect(pickDefaultOnboardingModel(catalog, "stock_a", recommendation)).toBe(
+      "stock_b",
+    );
+    expect(pickDefaultOnboardingModel(catalog, "", recommendation)).toBe(
+      "stock_b",
+    );
+  });
+
+  test("replaces a saved model that is legacy or gone", () => {
+    expect(pickDefaultOnboardingModel(catalog, "legacy", recommendation)).toBe(
+      "stock_b",
+    );
+    expect(pickDefaultOnboardingModel(catalog, "gone", recommendation)).toBe(
+      "stock_b",
+    );
+  });
+
+  test("keeps the saved model while the recommendation loads", () => {
+    expect(pickDefaultOnboardingModel(catalog, "picked", undefined)).toBe(
+      "picked",
+    );
   });
 });

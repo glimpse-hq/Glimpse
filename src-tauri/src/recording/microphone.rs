@@ -2,6 +2,7 @@ use anyhow::{Context, Result, anyhow};
 use cpal::traits::{DeviceTrait, StreamTrait};
 use cpal::{ErrorKind, FromSample, Sample, SampleFormat, SizedSample};
 
+use super::SamplesCallback;
 use crate::audio::find_input_device;
 
 /// Typed so the command layer can report "no microphone" distinctly.
@@ -37,7 +38,7 @@ impl MicrophoneCapture {
 /// `on_lost` runs on a cpal thread once the stream can no longer deliver audio.
 pub(crate) fn start(
     device_id: Option<&str>,
-    make_sink: impl FnOnce(u32) -> Box<dyn FnMut(&[f32]) + Send>,
+    make_sink: impl FnOnce(u32) -> SamplesCallback,
     on_lost: Box<dyn FnMut() + Send>,
 ) -> Result<MicrophoneCapture> {
     let device = find_input_device(device_id).ok_or(NoMicrophone)?;
@@ -73,7 +74,7 @@ pub(crate) fn start(
 fn build_stream<T>(
     device: &cpal::Device,
     config: cpal::StreamConfig,
-    mut sink: Box<dyn FnMut(&[f32]) + Send>,
+    mut sink: SamplesCallback,
     mut on_lost: Box<dyn FnMut() + Send>,
 ) -> Result<cpal::Stream, cpal::Error>
 where

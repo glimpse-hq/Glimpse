@@ -716,7 +716,7 @@ impl PillController {
                         started_at: started.to_rfc3339(),
                     },
                 );
-                check_accessibility_warning(app);
+                note_accessibility_at_recording_start(app);
                 true
             }
             Err(err) => {
@@ -1288,25 +1288,86 @@ pub(crate) fn cached_accessibility_granted() -> Option<bool> {
     }
 }
 
-fn check_accessibility_warning(app: &AppHandle<AppRuntime>) {
+// Only caches the grant: the paste step warns once there is text to rescue.
+fn note_accessibility_at_recording_start(app: &AppHandle<AppRuntime>) {
     #[cfg(target_os = "macos")]
     {
         let is_trusted = permissions::check_accessibility_permission();
         ACCESSIBILITY_AT_RECORDING_START.store(if is_trusted { 2 } else { 1 }, Ordering::Relaxed);
         if !is_trusted {
-            toast::show_with_action(
-                app,
-                "warning",
-                Some("Accessibility"),
-                "Accessibility permissions missing.",
-                "open_accessibility_settings",
-                "Open Settings",
-            );
+            watch_for_accessibility(app);
         }
     }
 
     #[cfg(not(target_os = "macos"))]
     let _ = app;
+}
+
+#[cfg(target_os = "macos")]
+fn watch_for_accessibility(app: &AppHandle<AppRuntime>) {
+    let app = app.clone();
+    permissions::watch_accessibility_grant(move || {
+        ACCESSIBILITY_AT_RECORDING_START.store(2, Ordering::Relaxed);
+        if let Err(err) = register_shortcuts(&app) {
+            tracing::error!("Failed to register shortcuts after accessibility was granted: {err}");
+        }
+        emit_event(&app, crate::EVENT_ACCESSIBILITY_GRANTED, ());
+        let onboarded = app
+            .state::<AppState>()
+            .current_settings()
+            .onboarding_completed;
+        analytics::track_permission_granted(&app, "accessibility", onboarded);
+        // Onboarding shows the grant on its own permissions step.
+        if onboarded {
+            toast::show(
+                &app,
+                "success",
+                None,
+                &toast::native(&app, "native.toast.accessibility_granted"),
+            );
+        }
+    });
+}
+
+#[cfg(target_os = "macos")]
+pub(crate) fn show_accessibility_toast(app: &AppHandle<AppRuntime>, message_key: &'static str) {
+    toast::emit_toast(
+        app,
+        toast::Payload {
+            toast_type: "warning".to_string(),
+            title: Some(toast::native(app, "native.toast.accessibility_title")),
+            message: toast::native(app, message_key),
+            auto_dismiss: Some(true),
+            duration: Some(15_000),
+            action: Some("open_accessibility_settings".to_string()),
+            action_label: Some(toast::native(app, "native.toast.open_system_settings")),
+            ..Default::default()
+        },
+    );
+}
+
+/// A finished setup without Accessibility access means the shortcut does
+/// nothing, which looks like a broken app. This can happen after macOS drops
+/// the grant for an updated binary, or after the user turns it off.
+#[cfg(target_os = "macos")]
+pub(crate) fn report_missing_accessibility_at_launch(app: &AppHandle<AppRuntime>) {
+    let onboarded = app
+        .state::<AppState>()
+        .current_settings()
+        .onboarding_completed;
+    if !onboarded || permissions::check_accessibility_permission() {
+        return;
+    }
+
+    analytics::track_shortcut_failed("accessibility", "permission");
+    let app = app.clone();
+    std::thread::spawn(move || {
+        // The toast window starts listening after setup; an earlier event is lost.
+        std::thread::sleep(Duration::from_secs(2));
+        if !permissions::check_accessibility_permission() {
+            show_accessibility_toast(&app, "native.toast.accessibility_shortcut");
+        }
+    });
 }
 
 fn shortcuts_paused(app: &AppHandle<AppRuntime>) -> bool {
@@ -1350,6 +1411,15 @@ pub(crate) fn handle_registered_hotkey_event(
 pub fn register_shortcuts(app: &AppHandle<AppRuntime>) -> anyhow::Result<()> {
     let state = app.state::<AppState>();
     if state.is_shortcut_capture_active() {
+        return Ok(());
+    }
+
+    // The event tap can't start without Accessibility access. Listen as soon
+    // as it is granted instead of waiting for a restart.
+    #[cfg(target_os = "macos")]
+    if !permissions::check_accessibility_permission() {
+        state.hotkeys.stop_registration();
+        watch_for_accessibility(app);
         return Ok(());
     }
 
@@ -1468,16 +1538,26 @@ fn position_overlay_on_cursor_screen(window: &WebviewWindow<AppRuntime>) {
 
 /// Centers the window horizontally near the bottom edge of the monitor.
 fn place_on_monitor(window: &WebviewWindow<AppRuntime>, monitor: &tauri::Monitor) {
+    let place = |size: tauri::PhysicalSize<u32>| {
+        let scale_factor = monitor.scale_factor();
+        let screen = monitor.size();
+        let mon_pos = monitor.position();
+        let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
+        let bottom_padding_physical = (69.0 * scale_factor) as i32;
+        let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
+        let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    };
     let Ok(size) = window.outer_size() else {
         return;
     };
-    let scale_factor = monitor.scale_factor();
-    let screen = monitor.size();
-    let mon_pos = monitor.position();
-    let x = mon_pos.x + (screen.width.saturating_sub(size.width) / 2) as i32;
-    let bottom_padding_physical = (69.0 * scale_factor) as i32;
-    let y = mon_pos.y + screen.height as i32 - size.height as i32 - bottom_padding_physical;
-    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
+    place(size);
+    // Moving onto a monitor with other display scaling resizes the window and
+    // keeps its top-left corner, so center it again at the new size.
+    if let Ok(resized) = window.outer_size()
+        && resized != size
+    {
+        place(resized);
+    }
 }
 
 pub fn start_hold_recording(app: &AppHandle<AppRuntime>) -> bool {

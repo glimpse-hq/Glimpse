@@ -1,9 +1,10 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useRef } from "react";
+import { useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Warning as AlertTriangle } from "@phosphor-icons/react";
 import { detectAppPlatform } from "../../../platform/service";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 
 const LibraryDeleteDialog = ({
   open,
@@ -15,34 +16,11 @@ const LibraryDeleteDialog = ({
   onConfirm: () => void;
 }) => {
   const { t } = useLingui();
-  const cancelRef = useRef<HTMLButtonElement>(null);
-  const deleteRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    // Focus starts on Cancel, stays on the two buttons, and returns on close.
-    const previous = document.activeElement as HTMLElement | null;
-    cancelRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented) return;
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onCancel();
-      } else if (event.key === "Tab") {
-        event.preventDefault();
-        const next =
-          document.activeElement === cancelRef.current
-            ? deleteRef.current
-            : cancelRef.current;
-        next?.focus();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      previous?.focus();
-    };
-  }, [open, onCancel]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const detailId = useId();
+  // Cancel comes first, so it takes focus.
+  useFocusTrap(dialogRef, open, onCancel);
 
   return createPortal(
     <AnimatePresence>
@@ -58,28 +36,35 @@ const LibraryDeleteDialog = ({
           }}
         >
           <motion.div
+            ref={dialogRef}
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
             transition={{ duration: 0.18 }}
             className="w-full max-w-sm rounded-2xl border border-border-primary bg-surface-tertiary p-5 ui-shadow-modal-deep"
             onClick={(event) => event.stopPropagation()}
-            role="dialog"
+            role="alertdialog"
             aria-modal="true"
+            aria-labelledby={titleId}
+            aria-describedby={detailId}
           >
             <div className="flex items-center gap-3 mb-3">
               <AlertTriangle
                 size={20}
                 className="ui-color-warning-strong shrink-0"
+                aria-hidden="true"
               />
               <div>
-                <p className="ui-text-body-lg font-semibold text-content-primary">
+                <p
+                  id={titleId}
+                  className="ui-text-body-lg font-semibold text-content-primary"
+                >
                   {t({
                     id: "library.modal.delete_confirm.title",
                     message: "Delete this item?",
                   })}
                 </p>
-                <p className="ui-text-label text-content-disabled">
+                <p id={detailId} className="ui-text-label text-content-muted">
                   {detectAppPlatform() === "windows"
                     ? t({
                         id: "library.delete_confirm.recycle_bin",
@@ -96,7 +81,6 @@ const LibraryDeleteDialog = ({
             </div>
             <div className="flex justify-end gap-2">
               <button
-                ref={cancelRef}
                 onClick={onCancel}
                 className="rounded-lg border border-border-secondary px-4 py-2 ui-text-body-sm font-medium text-content-secondary hover:border-border-hover transition-colors"
               >
@@ -106,7 +90,6 @@ const LibraryDeleteDialog = ({
                 })}
               </button>
               <button
-                ref={deleteRef}
                 onClick={onConfirm}
                 className="rounded-lg bg-red-500/90 px-4 py-2 ui-text-body-sm font-semibold ui-color-on-solid hover:bg-red-500 transition-colors"
               >

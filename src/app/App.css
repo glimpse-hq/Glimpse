@@ -101,7 +101,7 @@
   /* Text */
   --color-text-primary: #e8e8eb;
   --color-text-secondary: #a0a0ab;
-  --color-text-muted: #6b6b76;
+  --color-text-muted: #85858f;
   --color-text-disabled: #4a4a54;
 
   /* UI typography roles */
@@ -1741,4 +1741,25 @@ body {
     opacity: 0.7;
     box-shadow: 0 0 0 4px rgba(255, 59, 48, 0);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shake,
+  .animate-toast-in,
+  .animate-toast-out,
+  .animate-pulse,
+  .recording-pulse,
+  .hover-tip,
+  .tag-input-intro {
+    animation: none;
+  }
+
+  .twinkling-grid > div {
+    animation: none !important;
+  }
+}
+
+h1[tabindex="-1"]:focus,
+h2[tabindex="-1"]:focus {
+  outline: none;
 }

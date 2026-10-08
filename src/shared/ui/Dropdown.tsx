@@ -7,6 +7,7 @@ import {
   Check,
 } from "@phosphor-icons/react";
 import { useClickOutside } from "../hooks/useClickOutside";
+import { useMenuKeyboard } from "../hooks/useMenuKeyboard";
 
 export interface DropdownOption<T extends string | number> {
   value: T;
@@ -30,6 +31,9 @@ interface DropdownProps<T extends string | number> {
   options: DropdownOption<T>[];
   placeholder?: string;
   label?: string;
+  // Names the field for screen readers when no visible label is inside the
+  // button; read before the selected value.
+  ariaLabel?: string;
   icon?: React.ReactNode;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -62,6 +66,7 @@ export function Dropdown<T extends string | number>({
   options,
   placeholder,
   label,
+  ariaLabel,
   icon,
   searchable = false,
   searchPlaceholder,
@@ -106,28 +111,13 @@ export function Dropdown<T extends string | number>({
   }, []);
 
   useClickOutside(containerRef, closeDropdown, isOpen);
+  useMenuKeyboard(menuRef, isOpen, closeDropdown);
 
   useEffect(() => {
     if (disabled) {
       closeDropdown();
     }
   }, [closeDropdown, disabled]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDropdown();
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [closeDropdown, isOpen]);
 
   useEffect(() => {
     onOpenChange?.(isOpen);
@@ -263,10 +253,13 @@ export function Dropdown<T extends string | number>({
             disabled={disabled}
             aria-haspopup="listbox"
             aria-expanded={isOpen}
-            aria-label={t({
-              id: "dropdown.toggle_menu",
-              message: "Toggle options",
-            })}
+            aria-label={
+              ariaLabel ??
+              t({
+                id: "dropdown.toggle_menu",
+                message: "Toggle options",
+              })
+            }
             className="shrink-0 ml-2 inline-flex items-center justify-center text-content-muted hover:text-content-primary disabled:opacity-60"
           >
             <ChevronDown
@@ -287,6 +280,7 @@ export function Dropdown<T extends string | number>({
           className={`w-full flex items-center justify-between rounded-lg bg-surface-surface border border-border-primary text-left hover:border-border-secondary focus:border-border-hover focus:outline-hidden transition-colors disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border-primary ${buttonClassName || "py-2 px-3 ui-text-body-sm"}`}
         >
           <div className="flex items-center gap-2 min-w-0 flex-1">
+            {ariaLabel && <span className="sr-only">{ariaLabel}</span>}
             {icon && (
               <span className="text-content-muted shrink-0" aria-hidden="true">
                 {icon}
@@ -389,6 +383,7 @@ export function Dropdown<T extends string | number>({
             <div
               className="dropdown-list min-h-[40px] px-1 py-1 flex flex-col"
               role="listbox"
+              aria-label={ariaLabel ?? label}
             >
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option, idx) =>
@@ -405,7 +400,7 @@ export function Dropdown<T extends string | number>({
                     >
                       {option.label}
                       {option.description && (
-                        <p className="ui-text-meta ui-color-disabled font-normal normal-case mt-0.5">
+                        <p className="ui-text-meta ui-color-muted font-normal normal-case mt-0.5">
                           {option.description}
                         </p>
                       )}
@@ -451,8 +446,8 @@ export function Dropdown<T extends string | number>({
                           <span
                             className={`ui-text-meta truncate ${
                               value === option.value
-                                ? "ui-color-muted"
-                                : "ui-color-disabled group-hover:text-content-muted"
+                                ? "ui-color-secondary"
+                                : "ui-color-muted group-hover:text-content-secondary"
                             }`}
                           >
                             {option.description}

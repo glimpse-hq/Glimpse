@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { motion } from "framer-motion";
 import { X, Warning } from "@phosphor-icons/react";
 import { Dropdown, type DropdownOption } from "../../../shared/ui/Dropdown";
@@ -12,6 +12,7 @@ import {
 import { useDiarizerInstalled } from "../../settings/models-queries";
 import type { LibraryItem, SpeechModel } from "../../../types";
 import { showErrorToast } from "../../../shared/lib/errorToast";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 
 export type LibraryRetranscribeOptions = {
   model_key: string;
@@ -90,15 +91,8 @@ const LibraryRetranscribeModal = ({
     }
   }, [timestampsSupported]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      onCancel();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onCancel]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true, onCancel);
 
   const handleConfirm = async () => {
     if (!selectedModelKey) return;
@@ -135,6 +129,7 @@ const LibraryRetranscribeModal = ({
       aria-labelledby="retranscribe-modal-title"
     >
       <motion.div
+        ref={dialogRef}
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 12 }}
@@ -197,6 +192,10 @@ const LibraryRetranscribeModal = ({
             <div className="mt-1.5">
               <Dropdown
                 value={selectedModelKey || null}
+                ariaLabel={t({
+                  id: "library.retranscribe.model",
+                  message: "Model",
+                })}
                 onChange={(value) => setSelectedModelKey(value)}
                 options={modelOptions}
                 placeholder={t({

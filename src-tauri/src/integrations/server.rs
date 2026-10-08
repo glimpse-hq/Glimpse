@@ -33,7 +33,10 @@ fn serve(app: AppHandle<AppRuntime>) -> std::io::Result<()> {
         Err(err) if err.kind() == std::io::ErrorKind::AddrInUse => {
             // If something answers, another instance owns the socket; defer to
             // it. Otherwise it's stale (rare crash/dev-stop case), so reclaim it.
-            if Stream::connect(socket_name()?).is_ok() {
+            let answered = Stream::connect(socket_name()?).ok();
+            #[cfg(target_os = "windows")]
+            let answered = answered.filter(super::ipc::served_by_current_user);
+            if answered.is_some() {
                 tracing::debug!("CLI control socket already served by another instance");
                 return Ok(());
             } else {

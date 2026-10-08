@@ -45,7 +45,9 @@ pub(crate) fn retry_transcription(
 
     let settings = state.current_settings();
     let saved_mode = (record.mode_id, record.mode_name);
-    let cancel_token = state.register_retry_transcription(id.clone());
+    let cancel_token = state
+        .register_retry_transcription(id.clone())
+        .ok_or_else(|| "Already retrying".to_string())?;
     transcribe::retry_transcription_async(app, saved, settings, id, saved_mode, cancel_token);
 
     Ok(())

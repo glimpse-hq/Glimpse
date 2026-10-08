@@ -229,7 +229,7 @@ fn export(identifier: &str, args: &[String], json: bool) -> Result<()> {
     Ok(())
 }
 
-fn parse_format(value: &str) -> Result<ExportFormat> {
+pub(super) fn parse_format(value: &str) -> Result<ExportFormat> {
     match value.to_lowercase().as_str() {
         "txt" => Ok(ExportFormat::Txt),
         "md" => Ok(ExportFormat::Md),
@@ -239,7 +239,7 @@ fn parse_format(value: &str) -> Result<ExportFormat> {
     }
 }
 
-fn item_summary(item: &LibraryItem) -> Value {
+pub(super) fn item_summary(item: &LibraryItem) -> Value {
     let (status, progress, error) = item.status.as_fields();
     json!({
         "id": item.id,

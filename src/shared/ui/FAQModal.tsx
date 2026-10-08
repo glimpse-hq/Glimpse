@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { detectAppPlatform } from "../../platform/service";
+import { useFocusTrap } from "../hooks/useFocusTrap";
 
 interface FAQModalProps {
   isOpen: boolean;
@@ -17,6 +19,7 @@ interface FAQModalProps {
 }
 
 const PRIVACY_URL = "https://tryglimpse.cc/privacy";
+const isWindows = detectAppPlatform() === "windows";
 
 const openExternal = (url: string) => {
   openUrl(url).catch((err) => {
@@ -37,6 +40,7 @@ const FaqLink = ({ href, children }: { href: string; children: ReactNode }) => (
 const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
   const { t } = useLingui();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(false);
 
@@ -46,6 +50,8 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
     setShowTopFade(el.scrollTop > 1);
     setShowBottomFade(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
   }, []);
+
+  useFocusTrap(dialogRef, isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -78,11 +84,17 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
       }),
       answer: (
         <>
-          {t({
-            id: "faq.privacy.answer",
-            message:
-              "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
-          })}{" "}
+          {isWindows
+            ? t({
+                id: "faq.privacy.answer.windows",
+                message:
+                  "Your audio and transcripts stay on your PC. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
+              })
+            : t({
+                id: "faq.privacy.answer",
+                message:
+                  "Your audio and transcripts stay on your Mac. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App.",
+              })}{" "}
           <FaqLink href={PRIVACY_URL}>
             {t({
               id: "faq.privacy.link",
@@ -134,11 +146,17 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
         id: "faq.permissions.question",
         message: "What permissions does Glimpse need?",
       }),
-      answer: t({
-        id: "faq.permissions.answer.v2",
-        message:
-          "Microphone access to record your voice, and Accessibility access to insert text and to read selected text when a shortcut rewrites it. Glimpse only uses these while you are actively dictating.",
-      }),
+      answer: isWindows
+        ? t({
+            id: "faq.permissions.answer.windows",
+            message:
+              "Microphone access to record your voice. Glimpse inserts text by pasting it where your cursor is, and copies selected text when a shortcut rewrites it. Glimpse only does this while you are actively dictating.",
+          })
+        : t({
+            id: "faq.permissions.answer.v2",
+            message:
+              "Microphone access to record your voice, and Accessibility access to insert text and to read selected text when a shortcut rewrites it. Glimpse only uses these while you are actively dictating.",
+          }),
     },
   ];
 
@@ -156,6 +174,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
           aria-labelledby="faq-title"
         >
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -182,6 +201,7 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={onClose}
                 className="p-1.5 rounded-md text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
                 aria-label={t({

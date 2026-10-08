@@ -5,9 +5,13 @@ import { detectAppPlatform } from "../../platform/service";
 const isMacPlatform = detectAppPlatform() === "macos";
 
 const MODIFIER_ORDER = ["Fn", "Cmd", "Opt", "Ctrl", "Shift"] as const;
+// Windows writes Ctrl before Alt: "Ctrl + Alt + Space".
+const DISPLAY_ORDER = isMacPlatform
+  ? MODIFIER_ORDER
+  : (["Fn", "Cmd", "Ctrl", "Opt", "Shift"] as const);
 
 function modifierRank(token: string): number {
-  const index = MODIFIER_ORDER.findIndex(
+  const index = DISPLAY_ORDER.findIndex(
     (modifier) => token === modifier || token.startsWith(modifier),
   );
   return index === -1 ? Number.MAX_SAFE_INTEGER : index;

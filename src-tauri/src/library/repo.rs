@@ -3,7 +3,9 @@ use std::path::Path;
 use anyhow::Result;
 use rusqlite::{Connection, OptionalExtension, Row, ToSql, params};
 
-use crate::library::{LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus};
+use crate::library::{
+    LibraryFilter, LibraryItem, LibraryItemPatch, LibraryItemStatus, PreviousTranscript,
+};
 
 const LIBRARY_COLUMNS: &str = "id, name, audio_path, source_path, store_original, status, progress, \
     error_message, transcript, segments, words, duration_seconds, file_size_bytes, original_format, \
@@ -119,6 +121,16 @@ pub(crate) fn get_library_items_page(
     Ok((items, has_more))
 }
 
+/// Marks an active item as cancelling; false when it already has another status.
+pub(crate) fn mark_library_item_cancelling(conn: &Connection, id: &str) -> Result<bool> {
+    let changed = conn.execute(
+        "UPDATE library_items SET status = 'cancelling', progress = 0
+         WHERE id = ?1 AND status IN ('pending', 'importing', 'transcribing')",
+        params![id],
+    )?;
+    Ok(changed > 0)
+}
+
 pub(crate) fn get_recoverable_library_items(
     conn: &Connection,
     root: &Path,
@@ -198,8 +210,38 @@ pub(crate) fn update_library_item(
     }
 
     update_library_item_full(&tx, &item)?;
+    if let Some(previous) = patch.previous_transcript {
+        let previous = serialize_json_value(&previous)?;
+        tx.execute(
+            "UPDATE library_items SET previous_transcript = ?1 WHERE id = ?2",
+            params![previous, id],
+        )?;
+    }
     tx.commit()?;
     Ok(Some(item))
+}
+
+pub(crate) fn get_previous_transcript(
+    conn: &Connection,
+    id: &str,
+) -> Result<Option<PreviousTranscript>> {
+    let stored: Option<Option<String>> = conn
+        .query_row(
+            "SELECT previous_transcript FROM library_items WHERE id = ?1",
+            params![id],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(stored.flatten().and_then(|raw| {
+        serde_json::from_str(&raw)
+            .inspect_err(|err| {
+                tracing::warn!(
+                    "Previous transcript of library item {id} is unreadable ({:?})",
+                    err.classify()
+                );
+            })
+            .ok()
+    }))
 }
 
 pub(crate) fn delete_library_item(
@@ -420,7 +462,7 @@ fn serialize_tags(tags: &[String]) -> Result<String> {
     Ok(serde_json::to_string(tags)?)
 }
 
-fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
+pub(crate) fn extract_search_terms(search: &str) -> (Vec<String>, Vec<String>) {
     let mut tag_terms = Vec::new();
     let mut text_terms = Vec::new();
 
@@ -485,8 +527,10 @@ fn build_library_filter(filter: &LibraryFilter) -> (String, Vec<Box<dyn ToSql>>)
         params.push(Box::new(format!("%\"{}\"%", tag.trim())));
     }
 
-    if let Some(days) = filter.since_days {
-        let cutoff = chrono::Utc::now() - chrono::Duration::days(days as i64);
+    if let Some(cutoff) = filter.since_days.and_then(|days| {
+        chrono::TimeDelta::try_days(days as i64)
+            .and_then(|span| chrono::Utc::now().checked_sub_signed(span))
+    }) {
         clauses.push("created_at >= ?".to_string());
         params.push(Box::new(cutoff.to_rfc3339()));
     }

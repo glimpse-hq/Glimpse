@@ -150,6 +150,11 @@ const ModelStatCard = ({
                 <ActivityDots />
               ) : (
                 <span
+                  role="progressbar"
+                  aria-label={model.label}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(percent)}
                   className="font-mono tabular-nums ui-color-primary"
                   style={{ fontSize: "11.5px" }}
                 >
