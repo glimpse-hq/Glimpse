@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useLingui } from "@lingui/react/macro";
+import { useEffect, useRef, type ReactNode } from "react";
 import { motion, type Variants, type Easing } from "framer-motion";
 import type { Icon } from "@phosphor-icons/react";
 
@@ -29,8 +30,22 @@ export function OnboardingStep({
   footer?: ReactNode;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // The control that moved here is gone, so focus starts at the new step's
+  // heading, where a screen reader picks up reading.
+  useEffect(() => {
+    const root = ref.current;
+    if (!root || root.contains(document.activeElement)) return;
+    const heading = root.querySelector<HTMLElement>("h1, h2");
+    if (!heading) return;
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+  }, []);
+
   return (
     <motion.div
+      ref={ref}
       key={stepKey}
       {...motionProps}
       initial={initial}
@@ -62,7 +77,11 @@ export function Tile({
   return (
     <div className="rounded-2xl border border-border-primary bg-surface-overlay px-4 pb-4 pt-3.5 text-left shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
       <div className="mb-3 flex items-start gap-2">
-        <TileIcon size={15} className="mt-0.5 shrink-0 text-content-muted" />
+        <TileIcon
+          size={15}
+          className="mt-0.5 shrink-0 text-content-muted"
+          aria-hidden="true"
+        />
         <p className="min-w-0 flex-1 leading-snug ui-text-body-sm-strong text-content-primary text-balance">
           {title}
         </p>
@@ -115,21 +134,32 @@ export const StepIndicator = ({
 }: {
   currentStep: number;
   total: number;
-}) => (
-  <div className="flex items-center gap-1.5">
-    {Array.from({ length: total }).map((_, i) => (
-      <motion.div
-        key={i}
-        className="h-1.5 rounded-full bg-content-primary"
-        animate={{
-          width: i === currentStep ? 20 : 6,
-          opacity: i <= currentStep ? 1 : 0.25,
-        }}
-        transition={{ duration: 0.25 }}
-      />
-    ))}
-  </div>
-);
+}) => {
+  const { t } = useLingui();
+  const step = currentStep + 1;
+  return (
+    <div
+      role="img"
+      aria-label={t({
+        id: "onboarding.step_progress",
+        message: `Step ${step} of ${total}`,
+      })}
+      className="flex items-center gap-1.5"
+    >
+      {Array.from({ length: total }).map((_, i) => (
+        <motion.div
+          key={i}
+          className="h-1.5 rounded-full bg-content-primary"
+          animate={{
+            width: i === currentStep ? 20 : 6,
+            opacity: i <= currentStep ? 1 : 0.25,
+          }}
+          transition={{ duration: 0.25 }}
+        />
+      ))}
+    </div>
+  );
+};
 
 export const PRIMARY_BUTTON_CLASS =
   "flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-content-primary px-6 py-2.5 ui-text-body-lg font-semibold text-surface-secondary transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50";

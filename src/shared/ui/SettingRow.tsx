@@ -38,7 +38,7 @@ const SettingRow = ({
             )}
           </div>
           {description != null && (
-            <div className="mt-1 break-words ui-text-meta ui-color-disabled">
+            <div className="mt-1 break-words ui-text-meta ui-color-muted">
               {description}
             </div>
           )}
@@ -61,7 +61,7 @@ const SettingRow = ({
         <div className="flex min-w-[55%] flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="ui-text-label-strong ui-color-primary">{title}</span>
           {inlineDescription != null && (
-            <span className="min-w-0 ui-text-meta leading-none ui-color-disabled">
+            <span className="min-w-0 ui-text-meta leading-none ui-color-muted">
               {inlineDescription}
             </span>
           )}
@@ -71,7 +71,7 @@ const SettingRow = ({
         )}
       </div>
       {description != null && (
-        <span className="ui-text-micro ui-color-disabled mt-1 block">
+        <span className="ui-text-micro ui-color-muted mt-1 block">
           {description}
         </span>
       )}

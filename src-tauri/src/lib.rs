@@ -57,9 +57,7 @@ use pill::PillController;
 use recorder::{CompletedRecording, RecorderManager, RecordingRejectionReason, validate_recording};
 use reqwest::Client;
 use serde::Serialize;
-use settings::{
-    RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings, default_local_model,
-};
+use settings::{RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings};
 use tauri::Emitter;
 use tauri::Listener;
 use tauri::async_runtime;
@@ -124,6 +122,8 @@ pub(crate) const EVENT_TRANSCRIPTION_COMPLETE: &str = "transcription:complete";
 pub(crate) const EVENT_TRANSCRIPTION_ERROR: &str = "transcription:error";
 pub(crate) const EVENT_SETTINGS_CHANGED: &str = "settings:changed";
 pub(crate) const EVENT_LICENSE_CHECKOUT_RETURNED: &str = "license:checkout-returned";
+#[cfg(target_os = "macos")]
+pub(crate) const EVENT_ACCESSIBILITY_GRANTED: &str = "permissions:accessibility-granted";
 const EVENT_LICENSE_CHANGED: &str = "license:changed";
 // Only calls the server when the saved license is due for a refresh.
 const LICENSE_SYNC_INTERVAL: Duration = Duration::from_secs(15 * 60);
@@ -177,6 +177,7 @@ where
         let app = app.clone();
         let key = license::deep_link_license_key(raw_url);
         tauri::async_runtime::spawn(async move {
+            license::note_checkout_returned(&app);
             // A link never replaces a license that is already active.
             if let Some(key) = key
                 && let Some(state) = app.try_state::<AppState>()
@@ -259,8 +260,14 @@ pub fn run_cli() -> Result<()> {
         return glimpse_speech::cli::run_blocking();
     }
 
-    let context = app_context();
-    let settings_store = SettingsStore::for_cli(&context.config().identifier)?;
+    require_cli_license(&app_context().config().identifier)?;
+    glimpse_speech::cli::run_blocking()
+}
+
+/// The gate every licensed CLI command passes before it runs: refresh the
+/// saved grant when due, then require an active license (no trial).
+pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
+    let settings_store = SettingsStore::for_cli(identifier)?;
     let cache_active_before_refresh = license::active_license_gate(&settings_store);
     if license::secure_grant_refresh_needed(&settings_store).map_err(anyhow::Error::msg)? {
         let runtime = tokio::runtime::Runtime::new()?;
@@ -280,8 +287,7 @@ pub fn run_cli() -> Result<()> {
              Open Glimpse > Settings > Account to check or activate your license."
         );
     }
-
-    glimpse_speech::cli::run_blocking()
+    Ok(())
 }
 
 fn normalized_integration_args(args: &[String]) -> Option<Vec<String>> {
@@ -406,23 +412,24 @@ pub fn run() {
             if let Some(path) = crash_marker.clone() {
                 analytics::install_crash_handler(path.clone(), crash_log);
                 #[cfg(target_os = "windows")]
-                if let Ok(log_dir) = handle.path().app_log_dir() {
-                    platform::windows::crash::install(log_dir, path);
+                {
+                    if let Ok(log_dir) = handle.path().app_log_dir() {
+                        platform::windows::crash::install(log_dir, path);
+                    }
+                    platform::windows::crash::watch_session_end();
                 }
             }
             analytics::set_crash_phase("settings_load");
             let settings_store = Arc::new(SettingsStore::new(handle)?);
-            let mut settings = settings_store.load().unwrap_or_default();
-            if model_manager::definition(&settings.local_model).is_none() {
-                settings.local_model = default_local_model();
-                if let Err(err) = settings_store.save(&settings) {
-                    tracing::error!("Failed to persist default local model: {err}");
-                }
-            }
+            let settings = settings_store.load().unwrap_or_else(|err| {
+                tracing::error!("Failed to load settings, starting with defaults: {err:#}");
+                UserSettings::default()
+            });
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
-            speech::upgrade_retired_diarizer(handle);
+            speech::upgrade_retired_diarizers(handle);
+            speech::follow_model_upgrade(handle);
             speech::remove_whisper_cpp_files(handle);
             speech::compile_pending_ane_encoders(handle);
             speech::upgrade_parakeet_encoder(handle);
@@ -503,6 +510,8 @@ pub fn run() {
             if let Err(err) = pill::register_shortcuts(handle) {
                 tracing::error!("Failed to register shortcuts: {err}");
             }
+            #[cfg(target_os = "macos")]
+            pill::report_missing_accessibility_at_launch(handle);
 
             let state = handle.state::<AppState>();
             if state.should_open_settings_on_startup() {
@@ -651,6 +660,8 @@ pub fn run() {
             open_llm_cleanup_settings,
             open_ffmpeg_install,
             complete_onboarding,
+            model_recommendation,
+            speech::set_local_model_auto,
             start_hold_recording,
             pill::stop_hold_recording,
             cancel_recording,
@@ -663,6 +674,7 @@ pub fn run() {
             analytics::report_frontend_crash,
             analytics::track_onboarding_step_viewed,
             analytics::track_onboarding_source,
+            analytics::track_onboarding_model_chosen,
             analytics::track_paywall_shown,
             analytics::track_paywall_clicked,
             analytics::track_gate_blocked,
@@ -730,6 +742,43 @@ pub fn run() {
             }
             _ => {}
         });
+}
+
+#[cfg(test)]
+mod share_image_tests {
+    use super::{PNG_SIGNATURE, check_share_image};
+    use std::path::Path;
+
+    fn png() -> Vec<u8> {
+        [PNG_SIGNATURE, b"rest"].concat()
+    }
+
+    #[test]
+    fn accepts_png_bytes_at_an_absolute_png_path() {
+        let path = std::env::temp_dir().join("glimpse-share.PNG");
+        assert!(check_share_image(&path, &png()).is_ok());
+    }
+
+    #[test]
+    fn rejects_paths_that_are_not_png_files() {
+        let home = std::env::temp_dir();
+        for path in [
+            home.join(".zshrc"),
+            home.join("Library/LaunchAgents/evil.plist"),
+            home.join("share.png.command"),
+            home.join("noext"),
+        ] {
+            assert!(check_share_image(&path, &png()).is_err(), "{path:?}");
+        }
+        assert!(check_share_image(Path::new("relative.png"), &png()).is_err());
+    }
+
+    #[test]
+    fn rejects_bytes_that_are_not_png() {
+        let path = std::env::temp_dir().join("glimpse-share.png");
+        assert!(check_share_image(&path, b"#!/bin/sh\nrm -rf ~\n").is_err());
+        assert!(check_share_image(&path, &[]).is_err());
+    }
 }
 
 #[cfg(test)]
@@ -1219,7 +1268,10 @@ impl AppState {
     }
 
     pub(crate) fn library_job_pending(&self, id: &str) -> bool {
-        self.library_tokens.lock().contains_key(id)
+        // Each lock is released before the next is taken; nesting tokens
+        // inside active here would invert the order cancelling takes them in.
+        let has_token = self.library_tokens.lock().contains_key(id);
+        has_token
             || self.library_active.lock().as_deref() == Some(id)
             || self
                 .library_queue
@@ -1236,7 +1288,13 @@ impl AppState {
     }
 
     pub fn cancel_library_transcription(&self, id: &str) {
-        if let Some(token) = self.library_tokens.lock().get(id) {
+        // A claimed job registers its token only once its task runs, so the
+        // token is created here for it to pick up already cancelled.
+        let active = self.library_active.lock();
+        let mut tokens = self.library_tokens.lock();
+        if active.as_deref() == Some(id) {
+            tokens.entry(id.to_string()).or_default().cancel();
+        } else if let Some(token) = tokens.get(id) {
             token.cancel();
         }
     }
@@ -1245,10 +1303,15 @@ impl AppState {
         self.library_tokens.lock().remove(id);
     }
 
-    pub fn register_retry_transcription(&self, id: String) -> CancellationToken {
+    /// None while a retry of the same transcription is still running.
+    pub fn register_retry_transcription(&self, id: String) -> Option<CancellationToken> {
+        let mut tokens = self.retry_tokens.lock();
+        if tokens.contains_key(&id) {
+            return None;
+        }
         let token = CancellationToken::new();
-        self.retry_tokens.lock().insert(id, token.clone());
-        token
+        tokens.insert(id, token.clone());
+        Some(token)
     }
 
     pub fn cancel_retry_transcription(&self, id: &str) -> bool {
@@ -1364,8 +1427,10 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
 }
 
 #[tauri::command]
-fn open_accessibility_settings() -> Result<(), String> {
-    permissions::open_accessibility_settings()
+fn open_accessibility_settings(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    permissions::open_accessibility_settings()?;
+    analytics::track_permission_prompt_opened(&app, "accessibility");
+    Ok(())
 }
 
 #[tauri::command]
@@ -1427,7 +1492,17 @@ fn complete_onboarding(
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
 ) -> Result<(), String> {
-    core::settings::complete_onboarding(&app, &state, first_dictation)
+    core::settings::complete_onboarding(&app, &state, first_dictation)?;
+    // Speaker detection only serves licensed features, which a trial includes.
+    if license::license_gate_active(&state.settings_store) {
+        speech::install_diarizer_in_background(&app);
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn model_recommendation(state: tauri::State<AppState>) -> speech::catalog::ModelRecommendation {
+    speech::catalog::model_recommendation(&state.current_settings())
 }
 
 #[tauri::command]
@@ -1452,7 +1527,7 @@ fn update_settings(
     args: core::settings::UpdateSettingsArgs,
     app: AppHandle<AppRuntime>,
     state: tauri::State<AppState>,
-) -> Result<UserSettings, String> {
+) -> Result<core::settings::UpdateSettingsResult, String> {
     core::settings::update_settings(args, &app, &state)
 }
 
@@ -1881,7 +1956,26 @@ fn get_today_dictation_stats(
 
 #[tauri::command]
 fn save_share_image(path: String, bytes: Vec<u8>) -> Result<(), String> {
+    check_share_image(std::path::Path::new(&path), &bytes)?;
     std::fs::write(&path, bytes).map_err(|err| format!("Failed to save image: {err}"))
+}
+
+const PNG_SIGNATURE: &[u8] = b"\x89PNG\r\n\x1a\n";
+
+/// The save dialog always yields a `.png` path, so anything else means the
+/// webview is asking to write somewhere it shouldn't, like a shell profile.
+fn check_share_image(path: &std::path::Path, bytes: &[u8]) -> Result<(), String> {
+    let is_png_path = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("png"));
+    if !path.is_absolute() || !is_png_path {
+        return Err("Share images can only be saved as .png files".to_string());
+    }
+    if !bytes.starts_with(PNG_SIGNATURE) {
+        return Err("Share image is not a PNG".to_string());
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -1902,9 +1996,10 @@ fn delete_transcription(
     state: tauri::State<AppState>,
 ) -> Result<bool, String> {
     let result = match state.storage().delete(&id) {
-        Ok(Some(audio_path)) => {
-            let path = PathBuf::from(audio_path);
-            if path.exists() {
+        Ok(Some(unused_audio)) => {
+            if let Some(path) = unused_audio.map(PathBuf::from)
+                && path.exists()
+            {
                 let _ = std::fs::remove_file(path);
             }
             Ok(true)

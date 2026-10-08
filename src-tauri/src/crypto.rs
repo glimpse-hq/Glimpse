@@ -73,12 +73,12 @@ fn query_windows_hardware_uuid() -> Option<String> {
         .output()
         .ok();
 
-    if let Some(output) = output {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            if let Some(uuid) = stdout.lines().map(str::trim).find(|line| !line.is_empty()) {
-                return Some(uuid.to_string());
-            }
+    if let Some(output) = output
+        && output.status.success()
+    {
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        if let Some(uuid) = stdout.lines().map(str::trim).find(|line| !line.is_empty()) {
+            return Some(uuid.to_string());
         }
     }
 

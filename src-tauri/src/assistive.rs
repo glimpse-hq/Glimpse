@@ -16,8 +16,9 @@ use core_graphics::event_source::{CGEventSource, CGEventSourceStateID};
 use std::{thread, time::Duration};
 #[cfg(target_os = "windows")]
 use windows::Win32::UI::Input::KeyboardAndMouse::{
-    INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_KEYUP, SendInput,
-    VIRTUAL_KEY, VK_C, VK_CONTROL, VK_V,
+    GetAsyncKeyState, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT,
+    KEYEVENTF_EXTENDEDKEY, KEYEVENTF_KEYUP, SendInput, VIRTUAL_KEY, VK_C, VK_CONTROL, VK_LMENU,
+    VK_LSHIFT, VK_LWIN, VK_RMENU, VK_RSHIFT, VK_RWIN, VK_V,
 };
 
 const MAX_FOCUSED_TEXT_SNAPSHOT_LEN: usize = 20_000;
@@ -435,12 +436,49 @@ const PASTE_KEY: VIRTUAL_KEY = VK_V;
 
 #[cfg(target_os = "windows")]
 fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
-    let inputs = [
+    // SendInput adds to the keys the user is still holding, unlike a CGEvent
+    // whose flags replace them. A held shortcut modifier would turn Ctrl+C into
+    // Ctrl+Shift+C (DevTools in browsers) or Ctrl+Alt+C, so release them first.
+    let held: Vec<(VIRTUAL_KEY, KEYBD_EVENT_FLAGS)> = [
+        (VK_LSHIFT, KEYBD_EVENT_FLAGS(0)),
+        (VK_RSHIFT, KEYBD_EVENT_FLAGS(0)),
+        (VK_LMENU, KEYBD_EVENT_FLAGS(0)),
+        (VK_RMENU, KEYEVENTF_EXTENDEDKEY),
+        (VK_LWIN, KEYEVENTF_EXTENDEDKEY),
+        (VK_RWIN, KEYEVENTF_EXTENDEDKEY),
+    ]
+    .into_iter()
+    .filter(|(vk, _)| unsafe { GetAsyncKeyState(vk.0 as i32) } as u16 & 0x8000 != 0)
+    .collect();
+
+    let mut inputs = Vec::with_capacity(held.len() * 2 + 8);
+    let masks_alt_or_win = held
+        .iter()
+        .any(|(vk, _)| ![VK_LSHIFT, VK_RSHIFT].contains(vk));
+    if masks_alt_or_win {
+        inputs.push(keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)));
+        inputs.push(keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP));
+    }
+    for &(vk, flags) in &held {
+        inputs.push(keyboard_input(vk, flags | KEYEVENTF_KEYUP));
+    }
+    inputs.extend([
         keyboard_input(VK_CONTROL, KEYBD_EVENT_FLAGS(0)),
         keyboard_input(key, KEYBD_EVENT_FLAGS(0)),
         keyboard_input(key, KEYEVENTF_KEYUP),
         keyboard_input(VK_CONTROL, KEYEVENTF_KEYUP),
-    ];
+    ]);
+    // Press the held keys again so they still read as held (a released Shift
+    // would make the next letters lowercase). After Alt or Win, a dummy key keeps
+    // the user's own release from counting as a bare tap, which would open the
+    // menu bar or the Start menu.
+    for &(vk, flags) in &held {
+        inputs.push(keyboard_input(vk, flags));
+    }
+    if masks_alt_or_win {
+        inputs.push(keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)));
+        inputs.push(keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP));
+    }
 
     let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
     if sent != inputs.len() as u32 {
@@ -453,9 +491,35 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
     Ok(())
 }
 
+/// The paste was skipped because macOS Accessibility access is off. The text
+/// was left on the clipboard instead.
+#[cfg(target_os = "macos")]
+#[derive(Debug)]
+pub struct AccessibilityMissing;
+
+#[cfg(target_os = "macos")]
+impl std::fmt::Display for AccessibilityMissing {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Accessibility permission is not granted")
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl std::error::Error for AccessibilityMissing {}
+
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn paste_text(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
+
+    // Without Accessibility access macOS drops the synthetic Cmd+V without an
+    // error, and the clipboard restore below would then lose the text.
+    #[cfg(target_os = "macos")]
+    if !crate::permissions::check_accessibility_permission() {
+        clipboard
+            .set_text(text)
+            .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+        return Err(AccessibilityMissing.into());
+    }
 
     let backup = ClipboardBackup::capture(&mut clipboard);
 
@@ -591,6 +655,15 @@ impl ClipboardBackup {
     }
 }
 
+// Marks keys Glimpse sends so its own shortcut hook ignores them.
+#[cfg(target_os = "windows")]
+pub(crate) const GLIMPSE_INPUT_TAG: usize = 0x474C_4D50;
+
+// Releasing a lone Alt or Win opens the menu bar or Start; pressing this no-op
+// key first makes it part of a combination. Same trick as PowerToys Keyboard Manager.
+#[cfg(target_os = "windows")]
+pub(crate) const VK_DUMMY: VIRTUAL_KEY = VIRTUAL_KEY(0xFF);
+
 #[cfg(target_os = "windows")]
 pub(crate) fn keyboard_input(key: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS) -> INPUT {
     INPUT {
@@ -601,7 +674,7 @@ pub(crate) fn keyboard_input(key: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS) -> INPU
                 wScan: 0,
                 dwFlags: flags,
                 time: 0,
-                dwExtraInfo: 0,
+                dwExtraInfo: GLIMPSE_INPUT_TAG,
             },
         },
     }

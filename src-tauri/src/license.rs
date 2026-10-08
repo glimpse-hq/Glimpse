@@ -201,6 +201,11 @@ impl LicenseFailure {
     }
 }
 
+// Held across each activate, refresh and deactivate, network call included, so
+// a refresh that started earlier can't write its stale answer over a newer key
+// or a deactivation.
+static LICENSE_CHANGE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 static GATE_CACHE: Mutex<Option<(bool, DateTime<Utc>)>> = Mutex::new(None);
 const GATE_CACHE_TTL_SECONDS: i64 = 60;
 
@@ -290,9 +295,14 @@ pub(crate) fn checkout_returned_this_session() -> bool {
     CHECKOUT_RETURNED.load(std::sync::atomic::Ordering::Relaxed)
 }
 
-pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+/// Must run before a key from the link is activated, so the activation counts
+/// as coming from checkout.
+pub fn note_checkout_returned(app: &AppHandle<AppRuntime>) {
     CHECKOUT_RETURNED.store(true, std::sync::atomic::Ordering::Relaxed);
     crate::analytics::track_checkout_returned(app);
+}
+
+pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
     tray::toggle_settings_window(app)
         .map_err(|err| format!("Failed to open settings for license deep link: {err}"))?;
     app.emit(EVENT_LICENSE_CHECKOUT_RETURNED, ())
@@ -414,6 +424,7 @@ pub async fn activate_license(
     args: ActivateLicenseArgs,
 ) -> Result<LicenseState, String> {
     let key = normalize_license_key(&args.key)?;
+    let _change = LICENSE_CHANGE.lock().await;
     let body = ActivateRequest {
         key: &key,
         label: activation_label(),
@@ -432,6 +443,7 @@ pub async fn refresh_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
+    let _change = LICENSE_CHANGE.lock().await;
     let Some(key) = read_license_key(store)? else {
         return get_license_state(store);
     };
@@ -458,6 +470,7 @@ pub async fn deactivate_license(
     client: Client,
     store: &SettingsStore,
 ) -> Result<LicenseState, String> {
+    let _change = LICENSE_CHANGE.lock().await;
     let key = match read_license_key(store) {
         Ok(key) => key,
         Err(err) => {
@@ -1196,5 +1209,241 @@ mod tests {
         );
 
         assert!(parse_trial_record(&record, "install-b").is_none());
+    }
+
+    fn at(value: &str) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(value)
+            .unwrap()
+            .with_timezone(&Utc)
+    }
+
+    fn signed_grant(last_validated_at: &str, expires_at: Option<&str>) -> CachedLicenseGrant {
+        CachedLicenseGrant {
+            status: GRANT_STATUS_GRANTED.to_string(),
+            last_validated_at: last_validated_at.to_string(),
+            expires_at: expires_at.map(str::to_string),
+            edition: Some(LicenseEdition::Personal),
+            grant_token: Some("signed".to_string()),
+            ..CachedLicenseGrant::default()
+        }
+    }
+
+    #[test]
+    fn finds_creem_keys_inside_pasted_text() {
+        assert_eq!(
+            find_license_key("Your key: ABCDE-12345-fghij-67890-KLMNO. Thanks!"),
+            Some("ABCDE-12345-fghij-67890-KLMNO")
+        );
+        assert_eq!(find_license_key("ABCDE-12345-FGHIJ-67890"), None);
+        assert_eq!(find_license_key("XABCDE-12345-FGHIJ-67890-KLMNO"), None);
+    }
+
+    #[test]
+    fn finds_polar_keys_with_brand_prefixes() {
+        let text = "key=GLIMPSE_LIVE-0f8fad5b-d9cb-469f-a165-70867728950e;";
+        assert_eq!(
+            find_license_key(text),
+            Some("GLIMPSE_LIVE-0f8fad5b-d9cb-469f-a165-70867728950e")
+        );
+        assert_eq!(
+            find_license_key("0f8fad5b-d9cb-469f-a165-70867728950e"),
+            None
+        );
+    }
+
+    #[test]
+    fn normalizing_keeps_unrecognized_input_and_rejects_blank_input() {
+        assert!(normalize_license_key("   ").is_err());
+        assert_eq!(
+            normalize_license_key("  custom-key  ").unwrap(),
+            "custom-key"
+        );
+        assert_eq!(
+            normalize_license_key("Receipt\nABCDE-12345-FGHIJ-67890-KLMNO\n").unwrap(),
+            "ABCDE-12345-FGHIJ-67890-KLMNO"
+        );
+    }
+
+    #[test]
+    fn license_deep_links_need_the_glimpse_scheme_and_a_license_route() {
+        assert!(is_license_deep_link("glimpse://license/activate?key=abc"));
+        assert!(is_license_deep_link("glimpse:///license"));
+        assert!(!is_license_deep_link("glimpse://settings/general"));
+        assert!(!is_license_deep_link("https://license.example.com"));
+        assert!(!is_license_deep_link("not a url"));
+    }
+
+    #[test]
+    fn deep_link_keys_are_trimmed_decoded_and_bounded() {
+        assert_eq!(
+            deep_link_license_key("glimpse://license/activate?key=%20ABC-123%20&x=1").as_deref(),
+            Some("ABC-123")
+        );
+        assert_eq!(
+            deep_link_license_key("glimpse://license/activate?key=%20"),
+            None
+        );
+        assert_eq!(deep_link_license_key("glimpse://license/activate"), None);
+        let long = "k".repeat(257);
+        assert_eq!(
+            deep_link_license_key(&format!("glimpse://license/activate?key={long}")),
+            None
+        );
+    }
+
+    #[test]
+    fn key_hash_ignores_case_and_surrounding_space() {
+        assert_eq!(key_hash(" abcde-12345 "), key_hash("ABCDE-12345"));
+        assert_ne!(key_hash("ABCDE-12345"), key_hash("ABCDE-12346"));
+        assert_eq!(
+            sha256_hex(""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+    }
+
+    #[test]
+    fn tokens_without_the_server_signature_are_rejected() {
+        use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+        use ring::signature::Ed25519KeyPair;
+
+        let body = URL_SAFE_NO_PAD.encode(br#"{"typ":"trial","dev":"d","start":0}"#);
+        let rng = ring::rand::SystemRandom::new();
+        let pkcs8 = Ed25519KeyPair::generate_pkcs8(&rng).unwrap();
+        let forger = Ed25519KeyPair::from_pkcs8(pkcs8.as_ref()).unwrap();
+        let forged = URL_SAFE_NO_PAD.encode(forger.sign(body.as_bytes()).as_ref());
+
+        assert!(verify_token(&format!("{body}.{forged}")).is_none());
+        assert!(verify_token(&body).is_none());
+        assert!(verify_token("").is_none());
+        assert!(verify_token("a.b.c").is_none());
+    }
+
+    #[test]
+    fn cache_tolerates_small_clock_skew_and_exact_trust_window() {
+        let now = at("2026-05-25T12:00:00Z");
+        assert!(cache_is_fresh(now, "2026-05-25T12:09:00Z", None));
+        assert!(!cache_is_fresh(now, "2026-05-25T12:11:00Z", None));
+        assert!(cache_is_fresh(now, "2026-05-18T12:00:00Z", None));
+        assert!(!cache_is_fresh(now, "2026-05-18T11:59:59Z", None));
+    }
+
+    #[test]
+    fn cache_rejects_unparseable_dates_and_expiry_at_now() {
+        let now = at("2026-05-25T12:00:00Z");
+        assert!(!cache_is_fresh(now, "yesterday", None));
+        assert!(!cache_is_fresh(now, "2026-05-25T11:00:00Z", Some("soon")));
+        assert!(!cache_is_fresh(
+            now,
+            "2026-05-25T11:00:00Z",
+            Some("2026-05-25T12:00:00Z")
+        ));
+        assert!(cache_is_fresh(
+            now,
+            "2026-05-25T11:00:00+02:00",
+            Some("2026-06-25T12:00:00Z")
+        ));
+    }
+
+    #[test]
+    fn refresh_is_due_for_unsigned_expired_or_unreadable_grants() {
+        let now = at("2026-05-25T12:00:00Z");
+        assert!(!cached_grant_refresh_due(
+            now,
+            &signed_grant("2026-05-25T11:00:00Z", None)
+        ));
+
+        let mut unsigned = signed_grant("2026-05-25T11:00:00Z", None);
+        unsigned.grant_token = None;
+        assert!(cached_grant_refresh_due(now, &unsigned));
+
+        let mut pre_worker = signed_grant("2026-05-25T11:00:00Z", None);
+        pre_worker.edition = None;
+        assert!(cached_grant_refresh_due(now, &pre_worker));
+
+        assert!(cached_grant_refresh_due(
+            now,
+            &signed_grant("2026-05-25T11:00:00Z", Some("2026-05-25T12:00:00Z"))
+        ));
+        assert!(!cached_grant_refresh_due(
+            now,
+            &signed_grant("2026-05-25T11:00:00Z", Some("not a date"))
+        ));
+        assert!(cached_grant_refresh_due(
+            now,
+            &signed_grant("garbage", None)
+        ));
+        assert!(cached_grant_refresh_due(
+            now,
+            &signed_grant("2026-05-25T12:30:00Z", None)
+        ));
+    }
+
+    #[test]
+    fn granted_cache_is_active_only_while_fresh() {
+        let now = at("2026-05-25T12:00:00Z");
+        assert!(cached_grant_is_active(
+            now,
+            &signed_grant("2026-05-25T11:00:00Z", None)
+        ));
+        assert!(!cached_grant_is_active(
+            now,
+            &signed_grant("2026-05-01T11:00:00Z", None)
+        ));
+    }
+
+    #[test]
+    fn grants_cached_by_older_versions_still_deserialize() {
+        let grant: CachedLicenseGrant = serde_json::from_str(
+            r#"{"status":"granted","last_validated_at":"2026-05-25T11:00:00Z"}"#,
+        )
+        .unwrap();
+        assert_eq!(grant.status, GRANT_STATUS_GRANTED);
+        assert!(grant.edition.is_none() && grant.grant_token.is_none());
+
+        let grant: CachedLicenseGrant = serde_json::from_str(
+            r#"{"status":"granted","last_validated_at":"x","edition":"founder","unknown":1}"#,
+        )
+        .unwrap();
+        assert_eq!(grant.edition, Some(LicenseEdition::Founder));
+    }
+
+    #[test]
+    fn statuses_and_editions_serialize_as_their_wire_names() {
+        for status in [
+            LicenseStatus::Trial,
+            LicenseStatus::Active,
+            LicenseStatus::Expired,
+            LicenseStatus::Invalid,
+            LicenseStatus::Unverified,
+        ] {
+            assert_eq!(
+                serde_json::to_value(&status).unwrap(),
+                serde_json::Value::String(status.as_str().to_string())
+            );
+        }
+        for edition in [
+            LicenseEdition::Personal,
+            LicenseEdition::Commercial,
+            LicenseEdition::Founder,
+            LicenseEdition::Contributor,
+        ] {
+            assert_eq!(
+                serde_json::to_value(edition).unwrap(),
+                serde_json::Value::String(edition.as_str().to_string())
+            );
+        }
+    }
+
+    #[test]
+    fn trial_records_need_a_separator_and_a_valid_date() {
+        assert!(parse_trial_record("no-separator", "id").is_none());
+        let bad_date = format!("not-a-date|{}", trial_record_seal("not-a-date", "id"));
+        assert!(parse_trial_record(&bad_date, "id").is_none());
+        let started = "2026-05-25T00:00:00+02:00";
+        let record = format!("{started}|{}", trial_record_seal(started, "id"));
+        assert_eq!(
+            parse_trial_record(&record, "id"),
+            Some(at("2026-05-24T22:00:00Z"))
+        );
     }
 }

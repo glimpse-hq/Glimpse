@@ -24,12 +24,13 @@ const SidebarItem = ({
     onClick={onClick}
     title={locked ? lockedHint : undefined}
     data-active={active ? "true" : "false"}
+    aria-current={active ? "page" : undefined}
     className={`ui-nav-item group relative h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
       collapsed ? "gap-0" : "gap-3"
     } ${locked ? "opacity-45 hover:opacity-75" : ""}`}
   >
     <div className="flex items-center justify-center w-[20px] shrink-0">
-      <Icon size={20} weight={active ? "fill" : "regular"} />
+      <Icon size={20} weight={active ? "fill" : "regular"} aria-hidden="true" />
     </div>
     <span
       style={{ width: collapsed ? 0 : "auto", opacity: collapsed ? 0 : 1 }}

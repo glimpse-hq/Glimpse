@@ -189,6 +189,10 @@ export function ReadyStep({
         >
           <Dropdown
             value={microphoneDevice ?? ""}
+            ariaLabel={t({
+              id: "onboarding.done.recap.microphone",
+              message: "Microphone",
+            })}
             onChange={(value) => onSetMicrophoneDevice(value || null)}
             options={[
               { value: "", label: systemDefaultLabel },

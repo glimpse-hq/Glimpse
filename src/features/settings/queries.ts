@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { detectAppPlatform } from "../../platform/service";
 import * as settingsApi from "./api";
 import type { StoredSettings } from "../../types";
 
@@ -7,6 +8,7 @@ export const settingsKeys = {
   detail: () => [...settingsKeys.all, "detail"] as const,
   appInfo: () => ["appInfo"] as const,
   devices: () => ["inputDevices"] as const,
+  accessibility: () => ["permissions", "accessibility"] as const,
 };
 
 const SETTINGS_STALE_TIME = 5 * 60 * 1000;
@@ -39,5 +41,17 @@ export function useInputDevices(enabled: boolean = true) {
     queryFn: settingsApi.listInputDevices,
     enabled,
     refetchOnMount: "always",
+  });
+}
+
+// macOS only. Rechecked on focus, since the grant changes in System Settings.
+export function useAccessibilityPermission(enabled: boolean = true) {
+  return useQuery({
+    queryKey: settingsKeys.accessibility(),
+    queryFn: settingsApi.checkAccessibilityPermission,
+    enabled: enabled && detectAppPlatform() === "macos",
+    refetchOnWindowFocus: "always",
+    staleTime: 0,
+    retry: false,
   });
 }

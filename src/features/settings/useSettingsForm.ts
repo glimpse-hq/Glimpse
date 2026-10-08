@@ -80,6 +80,7 @@ import type {
   LocalApiStatus,
   ModelStatus,
   RemoteSpeechProvider,
+  UpdateSettingsResult,
 } from "../../types";
 
 type ActiveTab =
@@ -117,12 +118,21 @@ async function waitForLocalApiStopped(
 ): Promise<LocalApiStatus> {
   const started = Date.now();
   let latest = await modelsApi.getLocalApiStatus();
-  while (latest.running && Date.now() - started < timeoutMs) {
+  while (
+    (latest.running || latest.starting) &&
+    Date.now() - started < timeoutMs
+  ) {
     await new Promise((resolve) => window.setTimeout(resolve, 100));
     latest = await modelsApi.getLocalApiStatus();
   }
   return latest;
 }
+
+// The tray and app menu can change these while Settings has a save pending.
+type MenuSettings = Pick<
+  StoredSettings,
+  "microphone_device" | "local_model" | "remote_speech_enabled"
+>;
 
 const defaultShortcutBindings = (): ShortcutBindings => ({
   smart: [
@@ -341,6 +351,10 @@ export function useSettingsForm({
     null,
   );
   const [localApiBusy, setLocalApiBusy] = useState(false);
+  // Stop stays usable while a start waits for its model to load.
+  const [localApiStopping, setLocalApiStopping] = useState(false);
+  // A start the user stopped fails on purpose; don't report that as an error.
+  const localApiStopRequestedRef = useRef(false);
   const [textSizeMode, setTextSizeModeRaw] = useState<TextSizeMode>(() =>
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
@@ -355,6 +369,8 @@ export function useSettingsForm({
   >(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
+  const hydratedSettingsRef = useRef<StoredSettings | null>(null);
+  const sentMenuSettingsRef = useRef<MenuSettings | null>(null);
   const isSavingRef = useRef(false);
   const settingsSaveRef = useRef(Promise.resolve(true));
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -381,6 +397,12 @@ export function useSettingsForm({
   const activeLicense = licenseStateQuery.data?.status === "active";
   const appInfoQuery = useAppInfo(isOpen);
   const inputDevicesQuery = useInputDevices(isOpen);
+  // Settings stays mounted, and only macOS reports device changes, so a mic
+  // plugged in on Windows would otherwise not show up until restart.
+  const refetchInputDevices = inputDevicesQuery.refetch;
+  useEffect(() => {
+    if (active) void refetchInputDevices();
+  }, [active, refetchInputDevices]);
   const modelCatalogQuery = useModelCatalog(isOpen);
   const diarizerModel = useDiarizerModel(isOpen).data ?? null;
   const cliInstallQuery = useCliInstallStatus(isOpen);
@@ -557,6 +579,8 @@ export function useSettingsForm({
 
   const hydrateFromSettings = useCallback(
     (s: StoredSettings) => {
+      hydratedSettingsRef.current = s;
+      sentMenuSettingsRef.current = null;
       const hydratedBindings = bindingsFromSettings(s);
       persistedShortcutBindingsRef.current = hydratedBindings;
       clearInvalidShortcutDraft();
@@ -605,6 +629,35 @@ export function useSettingsForm({
     },
     [clearInvalidShortcutDraft],
   );
+
+  // While a save is pending, takes menu changes the form hasn't touched, so
+  // the save doesn't write the old values back. Our own saves echo back too;
+  // they match what was sent and are skipped.
+  const rebaseMenuSettings = useCallback((s: StoredSettings) => {
+    const base = hydratedSettingsRef.current;
+    hydratedSettingsRef.current = s;
+    if (!base) return;
+    const sent = sentMenuSettingsRef.current;
+    const changedOutside = <K extends keyof MenuSettings>(key: K) =>
+      s[key] !== base[key] && s[key] !== sent?.[key];
+    if (changedOutside("microphone_device")) {
+      setMicrophoneDevice((current) =>
+        current === base.microphone_device ? s.microphone_device : current,
+      );
+    }
+    if (changedOutside("local_model")) {
+      setLocalModel((current) =>
+        current === base.local_model ? s.local_model : current,
+      );
+    }
+    if (changedOutside("remote_speech_enabled")) {
+      setRemoteSpeechEnabled((current) =>
+        current === base.remote_speech_enabled
+          ? s.remote_speech_enabled
+          : current,
+      );
+    }
+  }, []);
 
   const setAutoLaunchEnabled = useCallback((enabled: boolean) => {
     setAutoLaunchEnabledState(enabled);
@@ -847,9 +900,25 @@ export function useSettingsForm({
         .catch(() => false)
         .then(async () => {
           isSavingRef.current = true;
+          sentMenuSettingsRef.current = {
+            microphone_device: args.microphoneDevice,
+            local_model: args.localModel,
+            remote_speech_enabled: args.remoteSpeechEnabled,
+          };
           try {
-            await invoke("update_settings", { args });
+            const { shortcut_error: shortcutError } =
+              await invoke<UpdateSettingsResult>("update_settings", { args });
             persistedShortcutBindingsRef.current = args.shortcutBindings;
+            if (shortcutError) {
+              if (overrides?.shortcutDraftTarget) {
+                setInvalidShortcutDraft(
+                  overrides.shortcutDraftTarget,
+                  shortcutError,
+                );
+              }
+              showSettingsError(shortcutError);
+              return true;
+            }
             if (overrides?.shortcutDraftTarget) {
               clearInvalidShortcutDraft();
             }
@@ -1141,12 +1210,16 @@ export function useSettingsForm({
     }
 
     if (!settingsQuery.data) return;
-    if (isSavingRef.current || saveTimeoutRef.current !== null) return;
+    if (isSavingRef.current || saveTimeoutRef.current !== null) {
+      rebaseMenuSettings(settingsQuery.data);
+      return;
+    }
 
     hydrateFromSettings(settingsQuery.data);
   }, [
     hydrateFromSettings,
     isOpen,
+    rebaseMenuSettings,
     settingsQuery.data,
     settingsQuery.error,
     showSettingsError,
@@ -1272,12 +1345,6 @@ export function useSettingsForm({
         resetCaptureState();
         return;
       }
-      // A modal opened from within settings owns Escape first.
-      if (showFAQModal || whatsNewOpen) {
-        setShowFAQModal(false);
-        setWhatsNewOpen(false);
-        return;
-      }
       onClose();
     };
     window.addEventListener("keydown", handleEscape);
@@ -1288,8 +1355,6 @@ export function useSettingsForm({
     finalizeCapture,
     onClose,
     resetCaptureState,
-    showFAQModal,
-    whatsNewOpen,
   ]);
 
   useEffect(() => {
@@ -1772,6 +1837,7 @@ export function useSettingsForm({
   const handleStartLocalApi = useCallback(async () => {
     flushPendingSettingsSave();
     setLocalApiBusy(true);
+    localApiStopRequestedRef.current = false;
     try {
       if (!(await saveSettingsNowRef.current())) return;
       const status = await modelsApi.startLocalApi({
@@ -1784,6 +1850,7 @@ export function useSettingsForm({
       setLocalApiStatus(status);
       clearSettingsError();
     } catch (err) {
+      if (localApiStopRequestedRef.current) return;
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
@@ -1805,6 +1872,8 @@ export function useSettingsForm({
 
   const handleStopLocalApi = useCallback(async () => {
     setLocalApiBusy(true);
+    setLocalApiStopping(true);
+    localApiStopRequestedRef.current = true;
     try {
       await modelsApi.stopLocalApi();
       const status = await waitForLocalApiStopped();
@@ -1818,11 +1887,13 @@ export function useSettingsForm({
       );
     } finally {
       setLocalApiBusy(false);
+      setLocalApiStopping(false);
     }
   }, [clearSettingsError, showSettingsError]);
 
   const handleRestartLocalApi = useCallback(async () => {
     setLocalApiBusy(true);
+    localApiStopRequestedRef.current = false;
     try {
       if (!(await saveSettingsNowRef.current())) return;
       await modelsApi.stopLocalApi();
@@ -1837,6 +1908,8 @@ export function useSettingsForm({
           ),
         );
       }
+      // Stop pressed while the old server shut down: leave it off.
+      if (localApiStopRequestedRef.current) return;
       const status = await modelsApi.startLocalApi({
         host: localApiHost,
         port: localApiPort,
@@ -1847,6 +1920,7 @@ export function useSettingsForm({
       setLocalApiStatus(status);
       clearSettingsError();
     } catch (err) {
+      if (localApiStopRequestedRef.current) return;
       console.error(err);
       showSettingsError(
         err instanceof Error ? err.message : String(err),
@@ -1997,6 +2071,7 @@ export function useSettingsForm({
     setLocalApiCors,
     localApiStatus,
     localApiBusy,
+    localApiStopping,
     cliInstallStatus,
     cliInstallBusy,
     handleStartLocalApi,

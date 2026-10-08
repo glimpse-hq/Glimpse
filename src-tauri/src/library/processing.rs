@@ -1,6 +1,8 @@
 use std::env;
 use std::fs;
 use std::io::{BufRead, BufReader, BufWriter, ErrorKind};
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
@@ -257,6 +259,9 @@ pub(crate) fn convert_library_item(
 
     fs::create_dir_all(item_dir)
         .with_context(|| format!("Failed to create library folder at {}", item_dir.display()))?;
+    // Recovering an interrupted import reads the original already stored in
+    // the item folder.
+    let source_is_stored = source_path.parent() == Some(item_dir);
 
     let result = (|| -> Result<f32> {
         report_import_progress(app, storage.clone(), id, 0.0);
@@ -264,7 +269,8 @@ pub(crate) fn convert_library_item(
             return Err(cancelled_error());
         }
 
-        if store_original {
+        // Copying a file onto itself truncates it.
+        if store_original && !source_is_stored {
             let original_target = item_dir.join(format!("source.{}", ext));
             let source_size = fs::metadata(source_path)
                 .with_context(|| format!("Failed to read file size for {}", source_path.display()))?
@@ -318,7 +324,11 @@ pub(crate) fn convert_library_item(
     let duration_seconds = match result {
         Ok(duration_seconds) => duration_seconds,
         Err(err) => {
-            let _ = fs::remove_dir_all(item_dir);
+            if source_is_stored {
+                let _ = fs::remove_file(&audio_path);
+            } else {
+                let _ = fs::remove_dir_all(item_dir);
+            }
             return Err(err);
         }
     };
@@ -1101,6 +1111,9 @@ fn convert_with_ffmpeg(
         .arg(TARGET_SAMPLE_RATE.to_string())
         .args(["-ac", "1"])
         .arg(output);
+    // Without this, each run opens a console window from the windowed app.
+    #[cfg(target_os = "windows")]
+    command.creation_flags(crate::crypto::CREATE_NO_WINDOW);
 
     let mut child = command.spawn().map_err(|err| match err.kind() {
         ErrorKind::NotFound => anyhow!("FFmpeg not found on PATH."),
@@ -1221,7 +1234,10 @@ fn find_tool_in_path(name: &str) -> Option<PathBuf> {
 
 pub(crate) fn probe_media_duration_ms(path: &Path) -> Option<u64> {
     if let Some(ffprobe) = find_tool_in_path("ffprobe") {
-        let output = Command::new(ffprobe)
+        let mut command = Command::new(ffprobe);
+        #[cfg(target_os = "windows")]
+        command.creation_flags(crate::crypto::CREATE_NO_WINDOW);
+        let output = command
             .arg("-v")
             .arg("error")
             .arg("-show_entries")
@@ -1444,7 +1460,10 @@ fn bookmark_list(item: &LibraryItem, markdown: bool) -> Option<String> {
     Some(lines.join("\n"))
 }
 
-fn speaker_name<'a>(item: &'a LibraryItem, speaker_id: &Option<String>) -> Option<&'a str> {
+pub(crate) fn speaker_name<'a>(
+    item: &'a LibraryItem,
+    speaker_id: &Option<String>,
+) -> Option<&'a str> {
     let id = speaker_id.as_deref()?;
     item.speakers
         .as_ref()?
@@ -1495,13 +1514,18 @@ fn build_speaker_transcript(item: &LibraryItem, markdown: bool) -> Option<String
     Some(out)
 }
 
-fn build_srt(item: &LibraryItem) -> Result<String> {
+// A blank cue payload reads as the end of the cue, so blank segments are dropped.
+fn timed_cues(item: &LibraryItem) -> Result<impl Iterator<Item = &TranscriptSegment>> {
     let segments = item
         .segments
         .as_ref()
         .ok_or_else(|| anyhow!("No timestamp segments available"))?;
+    Ok(segments.iter().filter(|s| !s.text.trim().is_empty()))
+}
+
+fn build_srt(item: &LibraryItem) -> Result<String> {
     let mut out = String::new();
-    for (idx, segment) in segments.iter().enumerate() {
+    for (idx, segment) in timed_cues(item)?.enumerate() {
         out.push_str(&(idx + 1).to_string());
         out.push('\n');
         let text = match speaker_name(item, &segment.speaker_id) {
@@ -1537,12 +1561,8 @@ fn escape_vtt_voice(value: &str) -> String {
 }
 
 fn build_vtt(item: &LibraryItem) -> Result<String> {
-    let segments = item
-        .segments
-        .as_ref()
-        .ok_or_else(|| anyhow!("No timestamp segments available"))?;
     let mut out = String::from("WEBVTT\n\n");
-    for segment in segments {
+    for segment in timed_cues(item)? {
         // WebVTT voice spans render as speaker labels in players.
         let text = match speaker_name(item, &segment.speaker_id) {
             Some(name) => format!(
@@ -1634,5 +1654,352 @@ mod native_media_tests {
     #[test]
     fn decodes_webm_vorbis_audio_without_ffmpeg() {
         assert_native_video_audio_decode("vorbis.webm");
+    }
+}
+
+#[cfg(test)]
+mod export_tests {
+    use super::*;
+    use crate::library::types::Bookmark;
+
+    fn item() -> LibraryItem {
+        LibraryItem {
+            id: "0123456789abcdef".to_string(),
+            name: "Standup".to_string(),
+            audio_path: String::new(),
+            source_path: String::new(),
+            store_original: false,
+            status: LibraryItemStatus::Complete,
+            transcript: Some("Hello there. General Kenobi.".to_string()),
+            transcript_edited: false,
+            segments: None,
+            words: None,
+            duration_seconds: 65.4,
+            file_size_bytes: 0,
+            original_format: "wav".to_string(),
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            transcribed_at: Some("2026-01-02T00:00:00Z".to_string()),
+            tags: Vec::new(),
+            llm_cleanup_enabled: false,
+            speech_model: "parakeet".to_string(),
+            show_timestamps: true,
+            detect_speakers: false,
+            kind: "import".to_string(),
+            speakers: None,
+            secondary_audio_path: None,
+            sources: None,
+            bookmarks: None,
+        }
+    }
+
+    fn segment(start_ms: u64, end_ms: u64, text: &str, speaker: Option<&str>) -> TranscriptSegment {
+        TranscriptSegment {
+            start_ms,
+            end_ms,
+            text: text.to_string(),
+            speaker_id: speaker.map(str::to_string),
+        }
+    }
+
+    fn speaker(id: &str, name: &str) -> Speaker {
+        Speaker {
+            id: id.to_string(),
+            name: name.to_string(),
+            color: None,
+        }
+    }
+
+    fn bookmark(at_ms: u64, label: Option<&str>) -> Bookmark {
+        Bookmark {
+            id: format!("b{at_ms}"),
+            at_ms,
+            label: label.map(str::to_string),
+        }
+    }
+
+    #[test]
+    fn cue_timestamps_pad_every_field_and_use_format_separator() {
+        assert_eq!(format_srt_timestamp(0), "00:00:00,000");
+        assert_eq!(format_vtt_timestamp(0), "00:00:00.000");
+        assert_eq!(format_srt_timestamp(61_005), "00:01:01,005");
+        assert_eq!(format_vtt_timestamp(3_599_999), "00:59:59.999");
+    }
+
+    #[test]
+    fn cue_timestamps_roll_over_into_hours_past_one_hour() {
+        assert_eq!(format_srt_timestamp(3_600_000), "01:00:00,000");
+        assert_eq!(format_vtt_timestamp(3_723_456), "01:02:03.456");
+        assert_eq!(format_srt_timestamp(100 * 3_600_000), "100:00:00,000");
+    }
+
+    #[test]
+    fn duration_uses_minutes_until_an_hour_then_adds_hours() {
+        assert_eq!(format_duration(0.0), "0:00");
+        assert_eq!(format_duration(-5.0), "0:00");
+        assert_eq!(format_duration(f32::NAN), "0:00");
+        assert_eq!(format_duration(0.4), "0:00");
+        assert_eq!(format_duration(9.5), "0:10");
+        assert_eq!(format_duration(65.4), "1:05");
+        assert_eq!(format_duration(3599.4), "59:59");
+        assert_eq!(format_duration(3599.6), "1:00:00");
+        assert_eq!(format_duration(3_723.0), "1:02:03");
+    }
+
+    #[test]
+    fn txt_export_has_title_transcribed_date_and_plain_transcript() {
+        let out = build_export_content(&item(), ExportFormat::Txt).unwrap();
+        assert_eq!(
+            out,
+            "Standup\nTranscribed: 2026-01-02T00:00:00Z\n\nHello there. General Kenobi."
+        );
+    }
+
+    #[test]
+    fn txt_export_falls_back_to_created_at_and_empty_transcript() {
+        let mut item = item();
+        item.transcribed_at = None;
+        item.transcript = None;
+        let out = build_export_content(&item, ExportFormat::Txt).unwrap();
+        assert_eq!(out, "Standup\nTranscribed: 2026-01-01T00:00:00Z\n\n");
+    }
+
+    #[test]
+    fn md_export_lists_duration_and_tags_or_none() {
+        let mut item = item();
+        let out = build_export_content(&item, ExportFormat::Md).unwrap();
+        assert_eq!(
+            out,
+            "# Standup\n\n**Duration:** 1:05  \n**Transcribed:** 2026-01-02T00:00:00Z  \n**Tags:** None\n\n---\n\nHello there. General Kenobi."
+        );
+
+        item.tags = vec!["work".to_string(), "daily".to_string()];
+        let out = build_export_content(&item, ExportFormat::Md).unwrap();
+        assert!(out.contains("**Tags:** work, daily\n"));
+    }
+
+    #[test]
+    fn bookmarks_are_sorted_and_blank_or_multiline_labels_are_cleaned() {
+        let mut item = item();
+        item.bookmarks = Some(vec![
+            bookmark(3_725_000, Some("Wrap\nup")),
+            bookmark(5_000, None),
+            bookmark(61_000, Some("  \n ")),
+        ]);
+
+        let txt = build_export_content(&item, ExportFormat::Txt).unwrap();
+        assert!(txt.contains(
+            "\n\nBookmarks\n0:05  Bookmark\n1:01  Bookmark\n1:02:05  Wrap up\n\nHello there."
+        ));
+
+        let md = build_export_content(&item, ExportFormat::Md).unwrap();
+        assert!(md.contains(
+            "## Bookmarks\n\n- **0:05** Bookmark\n- **1:01** Bookmark\n- **1:02:05** Wrap up\n\n---\n\n"
+        ));
+    }
+
+    #[test]
+    fn empty_bookmark_list_adds_no_section() {
+        let mut item = item();
+        item.bookmarks = Some(Vec::new());
+        let txt = build_export_content(&item, ExportFormat::Txt).unwrap();
+        assert!(!txt.contains("Bookmarks"));
+    }
+
+    #[test]
+    fn speaker_transcript_groups_consecutive_segments_and_skips_blank_text() {
+        let mut item = item();
+        item.speakers = Some(vec![speaker("s1", "Ada"), speaker("s2", "Grace")]);
+        item.segments = Some(vec![
+            segment(0, 1_000, " Hi. ", Some("s1")),
+            segment(1_000, 2_000, "   ", Some("s2")),
+            segment(2_000, 3_000, "How are you?", Some("s1")),
+            segment(3_000, 4_000, "Fine.", Some("s2")),
+            segment(4_000, 5_000, "Unlabeled.", None),
+        ]);
+
+        let txt = build_export_content(&item, ExportFormat::Txt).unwrap();
+        assert!(txt.ends_with("Ada: Hi. How are you?\n\nGrace: Fine.\n\nUnlabeled."));
+
+        let md = build_export_content(&item, ExportFormat::Md).unwrap();
+        assert!(md.ends_with("**Ada:** Hi. How are you?\n\n**Grace:** Fine.\n\nUnlabeled."));
+    }
+
+    #[test]
+    fn speaker_transcript_needs_both_speakers_and_assigned_segments() {
+        let mut item = item();
+        item.segments = Some(vec![segment(0, 1_000, "Segment text.", Some("s1"))]);
+        let txt = build_export_content(&item, ExportFormat::Txt).unwrap();
+        assert!(txt.ends_with("Hello there. General Kenobi."));
+
+        item.speakers = Some(vec![speaker("s1", "Ada")]);
+        item.segments = Some(vec![segment(0, 1_000, "Segment text.", None)]);
+        let txt = build_export_content(&item, ExportFormat::Txt).unwrap();
+        assert!(txt.ends_with("Hello there. General Kenobi."));
+    }
+
+    #[test]
+    fn srt_numbers_cues_and_prefixes_known_speakers() {
+        let mut item = item();
+        item.speakers = Some(vec![speaker("s1", "Ada\nLovelace")]);
+        item.segments = Some(vec![
+            segment(0, 1_500, " Hi. ", Some("s1")),
+            segment(3_600_000, 3_601_250, "Late.", Some("missing")),
+        ]);
+        let out = build_export_content(&item, ExportFormat::Srt).unwrap();
+        assert_eq!(
+            out,
+            "1\n00:00:00,000 --> 00:00:01,500\nAda Lovelace: Hi.\n\n2\n01:00:00,000 --> 01:00:01,250\nLate."
+        );
+    }
+
+    #[test]
+    fn vtt_escapes_text_and_wraps_speakers_in_voice_spans() {
+        let mut item = item();
+        item.speakers = Some(vec![speaker("s1", "R&D <Team>\n")]);
+        item.segments = Some(vec![
+            segment(0, 1_000, "a < b && c > d", Some("s1")),
+            segment(1_000, 2_000, "-->", None),
+        ]);
+        let out = build_export_content(&item, ExportFormat::Vtt).unwrap();
+        assert_eq!(
+            out,
+            "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\n<v R&D <Team>a &lt; b &amp;&amp; c &gt; d</v>\n\n00:00:01.000 --> 00:00:02.000\n--&gt;"
+        );
+    }
+
+    #[test]
+    fn timed_formats_require_segments() {
+        let item = item();
+        assert!(build_export_content(&item, ExportFormat::Srt).is_err());
+        assert!(build_export_content(&item, ExportFormat::Vtt).is_err());
+    }
+
+    #[test]
+    fn timed_formats_with_no_segments_are_empty_or_header_only() {
+        let mut item = item();
+        item.segments = Some(Vec::new());
+        assert_eq!(build_export_content(&item, ExportFormat::Srt).unwrap(), "");
+        assert_eq!(
+            build_export_content(&item, ExportFormat::Vtt).unwrap(),
+            "WEBVTT"
+        );
+    }
+
+    #[test]
+    fn timed_formats_skip_blank_text_segments() {
+        let mut item = item();
+        item.segments = Some(vec![
+            segment(0, 1_000, "   ", None),
+            segment(1_000, 2_000, "Hi.", None),
+            segment(2_000, 3_000, "", None),
+            segment(3_000, 4_000, "Bye.", None),
+        ]);
+        let srt = build_export_content(&item, ExportFormat::Srt).unwrap();
+        assert_eq!(
+            srt,
+            "1\n00:00:01,000 --> 00:00:02,000\nHi.\n\n2\n00:00:03,000 --> 00:00:04,000\nBye."
+        );
+        let vtt = build_export_content(&item, ExportFormat::Vtt).unwrap();
+        assert_eq!(
+            vtt,
+            "WEBVTT\n\n00:00:01.000 --> 00:00:02.000\nHi.\n\n00:00:03.000 --> 00:00:04.000\nBye."
+        );
+    }
+
+    #[test]
+    fn ffmpeg_progress_lines_parse_to_milliseconds() {
+        assert_eq!(parse_ffmpeg_progress_ms("out_time_ms=1500"), Some(1500));
+        assert_eq!(parse_ffmpeg_progress_ms("out_time_us=2500000"), Some(2500));
+        assert_eq!(
+            parse_ffmpeg_progress_ms("out_time=01:02:03.500000"),
+            Some(3_723_500)
+        );
+        assert_eq!(parse_ffmpeg_progress_ms("out_time=N/A"), None);
+        assert_eq!(parse_ffmpeg_progress_ms("out_time_ms=N/A"), None);
+        assert_eq!(parse_ffmpeg_progress_ms("progress=continue"), None);
+        assert_eq!(parse_ffmpeg_time_to_ms("12:34"), None);
+    }
+
+    #[test]
+    fn total_chunks_counts_overlapping_windows() {
+        assert_eq!(compute_total_chunks(0, 100, 90), 0);
+        assert_eq!(compute_total_chunks(50, 100, 90), 1);
+        assert_eq!(compute_total_chunks(100, 100, 90), 1);
+        assert_eq!(compute_total_chunks(101, 100, 90), 2);
+        assert_eq!(compute_total_chunks(190, 100, 90), 2);
+        assert_eq!(compute_total_chunks(191, 100, 90), 3);
+        assert_eq!(compute_total_chunks(10, 0, 0), 10);
+    }
+
+    #[test]
+    fn folder_names_are_lowercase_dashed_with_an_id_suffix() {
+        assert_eq!(
+            build_folder_name("My  Meeting__Notes!", "0123456789abcdef"),
+            "my-meeting-notes-01234567"
+        );
+        assert_eq!(
+            build_folder_name("日本語", "abcdefgh12"),
+            "library-item-abcdefgh"
+        );
+    }
+
+    #[test]
+    fn whisper_segments_convert_to_trimmed_millisecond_segments() {
+        let segments = vec![glimpse_speech::TranscriptionSegment {
+            start: -0.2,
+            end: 1.2345,
+            text: "  hi  ".to_string(),
+        }];
+        assert_eq!(
+            convert_segments_to_ms(&segments),
+            vec![segment(0, 1_234, "hi", None)]
+        );
+    }
+
+    #[test]
+    fn diarized_labels_map_to_numbered_speakers_in_first_seen_order() {
+        let segments: Vec<glimpse_speech::remote::DiarizedSegment> =
+            serde_json::from_value(serde_json::json!([
+                { "start": 0.0, "end": 1.0, "text": " a ", "speaker": "B" },
+                { "start": 1.0, "end": 2.0, "text": "b", "speaker": " A " },
+                { "start": 2.0, "end": 3.0, "text": "c", "speaker": "B" },
+                { "start": 3.0, "end": 4.0, "text": "d", "speaker": "  " },
+                { "start": 4.0, "end": 5.0, "text": "e" }
+            ]))
+            .unwrap();
+        let (converted, speakers) = diarize_segments(&segments);
+        let speakers = speakers.unwrap();
+        assert_eq!(
+            speakers,
+            vec![
+                speaker("speaker_1", "Speaker 1"),
+                speaker("speaker_2", "Speaker 2")
+            ]
+        );
+        let ids: Vec<_> = converted.iter().map(|s| s.speaker_id.as_deref()).collect();
+        assert_eq!(
+            ids,
+            vec![
+                Some("speaker_1"),
+                Some("speaker_2"),
+                Some("speaker_1"),
+                None,
+                None
+            ]
+        );
+        assert_eq!(converted[0].text, "a");
+        assert_eq!(converted[1].start_ms, 1_000);
+    }
+
+    #[test]
+    fn diarized_segments_without_labels_have_no_speakers() {
+        let segments: Vec<glimpse_speech::remote::DiarizedSegment> =
+            serde_json::from_value(serde_json::json!([
+                { "start": 0.0, "end": 1.0, "text": "a" }
+            ]))
+            .unwrap();
+        let (converted, speakers) = diarize_segments(&segments);
+        assert!(speakers.is_none());
+        assert_eq!(converted.len(), 1);
     }
 }

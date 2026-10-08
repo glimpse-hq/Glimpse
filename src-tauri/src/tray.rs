@@ -327,12 +327,11 @@ pub(crate) fn set_recording_indicator(
 
     #[cfg(target_os = "windows")]
     {
-        if changed {
-            if let Some(icon) = tray_icon(app, elapsed_ms.map(|_| rgb))
-                && let Err(err) = tray.set_icon(Some(icon))
-            {
-                tracing::warn!("Failed to update tray icon: {err}");
-            }
+        if changed
+            && let Some(icon) = tray_icon(app, elapsed_ms.map(|_| rgb))
+            && let Err(err) = tray.set_icon(Some(icon))
+        {
+            tracing::warn!("Failed to update tray icon: {err}");
         }
         let app_name = app.package_info().name.clone();
         let tooltip = match elapsed_ms {
@@ -659,7 +658,10 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
         Some(icon) => builder.icon(icon.clone()),
         None => builder,
     }
-    .tooltip(app.package_info().name.clone());
+    .tooltip(app.package_info().name.clone())
+    // Left click opens Settings and right click opens the menu. Otherwise a left
+    // click pops the menu over the Settings window it just opened.
+    .show_menu_on_left_click(false);
 
     builder
         .menu(&menu)

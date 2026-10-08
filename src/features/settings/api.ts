@@ -12,3 +12,7 @@ export async function getAppInfo(): Promise<AppInfo> {
 export async function listInputDevices(): Promise<DeviceInfo[]> {
   return invoke<DeviceInfo[]>("list_input_devices");
 }
+
+export async function checkAccessibilityPermission(): Promise<boolean> {
+  return invoke<boolean>("check_accessibility_permission");
+}

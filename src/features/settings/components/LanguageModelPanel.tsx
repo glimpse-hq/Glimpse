@@ -115,6 +115,10 @@ const LanguageModelPanel = ({
         </label>
         <Dropdown
           value={llmProvider}
+          ariaLabel={t({
+            id: "settings.language_model.provider",
+            message: "Provider",
+          })}
           onChange={(val) => {
             setLlmProvider(val);
             const preset = getProviderPreset(val);
@@ -246,6 +250,10 @@ const LanguageModelPanel = ({
           </span>
           <Dropdown
             value={llmModel}
+            ariaLabel={t({
+              id: "settings.language_model.model",
+              message: "Model",
+            })}
             onChange={(val) => setLlmModel(val)}
             onOpen={hasSelectedProvider ? fetchAvailableModels : undefined}
             options={[

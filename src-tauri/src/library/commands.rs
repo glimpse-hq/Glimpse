@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 #[cfg(target_os = "macos")]
 use std::sync::OnceLock;
+use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result};
 #[cfg(target_os = "macos")]
@@ -14,7 +15,7 @@ use super::processing::{
     build_export_content, create_item_from_path, library_root, probe_media_duration_ms,
     stored_original_path,
 };
-use super::queue::{release_library_slot, schedule_library_job};
+use super::queue::schedule_library_job;
 #[cfg(target_os = "macos")]
 use super::types::EVENT_LIBRARY_OPEN_IMPORT;
 use super::types::{
@@ -54,6 +55,8 @@ pub(crate) fn mark_library_import_renderer_ready(app: &AppHandle<AppRuntime>) {
     pending_library_import().lock().renderer_ready = true;
     flush_pending_library_import(app);
 }
+
+const LIBRARY_JOB_STOP_TIMEOUT: Duration = Duration::from_secs(30);
 
 enum LibraryDeleteScope {
     SkipFilesystemDeletion,
@@ -151,14 +154,22 @@ pub fn update_library_item(
 }
 
 #[tauri::command]
-pub fn delete_library_item(
+pub async fn delete_library_item(
     id: String,
     app: AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
 ) -> Result<(), String> {
     let was_queued = state.remove_library_job(&id);
     state.cancel_library_transcription(&id);
-    release_library_slot(&app, &state, &id);
+    // A running job holds the audio open, which blocks the Recycle Bin move on
+    // Windows, and keeps the queue slot until it has actually stopped.
+    let stop_deadline = Instant::now() + LIBRARY_JOB_STOP_TIMEOUT;
+    while state.library_job_pending(&id) {
+        if Instant::now() >= stop_deadline {
+            return Err("The transcription is still stopping. Try again in a moment.".to_string());
+        }
+        tokio::time::sleep(Duration::from_millis(50)).await;
+    }
 
     let storage = state.storage();
     let item = storage
@@ -168,10 +179,16 @@ pub fn delete_library_item(
         return Ok(());
     };
 
-    let trashed = match determine_delete_scope(&app, &item.audio_path) {
-        LibraryDeleteScope::DeleteFile(path) if path.exists() => move_to_trash(&path),
-        LibraryDeleteScope::DeleteDirectory(path) => move_to_trash(&path),
-        _ => Ok(()),
+    let trash_target = match determine_delete_scope(&app, &item.audio_path) {
+        LibraryDeleteScope::DeleteFile(path) if path.exists() => Some(path),
+        LibraryDeleteScope::DeleteDirectory(path) => Some(path),
+        _ => None,
+    };
+    let trashed = match trash_target {
+        Some(path) => tauri::async_runtime::spawn_blocking(move || move_to_trash(&path))
+            .await
+            .unwrap_or_else(|err| Err(format!("Couldn't move the audio to the Trash: {err}"))),
+        None => Ok(()),
     };
     if let Err(err) = trashed {
         // The item stays; a job it lost from the queue shows as cancelled, like
@@ -222,8 +239,18 @@ pub fn cancel_library_transcription(
         );
         return Ok(());
     }
-    state.cancel_library_transcription(&id);
-    set_library_status(&state.storage(), &id, LibraryItemStatus::Cancelling);
+    // A job that already ended set its own final status, and nothing would
+    // move the item on from Cancelling.
+    if !state.library_job_pending(&id) {
+        return Ok(());
+    }
+    let marked = state
+        .storage()
+        .mark_library_item_cancelling(&id)
+        .map_err(|err| format!("Failed to cancel library item: {err}"))?;
+    if marked {
+        state.cancel_library_transcription(&id);
+    }
     Ok(())
 }
 
@@ -338,33 +365,42 @@ pub fn export_library_item_to_path(
         .map_err(|err| format!("Failed to load library item: {err}"))?
         .ok_or_else(|| "Library item not found".to_string())?;
 
-    let content = build_export_content(&item, format.clone())
-        .map_err(|err| format!("Failed to build export: {err}"))?;
-
     let output_path = PathBuf::from(&output_path);
+    check_export_path(&output_path, &format)?;
 
-    // Validate output path is absolute and doesn't contain path traversal
-    if !output_path.is_absolute() {
-        return Err("Export path must be absolute".to_string());
-    }
-    if output_path
-        .components()
-        .any(|c| matches!(c, std::path::Component::ParentDir))
-    {
-        return Err("Export path contains invalid components".to_string());
-    }
-
-    if let Some(parent) = output_path.parent() {
-        fs::create_dir_all(parent)
-            .context("Failed to create export directory")
-            .map_err(|err| err.to_string())?;
-    }
+    let content = build_export_content(&item, format)
+        .map_err(|err| format!("Failed to build export: {err}"))?;
 
     fs::write(&output_path, content.as_bytes())
         .with_context(|| "Failed to write export file".to_string())
         .map_err(|err| err.to_string())?;
 
     crate::analytics::track_feature_used(&app, "library");
+    Ok(())
+}
+
+fn check_export_path(path: &Path, format: &ExportFormat) -> Result<(), String> {
+    let extension = match format {
+        ExportFormat::Txt => "txt",
+        ExportFormat::Md => "md",
+        ExportFormat::Srt => "srt",
+        ExportFormat::Vtt => "vtt",
+    };
+    let matches_format = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case(extension));
+    if !path.is_absolute() || !matches_format {
+        return Err(format!(
+            "This export can only be saved as a .{extension} file"
+        ));
+    }
+    if path
+        .components()
+        .any(|component| matches!(component, Component::ParentDir))
+    {
+        return Err("Export path contains invalid components".to_string());
+    }
     Ok(())
 }
 
@@ -418,8 +454,33 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
     };
 
     for item in items {
+        // A transcript that was being replaced when the app quit comes back,
+        // and a recovered job keeps it again while it runs.
+        let previous = storage
+            .get_previous_library_transcript(&item.id)
+            .inspect_err(|err| {
+                tracing::warn!(
+                    "Failed to read the previous transcript of library item {}: {err:#}",
+                    item.id
+                );
+            })
+            .ok()
+            .flatten();
         match item.status {
             LibraryItemStatus::Cancelling => {
+                if let Some(previous) = previous {
+                    let _ = storage.update_library_item(
+                        &item.id,
+                        previous.into_patch(LibraryItemStatus::Complete),
+                    );
+                    let _ = app.emit(
+                        EVENT_LIBRARY_COMPLETE,
+                        LibraryCompletePayload {
+                            id: item.id.clone(),
+                        },
+                    );
+                    continue;
+                }
                 set_library_status(&storage, &item.id, LibraryItemStatus::Cancelled);
                 let _ = app.emit(
                     EVENT_LIBRARY_ERROR,
@@ -434,7 +495,15 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
             | LibraryItemStatus::Importing { .. }
             | LibraryItemStatus::Transcribing { .. } => match build_recovery_job(&item) {
                 Ok(kind) => {
-                    set_library_status(&storage, &item.id, LibraryItemStatus::Pending);
+                    match previous {
+                        Some(previous) => {
+                            let _ = storage.update_library_item(
+                                &item.id,
+                                previous.into_patch(LibraryItemStatus::Pending),
+                            );
+                        }
+                        None => set_library_status(&storage, &item.id, LibraryItemStatus::Pending),
+                    }
                     schedule_library_job(
                         app,
                         &state,
@@ -445,9 +514,21 @@ pub(crate) fn recover_interrupted_library_items(app: &AppHandle<AppRuntime>) {
                         },
                     );
                 }
-                Err(message) => {
-                    set_library_item_error(&storage, &item.id, &message);
-                }
+                Err(message) => match previous {
+                    Some(previous) => {
+                        let _ = storage.update_library_item(
+                            &item.id,
+                            previous.into_patch(LibraryItemStatus::Complete),
+                        );
+                        let _ = app.emit(
+                            EVENT_LIBRARY_COMPLETE,
+                            LibraryCompletePayload {
+                                id: item.id.clone(),
+                            },
+                        );
+                    }
+                    None => set_library_item_error(&storage, &item.id, &message),
+                },
             },
             _ => {}
         }

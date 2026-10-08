@@ -1,9 +1,11 @@
+import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, ArrowUpRight } from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
 import { getLastSeenId, setLastSeenId } from "../api";
 import { useNewsFeed } from "../queries";
 
@@ -14,6 +16,7 @@ const NewsMenu = () => {
   const { t } = useLingui();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const { data: items = [], isLoading } = useNewsFeed();
   const [lastSeen, setLastSeen] = useState<string | null>(() =>
@@ -47,6 +50,7 @@ const NewsMenu = () => {
 
   const close = useCallback(() => setIsOpen(false), []);
   useClickOutside(containerRef, close, isOpen);
+  useMenuKeyboard(panelRef, isOpen, close);
 
   const toggle = () => {
     if (!isOpen && items.length > 0) markSeen(items[0].id);
@@ -67,7 +71,7 @@ const NewsMenu = () => {
         type="button"
         onClick={toggle}
         aria-expanded={isOpen}
-        aria-label={title}
+        aria-haspopup="dialog"
         className="relative flex h-full w-9 items-center justify-center rounded-l-full text-content-muted transition-colors hover:bg-[var(--surface-interactive)] hover:text-content-primary"
       >
         <Bell
@@ -76,6 +80,19 @@ const NewsMenu = () => {
           aria-hidden="true"
           className={unreadCount > 0 ? "text-content-primary" : undefined}
         />
+        <span className="sr-only">{title}</span>
+        {unreadCount > 0 && (
+          <span className="sr-only">
+            {", "}
+            {t({
+              id: "news.unread",
+              message: plural(unreadCount, {
+                one: "# new post",
+                other: "# new posts",
+              }),
+            })}
+          </span>
+        )}
         {unreadCount > 0 && (
           <span
             aria-hidden="true"
@@ -88,6 +105,9 @@ const NewsMenu = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-label={title}
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}

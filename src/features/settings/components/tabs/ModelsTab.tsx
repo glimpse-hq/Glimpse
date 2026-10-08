@@ -33,7 +33,13 @@ import {
   resolvedSpeechModel,
 } from "../../../../shared/lib/speechProviders";
 import { useShiftHeld } from "../../../../shared/hooks/useShiftHeld";
-import { resolveLocalFallbackModel } from "../../models-queries";
+import {
+  resolveLocalFallbackModel,
+  useModelRecommendation,
+} from "../../models-queries";
+import { setLocalModelAuto } from "../../models-api";
+import { showErrorToast } from "../../../../shared/lib/errorToast";
+import { useSettings } from "../../queries";
 import type {
   DownloadEvent,
   ModelInfo,
@@ -178,6 +184,48 @@ const InstalledModelRow = ({
   );
 };
 
+const AutomaticModelRow = ({
+  modelLabel,
+  progress,
+  enabled,
+  onToggle,
+}: {
+  modelLabel: string | null;
+  progress: DownloadEvent | undefined;
+  enabled: boolean;
+  onToggle: () => void;
+}) => {
+  const { t } = useLingui();
+  const title = t({ id: "settings.models.automatic", message: "Automatic" });
+  const percent = Math.round(progress?.percent ?? 0);
+  return (
+    <div className="flex shrink-0 items-center gap-3 border-b border-border-secondary px-2.5 pb-3">
+      <div className="min-w-0 flex-1">
+        <span className="block truncate ui-text-body-sm-strong text-content-primary">
+          {title}
+        </span>
+        <span className="mt-0.5 block truncate ui-text-meta tabular-nums text-content-muted">
+          {enabled && modelLabel && progress?.status === "downloading"
+            ? t({
+                id: "settings.models.automatic.downloading",
+                message: `Downloading ${modelLabel} ${percent}%`,
+              })
+            : modelLabel
+              ? t({
+                  id: "settings.models.automatic.uses",
+                  message: `Uses ${modelLabel} for your language`,
+                })
+              : t({
+                  id: "settings.models.automatic.description",
+                  message: "Uses the model for your language",
+                })}
+        </span>
+      </div>
+      <ToggleSwitch enabled={enabled} onToggle={onToggle} ariaLabel={title} />
+    </div>
+  );
+};
+
 type CloudMode = "on" | "off" | "unconfigured";
 
 const CloudHeroCard = ({
@@ -268,6 +316,10 @@ const ModelsTab = ({
   const { t } = useLingui();
   const [browsing, setBrowsing] = useState(false);
   const shiftHeld = useShiftHeld();
+  const automatic = useSettings().data?.local_model_auto ?? false;
+  const recommendedKey = useModelRecommendation().data?.key;
+  const recommendedLabel =
+    modelCatalog.find((model) => model.key === recommendedKey)?.label ?? null;
 
   const installedModel = resolveLocalFallbackModel(
     modelCatalog,
@@ -386,6 +438,19 @@ const ModelsTab = ({
               </div>
             )
           )}
+
+          <AutomaticModelRow
+            modelLabel={recommendedLabel}
+            progress={
+              recommendedKey ? downloadState[recommendedKey] : undefined
+            }
+            enabled={automatic}
+            onToggle={() =>
+              void setLocalModelAuto(!automatic).catch((err) =>
+                showErrorToast(String(err)),
+              )
+            }
+          />
 
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <div className="flex shrink-0 items-center gap-3">

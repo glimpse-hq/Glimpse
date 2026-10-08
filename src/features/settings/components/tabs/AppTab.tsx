@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { invoke } from "@tauri-apps/api/core";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
@@ -23,6 +23,7 @@ import {
 } from "../../../../shared/lib/macosPermissions";
 import { buildAppLocaleOptions } from "../../../../shared/lib/appLocales";
 import { Dropdown } from "../../../../shared/ui/Dropdown";
+import { useFocusTrap } from "../../../../shared/hooks/useFocusTrap";
 import type { PlatformCapabilities } from "../../../../shared/lib/platform";
 import type {
   AppLocaleSetting,
@@ -566,22 +567,17 @@ const AppTab = ({
     setPendingPruneConfirmation(null);
   };
 
+  const pruneDialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(
+    pruneDialogRef,
+    active && pendingPruneConfirmation !== null,
+    handleClosePruneConfirmation,
+  );
+
   useEffect(() => {
     if (active) return;
     setPendingPruneConfirmation(null);
   }, [active]);
-
-  useEffect(() => {
-    if (!pendingPruneConfirmation) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      event.stopPropagation();
-      setPendingPruneConfirmation(null);
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [pendingPruneConfirmation]);
 
   const pruneConfirmationMessage = pendingPruneConfirmation
     ? buildPruneConfirmationMessage(
@@ -644,6 +640,10 @@ const AppTab = ({
               </span>
               <Dropdown
                 value={textSizeMode}
+                ariaLabel={t({
+                  id: "settings.app.text_size.label",
+                  message: "Text Size",
+                })}
                 onChange={onTextSizeModeChange}
                 options={textSizeOptions}
               />
@@ -657,6 +657,10 @@ const AppTab = ({
               </span>
               <Dropdown
                 value={themeMode}
+                ariaLabel={t({
+                  id: "settings.app.theme.label",
+                  message: "Theme",
+                })}
                 onChange={onThemeModeChange}
                 options={themeOptions}
               />
@@ -670,6 +674,10 @@ const AppTab = ({
               </span>
               <Dropdown
                 value={appLocale}
+                ariaLabel={t({
+                  id: "settings.app.language.label",
+                  message: "Language",
+                })}
                 onChange={(value) => onAppLocaleChange(value)}
                 options={appLanguageOptions}
                 searchable
@@ -821,7 +829,7 @@ const AppTab = ({
             </SettingCard>
 
             {permissionRowCount > 0 && (
-              <p className="ui-text-micro ui-color-disabled px-0.5">
+              <p className="ui-text-micro ui-color-muted px-0.5">
                 {t({
                   id: "settings.app.permissions_restart_notice",
                   message: "Permission changes may require a restart.",
@@ -867,6 +875,7 @@ const AppTab = ({
                         <ChevronLeft size={10} className="rtl:rotate-180" />
                       </button>
                       <div
+                        aria-live="polite"
                         onMouseDown={handleDuckScrubStart}
                         onTouchStart={handleDuckScrubStart}
                         className="inline-grid whitespace-nowrap px-0.5 text-center font-medium tabular-nums cursor-ew-resize select-none"
@@ -993,6 +1002,10 @@ const AppTab = ({
                   <div className="shrink-0">
                     <Dropdown
                       value={autoDeleteTarget}
+                      ariaLabel={t({
+                        id: "settings.app.auto_delete",
+                        message: "Auto-delete",
+                      })}
                       onChange={(value) => {
                         void applyAutoDeleteChange(value, autoDeleteDuration);
                       }}
@@ -1010,6 +1023,10 @@ const AppTab = ({
                   <div className="shrink-0">
                     <Dropdown
                       value={autoDeleteDuration}
+                      ariaLabel={t({
+                        id: "settings.app.auto_delete.after_aria",
+                        message: "Delete after",
+                      })}
                       onChange={(value) => {
                         void applyAutoDeleteChange(autoDeleteTarget, value);
                       }}
@@ -1019,7 +1036,7 @@ const AppTab = ({
                     />
                   </div>
                 </div>
-                <span className="ui-text-micro ui-color-disabled block mt-1">
+                <span className="ui-text-micro ui-color-muted block mt-1">
                   {t({
                     id: "settings.app.auto_delete.body",
                     message:
@@ -1044,13 +1061,14 @@ const AppTab = ({
                 onClick={handleClosePruneConfirmation}
               >
                 <motion.div
+                  ref={pruneDialogRef}
                   initial={{ scale: 0.96, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.96, opacity: 0 }}
                   transition={{ duration: 0.18 }}
                   className="w-full max-w-sm rounded-2xl border border-red-500/30 bg-surface-tertiary p-5 ui-shadow-modal-deep"
                   onClick={(event) => event.stopPropagation()}
-                  role="dialog"
+                  role="alertdialog"
                   aria-modal="true"
                   aria-label={t({
                     id: "settings.app.auto_delete.confirm.title",
@@ -1061,6 +1079,7 @@ const AppTab = ({
                     <AlertTriangle
                       size={20}
                       className="mt-1 shrink-0 text-red-400"
+                      aria-hidden="true"
                     />
                     <div className="min-w-0">
                       <p className="ui-text-body-lg font-semibold ui-color-error-strong leading-tight">

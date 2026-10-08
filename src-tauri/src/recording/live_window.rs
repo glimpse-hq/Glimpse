@@ -53,16 +53,36 @@ fn dock(app: &AppHandle<AppRuntime>, window: &WebviewWindow<AppRuntime>) -> taur
     };
     let scale = monitor.scale_factor();
     let area = monitor.work_area();
-    let position = area.position.to_logical::<f64>(scale);
     let size = area.size.to_logical::<f64>(scale);
     let height = (size.height * HEIGHT_RATIO)
         .min(MAX_HEIGHT)
         .max(MIN_HEIGHT.min(size.height));
-    window.set_size(tauri::LogicalSize::new(WIDTH, height))?;
-    window.set_position(tauri::LogicalPosition::new(
-        position.x + size.width - WIDTH - EDGE_INSET,
-        position.y + (size.height - height) / 2.0,
-    ))
+
+    #[cfg(target_os = "macos")]
+    {
+        let position = area.position.to_logical::<f64>(scale);
+        window.set_size(tauri::LogicalSize::new(WIDTH, height))?;
+        window.set_position(tauri::LogicalPosition::new(
+            position.x + size.width - WIDTH - EDGE_INSET,
+            position.y + (size.height - height) / 2.0,
+        ))
+    }
+
+    // Windows lays monitors out in physical pixels and converts a logical
+    // position with the scale of the monitor the window is on now, which can
+    // differ from the target's. Moving first lets the size convert with the
+    // target's scale; moving again undoes the shift from the DPI-change resize.
+    #[cfg(target_os = "windows")]
+    {
+        let position = tauri::PhysicalPosition::new(
+            area.position.x + area.size.width as i32
+                - ((WIDTH + EDGE_INSET) * scale).round() as i32,
+            area.position.y + ((size.height - height) / 2.0 * scale).round() as i32,
+        );
+        window.set_position(position)?;
+        window.set_size(tauri::LogicalSize::new(WIDTH, height))?;
+        window.set_position(position)
+    }
 }
 
 fn hide_settings(app: &AppHandle<AppRuntime>) {

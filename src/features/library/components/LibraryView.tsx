@@ -68,6 +68,7 @@ type LibraryViewProps = {
 };
 
 const LAYOUT_KEY = "glimpse.library.layout";
+const NO_TAGS: string[] = [];
 
 const LibraryView = ({
   pendingImportPaths,
@@ -117,7 +118,7 @@ const LibraryView = ({
     error: queryError,
   } = useLibraryItemsQuery(filter, isActive);
 
-  const { data: availableTags = [] } = useLibraryTags(isActive);
+  const { data: availableTags = NO_TAGS } = useLibraryTags(isActive);
   const { data: speechModels = [] } = useSpeechModels(isActive);
   const { data: defaultModelKey = "" } = useSettings(
     (settings) => settings.local_model,
@@ -178,10 +179,10 @@ const LibraryView = ({
     : null;
 
   const createItemMutation = useCreateLibraryItem();
-  const updateItemMutation = useUpdateLibraryItem();
-  const deleteItemMutation = useDeleteLibraryItem();
-  const cancelMutation = useCancelLibraryTranscription();
-  const retryMutation = useRetryLibraryTranscription();
+  const { mutateAsync: updateItem } = useUpdateLibraryItem();
+  const { mutateAsync: deleteItem } = useDeleteLibraryItem();
+  const { mutateAsync: cancelItem } = useCancelLibraryTranscription();
+  const { mutateAsync: retryItem } = useRetryLibraryTranscription();
   const rediarizeMutation = useRediarizeLibraryItem();
   const exportMutation = useExportLibraryItem();
 
@@ -191,17 +192,17 @@ const LibraryView = ({
 
   const updateItemWithTags = useCallback(
     async (id: string, patch: LibraryItemPatch) => {
-      const updated = await updateItemMutation.mutateAsync({ id, patch });
+      const updated = await updateItem({ id, patch });
       if (patch.tags != null) invalidateTags();
       return updated;
     },
-    [updateItemMutation, invalidateTags],
+    [updateItem, invalidateTags],
   );
 
   const deleteItemAndRefreshTags = useCallback(
     async (id: string) => {
       try {
-        await deleteItemMutation.mutateAsync(id);
+        await deleteItem(id);
         invalidateTags();
       } catch (err) {
         console.error("Failed to delete library item:", err);
@@ -213,7 +214,7 @@ const LibraryView = ({
         throw err;
       }
     },
-    [deleteItemMutation, invalidateTags],
+    [deleteItem, invalidateTags],
   );
 
   const retranscribe = useCallback(
@@ -224,9 +225,9 @@ const LibraryView = ({
         show_timestamps: options.show_timestamps,
         detect_speakers: options.detect_speakers,
       });
-      await retryMutation.mutateAsync(id);
+      await retryItem(id);
     },
-    [updateItemWithTags, retryMutation],
+    [updateItemWithTags, retryItem],
   );
   const closeDeleteDialog = useCallback(() => setPendingDeleteId(null), []);
   const closeRetranscribe = useCallback(() => setRetranscribeItem(null), []);
@@ -299,80 +300,100 @@ const LibraryView = ({
     }
   };
 
-  const startTagEdit = (item: LibraryItem) => {
-    setEditingTagId(item.id);
+  const startTagEdit = useCallback((id: string) => {
+    setEditingTagId(id);
     setTagDraft("");
-  };
+  }, []);
 
-  const startNameEdit = (item: LibraryItem) => {
+  const startNameEdit = useCallback((item: LibraryItem) => {
     setEditingNameId(item.id);
     setEditingNameDraft(item.name);
-  };
+  }, []);
 
-  const cancelNameEdit = () => {
+  const cancelNameEdit = useCallback(() => {
     setEditingNameId(null);
     setEditingNameDraft("");
-  };
+  }, []);
 
-  const commitNameEdit = async (itemId: string) => {
-    const nextName = editingNameDraft.trim();
-    const original = items.find((entry) => entry.id === itemId)?.name ?? "";
-    setEditingNameId(null);
-    setEditingNameDraft("");
-    if (!nextName || nextName === original) return;
-    try {
-      await updateItemWithTags(itemId, { name: nextName });
-    } catch (err) {
-      console.error("Failed to rename library item:", err);
-      showErrorToast(
-        t({
-          id: "library.detail.rename_failed",
-          message: "Couldn't rename this item.",
-        }),
-      );
-    }
-  };
+  const commitNameEdit = useCallback(
+    async (item: LibraryItem, draft: string) => {
+      const nextName = draft.trim();
+      setEditingNameId(null);
+      setEditingNameDraft("");
+      if (!nextName || nextName === item.name) return;
+      try {
+        await updateItemWithTags(item.id, { name: nextName });
+      } catch (err) {
+        console.error("Failed to rename library item:", err);
+        showErrorToast(
+          t({
+            id: "library.detail.rename_failed",
+            message: "Couldn't rename this item.",
+          }),
+        );
+      }
+    },
+    [updateItemWithTags, t],
+  );
 
-  const saveTags = async (itemId: string, tags: string[]) => {
-    try {
-      await updateItemWithTags(itemId, { tags });
-      return true;
-    } catch (err) {
-      console.error("Failed to save library tags:", err);
-      showErrorToast(
-        t({
-          id: "library.detail.tags_failed",
-          message: "Couldn't save the tags.",
-        }),
-      );
-      return false;
-    }
-  };
+  const saveTags = useCallback(
+    async (itemId: string, tags: string[]) => {
+      try {
+        await updateItemWithTags(itemId, { tags });
+        return true;
+      } catch (err) {
+        console.error("Failed to save library tags:", err);
+        showErrorToast(
+          t({
+            id: "library.detail.tags_failed",
+            message: "Couldn't save the tags.",
+          }),
+        );
+        return false;
+      }
+    },
+    [updateItemWithTags, t],
+  );
 
-  const cancelTagEdit = () => {
+  const cancelTagEdit = useCallback(() => {
     setEditingTagId(null);
     setTagDraft("");
-  };
+  }, []);
 
-  const commitTagAdd = async (itemId: string, overrideTag?: string) => {
-    const nextTag = (overrideTag ?? tagDraft).trim();
-    if (!nextTag) {
-      setEditingTagId(null);
+  const commitTagAdd = useCallback(
+    async (item: LibraryItem, value: string) => {
+      const nextTag = value.trim();
+      if (!nextTag) {
+        setEditingTagId(null);
+        setTagDraft("");
+        return;
+      }
+      if (
+        item.tags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())
+      ) {
+        setTagDraft("");
+        setEditingTagId(null);
+        return;
+      }
+      // A failed save keeps the editor open with what was typed.
+      if (!(await saveTags(item.id, [...item.tags, nextTag]))) return;
       setTagDraft("");
-      return;
-    }
-    const item = items.find((entry) => entry.id === itemId);
-    if (!item) return;
-    if (item.tags.some((tag) => tag.toLowerCase() === nextTag.toLowerCase())) {
-      setTagDraft("");
       setEditingTagId(null);
-      return;
-    }
-    // A failed save keeps the editor open with what was typed.
-    if (!(await saveTags(itemId, [...item.tags, nextTag]))) return;
-    setTagDraft("");
-    setEditingTagId(null);
-  };
+    },
+    [saveTags],
+  );
+
+  const removeTag = useCallback(
+    async (item: LibraryItem, tag: string) => {
+      await saveTags(
+        item.id,
+        item.tags.filter((entry) => entry !== tag),
+      );
+    },
+    [saveTags],
+  );
+
+  const searchTag = useCallback((tag: string) => setSearchQuery(`#${tag}`), []);
 
   const defaultSpeechModelKey =
     installedModels.find((model) => model.remote)?.id ??
@@ -416,14 +437,14 @@ const LibraryView = ({
               await deleteItemAndRefreshTags(selectedItem.id);
               setSelectedItemId(null);
             }}
-            onRetry={() => retryMutation.mutateAsync(selectedItem.id)}
+            onRetry={() => retryItem(selectedItem.id)}
             onRetranscribe={(options) => retranscribe(selectedItem.id, options)}
             onRediarize={() => rediarizeItem(selectedItem.id)}
             rediarizing={
               rediarizeMutation.isPending &&
               rediarizeMutation.variables === selectedItem.id
             }
-            onCancel={() => cancelMutation.mutateAsync(selectedItem.id)}
+            onCancel={() => cancelItem(selectedItem.id)}
             onUpdate={(patch) => updateItemWithTags(selectedItem.id, patch)}
             onExport={(format, outputPath) =>
               exportMutation.mutateAsync({
@@ -460,6 +481,7 @@ const LibraryView = ({
                     <Search
                       size={13}
                       className="absolute left-2.5 top-1/2 -translate-y-1/2 ui-color-muted"
+                      aria-hidden="true"
                     />
                     <input
                       ref={searchInputRef}
@@ -470,6 +492,10 @@ const LibraryView = ({
                       spellCheck={false}
                       {...{ writingsuggestions: "false" }}
                       placeholder={t({
+                        id: "library.view.search_placeholder",
+                        message: "Search library...",
+                      })}
+                      aria-label={t({
                         id: "library.view.search_placeholder",
                         message: "Search library...",
                       })}
@@ -537,9 +563,9 @@ const LibraryView = ({
                       className="ui-button-ghost h-8 w-8"
                     >
                       {layout === "list" ? (
-                        <ListIcon size={15} />
+                        <ListIcon size={15} aria-hidden="true" />
                       ) : (
-                        <SquaresFour size={15} />
+                        <SquaresFour size={15} aria-hidden="true" />
                       )}
                     </button>
                   </HoverTip>
@@ -573,7 +599,7 @@ const LibraryView = ({
                     onClick={handleImportClick}
                     className="flex h-8 items-center gap-1.5 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-surface)] px-3 ui-text-body-sm ui-color-primary hover:border-[var(--color-border-secondary)] hover:bg-[var(--color-bg-overlay)] transition-colors shrink-0"
                   >
-                    <Plus size={13} />
+                    <Plus size={13} aria-hidden="true" />
                     {t({ id: "library.view.import_button", message: "Import" })}
                   </button>
                 </>
@@ -581,7 +607,10 @@ const LibraryView = ({
             />
 
             {error && (
-              <div className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2">
+              <div
+                role="alert"
+                className="rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-4 py-3 ui-text-body-sm ui-color-error-tint mx-4 mb-2"
+              >
                 {error}
               </div>
             )}
@@ -590,6 +619,11 @@ const LibraryView = ({
             <div key="library-list" className="flex flex-col gap-6 w-full">
               <div className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6">
                 <div
+                  role={items.length > 0 ? "list" : undefined}
+                  aria-label={t({
+                    id: "library.view.title",
+                    message: "Library",
+                  })}
                   className={
                     layout === "grid"
                       ? "grid min-w-0 gap-4 grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))]"
@@ -597,7 +631,14 @@ const LibraryView = ({
                   }
                 >
                   {isLoading && items.length === 0 && (
-                    <div className="py-12 flex items-center justify-center">
+                    <div
+                      role="status"
+                      aria-label={t({
+                        id: "library.view.loading_more",
+                        message: "Loading...",
+                      })}
+                      className="py-12 flex items-center justify-center"
+                    >
                       <DotMatrix
                         rows={2}
                         cols={8}
@@ -628,69 +669,71 @@ const LibraryView = ({
                   )}
 
                   {items.map((item, index) => (
-                    <LibraryCard
+                    <div
                       key={item.id || `library-item-${index}`}
-                      item={item}
-                      layout={layout}
-                      onOpen={() => setSelectedItemId(item.id)}
-                      onRemoveTag={async (tag) => {
-                        await saveTags(
-                          item.id,
-                          item.tags.filter((entry) => entry !== tag),
-                        );
-                      }}
-                      onClickTag={(tag) => setSearchQuery(`#${tag}`)}
-                      editingNameId={editingNameId}
-                      editingNameDraft={editingNameDraft}
-                      onStartNameEdit={() => startNameEdit(item)}
-                      onChangeNameDraft={setEditingNameDraft}
-                      onCommitNameEdit={() => commitNameEdit(item.id)}
-                      onCancelNameEdit={cancelNameEdit}
-                      onRetry={() => retryMutation.mutateAsync(item.id)}
-                      onRetranscribe={() => setRetranscribeItem(item)}
-                      onCancel={() => cancelMutation.mutateAsync(item.id)}
-                      onDelete={() => setPendingDeleteId(item.id)}
-                      onQuickDelete={() => deleteItemAndRefreshTags(item.id)}
-                      editingTagId={editingTagId}
-                      tagDraft={tagDraft}
-                      onStartTagEdit={() => startTagEdit(item)}
-                      onChangeTagDraft={setTagDraft}
-                      onCommitTagAdd={(value) => commitTagAdd(item.id, value)}
-                      onCancelTagEdit={cancelTagEdit}
-                      shiftHeld={shiftHeld}
-                      availableTags={availableTags}
-                    />
+                      role="listitem"
+                      className="min-w-0"
+                    >
+                      <LibraryCard
+                        item={item}
+                        layout={layout}
+                        onOpen={setSelectedItemId}
+                        onRemoveTag={removeTag}
+                        onClickTag={searchTag}
+                        editingNameId={editingNameId}
+                        // Only the card being edited re-renders while typing.
+                        editingNameDraft={
+                          editingNameId === item.id ? editingNameDraft : ""
+                        }
+                        onStartNameEdit={startNameEdit}
+                        onChangeNameDraft={setEditingNameDraft}
+                        onCommitNameEdit={commitNameEdit}
+                        onCancelNameEdit={cancelNameEdit}
+                        onRetry={retryItem}
+                        onRetranscribe={setRetranscribeItem}
+                        onCancel={cancelItem}
+                        onDelete={setPendingDeleteId}
+                        onQuickDelete={deleteItemAndRefreshTags}
+                        editingTagId={editingTagId}
+                        tagDraft={editingTagId === item.id ? tagDraft : ""}
+                        onStartTagEdit={startTagEdit}
+                        onChangeTagDraft={setTagDraft}
+                        onCommitTagAdd={commitTagAdd}
+                        onCancelTagEdit={cancelTagEdit}
+                        shiftHeld={shiftHeld}
+                        availableTags={availableTags}
+                      />
+                    </div>
                   ))}
-
-                  {items.length > 0 && hasNextPage && (
-                    <div className="flex items-center justify-center pt-4">
-                      <button
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                        className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-body-sm ui-color-secondary hover:text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                      >
-                        {isFetchingNextPage ? (
-                          <>
-                            <Loader2 size={14} className="animate-spin" />
-                            <span>
-                              {t({
-                                id: "library.view.loading_more",
-                                message: "Loading...",
-                              })}
-                            </span>
-                          </>
-                        ) : (
+                </div>
+                {items.length > 0 && hasNextPage && (
+                  <div className="flex items-center justify-center">
+                    <button
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                      className="flex items-center gap-2 rounded-lg border border-border-primary bg-surface-surface px-4 py-2 ui-text-body-sm ui-color-secondary hover:text-content-primary hover:border-border-secondary hover:bg-surface-overlay transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isFetchingNextPage ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
                           <span>
                             {t({
-                              id: "library.view.load_more",
-                              message: "Load more",
+                              id: "library.view.loading_more",
+                              message: "Loading...",
                             })}
                           </span>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        </>
+                      ) : (
+                        <span>
+                          {t({
+                            id: "library.view.load_more",
+                            message: "Load more",
+                          })}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

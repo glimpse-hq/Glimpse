@@ -27,6 +27,7 @@ type LocalApiTabProps = {
   setCors: (value: boolean) => void;
   status: LocalApiStatus | null;
   busy: boolean;
+  stopping: boolean;
   onStart: () => void;
   onStop: () => void;
   onRestart: () => void;
@@ -51,6 +52,7 @@ const LocalApiTab = ({
   setCors,
   status,
   busy,
+  stopping,
   onStart,
   onStop,
   onRestart,
@@ -68,8 +70,11 @@ const LocalApiTab = ({
     (entry) => modelStatus[entry.key]?.installed,
   );
   const running = status?.running ?? false;
+  const starting = status?.starting ?? false;
   const logs = status?.logs ?? [];
-  const effectiveHost = running ? (status?.host ?? host) : host;
+  const boundHost = running ? (status?.host ?? host) : host;
+  const effectiveHost =
+    boundHost === "0.0.0.0" ? (status?.lan_ip ?? boundHost) : boundHost;
   const effectivePort = running ? (status?.port ?? port) : port;
   const baseUrl = `http://${effectiveHost}:${effectivePort}/v1`;
   const requireApiKey = apiKey.trim().length > 0;
@@ -164,7 +169,7 @@ const LocalApiTab = ({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            {running ? (
+            {running || starting ? (
               <span className="opacity-80">
                 <ActivityDots
                   dotSize={3}
@@ -190,10 +195,15 @@ const LocalApiTab = ({
                     id: "settings.local_api.status.running",
                     message: "Running",
                   })
-                : t({
-                    id: "settings.local_api.status.stopped",
-                    message: "Stopped",
-                  })}
+                : starting
+                  ? t({
+                      id: "settings.local_api.status.starting",
+                      message: "Starting",
+                    })
+                  : t({
+                      id: "settings.local_api.status.stopped",
+                      message: "Stopped",
+                    })}
             </h2>
           </div>
           <button
@@ -257,11 +267,11 @@ const LocalApiTab = ({
           </button>
         </div>
 
-        {running ? (
+        {running || starting ? (
           <button
             className="ml-6 min-w-[92px] shrink-0 whitespace-nowrap px-5 py-1.5 rounded-md bg-red-500 hover:bg-red-400 text-white ui-text-button-sm font-semibold transition-all shadow-[0_3px_0_-1px_rgba(248,113,113,0.35),inset_0_1px_0_0_rgba(255,255,255,0.15)] active:translate-y-[1px] active:shadow-none"
             onClick={onStop}
-            disabled={busy}
+            disabled={stopping}
           >
             {t({
               id: "settings.local_api.stop",
@@ -323,6 +333,10 @@ const LocalApiTab = ({
                   className="mt-1.5 w-full border-b border-border-secondary bg-transparent px-0.5 py-1 ui-text-body-sm ui-color-primary focus:outline-none focus:border-content-primary transition-colors"
                   type="password"
                   value={apiKey}
+                  aria-label={t({
+                    id: "settings.local_api.api_key",
+                    message: "API key",
+                  })}
                   onChange={(event) => setApiKey(event.target.value)}
                   placeholder={
                     lanEnabled
@@ -358,13 +372,17 @@ const LocalApiTab = ({
               <div className="mt-1.5 relative z-10">
                 <Dropdown
                   value={model}
+                  ariaLabel={t({
+                    id: "settings.local_api.preloaded_model",
+                    message: "Preloaded model",
+                  })}
                   onChange={setModel}
                   options={modelOptions}
                   buttonClassName="!rounded-none !border-0 !border-b !border-border-secondary !bg-transparent !px-0.5 !py-1 ui-text-body-sm hover:!border-content-primary focus:!border-content-primary"
                   truncate={false}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-1">
+              <span className="ui-text-micro ui-color-muted block mt-1">
                 {model === "auto"
                   ? running && status?.loaded_model
                     ? t({
@@ -410,7 +428,7 @@ const LocalApiTab = ({
                   })}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
                   id: "settings.local_api.listen_on_lan_help",
                   message: "expose to other devices on your network",
@@ -435,7 +453,7 @@ const LocalApiTab = ({
                   })}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
                   id: "settings.local_api.start_on_launch_help",
                   message: "automatically start when Glimpse opens",
@@ -460,7 +478,7 @@ const LocalApiTab = ({
                   })}
                 />
               </div>
-              <span className="ui-text-micro ui-color-disabled block mt-0.5">
+              <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
                   id: "settings.local_api.allow_browser_requests_help",
                   message: "send CORS headers so web apps can call the API",
@@ -533,7 +551,7 @@ const LocalApiTab = ({
 
         <div className="h-[210px] overflow-y-auto">
           {logs.length === 0 ? (
-            <p className="ui-text-label ui-color-disabled">
+            <p className="ui-text-label ui-color-muted">
               {t({
                 id: "settings.local_api.logs.empty",
                 message: "No logs yet.",

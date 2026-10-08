@@ -76,7 +76,10 @@ const TwinklingGrid = React.memo(
     }, [color, animationName]);
 
     return (
-      <div className="absolute inset-0 overflow-hidden opacity-60 pointer-events-none">
+      <div
+        aria-hidden="true"
+        className="twinkling-grid absolute inset-0 overflow-hidden opacity-60 pointer-events-none"
+      >
         {dots}
       </div>
     );
@@ -171,6 +174,7 @@ const ToastOverlay: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (!toast?.retryId) return;
+    const generation = toastGenerationRef.current;
     setIsRetrying(true);
     try {
       await invoke("retry_transcription", { id: toast.retryId });
@@ -178,7 +182,10 @@ const ToastOverlay: React.FC = () => {
       // (either success, error, or quota exceeded) which replaces this one
     } catch (err) {
       console.error("Retry failed:", err);
+      if (generation !== toastGenerationRef.current) return;
       setIsRetrying(false);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(dismiss, DURATIONS.error);
       setToast((prev) =>
         prev
           ? {
@@ -330,14 +337,6 @@ const ToastOverlay: React.FC = () => {
     <div
       className="fixed inset-0 flex flex-col justify-end items-center pb-6"
       onClick={handleBackgroundClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleBackgroundClick();
-        }
-      }}
-      role="button"
-      tabIndex={0}
       onContextMenu={(e) => e.preventDefault()}
     >
       <div
@@ -347,7 +346,7 @@ const ToastOverlay: React.FC = () => {
           ${toast.isLeaving ? "animate-toast-out" : "animate-toast-in"}
         `}
         onClick={(e) => e.stopPropagation()}
-        role="alert"
+        role={toast.type === "error" ? "alert" : "status"}
         ref={cardRef}
       >
         {toast.type === "celebration" && <TwinklingGrid variant="cloud" />}
@@ -392,7 +391,11 @@ const ToastOverlay: React.FC = () => {
                     })
               }
             >
-              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? (
+                <Check size={12} aria-hidden="true" />
+              ) : (
+                <Copy size={12} aria-hidden="true" />
+              )}
             </button>
           )}
         </div>
@@ -412,6 +415,7 @@ const ToastOverlay: React.FC = () => {
             </div>
           ) : (
             <div
+              aria-hidden="true"
               className={`w-2 h-2 rounded-full mt-1 shrink-0 ${colors.dot} ${toast.type === "error" ? "animate-pulse" : ""}`}
             />
           )}
@@ -457,7 +461,7 @@ const ToastOverlay: React.FC = () => {
                     }}
                     className={`ui-text-body-sm ${toast.type === "update" ? "ui-color-accent" : "ui-color-info-strong"} ui-hover-on-solid transition-colors font-medium`}
                   >
-                    {toast.actionLabel} →
+                    {toast.actionLabel} <span aria-hidden="true">→</span>
                   </button>
                 )}
                 {!copySecondary && (

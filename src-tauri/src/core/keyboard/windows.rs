@@ -18,7 +18,7 @@ use super::{
     BlockingHotkeys, Key, KeyEvent, Modifiers, PlatformShutdown, should_block_event,
     should_forward_event,
 };
-use crate::assistive::keyboard_input;
+use crate::assistive::{GLIMPSE_INPUT_TAG, VK_DUMMY, keyboard_input};
 
 const LLKHF_EXTENDED_FLAG: u32 = 0x01;
 
@@ -177,10 +177,15 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
         return unsafe { CallNextHookEx(None, code, wparam, lparam) };
     }
 
+    let info = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
+    // Keys Glimpse sends itself must not count as shortcut presses.
+    if info.dwExtraInfo == GLIMPSE_INPUT_TAG {
+        return unsafe { CallNextHookEx(None, code, wparam, lparam) };
+    }
+
     let decision = HOOK_STATE.with(|state| {
         let mut state = state.borrow_mut();
         let state = state.as_mut()?;
-        let info = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
         let event = build_event(state.blocked_modifiers, info, is_key_down)?;
 
         let should_block =
@@ -349,9 +354,7 @@ fn held_modifiers(
     modifiers
 }
 
-// A lone Alt or Win press-and-release opens the menu bar or Start. When one of them
-// passed through before the chord completed, send a no-op key so Windows sees the press
-// as part of a combination. Same trick as PowerToys Keyboard Manager.
+// Alt or Win can pass through before the chord completes.
 fn mask_menu_activation(passed_through: Modifiers) {
     let opens_menu = [
         Modifiers::CMD_LEFT,
@@ -365,7 +368,6 @@ fn mask_menu_activation(passed_through: Modifiers) {
         return;
     }
 
-    const VK_DUMMY: VIRTUAL_KEY = VIRTUAL_KEY(0xFF);
     let inputs = [
         keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)),
         keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP),

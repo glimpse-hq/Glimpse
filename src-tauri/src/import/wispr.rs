@@ -19,7 +19,7 @@ pub fn detect(home: &Path) -> bool {
 }
 
 pub fn parse(home: &Path) -> Result<ImportBundle, String> {
-    let (conn, _guard) = open_sqlite_readonly(&db_path(home))?;
+    let conn = open_sqlite_readonly(&db_path(home))?;
     let mut bundle = ImportBundle::default();
 
     if sqlite_table_exists(&conn, "Dictionary")

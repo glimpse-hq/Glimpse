@@ -10,7 +10,8 @@ static SHORTCUT_FAILURES_SENT: Mutex<Vec<&'static str>> = Mutex::new(Vec::new())
 
 /// Records that global shortcuts stopped working or could not start: the
 /// stage (worker_exit, keyboard_hook, mouse_hook, event_tap,
-/// event_tap_disabled, register), a
+/// event_tap_disabled, register, or accessibility when setup is finished but
+/// macOS Accessibility access is missing at launch), a
 /// bounded reason, and the numeric OS error code when there is one. At most
 /// once per stage per session.
 pub fn track_shortcut_failed(stage: &'static str, reason: impl Into<ErrorDetail>) {

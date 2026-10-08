@@ -6,10 +6,10 @@ use std::{
 };
 
 use parking_lot::Mutex;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 use crate::{
-    AppRuntime, AppState, EVENT_SETTINGS_CHANGED,
+    AppRuntime, AppState,
     assistive::{self, FocusedTextSnapshot},
     dictionary, toast,
 };
@@ -163,21 +163,19 @@ pub(crate) fn accept_auto_dictionary_suggestion(
         return Ok(state.current_settings().dictionary);
     }
 
-    let mut settings = state.current_settings();
-    settings.dictionary.push(suggestion.clone());
-    settings.dictionary = dictionary::sanitize_dictionary_entries(&settings.dictionary);
-    settings.auto_dictionary_ignored = remove_dictionary_entries_from_ignored(
-        settings.auto_dictionary_ignored,
-        &settings.dictionary,
-    );
-    let saved = state
-        .persist_settings(settings)
+    let (_, saved) = state
+        .persist_settings_with(|_, next| {
+            next.dictionary.push(suggestion.clone());
+            next.dictionary = dictionary::sanitize_dictionary_entries(&next.dictionary);
+            next.auto_dictionary_ignored = remove_dictionary_entries_from_ignored(
+                std::mem::take(&mut next.auto_dictionary_ignored),
+                &next.dictionary,
+            );
+        })
         .map_err(|err| err.to_string())?;
     clear_ignored_suggestion(&suggestion);
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-        tracing::error!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(&app, &saved);
 
     Ok(saved.dictionary)
 }
@@ -193,18 +191,16 @@ pub(crate) fn reject_auto_dictionary_suggestion(
         return Ok(state.current_settings().auto_dictionary_ignored);
     }
 
-    let mut settings = state.current_settings();
-    settings.auto_dictionary_ignored.push(suggestion.clone());
-    settings.auto_dictionary_ignored =
-        sanitize_ignored_suggestions(&settings.auto_dictionary_ignored);
-    let saved = state
-        .persist_settings(settings)
+    let (_, saved) = state
+        .persist_settings_with(|_, next| {
+            next.auto_dictionary_ignored.push(suggestion.clone());
+            next.auto_dictionary_ignored =
+                sanitize_ignored_suggestions(&next.auto_dictionary_ignored);
+        })
         .map_err(|err| err.to_string())?;
     remember_ignored_suggestion(&suggestion);
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-        tracing::error!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(&app, &saved);
 
     Ok(saved.auto_dictionary_ignored)
 }

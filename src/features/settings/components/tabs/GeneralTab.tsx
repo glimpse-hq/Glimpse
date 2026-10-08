@@ -2,7 +2,7 @@ import { msg } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, type Variants } from "framer-motion";
 import {
@@ -101,6 +101,7 @@ const GeneralTab = ({
   onOpenProvidersTab,
 }: GeneralTabProps) => {
   const { t } = useLingui();
+  const languageInfoId = useId();
   const [expandedShortcut, setExpandedShortcut] = useState<ShortcutMode | null>(
     null,
   );
@@ -215,6 +216,10 @@ const GeneralTab = ({
             ) : (
               <Dropdown
                 value={microphoneDevice || ""}
+                ariaLabel={t({
+                  id: "settings.general.microphone",
+                  message: "Microphone",
+                })}
                 onChange={(val) =>
                   onMicrophoneDeviceChange(val === "" ? null : val)
                 }
@@ -252,7 +257,9 @@ const GeneralTab = ({
               </label>
               <div className="relative group">
                 <button
-                  className="flex h-4 w-4 items-center justify-center text-content-disabled hover:text-content-muted transition-colors"
+                  type="button"
+                  className="flex h-4 w-4 items-center justify-center rounded-sm text-content-muted hover:text-content-secondary transition-colors"
+                  aria-describedby={languageInfoId}
                   aria-label={t({
                     id: "settings.general.language_info_aria",
                     message:
@@ -262,7 +269,11 @@ const GeneralTab = ({
                   <Info size={10} aria-hidden="true" />
                 </button>
                 <div className="absolute right-0 top-full mt-1.5 hidden group-hover:block group-focus-within:block z-tooltip">
-                  <div className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight">
+                  <div
+                    id={languageInfoId}
+                    role="tooltip"
+                    className="ui-surface-menu w-56 px-2.5 py-1.5 ui-text-micro ui-color-secondary leading-tight"
+                  >
                     <p>
                       {t({
                         id: "settings.general.language_info.active_model",
@@ -278,6 +289,10 @@ const GeneralTab = ({
           <div>
             <Dropdown
               value={language}
+              ariaLabel={t({
+                id: "settings.general.transcription_language",
+                message: "Transcription Language",
+              })}
               onChange={(val) => onLanguageChange(val)}
               onOpenChange={setLanguageDropdownOpen}
               options={languages.map((lang) => ({
@@ -528,7 +543,7 @@ const MicrophoneTestSlot = ({
   if (status === "error") {
     return (
       <div className="flex h-[38px] items-center rounded-lg border border-error/30 bg-error/5 px-3">
-        <p className="ui-text-meta ui-color-error truncate">
+        <p role="alert" className="ui-text-meta ui-color-error truncate">
           {error ??
             t({
               id: "settings.general.microphone_test.generic_error",
@@ -852,11 +867,13 @@ const ShortcutBindingsList = ({
           {primaryCapturing ? (
             <>
               <motion.span
+                aria-hidden="true"
                 className="h-1 w-1 rounded-full bg-cloud"
                 animate={{ opacity: [0.3, 1, 0.3] }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
               <span
+                aria-live="polite"
                 className={`truncate ${
                   capturePreview ? "ui-color-primary" : "ui-color-muted"
                 }`}
@@ -996,11 +1013,13 @@ const ShortcutBindingsList = ({
                       {isCapturing ? (
                         <>
                           <motion.span
+                            aria-hidden="true"
                             className="h-1 w-1 rounded-full bg-cloud"
                             animate={{ opacity: [0.3, 1, 0.3] }}
                             transition={{ duration: 1, repeat: Infinity }}
                           />
                           <span
+                            aria-live="polite"
                             className={`truncate ${
                               capturePreview
                                 ? "ui-color-primary"
@@ -1164,6 +1183,8 @@ const ShortcutRow = ({
 
   return (
     <div
+      role="group"
+      aria-label={label}
       className={`space-y-1.5 px-2 py-1.5 ${
         enabled ? "opacity-100" : "opacity-80"
       }`}
@@ -1171,7 +1192,7 @@ const ShortcutRow = ({
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
           <span className="ui-text-label-strong ui-color-primary">{label}</span>
-          <span className="truncate ui-text-meta ui-color-disabled">
+          <span className="truncate ui-text-meta ui-color-muted">
             {description}
           </span>
         </div>

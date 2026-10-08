@@ -12,14 +12,17 @@ import { CaretLeft as ChevronLeft } from "@phosphor-icons/react";
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useModelDownloadEvents } from "../../shared/hooks/useModelDownloadEvents";
-import { isBuiltInModel } from "../../shared/lib/modelStats";
 import { requestMacAccessibilityPermission } from "../../shared/lib/macosPermissions";
 import { pricingUrlFor } from "../license/purchaseConfig";
-import { useSettings } from "../settings/queries";
-import { getSettings } from "../settings/api";
+import { settingsKeys, useSettings } from "../settings/queries";
+import { checkAccessibilityPermission, getSettings } from "../settings/api";
 import {
   modelKeys,
+  pickDefaultOnboardingModel,
+  useDiarizerInstalled,
+  useDiarizerModel,
   useModelCatalog,
+  useModelRecommendation,
   useModelStatuses,
 } from "../settings/models-queries";
 import { onboardingMachine, getSteps } from "./machine";
@@ -35,95 +38,28 @@ import { SourceStep, type OnboardingSource } from "./steps/SourceStep";
 import { ModelDownloadStatus } from "./ModelDownloadStatus";
 import FirstDictationGuide from "./FirstDictationGuide";
 import { StepIndicator } from "./steps/shared";
-import { useActivateLicense, useLicenseState } from "../license/queries";
+import {
+  useActivateLicense,
+  useLicenseGate,
+  useLicenseState,
+} from "../license/queries";
 import FAQModal from "../../shared/ui/FAQModal";
 import ModelPickerModal from "../../shared/ui/ModelPickerModal";
 import WindowControls from "../../shared/ui/WindowControls";
 import { showErrorToast } from "../../shared/lib/errorToast";
-import type { DownloadEvent, ModelInfo, ModelStatus } from "../../types";
-
-// The stock default; Parakeet first, Whisper for languages it doesn't cover.
-const DEFAULT_MODEL_KEY = "parakeet_tdt_v3_gguf";
-
-const ONBOARDING_MODEL_SLOTS = [
-  [DEFAULT_MODEL_KEY],
-  ["whisper_large_v3_turbo_q8"],
-] as const;
-
-const ONBOARDING_COMPACT_MODEL_KEY = "whisper_small_q8";
+import type {
+  DownloadEvent,
+  ModelStatus,
+  UpdateSettingsResult,
+} from "../../types";
 
 const onboardingPermissionKeys = {
   all: ["onboarding", "permissions"] as const,
   microphone: () => [...onboardingPermissionKeys.all, "microphone"] as const,
-  accessibility: () =>
-    [...onboardingPermissionKeys.all, "accessibility"] as const,
-};
-
-const downloadableModels = (models: ModelInfo[]) =>
-  models.filter((model) => model.downloadable);
-
-const pickOnboardingModels = (models: ModelInfo[]) => {
-  const available = downloadableModels(models);
-  const byKey = (key: string) =>
-    available.find((model) => model.key === key) ?? null;
-
-  return [
-    ...ONBOARDING_MODEL_SLOTS.map(
-      (keys) => keys.map(byKey).find(Boolean) ?? null,
-    ),
-    available.find(isBuiltInModel) ?? byKey(ONBOARDING_COMPACT_MODEL_KEY),
-  ].filter((model): model is ModelInfo => Boolean(model));
-};
-
-const baseLanguage = (locale: string) => locale.split(/[-_]/)[0].toLowerCase();
-
-// The system's first language, plus the app's language when set by hand.
-const userLanguages = (appLocale: string) => {
-  const system = navigator.languages?.[0] ?? navigator.language;
-  const locales = [system, appLocale === "system" ? null : appLocale];
-  return [
-    ...new Set(
-      locales.filter((locale): locale is string => !!locale).map(baseLanguage),
-    ),
-  ];
-};
-
-const supportsLanguages = (model: ModelInfo, languages: string[]) =>
-  languages.every((language) =>
-    model.supported_languages.some(
-      (supported) => baseLanguage(supported.code) === language,
-    ),
-  );
-
-const pickDefaultOnboardingModel = (
-  models: ModelInfo[],
-  persistedModel: string,
-  languages: string[],
-) => {
-  const available = downloadableModels(models);
-  // Anything but the stock default was picked on purpose.
-  if (
-    persistedModel &&
-    persistedModel !== DEFAULT_MODEL_KEY &&
-    available.some((model) => model.key === persistedModel)
-  ) {
-    return persistedModel;
-  }
-  const picked = pickOnboardingModels(models);
-  // A language no model lists goes to the one with the widest coverage.
-  const fitting =
-    picked.find((model) => supportsLanguages(model, languages)) ??
-    [...picked].sort(
-      (a, b) => b.supported_languages.length - a.supported_languages.length,
-    )[0];
-  return fitting?.key ?? persistedModel;
 };
 
 const checkMicrophonePermission = () =>
   invoke<boolean>("check_microphone_permission");
-
-const checkAccessibilityPermission = () =>
-  invoke<boolean>("check_accessibility_permission");
 
 const refreshModelStatus = (queryClient: QueryClient, model: string) =>
   queryClient.invalidateQueries({ queryKey: modelKeys.status(model) });
@@ -266,19 +202,13 @@ export default function OnboardingScreen({
   }, [currentStep]);
   const settingsQuery = useSettings();
   const modelCatalogQuery = useModelCatalog();
+  const diarizer = useDiarizerModel().data;
+  const licensed = useLicenseGate();
+  const diarizerInstalled = useDiarizerInstalled();
+  const recommendationQuery = useModelRecommendation();
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
 
-  const onboardingModelCatalog = useMemo(() => {
-    const catalog = modelCatalogQuery.data ?? [];
-    const picked = pickOnboardingModels(catalog);
-    const importedKey = ctx.localModelChoice;
-    if (importedKey && !picked.some((model) => model.key === importedKey)) {
-      const imported = catalog.find((model) => model.key === importedKey);
-      if (imported) return [...picked, imported];
-    }
-    return picked;
-  }, [modelCatalogQuery.data, ctx.localModelChoice]);
   const persistedLocalModel = settingsQuery.data?.local_model ?? "";
   const persistedSettings = settingsQuery.data;
 
@@ -292,20 +222,17 @@ export default function OnboardingScreen({
     });
   }, [persistedSettings, send]);
 
+  const recommendedModel = recommendationQuery.data?.key ?? "";
   const selectedModel =
     ctx.localModelChoice ||
     pickDefaultOnboardingModel(
       modelCatalogQuery.data ?? [],
       persistedLocalModel,
-      userLanguages(persistedSettings?.app_locale ?? "system"),
+      recommendationQuery.data,
     );
-  const selectedModelInfo = useMemo(
-    () =>
-      onboardingModelCatalog.find((model) => model.key === selectedModel) ??
-      modelCatalogQuery.data?.find((model) => model.key === selectedModel) ??
-      null,
-    [onboardingModelCatalog, modelCatalogQuery.data, selectedModel],
-  );
+  const selectedModelInfo =
+    modelCatalogQuery.data?.find((model) => model.key === selectedModel) ??
+    null;
   const statusModelKeys = useMemo(
     () =>
       Array.from(
@@ -335,7 +262,7 @@ export default function OnboardingScreen({
   });
 
   const accessibilityPermissionQuery = useQuery({
-    queryKey: onboardingPermissionKeys.accessibility(),
+    queryKey: settingsKeys.accessibility(),
     queryFn: checkAccessibilityPermission,
     enabled: ctx.platform.requiresAccessibilityPermission,
     refetchOnWindowFocus: currentStep === "permissions" ? "always" : false,
@@ -380,7 +307,7 @@ export default function OnboardingScreen({
     },
     onSettled: () => {
       void queryClient.invalidateQueries({
-        queryKey: onboardingPermissionKeys.accessibility(),
+        queryKey: settingsKeys.accessibility(),
       });
     },
   });
@@ -590,7 +517,9 @@ export default function OnboardingScreen({
     (accessibilityPermissionQuery.isPending ||
       isRequestingAccessibilityPermission);
   const isModelCatalogLoading =
-    modelCatalogQuery.isLoading || settingsQuery.isLoading;
+    modelCatalogQuery.isLoading ||
+    settingsQuery.isLoading ||
+    recommendationQuery.isLoading;
   const modelCatalogUnavailable = modelCatalogQuery.isError;
 
   const handleStartPractice = useCallback(async () => {
@@ -627,16 +556,18 @@ export default function OnboardingScreen({
 
     try {
       const latestSettings = await getSettings();
-      await invoke("update_settings", {
-        args: buildSettingsArgs(
-          latestSettings,
-          ctx.smartShortcut,
-          ctx.selectedMode,
-          resolvedLocalModel,
-          ctx.autoLaunch,
-          ctx.microphoneDevice,
-        ),
-      });
+      const { shortcut_error: shortcutError } =
+        await invoke<UpdateSettingsResult>("update_settings", {
+          args: buildSettingsArgs(
+            latestSettings,
+            ctx.smartShortcut,
+            ctx.selectedMode,
+            resolvedLocalModel,
+            ctx.autoLaunch,
+            ctx.microphoneDevice,
+          ),
+        });
+      if (shortcutError) throw shortcutError;
       send({ type: "COMPLETE_SUCCESS" });
       send({ type: "START_PRACTICE" });
     } catch (err) {
@@ -695,16 +626,18 @@ export default function OnboardingScreen({
     async (shortcut: string) => {
       try {
         const latest = await getSettings();
-        await invoke("update_settings", {
-          args: buildSettingsArgs(
-            latest,
-            shortcut,
-            ctx.selectedMode,
-            selectedModel,
-            ctx.autoLaunch,
-            ctx.microphoneDevice,
-          ),
-        });
+        const { shortcut_error: shortcutError } =
+          await invoke<UpdateSettingsResult>("update_settings", {
+            args: buildSettingsArgs(
+              latest,
+              shortcut,
+              ctx.selectedMode,
+              selectedModel,
+              ctx.autoLaunch,
+              ctx.microphoneDevice,
+            ),
+          });
+        if (shortcutError) throw new Error(shortcutError);
         send({ type: "SET_SHORTCUT", shortcut });
       } catch (err) {
         console.error("Failed to set shortcut", err);
@@ -768,11 +701,38 @@ export default function OnboardingScreen({
   );
 
   const selectedModelState = displayStateByModel[selectedModel] ?? null;
-  const showDownloadStatus =
-    Boolean(downloadStatus[selectedModel]) &&
+  const pastModelStep =
     currentStep !== "welcome" &&
     currentStep !== "import" &&
     currentStep !== "model";
+  const speakerState = diarizer ? (downloadStatus[diarizer.key] ?? null) : null;
+  const showDownloadStatus =
+    pastModelStep &&
+    (Boolean(downloadStatus[selectedModel]) || Boolean(speakerState));
+
+  // Speaker detection downloads after the dictation model, so it never slows
+  // the first dictation, and only with a license or trial, since only
+  // licensed features use it. Setup's end retries it if this doesn't finish.
+  useEffect(() => {
+    if (!licensed || !diarizer || diarizerInstalled || speakerState) return;
+    if (!pastModelStep || !selectedModelReady) return;
+    updateDownloadStatus(diarizer.key, {
+      status: "downloading",
+      percent: 0,
+      file: "",
+    });
+    void invoke("download_model", { model: diarizer.key, ane: false }).catch(
+      () => {},
+    );
+  }, [
+    licensed,
+    diarizer,
+    diarizerInstalled,
+    speakerState,
+    pastModelStep,
+    selectedModelReady,
+    updateDownloadStatus,
+  ]);
   const practiceModelState = selectedModelReady
     ? "ready"
     : selectedModelState?.status === "error"
@@ -810,7 +770,6 @@ export default function OnboardingScreen({
           <ModelStep
             key="model"
             stepMotionProps={stepMotionProps}
-            options={onboardingModelCatalog}
             selectedModel={selectedModelInfo}
             catalog={modelCatalogQuery.data ?? []}
             modelStatus={modelStatus}
@@ -829,7 +788,15 @@ export default function OnboardingScreen({
             onDownload={handleDownload}
             onDelete={handleDelete}
             onCancelDownload={handleCancelDownload}
-            onNext={goNext}
+            recommendedKey={recommendedModel}
+            userLanguages={recommendationQuery.data?.languages ?? []}
+            onNext={() => {
+              void invoke("track_onboarding_model_chosen", {
+                recommended: recommendedModel,
+                chosen: selectedModel,
+              }).catch(() => {});
+              goNext();
+            }}
           />
         );
       case "import":
@@ -977,10 +944,11 @@ export default function OnboardingScreen({
         {currentStep !== "welcome" &&
           steps.indexOf(currentStep as (typeof steps)[number]) !== 0 && (
             <button
+              type="button"
               onClick={goBack}
               className="absolute left-6 bottom-6 flex items-center gap-1 ui-text-body-sm text-content-muted hover:text-content-primary transition-colors"
             >
-              <ChevronLeft size={14} />
+              <ChevronLeft size={14} aria-hidden="true" />
               {t({
                 id: "onboarding.back",
                 message: "Back",
@@ -990,7 +958,8 @@ export default function OnboardingScreen({
 
         {showDownloadStatus ? (
           <ModelDownloadStatus
-            state={selectedModelState}
+            state={downloadStatus[selectedModel] ? selectedModelState : null}
+            speakerState={speakerState}
             onRetry={() => void handleDownload(selectedModel)}
           />
         ) : null}

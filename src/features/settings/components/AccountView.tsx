@@ -300,6 +300,7 @@ const AccountView = ({
                 id: "settings.account.activate.input_aria",
                 message: "Activation code",
               })}
+              aria-invalid={activationErrorText ? true : undefined}
               className="min-w-0 flex-1 bg-transparent px-0.5 py-1.5 font-mono ui-text-body-sm leading-normal ui-color-primary placeholder-content-disabled outline-none"
             />
             <button
@@ -318,6 +319,7 @@ const AccountView = ({
             </button>
           </form>
           <p
+            aria-live="polite"
             className={`mt-2 min-h-10 ui-text-meta text-pretty ${activationErrorText ? "text-error" : "ui-color-muted"}`}
           >
             {activationErrorText ?? activationHintText}

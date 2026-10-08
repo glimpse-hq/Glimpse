@@ -17,7 +17,8 @@ import {
   UserSwitch,
 } from "@phosphor-icons/react";
 import { useClickOutside } from "../../../shared/hooks/useClickOutside";
-import { SPEAKER_COLORS } from "../speakerColors";
+import { useMenuKeyboard } from "../../../shared/hooks/useMenuKeyboard";
+import { SPEAKER_COLORS, SPEAKER_COLOR_NAMES } from "../speakerColors";
 import type { Speaker } from "../../../types";
 
 const MENU_EDGE = 8;
@@ -30,32 +31,42 @@ export const SpeakerMenuItem = ({
   disabled = false,
   destructive = false,
   highlighted = false,
+  submenuOpen,
+  onKeyDown,
   trailing,
 }: {
   icon: ReactNode;
   label: string;
-  onClick: () => void;
+  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onMouseEnter?: () => void;
   disabled?: boolean;
   destructive?: boolean;
   highlighted?: boolean;
+  // Set for items that open a submenu.
+  submenuOpen?: boolean;
+  onKeyDown?: (event: React.KeyboardEvent<HTMLButtonElement>) => void;
   trailing?: ReactNode;
 }) => (
   <button
     type="button"
     role="menuitem"
+    aria-haspopup={submenuOpen === undefined ? undefined : "menu"}
+    aria-expanded={submenuOpen}
     onClick={onClick}
     onMouseEnter={onMouseEnter}
+    onKeyDown={onKeyDown}
     disabled={disabled}
-    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left ui-text-menu-item transition-colors disabled:opacity-40 ${
+    className={`flex w-full items-center gap-2.5 px-3 py-2 text-left ui-text-menu-item transition-colors focus-visible:outline-none disabled:opacity-40 ${
       destructive
-        ? "ui-color-error hover:bg-[var(--color-error)]/10"
-        : `ui-color-secondary enabled:hover:bg-surface-elevated ${
+        ? "ui-color-error hover:bg-[var(--color-error)]/10 focus-visible:bg-[var(--color-error)]/10"
+        : `ui-color-secondary enabled:hover:bg-surface-elevated focus-visible:bg-surface-elevated ${
             highlighted ? "bg-surface-elevated" : ""
           }`
     }`}
   >
-    {icon}
+    <span aria-hidden="true" className="flex shrink-0">
+      {icon}
+    </span>
     <span className="flex-1 truncate">{label}</span>
     {trailing}
   </button>
@@ -92,7 +103,7 @@ const SpeakerContextMenu = ({
   onRemove?: () => void;
   onClose: () => void;
 }) => {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const lineRowRef = useRef<HTMLDivElement>(null);
@@ -117,10 +128,63 @@ const SpeakerContextMenu = ({
     if (value && value !== speaker.name) onRename(value);
   };
 
-  useClickOutside(rootRef, () => {
+  const closeMenu = () => {
     if (renaming) commitRename();
     onClose();
-  });
+  };
+  useClickOutside(rootRef, closeMenu);
+  useMenuKeyboard(menuRef, true, closeMenu);
+
+  // A submenu opened from the keyboard takes focus; arrow keys move inside it
+  // and Escape or Left goes back to the item that opened it.
+  const focusSubmenuRef = useRef(false);
+  const toggleSubmenu = (
+    which: "line" | "merge",
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    // Enter and Space fire click with detail 0.
+    focusSubmenuRef.current = event.detail === 0;
+    setSubmenu((open) => (open === which ? null : which));
+  };
+  useEffect(() => {
+    if (!submenu || !focusSubmenuRef.current) return;
+    focusSubmenuRef.current = false;
+    const frame = requestAnimationFrame(() => {
+      submenuRef.current
+        ?.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')
+        ?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [submenu]);
+  const handleSubmenuKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
+    const items = Array.from(
+      submenuRef.current?.querySelectorAll<HTMLElement>(
+        '[role="menuitem"]:not([disabled])',
+      ) ?? [],
+    );
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (items.length === 0) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      items[(index + step + items.length) % items.length].focus();
+      return;
+    }
+    if (event.key === "Escape" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      const row = submenu === "line" ? lineRowRef.current : mergeRowRef.current;
+      setSubmenu(null);
+      row?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    }
+  };
+  const openOnArrowRight =
+    (which: "line" | "merge") =>
+    (event: React.KeyboardEvent<HTMLButtonElement>) => {
+      if (event.key !== "ArrowRight") return;
+      event.preventDefault();
+      focusSubmenuRef.current = true;
+      setSubmenu(which);
+    };
 
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -158,21 +222,13 @@ const SpeakerContextMenu = ({
       if (rootRef.current?.contains(event.target as Node)) return;
       onClose();
     };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      // Keeps the detail view from also closing.
-      event.preventDefault();
-      onClose();
-    };
     document.addEventListener("scroll", close, true);
     window.addEventListener("resize", onClose);
     window.addEventListener("blur", onClose);
-    document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("scroll", close, true);
       window.removeEventListener("resize", onClose);
       window.removeEventListener("blur", onClose);
-      document.removeEventListener("keydown", onKeyDown);
     };
   }, [onClose]);
 
@@ -246,10 +302,10 @@ const SpeakerContextMenu = ({
                   message: "Change speaker for this line",
                 })}
                 highlighted={submenu === "line"}
+                submenuOpen={submenu === "line"}
                 onMouseEnter={() => setSubmenu("line")}
-                onClick={() =>
-                  setSubmenu((open) => (open === "line" ? null : "line"))
-                }
+                onKeyDown={openOnArrowRight("line")}
+                onClick={(event) => toggleSubmenu("line", event)}
                 trailing={
                   <ChevronRight size={11} className="shrink-0 ui-color-muted" />
                 }
@@ -279,12 +335,10 @@ const SpeakerContextMenu = ({
             })}
             disabled={others.length === 0}
             highlighted={submenu === "merge"}
+            submenuOpen={submenu === "merge"}
             onMouseEnter={() => setSubmenu(others.length > 0 ? "merge" : null)}
-            onClick={() =>
-              setSubmenu((open) =>
-                open === "merge" || others.length === 0 ? null : "merge",
-              )
-            }
+            onKeyDown={openOnArrowRight("merge")}
+            onClick={(event) => toggleSubmenu("merge", event)}
             trailing={
               <ChevronRight size={11} className="shrink-0 ui-color-muted" />
             }
@@ -341,8 +395,13 @@ const SpeakerContextMenu = ({
                   onClick={() => onRecolor(color)}
                   onMouseEnter={() => setHoveredColor(color)}
                   onFocus={() => setHoveredColor(color)}
-                  aria-pressed={selected}
-                  aria-label={color}
+                  role="menuitemradio"
+                  aria-checked={selected}
+                  aria-label={
+                    SPEAKER_COLOR_NAMES[color]
+                      ? i18n._(SPEAKER_COLOR_NAMES[color])
+                      : color
+                  }
                   className={`h-3.5 w-3.5 rounded-full transition-transform hover:scale-110 ${
                     selected
                       ? "ring-2 ring-[var(--color-border-hover)] ring-offset-2 ring-offset-[var(--surface-floating)]"
@@ -376,6 +435,7 @@ const SpeakerContextMenu = ({
             key={submenu}
             ref={submenuRef}
             role="menu"
+            onKeyDown={handleSubmenuKeyDown}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

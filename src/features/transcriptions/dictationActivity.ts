@@ -28,8 +28,8 @@ export function localDayKey(date: Date): string {
 export function activityStart(today: Date): Date {
   const start = new Date(today);
   start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - (ACTIVITY_WEEKS * 7 - 1));
-  start.setDate(start.getDate() - start.getDay());
+  // The last column is the current week, so its days after today are future.
+  start.setDate(start.getDate() - start.getDay() - (ACTIVITY_WEEKS - 1) * 7);
   return start;
 }
 

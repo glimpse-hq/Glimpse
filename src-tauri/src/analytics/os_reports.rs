@@ -200,8 +200,10 @@ fn newest_report(since: u64) -> Option<OsReport> {
     let text = match bytes.strip_prefix(&[0xFF, 0xFE]) {
         Some(utf16) => String::from_utf16_lossy(
             &utf16
-                .chunks_exact(2)
-                .map(|pair| u16::from_le_bytes([pair[0], pair[1]]))
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|pair| u16::from_le_bytes(*pair))
                 .collect::<Vec<_>>(),
         ),
         None => String::from_utf8_lossy(&bytes).into_owned(),

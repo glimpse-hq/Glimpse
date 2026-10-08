@@ -1,7 +1,7 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::Serialize;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, async_runtime};
 
 use crate::{AppRuntime, AppState};
 
@@ -32,16 +32,31 @@ pub struct ImportPreview {
     pub transcript_count: u32,
 }
 
+// The import commands read other apps' databases, which can be large, so they
+// run off the main thread.
 #[tauri::command]
-pub fn detect_importable_apps(app: AppHandle<AppRuntime>) -> Result<Vec<DetectedApp>, String> {
+pub async fn detect_importable_apps(
+    app: AppHandle<AppRuntime>,
+) -> Result<Vec<DetectedApp>, String> {
     let home = home_dir(&app)?;
-    Ok(detect_apps(&home))
+    async_runtime::spawn_blocking(move || detect_apps(&home))
+        .await
+        .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
-pub fn preview_import(app: AppHandle<AppRuntime>, id: String) -> Result<ImportPreview, String> {
+pub async fn preview_import(
+    app: AppHandle<AppRuntime>,
+    id: String,
+) -> Result<ImportPreview, String> {
     let home = home_dir(&app)?;
-    let bundle = parse_app(&id, &home)?;
+    async_runtime::spawn_blocking(move || build_preview(id, &home))
+        .await
+        .map_err(|err| err.to_string())?
+}
+
+fn build_preview(id: String, home: &Path) -> Result<ImportPreview, String> {
+    let bundle = parse_app(&id, home)?;
 
     let (model_source, model_key, model_recognized) = match bundle.model_hint.as_ref() {
         Some(hint) => {
@@ -75,15 +90,20 @@ pub fn preview_import(app: AppHandle<AppRuntime>, id: String) -> Result<ImportPr
 }
 
 #[tauri::command]
-pub fn apply_import(
+pub async fn apply_import(
     app: AppHandle<AppRuntime>,
-    state: tauri::State<AppState>,
     id: String,
     selections: Option<ImportSelections>,
 ) -> Result<ImportResult, String> {
     let home = home_dir(&app)?;
     let selections = selections.unwrap_or_default();
-    let result = run_apply(&app, &state, &id, &home, &selections)?;
+    let app_for_task = app.clone();
+    let result = async_runtime::spawn_blocking(move || {
+        let state = app_for_task.state::<AppState>();
+        run_apply(&app_for_task, &state, &id, &home, &selections)
+    })
+    .await
+    .map_err(|err| err.to_string())??;
     crate::analytics::track_feature_used(&app, "import");
     Ok(result)
 }

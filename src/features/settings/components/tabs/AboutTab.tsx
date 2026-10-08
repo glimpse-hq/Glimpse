@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -201,6 +201,7 @@ const AboutTab = ({
   onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
+  const cliInfoId = useId();
   const { copied: supportEmailCopied, copy } = useCopyToClipboard(2000);
 
   const [exportConfigOpen, setExportConfigOpen] = useState(false);
@@ -587,7 +588,7 @@ const AboutTab = ({
           <div className="grid grid-cols-5 gap-x-6 gap-y-3">
             {storageBreakdown.map((row) => (
               <div key={row.label} className="min-w-0">
-                <p className="ui-text-micro ui-color-disabled">{row.label}</p>
+                <p className="ui-text-micro ui-color-muted">{row.label}</p>
                 <p
                   dir="ltr"
                   className={`mt-1 truncate text-start font-mono tabular-nums ui-text-meta ${
@@ -857,7 +858,8 @@ const AboutTab = ({
                   <div className="relative group shrink-0">
                     <button
                       type="button"
-                      className="flex size-4 items-center justify-center ui-color-disabled transition-colors hover:ui-color-muted focus:ui-color-muted focus:outline-none"
+                      className="flex size-4 items-center justify-center rounded-sm ui-color-muted transition-colors hover:ui-color-secondary focus-visible:ui-color-secondary"
+                      aria-describedby={cliInfoId}
                       aria-label={t({
                         id: "settings.about.command_line.info_aria",
                         message: "More information about command line tools",
@@ -866,7 +868,11 @@ const AboutTab = ({
                       <Info size={10} aria-hidden="true" />
                     </button>
                     <div className="absolute left-1/2 bottom-full z-20 mb-1 hidden -translate-x-1/2 group-hover:block group-focus-within:block">
-                      <div className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight">
+                      <div
+                        id={cliInfoId}
+                        role="tooltip"
+                        className="w-56 rounded-lg border border-border-secondary bg-surface-overlay px-2.5 py-1.5 ui-text-micro ui-color-secondary shadow-lg leading-tight"
+                      >
                         {cliInfo}
                       </div>
                     </div>

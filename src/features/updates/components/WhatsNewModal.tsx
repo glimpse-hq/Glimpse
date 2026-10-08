@@ -1,12 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
-import {
-  useState,
-  useEffect,
-  createContext,
-  useContext,
-  type ReactNode,
-} from "react";
+import { lazy, Suspense, useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useFocusTrap } from "../../../shared/hooks/useFocusTrap";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -15,10 +10,6 @@ import {
   WarningCircle as AlertCircle,
 } from "@phosphor-icons/react";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import ReactMarkdown, { type Components, type Options } from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkGithub from "remark-github";
-import remarkBreaks from "remark-breaks";
 
 interface WhatsNewModalProps {
   isOpen: boolean;
@@ -36,6 +27,9 @@ const GITHUB_REPO = "glimpse-hq/Glimpse";
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 const MAX_RELEASES = 15;
 
+const loadReleaseNotes = () => import("./ReleaseNotesMarkdown");
+const ReleaseNotesMarkdown = lazy(loadReleaseNotes);
+
 const isFeatureRelease = (version: string): boolean => {
   const match = version.match(/v?(\d+)\.(\d+)\.(\d+)/);
   if (!match) return false;
@@ -43,155 +37,22 @@ const isFeatureRelease = (version: string): boolean => {
   return patch === 0;
 };
 
-const isSafeHttpUrl = (value: string): boolean => {
-  try {
-    const { protocol } = new URL(value);
-    return protocol === "https:" || protocol === "http:";
-  } catch {
-    return false;
-  }
-};
-
-const markdownPlugins: {
-  remark: Options["remarkPlugins"];
-} = {
-  remark: [
-    remarkGfm,
-    [remarkGithub, { repository: GITHUB_REPO, mentionStrong: false }],
-    remarkBreaks,
-  ],
-};
-
-const OrderedListContext = createContext(false);
-
-function MarkdownListItem({ children }: { children?: ReactNode }) {
-  const ordered = useContext(OrderedListContext);
-  if (ordered) {
-    return (
-      <li className="pl-1 ui-text-body leading-relaxed ui-color-secondary">
-        {children}
-      </li>
-    );
-  }
-  return (
-    <li className="flex items-start gap-3 ui-text-body leading-relaxed ui-color-secondary">
-      <span className="ui-color-warning-strong mt-1 ui-text-meta">●</span>
-      <span className="min-w-0 flex-1">{children}</span>
-    </li>
-  );
-}
-
-const markdownComponents: Components = {
-  h1: ({ children }) => (
-    <h2 className="ui-text-title-strong ui-color-primary mt-5 mb-2 first:mt-0">
-      {children}
-    </h2>
-  ),
-  h2: ({ children }) => (
-    <h3 className="ui-text-body-lg-strong ui-color-primary mt-5 mb-2 first:mt-0">
-      {children}
-    </h3>
-  ),
-  h3: ({ children }) => (
-    <h4 className="ui-text-section-label ui-color-muted mt-5 mb-2 first:mt-0">
-      {children}
-    </h4>
-  ),
-  p: ({ children }) => (
-    <p className="ui-text-body leading-relaxed ui-color-secondary mb-3 last:mb-0">
-      {children}
-    </p>
-  ),
-  strong: ({ children }) => (
-    <strong className="font-semibold ui-color-primary">{children}</strong>
-  ),
-  em: ({ children }) => <em className="italic">{children}</em>,
-  a: ({ href, children }) => (
-    <a
-      href={href}
-      onClick={(e) => {
-        e.preventDefault();
-        if (href && isSafeHttpUrl(href)) {
-          openUrl(href).catch((err) => {
-            console.error("Failed to open link:", err);
-          });
-        }
-      }}
-      className="ui-color-info-strong hover:underline cursor-pointer"
-    >
-      {children}
-    </a>
-  ),
-  ul: ({ children }) => (
-    <OrderedListContext.Provider value={false}>
-      <ul className="space-y-2.5 mb-4 ml-1 last:mb-0">{children}</ul>
-    </OrderedListContext.Provider>
-  ),
-  ol: ({ children }) => (
-    <OrderedListContext.Provider value={true}>
-      <ol className="space-y-2.5 mb-4 ml-1 list-decimal list-inside last:mb-0">
-        {children}
-      </ol>
-    </OrderedListContext.Provider>
-  ),
-  li: MarkdownListItem,
-  code: ({ children }) => (
-    <code className="px-1 py-0.5 rounded-sm bg-surface-elevated ui-text-body-sm font-mono ui-color-primary">
-      {children}
-    </code>
-  ),
-  pre: ({ children }) => (
-    <pre className="mb-3 overflow-x-auto rounded-md bg-surface-elevated p-3 ui-text-body-sm [&>code]:bg-transparent [&>code]:p-0">
-      {children}
-    </pre>
-  ),
-  blockquote: ({ children }) => (
-    <blockquote className="mb-3 border-l-2 border-border-secondary pl-3 ui-color-muted">
-      {children}
-    </blockquote>
-  ),
-  hr: () => <div className="border-t border-border-primary my-4" />,
-  table: ({ children }) => (
-    <div className="mb-4 overflow-x-auto last:mb-0">
-      <table className="w-full border-collapse ui-text-body-sm">
-        {children}
-      </table>
-    </div>
-  ),
-  th: ({ children }) => (
-    <th className="border border-border-secondary px-3 py-1.5 text-left font-semibold ui-color-primary">
-      {children}
-    </th>
-  ),
-  td: ({ children }) => (
-    <td className="border border-border-secondary px-3 py-1.5 ui-color-secondary">
-      {children}
-    </td>
-  ),
-};
-
 function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
   const { t, i18n } = useLingui();
   const [releases, setReleases] = useState<ReleaseInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (isOpen && releases.length === 0) {
-      fetchReleases();
-    }
-  }, [isOpen]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      onClose();
-    };
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, onClose]);
+    // Loads alongside the releases so the notes render as soon as they arrive.
+    loadReleaseNotes().catch(() => {});
+    if (releases.length === 0) {
+      fetchReleases();
+    }
+  }, [isOpen]);
 
   const fetchReleases = async () => {
     setLoading(true);
@@ -246,6 +107,23 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
     }
   };
 
+  const spinner = (
+    <div
+      role="status"
+      aria-label={t({
+        id: "updates.whats_new.loading",
+        message: "Loading releases",
+      })}
+      className="flex items-center justify-center py-12"
+    >
+      <Loader2
+        size={20}
+        className="animate-spin text-content-muted"
+        aria-hidden="true"
+      />
+    </div>
+  );
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString(i18n.locale, {
@@ -269,6 +147,7 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
           aria-labelledby="whats-new-title"
         >
           <motion.div
+            ref={dialogRef}
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
@@ -303,14 +182,19 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                       message: "View all releases on GitHub",
                     })}
                   </span>
-                  <ExternalLink size={11} />
+                  <ExternalLink size={11} aria-hidden="true" />
                 </button>
               </div>
               <button
+                type="button"
                 onClick={onClose}
+                aria-label={t({
+                  id: "updates.whats_new.close_aria",
+                  message: "Close What's New",
+                })}
                 className="p-1.5 rounded-md text-content-muted hover:text-content-primary hover:bg-surface-elevated transition-colors"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </div>
 
@@ -332,21 +216,18 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 aria-hidden="true"
               />
               <div className="h-full overflow-y-auto settings-scroll px-7 pt-5 pb-7">
-                {(loading || releases.length === 0) && !error && (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2
-                      size={20}
-                      className="animate-spin text-content-muted"
-                    />
-                  </div>
-                )}
+                {(loading || releases.length === 0) && !error && spinner}
 
                 {error && (
                   <div className="flex flex-col items-center gap-3 py-8">
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 w-full">
+                    <div
+                      role="alert"
+                      className="flex items-center gap-2 p-3 rounded-lg bg-red-500/10 w-full"
+                    >
                       <AlertCircle
                         size={14}
                         className="ui-color-error-strong shrink-0"
+                        aria-hidden="true"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="ui-text-body ui-color-error-strong font-medium">
@@ -377,44 +258,41 @@ function WhatsNewModal({ isOpen, onClose }: WhatsNewModalProps) {
                 )}
 
                 {!loading && !error && releases.length > 0 && (
-                  <div className="space-y-8">
-                    {releases.map((release: ReleaseInfo, index: number) => {
-                      const isFeatured = isFeatureRelease(release.version);
-                      return (
-                        <div key={release.version || `release-${index}`}>
-                          <div className="flex items-baseline gap-3 mb-1">
-                            <h3
-                              className={`font-semibold tracking-tight ${isFeatured ? "ui-text-title ui-color-warning-strong" : "ui-text-body-lg-strong ui-color-primary"}`}
-                            >
-                              {release.version}
-                            </h3>
-                            {isFeatured && (
-                              <span className="ui-text-meta font-medium ui-color-warning">
-                                {t({
-                                  id: "updates.whats_new.major_release",
-                                  message: "Major Release",
-                                })}
-                              </span>
+                  <Suspense fallback={spinner}>
+                    <div className="space-y-8">
+                      {releases.map((release: ReleaseInfo, index: number) => {
+                        const isFeatured = isFeatureRelease(release.version);
+                        return (
+                          <div key={release.version || `release-${index}`}>
+                            <div className="flex items-baseline gap-3 mb-1">
+                              <h3
+                                className={`font-semibold tracking-tight ${isFeatured ? "ui-text-title ui-color-warning-strong" : "ui-text-body-lg-strong ui-color-primary"}`}
+                              >
+                                {release.version}
+                              </h3>
+                              {isFeatured && (
+                                <span className="ui-text-meta font-medium ui-color-warning">
+                                  {t({
+                                    id: "updates.whats_new.major_release",
+                                    message: "Major Release",
+                                  })}
+                                </span>
+                              )}
+                            </div>
+                            <span className="ui-text-meta ui-color-disabled">
+                              {formatDate(release.publishedAt)}
+                            </span>
+                            <div className="mt-3">
+                              <ReleaseNotesMarkdown body={release.body} />
+                            </div>
+                            {index < releases.length - 1 && (
+                              <div className="border-t border-border-primary mt-6" />
                             )}
                           </div>
-                          <span className="ui-text-meta ui-color-disabled">
-                            {formatDate(release.publishedAt)}
-                          </span>
-                          <div className="mt-3">
-                            <ReactMarkdown
-                              remarkPlugins={markdownPlugins.remark}
-                              components={markdownComponents}
-                            >
-                              {release.body}
-                            </ReactMarkdown>
-                          </div>
-                          {index < releases.length - 1 && (
-                            <div className="border-t border-border-primary mt-6" />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  </Suspense>
                 )}
               </div>
             </div>

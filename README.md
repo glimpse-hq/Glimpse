@@ -71,6 +71,7 @@ Something broken or bugging you? [Open an issue](https://github.com/glimpse-hq/G
 ## Integrations
 
 - **[Raycast](https://www.raycast.com/garon/glimpse)**. Search dictations, transcribe files, switch models, and more, without leaving Raycast. Requires a [license](#pricing).
+- **AI agents.** `glimpse mcp` lets Claude Code, Claude Desktop, Cursor and other MCP clients search and read your Library, on your machine. Connect it with `claude mcp add glimpse -- glimpse mcp`. Requires a [license](#pricing).
 - **Your own.** The [CLI guide](https://github.com/glimpse-hq/Glimpse/wiki/CLI) covers scripting Glimpse from Shortcuts, Finder, or anything else that can run a command.
 
 ## Pricing
@@ -112,7 +113,7 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 - <a href="https://lokalise.com/"><img src="./assets/readme/lokalise.png" width="16" alt="Lokalise" align="center" /></a> [Lokalise](https://lokalise.com/), localization platform and OSS supporter
 - [Tauri](https://v2.tauri.app/), app framework
 - [Glimpse-Speech](https://github.com/glimpse-hq/Glimpse-Speech) (MIT), local transcription engine
-- [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp) (MIT), on-device inference for Whisper and other speech models
+- [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp) (MIT), on-device inference for Whisper and other speech models, through [our fork](https://github.com/glimpse-hq/transcribe.cpp)
 - [Silero VAD](https://github.com/snakers4/silero-vad) (MIT), voice activity detection model
 
 Speech models are downloaded in-app from Hugging Face. The live list lives in **Settings → Models**. By family:
@@ -120,6 +121,7 @@ Speech models are downloaded in-app from Hugging Face. The live list lives in **
 - **Whisper GGUF** (MIT), via [`handy-computer`](https://huggingface.co/handy-computer)
 - **Distil-Whisper GGUF** (MIT, English-only), via [Glimpse's conversions](https://huggingface.co/Glimpse-Dictation) of [`distil-whisper`](https://huggingface.co/distil-whisper)
 - **Parakeet TDT V3 GGUF** (CC-BY-4.0), via [`handy-computer`](https://huggingface.co/handy-computer/parakeet-tdt-0.6b-v3-gguf), with a Neural Engine build from [`Glimpse-Dictation`](https://huggingface.co/Glimpse-Dictation/Parakeet-TDT-0.6B-V3-coreml)
+- **Parakeet Ultra GGUF** (CC-BY-4.0), via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Parakeet-Ultra-coreml) of [`moondream/parakeet-ultra`](https://huggingface.co/moondream/parakeet-ultra), with a Neural Engine build
 - **Parakeet Unified GGUF** (CC-BY-4.0, English-only), via [`handy-computer`](https://huggingface.co/handy-computer/parakeet-unified-en-0.6b-gguf)
 - **Nemotron Streaming GGUF** (NVIDIA Open Model License), English and 3.5 multilingual, via [`handy-computer`](https://huggingface.co/handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf)
 - **NVIDIA Nemotron 3 Diarization GGUF** (OpenMDW 1.1), speaker detection, via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf) of [`nvidia/Nemotron-3-Diarization`](https://huggingface.co/nvidia/Nemotron-3-Diarization)

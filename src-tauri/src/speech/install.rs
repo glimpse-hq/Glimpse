@@ -67,6 +67,27 @@ pub fn local_resolver(models_dir: PathBuf) -> glimpse_speech::service::ModelReso
     })
 }
 
+/// `local_resolver` for request-driven callers like the API server. When a
+/// resolver returns `None`, glimpse-speech falls back to treating the model id
+/// as a file path and loads whatever it points at, so a client could make the
+/// engine parse any file on disk. Ids outside the catalog get a spec whose id
+/// fails glimpse-speech's validation instead, which rejects them before any
+/// disk access.
+pub fn catalog_only_resolver(models_dir: PathBuf) -> glimpse_speech::service::ModelResolver {
+    let resolver = local_resolver(models_dir);
+    std::sync::Arc::new(move |model| {
+        resolver(model).or_else(|| {
+            Some(speech_models::InstallSpec {
+                id: format!("{model} (not a Glimpse model id)"),
+                engine: speech_models::ModelEngine::Whisper,
+                storage: speech_models::ModelStorage::Directory,
+                files: Vec::new(),
+                variant: None,
+            })
+        })
+    })
+}
+
 fn installed_spec(
     model: &str,
     manager: &speech_models::ModelInstallManager,
@@ -426,6 +447,28 @@ pub async fn download_model_now(
     Ok(map_status(status, &manager))
 }
 
+/// Downloads `model` and checks every file, since a cancelled download also
+/// returns Ok.
+pub(crate) async fn download_verified(
+    app: &AppHandle<AppRuntime>,
+    models_dir: &Path,
+    model: &str,
+) -> bool {
+    if let Err(err) = download_model_now(app.clone(), model.to_string(), None).await {
+        tracing::warn!("[speech] {model} download failed: {err}");
+        return false;
+    }
+    let (dir, key) = (models_dir.to_path_buf(), model.to_string());
+    let verified =
+        tauri::async_runtime::spawn_blocking(move || verify_model_installed_at(&dir, &key))
+            .await
+            .unwrap_or(false);
+    if !verified {
+        tracing::warn!("[speech] {model} download did not finish");
+    }
+    verified
+}
+
 /// Free space a download must leave behind, so a model never fills the disk.
 const DISK_HEADROOM_BYTES: u64 = 5 * 1024 * 1024 * 1024;
 
@@ -572,6 +615,14 @@ pub async fn delete_model(
     .map_err(|err| err.to_string())??;
 
     crate::analytics::track_model_deleted(&app, &status.key);
+    // Background deletes (Automatic moving to a newer model) bypass the
+    // window's own mutation, so it refreshes from this.
+    let _ = app.emit(
+        "model:deleted",
+        DownloadCompletePayload {
+            model: status.key.clone(),
+        },
+    );
 
     if let Some(state) = app.try_state::<crate::AppState>() {
         let settings = state.current_settings();
@@ -691,5 +742,72 @@ mod parakeet_package_tests {
             assert!(manager.verify(spec)?.installed);
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod catalog_only_resolver_tests {
+    use super::*;
+    use glimpse_speech::service::{SpeechConfig, SpeechService};
+
+    fn scratch_dir(name: &str) -> PathBuf {
+        let dir =
+            std::env::temp_dir().join(format!("glimpse-resolver-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn service(resolver: glimpse_speech::service::ModelResolver, dir: &Path) -> SpeechService {
+        SpeechService::new(SpeechConfig {
+            resolver,
+            model_cache_dir: dir.to_path_buf(),
+        })
+    }
+
+    #[test]
+    fn rejects_file_paths_and_unknown_ids() {
+        let dir = scratch_dir("strict");
+        let models = dir.join("models");
+        let planted = dir.join("planted.gguf");
+        std::fs::write(&planted, b"not a model").unwrap();
+        std::fs::create_dir_all(models.join("stray")).unwrap();
+        std::fs::write(models.join("stray/model.gguf"), b"not a model").unwrap();
+        let service = service(catalog_only_resolver(models.clone()), &models);
+
+        for model in [
+            planted.to_str().unwrap(),
+            "../planted.gguf",
+            "stray",
+            "whisper-1",
+        ] {
+            let err = service.resolve(model).unwrap_err().to_string();
+            assert!(err.contains("not a Glimpse model id"), "{model}: {err}");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn rejects_installing_unknown_ids_without_touching_disk() {
+        let dir = scratch_dir("install");
+        let models = dir.join("models");
+        let service = service(catalog_only_resolver(models.clone()), &models);
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        assert!(
+            runtime
+                .block_on(service.install("whisper-1", Default::default()))
+                .is_err()
+        );
+        assert!(!models.exists());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn still_resolves_catalog_models() {
+        let dir = scratch_dir("catalog");
+        let resolver = catalog_only_resolver(dir.clone());
+        let spec = resolver("whisper_small_q5").unwrap();
+        assert_eq!(spec.id, "whisper_small_q5");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

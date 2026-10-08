@@ -2,11 +2,11 @@ pub(crate) mod icons;
 
 use std::collections::HashSet;
 
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 use uuid::Uuid;
 
 use crate::settings::Personality;
-use crate::{AppRuntime, AppState, EVENT_SETTINGS_CHANGED};
+use crate::{AppRuntime, AppState};
 
 const INSTRUCTION_CHAR_LIMIT: usize = 3000;
 
@@ -104,12 +104,11 @@ pub fn sanitize_personalities(entries: &[Personality]) -> Vec<Personality> {
 
 #[tauri::command]
 pub fn get_personalities(state: tauri::State<AppState>) -> Result<Vec<Personality>, String> {
-    let mut settings = state.current_settings();
-    let cleaned = sanitize_personalities(&settings.personalities);
-    if cleaned != settings.personalities {
-        settings.personalities = cleaned.clone();
+    let current = state.current_settings_unmasked().personalities;
+    let cleaned = sanitize_personalities(&current);
+    if cleaned != current {
         state
-            .persist_settings(settings)
+            .persist_settings_with(|_, next| next.personalities = cleaned.clone())
             .map_err(|err| err.to_string())?;
     }
     Ok(cleaned)
@@ -122,16 +121,12 @@ pub fn set_personalities(
     state: tauri::State<AppState>,
 ) -> Result<Vec<Personality>, String> {
     let cleaned = sanitize_personalities(&personalities);
-    let mut settings = state.current_settings();
-    let previous_custom = custom_count(&settings.personalities);
-    settings.personalities = cleaned.clone();
-    let saved = state
-        .persist_settings(settings)
+    let (previous, saved) = state
+        .persist_settings_with(|_, next| next.personalities = cleaned.clone())
         .map_err(|err| err.to_string())?;
+    let previous_custom = custom_count(&previous.personalities);
 
-    if let Err(err) = app.emit(EVENT_SETTINGS_CHANGED, &saved) {
-        tracing::error!("Failed to emit settings change: {err}");
-    }
+    state.emit_settings_changed(&app, &saved);
     let custom = custom_count(&cleaned);
     if custom != previous_custom {
         crate::analytics::track_personalities_changed(&app, custom);

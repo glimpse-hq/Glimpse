@@ -83,6 +83,7 @@ export type StoredSettings = {
   shortcut_bindings: ShortcutBindings;
   transcription_mode: TranscriptionMode;
   local_model: string;
+  local_model_auto: boolean;
   remote_speech_enabled: boolean;
   remote_speech_provider: RemoteSpeechProvider;
   remote_speech_endpoint: string;
@@ -117,4 +118,10 @@ export type StoredSettings = {
   local_api_host: string;
   local_api_start_on_launch: boolean;
   local_api_cors: boolean;
+};
+
+// Settings save even when their shortcuts can't be registered afterwards.
+export type UpdateSettingsResult = {
+  settings: StoredSettings;
+  shortcut_error: string | null;
 };

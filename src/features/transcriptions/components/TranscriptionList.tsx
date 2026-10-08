@@ -61,6 +61,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const refocusSearchButton = useRef(false);
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
   const shiftHeld = useShiftHeld(isActive);
 
@@ -291,7 +292,11 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
             <div
               className={`flex items-center gap-3 pb-2 px-1 ${index === 0 ? "pt-1" : "pt-6"}`}
             >
-              <span className="ui-text-body-sm-strong ui-color-secondary shrink-0">
+              <span
+                role="heading"
+                aria-level={3}
+                className="ui-text-body-sm-strong ui-color-secondary shrink-0"
+              >
                 {formatGroupLabel(timestamp)}
               </span>
               <div className="ui-divider-trailing flex-1" aria-hidden="true" />
@@ -369,6 +374,7 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
                   if (e.key === "Escape") {
                     setSearchQuery("");
                     setSearchOpen(false);
+                    refocusSearchButton.current = true;
                   }
                 }}
                 placeholder={t({
@@ -442,6 +448,11 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
           ) : (
             <motion.button
               key="search-button"
+              ref={(button: HTMLButtonElement | null) => {
+                if (!button || !refocusSearchButton.current) return;
+                refocusSearchButton.current = false;
+                button.focus();
+              }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -496,7 +507,10 @@ const TranscriptionList: React.FC<TranscriptionListProps> = ({
             </p>
           </div>
         ) : showNoResults ? (
-          <div className="h-full flex flex-col items-center justify-center">
+          <div
+            role="status"
+            className="h-full flex flex-col items-center justify-center"
+          >
             <Search
               size={18}
               className="text-content-disabled mb-2"
