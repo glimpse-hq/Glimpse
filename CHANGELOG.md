@@ -2,10 +2,14 @@
 
 ### New Features
 
+- Parakeet Ultra, a new local model, is more accurate than Parakeet TDT V3 in all 25 of its languages at the same size and speed (on our tests, about 17% fewer errors across European languages). It is the new Automatic pick, so if you use Automatic, Glimpse downloads it once in the background and switches over. Parakeet TDT V3 stays available in Settings > Models.
 - AI agents can search and read your Library. Run `glimpse mcp` to give Claude, ChatGPT, Cursor and other MCP apps your transcripts, with speaker names and timestamps. It runs only on your computer and is read-only unless you allow imports.
 
 ### Improvements
 
+- Parakeet picks up your dictionary words more reliably, including words it spells its own way (on our tests, Parakeet TDT V3 caught 95% of dictionary words instead of 91%).
+- Parakeet splits long recordings at natural pauses, so words at the split points come out right and a 9 minute recording transcribes about 15% faster on the Neural Engine.
+- On Mac, short dictations with Nemotron Streaming finish about 30% faster.
 - On Mac, your shortcut starts working the moment you allow Accessibility, without restarting Glimpse. If macOS turns the permission off, for example after an update, Glimpse tells you at launch and links straight to the setting.
 - When Glimpse can't paste because Accessibility is off, your text stays on the clipboard and Glimpse tells you, instead of the dictation disappearing.
 - Home shows your dictation shortcut on days you haven't dictated yet.
@@ -23,6 +27,7 @@
 
 ### Fixes
 
+- Parakeet no longer occasionally writes `<unk>` into a transcript.
 - Retrying a dictation that finds no words keeps its audio, and a failed retry no longer adds a duplicate entry to History.
 - Auto-delete no longer removes audio that a newer History entry still uses.
 - One setting Glimpse can't read no longer resets all your settings. Glimpse keeps everything else and backs up your settings first.
