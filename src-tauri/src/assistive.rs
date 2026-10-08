@@ -451,11 +451,11 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
     .filter(|(vk, _)| unsafe { GetAsyncKeyState(vk.0 as i32) } as u16 & 0x8000 != 0)
     .collect();
 
-    let mut inputs = Vec::with_capacity(held.len() * 2 + 6);
-    if held
+    let mut inputs = Vec::with_capacity(held.len() * 2 + 8);
+    let masks_alt_or_win = held
         .iter()
-        .any(|(vk, _)| ![VK_LSHIFT, VK_RSHIFT].contains(vk))
-    {
+        .any(|(vk, _)| ![VK_LSHIFT, VK_RSHIFT].contains(vk));
+    if masks_alt_or_win {
         inputs.push(keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)));
         inputs.push(keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP));
     }
@@ -468,14 +468,16 @@ fn send_shortcut_keystroke(key: VIRTUAL_KEY) -> Result<()> {
         keyboard_input(key, KEYEVENTF_KEYUP),
         keyboard_input(VK_CONTROL, KEYEVENTF_KEYUP),
     ]);
-    // A Shift still held would otherwise read as released, so the next letters
-    // typed come out lowercase. Alt and Win stay released: pressing them again
-    // would make the user's own release a bare tap, which opens the menu bar or
-    // the Start menu.
+    // Press the held keys again so they still read as held (a released Shift
+    // would make the next letters lowercase). After Alt or Win, a dummy key keeps
+    // the user's own release from counting as a bare tap, which would open the
+    // menu bar or the Start menu.
     for &(vk, flags) in &held {
-        if [VK_LSHIFT, VK_RSHIFT].contains(&vk) {
-            inputs.push(keyboard_input(vk, flags));
-        }
+        inputs.push(keyboard_input(vk, flags));
+    }
+    if masks_alt_or_win {
+        inputs.push(keyboard_input(VK_DUMMY, KEYBD_EVENT_FLAGS(0)));
+        inputs.push(keyboard_input(VK_DUMMY, KEYEVENTF_KEYUP));
     }
 
     let sent = unsafe { SendInput(&inputs, std::mem::size_of::<INPUT>() as i32) };
