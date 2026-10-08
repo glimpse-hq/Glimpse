@@ -729,7 +729,7 @@ msgstr "{avg, plural, one {Aproximadamente # palabra por dictado hoy} other {Apr
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.export_skipped_files"
-msgstr ""
+msgstr "No se pudieron copiar {count} archivos."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -744,7 +744,7 @@ msgstr "{coverageBase} · {activeDevices} de {deviceLimit} dispositivos activos"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.trial_days_left"
-msgstr ""
+msgstr "Quedan {days} días de prueba. El dictado sigue siendo gratuito. Algunas funciones requieren una licencia."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -805,7 +805,7 @@ msgstr "{seconds, plural, one {# segundo hablado hoy} other {# segundos hablados
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.unread"
-msgstr ""
+msgstr "{unreadCount, plural, one {# publicación nueva} other {# publicaciones nuevas}}"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
@@ -895,7 +895,7 @@ msgstr "Acerca de"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_title"
-msgstr ""
+msgstr "Accesibilidad"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -910,7 +910,7 @@ msgstr "Accesibilidad"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_granted"
-msgstr ""
+msgstr "La accesibilidad está activada. Tu atajo ya funciona."
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -1036,7 +1036,7 @@ msgstr "después"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_agents"
-msgstr ""
+msgstr "Agentes de IA"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
@@ -1071,7 +1071,7 @@ msgstr "Permitir solicitudes de navegador de orígenes cruzados"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permission.granted"
-msgstr ""
+msgstr "Permitido"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -1146,7 +1146,7 @@ msgstr "Apple Neural Engine"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.capability.neural_engine"
-msgstr ""
+msgstr "Motor neuronal de Apple"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1233,12 +1233,12 @@ msgstr "Actualización automática"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic"
-msgstr ""
+msgstr "Automático"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.automatic"
-msgstr ""
+msgstr "Automático"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
@@ -1248,7 +1248,7 @@ msgstr "Automático ({defaultModel})"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_switched"
-msgstr "El modo automático eligió un modelo más reciente para ti. Puedes cambiarlo cuando quieras en Ajustes."
+msgstr "Automatic seleccionó un modelo más reciente para ti. Cámbialo en cualquier momento en Configuración."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1303,7 +1303,7 @@ msgstr "Bloqueado por tu red"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.blue"
-msgstr ""
+msgstr "Azul"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -1512,7 +1512,7 @@ msgstr "Buscar actualizaciones..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permission.checking"
-msgstr ""
+msgstr "Comprobando"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -1567,7 +1567,7 @@ msgstr "Elige dónde guardar el conjunto de datos"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_agents_body"
-msgstr ""
+msgstr "Claude, ChatGPT y Cursor pueden buscar en tus transcripciones."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1677,12 +1677,12 @@ msgstr "Cerrar notificación"
 #. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.close_aria"
-msgstr ""
+msgstr "Cerrar soporte"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.close_aria"
-msgstr ""
+msgstr "Cerrar Novedades"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2222,7 +2222,7 @@ msgstr "Cortar"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.cyan"
-msgstr ""
+msgstr "Cian"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2329,7 +2329,7 @@ msgstr "Eliminar {entry}"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after_aria"
-msgstr ""
+msgstr "Eliminar después de"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2575,7 +2575,7 @@ msgstr "Descargando"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.downloading"
-msgstr ""
+msgstr "Descargando {modelLabel} {percent}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2600,12 +2600,12 @@ msgstr "Descargando el modelo {percent}% ({fileIndex}/{fileCount})"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.speakers"
-msgstr ""
+msgstr "Descargando detección de hablantes {speakerPercent}%"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.downloading_aria"
-msgstr ""
+msgstr "Descargando actualización"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2791,7 +2791,7 @@ msgstr "Exportar…"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.export_done"
-msgstr ""
+msgstr "Se exportaron {pairs} pares de audio y texto."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3026,7 +3026,7 @@ msgstr "Glimpse no pudo volver a transcribir esto, por lo que conservó la trans
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_paste"
-msgstr ""
+msgstr "Glimpse no pudo escribir esto porque el acceso a Accesibilidad está desactivado. Tu texto está en el portapapeles, así que puedes pegarlo con Comando-V."
 
 #. js-lingui-explicit-id
 #: src/main.tsx
@@ -3091,7 +3091,7 @@ msgstr "Conceder acceso"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.green"
-msgstr ""
+msgstr "Verde"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3151,7 +3151,7 @@ msgstr "Mantener pulsado"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
-msgstr ""
+msgstr "Mantén pulsado {shortcutLabel} y habla para dictar en cualquier aplicación."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -3424,7 +3424,7 @@ msgstr "Grande"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.trial_last_day"
-msgstr ""
+msgstr "Último día de tu prueba. El dictado sigue siendo gratuito. Algunas funciones requieren una licencia."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3479,12 +3479,12 @@ msgstr "Heredado"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.caveat.less_accurate"
-msgstr ""
+msgstr "Menos preciso que Automático."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_live_line"
-msgstr ""
+msgstr "Publiquémoslo el viernes."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3569,7 +3569,7 @@ msgstr "La transcripción en directo requiere un modelo de voz compatible."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_live"
-msgstr ""
+msgstr "Transcripciones en vivo"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -3599,7 +3599,7 @@ msgstr "Cargar más"
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.loading"
-msgstr ""
+msgstr "Cargando versiones"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3680,7 +3680,7 @@ msgstr "Hace que un atajo sea temporal. No guardará audio, transcripción ni hi
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.manage_license"
-msgstr ""
+msgstr "Gestionar licencia"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/WindowControls.tsx
@@ -3741,7 +3741,7 @@ msgstr "Acceso al micrófono para grabar tu voz y acceso a Accesibilidad para in
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.permissions.answer.windows"
-msgstr ""
+msgstr "Acceso al micrófono para grabar tu voz. Glimpse inserta texto pegándolo donde está el cursor y copia el texto seleccionado cuando un atajo lo reescribe. Glimpse solo hace esto mientras estás dictando activamente."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4180,7 +4180,7 @@ msgstr "No es un archivo de audio válido."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permission.not_granted"
-msgstr ""
+msgstr "Aún no permitido"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4235,7 +4235,7 @@ msgstr "No es compatible con este Mac."
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.note"
-msgstr ""
+msgstr "Nota"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -4250,7 +4250,7 @@ msgstr "Nada que trasladar desde esta app."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_switched_title"
-msgstr "Ahora con {model}"
+msgstr "Ahora usando {model}"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4360,12 +4360,12 @@ msgstr "Abrir Ajustes"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_system_settings"
-msgstr ""
+msgstr "Abrir Configuración del Sistema"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.accessibility_open"
-msgstr ""
+msgstr "Abrir Configuración del Sistema"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4400,7 +4400,7 @@ msgstr "Opcional: en blanco para desactivar"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.orange"
-msgstr ""
+msgstr "Naranja"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4410,7 +4410,7 @@ msgstr "Texto original"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.other"
-msgstr ""
+msgstr "Otros modelos"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4496,7 +4496,7 @@ msgstr "Personalización"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
-msgstr ""
+msgstr "Rosa"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4526,7 +4526,7 @@ msgstr "Publicar"
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.poster"
-msgstr ""
+msgstr "Póster"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4541,7 +4541,7 @@ msgstr "Modelo precargado"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.toggle"
-msgstr ""
+msgstr "Pulsa {shortcutLabel} para dictar en cualquier aplicación y vuelve a pulsarlo para detenerte."
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -4627,7 +4627,7 @@ msgstr "Proveedores"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
-msgstr ""
+msgstr "Morado"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4682,7 +4682,7 @@ msgstr "Reconoce palabras de tu diccionario."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.recommended"
-msgstr ""
+msgstr "Recomendado"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5196,7 +5196,7 @@ msgstr "Motor de búsqueda"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_search"
-msgstr ""
+msgstr "Buscar en todo"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -5281,12 +5281,12 @@ msgstr "Buscar..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.see_all"
-msgstr ""
+msgstr "Ver todo"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.see_options"
-msgstr ""
+msgstr "Ver opciones"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -5371,7 +5371,7 @@ msgstr "Configurar"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_settings"
-msgstr "Ajustes"
+msgstr "Configuración"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -5513,7 +5513,7 @@ msgstr "Saltar clips cortos"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.export_skipped_short"
-msgstr ""
+msgstr "Se omitieron {count} clips cortos."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5563,7 +5563,7 @@ msgstr "Hablante 2"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_live_speaker"
-msgstr ""
+msgstr "Hablante 2:"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5653,7 +5653,7 @@ msgstr "Iniciar grabación"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.status.starting"
-msgstr ""
+msgstr "Iniciando"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -5678,7 +5678,7 @@ msgstr "Estado"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/shared.tsx
 msgid "onboarding.step_progress"
-msgstr ""
+msgstr "Paso {step} de {total}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5829,7 +5829,7 @@ msgstr "toca para activar/desactivar, mantén pulsado para hablar"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.teal"
-msgstr ""
+msgstr "Verde azulado"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6137,7 +6137,7 @@ msgstr "Error de transcripción"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_empty"
-msgstr ""
+msgstr "La transcripción está vacía"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6152,7 +6152,7 @@ msgstr "Modelo de transcripción"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_missing"
-msgstr ""
+msgstr "La transcripción ya no está disponible"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6216,7 +6216,7 @@ msgstr "eh, sí, envíalo mañana"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_failed"
-msgstr ""
+msgstr "No se puede copiar al portapapeles"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6341,12 +6341,12 @@ msgstr "Usar las transcripciones originales antes de la limpieza"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.uses"
-msgstr ""
+msgstr "Usa {modelLabel} para tu idioma"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.description"
-msgstr ""
+msgstr "Usa el modelo para tu idioma"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6507,12 +6507,12 @@ msgstr "Proveedor del modelo de lenguaje"
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.year"
-msgstr ""
+msgstr "Año"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.yellow"
-msgstr ""
+msgstr "Amarillo"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -6547,7 +6547,7 @@ msgstr "Sí. En modo local, todo tu audio y tus transcripciones permanecen en tu
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
-msgstr ""
+msgstr "Tu audio y tus transcripciones permanecen en tu PC. Glimpse no recopila grabaciones, transcripciones, claves de API ni indicaciones. Las estadísticas de uso anónimas opcionales (como la duración de la sesión y el uso de funciones, nunca tu contenido) nos ayudan a mejorar la aplicación. Puedes desactivarlas en cualquier momento en Configuración → Aplicación."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6567,7 +6567,7 @@ msgstr "Tu disco está lleno, por lo que Glimpse dejó de grabar. Se ha guardado
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.license_inactive"
-msgstr ""
+msgstr "Tu licencia está inactiva. El dictado sigue siendo gratuito. Algunas funciones requieren una licencia activa."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -6592,12 +6592,12 @@ msgstr "Tus transcripciones recientes aparecerán aquí"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.accessibility_missing"
-msgstr ""
+msgstr "Tu atajo necesita acceso de Accesibilidad para funcionar."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_shortcut"
-msgstr ""
+msgstr "Tu atajo no funcionará hasta que permitas Glimpse en Accesibilidad. Si Glimpse ya está activado, desactívalo y vuelve a activarlo."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6617,7 +6617,7 @@ msgstr "Tu prueba terminó el"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.trial_expired"
-msgstr ""
+msgstr "Tu prueba terminó. El dictado sigue siendo gratuito. Algunas funciones requieren una licencia."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx

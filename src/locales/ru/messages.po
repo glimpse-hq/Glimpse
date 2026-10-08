@@ -729,7 +729,7 @@ msgstr "{avg, plural, one {Около # слова на диктовку сег�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.export_skipped_files"
-msgstr ""
+msgstr "{count} файлов не удалось скопировать."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -744,7 +744,7 @@ msgstr "{coverageBase} · {activeDevices} из {deviceLimit} устройств 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.trial_days_left"
-msgstr ""
+msgstr "До конца пробного периода осталось {days} дн. Диктовка остаётся бесплатной. Для некоторых функций требуется лицензия."
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -805,7 +805,7 @@ msgstr "{seconds, plural, one {# секунда наговорена сегод�
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.unread"
-msgstr ""
+msgstr "{unreadCount, plural, one {# новая запись} other {# новые записи}}"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/homeHeaderStats.ts
@@ -895,7 +895,7 @@ msgstr "О программе"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_title"
-msgstr ""
+msgstr "Специальные возможности"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -910,7 +910,7 @@ msgstr "Специальные возможности"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_granted"
-msgstr ""
+msgstr "Специальные возможности включены. Ваш ярлык теперь работает."
 
 #. js-lingui-explicit-id
 #: src/features/settings/settingsPanes.ts
@@ -1036,7 +1036,7 @@ msgstr "после"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_agents"
-msgstr ""
+msgstr "ИИ-агенты"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/SourceStep.tsx
@@ -1071,7 +1071,7 @@ msgstr "Разрешить межсайтовые запросы браузер�
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permission.granted"
-msgstr ""
+msgstr "Разрешено"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -1146,7 +1146,7 @@ msgstr "Apple Neural Engine"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.capability.neural_engine"
-msgstr ""
+msgstr "Apple Neural Engine"
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -1233,12 +1233,12 @@ msgstr "Автообновление"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic"
-msgstr ""
+msgstr "Автоматически"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.automatic"
-msgstr ""
+msgstr "Автоматически"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
@@ -1248,7 +1248,7 @@ msgstr "Автоматически ({defaultModel})"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_switched"
-msgstr "Автоматический режим выбрал для вас более новую модель. Её можно изменить в любой момент в настройках."
+msgstr "Автоматически выбрана более новая модель. Вы можете изменить её в любое время в настройках."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -1303,7 +1303,7 @@ msgstr "Заблокировано сетью"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.blue"
-msgstr ""
+msgstr "Синий"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -1512,7 +1512,7 @@ msgstr "Проверить обновления…"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permission.checking"
-msgstr ""
+msgstr "Проверка"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -1567,7 +1567,7 @@ msgstr "Выберите место для сохранения набора д�
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_agents_body"
-msgstr ""
+msgstr "Claude, ChatGPT и Cursor могут выполнять поиск по вашим транскриптам."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -1677,12 +1677,12 @@ msgstr "Закрыть уведомление"
 #. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.close_aria"
-msgstr ""
+msgstr "Закрыть поддержку"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.close_aria"
-msgstr ""
+msgstr "Закрыть «Что нового»"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -2222,7 +2222,7 @@ msgstr "Вырезать"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.cyan"
-msgstr ""
+msgstr "Голубой"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2329,7 +2329,7 @@ msgstr "Удалить {entry}"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.after_aria"
-msgstr ""
+msgstr "Удалить через"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -2575,7 +2575,7 @@ msgstr "Загрузка"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.downloading"
-msgstr ""
+msgstr "Загрузка {modelLabel} {percent}%"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
@@ -2600,12 +2600,12 @@ msgstr "Загрузка модели {percent}% ({fileIndex}/{fileCount})"
 #. js-lingui-explicit-id
 #: src/features/onboarding/ModelDownloadStatus.tsx
 msgid "onboarding.download_status.speakers"
-msgstr ""
+msgstr "Загрузка определения говорящих {speakerPercent}%"
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.downloading_aria"
-msgstr ""
+msgstr "Загрузка обновления"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -2791,7 +2791,7 @@ msgstr "Экспортировать…"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.export_done"
-msgstr ""
+msgstr "Экспортировано {pairs} пар аудио и текста."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3026,7 +3026,7 @@ msgstr "Glimpse не смог повторно расшифровать запи
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_paste"
-msgstr ""
+msgstr "Glimpse не смог ввести текст, так как доступ к специальным возможностям отключён. Текст скопирован в буфер обмена, поэтому вы можете вставить его с помощью Command-V."
 
 #. js-lingui-explicit-id
 #: src/main.tsx
@@ -3091,7 +3091,7 @@ msgstr "Предоставить доступ"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.green"
-msgstr ""
+msgstr "Зелёный"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3151,7 +3151,7 @@ msgstr "Удерживайте"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.hold"
-msgstr ""
+msgstr "Удерживайте {shortcutLabel} и говорите, чтобы диктовать в любом приложении."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -3424,7 +3424,7 @@ msgstr "Крупный"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.trial_last_day"
-msgstr ""
+msgstr "Последний день пробного периода. Диктовка остаётся бесплатной. Для некоторых функций требуется лицензия."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3479,12 +3479,12 @@ msgstr "Устаревший"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.caveat.less_accurate"
-msgstr ""
+msgstr "Менее точно, чем автоматический режим."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_live_line"
-msgstr ""
+msgstr "Давайте выпустим это в пятницу."
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3569,7 +3569,7 @@ msgstr "Для живой транскрипции требуется речев
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_live"
-msgstr ""
+msgstr "Транскрипты в реальном времени"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -3599,7 +3599,7 @@ msgstr "Загрузить ещё"
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.loading"
-msgstr ""
+msgstr "Загрузка релизов"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
@@ -3680,7 +3680,7 @@ msgstr "Делает сочетание клавиш временным. Ауд�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.manage_license"
-msgstr ""
+msgstr "Управление лицензией"
 
 #. js-lingui-explicit-id
 #: src/shared/ui/WindowControls.tsx
@@ -3741,7 +3741,7 @@ msgstr "Доступ к микрофону для записи голоса и �
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.permissions.answer.windows"
-msgstr ""
+msgstr "Доступ к микрофону для записи вашего голоса. Glimpse вставляет текст путём вставки в позицию курсора и копирует выделенный текст, когда ярлык его переписывает. Glimpse делает это только во время активной диктовки."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -4180,7 +4180,7 @@ msgstr "Недопустимый аудиофайл."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permission.not_granted"
-msgstr ""
+msgstr "Ещё не разрешено"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4235,7 +4235,7 @@ msgstr "Не поддерживается на этом Mac."
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.note"
-msgstr ""
+msgstr "Примечание"
 
 #. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
@@ -4250,7 +4250,7 @@ msgstr "Нечего переносить из этого приложения."
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_switched_title"
-msgstr "Теперь используется {model}"
+msgstr "Сейчас используется {model}"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -4360,12 +4360,12 @@ msgstr "Открыть Настройки"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.open_system_settings"
-msgstr ""
+msgstr "Открыть системные настройки"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.accessibility_open"
-msgstr ""
+msgstr "Открыть системные настройки"
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -4400,7 +4400,7 @@ msgstr "Необязательно — оставьте пустым для от
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.orange"
-msgstr ""
+msgstr "Оранжевый"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4410,7 +4410,7 @@ msgstr "Исходный текст"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.other"
-msgstr ""
+msgstr "Другие модели"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -4496,7 +4496,7 @@ msgstr "Персонализация"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
-msgstr ""
+msgstr "Розовый"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4526,7 +4526,7 @@ msgstr "Опубликовать"
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.poster"
-msgstr ""
+msgstr "Постер"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
@@ -4541,7 +4541,7 @@ msgstr "Предзагруженная модель"
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.reminder.toggle"
-msgstr ""
+msgstr "Нажмите {shortcutLabel}, чтобы диктовать в любом приложении, затем нажмите снова, чтобы остановить."
 
 #. js-lingui-explicit-id
 #: src/features/dictionary/components/DictionaryView.tsx
@@ -4627,7 +4627,7 @@ msgstr "Провайдеры"
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.purple"
-msgstr ""
+msgstr "Фиолетовый"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryCard.tsx
@@ -4682,7 +4682,7 @@ msgstr "Распознаёт слова из вашего словаря."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.recommended"
-msgstr ""
+msgstr "Рекомендуемое"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -5196,7 +5196,7 @@ msgstr "Поисковая система"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_search"
-msgstr ""
+msgstr "Искать везде"
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
@@ -5281,12 +5281,12 @@ msgstr "Поиск..."
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/ModelStep.tsx
 msgid "onboarding.model.option.see_all"
-msgstr ""
+msgstr "Смотреть все"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.see_options"
-msgstr ""
+msgstr "Смотреть параметры"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -5513,7 +5513,7 @@ msgstr "Пропускать короткие клипы"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.export_skipped_short"
-msgstr ""
+msgstr "Пропущено {count} коротких клипов."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -5563,7 +5563,7 @@ msgstr "Говорящий 2"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_live_speaker"
-msgstr ""
+msgstr "Говорящий 2:"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -5653,7 +5653,7 @@ msgstr "Начать запись"
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.status.starting"
-msgstr ""
+msgstr "Запуск"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -5678,7 +5678,7 @@ msgstr "Статус"
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/shared.tsx
 msgid "onboarding.step_progress"
-msgstr ""
+msgstr "Шаг {step} из {total}"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5829,7 +5829,7 @@ msgstr "нажмите для переключения, удерживайте �
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.teal"
-msgstr ""
+msgstr "Бирюзовый"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6137,7 +6137,7 @@ msgstr "Ошибка транскрипции"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_empty"
-msgstr ""
+msgstr "Транскрипция пуста"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6152,7 +6152,7 @@ msgstr "Модель транскрипции"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_missing"
-msgstr ""
+msgstr "Транскрипция больше недоступна"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6216,7 +6216,7 @@ msgstr "ну да короч отправь завтра"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_failed"
-msgstr ""
+msgstr "Не удалось скопировать в буфер обмена"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6341,12 +6341,12 @@ msgstr "Использовать исходные транскрипты до о
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.uses"
-msgstr ""
+msgstr "Использует {modelLabel} для вашего языка"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/ModelsTab.tsx
 msgid "settings.models.automatic.description"
-msgstr ""
+msgstr "Использует модель для вашего языка"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -6507,12 +6507,12 @@ msgstr "Поставщик языковой модели"
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
 msgid "settings.stats.share.style.year"
-msgstr ""
+msgstr "Год"
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.yellow"
-msgstr ""
+msgstr "Жёлтый"
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionList.tsx
@@ -6547,7 +6547,7 @@ msgstr "Да. В локальном режиме все ваши аудиоза�
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
-msgstr ""
+msgstr "Ваши аудиозаписи и транскрипции хранятся на вашем ПК. Glimpse не собирает записи, транскрипции, ключи API или подсказки. Необязательная анонимная аналитика использования (например, длительность сеанса и использование функций, но никогда — ваш контент) помогает нам улучшать приложение. Вы можете отключить её в любое время в разделе Настройки → Приложение."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6567,7 +6567,7 @@ msgstr "Диск заполнен, поэтому Glimpse остановил з�
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.license_inactive"
-msgstr ""
+msgstr "Ваша лицензия неактивна. Диктовка остаётся бесплатной. Для некоторых функций требуется активная лицензия."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -6592,12 +6592,12 @@ msgstr "Здесь появятся ваши последние транскри
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.accessibility_missing"
-msgstr ""
+msgstr "Для работы вашего сочетания клавиш необходим доступ к специальным возможностям."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_shortcut"
-msgstr ""
+msgstr "Ваше сочетание клавиш не будет работать, пока вы не разрешите доступ Glimpse в разделе «Специальные возможности». Если Glimpse уже включён, выключите его и включите снова."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6617,7 +6617,7 @@ msgstr "Ваш пробный период завершился"
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.trial_expired"
-msgstr ""
+msgstr "Пробный период завершён. Диктовка остаётся бесплатной. Для некоторых функций требуется лицензия."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
