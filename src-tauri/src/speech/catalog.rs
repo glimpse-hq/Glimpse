@@ -467,6 +467,15 @@ const WHISPER_ANE_DECODERS: &[(&str, &[CatalogFile])] = &[
         }],
     ),
     (
+        "whisper_large_v3_q5",
+        &[CatalogFile {
+            url: "https://huggingface.co/Glimpse-Dictation/Whisper-Large-V3-coreml/resolve/main/whisper-large-v3-Q8_0-decoder.gguf",
+            path: "whisper-large-v3-Q8_0-decoder.gguf",
+            size_bytes: Some(968_950_752),
+            sha256: Some("a40e809cfbb958dc9053609ff9e54595cd011e960bcaebfa0f281ae93995ebe4"),
+        }],
+    ),
+    (
         "whisper_small_q8",
         &[CatalogFile {
             url: "https://huggingface.co/Glimpse-Dictation/Whisper-Small-coreml/resolve/main/whisper-small-Q8_0-decoder.gguf",
@@ -1721,6 +1730,11 @@ mod tests {
                 "whisper-large-v3-turbo-encoder.mlmodelc",
             ),
             (
+                "whisper_large_v3_q5",
+                "whisper-large-v3-Q8_0-decoder.gguf",
+                "whisper-large-v3-encoder.mlmodelc",
+            ),
+            (
                 "whisper_small_q8",
                 "whisper-small-Q8_0-decoder.gguf",
                 "whisper-small-encoder.mlmodelc",
@@ -1742,7 +1756,7 @@ mod tests {
                 assert_eq!(ane.files, full.files, "{model}");
             }
         }
-        assert!(!ane_replaces_model_files("whisper_large_v3_q5"));
+        assert!(!ane_replaces_model_files("whisper_large_v3"));
     }
 
     #[test]
