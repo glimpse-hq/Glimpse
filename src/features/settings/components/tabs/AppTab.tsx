@@ -634,15 +634,15 @@ const AppTab = ({
             <div className="space-y-1.5">
               <span className="ui-text-label-strong ui-color-primary">
                 {t({
-                  id: "settings.app.text_size.label",
-                  message: "Text Size",
+                  id: "settings.app.text_size.label.v2",
+                  message: "Text size",
                 })}
               </span>
               <Dropdown
                 value={textSizeMode}
                 ariaLabel={t({
-                  id: "settings.app.text_size.label",
-                  message: "Text Size",
+                  id: "settings.app.text_size.label.v2",
+                  message: "Text size",
                 })}
                 onChange={onTextSizeModeChange}
                 options={textSizeOptions}
@@ -795,8 +795,8 @@ const AppTab = ({
             >
               <ToggleRow
                 title={t({
-                  id: "settings.app.analytics",
-                  message: "Usage Analytics",
+                  id: "settings.app.analytics.v2",
+                  message: "Usage analytics",
                 })}
                 enabled={analyticsEnabled}
                 onToggle={() => onAnalyticsEnabledChange(!analyticsEnabled)}
@@ -807,8 +807,9 @@ const AppTab = ({
                 description={
                   <>
                     {t({
-                      id: "settings.app.analytics.body",
-                      message: "anonymous, no transcripts or audio shared.",
+                      id: "settings.app.analytics.body.v2",
+                      message:
+                        "Anonymous. Never includes transcripts or audio.",
                     })}{" "}
                     <button
                       onClick={() =>
@@ -850,8 +851,8 @@ const AppTab = ({
               {platformCapabilities.supportsAutoPauseMedia && (
                 <SettingRow
                   title={t({
-                    id: "settings.app.auto_pause_media",
-                    message: "Auto-pause Media",
+                    id: "settings.app.auto_pause_media.v2",
+                    message: "Auto-pause media",
                   })}
                   description={duckDescription}
                   control={
@@ -944,17 +945,17 @@ const AppTab = ({
                     message: "Toggle auto-update",
                   })}
                   description={t({
-                    id: "settings.app.auto_update.body",
+                    id: "settings.app.auto_update.body.v2",
                     message:
-                      "downloads and installs updates in the background.",
+                      "Downloads and installs updates in the background.",
                   })}
                 />
               )}
 
               <ToggleRow
                 title={t({
-                  id: "settings.app.auto_launch",
-                  message: "Launch at Login",
+                  id: "settings.app.auto_launch.v2",
+                  message: "Launch at login",
                 })}
                 enabled={autoLaunchEnabled}
                 onToggle={() => onAutoLaunchEnabledChange(!autoLaunchEnabled)}

@@ -156,19 +156,9 @@ const PersonalityModal = ({
   useFocusTrap(dialogRef, true);
   const [websiteInput, setWebsiteInput] = useState("");
   const [websiteError, setWebsiteError] = useState<string | null>(null);
-  const [instructionsText, setInstructionsText] = useState("");
-
-  useEffect(() => {
-    setNameDraft(personality.name);
-    setIsEditingName(false);
-    setAppQuery("");
-    setIsAppMenuOpen(false);
-    setWebsiteInput("");
-    setWebsiteError(null);
-    setInstructionsText(
-      clampInstructionsText(personality.instructions.join("\n")),
-    );
-  }, [personality.id]);
+  const [instructionsText, setInstructionsText] = useState(() =>
+    clampInstructionsText(personality.instructions.join("\n")),
+  );
 
   const commitName = () => {
     const value = normalizeEntry(nameDraft);
@@ -424,8 +414,8 @@ const PersonalityModal = ({
                         if (
                           personality.name ===
                           t({
-                            id: "personalization.new_mode.default_name",
-                            message: "New Mode",
+                            id: "personalization.new_mode.default_name.v2",
+                            message: "New mode",
                           })
                         ) {
                           setNameDraft("");

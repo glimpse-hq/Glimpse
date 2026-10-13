@@ -324,8 +324,8 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
     const nextMode: Personality = {
       id,
       name: t({
-        id: "personalization.new_mode.default_name",
-        message: "New Mode",
+        id: "personalization.new_mode.default_name.v2",
+        message: "New mode",
       }),
       enabled: true,
       apps: [],
@@ -422,9 +422,9 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
           message: "Personalization",
         })}
         description={t({
-          id: "personalization.description",
+          id: "personalization.description.v2",
           message:
-            "Tailor language model behavior to apps, sites, and custom instructions.",
+            "Choose how your writing model writes in each app and website.",
         })}
         trailing={
           <button
@@ -767,6 +767,7 @@ const PersonalizationView = ({ isActive = true }: { isActive?: boolean }) => {
 
       {activePersonality && (
         <PersonalityModal
+          key={activePersonality.id}
           personality={activePersonality}
           installedApps={installedApps}
           websiteIconBySite={websiteIconBySite}

@@ -128,7 +128,7 @@ pub fn build_app_menu(
     // Help menu
     let help_menu = SubmenuBuilder::new(app, strings.get("native.menu.help"))
         .item(
-            &MenuItemBuilder::with_id(MENU_ID_WEBSITE, strings.get("native.menu.github"))
+            &MenuItemBuilder::with_id(MENU_ID_WEBSITE, strings.get("native.menu.github.v2"))
                 .build(app)?,
         )
         .item(

@@ -420,7 +420,7 @@ pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdate
     let current_version = env!("CARGO_PKG_VERSION");
     let message = match new_version {
         Some(ref v) => format!("v{current_version} → v{v}"),
-        None => "Update available.".to_string(),
+        None => toast::native(app, "native.toast.update_available"),
     };
 
     toast::emit_toast(
@@ -430,7 +430,7 @@ pub fn maybe_show_update_toast(app: &AppHandle<AppRuntime>, state: &SharedUpdate
             message,
             auto_dismiss: Some(false),
             action: Some("open_about_page".to_string()),
-            action_label: Some("Update".to_string()),
+            action_label: Some(toast::native(app, "native.toast.update_action")),
             ..Default::default()
         },
     );

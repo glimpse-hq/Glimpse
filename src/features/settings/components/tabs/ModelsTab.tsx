@@ -109,7 +109,9 @@ const InstalledModelRow = ({
   const quant = formatQuantLabel(model.variant);
   if (quant) facts.push(quant);
   if (aneInstalled)
-    facts.push(t({ id: "settings.models.installed.ane", message: "ANE" }));
+    facts.push(
+      t({ id: "settings.models.installed.ane.v2", message: "Neural Engine" }),
+    );
 
   return (
     <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2.5 py-2 transition-colors hover:bg-surface-elevated/40">

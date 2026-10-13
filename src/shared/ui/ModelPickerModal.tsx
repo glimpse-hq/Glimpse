@@ -559,8 +559,8 @@ function ModelRow({
           <span className="mt-0.5 block truncate ui-text-meta tabular-nums text-content-muted">
             {group.diarizer
               ? t({
-                  id: "model_picker.diarizer.description",
-                  message: "Speaker diarization for Library transcripts.",
+                  id: "model_picker.diarizer.description.v2",
+                  message: "Labels who is speaking in Library transcripts.",
                 })
               : group.englishOnly
                 ? t({ id: "model_picker.english", message: "English" })

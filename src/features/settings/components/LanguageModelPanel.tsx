@@ -100,8 +100,8 @@ const LanguageModelPanel = ({
       <div className="px-2 py-1.5">
         <h3 className="ui-text-label-strong ui-color-primary">
           {t({
-            id: "settings.language_model.title",
-            message: "Writing Model Provider",
+            id: "settings.language_model.title.v2",
+            message: "Writing model",
           })}
         </h3>
       </div>
@@ -133,8 +133,8 @@ const LanguageModelPanel = ({
                   value: llmEndpoint,
                   onChange: setLlmEndpoint,
                   placeholder: t({
-                    id: "settings.language_model.endpoint.placeholder",
-                    message: "https://your-llm-endpoint.com",
+                    id: "settings.language_model.endpoint.placeholder.v2",
+                    message: "https://api.example.com/v1",
                   }),
                   ariaLabel: t({
                     id: "settings.language_model.endpoint.aria",
@@ -178,8 +178,8 @@ const LanguageModelPanel = ({
             {
               value: "_cloud_header" as LlmProvider,
               label: t({
-                id: "settings.language_model.provider.cloud",
-                message: "Cloud (API Key)",
+                id: "settings.language_model.provider.cloud.v2",
+                message: "Cloud (API key)",
               }),
               isHeader: true,
             },
@@ -214,8 +214,8 @@ const LanguageModelPanel = ({
         <div className="px-2">
           <span className="ui-text-label-strong ui-color-primary block">
             {t({
-              id: "settings.language_model.api_key",
-              message: "API Key",
+              id: "settings.language_model.api_key.v2",
+              message: "API key",
             })}
           </span>
           <ApiKeyField
@@ -233,8 +233,8 @@ const LanguageModelPanel = ({
                   })
             }
             ariaLabel={t({
-              id: "settings.language_model.api_key.aria",
-              message: "LLM API Key",
+              id: "settings.language_model.api_key.aria.v2",
+              message: "Writing model API key",
             })}
           />
         </div>
