@@ -828,6 +828,26 @@ msgstr ""
 #~ msgstr "Datensatz exportieren"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "„Glimpse wandelt meine Stimme in Text um.“"
@@ -3456,11 +3476,6 @@ msgid "plans.name.solo"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.description"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.updated_to"
 msgstr ""
@@ -5092,11 +5107,6 @@ msgid "settings.app.auto_pause_media.lower"
 msgstr "Vorherige Medienaktion"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Datenschutz & Berechtigungen"
@@ -5105,11 +5115,6 @@ msgstr "Datenschutz & Berechtigungen"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
 msgstr "Datenschutzerklärung"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.policy"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -7210,11 +7215,6 @@ msgstr "Ja. Im lokalen Modus bleiben alle Ihre Audios und Transkriptionen auf Ih
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Ihre Audiodateien und Transkripte bleiben auf Ihrem PC. Glimpse sammelt keine Aufnahmen, Transkripte, API-Schlüssel oder Eingabeaufforderungen. Optionale anonyme Nutzungsanalysen (z. B. Sitzungsdauer und Funktionsnutzung, niemals Ihre Inhalte) helfen uns, die App zu verbessern. Sie können dies jederzeit unter Einstellungen → App deaktivieren."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.title"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

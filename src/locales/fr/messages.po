@@ -828,6 +828,26 @@ msgstr ""
 #~ msgstr "Exporter le jeu de données"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "« Glimpse transforme ma voix en texte. »"
@@ -3456,11 +3476,6 @@ msgid "plans.name.solo"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.description"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.updated_to"
 msgstr ""
@@ -5092,11 +5107,6 @@ msgid "settings.app.auto_pause_media.lower"
 msgstr "Action média précédente"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Confidentialité et autorisations"
@@ -5105,11 +5115,6 @@ msgstr "Confidentialité et autorisations"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
 msgstr "Politique de confidentialité"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.policy"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -7210,11 +7215,6 @@ msgstr "Oui. En mode local, vos fichiers audio et transcriptions restent sur vot
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Vos fichiers audio et transcriptions restent sur votre PC. Glimpse ne collecte pas vos enregistrements, transcriptions, clés API ou invites. Des analyses d'utilisation anonymes facultatives (comme la durée des sessions et l'utilisation des fonctionnalités, jamais votre contenu) nous aident à améliorer l'application. Vous pouvez les désactiver à tout moment dans Paramètres → Application."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.title"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

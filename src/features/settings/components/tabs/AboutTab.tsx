@@ -28,7 +28,6 @@ import {
 const CLI_WIKI_URL = "https://github.com/glimpse-hq/Glimpse/wiki/CLI";
 const REPORT_ISSUE_URL = "https://github.com/glimpse-hq/Glimpse/issues/new";
 const SUPPORT_EMAIL = "hello@tryglimpse.cc";
-const PRIVACY_URL = "https://tryglimpse.cc/privacy";
 
 const SUPPORT_ACTION_CLASS =
   "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-border-primary bg-surface-surface outline-hidden transition-[transform,border-color,background-color] duration-100 ease-out hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-10)] active:translate-y-[2px] focus-visible:ring-2 focus-visible:ring-border-hover";
@@ -1048,44 +1047,6 @@ const AboutTab = ({
             />
           </SettingCard>
         </div>
-      </section>
-
-      <section className="space-y-2">
-        <SectionLabel>
-          {t({
-            id: "settings.about.privacy",
-            message: "Privacy",
-          })}
-        </SectionLabel>
-
-        <SettingCard flush>
-          <SettingRow
-            className="px-3.5 py-2.5"
-            title={t({
-              id: "settings.about.privacy.title",
-              message: "Your dictation stays on this computer",
-            })}
-            description={t({
-              id: "settings.about.privacy.description",
-              message:
-                "Glimpse transcribes and stores everything here. Audio or text goes to a cloud provider only if you set one up, and usage analytics never include what you say.",
-            })}
-            footer={
-              <button
-                type="button"
-                onClick={() => {
-                  void openUrl(PRIVACY_URL);
-                }}
-                className={MANAGEMENT_ACTION_CLASS}
-              >
-                {t({
-                  id: "settings.about.privacy.policy",
-                  message: "Privacy policy",
-                })}
-              </button>
-            }
-          />
-        </SettingCard>
       </section>
 
       {active && (

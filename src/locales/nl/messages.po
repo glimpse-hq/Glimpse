@@ -828,6 +828,26 @@ msgstr ""
 #~ msgstr "Dataset exporteren"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse zet mijn stem om in tekst.\""
@@ -3456,11 +3476,6 @@ msgid "plans.name.solo"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.description"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.updated_to"
 msgstr ""
@@ -5092,11 +5107,6 @@ msgid "settings.app.auto_pause_media.lower"
 msgstr "Vorige media-actie"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Privacy en machtigingen"
@@ -5105,11 +5115,6 @@ msgstr "Privacy en machtigingen"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
 msgstr "Privacybeleid"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.policy"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -7210,11 +7215,6 @@ msgstr "Ja. In de lokale modus blijven al je audio en transcripties op je appara
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Je audio en transcripties blijven op je pc. Glimpse verzamelt geen opnamen, transcripties, API-sleutels of prompts. Optionele anonieme gebruiksanalyses (zoals sessieduur en functiegebruik, nooit je inhoud) helpen ons de app te verbeteren. Je kunt dit op elk moment uitschakelen via Instellingen → App."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.title"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

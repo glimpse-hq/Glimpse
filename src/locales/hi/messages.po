@@ -828,6 +828,26 @@ msgstr ""
 #~ msgstr "डेटासेट निर्यात करें"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "\"Glimpse मेरी आवाज़ को टेक्स्ट में बदल देता है।\""
@@ -3456,11 +3476,6 @@ msgid "plans.name.solo"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.description"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.updated_to"
 msgstr ""
@@ -5092,11 +5107,6 @@ msgid "settings.app.auto_pause_media.lower"
 msgstr "पिछली मीडिया क्रिया"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "गोपनीयता और अनुमतियाँ"
@@ -5105,11 +5115,6 @@ msgstr "गोपनीयता और अनुमतियाँ"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
 msgstr "गोपनीयता नीति"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.policy"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -7210,11 +7215,6 @@ msgstr "हाँ। लोकल मोड में आपका सारा 
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "आपका ऑडियो और ट्रांसक्रिप्ट आपके PC पर ही रहते हैं। Glimpse रिकॉर्डिंग, ट्रांसक्रिप्ट, API कुंजियाँ या प्रॉम्प्ट एकत्र नहीं करता। वैकल्पिक गुमनाम उपयोग विश्लेषण (जैसे सत्र की अवधि और फ़ीचर का उपयोग, लेकिन आपकी सामग्री कभी नहीं) हमें ऐप बेहतर बनाने में मदद करता है। आप इसे कभी भी सेटिंग्स → ऐप में बंद कर सकते हैं।"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.title"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

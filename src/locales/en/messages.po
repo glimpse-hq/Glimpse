@@ -828,6 +828,26 @@ msgstr ""
 #~ msgstr "Export dataset"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr "Glimpse transcribes and stores everything here. Audio or text goes to a cloud provider only if you set one up, and usage analytics never include what you say."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr "Privacy"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr "Privacy policy"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr "Your dictation stays on this computer"
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "“Glimpse turns my voice into text.”"
@@ -3456,11 +3476,6 @@ msgid "plans.name.solo"
 msgstr "Glimpse Solo"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.description"
-msgstr "Glimpse transcribes and stores everything here. Audio or text goes to a cloud provider only if you set one up, and usage analytics never include what you say."
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.updated_to"
 msgstr "Glimpse updated to v{version}."
@@ -5092,11 +5107,6 @@ msgid "settings.app.auto_pause_media.lower"
 msgstr "Previous media action"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy"
-msgstr "Privacy"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Privacy & Permissions"
@@ -5104,11 +5114,6 @@ msgstr "Privacy & Permissions"
 #. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
-msgstr "Privacy policy"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.policy"
 msgstr "Privacy policy"
 
 #. js-lingui-explicit-id
@@ -7210,11 +7215,6 @@ msgstr "Your audio and transcripts stay on your Mac. Glimpse does not collect re
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Your audio and transcripts stay on your PC. Glimpse does not collect recordings, transcripts, API keys, or prompts. Optional anonymous usage analytics (things like session length and feature usage, never your content) help us improve the app. You can turn this off anytime in Settings → App."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.title"
-msgstr "Your dictation stays on this computer"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx

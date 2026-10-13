@@ -828,6 +828,26 @@ msgstr ""
 #~ msgstr "Экспортировать набор данных"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«Glimpse превращает мой голос в текст.»"
@@ -3456,11 +3476,6 @@ msgid "plans.name.solo"
 msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.description"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.updated_to"
 msgstr ""
@@ -5092,11 +5107,6 @@ msgid "settings.app.auto_pause_media.lower"
 msgstr "Предыдущий медиафайл"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.privacy_permissions"
 msgstr "Конфиденциальность и разрешения"
@@ -5105,11 +5115,6 @@ msgstr "Конфиденциальность и разрешения"
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.link"
 msgstr "Политика конфиденциальности"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.policy"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/pill/PillOverlay.tsx
@@ -7210,11 +7215,6 @@ msgstr "Да. В локальном режиме все ваши аудиоза�
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "Ваши аудиозаписи и транскрипции хранятся на вашем ПК. Glimpse не собирает записи, транскрипции, ключи API или подсказки. Необязательная анонимная аналитика использования (например, длительность сеанса и использование функций, но никогда — ваш контент) помогает нам улучшать приложение. Вы можете отключить её в любое время в разделе Настройки → Приложение."
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.privacy.title"
-msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
