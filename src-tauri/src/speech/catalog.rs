@@ -273,7 +273,7 @@ fn transcribe_ane_encoder(model: &str) -> Option<&'static TranscribeAneEncoder> 
         return None;
     }
     // Glimpse needs macOS 14, so an unreadable version counts as 14.
-    let macos = crate::macos_major_version().max(14);
+    let macos = crate::platform::macos_major_version().max(14);
     TRANSCRIBE_ANE_ENCODERS
         .iter()
         .find(|encoder| encoder.model == model && encoder.min_macos <= macos)

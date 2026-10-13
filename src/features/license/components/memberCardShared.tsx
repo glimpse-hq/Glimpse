@@ -869,45 +869,6 @@ export const TierStamp = ({
   );
 };
 
-export const Detail = ({
-  label,
-  value,
-  wide = false,
-  muted = false,
-}: {
-  label: string;
-  value: string;
-  wide?: boolean;
-  muted?: boolean;
-}) => {
-  const palette = useMemberCardPalette();
-
-  return (
-    <div className={`min-w-0 ${wide ? "col-span-2" : ""}`}>
-      <dt
-        className="font-mono uppercase tracking-[0.16em]"
-        style={{
-          fontSize: "9.5px",
-          fontWeight: 600,
-          color: palette.textDisabled,
-        }}
-      >
-        {label}
-      </dt>
-      <dd
-        className="mt-1 truncate font-mono"
-        style={{
-          fontSize: "13px",
-          fontWeight: 500,
-          color: muted ? palette.textDisabled : palette.textPrimary,
-        }}
-      >
-        {value}
-      </dd>
-    </div>
-  );
-};
-
 export const MemberCardStripe = ({
   seedKey,
   transitionMode = "none",

@@ -324,7 +324,7 @@ const LibraryDetail = ({
   availableTags: string[];
 }) => {
   const { t } = useLingui();
-  const [nameDraft, setNameDraft] = useState(item.name);
+  const [nameDraft, setNameDraft] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const nameEditCancelled = useRef(false);
   const [transcriptDraft, setTranscriptDraft] = useState(item.transcript ?? "");
@@ -593,12 +593,6 @@ const LibraryDetail = ({
   }, [stopSeekLoop]);
 
   useEffect(() => {
-    if (!isEditingName) {
-      setNameDraft(item.name);
-    }
-  }, [isEditingName, item.name]);
-
-  useEffect(() => {
     setShowTimestamps(item.show_timestamps && canShowTimestamps);
   }, [item.show_timestamps, canShowTimestamps]);
 
@@ -829,14 +823,13 @@ const LibraryDetail = ({
         }
         if (transcriptSaveFailed.current) return;
         transcriptSaveFailed.current = true;
-        invoke("debug_show_toast", {
-          toastType: "error",
-          message: t({
+        showErrorToast(
+          t({
             id: "library.detail.transcript.save_failed",
             message:
               "Couldn't save this transcript. Your changes are still here.",
           }),
-        }).catch(() => {});
+        );
       })
       .finally(() => {
         transcriptSaves.current -= 1;
@@ -1231,10 +1224,7 @@ const LibraryDetail = ({
           message: "Couldn't find this library item. Try reopening it.",
         });
       }
-      invoke("debug_show_toast", {
-        toastType: "error",
-        message: toastMessage,
-      }).catch(() => {});
+      showErrorToast(toastMessage);
     } finally {
       setIsExporting(false);
       setExportOpen(false);
@@ -2043,6 +2033,7 @@ const LibraryDetail = ({
                   <button
                     onClick={() => {
                       nameEditCancelled.current = false;
+                      setNameDraft(item.name);
                       setIsEditingName(true);
                     }}
                     aria-label={t({

@@ -11,7 +11,7 @@ export type Speaker = {
   color?: string | null;
 };
 
-export type LibraryItemKind = "import" | "recording" | "meeting";
+export type LibraryItemKind = "import" | "recording";
 
 // Inputs a recording captured. `system_audio` lists app names, or is empty
 // when the whole system was captured.

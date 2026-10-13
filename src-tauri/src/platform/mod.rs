@@ -64,6 +64,18 @@ pub mod macos;
 #[cfg(target_os = "windows")]
 pub mod windows;
 
+/// 0 on Windows or when `sw_vers` can't be read.
+pub fn macos_major_version() -> u32 {
+    #[cfg(target_os = "macos")]
+    {
+        macos::major_version()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        0
+    }
+}
+
 /// True when this install's updates are owned by an app store
 /// (MSIX from the Microsoft Store); the built-in updater stays off.
 pub fn is_store_build() -> bool {
