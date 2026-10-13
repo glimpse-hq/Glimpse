@@ -97,7 +97,8 @@ pub struct TranscriptionEvent<'a> {
     pub asr_seconds: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm_seconds: Option<f32>,
-    /// off, ok, failed, or skipped.
+    /// off, ok, failed, skipped (writing model unavailable), or input_skipped
+    /// (the on-device model can't take this transcript).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm_outcome: Option<&'a str>,
     /// Key release to text inserted.

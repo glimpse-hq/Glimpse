@@ -807,6 +807,7 @@ async fn process_transcript_text(
     let mut llm_outcome = "off";
     // Reported after insertion so analytics never delays the paste.
     let mut llm_failure = None;
+    let mut input_skipped = false;
     let (final_transcript, llm_cleaned) = if should_use_llm {
         analytics::set_activity(Activity::Llm);
         let llm_started_at = Instant::now();
@@ -853,6 +854,11 @@ async fn process_transcript_text(
                 .await
             {
                 Ok(cleaned) => (cleaned, true),
+                Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
+                    tracing::info!("Cleanup skipped, using raw transcript: {}", err.message);
+                    input_skipped = true;
+                    (raw_transcript.clone(), false)
+                }
                 Err(err) => {
                     let message = llm_cleanup::llm_issue_message(&err);
                     if let Some(context) = log_context {
@@ -880,6 +886,8 @@ async fn process_transcript_text(
         llm_seconds = Some(llm_started_at.elapsed().as_secs_f32());
         llm_outcome = if llm_failure.is_some() {
             "failed"
+        } else if input_skipped {
+            "input_skipped"
         } else {
             "ok"
         };
@@ -1123,6 +1131,13 @@ pub(crate) fn retry_transcription_async(
                     .await
                     {
                         Ok(cleaned) => (cleaned, true),
+                        Err(err) if llm_cleanup::is_input_unsuitable(&err) => {
+                            tracing::info!(
+                                "Cleanup skipped during retry, using raw transcript: {}",
+                                err.message
+                            );
+                            (raw_transcript.clone(), false)
+                        }
                         Err(err) => {
                             let message = llm_cleanup::llm_issue_message(&err);
                             tracing::error!(

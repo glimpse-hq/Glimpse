@@ -292,6 +292,14 @@ pub fn short_retry_delay(error: &RemoteError) -> Option<Duration> {
     (after <= Duration::from_secs(8)).then(|| after.max(Duration::from_millis(500)))
 }
 
+const INPUT_UNSUITABLE_CODE: &str = "input_unsuitable";
+
+/// The on-device model can't take this input (too long, refused, unsupported
+/// language). Dictation keeps the raw transcript without a warning.
+pub fn is_input_unsuitable(error: &RemoteError) -> bool {
+    error.code.as_deref() == Some(INPUT_UNSUITABLE_CODE)
+}
+
 pub fn llm_issue_message(error: &RemoteError) -> String {
     crate::speech::remote::issue_message("Language model", error)
 }
@@ -546,28 +554,21 @@ async fn run_text_task(
         } else {
             task.max_tokens()
         };
-        let raw = match run_apple_text_task(task, max_tokens, system_prompt, user_content).await {
-            Ok(raw) => raw,
-            // The input, not the model, is the problem; the raw transcript is
-            // the right result and not worth a warning.
-            Err(err)
-                if matches!(task, TextTaskKind::Cleanup)
-                    && matches!(
-                        err.kind,
-                        AppleErrorKind::ContextTooLarge
-                            | AppleErrorKind::Refused
-                            | AppleErrorKind::UnsupportedLanguage
-                    ) =>
-            {
-                tracing::info!("[Apple LLM] cleanup skipped ({:?}): {err}", err.kind);
-                return Ok(fallback_text.to_string());
-            }
-            Err(err) => {
-                return Err(remote_lib::transport_error(format!(
-                    "On-device model failed: {err}"
-                )));
-            }
-        };
+        let raw = run_apple_text_task(task, max_tokens, system_prompt, user_content)
+            .await
+            .map_err(|err| {
+                let mut error =
+                    remote_lib::transport_error(format!("On-device model failed: {err}"));
+                if matches!(
+                    err.kind,
+                    AppleErrorKind::ContextTooLarge
+                        | AppleErrorKind::Refused
+                        | AppleErrorKind::UnsupportedLanguage
+                ) {
+                    error.code = Some(INPUT_UNSUITABLE_CODE.to_string());
+                }
+                error
+            })?;
         return Ok(
             extract_plain_text(&raw, fallback_text).unwrap_or_else(|| fallback_text.to_string())
         );
