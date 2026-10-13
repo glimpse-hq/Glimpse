@@ -50,13 +50,13 @@ failed. F21–F30 were written before any prompt change as a filler holdout. Raw
 output on Apple's model in macOS 27, before → after the filler rule and example,
 strict match / match ignoring case and punctuation:
 
-| Set                       | Cases | Before  | After   |
+| Set                       | Cases |  Before |   After |
 | ------------------------- | ----: | ------: | ------: |
 | Regression                |    76 | 45 / 49 | 53 / 55 |
 | Initial prompt holdout    |    42 | 27 / 28 | 30 / 33 |
 | Final frozen confirmation |    20 | 14 / 14 | 13 / 14 |
-| Filler development        |    23 |  3 /  8 | 14 / 15 |
-| Filler holdout            |    10 |  2 /  3 |  7 /  9 |
+| Filler development        |    23 |   3 / 8 | 14 / 15 |
+| Filler holdout            |    10 |   2 / 3 |   7 / 9 |
 
 Qwen3.8-27B (temperature 0, no thinking) stood in for remote providers: 69 → 72
 strict on the regression set, one fewer on filler development, and unchanged on
