@@ -25,6 +25,15 @@ const SMART_MODE_TAP_THRESHOLD: Duration = Duration::from_millis(200);
 const OVERLAY_HIDE_AFTER_IDLE_MS: u64 = 180;
 const MAX_RECORDING_DURATION: Duration = Duration::from_secs(30 * 60);
 const CAPTURE_ARM_DELAY: Duration = Duration::from_millis(280);
+// A press this soon after stopping is a double press, not a request to cancel.
+const CANCEL_PRESS_GRACE: Duration = Duration::from_secs(1);
+// Set when a press found the model still downloading, so the finished
+// download can say the shortcut works now.
+static ANNOUNCE_MODEL_READY: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn take_model_ready_announcement() -> bool {
+    ANNOUNCE_MODEL_READY.swap(false, Ordering::SeqCst)
+}
 pub const EVENT_PILL_STATE: &str = "pill:state";
 pub const EVENT_PILL_MODE: &str = "pill:mode";
 pub const EVENT_PILL_HOVER: &str = "pill:hover";
@@ -231,6 +240,7 @@ pub struct PillController {
     is_expanded: Mutex<bool>,
     recording_started_at: Mutex<Option<Instant>>,
     stopped_audio_seconds: Mutex<Option<f32>>,
+    stopped_at: Mutex<Option<Instant>>,
     model_notice_shown_at: Mutex<Option<Instant>>,
 }
 
@@ -254,6 +264,7 @@ impl PillController {
             is_expanded: Mutex::new(false),
             recording_started_at: Mutex::new(None),
             stopped_audio_seconds: Mutex::new(None),
+            stopped_at: Mutex::new(None),
             model_notice_shown_at: Mutex::new(None),
         }
     }
@@ -357,6 +368,9 @@ impl PillController {
             return true;
         }
 
+        if state.download_percent(&model).is_some() {
+            ANNOUNCE_MODEL_READY.store(true, Ordering::SeqCst);
+        }
         if self.model_notice_is_due() {
             match state.download_percent(&model) {
                 Some(percent) => toast::show(
@@ -371,6 +385,9 @@ impl PillController {
                 ),
                 None => {
                     let downloading = start_model_download(app, &model);
+                    if downloading {
+                        ANNOUNCE_MODEL_READY.store(true, Ordering::SeqCst);
+                    }
                     toast::show_with_action(
                         app,
                         "info",
@@ -459,7 +476,7 @@ impl PillController {
         self.reset_recording_state();
         self.set_hold_key_down(false);
         self.transition_to(app, PillStatus::Error);
-        let simple_msg = simplify_recording_error(message);
+        let simple_msg = simplify_recording_error(app, message);
         toast::show(app, "error", None, &simple_msg);
     }
 
@@ -480,7 +497,7 @@ impl PillController {
         let simple_msg = if crate::platform::is_disk_full(err) {
             toast::native(app, "native.toast.dictation_disk_full")
         } else {
-            simplify_recording_error(&message)
+            simplify_recording_error(app, &message)
         };
         toast::show(app, "error", None, &simple_msg);
     }
@@ -634,7 +651,11 @@ impl PillController {
         }
 
         if self.status() == PillStatus::Processing {
-            if *self.shortcut_origin.lock() == Some(action) {
+            let just_stopped = self
+                .stopped_at
+                .lock()
+                .is_some_and(|stopped| stopped.elapsed() < CANCEL_PRESS_GRACE);
+            if *self.shortcut_origin.lock() == Some(action) && !just_stopped {
                 self.cancel_processing(app, "shortcut");
             }
             return false;
@@ -894,7 +915,7 @@ impl PillController {
             app,
             "warning",
             None,
-            &toast::native(app, "native.toast.mic_removed"),
+            &toast::native(app, "native.toast.mic_removed.v2"),
         );
         self.stop_and_process_inner(app, false);
     }
@@ -902,6 +923,7 @@ impl PillController {
     fn stop_and_process_inner(&self, app: &AppHandle<AppRuntime>, auto_paste: bool) {
         self.stop_audio_spectrum_emitter();
         let stopped_at = Instant::now();
+        *self.stopped_at.lock() = Some(stopped_at);
         analytics::set_activity(Activity::Transcribing);
         let trigger = match self.recording_mode.lock().take() {
             Some(RecordingMode::Toggle) => "toggle",
@@ -1573,7 +1595,7 @@ pub fn stop_hold_recording(app: AppHandle<AppRuntime>) {
     app.state::<AppState>().pill().handle_hold_release(&app);
 }
 
-fn microphone_input_kind(settings: &UserSettings) -> &'static str {
+pub(crate) fn microphone_input_kind(settings: &UserSettings) -> &'static str {
     if settings.microphone_device.is_some() {
         "selected"
     } else {
@@ -1582,27 +1604,25 @@ fn microphone_input_kind(settings: &UserSettings) -> &'static str {
 }
 
 /// Simplifies recording error messages
-pub(crate) fn simplify_recording_error(message: &str) -> String {
+pub(crate) fn simplify_recording_error(app: &AppHandle<AppRuntime>, message: &str) -> String {
     let msg_lower = message.to_lowercase();
-
-    if msg_lower.contains("permission")
+    let key = if msg_lower.contains("permission")
         || msg_lower.contains("not allowed")
         || msg_lower.contains("access denied")
         || msg_lower.contains("coreaudio")
     {
-        return "Microphone permission needed. Check System Settings.".to_string();
-    }
-
-    if msg_lower.contains("microphone")
+        if cfg!(target_os = "macos") {
+            "native.error.mic_permission_mac"
+        } else {
+            "native.error.mic_permission_windows"
+        }
+    } else if msg_lower.contains("microphone")
         || msg_lower.contains("audio")
         || msg_lower.contains("input device")
     {
-        return "Microphone unavailable".to_string();
-    }
-
-    if message.len() <= 30 {
-        return message.to_string();
-    }
-
-    "Recording failed".to_string()
+        "native.error.mic_unavailable"
+    } else {
+        "native.error.recording_failed"
+    };
+    toast::native(app, key)
 }

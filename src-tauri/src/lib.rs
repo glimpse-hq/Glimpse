@@ -1171,6 +1171,19 @@ impl AppState {
         self.pending_recording_path.lock().take()
     }
 
+    pub fn owns_pending_path(&self, owner: &std::path::Path) -> bool {
+        self.pending_recording_path.lock().as_deref() == Some(owner)
+    }
+
+    pub fn release_pending_path(&self, owner: &std::path::Path) -> bool {
+        let mut current = self.pending_recording_path.lock();
+        if current.as_deref() != Some(owner) {
+            return false;
+        }
+        *current = None;
+        true
+    }
+
     pub fn set_pending_selected_text(&self, text: Option<String>) {
         *self.pending_selected_text.lock() = text;
     }

@@ -6,7 +6,7 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, Result, anyhow};
-use tauri::{AppHandle, Emitter, Manager, async_runtime};
+use tauri::{AppHandle, Manager, async_runtime};
 use tokio_util::sync::CancellationToken;
 use webrtc_vad::VadMode;
 
@@ -21,66 +21,6 @@ use crate::{
     settings::{Personality, UserSettings},
     speech, storage, toast, transcription_api, update_checker,
 };
-
-pub(crate) fn run_transcription_prune_for_settings(
-    app: &AppHandle<AppRuntime>,
-    settings: &UserSettings,
-) -> Result<()> {
-    let count = count_or_prune_transcriptions(
-        app,
-        crate::settings::auto_delete_transcription_policy(settings),
-        chrono::Local::now(),
-        true,
-    )?;
-    if count > 0 {
-        crate::tray::refresh_menus(app, &app.state::<AppState>().current_settings());
-        app.emit(
-            EVENT_TRANSCRIPTION_COMPLETE,
-            TranscriptionCompletePayload {
-                transcript: String::new(),
-                auto_paste: false,
-                record: None,
-            },
-        )?;
-    }
-    Ok(())
-}
-
-pub(crate) fn preview_transcription_prune_for_policy(
-    app: &AppHandle<AppRuntime>,
-    policy: crate::settings::RecordingPrunePolicy,
-) -> Result<u32> {
-    count_or_prune_transcriptions(app, policy, chrono::Local::now(), false)
-}
-
-fn count_or_prune_transcriptions(
-    app: &AppHandle<AppRuntime>,
-    policy: crate::settings::RecordingPrunePolicy,
-    now: chrono::DateTime<chrono::Local>,
-    delete: bool,
-) -> Result<u32> {
-    if matches!(policy, crate::settings::RecordingPrunePolicy::Never) {
-        return Ok(0);
-    }
-
-    let cutoff = crate::settings::recording_prune_cutoff(policy, now);
-    let cutoff_millis = match (policy, cutoff) {
-        (crate::settings::RecordingPrunePolicy::Immediately, _) => now.timestamp_millis(),
-        (_, Some(cutoff)) => cutoff.timestamp_millis(),
-        _ => return Ok(0),
-    };
-
-    let storage = app.state::<AppState>().storage();
-    if delete {
-        storage
-            .prune_before_and_remove_files(cutoff_millis)
-            .context("Failed to prune transcriptions")
-    } else {
-        storage
-            .count_prunable_before(cutoff_millis)
-            .context("Failed to count prunable transcriptions")
-    }
-}
 
 struct ProcessedTranscript {
     final_transcript: String,
@@ -211,14 +151,24 @@ impl Drop for StallWatch {
     }
 }
 
+/// What a stalled dictation needs to end cleanly with its recording kept.
+struct StallRecovery {
+    cancel_token: CancellationToken,
+    audio_path: PathBuf,
+    pending_path: Option<PathBuf>,
+    temporary: bool,
+}
+
 /// Reports once if the dictation is still running well past its expected
-/// time. Never interrupts it.
+/// time, then ends it so the pill doesn't spin forever. The recording is kept
+/// as a failed entry that can be retried.
 fn watch_for_stall(
     app: &AppHandle<AppRuntime>,
     model: String,
     mode: &'static str,
     audio_seconds: f32,
     remote: bool,
+    recovery: StallRecovery,
 ) -> StallWatch {
     let done = Arc::new(AtomicBool::new(false));
     let finished = Arc::clone(&done);
@@ -230,9 +180,39 @@ fn watch_for_stall(
     let app = app.clone();
     async_runtime::spawn(async move {
         tokio::time::sleep(Duration::from_secs_f32(limit)).await;
-        if !finished.load(Ordering::Relaxed) {
-            analytics::track_dictation_stalled(&app, &model, mode, audio_seconds);
+        if finished.load(Ordering::Relaxed) {
+            return;
         }
+        analytics::track_dictation_stalled(&app, &model, mode, audio_seconds);
+        // A model that is still loading is slow, not stuck.
+        while matches!(
+            analytics::activity(),
+            Activity::ModelLoading | Activity::Llm
+        ) {
+            tokio::time::sleep(Duration::from_secs_f32(limit)).await;
+            if finished.load(Ordering::Relaxed) {
+                return;
+            }
+        }
+        if recovery.cancel_token.is_cancelled() {
+            return;
+        }
+        recovery.cancel_token.cancel();
+        app.state::<AppState>()
+            .release_pending_path(&recovery.audio_path);
+        emit_transcription_error_inner(
+            &app,
+            "Transcription timed out".to_string(),
+            None,
+            "stall",
+            audio_seconds,
+            "microphone",
+            Some(recovery.audio_path.display().to_string()),
+            recovery.pending_path.as_deref(),
+            true,
+            recovery.temporary,
+            true,
+        );
     });
     StallWatch(done)
 }
@@ -285,6 +265,12 @@ pub(crate) fn queue_transcription(
             transcription_mode_label(&settings),
             audio_duration_seconds,
             use_remote,
+            StallRecovery {
+                cancel_token: cancel_token.clone(),
+                audio_path: saved_for_task.path.clone(),
+                pending_path: saved_for_task.pending_path.clone(),
+                temporary,
+            },
         );
         let app_for_local = &app_handle;
         let settings_for_local = &settings;
@@ -315,7 +301,12 @@ pub(crate) fn queue_transcription(
         match result {
             Ok(result) => {
                 if is_cancelled() {
-                    abort_transcription(&app_handle, saved_for_task.pending_path.as_deref(), false);
+                    abort_transcription(
+                        &app_handle,
+                        &saved_for_task.path,
+                        saved_for_task.pending_path.as_deref(),
+                        false,
+                    );
                     return;
                 }
 
@@ -326,12 +317,18 @@ pub(crate) fn queue_transcription(
                         &app_handle,
                         &saved_for_task.path,
                         saved_for_task.pending_path.as_deref(),
+                        temporary,
                     );
                     return;
                 }
 
                 if is_cancelled() {
-                    abort_transcription(&app_handle, saved_for_task.pending_path.as_deref(), false);
+                    abort_transcription(
+                        &app_handle,
+                        &saved_for_task.path,
+                        saved_for_task.pending_path.as_deref(),
+                        false,
+                    );
                     return;
                 }
 
@@ -351,7 +348,9 @@ pub(crate) fn queue_transcription(
                         temporary,
                         true,
                     );
-                    app_handle.state::<AppState>().set_pending_path(None);
+                    app_handle
+                        .state::<AppState>()
+                        .release_pending_path(&saved_for_task.path);
                     return;
                 }
 
@@ -379,12 +378,14 @@ pub(crate) fn queue_transcription(
                             &app_handle,
                             &saved_for_task.path,
                             saved_for_task.pending_path.as_deref(),
+                            temporary,
                         );
                         return;
                     }
                     ProcessTranscriptOutcome::Cancelled => {
                         abort_transcription(
                             &app_handle,
+                            &saved_for_task.path,
                             saved_for_task.pending_path.as_deref(),
                             false,
                         );
@@ -393,7 +394,12 @@ pub(crate) fn queue_transcription(
                 };
 
                 if is_cancelled() {
-                    abort_transcription(&app_handle, saved_for_task.pending_path.as_deref(), false);
+                    abort_transcription(
+                        &app_handle,
+                        &saved_for_task.path,
+                        saved_for_task.pending_path.as_deref(),
+                        false,
+                    );
                     return;
                 }
 
@@ -436,16 +442,17 @@ pub(crate) fn queue_transcription(
                     },
                 );
 
-                app_handle
-                    .state::<AppState>()
-                    .pill()
-                    .finish_processing(&app_handle);
-                app_handle.state::<AppState>().set_pending_path(None);
+                let state = app_handle.state::<AppState>();
+                if state.release_pending_path(&saved_for_task.path) {
+                    state.pill().finish_processing(&app_handle);
+                }
             }
             Err(err) => {
                 if is_cancelled() {
                     discard_pending_recording(saved_for_task.pending_path.as_deref());
-                    app_handle.state::<AppState>().set_pending_path(None);
+                    app_handle
+                        .state::<AppState>()
+                        .release_pending_path(&saved_for_task.path);
                     return;
                 }
                 let show_toast = !is_remote_fallback_unavailable(&err);
@@ -462,7 +469,9 @@ pub(crate) fn queue_transcription(
                     temporary,
                     show_toast,
                 );
-                app_handle.state::<AppState>().set_pending_path(None);
+                app_handle
+                    .state::<AppState>()
+                    .release_pending_path(&saved_for_task.path);
             }
         }
     });
@@ -593,14 +602,14 @@ pub(crate) fn recover_interrupted_recordings(app: &AppHandle<AppRuntime>) {
                 message: toast::native(
                     &app,
                     if saved_count == 1 {
-                        "native.toast.recovered_saved_one"
+                        "native.toast.recovered_saved_one.v2"
                     } else {
-                        "native.toast.recovered_saved_many"
+                        "native.toast.recovered_saved_many.v2"
                     },
                 ),
                 auto_dismiss: Some(false),
                 action: Some("view_recovered_transcriptions".to_string()),
-                action_label: Some(toast::native(&app, "native.toast.view_history")),
+                action_label: Some(toast::native(&app, "native.toast.view_home")),
                 secondary_action: Some("copy_last_transcription".to_string()),
                 secondary_action_label: Some("Copy".to_string()),
                 ..Default::default()
@@ -663,7 +672,7 @@ async fn transcribe_recovered_recording(
     let asr_seconds = transcription_started_at.elapsed().as_secs_f32();
     let raw_transcript = result.transcript.clone();
     if count_words(&raw_transcript) == 0 {
-        handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref());
+        handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref(), false);
         return Ok(RecoveredTranscriptionOutcome::Empty);
     }
 
@@ -687,7 +696,7 @@ async fn transcribe_recovered_recording(
     {
         ProcessTranscriptOutcome::Ready(processed) => processed,
         ProcessTranscriptOutcome::Empty => {
-            handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref());
+            handle_empty_transcription(app, &saved.path, saved.pending_path.as_deref(), false);
             return Ok(RecoveredTranscriptionOutcome::Empty);
         }
         ProcessTranscriptOutcome::Cancelled => return Err(anyhow!("Transcription cancelled")),
@@ -826,7 +835,15 @@ async fn process_transcript_text(
                     if !llm_cleanup::is_transient_llm_error(&err) {
                         llm_cleanup::note_preflight_failure();
                     }
-                    maybe_warn_llm_issue(app, true, &message);
+                    maybe_warn_llm_issue(
+                        app,
+                        true,
+                        &crate::speech::remote::localized_issue_message(
+                            app,
+                            "native.provider.writing",
+                            &err,
+                        ),
+                    );
                     llm_failure = Some(err);
                     (selected.clone(), false)
                 }
@@ -846,7 +863,15 @@ async fn process_transcript_text(
                     if !llm_cleanup::is_transient_llm_error(&err) {
                         llm_cleanup::note_preflight_failure();
                     }
-                    maybe_warn_llm_issue(app, false, &message);
+                    maybe_warn_llm_issue(
+                        app,
+                        false,
+                        &crate::speech::remote::localized_issue_message(
+                            app,
+                            "native.provider.writing",
+                            &err,
+                        ),
+                    );
                     llm_failure = Some(err);
                     (raw_transcript.clone(), false)
                 }
@@ -942,12 +967,21 @@ async fn process_transcript_text(
                 let accessibility_missing = err.is::<assistive::AccessibilityMissing>();
                 #[cfg(not(target_os = "macos"))]
                 let accessibility_missing = false;
+                #[cfg(target_os = "windows")]
+                let elevated_target = err.is::<assistive::ElevatedTarget>();
+                #[cfg(not(target_os = "windows"))]
+                let elevated_target = false;
                 emit_auto_paste_error(
                     app,
                     format!("Auto paste failed: {err}"),
-                    analytics::error_detail(&err),
+                    if elevated_target {
+                        "elevated_target".into()
+                    } else {
+                        analytics::error_detail(&err)
+                    },
                     audio_duration_seconds,
                     accessibility_missing,
+                    elevated_target,
                 )
             }
             Err(err) => emit_auto_paste_error(
@@ -955,6 +989,7 @@ async fn process_transcript_text(
                 format!("Auto paste task error: {err}"),
                 "task_failed".into(),
                 audio_duration_seconds,
+                false,
                 false,
             ),
         }
@@ -1325,7 +1360,10 @@ fn emit_transcription_complete_with_cleanup(
         },
     );
 
-    app.state::<AppState>().pill().finish_processing(app);
+    let state = app.state::<AppState>();
+    if state.owns_pending_path(Path::new(&audio_path)) {
+        state.pill().finish_processing(app);
+    }
 
     if temporary {
         let _ = std::fs::remove_file(&audio_path);
@@ -1336,8 +1374,7 @@ fn emit_transcription_complete_with_cleanup(
     let settings = app.state::<AppState>().current_settings();
     crate::tray::refresh_menus(app, &settings);
 
-    crate::schedule_recording_prune(app.clone(), settings.clone());
-    crate::schedule_transcription_prune(app.clone(), settings);
+    crate::auto_delete::schedule_prune(app.clone(), settings);
 
     let update_state = app.state::<AppState>().update_state().clone();
     let update_toast_shown = update_checker::maybe_show_update_toast(app, &update_state);
@@ -1349,16 +1386,19 @@ fn emit_transcription_complete_with_cleanup(
 
 fn abort_transcription(
     app: &AppHandle<AppRuntime>,
+    audio_path: &Path,
     pending_path: Option<&Path>,
     collapse_pill: bool,
 ) {
+    discard_pending_recording(pending_path);
+    let state = app.state::<AppState>();
+    if !state.release_pending_path(audio_path) {
+        return;
+    }
     if collapse_pill {
         crate::pill::collapse_expanded_pill(app);
     }
-    let state = app.state::<AppState>();
     state.pill().finish_processing(app);
-    discard_pending_recording(pending_path);
-    state.set_pending_path(None);
 }
 
 fn discard_pending_recording(path: Option<&Path>) {
@@ -1391,24 +1431,52 @@ fn handle_empty_retry(app: &AppHandle<AppRuntime>, id: &str) {
     );
 }
 
+// Long enough that an empty result means lost speech rather than a stray press.
+const KEEP_EMPTY_RECORDING_SECONDS: f32 = 3.0;
+
 fn handle_empty_transcription(
     app: &AppHandle<AppRuntime>,
     audio_path: &Path,
     pending_path: Option<&Path>,
+    temporary: bool,
 ) {
     let audio = load_audio_for_transcription(audio_path)
         .ok()
         .filter(|(_, rate)| *rate > 0);
+    let audio_seconds = audio
+        .as_ref()
+        .map(|(samples, rate)| samples.len() as f32 / *rate as f32);
     analytics::track_dictation_discarded(
         app,
         "empty_transcript",
-        audio
-            .as_ref()
-            .map(|(samples, rate)| samples.len() as f32 / *rate as f32),
+        audio_seconds,
         audio
             .as_ref()
             .map(|(samples, _)| crate::recorder::calculate_rms_i16(samples)),
     );
+    let keep =
+        !temporary && audio_seconds.is_some_and(|seconds| seconds >= KEEP_EMPTY_RECORDING_SECONDS);
+
+    let state = app.state::<AppState>();
+    // Kept as a failed entry in Home, where it can be retried with another model.
+    let kept = keep
+        && state
+            .storage()
+            .save_transcription(
+                String::new(),
+                audio_path.display().to_string(),
+                storage::TranscriptionStatus::Error,
+                Some(toast::native(app, "native.transcription.no_words")),
+                storage::TranscriptionMetadata {
+                    speech_model: resolve_speech_model_label(&state.current_settings()),
+                    audio_duration_seconds: audio_seconds.unwrap_or_default(),
+                    ..Default::default()
+                },
+                None,
+                None,
+            )
+            .inspect_err(|err| tracing::error!("Failed to keep empty transcription: {err}"))
+            .is_ok();
 
     crate::emit_event(
         app,
@@ -1424,14 +1492,22 @@ fn handle_empty_transcription(
         app,
         toast::Payload {
             toast_type: "warning".to_string(),
-            message: toast::native(app, "native.toast.no_words"),
+            message: toast::native(
+                app,
+                if kept {
+                    "native.toast.no_words_kept"
+                } else {
+                    "native.toast.no_words"
+                },
+            ),
             auto_dismiss: Some(true),
-            duration: Some(3000),
+            duration: Some(if kept { 5000 } else { 3000 }),
             ..Default::default()
         },
     );
 
-    if audio_path.exists()
+    if !kept
+        && audio_path.exists()
         && let Err(err) = std::fs::remove_file(audio_path)
     {
         tracing::error!(
@@ -1442,11 +1518,12 @@ fn handle_empty_transcription(
     discard_pending_recording(pending_path);
 
     let prune_settings = app.state::<AppState>().current_settings();
-    crate::schedule_recording_prune(app.clone(), prune_settings.clone());
-    crate::schedule_transcription_prune(app.clone(), prune_settings);
+    crate::auto_delete::schedule_prune(app.clone(), prune_settings);
 
-    app.state::<AppState>().pill().finish_processing(app);
-    app.state::<AppState>().set_pending_path(None);
+    let state = app.state::<AppState>();
+    if state.release_pending_path(audio_path) {
+        state.pill().finish_processing(app);
+    }
 }
 
 fn is_remote_fallback_unavailable(err: &anyhow::Error) -> bool {
@@ -1459,6 +1536,7 @@ fn emit_auto_paste_error(
     reason: analytics::ErrorDetail,
     audio_duration_seconds: f32,
     accessibility_missing: bool,
+    elevated_target: bool,
 ) {
     let settings = app.state::<AppState>().current_settings();
     analytics::track_auto_paste_failed(
@@ -1477,6 +1555,16 @@ fn emit_auto_paste_error(
     #[cfg(target_os = "macos")]
     if accessibility_missing {
         crate::pill::show_accessibility_toast(app, "native.toast.accessibility_paste");
+        return;
+    }
+
+    if elevated_target {
+        toast::show(
+            app,
+            "warning",
+            None,
+            &toast::native(app, "native.toast.admin_app_paste"),
+        );
         return;
     }
 
@@ -1520,17 +1608,7 @@ fn emit_transcription_error_inner(
         audio_source,
     );
 
-    crate::emit_event(
-        app,
-        EVENT_TRANSCRIPTION_ERROR,
-        TranscriptionErrorPayload {
-            message: message.clone(),
-            stage: stage.to_string(),
-            id: None,
-        },
-    );
-
-    let toast_message = format_transcription_error(&message);
+    let toast_message = format_transcription_error(app, &message);
     let metadata = storage::TranscriptionMetadata {
         speech_model: resolve_speech_model_label(&settings),
         audio_duration_seconds,
@@ -1561,6 +1639,16 @@ fn emit_transcription_error_inner(
         }
     }
 
+    crate::emit_event(
+        app,
+        EVENT_TRANSCRIPTION_ERROR,
+        TranscriptionErrorPayload {
+            message: message.clone(),
+            stage: stage.to_string(),
+            id: None,
+        },
+    );
+
     if state.pill().status() == crate::pill::PillStatus::Listening {
         return;
     }
@@ -1577,35 +1665,31 @@ fn emit_transcription_error_inner(
         );
     }
 
-    crate::schedule_recording_prune(app.clone(), settings.clone());
-    crate::schedule_transcription_prune(app.clone(), settings);
+    crate::auto_delete::schedule_prune(app.clone(), settings);
 
     if reset_state {
         state.pill().reset(app);
     }
 }
 
-fn format_transcription_error(message: &str) -> String {
+fn format_transcription_error(app: &AppHandle<AppRuntime>, message: &str) -> String {
     let msg_lower = message.to_lowercase();
-
-    if msg_lower.contains("not fully installed") || msg_lower.contains("missing:") {
-        return "No transcription model installed".to_string();
-    }
-    if msg_lower.contains("model not found") || msg_lower.contains("no model") {
-        return "No transcription model selected".to_string();
-    }
-
-    if msg_lower.contains("microphone") || msg_lower.contains("audio input") {
-        return "Microphone error".to_string();
-    }
-    if msg_lower.contains("permission") {
-        return "Permission denied".to_string();
-    }
-    if msg_lower.contains("auto paste") {
-        return "Pasted to clipboard instead".to_string();
-    }
-
-    "Transcription failed".to_string()
+    let key = if msg_lower.contains("not fully installed") || msg_lower.contains("missing:") {
+        "native.error.no_model_installed"
+    } else if msg_lower.contains("model not found") || msg_lower.contains("no model") {
+        "native.error.no_model_selected"
+    } else if msg_lower.contains("microphone") || msg_lower.contains("audio input") {
+        "native.error.microphone"
+    } else if msg_lower.contains("permission") {
+        "native.error.permission"
+    } else if msg_lower.contains("timed out") {
+        "native.error.transcription_timeout"
+    } else if msg_lower.contains("auto paste") {
+        "native.error.pasted_to_clipboard"
+    } else {
+        "native.error.transcription_failed"
+    };
+    toast::native(app, key)
 }
 
 struct TranscriptionMetadataInput<'a> {
@@ -1980,7 +2064,12 @@ pub(crate) fn append_deduped_chunk(existing: &mut String, next: &str) {
 }
 
 fn maybe_warn_llm_unavailable(app: &AppHandle<AppRuntime>, is_edit_mode: bool) {
-    maybe_warn_llm_issue(app, is_edit_mode, "Language model unreachable.");
+    let reason = toast::native_format(
+        app,
+        "native.provider.unreachable",
+        &[("subject", &toast::native(app, "native.provider.writing"))],
+    );
+    maybe_warn_llm_issue(app, is_edit_mode, &reason);
 }
 
 /// Says what actually went wrong. A rate limit and a bad key are not the same
@@ -1990,17 +2079,22 @@ fn maybe_warn_llm_issue(app: &AppHandle<AppRuntime>, is_edit_mode: bool, reason:
         return;
     }
 
+    let title = toast::native(app, "native.toast.writing_model_title");
+    let open_settings = toast::native(app, "native.toast.open_settings_action");
     if is_edit_mode {
         toast::emit_toast(
             app,
             toast::Payload {
                 toast_type: "error".to_string(),
-                title: Some("Writing model".to_string()),
-                message: format!("{reason} Your selected text was left alone."),
+                title: Some(title),
+                message: format!(
+                    "{reason} {}",
+                    toast::native(app, "native.toast.writing_model_edit_kept")
+                ),
                 auto_dismiss: Some(true),
                 duration: Some(10_000),
                 action: Some("open_llm_cleanup_settings".to_string()),
-                action_label: Some("Open Settings".to_string()),
+                action_label: Some(open_settings),
                 ..Default::default()
             },
         );
@@ -2008,10 +2102,13 @@ fn maybe_warn_llm_issue(app: &AppHandle<AppRuntime>, is_edit_mode: bool, reason:
         toast::show_with_action(
             app,
             "warning",
-            Some("Writing model"),
-            &format!("{reason} Your words were left as dictated."),
+            Some(&title),
+            &format!(
+                "{reason} {}",
+                toast::native(app, "native.toast.writing_model_raw_kept")
+            ),
             "open_llm_cleanup_settings",
-            "Open Settings",
+            &open_settings,
         );
     }
 }
@@ -2130,17 +2227,28 @@ pub(crate) fn finalize_streaming_transcription(
             "local_streaming",
             duration_seconds,
             false,
+            StallRecovery {
+                cancel_token: cancel_token.clone(),
+                audio_path: audio_path.clone(),
+                pending_path: pending_path.clone(),
+                temporary,
+            },
         );
         let is_edit = pending_selected_text.is_some();
 
         if count_words(&raw_transcript) == 0 {
             crate::pill::collapse_expanded_pill(&app_handle);
-            handle_empty_transcription(&app_handle, &audio_path, pending_path.as_deref());
+            handle_empty_transcription(
+                &app_handle,
+                &audio_path,
+                pending_path.as_deref(),
+                temporary,
+            );
             return;
         }
 
         if is_cancelled() {
-            abort_transcription(&app_handle, pending_path.as_deref(), true);
+            abort_transcription(&app_handle, &audio_path, pending_path.as_deref(), true);
             return;
         }
 
@@ -2164,17 +2272,22 @@ pub(crate) fn finalize_streaming_transcription(
         {
             ProcessTranscriptOutcome::Ready(processed) => processed,
             ProcessTranscriptOutcome::Empty => {
-                handle_empty_transcription(&app_handle, &audio_path, pending_path.as_deref());
+                handle_empty_transcription(
+                    &app_handle,
+                    &audio_path,
+                    pending_path.as_deref(),
+                    temporary,
+                );
                 return;
             }
             ProcessTranscriptOutcome::Cancelled => {
-                abort_transcription(&app_handle, pending_path.as_deref(), true);
+                abort_transcription(&app_handle, &audio_path, pending_path.as_deref(), true);
                 return;
             }
         };
 
         if is_cancelled() {
-            abort_transcription(&app_handle, pending_path.as_deref(), true);
+            abort_transcription(&app_handle, &audio_path, pending_path.as_deref(), true);
             return;
         }
 
@@ -2219,6 +2332,8 @@ pub(crate) fn finalize_streaming_transcription(
                 stats,
             },
         );
-        app_handle.state::<AppState>().set_pending_path(None);
+        app_handle
+            .state::<AppState>()
+            .release_pending_path(&audio_path);
     });
 }

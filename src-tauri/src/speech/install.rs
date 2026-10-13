@@ -443,6 +443,15 @@ pub async fn download_model_now(
 
     let settings = state.current_settings();
     crate::tray::refresh_menus(&app, &settings);
+    if super::selected_model(&settings) == status.id && crate::pill::take_model_ready_announcement()
+    {
+        crate::toast::show(
+            &app,
+            "success",
+            None,
+            &crate::toast::native(&app, "native.toast.model_ready"),
+        );
+    }
 
     Ok(map_status(status, &manager))
 }
