@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useCopyToClipboard } from "../../../../shared/hooks/useCopyToClipboard";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { useLingui } from "@lingui/react/macro";
 import { useQuery } from "@tanstack/react-query";
@@ -19,13 +19,16 @@ import {
 import {
   deleteAllData,
   exportDataset,
+  exportTranscripts,
   getDatasetPreview,
+  type TranscriptExportFormat,
   type DatasetExportOptions,
 } from "../../data-api";
 
 const CLI_WIKI_URL = "https://github.com/glimpse-hq/Glimpse/wiki/CLI";
 const REPORT_ISSUE_URL = "https://github.com/glimpse-hq/Glimpse/issues/new";
 const SUPPORT_EMAIL = "hello@tryglimpse.cc";
+const PRIVACY_URL = "https://tryglimpse.cc/privacy";
 
 const SUPPORT_ACTION_CLASS =
   "group flex min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-border-primary bg-surface-surface outline-hidden transition-[transform,border-color,background-color] duration-100 ease-out hover:border-[var(--color-accent-30)] hover:bg-[var(--color-accent-10)] active:translate-y-[2px] focus-visible:ring-2 focus-visible:ring-border-hover";
@@ -40,13 +43,12 @@ import SectionLabel from "../../../../shared/ui/SectionLabel";
 import SettingCard from "../../../../shared/ui/SettingCard";
 import SettingRow from "../../../../shared/ui/SettingRow";
 import { UpdateChecker } from "../../../updates/components/UpdateChecker";
+import WhatsNewModal from "../../../updates/components/WhatsNewModal";
+import FAQModal from "../../../../shared/ui/FAQModal";
+import { useInstallCli, useRemoveCli } from "../../models-queries";
 import { detectAppPlatform } from "../../../../platform/service";
 import { formatBytes } from "../../../../shared/lib/format";
-import type {
-  AppInfo,
-  CliInstallStatus,
-  TranscriptionMode,
-} from "../../../../types";
+import type { AppInfo, CliInstallStatus } from "../../../../types";
 
 const InlineHoldButton = ({
   onConfirm,
@@ -173,38 +175,43 @@ const InlineHoldButton = ({
 
 type AboutTabProps = {
   variants: Variants;
+  active: boolean;
   appInfo: AppInfo | null;
   appInfoFailed: boolean;
-  transcriptionMode: TranscriptionMode;
   cliInstallStatus: CliInstallStatus | null;
-  cliInstallBusy: boolean;
   activeLicense: boolean;
-  onInstallCli: () => void;
-  onRemoveCli: () => void;
+  onCliError: (message: string) => void;
   onOpenDataDir: () => void;
-  onOpenFAQ: () => void;
-  onOpenWhatsNew: () => void;
 };
 
 const AboutTab = ({
   variants,
+  active,
   appInfo,
   appInfoFailed,
-  transcriptionMode,
   cliInstallStatus,
-  cliInstallBusy,
   activeLicense,
-  onInstallCli,
-  onRemoveCli,
+  onCliError,
   onOpenDataDir,
-  onOpenFAQ,
-  onOpenWhatsNew,
 }: AboutTabProps) => {
   const { t } = useLingui();
+  const installCli = useInstallCli();
+  const removeCli = useRemoveCli();
+  const cliInstallBusy = installCli.isPending || removeCli.isPending;
+  const [showFAQModal, setShowFAQModal] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+
+  useEffect(() => {
+    setShowFAQModal(false);
+    setWhatsNewOpen(false);
+  }, [active]);
+
   const cliInfoId = useId();
   const { copied: supportEmailCopied, copy } = useCopyToClipboard(2000);
 
-  const [exportConfigOpen, setExportConfigOpen] = useState(false);
+  const [exportMenu, setExportMenu] = useState<
+    "closed" | "formats" | "dataset"
+  >("closed");
   const [exportOptions, setExportOptions] = useState<DatasetExportOptions>({
     includeTimestamps: true,
     verbatimText: true,
@@ -216,16 +223,16 @@ const AboutTab = ({
   const exportConfigRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!exportConfigOpen) return;
+    if (exportMenu === "closed") return;
     const onPointerDown = (event: PointerEvent) => {
       if (!exportConfigRef.current?.contains(event.target as Node)) {
-        setExportConfigOpen(false);
+        setExportMenu("closed");
       }
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
-      setExportConfigOpen(false);
+      setExportMenu("closed");
     };
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -233,7 +240,7 @@ const AboutTab = ({
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [exportConfigOpen]);
+  }, [exportMenu]);
 
   const toggleExportOption = (key: keyof DatasetExportOptions) => {
     setExportOptions((previous) => ({ ...previous, [key]: !previous[key] }));
@@ -245,8 +252,26 @@ const AboutTab = ({
   });
   const pairCount = datasetPreview.data?.pairs;
 
+  const handleExportTranscripts = async (format: TranscriptExportFormat) => {
+    setExportMenu("closed");
+    setDataError(null);
+    const destination = await save({
+      defaultPath: `glimpse-transcripts.${format}`,
+      filters: [{ name: format.toUpperCase(), extensions: [format] }],
+    });
+    if (typeof destination !== "string") return;
+    setExportBusy(true);
+    try {
+      await exportTranscripts(destination, format);
+    } catch (err) {
+      setDataError(String(err));
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   const handleExportDataset = async () => {
-    setExportConfigOpen(false);
+    setExportMenu("closed");
     setDataError(null);
     const destination = await open({
       directory: true,
@@ -303,11 +328,6 @@ const AboutTab = ({
               message: `${pairCount} audio and text pairs`,
             });
 
-  const modeLabel = t({
-    id: "settings.about.mode.local",
-    message: "Local",
-  });
-
   const recordingsBytes = appInfo?.storage_breakdown?.recordings_bytes ?? 0;
   const libraryBytes = appInfo?.storage_breakdown?.library_bytes ?? 0;
   const databasesBytes = appInfo?.storage_breakdown?.databases_bytes ?? 0;
@@ -329,8 +349,9 @@ const AboutTab = ({
       })
     : cliInstallLocked
       ? t({
-          id: "settings.about.cli.locked_info",
-          message: "Command line install requires an active license.",
+          id: "settings.about.cli.locked_info.v2",
+          message:
+            "The command line comes with a purchased Glimpse Plus license. It isn't part of the trial.",
         })
       : cliInstalled && !cliManagedByApp
         ? t({
@@ -358,8 +379,8 @@ const AboutTab = ({
       })
     : cliInstallLocked
       ? t({
-          id: "settings.about.cli.locked_subtitle",
-          message: "Requires an active license",
+          id: "settings.about.cli.locked_subtitle.v2",
+          message: "Needs a purchased Glimpse Plus license",
         })
       : cliInstalled
         ? t({
@@ -415,7 +436,6 @@ const AboutTab = ({
     const setup = [
       `Glimpse version: ${appInfo?.version ?? "unknown"}`,
       `OS version: ${platformLabel}`,
-      `Recording mode / model: ${transcriptionMode}`,
     ].join("\n");
     void openUrl(
       `${REPORT_ISSUE_URL}?template=bug_report.yml&setup=${encodeURIComponent(setup)}`,
@@ -429,6 +449,17 @@ const AboutTab = ({
       await invoke("reset_onboarding");
     } catch (err) {
       console.error("Failed to restart onboarding:", err);
+    }
+  };
+
+  const handleCliAction = async () => {
+    try {
+      await (cliInstalled && cliManagedByApp
+        ? removeCli.mutateAsync()
+        : installCli.mutateAsync());
+    } catch (err) {
+      console.error(err);
+      onCliError(String(err));
     }
   };
 
@@ -450,8 +481,8 @@ const AboutTab = ({
         </h2>
         <p className="mt-1 ui-text-body-sm ui-color-muted">
           {t({
-            id: "settings.about.version_mode",
-            message: `Version ${{ version: appInfo?.version ?? "-" }} • ${{ mode: modeLabel }}`,
+            id: "settings.about.version",
+            message: `Version ${{ version: appInfo?.version ?? "-" }}`,
           })}
         </p>
       </header>
@@ -465,7 +496,7 @@ const AboutTab = ({
             })}
           </SectionLabel>
           <UpdateChecker
-            onOpenWhatsNew={onOpenWhatsNew}
+            onOpenWhatsNew={() => setWhatsNewOpen(true)}
             // Without app info the backend still refuses checks on store builds.
             storeBuild={
               appInfo ? appInfo.store_build : appInfoFailed ? false : undefined
@@ -557,7 +588,7 @@ const AboutTab = ({
             </button>
             <button
               type="button"
-              onClick={onOpenFAQ}
+              onClick={() => setShowFAQModal(true)}
               className={SUPPORT_ACTION_CLASS}
             >
               <HelpCircle
@@ -631,16 +662,23 @@ const AboutTab = ({
             <SettingRow
               className="min-h-[88px] flex-1 px-3.5 py-2.5"
               title={t({
-                id: "settings.about.data.export_dataset",
-                message: "Export dataset",
+                id: "settings.about.data.export_transcripts",
+                message: "Export transcripts",
               })}
-              description={datasetSubtitle}
+              description={t({
+                id: "settings.about.data.export_transcripts_description",
+                message: "Your dictations and Library, as one file",
+              })}
               footer={
                 <div className="relative" ref={exportConfigRef}>
                   <button
                     type="button"
-                    onClick={() => setExportConfigOpen((previous) => !previous)}
-                    disabled={exportBusy || pairCount === 0}
+                    onClick={() =>
+                      setExportMenu((menu) =>
+                        menu === "closed" ? "formats" : "closed",
+                      )
+                    }
+                    disabled={exportBusy}
                     className={MANAGEMENT_ACTION_CLASS}
                   >
                     {exportBusy && (
@@ -655,8 +693,73 @@ const AboutTab = ({
                   </button>
 
                   <AnimatePresence>
-                    {exportConfigOpen && (
+                    {exportMenu === "formats" && (
                       <motion.div
+                        key="formats"
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -4 }}
+                        transition={{ duration: 0.15 }}
+                        className="ui-surface-menu absolute start-full top-0 z-20 ms-2 w-56 py-1"
+                      >
+                        {(
+                          [
+                            [
+                              "txt",
+                              t({
+                                id: "settings.about.data.format_txt",
+                                message: "Text",
+                              }),
+                            ],
+                            [
+                              "csv",
+                              t({
+                                id: "settings.about.data.format_csv",
+                                message: "Spreadsheet (CSV)",
+                              }),
+                            ],
+                            [
+                              "json",
+                              t({
+                                id: "settings.about.data.format_json",
+                                message: "JSON",
+                              }),
+                            ],
+                          ] as const
+                        ).map(([format, label]) => (
+                          <button
+                            key={format}
+                            type="button"
+                            onClick={() => {
+                              void handleExportTranscripts(format);
+                            }}
+                            className="flex h-8 w-full items-center px-3 text-start ui-text-meta ui-color-primary transition-colors hover:bg-[var(--surface-interactive)]"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                        <div className="my-1 border-t border-border-primary/60" />
+                        <button
+                          type="button"
+                          onClick={() => setExportMenu("dataset")}
+                          disabled={!pairCount}
+                          className="flex w-full flex-col items-start px-3 py-1.5 text-start transition-colors hover:bg-[var(--surface-interactive)] disabled:opacity-50"
+                        >
+                          <span className="ui-text-meta ui-color-primary">
+                            {t({
+                              id: "settings.about.data.format_dataset",
+                              message: "Training dataset…",
+                            })}
+                          </span>
+                          <span className="ui-text-micro ui-color-muted">
+                            {datasetSubtitle}
+                          </span>
+                        </button>
+                      </motion.div>
+                    )}
+                    {exportMenu === "dataset" && (
+                      <motion.div
+                        key="dataset"
                         initial={{ opacity: 0, x: -4 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -4 }}
@@ -883,9 +986,7 @@ const AboutTab = ({
               footer={
                 <button
                   type="button"
-                  onClick={
-                    cliInstalled && cliManagedByApp ? onRemoveCli : onInstallCli
-                  }
+                  onClick={() => void handleCliAction()}
                   disabled={
                     cliInstallBusy ||
                     (cliInstalled && !cliManagedByApp) ||
@@ -948,6 +1049,57 @@ const AboutTab = ({
           </SettingCard>
         </div>
       </section>
+
+      <section className="space-y-2">
+        <SectionLabel>
+          {t({
+            id: "settings.about.privacy",
+            message: "Privacy",
+          })}
+        </SectionLabel>
+
+        <SettingCard flush>
+          <SettingRow
+            className="px-3.5 py-2.5"
+            title={t({
+              id: "settings.about.privacy.title",
+              message: "Your dictation stays on this computer",
+            })}
+            description={t({
+              id: "settings.about.privacy.description",
+              message:
+                "Glimpse transcribes and stores everything here. Audio or text goes to a cloud provider only if you set one up, and usage analytics never include what you say.",
+            })}
+            footer={
+              <button
+                type="button"
+                onClick={() => {
+                  void openUrl(PRIVACY_URL);
+                }}
+                className={MANAGEMENT_ACTION_CLASS}
+              >
+                {t({
+                  id: "settings.about.privacy.policy",
+                  message: "Privacy policy",
+                })}
+              </button>
+            }
+          />
+        </SettingCard>
+      </section>
+
+      {active && (
+        <>
+          <FAQModal
+            isOpen={showFAQModal}
+            onClose={() => setShowFAQModal(false)}
+          />
+          <WhatsNewModal
+            isOpen={whatsNewOpen}
+            onClose={() => setWhatsNewOpen(false)}
+          />
+        </>
+      )}
     </motion.div>
   );
 };
