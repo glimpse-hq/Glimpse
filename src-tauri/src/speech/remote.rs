@@ -179,9 +179,8 @@ pub(crate) async fn attempt_remote(
                         reason,
                         "unavailable",
                     );
-                    let message = fallback_unavailable_toast_message(&error);
-                    emit_fallback_unavailable_toast_message(app, &message);
-                    RemoteAttempt::Unavailable(message)
+                    emit_fallback_unavailable_toast(app, &error);
+                    RemoteAttempt::Unavailable(fallback_unavailable_toast_message(&error))
                 }
             }
         }
@@ -224,11 +223,6 @@ pub(crate) fn speech_model_storage_label(
     }
 }
 
-pub(crate) fn fallback_toast_message(error: &RemoteError) -> String {
-    let lead = remote_issue_message(error);
-    format!("{lead} Defaulting to local model.")
-}
-
 pub(crate) fn fallback_unavailable_toast_message(error: &RemoteError) -> String {
     format!(
         "{} No local model is installed for fallback.",
@@ -245,39 +239,25 @@ pub(crate) fn emit_fallback_toast(app: &AppHandle<AppRuntime>, error: &RemoteErr
         app,
         toast::Payload {
             toast_type: "warning".to_string(),
-            title: Some("Speech Provider".to_string()),
-            message: fallback_toast_message(error),
+            title: Some(toast::native(app, "native.toast.speech_provider_title")),
+            message: format!(
+                "{} {}",
+                localized_issue_message(app, "native.provider.speech", error),
+                toast::native(app, "native.provider.fallback_local")
+            ),
             auto_dismiss: Some(true),
             ..Default::default()
         },
     );
 }
 
-pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>, settings: &UserSettings) {
-    let mut missing: Vec<&str> = Vec::new();
-    if settings.remote_speech_endpoint.trim().is_empty() {
-        missing.push("an endpoint");
-    }
-    if resolved_model_name(settings).is_none() {
-        missing.push("a model");
-    }
-    if provider_requires_api_key(&settings.remote_speech_provider)
-        && settings.remote_speech_api_key.trim().is_empty()
-    {
-        missing.push("an API key");
-    }
-    let needed = match missing.as_slice() {
-        [] => "the required settings".to_string(),
-        [one] => one.to_string(),
-        [first, second] => format!("{first} and {second}"),
-        [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
-    };
-    let message = format!("Add {needed} in Settings before enabling a remote speech provider.");
+pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>) {
+    let message = toast::native(app, "native.provider.not_configured");
     toast::emit_toast(
         app,
         toast::Payload {
             toast_type: "warning".to_string(),
-            title: Some("Speech Provider".to_string()),
+            title: Some(toast::native(app, "native.toast.speech_provider_title")),
             message,
             auto_dismiss: Some(true),
             ..Default::default()
@@ -285,13 +265,17 @@ pub(crate) fn emit_not_configured_toast(app: &AppHandle<AppRuntime>, settings: &
     );
 }
 
-fn emit_fallback_unavailable_toast_message(app: &AppHandle<AppRuntime>, message: &str) {
+fn emit_fallback_unavailable_toast(app: &AppHandle<AppRuntime>, error: &RemoteError) {
     toast::emit_toast(
         app,
         toast::Payload {
             toast_type: "error".to_string(),
-            title: Some("Speech Provider".to_string()),
-            message: message.to_string(),
+            title: Some(toast::native(app, "native.toast.speech_provider_title")),
+            message: format!(
+                "{} {}",
+                localized_issue_message(app, "native.provider.speech", error),
+                toast::native(app, "native.provider.no_fallback")
+            ),
             auto_dismiss: Some(true),
             ..Default::default()
         },
@@ -300,6 +284,56 @@ fn emit_fallback_unavailable_toast_message(app: &AppHandle<AppRuntime>, message:
 
 fn remote_issue_message(error: &RemoteError) -> String {
     issue_message("Speech provider", error)
+}
+
+/// `issue_message` in the app's language, for toasts and error banners.
+/// `subject_key` names the service: `native.provider.speech` or `.writing`.
+pub(crate) fn localized_issue_message(
+    app: &AppHandle<AppRuntime>,
+    subject_key: &'static str,
+    error: &RemoteError,
+) -> String {
+    let subject = toast::native(app, subject_key);
+    let format = |key: &'static str, extra: &[(&str, &str)]| {
+        let mut args = vec![("subject", subject.as_str())];
+        args.extend_from_slice(extra);
+        toast::native_format(app, key, &args)
+    };
+    match error.kind {
+        RemoteErrorKind::RateLimited => match error.retry_after {
+            Some(retry_after) => format(
+                "native.provider.rate_limited_retry",
+                &[("seconds", &retry_after.as_secs().max(1).to_string())],
+            ),
+            None => format("native.provider.rate_limited", &[]),
+        },
+        RemoteErrorKind::QuotaExceeded => format("native.provider.quota", &[]),
+        RemoteErrorKind::Unauthorized => format("native.provider.unauthorized", &[]),
+        RemoteErrorKind::InvalidRequest => match request_detail(error) {
+            Some(detail) => format("native.provider.rejected_detail", &[("detail", &detail)]),
+            None => format("native.provider.rejected", &[]),
+        },
+        RemoteErrorKind::NotFound => format("native.provider.not_found", &[]),
+        RemoteErrorKind::UpstreamUnavailable | RemoteErrorKind::Other => {
+            format("native.provider.unreachable", &[])
+        }
+    }
+}
+
+/// The provider's own explanation, trimmed to a sentence-sized snippet.
+fn request_detail(error: &RemoteError) -> Option<String> {
+    const MAX_DETAIL_CHARS: usize = 160;
+    let detail = error.message.trim();
+    if detail.is_empty() {
+        return None;
+    }
+    let mut snippet: String = detail.chars().take(MAX_DETAIL_CHARS).collect();
+    if detail.chars().count() > MAX_DETAIL_CHARS {
+        snippet.push('…');
+    } else if !snippet.ends_with(['.', '!', '?']) {
+        snippet.push('.');
+    }
+    Some(snippet)
 }
 
 /// User-facing summary of a remote API failure, prefixed by the service name.
@@ -318,21 +352,10 @@ pub(crate) fn issue_message(subject: &str, error: &RemoteError) -> String {
         }
         RemoteErrorKind::QuotaExceeded => format!("{subject} quota exceeded."),
         RemoteErrorKind::Unauthorized => format!("{subject} API key is invalid or expired."),
-        RemoteErrorKind::InvalidRequest => {
-            let detail = error.message.trim();
-            if detail.is_empty() {
-                format!("{subject} rejected the request.")
-            } else {
-                const MAX_DETAIL_CHARS: usize = 160;
-                let mut snippet: String = detail.chars().take(MAX_DETAIL_CHARS).collect();
-                if detail.chars().count() > MAX_DETAIL_CHARS {
-                    snippet.push('…');
-                } else if !snippet.ends_with(['.', '!', '?']) {
-                    snippet.push('.');
-                }
-                format!("{subject} rejected the request: {snippet}")
-            }
-        }
+        RemoteErrorKind::InvalidRequest => match request_detail(error) {
+            Some(snippet) => format!("{subject} rejected the request: {snippet}"),
+            None => format!("{subject} rejected the request."),
+        },
         RemoteErrorKind::NotFound => format!("{subject} endpoint or model was not found."),
         RemoteErrorKind::UpstreamUnavailable | RemoteErrorKind::Other => {
             format!("{subject} unreachable.")

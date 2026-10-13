@@ -123,7 +123,11 @@ pub(crate) fn retry_llm_cleanup(
                 }
             }
             Err(err) => {
-                let message = llm_cleanup::llm_issue_message(&err);
+                let message = crate::speech::remote::localized_issue_message(
+                    &app_handle,
+                    "native.provider.writing",
+                    &err,
+                );
                 warn!(error = ?err, transcription_id = %record_id, "cleanup failed");
                 let _ = app_handle.emit(
                     EVENT_TRANSCRIPTION_ERROR,

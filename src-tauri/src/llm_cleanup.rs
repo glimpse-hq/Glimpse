@@ -228,7 +228,13 @@ pub async fn fetch_available_models(
     let mut req = client.get(&url).timeout(MODELS_TIMEOUT);
 
     if !api_key.is_empty() {
-        req = req.header("Authorization", format!("Bearer {api_key}"));
+        // Anthropic's models list is its native API, documented with x-api-key auth.
+        req = if url.contains("api.anthropic.com") {
+            req.header("x-api-key", api_key)
+                .header("anthropic-version", "2023-06-01")
+        } else {
+            req.header("Authorization", format!("Bearer {api_key}"))
+        };
     }
 
     let resp = req.send().await.map_err(|err| {
@@ -297,8 +303,125 @@ impl TextTaskKind {
 struct ChatRequest {
     model: String,
     messages: Vec<Message>,
-    temperature: f32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    temperature: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     max_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_completion_tokens: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reasoning_effort: Option<&'static str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    thinking: Option<serde_json::Value>,
+}
+
+// Models that returned 400 for a reasoning setting; asked without one from then on.
+static REASONING_SETTING_REJECTED: Mutex<Option<HashSet<String>>> = Mutex::new(None);
+
+impl ChatRequest {
+    fn new(model: String, task: TextTaskKind, system_prompt: String, user_content: String) -> Self {
+        // Routers prefix ids ("openai/gpt-6-luna"); the upstream model's rules still apply.
+        let id = model
+            .rsplit('/')
+            .next()
+            .unwrap_or(&model)
+            .to_ascii_lowercase();
+        let openai_reasoning = is_openai_reasoning_model(&id);
+        // Claude 4.7 and later return 400 for any temperature below 1.
+        let omit_temperature = openai_reasoning || id.starts_with("claude-");
+        let rejected = REASONING_SETTING_REJECTED
+            .lock()
+            .as_ref()
+            .is_some_and(|models| models.contains(&model));
+        let (reasoning_effort, thinking) = if rejected {
+            (None, None)
+        } else {
+            least_reasoning(&id, openai_reasoning)
+        };
+
+        Self {
+            model,
+            messages: vec![
+                Message {
+                    role: "system".into(),
+                    content: system_prompt,
+                },
+                Message {
+                    role: "user".into(),
+                    content: user_content,
+                },
+            ],
+            temperature: (!omit_temperature).then(|| task.temperature()),
+            max_tokens: (!openai_reasoning).then(|| task.max_tokens()),
+            max_completion_tokens: openai_reasoning.then(|| task.max_tokens()),
+            reasoning_effort,
+            thinking,
+        }
+    }
+
+    fn sets_reasoning(&self) -> bool {
+        self.reasoning_effort.is_some() || self.thinking.is_some()
+    }
+
+    /// Drops the reasoning setting after the model rejected it, for this
+    /// request and every later one.
+    fn drop_reasoning_setting(&mut self) {
+        self.reasoning_effort = None;
+        self.thinking = None;
+        REASONING_SETTING_REJECTED
+            .lock()
+            .get_or_insert_with(HashSet::new)
+            .insert(self.model.clone());
+    }
+}
+
+/// The least thinking each model family allows. Cleanup and edits are short
+/// rewrites, so reasoning only adds latency.
+fn least_reasoning(
+    id: &str,
+    openai_reasoning: bool,
+) -> (Option<&'static str>, Option<serde_json::Value>) {
+    if openai_reasoning {
+        let effort = if id.starts_with('o') {
+            "low"
+        } else if id == "gpt-5" || id.starts_with("gpt-5-") {
+            "minimal"
+        } else {
+            "none"
+        };
+        return (Some(effort), None);
+    }
+    // Claude 5 thinks by default; the compatible endpoint ignores reasoning_effort.
+    if id.starts_with("claude-") {
+        return (None, Some(serde_json::json!({ "type": "disabled" })));
+    }
+    // Gemini 3 can't turn thinking off; minimal is its lowest level.
+    if id.starts_with("gemini-2.5") {
+        return (Some("none"), None);
+    }
+    if id.starts_with("gemini-") {
+        return (Some("minimal"), None);
+    }
+    // gpt-oss and Grok 4.7 can't turn reasoning off; low is their lowest level.
+    if id.contains("gpt-oss") || (id.starts_with("grok-") && !id.contains("non-reasoning")) {
+        return (Some("low"), None);
+    }
+    (None, None)
+}
+
+// o-series and gpt-5+ reject `max_tokens` and non-default temperature. The `-chat` variants
+// are non-reasoning and take the classic parameters.
+fn is_openai_reasoning_model(id: &str) -> bool {
+    if id.contains("-chat") {
+        return false;
+    }
+    if let Some(rest) = id.strip_prefix('o') {
+        return rest.starts_with(|c: char| c.is_ascii_digit());
+    }
+    id.strip_prefix("gpt-")
+        .and_then(|rest| rest.split(['.', '-']).next())
+        .and_then(|major| major.parse::<u32>().ok())
+        .is_some_and(|major| major >= 5)
 }
 
 #[derive(Debug, Serialize)]
@@ -404,24 +527,21 @@ async fn run_text_task(
     let model = configured_model(settings)
         .ok_or_else(|| remote_lib::config_error("Choose a language model in Settings -> Models"))?;
 
-    let body = ChatRequest {
-        model,
-        messages: vec![
-            Message {
-                role: "system".into(),
-                content: system_prompt,
-            },
-            Message {
-                role: "user".into(),
-                content: user_content,
-            },
-        ],
-        temperature: task.temperature(),
-        max_tokens: Some(task.max_tokens()),
-    };
+    let mut body = ChatRequest::new(model, task, system_prompt, user_content);
 
     let raw = match send_chat_request(client, settings, &body).await {
         Ok(raw) => raw,
+        Err(err)
+            if matches!(err.kind, RemoteErrorKind::InvalidRequest) && body.sets_reasoning() =>
+        {
+            tracing::warn!(
+                "[LLM] {} rejected the reasoning setting, retrying without it: {}",
+                body.model,
+                llm_issue_message(&err)
+            );
+            body.drop_reasoning_setting();
+            send_chat_request(client, settings, &body).await?
+        }
         Err(err) => {
             // Providers routinely ask for a couple of seconds. Waiting beats
             // handing back the raw words as though the model had refused.
