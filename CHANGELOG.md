@@ -8,6 +8,7 @@
 
 - Buy Glimpse Plus right from the app. Locked features now show what they do and how to get them, instead of sending you somewhere else first.
 - Glimpse no longer throws away your speech. A dictation that comes back empty or gets stuck is kept in Home so you can retry it, and pressing your shortcut twice by accident no longer cancels it.
+- Glimpse tells speech apart from background sound much better, so music, typing, fans and room noise no longer turn into made-up text like "Thank you." Live transcripts also cut sentences in the middle of a word less often.
 - Cleanup works better with reasoning models, and the suggested writing models are up to date.
 - When your trial ends, Glimpse shows once what stays free and what needs Glimpse Plus.
 - Glimpse starts at login by default, and tells you when your speech model has finished downloading.

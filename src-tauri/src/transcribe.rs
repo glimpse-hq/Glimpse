@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 use anyhow::{Context, Result, anyhow};
 use tauri::{AppHandle, Manager, async_runtime};
 use tokio_util::sync::CancellationToken;
-use webrtc_vad::VadMode;
 
 use crate::{
     AppRuntime, AppState, EVENT_TRANSCRIPTION_COMPLETE, EVENT_TRANSCRIPTION_ERROR,
@@ -16,7 +15,7 @@ use crate::{
     analytics::{self, Activity},
     assistive, auto_dictionary, dictionary, llm_cleanup, mode_context, model_manager,
     model_manager::{MODEL_CAPABILITY_DICTIONARY, model_supports_capability},
-    recorder::{CompletedRecording, RecordingSaved, speech_percentage_i16_with_mode},
+    recorder::{CompletedRecording, RecordingSaved, speech_percentage},
     remote_speech,
     settings::{Personality, UserSettings},
     speech, storage, toast, transcription_api, update_checker,
@@ -1905,8 +1904,7 @@ fn transcribe_local_chunked(
         return Err(anyhow!("No audio samples provided"));
     }
 
-    let speech_percent =
-        speech_percentage_i16_with_mode(samples, sample_rate, VadMode::VeryAggressive);
+    let speech_percent = speech_percentage(samples, sample_rate);
     if speech_percent < speech::VAD_MIN_SPEECH_PERCENT_FILE {
         return Ok(transcription_api::TranscriptionSuccess {
             transcript: String::new(),
@@ -1952,8 +1950,11 @@ fn transcribe_local_chunked(
             start + crate::recorder::quiet_cut_index(&samples[start..nominal_end], sample_rate)
         };
         let chunk = &samples[start..end];
-        let chunk_speech_percent =
-            speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive);
+        let chunk_speech_percent = if pad_samples == 0 && start == 0 && end == samples.len() {
+            speech_percent
+        } else {
+            speech_percentage(chunk, sample_rate)
+        };
         let min_chunk_threshold = if end == samples.len() {
             speech::VAD_MIN_SPEECH_PERCENT_FILE
         } else {

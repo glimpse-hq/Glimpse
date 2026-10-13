@@ -6,13 +6,11 @@ use anyhow::{Result, anyhow};
 use chrono::Utc;
 use tauri::{AppHandle, Emitter, Manager, async_runtime};
 use tokio_util::sync::CancellationToken;
-use webrtc_vad::VadMode;
 
 use crate::transcribe::count_words;
 use crate::{
-    AppRuntime, AppState, dictionary, model_manager, recorder::speech_percentage_i16_with_mode,
-    remote_speech, settings::UserSettings, storage::StorageManager, toast, transcribe,
-    transcription_api,
+    AppRuntime, AppState, dictionary, model_manager, recorder::speech_percentage, remote_speech,
+    settings::UserSettings, storage::StorageManager, toast, transcribe, transcription_api,
 };
 
 use super::bleed::normalize;
@@ -595,8 +593,7 @@ fn offset_ms(start_idx: usize, sample_rate: u32) -> u64 {
 }
 
 fn chunk_below_speech_gate(chunk: &[i16], sample_rate: u32) -> bool {
-    speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive)
-        < VAD_MIN_SPEECH_PERCENT_CHUNK
+    speech_percentage(chunk, sample_rate) < VAD_MIN_SPEECH_PERCENT_CHUNK
 }
 
 /// How one audio file's pass maps onto the item: which slice of the progress
@@ -1066,8 +1063,7 @@ fn transcribe_remote(
 
 fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscriptionResult> {
     let (samples, sample_rate) = transcribe::load_audio_for_transcription(audio_path)?;
-    let speech_percent =
-        speech_percentage_i16_with_mode(&samples, sample_rate, VadMode::VeryAggressive);
+    let speech_percent = speech_percentage(&samples, sample_rate);
     if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
         return Ok(LibraryTranscriptionResult::default());
     }
