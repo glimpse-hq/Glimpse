@@ -456,6 +456,27 @@ const WHISPER_ANE_ENCODERS: &[AneEncoder] = &[
     },
 ];
 
+const WHISPER_ANE_DECODERS: &[(&str, &[CatalogFile])] = &[
+    (
+        "whisper_large_v3_turbo_q8",
+        &[CatalogFile {
+            url: "https://huggingface.co/Glimpse-Dictation/Whisper-Large-V3-Turbo-coreml/resolve/main/whisper-large-v3-turbo-Q8_0-decoder.gguf",
+            path: "whisper-large-v3-turbo-Q8_0-decoder.gguf",
+            size_bytes: Some(186_591_040),
+            sha256: Some("f32445611eaf326a3de1023edf0524c5125e1eb5de3b5504fcd91836fca7a9e8"),
+        }],
+    ),
+    (
+        "whisper_small_q8",
+        &[CatalogFile {
+            url: "https://huggingface.co/Glimpse-Dictation/Whisper-Small-coreml/resolve/main/whisper-small-Q8_0-decoder.gguf",
+            path: "whisper-small-Q8_0-decoder.gguf",
+            size_bytes: Some(166_618_880),
+            sha256: Some("5b8c6b995f6a6996dfe58defbfea799ac4efb0e764e1ca926007a3eeac15f359"),
+        }],
+    ),
+];
+
 // whisper.cpp encoder names drop the `-qX_Y` quantization.
 fn strip_quant_suffix(stem: &str) -> &str {
     if let Some(pos) = stem.rfind('-') {
@@ -1152,7 +1173,14 @@ pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelMan
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {
-    transcribe_ane_encoder(model).and_then(|encoder| encoder.replacement_files)
+    transcribe_ane_encoder(model)
+        .and_then(|encoder| encoder.replacement_files)
+        .or_else(|| {
+            WHISPER_ANE_DECODERS
+                .iter()
+                .find(|(id, _)| ANE_SUPPORTED && *id == model)
+                .map(|(_, files)| *files)
+        })
 }
 
 pub fn ane_replaces_model_files(model: &str) -> bool {
@@ -1682,6 +1710,39 @@ mod tests {
             }
         }
         assert!(install_spec("not_a_real_model", false).is_none());
+    }
+
+    #[test]
+    fn whisper_neural_engine_packages_use_decoder_only_ggufs() {
+        for (model, decoder, encoder) in [
+            (
+                "whisper_large_v3_turbo_q8",
+                "whisper-large-v3-turbo-Q8_0-decoder.gguf",
+                "whisper-large-v3-turbo-encoder.mlmodelc",
+            ),
+            (
+                "whisper_small_q8",
+                "whisper-small-Q8_0-decoder.gguf",
+                "whisper-small-encoder.mlmodelc",
+            ),
+        ] {
+            let full = install_spec(model, false).unwrap();
+            let ane = install_spec(model, true).unwrap();
+            assert_eq!(full.files.len(), 1, "{model}");
+            assert!(!full.files[0].path.ends_with("-decoder.gguf"), "{model}");
+            assert_eq!(ane_replaces_model_files(model), ANE_SUPPORTED, "{model}");
+            if ANE_SUPPORTED {
+                let paths: Vec<_> = ane.files.iter().map(|file| file.path.as_str()).collect();
+                assert_eq!(paths, [decoder, encoder], "{model}");
+                assert!(matches!(
+                    ane.storage,
+                    ModelStorage::File { ref artifact } if artifact == decoder
+                ));
+            } else {
+                assert_eq!(ane.files, full.files, "{model}");
+            }
+        }
+        assert!(!ane_replaces_model_files("whisper_large_v3_q5"));
     }
 
     #[test]

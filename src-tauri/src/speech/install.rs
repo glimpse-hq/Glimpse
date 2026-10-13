@@ -93,17 +93,18 @@ fn installed_spec(
     manager: &speech_models::ModelInstallManager,
 ) -> Result<speech_models::InstallSpec> {
     let base = spec_for(model, false)?;
-    if super::catalog::ane_replaces_model_files(model) {
-        let ane = spec_for(model, true)?;
-        if manager.status(&ane)?.installed || !manager.status(&base)?.installed {
-            return Ok(ane);
-        }
-    }
-    if let Some(bin) = super::catalog::whisper_bin_install_spec(model, false)
-        && !manager.status(&base)?.installed
+    let base_installed = manager.status(&base)?.installed;
+    if !base_installed
+        && let Some(bin) = super::catalog::whisper_bin_install_spec(model, false)
         && manager.status(&bin)?.installed
     {
         return Ok(bin);
+    }
+    if super::catalog::ane_replaces_model_files(model) {
+        let ane = spec_for(model, true)?;
+        if manager.status(&ane)?.installed || !base_installed {
+            return Ok(ane);
+        }
     }
     Ok(base)
 }
@@ -818,5 +819,44 @@ mod catalog_only_resolver_tests {
         let spec = resolver("whisper_small_q5").unwrap();
         assert_eq!(spec.id, "whisper_small_q5");
         let _ = std::fs::remove_dir_all(&dir);
+    }
+}
+
+#[cfg(all(test, target_os = "macos", target_arch = "aarch64"))]
+mod whisper_package_tests {
+    use super::*;
+
+    fn place(dir: &std::path::Path, file: &speech_models::RemoteFile) {
+        std::fs::File::create(dir.join(&file.path))
+            .unwrap()
+            .set_len(file.size_bytes.unwrap())
+            .unwrap();
+    }
+
+    #[test]
+    fn whisper_installs_resolve_when_decoder_only_packages_replace_ggufs() {
+        let cache =
+            std::env::temp_dir().join(format!("glimpse-whisper-pkg-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&cache);
+        let manager = speech_models::ModelInstallManager::new(cache.clone());
+        let model = "whisper_large_v3_turbo_q8";
+        let dir = manager.model_dir(model);
+        std::fs::create_dir_all(&dir).unwrap();
+        let ane = spec_for(model, true).unwrap();
+        let full = spec_for(model, false).unwrap();
+        let bin = super::super::catalog::whisper_bin_install_spec(model, false).unwrap();
+        assert_eq!(
+            ane.files[0].path,
+            "whisper-large-v3-turbo-Q8_0-decoder.gguf"
+        );
+        assert_eq!(installed_spec(model, &manager).unwrap().files, ane.files);
+
+        place(&dir, &bin.files[0]);
+        assert_eq!(installed_spec(model, &manager).unwrap().files, bin.files);
+
+        place(&dir, &full.files[0]);
+        assert_eq!(installed_spec(model, &manager).unwrap().files, full.files);
+
+        let _ = std::fs::remove_dir_all(&cache);
     }
 }

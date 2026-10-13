@@ -16,6 +16,7 @@
 - The Glimpse window fits on smaller laptop screens.
 - Cleanup removes more ums, uhs and stammers, especially with Apple Intelligence as your writing model.
 - With Apple Intelligence as your writing model, Edit mode responds sooner, and a dictation too long for the on-device model is pasted as you said it, without a warning.
+- Whisper Large V3 Turbo and Whisper Small download less and use less memory with Neural Engine acceleration on Apple Silicon. Turbo's download is about 1.36 GB instead of 2.06 GB and it uses about 700 MB less memory, with the same transcripts and speed.
 
 ### Fixes
 
