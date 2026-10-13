@@ -221,6 +221,32 @@ fn ane_installed_for(model: &str, manager: &speech_models::ModelInstallManager) 
         .is_some_and(|dir_name| ane_encoder_complete(&manager.model_dir(model).join(dir_name)))
 }
 
+pub(super) fn decoder_upgrade_spec(
+    models_dir: &Path,
+    model: &str,
+) -> Option<speech_models::InstallSpec> {
+    if !super::catalog::ane_replaces_model_files(model) {
+        return None;
+    }
+    let manager = speech_models::ModelInstallManager::new(models_dir.to_path_buf());
+    let base = spec_for(model, false).ok()?;
+    let mut ane = spec_for(model, true).ok()?;
+    if !manager.status(&base).ok()?.installed
+        || manager.status(&ane).ok()?.installed
+        || !ane_installed_for(model, &manager)
+    {
+        return None;
+    }
+    ane.files.retain(|file| !file.extract);
+    Some(ane)
+}
+
+pub(super) fn finish_decoder_upgrade(models_dir: &Path, model: &str) -> Result<()> {
+    let manager = speech_models::ModelInstallManager::new(models_dir.to_path_buf());
+    finish_model_install(&manager, &spec_for(model, true)?, true)?;
+    Ok(())
+}
+
 fn map_status(
     status: speech_models::ModelStatus,
     manager: &speech_models::ModelInstallManager,
@@ -856,6 +882,56 @@ mod whisper_package_tests {
 
         place(&dir, &full.files[0]);
         assert_eq!(installed_spec(model, &manager).unwrap().files, full.files);
+
+        let _ = std::fs::remove_dir_all(&cache);
+    }
+
+    #[test]
+    fn decoder_upgrade_only_offers_the_missing_decoder_to_full_gguf_installs() {
+        let cache =
+            std::env::temp_dir().join(format!("glimpse-whisper-upgrade-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&cache);
+        let manager = speech_models::ModelInstallManager::new(cache.clone());
+        let model = "whisper_large_v3_turbo_q8";
+        let dir = manager.model_dir(model);
+        std::fs::create_dir_all(&dir).unwrap();
+        let full = spec_for(model, false).unwrap();
+        let ane = spec_for(model, true).unwrap();
+        assert!(decoder_upgrade_spec(&cache, model).is_none());
+
+        place(&dir, &full.files[0]);
+        assert!(decoder_upgrade_spec(&cache, model).is_none());
+
+        let encoder = ane.files.iter().find(|file| file.extract).unwrap();
+        let encoder_dir = dir.join(&encoder.path);
+        std::fs::create_dir_all(encoder_dir.join("weights")).unwrap();
+        let mut listing = Vec::new();
+        for (path, bytes) in [
+            ("coremldata.bin", 8),
+            ("model.mil", 16),
+            ("weights/weight.bin", 32),
+        ] {
+            std::fs::write(encoder_dir.join(path), vec![0u8; bytes]).unwrap();
+            listing.push(serde_json::json!({ "path": path, "size": bytes }));
+        }
+        std::fs::write(
+            dir.join(format!(".{}.manifest.json", encoder.path)),
+            serde_json::to_vec(&listing).unwrap(),
+        )
+        .unwrap();
+        let upgrade = decoder_upgrade_spec(&cache, model).unwrap();
+        let paths: Vec<_> = upgrade
+            .files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect();
+        assert_eq!(paths, ["whisper-large-v3-turbo-Q8_0-decoder.gguf"]);
+
+        place(&dir, &upgrade.files[0]);
+        assert!(decoder_upgrade_spec(&cache, model).is_none());
+        assert!(finish_decoder_upgrade(&cache, model).is_err());
+        assert!(dir.join(&full.files[0].path).exists());
+        assert!(encoder_dir.join("coremldata.bin").exists());
 
         let _ = std::fs::remove_dir_all(&cache);
     }
