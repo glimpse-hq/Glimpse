@@ -593,6 +593,9 @@ impl PillController {
             Some(text) if text.len() <= 10_000 => Some(text),
             _ => None,
         };
+        if selected_text.is_some() {
+            crate::llm_cleanup::prewarm_apple_edit(settings);
+        }
         state.set_pending_selected_text(selected_text);
     }
 

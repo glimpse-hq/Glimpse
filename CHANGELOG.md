@@ -13,6 +13,11 @@
 - Glimpse starts at login by default, and tells you when your speech model has finished downloading.
 - Error messages are clearer and now appear in your language, including when Glimpse hears no sound from your microphone.
 - The Glimpse window fits on smaller laptop screens.
+- With Apple Intelligence as your writing model, Edit mode responds sooner, and a dictation too long for the on-device model is pasted as you said it, without a warning.
+
+### Fixes
+
+- Glimpse launches again on macOS 14 and 15. Since 1.0.3 it crashed at startup on those versions.
 
 1.3.5
 

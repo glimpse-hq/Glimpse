@@ -1,3 +1,4 @@
+use glimpse_speech::cleanup::{AppleError, AppleErrorKind};
 use glimpse_speech::remote::{self as remote_lib, RemoteError, RemoteErrorKind};
 use parking_lot::Mutex;
 use reqwest::Client;
@@ -100,6 +101,7 @@ pub async fn cleanup_transcription(
         build_cleanup_system_prompt(settings, style_guidance.as_deref()),
         build_user_content(TextTaskKind::Cleanup, text, None, has_style_guidance),
         text,
+        !has_style_guidance,
     )
     .await?;
 
@@ -145,6 +147,7 @@ pub async fn edit_transcription(
             false,
         ),
         selected_text,
+        false,
     )
     .await?;
 
@@ -166,7 +169,7 @@ pub fn uses_apple_provider(settings: &UserSettings) -> bool {
 
 pub fn apple_llm_ready() -> bool {
     matches!(
-        glimpse_speech::cleanup::CleanupProvider::apple_availability(),
+        glimpse_speech::cleanup::apple_availability(),
         glimpse_speech::cleanup::AppleAvailability::Available
     )
 }
@@ -201,6 +204,19 @@ pub fn prewarm_apple_cleanup(settings: &UserSettings) {
         let prompt = build_cleanup_system_prompt(&settings, guidance.as_deref());
         if let Err(err) = glimpse_speech::cleanup::apple_prewarm(&prompt) {
             tracing::debug!("[Apple LLM] prewarm skipped: {err}");
+        }
+    });
+}
+
+/// Edit mode is only known at stop, once the selection is captured; prewarming
+/// then overlaps the session setup with transcription.
+pub fn prewarm_apple_edit(settings: &UserSettings) {
+    if !settings.llm_enabled || !uses_apple_provider(settings) {
+        return;
+    }
+    std::thread::spawn(|| {
+        if let Err(err) = glimpse_speech::cleanup::apple_prewarm(EDIT_PROMPT.trim()) {
+            tracing::debug!("[Apple LLM] edit prewarm skipped: {err}");
         }
     });
 }
@@ -516,9 +532,39 @@ async fn run_text_task(
     system_prompt: String,
     user_content: String,
     fallback_text: &str,
+    output_tracks_input: bool,
 ) -> Result<String, RemoteError> {
     if uses_apple_provider(settings) {
-        let raw = run_apple_text_task(task, system_prompt, user_content).await?;
+        // Apple's model can loop until its 4,096-token window is full (53 s on
+        // an empty transcript in testing). Cleanup output tracks input length.
+        let max_tokens = if output_tracks_input {
+            task.max_tokens()
+                .min(u32::try_from(fallback_text.len() / 2 + 256).unwrap_or(u32::MAX))
+        } else {
+            task.max_tokens()
+        };
+        let raw = match run_apple_text_task(task, max_tokens, system_prompt, user_content).await {
+            Ok(raw) => raw,
+            // The input, not the model, is the problem; the raw transcript is
+            // the right result and not worth a warning.
+            Err(err)
+                if matches!(task, TextTaskKind::Cleanup)
+                    && matches!(
+                        err.kind,
+                        AppleErrorKind::ContextTooLarge
+                            | AppleErrorKind::Refused
+                            | AppleErrorKind::UnsupportedLanguage
+                    ) =>
+            {
+                tracing::info!("[Apple LLM] cleanup skipped ({:?}): {err}", err.kind);
+                return Ok(fallback_text.to_string());
+            }
+            Err(err) => {
+                return Err(remote_lib::transport_error(format!(
+                    "On-device model failed: {err}"
+                )));
+            }
+        };
         return Ok(
             extract_plain_text(&raw, fallback_text).unwrap_or_else(|| fallback_text.to_string())
         );
@@ -563,25 +609,25 @@ async fn run_text_task(
 
 async fn run_apple_text_task(
     task: TextTaskKind,
+    max_tokens: u32,
     system_prompt: String,
     user_content: String,
-) -> Result<String, RemoteError> {
+) -> Result<String, AppleError> {
     let started = Instant::now();
-    let result = tokio::time::timeout(
-        CHAT_TIMEOUT,
-        tokio::task::spawn_blocking(move || {
-            glimpse_speech::cleanup::apple_generate(
-                &system_prompt,
-                &user_content,
-                task.temperature(),
-                Some(task.max_tokens()),
-            )
-        }),
-    )
+    let result = tokio::task::spawn_blocking(move || {
+        glimpse_speech::cleanup::apple_generate(
+            &system_prompt,
+            &user_content,
+            task.temperature(),
+            Some(max_tokens),
+            CHAT_TIMEOUT,
+        )
+    })
     .await
-    .map_err(|_| remote_lib::transport_error("On-device model timed out".to_string()))?
-    .map_err(|err| remote_lib::transport_error(format!("On-device model task failed: {err}")))?
-    .map_err(|err| remote_lib::transport_error(format!("On-device model failed: {err}")))?;
+    .map_err(|err| AppleError {
+        kind: AppleErrorKind::Other,
+        message: format!("task failed: {err}"),
+    })??;
     tracing::info!(
         "[Apple LLM] responded in {} ms ({} chars)",
         started.elapsed().as_millis(),
