@@ -507,6 +507,22 @@ impl std::fmt::Display for AccessibilityMissing {
 #[cfg(target_os = "macos")]
 impl std::error::Error for AccessibilityMissing {}
 
+/// The paste was skipped because the app in front runs as administrator, which
+/// Windows doesn't let Glimpse type into. The text was left on the clipboard.
+#[cfg(target_os = "windows")]
+#[derive(Debug)]
+pub struct ElevatedTarget;
+
+#[cfg(target_os = "windows")]
+impl std::fmt::Display for ElevatedTarget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("The app in front runs as administrator")
+    }
+}
+
+#[cfg(target_os = "windows")]
+impl std::error::Error for ElevatedTarget {}
+
 #[cfg(any(target_os = "macos", target_os = "windows"))]
 pub fn paste_text(text: &str) -> Result<()> {
     let mut clipboard = Clipboard::new().map_err(|e| anyhow!("Failed to access clipboard: {e}"))?;
@@ -519,6 +535,15 @@ pub fn paste_text(text: &str) -> Result<()> {
             .set_text(text)
             .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
         return Err(AccessibilityMissing.into());
+    }
+
+    // Windows drops synthetic keystrokes sent to an elevated app without an error.
+    #[cfg(target_os = "windows")]
+    if crate::platform::windows::elevation::foreground_blocks_input() {
+        clipboard
+            .set_text(text)
+            .map_err(|e| anyhow!("Failed to set clipboard: {e}"))?;
+        return Err(ElevatedTarget.into());
     }
 
     let backup = ClipboardBackup::capture(&mut clipboard);
