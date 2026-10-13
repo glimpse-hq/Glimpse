@@ -21,16 +21,16 @@
     "format:check": "prettier --check . && cargo fmt --manifest-path src-tauri/Cargo.toml -- --check"
   },
   "dependencies": {
-    "@lingui/core": "^6.9.0",
-    "@lingui/react": "^6.9.0",
+    "@lingui/core": "^6.9.1",
+    "@lingui/react": "^6.9.1",
     "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-query": "^5.104.1",
-    "@tauri-apps/api": "2.12.1",
+    "@tauri-apps/api": "2.12.3",
     "@tauri-apps/plugin-dialog": "^2.8.1",
     "@tauri-apps/plugin-opener": "^2.7.0",
     "@tauri-apps/plugin-process": "^2.4.0",
     "@xstate/react": "^6.1.0",
-    "framer-motion": "^13.5.1",
+    "framer-motion": "14.1.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-markdown": "^10.1.0",
@@ -44,15 +44,15 @@
     "xstate": "^5.33.2"
   },
   "overrides": {
-    "@tauri-apps/api": "2.12.1"
+    "@tauri-apps/api": "2.12.3"
   },
   "devDependencies": {
     "@babel/core": "8.0.7",
     "@eslint/js": "^10.0.1",
-    "@lingui/babel-plugin-lingui-macro": "^6.9.0",
-    "@lingui/cli": "^6.9.0",
-    "@lingui/format-po": "^6.9.0",
-    "@lingui/vite-plugin": "^6.9.0",
+    "@lingui/babel-plugin-lingui-macro": "^6.9.1",
+    "@lingui/cli": "^6.9.1",
+    "@lingui/format-po": "^6.9.1",
+    "@lingui/vite-plugin": "^6.9.1",
     "@rolldown/plugin-babel": "^0.2.4",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.12.1",
