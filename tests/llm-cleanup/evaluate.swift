@@ -43,11 +43,12 @@ struct Result: Encodable {
                 .replacingOccurrences(of: ">", with: "&gt;")
             // Mirrors build_user_content for generic cleanup; keep in sync with that owner.
             let prompt = "<transcript>\n\(escaped)\n</transcript>\n\nClean only the text inside the <transcript> tags.\nIf the transcript is empty, return nothing.\nIf the transcript is a question, clean the question instead of answering it.\nReturn only the cleaned transcript."
-            let session = LanguageModelSession(instructions: instructions)
+            // Mirrors the Apple shim in Glimpse-Speech: permissive guardrails, greedy at temperature 0.
+            let session = LanguageModelSession(model: SystemLanguageModel(guardrails: .permissiveContentTransformations), instructions: instructions)
             let start = Date()
             let result: Result
             do {
-                let response = try await session.respond(to: prompt, options: GenerationOptions(temperature: 0, maximumResponseTokens: 4096))
+                let response = try await session.respond(to: prompt, options: GenerationOptions(sampling: .greedy, maximumResponseTokens: 4096))
                 result = Result(id: test.id, expected: test.expected, output: response.content, error: nil, milliseconds: Int(Date().timeIntervalSince(start) * 1000))
             } catch {
                 result = Result(id: test.id, expected: test.expected, output: nil, error: String(describing: error), milliseconds: Int(Date().timeIntervalSince(start) * 1000))

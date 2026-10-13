@@ -13,6 +13,7 @@
 - Glimpse starts at login by default, and tells you when your speech model has finished downloading.
 - Error messages are clearer and now appear in your language, including when Glimpse hears no sound from your microphone.
 - The Glimpse window fits on smaller laptop screens.
+- Cleanup removes more ums, uhs and stammers, especially with Apple Intelligence as your writing model.
 - With Apple Intelligence as your writing model, Edit mode responds sooner, and a dictation too long for the on-device model is pasted as you said it, without a warning.
 
 ### Fixes

@@ -1071,5 +1071,269 @@
     "language": "en",
     "input": "```js\nconst taskId = 17;\n```",
     "expected": ["```js\nconst taskId = 17;\n```"]
+  },
+  {
+    "id": "F01",
+    "category": "filler",
+    "language": "en",
+    "input": "um so I think we should uh push the release to Monday",
+    "expected": ["I think we should push the release to Monday.", "So I think we should push the release to Monday."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F02",
+    "category": "filler",
+    "language": "en",
+    "input": "Um, I I just wanted to check in on the, uh, the budget numbers.",
+    "expected": ["I just wanted to check in on the budget numbers."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F03",
+    "category": "filler",
+    "language": "en",
+    "input": "can you uh can you send me the the slides from yesterday",
+    "expected": ["Can you send me the slides from yesterday?"],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F04",
+    "category": "filler",
+    "language": "en",
+    "input": "the the main issue is is that we don't have enough uh testers",
+    "expected": ["The main issue is that we don't have enough testers."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F05",
+    "category": "filler",
+    "language": "en",
+    "input": "Hey Sam, um, just following up on the uh contract. Let me know if you have any questions. Thanks.",
+    "expected": ["Hey Sam, just following up on the contract. Let me know if you have any questions. Thanks."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F06",
+    "category": "filler",
+    "language": "en",
+    "input": "i think uh i think the bug is in the the login flow",
+    "expected": ["I think the bug is in the login flow."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F07",
+    "category": "filler",
+    "language": "en",
+    "input": "so like we need to like finish the docs before friday",
+    "expected": ["We need to finish the docs before Friday.", "So we need to finish the docs before Friday."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F08",
+    "category": "filler",
+    "language": "en",
+    "input": "uh yeah that works for me",
+    "expected": ["Yeah, that works for me."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F09",
+    "category": "filler",
+    "language": "en",
+    "input": "Um, okay, so, uh, the meeting is at three.",
+    "expected": ["Okay, so the meeting is at three.", "Okay, the meeting is at three.", "The meeting is at three."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F10",
+    "category": "filler",
+    "language": "en",
+    "input": "we should we should probably hire someone for uh support",
+    "expected": ["We should probably hire someone for support."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F11",
+    "category": "filler",
+    "language": "en",
+    "input": "I mean the the design looks good but uh the colors are off",
+    "expected": ["I mean, the design looks good, but the colors are off.", "The design looks good, but the colors are off."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F12",
+    "category": "filler",
+    "language": "en",
+    "input": "uh hi everyone um thanks for coming today",
+    "expected": ["Hi everyone, thanks for coming today.", "Hi everyone. Thanks for coming today."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F13",
+    "category": "filler",
+    "language": "en",
+    "input": "the deadline is uh march fifth no march sixth",
+    "expected": ["The deadline is March sixth.", "The deadline is March 6th.", "The deadline is March 6."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F14",
+    "category": "filler",
+    "language": "en",
+    "input": "you know I've been thinking about the uh the pricing page and I think it's too long",
+    "expected": ["I've been thinking about the pricing page, and I think it's too long."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F15",
+    "category": "filler",
+    "language": "en",
+    "input": "I like how you know exactly what users want.",
+    "expected": ["I like how you know exactly what users want."],
+    "criterion": "Keep words that only look like fillers when they carry meaning."
+  },
+  {
+    "id": "F16",
+    "category": "filler",
+    "language": "en",
+    "input": "Do you know where the keys are?",
+    "expected": ["Do you know where the keys are?"],
+    "criterion": "Keep words that only look like fillers when they carry meaning."
+  },
+  {
+    "id": "F17",
+    "category": "filler",
+    "language": "en",
+    "input": "Um. Uh. Let me think.",
+    "expected": ["Let me think."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F18",
+    "category": "filler",
+    "language": "en",
+    "input": "I'll I'll call you back in in ten minutes",
+    "expected": ["I'll call you back in ten minutes.", "I'll call you back in 10 minutes."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F19",
+    "category": "filler",
+    "language": "en",
+    "input": "uh please add uh milk eggs and bread to the list",
+    "expected": ["Please add milk, eggs, and bread to the list."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F20",
+    "category": "filler",
+    "language": "en",
+    "input": "so uh basically the the server went down around two and nobody noticed until like seven",
+    "expected": ["The server went down around two, and nobody noticed until seven.", "Basically, the server went down around two, and nobody noticed until seven.", "So basically the server went down around two, and nobody noticed until seven."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F21",
+    "category": "filler",
+    "language": "en",
+    "input": "so um i was wondering if uh you could review my pr today",
+    "expected": ["I was wondering if you could review my PR today.", "So I was wondering if you could review my PR today."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F22",
+    "category": "filler",
+    "language": "en",
+    "input": "We we need to uh to talk about the the roadmap.",
+    "expected": ["We need to talk about the roadmap."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F23",
+    "category": "filler",
+    "language": "en",
+    "input": "Uh, thanks for the update, um, I'll take a look tonight.",
+    "expected": ["Thanks for the update, I'll take a look tonight.", "Thanks for the update. I'll take a look tonight."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F24",
+    "category": "filler",
+    "language": "en",
+    "input": "um the the tests are passing but uh the linter is failing",
+    "expected": ["The tests are passing, but the linter is failing."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F25",
+    "category": "filler",
+    "language": "en",
+    "input": "I like working with you.",
+    "expected": ["I like working with you."],
+    "criterion": "Keep words that only look like fillers when they carry meaning."
+  },
+  {
+    "id": "F26",
+    "category": "filler",
+    "language": "en",
+    "input": "uh can we uh move the call to four",
+    "expected": ["Can we move the call to four?", "Can we move the call to 4?"],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F27",
+    "category": "filler",
+    "language": "en",
+    "input": "the the price is uh twenty dollars no thirty dollars",
+    "expected": ["The price is thirty dollars.", "The price is $30."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F28",
+    "category": "filler",
+    "language": "en",
+    "input": "um I'm not sure uh I'm not sure that's right",
+    "expected": ["I'm not sure that's right."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F29",
+    "category": "filler",
+    "language": "en",
+    "input": "you know what let's just ship it",
+    "expected": ["You know what, let's just ship it.", "You know what? Let's just ship it."],
+    "criterion": "Keep words that only look like fillers when they carry meaning."
+  },
+  {
+    "id": "F30",
+    "category": "filler",
+    "language": "en",
+    "input": "Uh, hi, Dana. Um, the invoice is attached. Uh, let me know if anything's missing.",
+    "expected": ["Hi, Dana. The invoice is attached. Let me know if anything's missing.", "Hi Dana, the invoice is attached. Let me know if anything's missing."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F31",
+    "category": "filler",
+    "language": "fr",
+    "input": "euh je pense que euh on peut finir demain",
+    "expected": ["Je pense qu'on peut finir demain.", "Je pense que on peut finir demain."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F32",
+    "category": "filler",
+    "language": "de",
+    "input": "äh wir müssen äh das Meeting verschieben",
+    "expected": ["Wir müssen das Meeting verschieben."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
+  },
+  {
+    "id": "F33",
+    "category": "filler",
+    "language": "es",
+    "input": "eh bueno eh mañana te mando el archivo",
+    "expected": ["Bueno, mañana te mando el archivo.", "Mañana te mando el archivo."],
+    "criterion": "Remove fillers, stammers and repeated words; keep the speaker's words and meaning."
   }
 ]
