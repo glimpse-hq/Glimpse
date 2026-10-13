@@ -121,6 +121,11 @@ pub(crate) fn get_library_items_page(
     Ok((items, has_more))
 }
 
+pub(crate) fn count_library_items(conn: &Connection) -> Result<u64> {
+    let count: i64 = conn.query_row("SELECT COUNT(*) FROM library_items", [], |row| row.get(0))?;
+    Ok(count.max(0) as u64)
+}
+
 /// Marks an active item as cancelling; false when it already has another status.
 pub(crate) fn mark_library_item_cancelling(conn: &Connection, id: &str) -> Result<bool> {
     let changed = conn.execute(

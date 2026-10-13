@@ -4,7 +4,25 @@ import * as licenseApi from "./api";
 export const licenseKeys = {
   state: () => ["license", "state"] as const,
   dictationStats: () => ["license", "dictationStats"] as const,
+  purchasePlans: () => ["license", "purchasePlans"] as const,
+  trialEndedScreen: () => ["license", "trialEndedScreen"] as const,
 };
+
+export function usePurchasePlans() {
+  return useQuery({
+    queryKey: licenseKeys.purchasePlans(),
+    queryFn: licenseApi.getPurchasePlans,
+    staleTime: Infinity,
+  });
+}
+
+export function useTrialEndedScreen(enabled: boolean) {
+  return useQuery({
+    queryKey: licenseKeys.trialEndedScreen(),
+    queryFn: licenseApi.getTrialEndedScreen,
+    enabled,
+  });
+}
 
 export function useDictationStats() {
   return useQuery({
@@ -39,7 +57,11 @@ export function useLicenseGate(): boolean {
 export function useActivateLicense() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useMutation<
+    licenseApi.LicenseState,
+    licenseApi.ActivationError,
+    string
+  >({
     mutationFn: licenseApi.activateLicense,
     onSuccess: (state) => {
       queryClient.setQueryData(licenseKeys.state(), state);
