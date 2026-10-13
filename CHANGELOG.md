@@ -1,3 +1,19 @@
+1.3.6
+
+### New Features
+
+- Export all your transcripts as text, CSV or JSON from Settings > About.
+
+### Improvements
+
+- Buy Glimpse Plus right from the app. Locked features now show what they do and how to get them, instead of sending you somewhere else first.
+- Glimpse no longer throws away your speech. A dictation that comes back empty or gets stuck is kept in Home so you can retry it, and pressing your shortcut twice by accident no longer cancels it.
+- Cleanup works better with reasoning models, and the suggested writing models are up to date.
+- When your trial ends, Glimpse shows once what stays free and what needs Glimpse Plus.
+- Glimpse starts at login by default, and tells you when your speech model has finished downloading.
+- Error messages are clearer and now appear in your language, including when Glimpse hears no sound from your microphone.
+- The Glimpse window fits on smaller laptop screens.
+
 1.3.5
 
 ### New Models
