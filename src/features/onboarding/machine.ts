@@ -1,5 +1,5 @@
 import { setup, assign } from "xstate";
-import type { DetectedApp, TranscriptionMode } from "../../types";
+import type { DetectedApp } from "../../types";
 import {
   getDefaultShortcuts,
   getOnboardingPlatform,
@@ -11,7 +11,6 @@ const initialPlatform = getOnboardingPlatform();
 
 export type OnboardingContext = {
   platform: OnboardingPlatform;
-  selectedMode: TranscriptionMode;
   importableApps: DetectedApp[];
   localModelChoice: string;
   microphoneDevice: string | null;
@@ -27,7 +26,6 @@ export type OnboardingContext = {
 export type OnboardingEvent =
   | { type: "NEXT" }
   | { type: "BACK" }
-  | { type: "SELECT_MODE"; mode: TranscriptionMode }
   | { type: "SET_IMPORTABLE"; apps: DetectedApp[] }
   | { type: "SELECT_MODEL"; key: string }
   | { type: "SET_MICROPHONE_DEVICE"; device: string | null }
@@ -64,7 +62,7 @@ function getSteps(
 }
 
 const hasImportStep = ({ context }: { context: OnboardingContext }) =>
-  context.selectedMode === "local" && context.importableApps.length > 0;
+  context.importableApps.length > 0;
 
 const requiresPermissionsStep = ({ context }: { context: OnboardingContext }) =>
   context.platform.requiresMicrophonePermission ||
@@ -92,11 +90,10 @@ export const onboardingMachine = setup({
   initial: "welcome",
   context: {
     platform: initialPlatform,
-    selectedMode: "local",
     importableApps: [],
     localModelChoice: "",
     microphoneDevice: null,
-    autoLaunch: false,
+    autoLaunch: true,
     smartShortcut: getDefaultShortcuts(initialPlatform.id).smart,
     completionError: null,
     isCompleting: false,
@@ -105,9 +102,6 @@ export const onboardingMachine = setup({
     hasStepTransitioned: false,
   },
   on: {
-    SELECT_MODE: {
-      actions: assign({ selectedMode: ({ event }) => event.mode }),
-    },
     SET_IMPORTABLE: {
       actions: assign({ importableApps: ({ event }) => event.apps }),
     },
