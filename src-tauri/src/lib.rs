@@ -1422,8 +1422,14 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
         return Ok(());
     }
 
+    end_shortcut_capture(&app)
+}
+
+pub(crate) fn end_shortcut_capture(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    state.set_shortcut_capture_active(false);
     state.hotkeys.stop_capture();
-    pill::register_shortcuts(&app).map_err(|err| err.to_string())
+    pill::register_shortcuts(app).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
