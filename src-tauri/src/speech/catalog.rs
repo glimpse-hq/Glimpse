@@ -104,7 +104,10 @@ pub enum Languages {
     Qwen3,
     Whisper,
     /// Only the macOS Apple Speech model uses this.
-    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    #[cfg_attr(
+        not(all(target_os = "macos", target_arch = "aarch64")),
+        allow(dead_code)
+    )]
     Apple,
 }
 
