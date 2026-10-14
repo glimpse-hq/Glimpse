@@ -123,9 +123,9 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
         message: "What is free vs paid?",
       }),
       answer: t({
-        id: "faq.free.answer.v4",
+        id: "faq.free.answer.v5",
         message:
-          "Core dictation is free: local transcription, dictionary, replacements, and history. There are no per-minute fees or subscriptions for that. Library, Cleanup, and personalization with an LLM are part of every paid plan, and you can try them free for 14 days. The local API server and the CLI need a license and aren't part of the trial. Activate a license in Settings → Account.",
+          "Dictation is free with every model: local transcription, dictionary, replacements, and history, with no word limits or subscription. Library, Record, Cleanup, and Personalization come with Glimpse Plus, or Glimpse Solo for one device, and you can try them free for 14 days. Both are a single payment. The local API server and the command line need a purchased license and aren't part of the trial. Enter your license key in Settings → Account.",
       }),
     },
     {
@@ -135,9 +135,9 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
         message: "How do I manage or delete my data?",
       }),
       answer: t({
-        id: "faq.delete.answer",
+        id: "faq.delete.answer.v2",
         message:
-          "Delete recordings from History, remove imported files from Library, or uninstall models from Settings → Models. Settings → App can auto-delete Audio only or full Transcripts (including linked audio). You can also open your Glimpse data folder from About → Storage to manage files directly.",
+          "Delete dictations from Home, remove recordings and imported files from Library, or uninstall models from Settings → Models. Settings → App can auto-delete Audio only or full Transcripts (including linked audio). You can also open your Glimpse data folder from About → Storage to manage files directly.",
       }),
     },
     {
@@ -193,12 +193,6 @@ const FAQModal = ({ isOpen, onClose }: FAQModalProps) => {
                     message: "Frequently Asked Questions",
                   })}
                 </h2>
-                <p className="ui-text-meta ui-color-muted mt-1">
-                  {t({
-                    id: "faq.subtitle",
-                    message: "How Glimpse works, privacy, and AI writing",
-                  })}
-                </p>
               </div>
               <button
                 type="button"

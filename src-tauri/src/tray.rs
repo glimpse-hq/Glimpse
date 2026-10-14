@@ -10,7 +10,7 @@ use crate::{AppRuntime, AppState, SETTINGS_WINDOW_LABEL, audio};
 use parking_lot::Mutex;
 use std::sync::{
     OnceLock,
-    atomic::{AtomicU8, Ordering},
+    atomic::{AtomicBool, AtomicU8, AtomicU64, Ordering},
 };
 use tauri::menu::{CheckMenuItemBuilder, Menu, MenuBuilder, MenuItem, Submenu, SubmenuBuilder};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
@@ -36,6 +36,12 @@ const MENU_ID_RECORDING_FINISH: &str = "menu_recording_finish";
 const RECORDING_ICON_RGB: [u8; 3] = [255, 59, 48];
 const PAUSED_ICON_RGB: [u8; 3] = [255, 146, 48];
 pub(crate) const EVENT_SETTINGS_RENDERER_READY: &str = "settings:renderer_ready";
+// Long enough for the Settings form's debounced save to land after a close.
+const SETTINGS_FREE_DELAY: std::time::Duration = std::time::Duration::from_secs(2);
+// Bumped on every show and close, so a pending free only runs if nothing
+// happened to the window since.
+static SETTINGS_WINDOW_GENERATION: AtomicU64 = AtomicU64::new(0);
+static SETTINGS_WINDOW_BUILDING: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, Copy)]
 pub(crate) enum SettingsPage {
@@ -47,6 +53,7 @@ pub(crate) enum SettingsPage {
     Personalization,
     Library,
     Record,
+    CheckoutReturned,
 }
 
 impl SettingsPage {
@@ -60,6 +67,7 @@ impl SettingsPage {
             Self::Personalization => "navigate:personalization",
             Self::Library => "navigate:library",
             Self::Record => "navigate:record",
+            Self::CheckoutReturned => crate::EVENT_LICENSE_CHECKOUT_RETURNED,
         }
     }
 }
@@ -681,19 +689,47 @@ pub fn build_tray(app: &AppHandle<AppRuntime>) -> tauri::Result<TrayIcon<AppRunt
 }
 
 pub fn toggle_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<()> {
-    let window = match app.get_webview_window(SETTINGS_WINDOW_LABEL) {
-        Some(window) => window,
-        None => build_settings_window(app)?,
+    if let Some(window) = app.get_webview_window(SETTINGS_WINDOW_LABEL) {
+        return show_settings_window(app, &window);
+    }
+    // Building a webview inside a tray, menu or single-instance callback
+    // re-enters the Windows event loop and can panic tao, so it's built off
+    // the caller's thread.
+    if SETTINGS_WINDOW_BUILDING.swap(true, Ordering::SeqCst) {
+        return Ok(());
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result =
+            build_settings_window(&app).and_then(|window| show_settings_window(&app, &window));
+        SETTINGS_WINDOW_BUILDING.store(false, Ordering::SeqCst);
+        if let Err(err) = result {
+            tracing::error!("Failed to open the main window: {err}");
+        }
+    });
+    Ok(())
+}
+
+// Shrinks below 900x750 only on screens that can't fit it, such as 1366x768
+// or 1080p at 150% scaling, so the bottom of the window stays reachable.
+fn fitted_settings_size(app: &AppHandle<AppRuntime>) -> (f64, f64) {
+    let Some(monitor) = app.primary_monitor().ok().flatten() else {
+        return (900.0, 750.0);
     };
-    show_settings_window(app, &window)
+    let area = monitor
+        .work_area()
+        .size
+        .to_logical::<f64>(monitor.scale_factor());
+    (900.0_f64.min(area.width), 750.0_f64.min(area.height))
 }
 
 fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWindow<AppRuntime>> {
     let settings = app.state::<AppState>().current_settings();
+    let (width, height) = fitted_settings_size(app);
     let builder = WebviewWindowBuilder::new(app, SETTINGS_WINDOW_LABEL, WebviewUrl::default())
         .title("Glimpse")
-        .inner_size(900.0, 750.0)
-        .min_inner_size(900.0, 750.0)
+        .inner_size(width, height)
+        .min_inner_size(width, height)
         .resizable(true)
         .visible(false)
         .initialization_script(boot_script(&settings));
@@ -724,9 +760,15 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
 
     let app_handle = app.clone();
     let window_clone = window.clone();
-    window.on_window_event(move |event| {
-        if let WindowEvent::CloseRequested { api, .. } = event {
+    window.on_window_event(move |event| match event {
+        // Hides at once, then frees the webview so a closed window holds no memory.
+        WindowEvent::CloseRequested { api, .. } => {
             api.prevent_close();
+            if app_handle.state::<AppState>().is_shortcut_capture_active()
+                && let Err(err) = crate::end_shortcut_capture(&app_handle)
+            {
+                tracing::warn!("Failed to restore shortcuts after closing the window: {err}");
+            }
             let _ = window_clone.hide();
             app_handle
                 .state::<AppState>()
@@ -734,7 +776,29 @@ fn build_settings_window(app: &AppHandle<AppRuntime>) -> tauri::Result<WebviewWi
                 .stop_microphone_test(&app_handle);
             #[cfg(target_os = "macos")]
             let _ = app_handle.set_activation_policy(ActivationPolicy::Accessory);
+
+            let generation = SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst) + 1;
+            if !app_handle
+                .state::<AppState>()
+                .current_settings()
+                .onboarding_completed
+            {
+                return;
+            }
+            let window = window_clone.clone();
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(SETTINGS_FREE_DELAY).await;
+                if SETTINGS_WINDOW_GENERATION.load(Ordering::SeqCst) == generation {
+                    let _ = window.destroy();
+                }
+            });
         }
+        WindowEvent::Destroyed => {
+            pending_settings_navigation().lock().renderer_ready = false;
+            #[cfg(target_os = "macos")]
+            crate::library::commands::reset_library_import_renderer();
+        }
+        _ => {}
     });
     Ok(window)
 }
@@ -743,6 +807,7 @@ fn show_settings_window(
     app: &AppHandle<AppRuntime>,
     window: &WebviewWindow<AppRuntime>,
 ) -> tauri::Result<()> {
+    SETTINGS_WINDOW_GENERATION.fetch_add(1, Ordering::SeqCst);
     #[cfg(target_os = "macos")]
     let _ = app.set_activation_policy(ActivationPolicy::Regular);
 
@@ -759,7 +824,11 @@ fn show_settings_window(
             app,
             crate::toast::Payload {
                 toast_type: "success".to_string(),
-                message: format!("Glimpse updated to v{current_version}."),
+                message: crate::toast::native_format(
+                    app,
+                    "native.toast.updated_to",
+                    &[("version", current_version)],
+                ),
                 auto_dismiss: Some(true),
                 duration: Some(5000),
                 ..Default::default()
@@ -775,7 +844,7 @@ pub(crate) fn boot_script(settings: &UserSettings) -> String {
         "theme": settings.theme_mode,
         "locale": settings.app_locale,
         "version": env!("CARGO_PKG_VERSION"),
-        "osMajor": crate::macos_major_version(),
+        "osMajor": crate::platform::macos_major_version(),
     });
     format!("window.__GLIMPSE_BOOT__ = {boot};")
 }

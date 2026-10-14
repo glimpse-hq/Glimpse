@@ -19,7 +19,6 @@ use crossbeam_channel::{Receiver, RecvTimeoutError, Sender, bounded, unbounded};
 use parking_lot::Mutex;
 use rubato::{Fft, FixedSync, Resampler, audioadapter_buffers::direct::InterleavedSlice};
 use uuid::Uuid;
-use webrtc_vad::{SampleRate as VadSampleRate, Vad, VadMode};
 
 #[derive(Debug, Clone)]
 pub enum RecordingRejectionReason {
@@ -785,17 +784,13 @@ pub fn validate_recording(recording: &CompletedRecording) -> Result<(), Recordin
         });
     }
 
-    let mut speech_percentage = recording.speech_percentage.unwrap_or_else(|| {
-        speech_percentage_i16_with_mode(&recording.samples, recording.sample_rate, VadMode::Quality)
-    });
-    if recording.speech_percentage.is_some() && speech_percentage < MIN_SPEECH_PERCENTAGE {
-        speech_percentage = speech_percentage_i16_with_mode(
-            &recording.samples,
-            recording.sample_rate,
-            VadMode::Quality,
-        );
+    let mut percentage = recording
+        .speech_percentage
+        .unwrap_or_else(|| speech_percentage(&recording.samples, recording.sample_rate));
+    if recording.speech_percentage.is_some() && percentage < MIN_SPEECH_PERCENTAGE {
+        percentage = speech_percentage(&recording.samples, recording.sample_rate);
     }
-    if speech_percentage < MIN_SPEECH_PERCENTAGE {
+    if percentage < MIN_SPEECH_PERCENTAGE {
         return Err(RecordingRejectionReason::NoSpeechDetected);
     }
 
@@ -823,21 +818,6 @@ pub(crate) fn calculate_rms_i16(samples: &[i16]) -> f32 {
         })
         .sum();
     ((sum_squares / samples.len() as f64).sqrt()) as f32
-}
-
-fn vad_sample_rate(sample_rate: u32) -> Option<VadSampleRate> {
-    match sample_rate {
-        8000 => Some(VadSampleRate::Rate8kHz),
-        16000 => Some(VadSampleRate::Rate16kHz),
-        32000 => Some(VadSampleRate::Rate32kHz),
-        48000 => Some(VadSampleRate::Rate48kHz),
-        _ => None,
-    }
-}
-
-fn create_vad(sample_rate: u32, mode: VadMode) -> Option<Vad> {
-    let rate = vad_sample_rate(sample_rate)?;
-    Some(Vad::new_with_rate_and_mode(rate, mode))
 }
 
 pub fn quiet_cut_index(samples: &[i16], sample_rate: u32) -> usize {
@@ -869,66 +849,9 @@ pub fn quiet_cut_index(samples: &[i16], sample_rate: u32) -> usize {
     best_end - frame / 2
 }
 
-pub fn speech_percentage_i16_with_mode(samples: &[i16], sample_rate: u32, mode: VadMode) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
-
-    if matches!(sample_rate, 8000 | 16000 | 32000 | 48000) {
-        return calculate_speech_percentage_i16_with_mode(samples, sample_rate, mode);
-    }
-
-    // The VAD only accepts a few rates; resample everything else to 16 kHz.
-    let scale = 1.0 / i16::MAX as f32;
-    let samples_f32: Vec<f32> = samples
-        .iter()
-        .map(|sample| *sample as f32 * scale)
-        .collect();
-    let resampled: Vec<i16> = resample_audio(&samples_f32, sample_rate, 16000)
-        .iter()
-        .map(|s| (s.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16)
-        .collect();
-
-    calculate_speech_percentage_i16_with_mode(&resampled, 16000, mode)
-}
-
-fn calculate_speech_percentage_i16_with_mode(
-    samples: &[i16],
-    sample_rate: u32,
-    mode: VadMode,
-) -> f32 {
-    if samples.is_empty() {
-        return 0.0;
-    }
-
-    let frame_ms = 30usize;
-    let frame_len = (sample_rate as usize * frame_ms) / 1000;
-    if frame_len == 0 || samples.len() < frame_len {
-        return 0.0;
-    }
-
-    let mut vad = match create_vad(sample_rate, mode) {
-        Some(instance) => instance,
-        None => return 100.0, // If VAD fails, assume it's valid
-    };
-
-    let mut speech_frames = 0;
-    let mut total_frames = 0;
-    for chunk in samples.chunks(frame_len) {
-        if chunk.len() < frame_len {
-            break;
-        }
-        total_frames += 1;
-        if vad.is_voice_segment(chunk).unwrap_or(false) {
-            speech_frames += 1;
-        }
-    }
-
-    if total_frames == 0 {
-        return 0.0;
-    }
-
-    (speech_frames as f32 / total_frames as f32) * 100.0
+pub fn speech_percentage(samples: &[i16], sample_rate: u32) -> f32 {
+    // Without the model, assume speech rather than drop a recording.
+    glimpse_speech::vad::analyze(samples, sample_rate).map_or(100.0, |speech| speech.percentage())
 }
 
 const WAV_SAMPLE_RATE: u32 = 16_000;
@@ -1311,45 +1234,76 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
         return (Vec::new(), None);
     }
 
-    let vad_rate = match sample_rate {
-        8000 | 16000 | 32000 | 48000 => sample_rate,
-        _ => 16000,
-    };
-
     let to_i16 = |s: &f32| (s.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16;
-    let analysis_i16: Vec<i16> = if vad_rate == sample_rate {
-        samples.iter().map(to_i16).collect()
-    } else {
-        resample_audio(samples, sample_rate, vad_rate)
-            .iter()
-            .map(to_i16)
-            .collect()
+    let analysis_i16: Vec<i16> = samples.iter().map(to_i16).collect();
+    let Some(speech) = glimpse_speech::vad::analyze(&analysis_i16, sample_rate) else {
+        return (samples.to_vec(), None);
     };
 
+    // Silero analyzes at 16 kHz whatever the input rate.
+    let vad_rate = 16_000u32;
     let frame_ms = 30usize;
     let frame_len = (vad_rate as usize * frame_ms) / 1000;
-    if frame_len == 0 || analysis_i16.len() < frame_len {
+    let speech_frames = speech.frames(frame_len);
+    if speech_frames.iter().all(|flag| !*flag) {
         return (samples.to_vec(), None);
     }
+    let keep_mask = keep_frames(&speech.regions(frame_len), frame_ms);
 
-    let mut vad = match create_vad(vad_rate, VadMode::Quality) {
-        Some(instance) => instance,
-        None => return (samples.to_vec(), None),
+    // Speech share of the kept frames, mirroring what a VAD pass over the
+    // trimmed output would measure.
+    let voiced_count = speech_frames.iter().filter(|flag| **flag).count();
+    let kept_count = keep_frames(&speech_frames, frame_ms)
+        .iter()
+        .filter(|flag| **flag)
+        .count();
+    let speech_percentage = if kept_count == 0 {
+        None
+    } else {
+        Some((voiced_count as f32 / kept_count as f32) * 100.0)
     };
 
-    let mut speech_frames = Vec::new();
-    for chunk in analysis_i16.chunks(frame_len) {
-        if chunk.len() < frame_len {
-            break;
+    let samples_per_vad_sample = sample_rate as f32 / vad_rate as f32;
+    let mut intervals: Vec<(usize, usize)> = Vec::new();
+    let mut current: Option<(usize, usize)> = None;
+    for (idx, keep) in keep_mask.iter().enumerate() {
+        let start = ((idx * frame_len) as f32 * samples_per_vad_sample) as usize;
+        let end = (((idx + 1) * frame_len) as f32 * samples_per_vad_sample).ceil() as usize;
+        if *keep {
+            if let Some(interval) = current.as_mut() {
+                interval.1 = end;
+            } else {
+                current = Some((start, end));
+            }
+        } else if let Some(interval) = current.take() {
+            intervals.push(interval);
         }
-        let voiced = vad.is_voice_segment(chunk).unwrap_or(true);
-        speech_frames.push(voiced);
+    }
+    if let Some(interval) = current.take() {
+        intervals.push(interval);
     }
 
-    if speech_frames.is_empty() || speech_frames.iter().all(|flag| !*flag) {
-        return (samples.to_vec(), None);
+    if intervals.is_empty() {
+        return (samples.to_vec(), speech_percentage);
     }
 
+    let mut output = Vec::new();
+    for (start, end) in intervals {
+        let clamped_start = start.min(samples.len());
+        let clamped_end = end.min(samples.len());
+        if clamped_start < clamped_end {
+            output.extend_from_slice(&samples[clamped_start..clamped_end]);
+        }
+    }
+
+    if output.is_empty() {
+        (samples.to_vec(), speech_percentage)
+    } else {
+        (output, speech_percentage)
+    }
+}
+
+fn keep_frames(speech_frames: &[bool], frame_ms: usize) -> Vec<bool> {
     let hang_duration_ms = 350f32;
     let hang_frames = ((hang_duration_ms / frame_ms as f32).ceil()) as usize;
     let pre_roll = 4usize;
@@ -1397,55 +1351,7 @@ fn trim_silence(samples: &[f32], sample_rate: u32) -> (Vec<f32>, Option<f32>) {
             }
         }
     }
-
-    // Speech share of the kept frames, mirroring what a VAD pass over the
-    // trimmed output would measure.
-    let voiced_count = speech_frames.iter().filter(|flag| **flag).count();
-    let kept_count = keep_mask.iter().filter(|flag| **flag).count();
-    let speech_percentage = if kept_count == 0 {
-        None
-    } else {
-        Some((voiced_count as f32 / kept_count as f32) * 100.0)
-    };
-
-    let samples_per_vad_sample = sample_rate as f32 / vad_rate as f32;
-    let mut intervals: Vec<(usize, usize)> = Vec::new();
-    let mut current: Option<(usize, usize)> = None;
-    for (idx, keep) in keep_mask.iter().enumerate() {
-        let start = ((idx * frame_len) as f32 * samples_per_vad_sample) as usize;
-        let end = (((idx + 1) * frame_len) as f32 * samples_per_vad_sample).ceil() as usize;
-        if *keep {
-            if let Some(interval) = current.as_mut() {
-                interval.1 = end;
-            } else {
-                current = Some((start, end));
-            }
-        } else if let Some(interval) = current.take() {
-            intervals.push(interval);
-        }
-    }
-    if let Some(interval) = current.take() {
-        intervals.push(interval);
-    }
-
-    if intervals.is_empty() {
-        return (samples.to_vec(), speech_percentage);
-    }
-
-    let mut output = Vec::new();
-    for (start, end) in intervals {
-        let clamped_start = start.min(samples.len());
-        let clamped_end = end.min(samples.len());
-        if clamped_start < clamped_end {
-            output.extend_from_slice(&samples[clamped_start..clamped_end]);
-        }
-    }
-
-    if output.is_empty() {
-        (samples.to_vec(), speech_percentage)
-    } else {
-        (output, speech_percentage)
-    }
+    keep_mask
 }
 
 fn resample_audio(input: &[f32], in_rate: u32, out_rate: u32) -> Vec<f32> {

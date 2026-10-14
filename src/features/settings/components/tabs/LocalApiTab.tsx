@@ -214,8 +214,8 @@ const LocalApiTab = ({
             <span>
               {copied
                 ? t({
-                    id: "settings.local_api.copy.copied_exclaim",
-                    message: "Copied!",
+                    id: "settings.local_api.copy.copied_exclaim.v2",
+                    message: "Copied",
                   })
                 : baseUrl}
             </span>
@@ -345,8 +345,8 @@ const LocalApiTab = ({
                           message: "Required for LAN access",
                         })
                       : t({
-                          id: "settings.local_api.api_key.placeholder_optional",
-                          message: "Optional - blank to disable",
+                          id: "settings.local_api.api_key.placeholder_optional.v2",
+                          message: "Optional. Leave blank to turn off.",
                         })
                   }
                 />
@@ -430,8 +430,8 @@ const LocalApiTab = ({
               </div>
               <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
-                  id: "settings.local_api.listen_on_lan_help",
-                  message: "expose to other devices on your network",
+                  id: "settings.local_api.listen_on_lan_help.v2",
+                  message: "Lets other devices on your network connect.",
                 })}
               </span>
             </div>
@@ -480,8 +480,8 @@ const LocalApiTab = ({
               </div>
               <span className="ui-text-micro ui-color-muted block mt-0.5">
                 {t({
-                  id: "settings.local_api.allow_browser_requests_help",
-                  message: "send CORS headers so web apps can call the API",
+                  id: "settings.local_api.allow_browser_requests_help.v2",
+                  message: "Lets web pages in your browser call the API.",
                 })}
               </span>
             </div>

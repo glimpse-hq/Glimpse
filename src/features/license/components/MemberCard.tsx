@@ -1,6 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
-import { ArrowUpRight, CircleNotch as Loader2 } from "@phosphor-icons/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   EDITION_COLORS,
@@ -42,9 +41,6 @@ type MemberCardProps = {
   activationAttempt?: number;
   licenseLoading?: boolean;
   licenseState: LicenseState | null;
-  opening?: boolean;
-  checkoutDisabled?: boolean;
-  onOpenCheckout?: () => void;
   onRevealComplete?: () => void;
 };
 
@@ -63,9 +59,6 @@ const MemberCardInner = ({
   activationAttempt = 0,
   licenseLoading = false,
   licenseState,
-  opening = false,
-  checkoutDisabled = false,
-  onOpenCheckout,
   onRevealComplete,
 }: MemberCardProps) => {
   const { t } = useLingui();
@@ -89,12 +82,14 @@ const MemberCardInner = ({
   const edition = editionFromLicenseState(licenseState, active);
   const editionLabel =
     edition === "commercial"
-      ? t({ id: "member_card.tier_commercial", message: "Commercial" })
+      ? t({ id: "member_card.tier_business", message: "Business" })
       : edition === "founder"
         ? t({ id: "member_card.tier_founder", message: "Founder" })
         : edition === "contributor"
           ? t({ id: "member_card.tier_contributor", message: "Contributor" })
-          : t({ id: "member_card.tier_personal", message: "Personal" });
+          : deviceLimit <= 1
+            ? t({ id: "member_card.tier_solo", message: "Solo" })
+            : t({ id: "member_card.tier_plus", message: "Plus" });
   const editionBlurb =
     edition === "commercial"
       ? t({
@@ -127,13 +122,11 @@ const MemberCardInner = ({
 
   const cardHeight = getMemberCardHeight(coverageExtraHeight);
   const expandedHeadline = !active;
-  const checkoutBlocked = checkoutDisabled || opening;
 
   const {
     stage,
     cinematic,
     typingReveal,
-    showTierPicker,
     showStamp,
     showName,
     showEmail,
@@ -166,10 +159,6 @@ const MemberCardInner = ({
     }
   }, [active, stage, isUserActivationReveal, onRevealComplete]);
 
-  const licenseResolved = !licenseLoading || licenseState !== null;
-  const showDraftChrome =
-    licenseResolved && !active && !cinematic && !activating;
-
   useEffect(() => {
     if (stage === "draft") {
       stripeSeedRef.current = "draft-glimpse";
@@ -183,11 +172,9 @@ const MemberCardInner = ({
     isUserActivationReveal && cinematic && displayKey
       ? ("sweep" as const)
       : ("none" as const);
-  const buyDisabled = checkoutBlocked || cinematic || !showDraftChrome;
-
   const idlePrompt = t({
-    id: "member_card.draft_idle",
-    message: "Buy a license",
+    id: "member_card.draft_idle.v2",
+    message: "Glimpse Plus",
   });
 
   const coverageBase = editionBlurb;
@@ -414,15 +401,7 @@ const MemberCardInner = ({
               className="relative mt-1.5"
               style={{ minHeight: `${28 + coverageExtraHeight}px` }}
             >
-              {showTierPicker && showDraftChrome ? (
-                <div className="absolute inset-0 flex items-stretch gap-0">
-                  <BuyOption
-                    opening={opening}
-                    disabled={buyDisabled}
-                    onClick={() => onOpenCheckout?.()}
-                  />
-                </div>
-              ) : showCoverage ? (
+              {showCoverage ? (
                 isUserActivationReveal &&
                 typingReveal &&
                 stage === "coverage" ? (
@@ -578,57 +557,6 @@ const StatDetail = ({
         {value}
       </dd>
     </motion.div>
-  );
-};
-
-const BuyOption = ({
-  opening,
-  disabled,
-  onClick,
-}: {
-  opening: boolean;
-  disabled: boolean;
-  onClick: () => void;
-}) => {
-  const { t } = useLingui();
-  const palette = useMemberCardPalette();
-  const accent = EDITION_COLORS.personal;
-  const color = opening ? accent.fg : palette.textPrimary;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled && !opening}
-      className="group flex min-w-0 flex-1 items-center justify-between gap-1.5 border-0 bg-transparent py-1.5 text-left disabled:opacity-50"
-      style={{ color }}
-    >
-      <span
-        className="min-w-0 truncate font-mono uppercase tracking-[0.05em] underline"
-        style={{
-          fontSize: "10px",
-          fontWeight: 600,
-          textUnderlineOffset: "3px",
-          textDecorationColor: `color-mix(in srgb, ${color} 30%, transparent)`,
-        }}
-      >
-        {t({ id: "member_card.buy_glimpse", message: "Buy Glimpse" })}
-      </span>
-      {opening ? (
-        <Loader2
-          size={11}
-          className="shrink-0 animate-spin"
-          style={{ color: accent.fg }}
-        />
-      ) : (
-        <ArrowUpRight
-          size={11}
-          className="shrink-0 opacity-80 transition-opacity group-hover:opacity-100"
-          style={{ color: accent.fg }}
-          aria-hidden="true"
-        />
-      )}
-    </button>
   );
 };
 

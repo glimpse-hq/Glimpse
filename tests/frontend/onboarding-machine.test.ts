@@ -100,15 +100,11 @@ describe("onboarding machine", () => {
     expect(walk(actor, "BACK", 2)).toEqual(["license", "source"]);
   });
 
-  test("the import step only shows for local mode with importable apps", () => {
+  test("the import step only shows with importable apps", () => {
     const actor = start(windows);
     actor.send({ type: "SET_IMPORTABLE", apps: importable });
     expect(walk(actor, "NEXT", 2)).toEqual(["import", "model"]);
     expect(walk(actor, "BACK", 2)).toEqual(["import", "welcome"]);
-
-    actor.send({ type: "SELECT_MODE", mode: "cloud" });
-    expect(walk(actor, "NEXT", 1)).toEqual(["model"]);
-    expect(walk(actor, "BACK", 1)).toEqual(["welcome"]);
   });
 
   test("practice is reachable only from done", () => {

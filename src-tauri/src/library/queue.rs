@@ -6,13 +6,11 @@ use anyhow::{Result, anyhow};
 use chrono::Utc;
 use tauri::{AppHandle, Emitter, Manager, async_runtime};
 use tokio_util::sync::CancellationToken;
-use webrtc_vad::VadMode;
 
 use crate::transcribe::count_words;
 use crate::{
-    AppRuntime, AppState, LibraryJob, LibraryJobKind, dictionary, model_manager,
-    recorder::speech_percentage_i16_with_mode, remote_speech, settings::UserSettings,
-    storage::StorageManager, toast, transcribe, transcription_api,
+    AppRuntime, AppState, dictionary, model_manager, recorder::speech_percentage, remote_speech,
+    settings::UserSettings, storage::StorageManager, toast, transcribe, transcription_api,
 };
 
 use super::bleed::normalize;
@@ -32,6 +30,107 @@ use crate::speech::{
     VAD_MIN_SPEECH_PERCENT_CHUNK, VAD_MIN_SPEECH_PERCENT_FILE, WHISPER_CHUNK_OVERLAP_SECONDS,
     WHISPER_CHUNK_SECONDS,
 };
+
+#[derive(Clone)]
+pub struct LibraryJob {
+    pub id: String,
+    pub kind: LibraryJobKind,
+    pub source: JobSource,
+}
+
+#[derive(Clone)]
+pub enum LibraryJobKind {
+    Import {
+        source_path: PathBuf,
+        store_original: bool,
+    },
+    TranscribeExisting,
+}
+
+impl AppState {
+    pub fn register_library_transcription(&self, id: String) -> CancellationToken {
+        let mut tokens = self.library_tokens.lock();
+        if let Some(token) = tokens.get(&id) {
+            return token.clone();
+        }
+        let token = CancellationToken::new();
+        tokens.insert(id, token.clone());
+        token
+    }
+
+    pub fn enqueue_library_job(&self, job: LibraryJob) -> bool {
+        if self.library_tokens.lock().contains_key(&job.id) {
+            return false;
+        }
+        if self.library_active.lock().as_deref() == Some(&job.id) {
+            return false;
+        }
+        let mut queue = self.library_queue.lock();
+        if queue.iter().any(|queued| queued.id == job.id) {
+            return false;
+        }
+        queue.push_back(job);
+        true
+    }
+
+    pub fn claim_next_library_job(&self) -> Option<LibraryJob> {
+        let mut active = self.library_active.lock();
+        if active.is_some() {
+            return None;
+        }
+        let mut queue = self.library_queue.lock();
+        let next = queue.pop_front()?;
+        *active = Some(next.id.clone());
+        Some(next)
+    }
+
+    pub(crate) fn library_job_active(&self) -> bool {
+        self.library_active.lock().is_some()
+    }
+
+    pub fn clear_active_library_job(&self, id: &str) {
+        let mut active = self.library_active.lock();
+        if active.as_deref() == Some(id) {
+            *active = None;
+        }
+    }
+
+    pub(crate) fn library_job_pending(&self, id: &str) -> bool {
+        // Each lock is released before the next is taken; nesting tokens
+        // inside active here would invert the order cancelling takes them in.
+        let has_token = self.library_tokens.lock().contains_key(id);
+        has_token
+            || self.library_active.lock().as_deref() == Some(id)
+            || self
+                .library_queue
+                .lock()
+                .iter()
+                .any(|queued| queued.id == id)
+    }
+
+    pub fn remove_library_job(&self, id: &str) -> bool {
+        let mut queue = self.library_queue.lock();
+        let before = queue.len();
+        queue.retain(|queued| queued.id != id);
+        before != queue.len()
+    }
+
+    pub fn cancel_library_transcription(&self, id: &str) {
+        // A claimed job registers its token only once its task runs, so the
+        // token is created here for it to pick up already cancelled.
+        let active = self.library_active.lock();
+        let mut tokens = self.library_tokens.lock();
+        if active.as_deref() == Some(id) {
+            tokens.entry(id.to_string()).or_default().cancel();
+        } else if let Some(token) = tokens.get(id) {
+            token.cancel();
+        }
+    }
+
+    pub fn clear_library_transcription(&self, id: &str) {
+        self.library_tokens.lock().remove(id);
+    }
+}
 
 fn start_library_job_internal(app: &AppHandle<AppRuntime>, job: LibraryJob) {
     let app_handle = app.clone();
@@ -494,8 +593,7 @@ fn offset_ms(start_idx: usize, sample_rate: u32) -> u64 {
 }
 
 fn chunk_below_speech_gate(chunk: &[i16], sample_rate: u32) -> bool {
-    speech_percentage_i16_with_mode(chunk, sample_rate, VadMode::VeryAggressive)
-        < VAD_MIN_SPEECH_PERCENT_CHUNK
+    speech_percentage(chunk, sample_rate) < VAD_MIN_SPEECH_PERCENT_CHUNK
 }
 
 /// How one audio file's pass maps onto the item: which slice of the progress
@@ -965,8 +1063,7 @@ fn transcribe_remote(
 
 fn transcribe_direct(run: &LocalRun, audio_path: &Path) -> Result<LibraryTranscriptionResult> {
     let (samples, sample_rate) = transcribe::load_audio_for_transcription(audio_path)?;
-    let speech_percent =
-        speech_percentage_i16_with_mode(&samples, sample_rate, VadMode::VeryAggressive);
+    let speech_percent = speech_percentage(&samples, sample_rate);
     if speech_percent < VAD_MIN_SPEECH_PERCENT_FILE {
         return Ok(LibraryTranscriptionResult::default());
     }

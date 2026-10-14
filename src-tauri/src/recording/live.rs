@@ -15,10 +15,10 @@ use std::{
 
 use crossbeam_channel::{Receiver, Sender, TryRecvError, bounded};
 use glimpse_speech::diarization::{LiveDiarizer, SpeakerTurn};
+use glimpse_speech::vad::SpeechStream;
 use parking_lot::Mutex;
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
-use webrtc_vad::{SampleRate as VadSampleRate, Vad, VadMode};
 
 use super::Shared;
 use super::track::{LIVE_RATE, LiveTap};
@@ -641,7 +641,11 @@ enum Plan {
 struct TrackRun {
     source: Source,
     tap: Arc<LiveTap>,
-    vad: Vad,
+    vad: Option<SpeechStream>,
+    // 16 kHz index of the first sample the VAD stream was fed, and of the
+    // next one it expects.
+    vad_origin: u64,
+    vad_fed: u64,
     // 16 kHz index of `samples[0]` on the session timeline.
     start: u64,
     samples: Vec<f32>,
@@ -656,7 +660,9 @@ impl TrackRun {
         Self {
             source,
             tap,
-            vad: Vad::new_with_rate_and_mode(VadSampleRate::Rate16kHz, VadMode::Aggressive),
+            vad: SpeechStream::new(),
+            vad_origin: 0,
+            vad_fed: 0,
             start: 0,
             samples: Vec::new(),
             voiced: Vec::new(),
@@ -703,13 +709,30 @@ impl TrackRun {
             self.start = start;
         }
         self.samples.extend_from_slice(&samples);
-        while (self.voiced.len() + 1) * FRAME <= self.samples.len() {
-            let from = self.voiced.len() * FRAME;
-            let frame = to_pcm(&self.samples[from..from + FRAME]);
-            self.voiced
-                .push(self.vad.is_voice_segment(&frame).unwrap_or(false));
+        if let Some(vad) = self.vad.as_mut() {
+            if start != self.vad_fed {
+                vad.reset();
+                self.vad_origin = start;
+            }
+            vad.push(&samples);
+            self.vad_fed = start + samples.len() as u64;
         }
+        self.refresh_voiced();
         Some((start, samples, restarted))
+    }
+
+    // Padding around speech can turn earlier frames voiced once later audio
+    // arrives, so the whole buffer is re-read from the stream.
+    fn refresh_voiced(&mut self) {
+        let frames = self.samples.len() / FRAME;
+        self.voiced = match self.vad.as_ref() {
+            Some(vad) => {
+                let mut voiced = vad.regions(self.start.saturating_sub(self.vad_origin), FRAME);
+                voiced.truncate(frames);
+                voiced
+            }
+            None => vec![true; frames],
+        };
     }
 
     fn advance(&mut self, frames: usize) {
@@ -718,6 +741,9 @@ impl TrackRun {
         self.voiced.drain(..frames);
         self.start += (frames * FRAME) as u64;
         self.open_frames = 0;
+        if let Some(vad) = self.vad.as_mut() {
+            vad.forget_before(self.start.saturating_sub(self.vad_origin));
+        }
     }
 
     fn untranscribed_speech(&self) -> usize {

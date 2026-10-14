@@ -1,10 +1,6 @@
-import { openUrl } from "@tauri-apps/plugin-opener";
 import { motion, type Variants } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
-import {
-  pricingUrlFor,
-  type PurchaseSource,
-} from "../../../license/purchaseConfig";
+import { useEffect, useRef } from "react";
+import type { PurchaseSource } from "../../../license/purchaseConfig";
 import {
   useActivateLicense,
   useDeactivateLicense,
@@ -17,19 +13,23 @@ import DictationStatsPanel from "../../../license/components/DictationStatsPanel
 type AccountTabProps = {
   variants: Variants;
   source?: PurchaseSource;
+  focusLicenseKey?: boolean;
+  onLicenseKeyFocused?: () => void;
 };
+
+const noop = () => {};
 
 const AccountTab = ({
   variants,
   source = "settings_account",
+  focusLicenseKey = false,
+  onLicenseKeyFocused = noop,
 }: AccountTabProps) => {
   const licenseQuery = useLicenseState();
   const activateLicense = useActivateLicense();
   const { mutate: refreshLicense, isPending: refreshLicensePending } =
     useRefreshLicense();
   const deactivateLicense = useDeactivateLicense();
-  const [opening, setOpening] = useState(false);
-  const [openError, setOpenError] = useState<string | null>(null);
   const refreshedIdentityForKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,18 +46,6 @@ const AccountTab = ({
     refreshLicense();
   }, [licenseQuery.data, refreshLicense, refreshLicensePending]);
 
-  const openCheckout = async () => {
-    setOpenError(null);
-    setOpening(true);
-    try {
-      await openUrl(pricingUrlFor(source));
-    } catch (err) {
-      setOpenError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setOpening(false);
-    }
-  };
-
   return (
     <motion.div
       key="account"
@@ -72,15 +60,7 @@ const AccountTab = ({
         licenseLoading={licenseQuery.isLoading && !licenseQuery.data}
         activating={activateLicense.isPending}
         deactivating={deactivateLicense.isPending}
-        opening={opening}
-        openError={openError}
-        activationError={
-          activateLicense.error instanceof Error
-            ? activateLicense.error.message
-            : activateLicense.error
-              ? String(activateLicense.error)
-              : null
-        }
+        activationError={activateLicense.error}
         deactivationError={
           deactivateLicense.error instanceof Error
             ? deactivateLicense.error.message
@@ -89,7 +69,8 @@ const AccountTab = ({
               : null
         }
         checkoutReturned={source === "checkout_return"}
-        onOpenCheckout={openCheckout}
+        focusLicenseKey={focusLicenseKey}
+        onLicenseKeyFocused={onLicenseKeyFocused}
         onActivateLicense={(key) => activateLicense.mutate(key)}
         onDeactivateLicense={() => deactivateLicense.mutate()}
       />

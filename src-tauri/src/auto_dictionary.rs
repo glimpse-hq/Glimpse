@@ -107,13 +107,20 @@ pub(crate) fn start_after_paste(
                     &app,
                     toast::Payload {
                         toast_type: "info".to_string(),
-                        message: format!("Add \"{candidate}\" to dictionary?"),
+                        message: toast::native_format(
+                            &app,
+                            "native.toast.dictionary_suggest",
+                            &[("word", &candidate)],
+                        ),
                         auto_dismiss: Some(false),
                         retry_id: Some(candidate.clone()),
                         action: Some("accept_auto_dictionary_suggestion".to_string()),
-                        action_label: Some("Add".to_string()),
+                        action_label: Some(toast::native(&app, "native.toast.dictionary_add")),
                         secondary_action: Some("reject_auto_dictionary_suggestion".to_string()),
-                        secondary_action_label: Some("Never".to_string()),
+                        secondary_action_label: Some(toast::native(
+                            &app,
+                            "native.toast.dictionary_never",
+                        )),
                         ..Default::default()
                     },
                 );

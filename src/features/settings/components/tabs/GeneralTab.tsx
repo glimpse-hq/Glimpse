@@ -128,8 +128,8 @@ const GeneralTab = ({
         message: "requires a model with dictionary support",
       });
   const systemDefaultLabel = t({
-    id: "settings.general.system_default",
-    message: "System Default",
+    id: "settings.general.system_default.v2",
+    message: "System default",
   });
 
   const isMicrophoneTestActive =
@@ -251,8 +251,8 @@ const GeneralTab = ({
             <div className="flex items-center gap-1">
               <label className="ui-text-label-strong ui-color-primary leading-none">
                 {t({
-                  id: "settings.general.transcription_language",
-                  message: "Transcription Language",
+                  id: "settings.general.transcription_language.v2",
+                  message: "Transcription language",
                 })}
               </label>
               <div className="relative group">
@@ -290,8 +290,8 @@ const GeneralTab = ({
             <Dropdown
               value={language}
               ariaLabel={t({
-                id: "settings.general.transcription_language",
-                message: "Transcription Language",
+                id: "settings.general.transcription_language.v2",
+                message: "Transcription language",
               })}
               onChange={(val) => onLanguageChange(val)}
               onOpenChange={setLanguageDropdownOpen}
@@ -438,8 +438,8 @@ const GeneralTab = ({
               />
               {cleanupNeedsLicense
                 ? t({
-                    id: "settings.general.shortcuts.cleanup_locked.license_prefix",
-                    message: "Cleanup needs a license. Activate it in",
+                    id: "settings.general.shortcuts.cleanup_locked.license_prefix.v2",
+                    message: "Cleanup comes with Glimpse Plus. Get it in",
                   })
                 : t({
                     id: "settings.general.shortcuts.cleanup_locked.provider_prefix",

@@ -388,6 +388,155 @@ fn spawn_windows_cleaner(targets: &[PathBuf]) -> Result<(), String> {
     Ok(())
 }
 
+/// One transcript in a plain export: a Home dictation or a Library item.
+#[derive(Serialize)]
+struct TranscriptEntry {
+    source: &'static str,
+    created_at: String,
+    name: String,
+    duration_seconds: f32,
+    text: String,
+}
+
+fn collect_transcripts(
+    storage: &crate::storage::StorageManager,
+) -> Result<Vec<TranscriptEntry>, String> {
+    let mut entries = Vec::new();
+
+    let mut offset = 0;
+    loop {
+        let (items, has_more) = storage
+            .get_library_items_page(LibraryFilter::default(), LIBRARY_PAGE_SIZE, offset)
+            .map_err(|err| format!("Failed to read library: {err}"))?;
+        offset += items.len();
+        for item in items {
+            let Some(text) = item.transcript.as_deref().map(str::trim) else {
+                continue;
+            };
+            if text.is_empty() {
+                continue;
+            }
+            entries.push(TranscriptEntry {
+                source: "library",
+                created_at: item.created_at.clone(),
+                name: item.name.clone(),
+                duration_seconds: item.duration_seconds,
+                text: text.to_string(),
+            });
+        }
+        if !has_more {
+            break;
+        }
+    }
+
+    let mut offset = 0;
+    loop {
+        let records = storage
+            .get_recent_transcriptions_page(DICTATION_PAGE_SIZE, offset)
+            .map_err(|err| format!("Failed to read dictation history: {err}"))?;
+        let page_len = records.len();
+        offset += page_len;
+        for record in records {
+            let text = record.text.trim();
+            if text.is_empty() {
+                continue;
+            }
+            entries.push(TranscriptEntry {
+                source: "dictation",
+                created_at: record.timestamp.to_rfc3339(),
+                name: String::new(),
+                duration_seconds: record.audio_duration_seconds,
+                text: text.to_string(),
+            });
+        }
+        if page_len < DICTATION_PAGE_SIZE {
+            break;
+        }
+    }
+
+    sort_newest_first(&mut entries);
+    Ok(entries)
+}
+
+fn sort_newest_first(entries: &mut [TranscriptEntry]) {
+    entries.sort_by_cached_key(|entry| {
+        std::cmp::Reverse(chrono::DateTime::parse_from_rfc3339(&entry.created_at).ok())
+    });
+}
+
+fn csv_field(value: &str) -> String {
+    let guard = if value.starts_with(['=', '+', '-', '@', '\t', '\r']) {
+        "'"
+    } else {
+        ""
+    };
+    format!("\"{guard}{}\"", value.replace('"', "\"\""))
+}
+
+fn render_transcripts(entries: &[TranscriptEntry], format: &str) -> Result<String, String> {
+    match format {
+        "json" => serde_json::to_string_pretty(entries).map_err(|err| err.to_string()),
+        "csv" => {
+            let mut out = String::from("source,created_at,name,duration_seconds,text\n");
+            for entry in entries {
+                out.push_str(&format!(
+                    "{},{},{},{:.1},{}\n",
+                    entry.source,
+                    entry.created_at,
+                    csv_field(&entry.name),
+                    entry.duration_seconds,
+                    csv_field(&entry.text),
+                ));
+            }
+            Ok(out)
+        }
+        "txt" => {
+            let mut out = String::new();
+            for entry in entries {
+                let heading = if entry.name.is_empty() {
+                    entry.created_at.clone()
+                } else {
+                    format!("{} · {}", entry.created_at, entry.name)
+                };
+                out.push_str(&format!("{heading}\n{}\n\n", entry.text));
+            }
+            Ok(out)
+        }
+        _ => Err("Unknown export format".to_string()),
+    }
+}
+
+/// Writes every Home dictation and Library transcript to one file.
+#[tauri::command]
+pub async fn export_transcripts(
+    app: AppHandle<AppRuntime>,
+    state: tauri::State<'_, AppState>,
+    destination: String,
+    format: String,
+) -> Result<usize, String> {
+    let storage = state.storage();
+    let count = tauri::async_runtime::spawn_blocking(move || {
+        let entries = collect_transcripts(&storage)?;
+        let body = render_transcripts(&entries, &format)?;
+        fs::write(&destination, body).map_err(|err| format!("Couldn't write the file: {err}"))?;
+        Ok::<usize, String>(entries.len())
+    })
+    .await
+    .map_err(|err| format!("Export task failed: {err}"))??;
+
+    crate::toast::show(
+        &app,
+        "success",
+        None,
+        &crate::toast::native_format(
+            &app,
+            "native.toast.transcripts_exported",
+            &[("count", &count.to_string())],
+        ),
+    );
+    Ok(count)
+}
+
 #[tauri::command]
 pub async fn delete_all_data(app: AppHandle<AppRuntime>) -> Result<(), String> {
     let targets = wipe_targets(&app)?;
@@ -426,6 +575,41 @@ pub async fn delete_all_data(app: AppHandle<AppRuntime>) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn transcripts_sort_by_time_across_utc_offsets() {
+        let entry = |created_at: &str| TranscriptEntry {
+            source: "library",
+            created_at: created_at.to_string(),
+            name: String::new(),
+            duration_seconds: 0.0,
+            text: String::new(),
+        };
+        let mut entries = vec![
+            entry("2026-10-13T10:00:00+02:00"),
+            entry("2026-10-13T09:00:00+00:00"),
+            entry("2026-10-13T07:30:00Z"),
+        ];
+        sort_newest_first(&mut entries);
+        let order: Vec<_> = entries.iter().map(|e| e.created_at.as_str()).collect();
+        assert_eq!(
+            order,
+            [
+                "2026-10-13T09:00:00+00:00",
+                "2026-10-13T10:00:00+02:00",
+                "2026-10-13T07:30:00Z"
+            ]
+        );
+    }
+
+    #[test]
+    fn csv_fields_never_start_a_spreadsheet_formula() {
+        assert_eq!(csv_field("=1+1"), "\"'=1+1\"");
+        assert_eq!(csv_field("@SUM(A1)"), "\"'@SUM(A1)\"");
+        assert_eq!(csv_field("-2"), "\"'-2\"");
+        assert_eq!(csv_field("say \"hi\""), "\"say \"\"hi\"\"\"");
+        assert_eq!(csv_field("plain"), "\"plain\"");
+    }
 
     #[test]
     fn wipe_targets_require_per_app_directories() {

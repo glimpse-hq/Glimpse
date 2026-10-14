@@ -91,16 +91,6 @@ const choicesFromSources = (sources: RecordingSources): SourceChoices => {
   };
 };
 
-const formatClock = (elapsedMs: number) => {
-  const total = Math.floor(elapsedMs / 1000);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  const mm = minutes.toString().padStart(2, "0");
-  const ss = seconds.toString().padStart(2, "0");
-  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
-};
-
 const LevelMeter = ({ level }: { level: number }) => {
   const active = Math.min(METER_DOTS, Math.round(level * METER_DOTS));
   return (
@@ -527,7 +517,10 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
           id: "record.setup.microphone.default_named",
           message: `System Default (${fallback})`,
         })
-      : t({ id: "record.setup.microphone.default", message: "System Default" });
+      : t({
+          id: "record.setup.microphone.default.v2",
+          message: "System default",
+        });
   }, [devices, t]);
 
   // A remembered microphone that is no longer connected falls back to the default.
@@ -1035,7 +1028,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                 : "ui-color-primary"
           }`}
         >
-          {formatClock(state.elapsed_ms)}
+          {formatTimestamp(state.elapsed_ms, true)}
         </div>
         <div
           aria-live="polite"
@@ -1256,7 +1249,7 @@ const RecordingView = ({ isActive, onOpenLibraryItem }: RecordingViewProps) => {
                   {t({ id: "record.name.title", message: "Name recording" })}
                 </p>
                 <p className="mt-0.5 ui-text-label text-content-muted tabular-nums">
-                  {formatClock(state.elapsed_ms)}
+                  {formatTimestamp(state.elapsed_ms, true)}
                   {state.bookmarks.length > 0 &&
                     ` · ${t({
                       id: "record.name.bookmark_count",

@@ -66,10 +66,30 @@ const refreshModelStatus = (queryClient: QueryClient, model: string) =>
 
 type OnboardingSettings = Awaited<ReturnType<typeof getSettings>>;
 
+// The OS can refuse launch at login, for example when Glimpse is turned off in
+// Windows Startup apps. Setup then saves without it instead of stopping there.
+async function saveSetupSettings(
+  build: (autoLaunch: boolean) => ReturnType<typeof buildSettingsArgs>,
+  autoLaunch: boolean,
+): Promise<{ result: UpdateSettingsResult; autoLaunch: boolean }> {
+  try {
+    const result = await invoke<UpdateSettingsResult>("update_settings", {
+      args: build(autoLaunch),
+    });
+    return { result, autoLaunch };
+  } catch (err) {
+    if (!autoLaunch) throw err;
+    console.error("Launch at login was refused; saving without it", err);
+    const result = await invoke<UpdateSettingsResult>("update_settings", {
+      args: build(false),
+    });
+    return { result, autoLaunch: false };
+  }
+}
+
 const buildSettingsArgs = (
   latest: OnboardingSettings,
   smartShortcut: string,
-  transcriptionMode: string,
   localModel: string,
   autoLaunchEnabled: boolean,
   microphoneDevice: string | null,
@@ -95,7 +115,7 @@ const buildSettingsArgs = (
         { shortcut: toggleShortcut, temporary: false, cleanup_enabled: false },
       ],
     },
-    transcriptionMode,
+    transcriptionMode: "local",
     localModel,
     remoteSpeechEnabled: false,
     remoteSpeechProvider: latest.remote_speech_provider ?? "custom",
@@ -183,8 +203,7 @@ export default function OnboardingScreen({
     }
   }, [importableAppsQuery.data, send]);
 
-  const hasImportStep =
-    ctx.selectedMode === "local" && ctx.importableApps.length > 0;
+  const hasImportStep = ctx.importableApps.length > 0;
 
   const steps = useMemo(
     () => getSteps(ctx.platform, hasImportStep),
@@ -556,18 +575,19 @@ export default function OnboardingScreen({
 
     try {
       const latestSettings = await getSettings();
-      const { shortcut_error: shortcutError } =
-        await invoke<UpdateSettingsResult>("update_settings", {
-          args: buildSettingsArgs(
+      const { result, autoLaunch } = await saveSetupSettings(
+        (launch) =>
+          buildSettingsArgs(
             latestSettings,
             ctx.smartShortcut,
-            ctx.selectedMode,
             resolvedLocalModel,
-            ctx.autoLaunch,
+            launch,
             ctx.microphoneDevice,
           ),
-        });
-      if (shortcutError) throw shortcutError;
+        ctx.autoLaunch,
+      );
+      if (!autoLaunch) send({ type: "SET_AUTO_LAUNCH", value: false });
+      if (result.shortcut_error) throw result.shortcut_error;
       send({ type: "COMPLETE_SUCCESS" });
       send({ type: "START_PRACTICE" });
     } catch (err) {
@@ -587,7 +607,6 @@ export default function OnboardingScreen({
   }, [
     ctx.autoLaunch,
     ctx.microphoneDevice,
-    ctx.selectedMode,
     ctx.smartShortcut,
     persistedSettings,
     selectedModel,
@@ -626,18 +645,19 @@ export default function OnboardingScreen({
     async (shortcut: string) => {
       try {
         const latest = await getSettings();
-        const { shortcut_error: shortcutError } =
-          await invoke<UpdateSettingsResult>("update_settings", {
-            args: buildSettingsArgs(
+        const { result, autoLaunch } = await saveSetupSettings(
+          (launch) =>
+            buildSettingsArgs(
               latest,
               shortcut,
-              ctx.selectedMode,
               selectedModel,
-              ctx.autoLaunch,
+              launch,
               ctx.microphoneDevice,
             ),
-          });
-        if (shortcutError) throw new Error(shortcutError);
+          ctx.autoLaunch,
+        );
+        if (!autoLaunch) send({ type: "SET_AUTO_LAUNCH", value: false });
+        if (result.shortcut_error) throw new Error(result.shortcut_error);
         send({ type: "SET_SHORTCUT", shortcut });
       } catch (err) {
         console.error("Failed to set shortcut", err);
@@ -649,14 +669,7 @@ export default function OnboardingScreen({
         );
       }
     },
-    [
-      ctx.autoLaunch,
-      ctx.microphoneDevice,
-      ctx.selectedMode,
-      selectedModel,
-      send,
-      t,
-    ],
+    [ctx.autoLaunch, ctx.microphoneDevice, selectedModel, send, t],
   );
 
   const zoomingFromWelcome = useRef(false);
@@ -760,9 +773,7 @@ export default function OnboardingScreen({
             stepMotionProps={stepMotionProps}
             hasStepTransitioned={ctx.hasStepTransitioned}
             onStart={goNext}
-            startDisabled={
-              ctx.selectedMode === "local" && importableAppsQuery.isLoading
-            }
+            startDisabled={importableAppsQuery.isLoading}
           />
         );
       case "model":
@@ -859,13 +870,7 @@ export default function OnboardingScreen({
             opening={openingLicenseCheckout}
             openError={licenseOpenError}
             activating={activateLicense.isPending}
-            activationError={
-              activateLicense.error instanceof Error
-                ? activateLicense.error.message
-                : activateLicense.error
-                  ? String(activateLicense.error)
-                  : null
-            }
+            activationError={activateLicense.error}
             onOpenCheckout={openLicenseCheckout}
             onActivate={(key) => activateLicense.mutate(key)}
             onNext={goNext}

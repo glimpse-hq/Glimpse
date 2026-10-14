@@ -4,25 +4,33 @@ import {
   SignOut as LogOut,
   ArrowRight,
 } from "@phosphor-icons/react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useEffect, useRef, useState } from "react";
 import CustomerPortalLink from "../../license/components/CustomerPortalLink";
 import MemberCard from "../../license/components/MemberCard";
+import PlanPicker from "../../license/components/PlanPicker";
 import { classifyActivationInput } from "../../license/licenseKeyShape";
-import type { LicenseState } from "../../license/api";
+import { useActivationErrorText } from "../../license/useActivationErrorText";
+import {
+  openCheckout,
+  type ActivationError,
+  type LicenseState,
+} from "../../license/api";
 type AccountViewProps = {
   licenseState: LicenseState | null;
   licenseLoading: boolean;
   activating: boolean;
   deactivating: boolean;
-  opening: boolean;
-  openError: string | null;
-  activationError: string | null;
+  activationError: ActivationError | null;
   deactivationError: string | null;
   checkoutReturned: boolean;
-  onOpenCheckout: () => void;
+  focusLicenseKey: boolean;
+  onLicenseKeyFocused: () => void;
   onActivateLicense: (key: string) => void;
   onDeactivateLicense: () => void;
 };
+
+const SUPPORT_EMAIL = "hello@tryglimpse.cc";
 
 const TRIAL_TOTAL_DAYS = 14;
 
@@ -34,12 +42,11 @@ const AccountView = ({
   licenseLoading,
   activating,
   deactivating,
-  opening,
-  openError,
   activationError,
   deactivationError,
   checkoutReturned,
-  onOpenCheckout,
+  focusLicenseKey,
+  onLicenseKeyFocused,
   onActivateLicense,
   onDeactivateLicense,
 }: AccountViewProps) => {
@@ -49,6 +56,7 @@ const AccountView = ({
   const [activationAttempt, setActivationAttempt] = useState(0);
   const [confirmDeactivate, setConfirmDeactivate] = useState(false);
   const confirmTimeoutRef = useRef<number | null>(null);
+  const licenseKeyInputRef = useRef<HTMLInputElement>(null);
 
   const isActive = licenseState?.status === "active";
   const isUnverified = licenseState?.status === "unverified";
@@ -58,6 +66,19 @@ const AccountView = ({
       ? formatDate(licenseState.expiresAt)
       : null;
   const renewsText = renewsAt ? t`Renews ${renewsAt}` : null;
+
+  useEffect(() => {
+    if (!focusLicenseKey || isActive) return;
+    const frame = window.requestAnimationFrame(() => {
+      const input = licenseKeyInputRef.current;
+      if (!input) return;
+      input.scrollIntoView({ block: "nearest" });
+      input.focus({ preventScroll: true });
+      input.select();
+      onLicenseKeyFocused();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusLicenseKey, isActive, onLicenseKeyFocused]);
 
   useEffect(() => {
     return () => {
@@ -76,31 +97,14 @@ const AccountView = ({
     onActivateLicense(trimmedKey);
   };
 
-  const activationErrorText = (() => {
-    if (!activationError) return null;
-    switch (classifyActivationInput(attemptedKey)) {
-      case "order_id":
-        return t({
-          id: "settings.account.activate.order_id_error_generic",
-          message:
-            "That is your order number. Paste the license key from the same email.",
-        });
-      case "masked_key":
-        return t({
-          id: "settings.account.activate.masked_key_error_generic",
-          message:
-            "That is the shortened key. Copy the full one from your receipt email.",
-        });
-      case "discount_code":
-        return t({
-          id: "settings.account.activate.discount_code_error",
-          message:
-            "That looks like a discount code. Enter it at checkout, then paste the license key from your receipt.",
-        });
-      default:
-        return activationError;
-    }
-  })();
+  const activationErrorText = useActivationErrorText(
+    activationError,
+    attemptedKey,
+  );
+  const failedOnDiscountCode =
+    activationError !== null &&
+    classifyActivationInput(attemptedKey) === "discount_code";
+  const showSupport = activationErrorText !== null && activationAttempt >= 2;
 
   const activationHintText = checkoutReturned
     ? t({
@@ -181,8 +185,6 @@ const AccountView = ({
           activationAttempt={activationAttempt}
           licenseLoading={licenseLoading}
           licenseState={licenseState}
-          opening={opening}
-          onOpenCheckout={onOpenCheckout}
         />
 
         <div className="flex w-full max-w-[400px] items-center justify-between gap-3">
@@ -268,13 +270,13 @@ const AccountView = ({
             {deactivationError}
           </p>
         ) : null}
-
-        {openError ? (
-          <p className="w-full max-w-[400px] ui-text-meta text-error">
-            {openError}
-          </p>
-        ) : null}
       </div>
+
+      {!isActive && !licenseLoading && (
+        <section className="mx-auto max-w-[400px]">
+          <PlanPicker source="account" />
+        </section>
+      )}
 
       {!isActive && (
         <section className="mx-auto max-w-[400px] border-t border-border-primary pt-5">
@@ -289,6 +291,7 @@ const AccountView = ({
             className="mt-3 flex items-center gap-2 border-b border-border-secondary transition-colors focus-within:border-content-primary"
           >
             <input
+              ref={licenseKeyInputRef}
               autoFocus={checkoutReturned}
               value={licenseKey}
               onChange={(event) => setLicenseKey(event.target.value)}
@@ -323,6 +326,44 @@ const AccountView = ({
             className={`mt-2 min-h-10 ui-text-meta text-pretty ${activationErrorText ? "text-error" : "ui-color-muted"}`}
           >
             {activationErrorText ?? activationHintText}
+            {failedOnDiscountCode && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() =>
+                    void openCheckout({
+                      tier: "plus",
+                      source: "activation",
+                      code: attemptedKey,
+                    }).catch(() => {})
+                  }
+                  className="ui-color-primary underline underline-offset-2"
+                >
+                  {t({
+                    id: "license.activate.buy_with_code",
+                    message: "Get Glimpse Plus with this code",
+                  })}
+                </button>
+              </>
+            )}
+            {showSupport && !failedOnDiscountCode && (
+              <>
+                {" "}
+                <button
+                  type="button"
+                  onClick={() =>
+                    void openUrl(`mailto:${SUPPORT_EMAIL}`).catch(() => {})
+                  }
+                  className="ui-color-primary underline underline-offset-2"
+                >
+                  {t({
+                    id: "license.activate.email_support",
+                    message: `Still stuck? Email ${SUPPORT_EMAIL}`,
+                  })}
+                </button>
+              </>
+            )}
           </p>
         </section>
       )}

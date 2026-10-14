@@ -557,6 +557,297 @@ msgstr ""
 #~ msgstr "لا يوجد تنزيل"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.trial_days_left"
+#~ msgstr "تبقّى {days} يوم في فترة التجربة. تظل ميزة الإملاء مجانية. تتطلب بعض الميزات ترخيصاً."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.have_license"
+#~ msgstr "هل لديك ترخيص بالفعل؟"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.draft_idle"
+#~ msgstr "شراء ترخيص"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.buy_glimpse"
+#~ msgstr "اشترِ Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.buy"
+#~ msgstr "شراء ترخيص"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.shortcuts.cleanup_locked.license_prefix"
+#~ msgstr "تتطلب «التنظيف» ترخيصًا. فعّله في"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_info"
+#~ msgstr "يتطلب التثبيت عبر سطر الأوامر ترخيصًا نشطًا."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_commercial"
+#~ msgstr "تجاري"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.free.answer.v4"
+#~ msgstr "الإملاء الأساسي مجاني: النسخ المحلي، والقاموس، والاستبدالات، والسجل. لا توجد رسوم بالدقيقة أو اشتراكات لذلك. المكتبة، والتنظيف، والتخصيص باستخدام نموذج لغوي كبير (LLM) متاحة ضمن كل خطة مدفوعة، ويمكنك تجربتها مجانًا لمدة 14 يومًا. يحتاج خادم API المحلي وواجهة سطر الأوامر (CLI) إلى ترخيص وليسا جزءًا من الفترة التجريبية. فعِّل الترخيص من الإعدادات ← الحساب."
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+#~ msgid "onboarding.license_step.title_free"
+#~ msgstr "احصل على كل شيء بترخيص."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.trial_last_day"
+#~ msgstr "آخر يوم في فترة تجربتك. تبقى ميزة الإملاء مجانية. تتطلب بعض الميزات ترخيصًا."
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.sidebar.locked_hint"
+#~ msgstr "يتطلب ترخيص Glimpse. يفتح الحساب."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+#~ msgid "member_card.tier_personal"
+#~ msgstr "شخصي"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.cli.locked_subtitle"
+#~ msgstr "يتطلب ترخيصًا نشطًا"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+#~ msgid "settings.account.activate.discount_code_error"
+#~ msgstr "يبدو هذا رمز خصم. أدخله عند الدفع، ثم الصق مفتاح الترخيص من إيصالك."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.trial_expired"
+#~ msgstr "انتهت فترة تجربتك. تبقى ميزة الإملاء مجانية. تتطلب بعض الميزات ترخيصًا."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+#~ msgid "settings.models.installed.ane"
+#~ msgstr "ANE"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.analytics.body"
+#~ msgstr "مجهول الهوية، لا تتم مشاركة أي نصوص أو ملفات صوتية."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.api_key"
+#~ msgstr "مفتاح API"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.api_key"
+#~ msgstr "مفتاح API"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_pause_media"
+#~ msgstr "إيقاف الوسائط تلقائيًا"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.provider.cloud"
+#~ msgstr "السحابة (مفتاح API)"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechModelPanel.tsx
+#~ msgid "settings.speech_model.provider.cloud"
+#~ msgstr "سحابي (مفتاح API)"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.feedback.email_copied"
+#~ msgstr "تم النسخ!"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+#~ msgid "settings.local_api.copy.copied_exclaim"
+#~ msgstr "تم النسخ!"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.delete.answer"
+#~ msgstr "احذف التسجيلات محلياً لإزالتها. تُوسَم البيانات المزامَنة للإزالة فور حذفها."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+#~ msgid "settings.local_api.listen_on_lan_help"
+#~ msgstr "الكشف للأجهزة الأخرى على شبكتك"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.menu.github"
+#~ msgstr "Github"
+
+#. js-lingui-explicit-id
+#: src/Home.tsx
+#~ msgid "home.support.feedback.github"
+#~ msgstr "مشكلة GitHub"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+#~ msgid "faq.subtitle"
+#~ msgstr "أسئلة شائعة حول Glimpse"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.endpoint.placeholder"
+#~ msgstr "https://your-llm-endpoint.com"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_launch"
+#~ msgstr "التشغيل عند تسجيل الدخول"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.api_key.aria"
+#~ msgstr "مفتاح LLM API"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.mode.local"
+#~ msgstr "محلي"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.mic_removed"
+#~ msgstr "انقطع الاتصال بالميكروفون. تم إيقاف التسجيل وحفظه في السجل."
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalityModal.tsx
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.new_mode.default_name"
+#~ msgstr "وضع جديد"
+
+#. js-lingui-explicit-id
+#: src/features/library/components/LibraryImportModal.tsx
+#~ msgid "library.import.no_models_installed"
+#~ msgstr "لا توجد نماذج متاحة. نزّل نموذجاً أو أضف موفراً من الإعدادات > النماذج."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+#~ msgid "settings.local_api.api_key.placeholder_optional"
+#~ msgstr "اختياري - اتركه فارغاً للتعطيل"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.recovered_saved_one"
+#~ msgstr "تم حفظ التسجيل في السجل."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.recovered_saved_many"
+#~ msgstr "تم حفظ التسجيلات في السجل."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+#~ msgid "settings.local_api.allow_browser_requests_help"
+#~ msgstr "إرسال ترويسات CORS للسماح لتطبيقات الويب باستدعاء واجهة API"
+
+#. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+#~ msgid "model_picker.diarizer.description"
+#~ msgstr "تمييز المتحدثين لنصوص المكتبة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.system_default"
+#~ msgstr "الإعداد الافتراضي للنظام"
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+#~ msgid "record.setup.microphone.default"
+#~ msgstr "افتراضي النظام"
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+#~ msgid "personalization.description"
+#~ msgstr "خصِّص سلوك نموذج اللغة وفقاً للتطبيقات والمواقع والتعليمات المخصصة."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.text_size.label"
+#~ msgstr "حجم النص"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+#~ msgid "settings.general.transcription_language"
+#~ msgstr "لغة النسخ"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.analytics"
+#~ msgstr "تحليلات الاستخدام"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.version_mode"
+#~ msgstr "الإصدار {version} • {mode}"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+#~ msgid "native.toast.view_history"
+#~ msgstr "عرض السجل"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+#~ msgid "settings.language_model.title"
+#~ msgstr "موفّر نموذج اللغة"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.app.auto_update.body"
+#~ msgstr "يُنزِّل التحديثات ويثبّتها في الخلفية."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AppTab.tsx
+#~ msgid "settings.managed_note"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.data.export_dataset"
+#~ msgstr "تصدير مجموعة البيانات"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.description"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.policy"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+#~ msgid "settings.about.privacy.title"
+#~ msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.prompt"
 msgstr "«يحوّل Glimpse صوتي إلى نص.»"
@@ -743,8 +1034,8 @@ msgstr "{coverageBase} · {activeDevices} من أصل {deviceLimit} أجهزة �
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.trial_days_left"
-msgstr "تبقّى {days} يوم في فترة التجربة. تظل ميزة الإملاء مجانية. تتطلب بعض الميزات ترخيصاً."
+msgid "native.toast.trial_days_left.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -803,6 +1094,46 @@ msgid "home.today.stats.seconds_spoken"
 msgstr "{seconds, plural, one {# ثانية منطوقة اليوم} other {# ثوانٍ منطوقة اليوم}}"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.unauthorized"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.not_found"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.unreachable"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.quota"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.rate_limited"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.rate_limited_retry"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.rejected_detail"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.rejected"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/news/components/NewsMenu.tsx
 msgid "news.unread"
 msgstr "{unreadCount, plural, one {# منشور جديد} other {# منشورات جديدة}}"
@@ -826,6 +1157,11 @@ msgstr "+ إضافة اختصار"
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.count_one"
 msgstr "زوج صوت ونص واحد"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.devices.one"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -958,9 +1294,19 @@ msgid "library.filter.active"
 msgstr "نشط"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dictionary_add"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 msgid "personalization.modal.add"
 msgstr "إضافة"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dictionary_suggest"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
@@ -1080,18 +1426,19 @@ msgstr "اشتريت مسبقاً؟"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.have_license"
-msgstr "هل لديك ترخيص بالفعل؟"
+msgid "onboarding.license_step.have_license.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/ModelsTab.tsx
-msgid "settings.models.installed.ane"
-msgstr "ANE"
+#: src/features/license/components/LockedFeature.tsx
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "locked.enter_key"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.analytics.body"
-msgstr "مجهول الهوية، لا تتم مشاركة أي نصوص أو ملفات صوتية."
+msgid "settings.app.analytics.body.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
@@ -1104,18 +1451,18 @@ msgid "transcriptions.time.any"
 msgstr "في أي وقت"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.api_key"
-msgstr "مفتاح API"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.api_key"
-msgstr "مفتاح API"
+msgid "settings.language_model.api_key.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.api_key"
+msgid "settings.speech_model.api_key.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.api_key"
 msgstr "مفتاح API"
 
 #. js-lingui-explicit-id
@@ -1222,8 +1569,8 @@ msgstr "الحذف التلقائي"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_pause_media"
-msgstr "إيقاف الوسائط تلقائيًا"
+msgid "settings.app.auto_pause_media.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -1353,18 +1700,8 @@ msgstr "مدمج في Mac"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
-msgid "member_card.draft_idle"
-msgstr "شراء ترخيص"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.buy_glimpse"
-msgstr "اشترِ Glimpse"
-
-#. js-lingui-explicit-id
-#: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.buy"
-msgstr "شراء ترخيص"
+msgid "member_card.tier_business"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -1560,6 +1897,11 @@ msgid "settings.stats.mode.aria"
 msgstr "اختر طريقة عرض النشاط في المخطط"
 
 #. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.description.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.data.export_dialog_title"
 msgstr "اختر مكان حفظ مجموعة البيانات"
@@ -1580,9 +1922,19 @@ msgid "settings.general.shortcuts.cleanup"
 msgstr "تنظيف"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.cleanup.name"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.cleanup.detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.shortcuts.cleanup_locked.license_prefix"
-msgstr "تتطلب «التنظيف» ترخيصًا. فعّله في"
+msgid "settings.general.shortcuts.cleanup_locked.license_prefix.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -1696,13 +2048,13 @@ msgstr "السحابة"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.provider.cloud"
-msgstr "السحابة (مفتاح API)"
+msgid "settings.language_model.provider.cloud.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
-msgid "settings.speech_model.provider.cloud"
-msgstr "سحابي (مفتاح API)"
+msgid "settings.speech_model.provider.cloud.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/CloudModelCard.tsx
@@ -1725,6 +2077,11 @@ msgid "library.detail.speaker_menu.color"
 msgstr "اللون"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.sidebar.locked_hint.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
 msgid "settings.about.command_line"
 msgstr "سطر الأوامر"
@@ -1733,16 +2090,6 @@ msgstr "سطر الأوامر"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_cli"
 msgstr "سطر الأوامر"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_info"
-msgstr "يتطلب التثبيت عبر سطر الأوامر ترخيصًا نشطًا."
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_commercial"
-msgstr "تجاري"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -1802,6 +2149,11 @@ msgid "library.modal.import_status.converting_progress"
 msgstr "جارٍ تحويل الصوت... {0}%"
 
 #. js-lingui-explicit-id
+#: src/Home.tsx
+msgid "home.support.feedback.email_copied.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.error.copied"
 msgstr "تم النسخ"
@@ -1823,6 +2175,11 @@ msgstr "تم النسخ"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.copy.copied_exclaim.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.copied"
 msgstr "تم النسخ"
 
@@ -1830,16 +2187,6 @@ msgstr "تم النسخ"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copied"
 msgstr "تم النسخ إلى الحافظة"
-
-#. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.support.feedback.email_copied"
-msgstr "تم النسخ!"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.copy.copied_exclaim"
-msgstr "تم النسخ!"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -1915,11 +2262,6 @@ msgstr "نسخ الصور غير متاح هنا. احفظها عوضًا عن �
 #: src/features/settings/settingsPanes.ts
 msgid "settings.modal.section.core"
 msgstr "أساسي"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.free.answer.v4"
-msgstr "الإملاء الأساسي مجاني: النسخ المحلي، والقاموس، والاستبدالات، والسجل. لا توجد رسوم بالدقيقة أو اشتراكات لذلك. المكتبة، والتنظيف، والتخصيص باستخدام نموذج لغوي كبير (LLM) متاحة ضمن كل خطة مدفوعة، ويمكنك تجربتها مجانًا لمدة 14 يومًا. يحتاج خادم API المحلي وواجهة سطر الأوامر (CLI) إلى ترخيص وليسا جزءًا من الفترة التجريبية. فعِّل الترخيص من الإعدادات ← الحساب."
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/OnboardingScreen.tsx
@@ -2347,6 +2689,11 @@ msgid "dictionary.full_add_prompt"
 msgstr "احذف إدخالاً قبل إضافة آخر."
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.delete.answer.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.models.delete_failed"
 msgstr "فشل الحذف"
@@ -2380,11 +2727,6 @@ msgstr "حذف النموذج"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.title"
 msgstr "حذف العناصر الأقدم الآن؟"
-
-#. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.delete.answer"
-msgstr "احذف التسجيلات محلياً لإزالتها. تُوسَم البيانات المزامَنة للإزالة فور حذفها."
 
 #. js-lingui-explicit-id
 #. placeholder {0}: replacement.from
@@ -2463,9 +2805,19 @@ msgid "settings.modal.section.dictation"
 msgstr "الإملاء"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/FAQModal.tsx
+msgid "faq.free.answer.v5"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.line_free"
 msgstr "الإملاء مجاني إلى الأبد."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.line"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -2609,8 +2961,8 @@ msgstr "جارٍ تنزيل التحديث"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_update.body"
-msgstr "يُنزِّل التحديثات ويثبّتها في الخلفية."
+msgid "settings.app.auto_update.body.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/MemberCard.tsx
@@ -2764,11 +3116,6 @@ msgid "library.modal.export"
 msgstr "تصدير"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.data.export_dataset"
-msgstr "تصدير مجموعة البيانات"
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.failed"
 msgstr "فشل التصدير. حاول مجددًا."
@@ -2777,6 +3124,11 @@ msgstr "فشل التصدير. حاول مجددًا."
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.title"
 msgstr "تصدير النسخ"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.data.export_transcripts"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -2790,13 +3142,13 @@ msgstr "تصدير…"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.export_done"
-msgstr "تم تصدير {pairs} زوجًا من الصوت والنص."
+msgid "native.toast.transcripts_exported"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.listen_on_lan_help"
-msgstr "الكشف للأجهزة الأخرى على شبكتك"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.export_done"
+msgstr "تم تصدير {pairs} زوجًا من الصوت والنص."
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -2909,6 +3261,11 @@ msgid "native.menu.recording_finish"
 msgstr "إنهاء التسجيل..."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.not_configured"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.finishing"
 msgstr "جارٍ الإنهاء..."
@@ -2975,8 +3332,28 @@ msgstr "عام"
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
-msgid "onboarding.license_step.title_free"
-msgstr "احصل على كل شيء بترخيص."
+msgid "onboarding.license_step.title_free.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/onboarding/steps/LicenseStep.tsx
+msgid "onboarding.license_step.buy.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.buy.plus"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "license.activate.buy_with_code"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.buy.solo"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -2990,8 +3367,8 @@ msgstr "جارٍ تجهيز نموذج التعرف على الكلام. يعم�
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.menu.github"
-msgstr "Github"
+msgid "native.menu.github.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3000,13 +3377,18 @@ msgstr "GitHub"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
-msgid "home.support.feedback.github"
-msgstr "مشكلة GitHub"
+msgid "home.support.feedback.github.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.github_unavailable"
 msgstr "قد يكون GitHub غير متاح مؤقتًا. تحقق من اتصالك وحاول مجددًا."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.personalization.line"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -3019,6 +3401,11 @@ msgid "native.toast.recording_write_failed"
 msgstr "تعذّر على Glimpse الاستمرار في كتابة التسجيل، لذا توقّف. ما تمّ تسجيله حتى الآن محفوظ."
 
 #. js-lingui-explicit-id
+#: src/features/license/useActivationErrorText.ts
+msgid "license.activate.error.network"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.retranscribe_failed"
 msgstr "تعذّر على Glimpse نسخ هذا المحتوى مجدّدًا، لذا احتفظ بالنص المكتوب السابق."
@@ -3027,6 +3414,11 @@ msgstr "تعذّر على Glimpse نسخ هذا المحتوى مجدّدًا، 
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_paste"
 msgstr "تعذّر على Glimpse الكتابة لأن إمكانية الوصول معطّلة. النص موجود في الحافظة، يمكنك لصقه باستخدام Command-V."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_audio"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/main.tsx
@@ -3049,6 +3441,16 @@ msgid "record.error.microphone_permission"
 msgstr "يحتاج Glimpse إلى الوصول إلى الميكروفون."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.mic_permission_windows"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.mic_permission_mac"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.error.system_audio_permission"
 msgstr "يحتاج Glimpse إلى إذن لتسجيل صوت النظام."
@@ -3057,6 +3459,26 @@ msgstr "يحتاج Glimpse إلى إذن لتسجيل صوت النظام."
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.subtitle"
 msgstr "يحتاج Glimpse إلى هذه الأذونات للاستماع إليك والكتابة نيابةً عنك."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.draft_idle.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.name.plus"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.name.solo"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.updated_to"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
@@ -3204,14 +3626,9 @@ msgid "faq.how_it_works.question"
 msgstr "كيف يعمل Glimpse؟"
 
 #. js-lingui-explicit-id
-#: src/shared/ui/FAQModal.tsx
-msgid "faq.subtitle"
-msgstr "أسئلة شائعة حول Glimpse"
-
-#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.endpoint.placeholder"
-msgstr "https://your-llm-endpoint.com"
+msgid "settings.language_model.endpoint.placeholder.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
@@ -3367,6 +3784,11 @@ msgid "member_card.draft_stamp_issuing"
 msgstr "جارٍ الإصدار"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.data.format_json"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/recording/components/LiveView.tsx
 msgid "live.jump"
 msgstr "الانتقال إلى البث المباشر"
@@ -3385,6 +3807,11 @@ msgstr "استمر في الضغط، ثم ارفع إصبعك عند الانت�
 #: src/features/recording/components/LiveView.tsx
 msgid "live.prefs.on_top"
 msgstr "إبقاء في المقدّمة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.continue_free"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -3407,6 +3834,11 @@ msgid "live.prefs.text_size.large"
 msgstr "L"
 
 #. js-lingui-explicit-id
+#: src/shared/ui/ModelPickerModal.tsx
+msgid "model_picker.diarizer.description.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.language.label"
 msgstr "اللغة"
@@ -3423,8 +3855,8 @@ msgstr "كبير"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.trial_last_day"
-msgstr "آخر يوم في فترة تجربتك. تبقى ميزة الإملاء مجانية. تتطلب بعض الميزات ترخيصًا."
+msgid "native.toast.trial_last_day.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -3432,13 +3864,13 @@ msgid "native.menu.recent"
 msgstr "آخر النصوص المكتوبة"
 
 #. js-lingui-explicit-id
-#: src/features/import/components/ImportStep.tsx
-msgid "import.cat.auto_launch"
-msgstr "التشغيل عند تسجيل الدخول"
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.auto_launch.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.auto_launch"
+#: src/features/import/components/ImportStep.tsx
+msgid "import.cat.auto_launch"
 msgstr "التشغيل عند تسجيل الدخول"
 
 #. js-lingui-explicit-id
@@ -3487,6 +3919,16 @@ msgid "onboarding.license_step.tile_live_line"
 msgstr "لنطرحه يوم الجمعة."
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.listen_on_lan_help.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/LocalApiTab.tsx
+msgid "settings.local_api.allow_browser_requests_help.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.sidebar.library"
 msgstr "المكتبة"
@@ -3497,9 +3939,19 @@ msgid "settings.about.storage.library"
 msgstr "المكتبة"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.library.name"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryView.tsx
 msgid "library.view.title"
 msgstr "المكتبة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.library.title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -3583,11 +4035,6 @@ msgstr "إعدادات العرض المباشر"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.api_key.aria"
-msgstr "مفتاح LLM API"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.endpoint.aria"
 msgstr "عنوان URL لنقطة نهاية LLM"
 
@@ -3619,11 +4066,6 @@ msgstr "محلي"
 #. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.provider.local"
-msgstr "محلي"
-
-#. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.mode.local"
 msgstr "محلي"
 
 #. js-lingui-explicit-id
@@ -3750,8 +4192,13 @@ msgstr "تم رفض الوصول إلى الميكروفون."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.mic_removed"
-msgstr "انقطع الاتصال بالميكروفون. تم إيقاف التسجيل وحفظه في السجل."
+msgid "native.toast.mic_removed.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.microphone"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -3925,9 +4372,9 @@ msgid "record.name.title"
 msgstr "تسمية التسجيل"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.sidebar.locked_hint"
-msgstr "يتطلب ترخيص Glimpse. يفتح الحساب."
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.cli.locked_subtitle.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
@@ -3941,9 +4388,19 @@ msgid "library.detect_speakers_unavailable"
 msgstr "يتطلب نموذج الكشف عن المتحدث"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/ModelsTab.tsx
+msgid "settings.models.installed.ane.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.ane.installed"
 msgstr "تم تثبيت مشفِّر Neural Engine"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.dictionary_never"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -3951,14 +4408,14 @@ msgid "settings.app.prune.never"
 msgstr "أبداً"
 
 #. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.new_mode"
-msgstr "وضع جديد"
-
-#. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
 #: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.new_mode.default_name"
+msgid "personalization.new_mode.default_name.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/personalization/components/PersonalizationView.tsx
+msgid "personalization.new_mode"
 msgstr "وضع جديد"
 
 #. js-lingui-explicit-id
@@ -4027,6 +4484,11 @@ msgid "native.menu.mic_none"
 msgstr "لم يتم العثور على أجهزة إدخال"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.no_fallback"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
 msgid "settings.local_api.logs.empty"
 msgstr "لا توجد سجلات بعد."
@@ -4048,8 +4510,8 @@ msgstr "لا يُحتفظ بأي نموذج في الذاكرة بين الطل�
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryImportModal.tsx
-msgid "library.import.no_models_installed"
-msgstr "لا توجد نماذج متاحة. نزّل نموذجاً أو أضف موفراً من الإعدادات > النماذج."
+msgid "library.import.no_models_installed.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryRetranscribeModal.tsx
@@ -4149,6 +4611,16 @@ msgstr "لا يوجد صوت مُفرَّغ بعد"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.no_model_installed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.no_model_selected"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recent_empty"
 msgstr "لا توجد نصوص مكتوبة بعد"
 
@@ -4164,8 +4636,18 @@ msgstr "لم يُستقبَل أي كلام."
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.transcription.no_words"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.no_words"
 msgstr "لم يتم اكتشاف أي كلمات. تم حذف التسجيل."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.no_words_kept"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4298,6 +4780,11 @@ msgid "settings.language_model.provider.on_device"
 msgstr "على الجهاز"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.once_note"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.ai_writing.answer.v2"
 msgstr "فقط إذا أعددت نموذج كتابة ضمن الإعدادات ← الموفرون. تُرسل الاختصارات التي تم تفعيل «التنظيف» فيها، والتخصيص، النص ذا الصلة مباشرةً إلى ذلك الموفر. يظل مفتاح API الخاص بك مخزنًا محليًا في Glimpse. لا يغادر الصوت جهازك إلا إذا اخترت نموذج كلام سحابيًا في الإعدادات ← النماذج."
@@ -4339,6 +4826,11 @@ msgstr "فتح GitHub"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.view_home"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.model_action"
 msgstr "فتح النماذج"
 
@@ -4346,6 +4838,11 @@ msgstr "فتح النماذج"
 #: src/features/settings/components/tabs/ProvidersTab.tsx
 msgid "settings.providers.guide.speech.action"
 msgstr "فتح النماذج"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.open_settings_action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4394,8 +4891,8 @@ msgstr "اختياري"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.api_key.placeholder_optional"
-msgstr "اختياري - اتركه فارغاً للتعطيل"
+msgid "settings.local_api.api_key.placeholder_optional.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
@@ -4426,6 +4923,11 @@ msgstr "آخر 7 أيام"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.paste"
 msgstr "لصق"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.pasted_to_clipboard"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -4474,14 +4976,14 @@ msgid "settings.app.permissions_restart_notice"
 msgstr "قد تستلزم تغييرات الأذونات إعادة تشغيل."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.permission"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/PermissionsStep.tsx
 msgid "onboarding.permissions.title"
 msgstr "الأذونات"
-
-#. js-lingui-explicit-id
-#: src/features/license/components/MemberCard.tsx
-msgid "member_card.tier_personal"
-msgstr "شخصي"
 
 #. js-lingui-explicit-id
 #: src/Home.tsx
@@ -4494,9 +4996,24 @@ msgid "personalization.title"
 msgstr "التخصيص"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.personalization.name"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.personalization.title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/speakerColors.ts
 msgid "speaker_color.pink"
 msgstr "وردي"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.picker_aria"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
@@ -4512,6 +5029,11 @@ msgstr "إعدادات التشغيل"
 #: src/main.tsx
 msgid "crash.body"
 msgstr "يرجى إعادة تشغيل التطبيق."
+
+#. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.tier_plus"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/LocalApiTab.tsx
@@ -4695,9 +5217,29 @@ msgid "home.sidebar.record"
 msgstr "تسجيل"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.record.name"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.record.title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_recording"
 msgstr "تسجيل الاجتماعات"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.record.line"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.record.detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4726,6 +5268,11 @@ msgstr "تسجيل - {day}، {time}"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.recording_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.recording_paused"
 msgstr "التسجيل متوقف مؤقتًا"
 
@@ -4736,8 +5283,8 @@ msgstr "تم استرداد التسجيل"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.recovered_saved_one"
-msgstr "تم حفظ التسجيل في السجل."
+msgid "native.toast.recovered_saved_one.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -4751,8 +5298,8 @@ msgstr "تم استرداد التسجيلات"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.recovered_saved_many"
-msgstr "تم حفظ التسجيلات في السجل."
+msgid "native.toast.recovered_saved_many.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -4942,11 +5489,6 @@ msgid "settings.general.auto_dictionary.unsupported_body"
 msgstr "يتطلب نموذجًا يدعم القاموس"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.cli.locked_subtitle"
-msgstr "يتطلب ترخيصًا نشطًا"
-
-#. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
 msgid "updates.restart"
 msgstr "إعادة التشغيل"
@@ -5091,6 +5633,11 @@ msgstr "يمين {key}"
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.prune.threshold.immediately"
 msgstr "الآن"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.api.line"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
@@ -5344,11 +5891,6 @@ msgid "dropdown.placeholder"
 msgstr "تحديد..."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/LocalApiTab.tsx
-msgid "settings.local_api.allow_browser_requests_help"
-msgstr "إرسال ترويسات CORS للسماح لتطبيقات الويب باستدعاء واجهة API"
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.menu.send_feedback"
 msgstr "إرسال ملاحظات"
@@ -5369,13 +5911,13 @@ msgid "settings.models.cloud.set_up"
 msgstr "إعداد"
 
 #. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.open_settings"
+#: src/Home.tsx
+msgid "home.sidebar.settings"
 msgstr "الإعدادات"
 
 #. js-lingui-explicit-id
-#: src/Home.tsx
-msgid "home.sidebar.settings"
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.open_settings"
 msgstr "الإعدادات"
 
 #. js-lingui-explicit-id
@@ -5526,6 +6068,11 @@ msgid "settings.general.shortcuts.smart"
 msgstr "ذكي"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/MemberCard.tsx
+msgid "member_card.tier_solo"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/asks/components/AskPrompt.tsx
 msgid "home.survey.title"
 msgstr "بعض الأسئلة حول كيفية استخدامك لـ Glimpse؟"
@@ -5571,11 +6118,6 @@ msgid "native.toast.speaker_model_upgraded"
 msgstr "يستخدم اكتشاف المتحدث الآن نموذجًا جديدًا يميّز بين الأشخاص بدقة أعلى."
 
 #. js-lingui-explicit-id
-#: src/shared/ui/ModelPickerModal.tsx
-msgid "model_picker.diarizer.description"
-msgstr "تمييز المتحدثين لنصوص المكتبة."
-
-#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.speakers"
 msgstr "المتحدثون"
@@ -5591,6 +6133,16 @@ msgid "onboarding.done.recap.model.v2"
 msgstr "نموذج الكلام"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.speech"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.speech_provider_title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/SpeechModelPanel.tsx
 msgid "settings.speech_model.title_provider"
 msgstr "موفر الكلام"
@@ -5599,6 +6151,11 @@ msgstr "موفر الكلام"
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_offline_body"
 msgstr "يبقى الكلام على هذا الكمبيوتر."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.data.format_csv"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -5679,6 +6236,11 @@ msgstr "الحالة"
 #: src/features/onboarding/steps/shared.tsx
 msgid "onboarding.step_progress"
 msgstr "الخطوة {step} من {total}"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/AccountView.tsx
+msgid "license.activate.email_support"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5782,6 +6344,16 @@ msgid "library.tracks.system_audio"
 msgstr "مسار صوت النظام"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/GeneralTab.tsx
+msgid "settings.general.system_default.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/recording/components/RecordingView.tsx
+msgid "record.setup.microphone.default.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/ReadyStep.tsx
 msgid "onboarding.done.recap.microphone_default"
 msgstr "إعداد النظام الافتراضي"
@@ -5792,16 +6364,6 @@ msgid "native.menu.mic_system_default"
 msgstr "إعداد النظام الافتراضي"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.system_default"
-msgstr "الإعداد الافتراضي للنظام"
-
-#. js-lingui-explicit-id
-#: src/features/recording/components/RecordingView.tsx
-msgid "record.setup.microphone.default"
-msgstr "افتراضي النظام"
-
-#. js-lingui-explicit-id
 #: src/features/recording/components/RecordingView.tsx
 msgid "record.setup.microphone.default_named"
 msgstr "افتراضي النظام ({fallback})"
@@ -5810,11 +6372,6 @@ msgstr "افتراضي النظام ({fallback})"
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.detail.tags.label"
 msgstr "وسم"
-
-#. js-lingui-explicit-id
-#: src/features/personalization/components/PersonalizationView.tsx
-msgid "personalization.description"
-msgstr "خصِّص سلوك نموذج اللغة وفقاً للتطبيقات والمواقع والتعليمات المخصصة."
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5842,18 +6399,23 @@ msgid "settings.general.microphone_test.test"
 msgstr "اختبار"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.data.format_txt"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelCapabilityIcon.tsx
 msgid "model_capability.live_text_detail"
 msgstr "يظهر النص في الشريط أثناء كلامك."
 
 #. js-lingui-explicit-id
-#: src/features/recording/components/LiveView.tsx
-msgid "live.prefs.text_size"
-msgstr "حجم النص"
+#: src/features/settings/components/tabs/AppTab.tsx
+msgid "settings.app.text_size.label.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.text_size.label"
+#: src/features/recording/components/LiveView.tsx
+msgid "live.prefs.text_size"
 msgstr "حجم النص"
 
 #. js-lingui-explicit-id
@@ -5872,10 +6434,20 @@ msgid "onboarding.license_step.line_active"
 msgstr "شكراً لدعمك Glimpse!"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.admin_app_paste"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/library/components/LibraryDetail.tsx
 #: src/features/toast/ToastOverlay.tsx
 msgid "toast.action_failed"
 msgstr "لم ينجح ذلك. حاول مرة أخرى."
+
+#. js-lingui-explicit-id
+#: src/features/license/useActivationErrorText.ts
+msgid "license.activate.error.not_a_key"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/personalization/components/PersonalityModal.tsx
@@ -5883,19 +6455,24 @@ msgid "personalization.modal.website.duplicate"
 msgstr "هذا النطاق مضاف مسبقاً"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
+#: src/features/license/useActivationErrorText.ts
 msgid "settings.account.activate.masked_key_error_generic"
 msgstr "هذا هو المفتاح المختصر. انسخ المفتاح الكامل من رسالة الإيصال الإلكترونية."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
+#: src/features/license/useActivationErrorText.ts
 msgid "settings.account.activate.order_id_error_generic"
 msgstr "هذا هو رقم طلبك. الصق مفتاح الترخيص من الرسالة الإلكترونية ذاتها."
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/AccountView.tsx
-msgid "settings.account.activate.discount_code_error"
-msgstr "يبدو هذا رمز خصم. أدخله عند الدفع، ثم الصق مفتاح الترخيص من إيصالك."
+#: src/features/license/useActivationErrorText.ts
+msgid "license.activate.error.not_found_key"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/useActivationErrorText.ts
+msgid "license.activate.error.discount_code"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
@@ -5913,6 +6490,11 @@ msgid "onboarding.first_dictation.complete.v2"
 msgstr "هذا كل شيء، هذا هو المقصود."
 
 #. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.api.title"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/useSettingsForm.ts
 msgid "settings.error.api_server_restart"
 msgstr "لم يتوقف خادم API، لذا تعذّرت إعادة تشغيله."
@@ -5921,6 +6503,11 @@ msgstr "لم يتوقف خادم API، لذا تعذّرت إعادة تشغيل
 #: src/features/settings/components/LanguageModelPanel.tsx
 msgid "settings.language_model.apple.not_ready"
 msgstr "نموذج Apple Intelligence لا يزال قيد التنزيل."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.cli.locked_info.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
@@ -5981,6 +6568,16 @@ msgstr "معدل أخذ العينات في هذا الملف غير مدعوم.
 #: src/features/library/components/LibraryDetail.tsx
 msgid "library.modal.export.no_timestamps"
 msgstr "لا تتوفر طوابع زمنية لهذا العنصر. أعِد النسخ مع الطوابع الزمنية لتصدير الترجمات."
+
+#. js-lingui-explicit-id
+#: src/features/license/useActivationErrorText.ts
+msgid "license.activate.error.device_limit"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/useActivationErrorText.ts
+msgid "license.activate.error.inactive"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6083,6 +6680,21 @@ msgid "settings.about.storage.total"
 msgstr "الإجمالي"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.data.format_dataset"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/LockedFeature.tsx
+msgid "locked.library.line"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.library.detail"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
 msgid "onboarding.license_step.tile_files"
 msgstr "نسخ الملفات"
@@ -6125,6 +6737,11 @@ msgid "native.toast.cancelled"
 msgstr "تم إلغاء النسخ"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.transcription_failed"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/TranscriptionItem.tsx
 msgid "transcriptions.item.error.default"
 msgstr "فشل التفريغ"
@@ -6141,8 +6758,8 @@ msgstr "النص فارغ"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/GeneralTab.tsx
-msgid "settings.general.transcription_language"
-msgstr "لغة النسخ"
+msgid "settings.general.transcription_language.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/import/components/ImportStep.tsx
@@ -6153,6 +6770,11 @@ msgstr "نموذج التحويل إلى نص"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.copy_missing"
 msgstr "النص غير متاح بعد الآن"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.transcription_timeout"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
@@ -6269,9 +6891,19 @@ msgid "shortcuts.key.up"
 msgstr "أعلى"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/PlanPicker.tsx
+msgid "plans.devices.many"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
 msgid "model_picker.diarizer.speakers"
 msgstr "حتى 8 متحدثين"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.update_action"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -6282,6 +6914,11 @@ msgstr "تحديث"
 #: src/Home.tsx
 msgid "home.update_available"
 msgstr "يتوفر تحديث"
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.update_available"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/updates/components/UpdateChecker.tsx
@@ -6305,8 +6942,8 @@ msgstr "تأتي التحديثات من Microsoft Store"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AppTab.tsx
-msgid "settings.app.analytics"
-msgstr "تحليلات الاستخدام"
+msgid "settings.app.analytics.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/ui/ModelPickerModal.tsx
@@ -6354,6 +6991,11 @@ msgid "settings.general.shortcuts.help_writing"
 msgstr "يستخدم نموذج الكتابة لهذا الاختصار فقط. يُرتّب ما تمليه، ويُعيد صياغة النص المحدد عند نطق تعليمة."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.fallback_local"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/Home.tsx
 msgid "home.support.about.version_mode"
 msgstr "v{version} • {mode}"
@@ -6371,8 +7013,8 @@ msgstr "جارٍ التحقق من التثبيت"
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/tabs/AboutTab.tsx
-msgid "settings.about.version_mode"
-msgstr "الإصدار {version} • {mode}"
+msgid "settings.about.version"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6383,11 +7025,6 @@ msgstr "عرض"
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.view_all"
 msgstr "عرض جميع الإصدارات على GitHub"
-
-#. js-lingui-explicit-id
-#: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.view_history"
-msgstr "عرض السجل"
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
@@ -6470,6 +7107,11 @@ msgid "faq.privacy.question"
 msgstr "هل بياناتي خاصة؟"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.admin_app_shortcut"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx
 msgid "settings.stats.card.words"
 msgstr "كلمات"
@@ -6500,9 +7142,29 @@ msgid "settings.providers.writing_label"
 msgstr "الكتابة"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.writing_model_title"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.provider.writing"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LanguageModelPanel.tsx
-msgid "settings.language_model.title"
-msgstr "موفّر نموذج اللغة"
+msgid "settings.language_model.title.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelPanel.tsx
+msgid "settings.language_model.api_key.aria.v2"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.personalization.detail"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/shareCard.ts
@@ -6535,6 +7197,11 @@ msgid "updates.up_to_date"
 msgstr "أنت محدَّث"
 
 #. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.library.kept"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/settings/components/LocalApiSidebarStatus.tsx
 msgid "home.local_api.status_hint"
 msgstr "خادم API الخاص بك يعمل في الخلفية."
@@ -6548,6 +7215,11 @@ msgstr "نعم. في الوضع المحلي، تبقى جميع ملفاتك ا
 #: src/shared/ui/FAQModal.tsx
 msgid "faq.privacy.answer.windows"
 msgstr "تبقى ملفاتك الصوتية ونصوصك المُحوَّلة على جهاز الكمبيوتر الخاص بك. لا تجمع Glimpse أي تسجيلات أو نصوص أو مفاتيح API أو مطالبات. تساعدنا تحليلات الاستخدام المجهولة الاختيارية (مثل مدة الجلسة واستخدام الميزات، دون المحتوى أبدًا) على تحسين التطبيق. يمكنك إيقاف هذا في أي وقت من الإعدادات ← التطبيق."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/tabs/AboutTab.tsx
+msgid "settings.about.data.export_transcripts_description"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6575,6 +7247,11 @@ msgid "settings.account.activate.checkout_return_hint_generic"
 msgstr "مفتاح الترخيص موجود في رسالة الإيصال الإلكترونية. الصقه هنا، أو الصق الرسالة بأكملها."
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.error.mic_unavailable"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx
 msgid "onboarding.first_dictation.waiting.model_failed"
 msgstr "لم يكتمل تنزيل النموذج. أعد المحاولة أدناه."
@@ -6590,6 +7267,11 @@ msgid "transcriptions.list.empty"
 msgstr "ستظهر نصوصك المُفرَّغة الأخيرة هنا"
 
 #. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.writing_model_edit_kept"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/transcriptions/components/HomeTodayHeader.tsx
 msgid "home.today.accessibility_missing"
 msgstr "يحتاج اختصارك إلى إذن الوصول لميزة إمكانية الوصول كي يعمل."
@@ -6598,6 +7280,11 @@ msgstr "يحتاج اختصارك إلى إذن الوصول لميزة إمكا
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.accessibility_shortcut"
 msgstr "لن يعمل اختصارك حتى تسمح لـ Glimpse في إمكانية الوصول. إذا كانت Glimpse مُفعَّلة بالفعل، فأوقفها ثم شغّلها مجددًا."
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.model_ready"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
@@ -6616,13 +7303,23 @@ msgstr "انتهت تجربتك في"
 
 #. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
-msgid "native.toast.trial_expired"
-msgstr "انتهت فترة تجربتك. تبقى ميزة الإملاء مجانية. تتطلب بعض الميزات ترخيصًا."
+msgid "native.toast.trial_expired.v2"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/settings/components/AccountView.tsx
 msgid "settings.account.trial.text_ended"
 msgstr "انتهت فترة التجربة"
+
+#. js-lingui-explicit-id
+#: src/features/license/components/TrialEndedScreen.tsx
+msgid "trial_ended.title"
+msgstr ""
+
+#. js-lingui-explicit-id
+#: src/shared/lib/nativeMenuStrings.ts
+msgid "native.toast.writing_model_raw_kept"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/FirstDictationGuide.tsx

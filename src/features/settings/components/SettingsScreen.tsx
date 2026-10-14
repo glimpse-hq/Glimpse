@@ -1,19 +1,17 @@
 import { useLingui } from "@lingui/react/macro";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCopyToClipboard } from "../../../shared/hooks/useCopyToClipboard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy } from "@phosphor-icons/react";
-import FAQModal from "../../../shared/ui/FAQModal";
-import WhatsNewModal from "../../updates/components/WhatsNewModal";
 import AboutTab from "./tabs/AboutTab";
 import AccountTab from "./tabs/AccountTab";
 import GeneralTab from "./tabs/GeneralTab";
 import LocalApiTab from "./tabs/LocalApiTab";
+import LockedFeature from "../../license/components/LockedFeature";
 import ModelsTab from "./tabs/ModelsTab";
 import AppTab from "./tabs/AppTab";
 import ProvidersTab from "./tabs/ProvidersTab";
 import type { PurchaseSource } from "../../license/purchaseConfig";
-import type { TranscriptionMode } from "../../../types";
 import { useSettingsForm } from "../useSettingsForm";
 import { SETTINGS_PANE_LABELS, type SettingsPane } from "../settingsPanes";
 
@@ -45,7 +43,8 @@ interface SettingsScreenProps {
   onPaneChange: (pane: SettingsPane) => void;
   onClose: () => void;
   accountSource?: PurchaseSource;
-  transcriptionMode: TranscriptionMode;
+  focusLicenseKey?: boolean;
+  onLicenseKeyFocused?: () => void;
 }
 
 const paneVariants = {
@@ -60,31 +59,29 @@ const SettingsScreen = ({
   onPaneChange,
   onClose,
   accountSource = "settings_account",
-  transcriptionMode: initialTranscriptionMode,
+  focusLicenseKey = false,
+  onLicenseKeyFocused,
 }: SettingsScreenProps) => {
   const { i18n } = useLingui();
+  const [apiLicenseKeyFocus, setApiLicenseKeyFocus] = useState(false);
+  const handleLicenseKeyFocused = useCallback(() => {
+    setApiLicenseKeyFocus(false);
+    onLicenseKeyFocused?.();
+  }, [onLicenseKeyFocused]);
   const form = useSettingsForm({
     isOpen: true,
     active,
     onClose,
     initialTab: legacyTabFor(pane),
-    transcriptionMode: initialTranscriptionMode,
   });
-  const { activeLicense, setActiveTab, setShowFAQModal, setWhatsNewOpen } =
-    form;
+  const { activeLicense, setActiveTab } = form;
   const localApiLocked = !activeLicense;
 
   useEffect(() => {
     setActiveTab(legacyTabFor(pane));
   }, [pane, setActiveTab]);
 
-  useEffect(() => {
-    setShowFAQModal(false);
-    setWhatsNewOpen(false);
-  }, [pane, active, setShowFAQModal, setWhatsNewOpen]);
-
   const handleOpenTab = (tab: LegacyTab) => {
-    if (localApiLocked && tab === "local-api") return;
     onPaneChange(paneForLegacyTab[tab]);
   };
 
@@ -118,6 +115,8 @@ const SettingsScreen = ({
                 key="account"
                 variants={paneVariants}
                 source={accountSource}
+                focusLicenseKey={focusLicenseKey || apiLicenseKeyFocus}
+                onLicenseKeyFocused={handleLicenseKeyFocused}
               />
             )}
 
@@ -247,17 +246,26 @@ const SettingsScreen = ({
               <AboutTab
                 key="about"
                 variants={paneVariants}
+                active={active}
                 appInfo={form.appInfo}
                 appInfoFailed={form.appInfoFailed}
-                transcriptionMode={form.transcriptionMode}
                 cliInstallStatus={form.cliInstallStatus}
-                cliInstallBusy={form.cliInstallBusy}
                 activeLicense={form.activeLicense}
-                onInstallCli={form.handleInstallCli}
-                onRemoveCli={form.handleRemoveCli}
+                onCliError={(message) =>
+                  form.showSettingsError(message, "about")
+                }
                 onOpenDataDir={form.handleOpenDataDir}
-                onOpenFAQ={() => form.setShowFAQModal(true)}
-                onOpenWhatsNew={() => form.setWhatsNewOpen(true)}
+              />
+            )}
+
+            {pane === "api" && localApiLocked && (
+              <LockedFeature
+                key="api-locked"
+                feature="api"
+                onEnterKey={() => {
+                  setApiLicenseKeyFocus(true);
+                  onPaneChange("account");
+                }}
               />
             )}
 
@@ -291,19 +299,6 @@ const SettingsScreen = ({
           </AnimatePresence>
         )}
       </div>
-
-      {active && (
-        <>
-          <FAQModal
-            isOpen={form.showFAQModal}
-            onClose={() => form.setShowFAQModal(false)}
-          />
-          <WhatsNewModal
-            isOpen={form.whatsNewOpen}
-            onClose={() => form.setWhatsNewOpen(false)}
-          />
-        </>
-      )}
     </div>
   );
 };

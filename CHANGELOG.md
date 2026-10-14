@@ -1,3 +1,27 @@
+1.3.6
+
+### New Features
+
+- Export all your transcripts as text, CSV or JSON from Settings > About.
+
+### Improvements
+
+- Buy Glimpse Plus right from the app. Locked features now show what they do and how to get them, instead of sending you somewhere else first.
+- Glimpse no longer throws away your speech. A dictation that comes back empty or gets stuck is kept in Home so you can retry it, and pressing your shortcut twice by accident no longer cancels it.
+- Glimpse tells speech apart from background sound much better, so music, typing, fans and room noise no longer turn into made-up text like "Thank you." Live transcripts also cut sentences in the middle of a word less often.
+- Cleanup works better with reasoning models, and the suggested writing models are up to date.
+- When your trial ends, Glimpse shows once what stays free and what needs Glimpse Plus.
+- Glimpse starts at login by default, and tells you when your speech model has finished downloading.
+- Error messages are clearer and now appear in your language, including when Glimpse hears no sound from your microphone.
+- The Glimpse window fits on smaller laptop screens.
+- Cleanup removes more ums, uhs and stammers, especially with Apple Intelligence as your writing model.
+- With Apple Intelligence as your writing model, Edit mode responds sooner, and a dictation too long for the on-device model is pasted as you said it, without a warning.
+- Whisper Large V3 Turbo, Large V3 and Small download less and use less memory with Neural Engine acceleration on Apple Silicon. Turbo's download is about 1.36 GB instead of 2.06 GB and it uses about 700 MB less memory, with the same transcripts and speed.
+
+### Fixes
+
+- Glimpse launches again on macOS 14 and 15. Since 1.0.3 it crashed at startup on those versions.
+
 1.3.5
 
 ### New Models

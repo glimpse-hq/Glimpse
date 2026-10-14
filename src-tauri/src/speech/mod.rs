@@ -480,6 +480,58 @@ pub(crate) fn upgrade_parakeet_encoder(app: &AppHandle<AppRuntime>) {
     });
 }
 
+pub(crate) fn upgrade_whisper_decoder(app: &AppHandle<AppRuntime>) {
+    let settings = app.state::<AppState>().current_settings();
+    let model = settings.local_model.clone();
+    let Ok(models_dir) = install::model_cache_dir(app) else {
+        return;
+    };
+    if !catalog::ane_replaces_model_files(&model) {
+        return;
+    }
+    let staging = models_dir.join(&model).join(".decoder-upgrade");
+    let spec = catalog::model_upgrade_target(&settings)
+        .is_none()
+        .then(|| install::decoder_upgrade_spec(&models_dir, &model))
+        .flatten();
+    let Some(spec) = spec else {
+        let _ = crate::platform::remove_dir_all_compat(&staging);
+        return;
+    };
+    let manager = glimpse_speech::models::ModelInstallManager::new(staging.clone());
+    let staged_dir = manager.model_dir(&model);
+    if let Err(err) = install::ensure_disk_space(&staged_dir, &spec) {
+        return tracing::warn!("[speech] {model} decoder upgrade skipped: {err:#}");
+    }
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        match manager.install(&spec, Default::default()).await {
+            Ok(status) if status.installed => {}
+            Ok(_) => return tracing::warn!("[speech] {model} decoder upgrade did not finish"),
+            Err(err) => return tracing::warn!("[speech] {model} decoder upgrade failed: {err:#}"),
+        }
+        let upgraded = tauri::async_runtime::spawn_blocking(move || -> Result<()> {
+            let model_dir = models_dir.join(&model);
+            for file in &spec.files {
+                std::fs::rename(staged_dir.join(&file.path), model_dir.join(&file.path))?;
+            }
+            install::finish_decoder_upgrade(&models_dir, &model)?;
+            crate::platform::remove_dir_all_compat(&staging)?;
+            tracing::info!("[speech] {model} now runs from its decoder-only GGUF");
+            let transcriber = app.state::<AppState>().local_transcriber();
+            if transcriber.loaded_model_id().as_deref() == Some(model.as_str()) {
+                transcriber.unload();
+                warm_model(&app, model);
+            }
+            Ok(())
+        })
+        .await;
+        if let Ok(Err(err)) = upgraded {
+            tracing::warn!("[speech] decoder upgrade failed: {err:#}");
+        }
+    });
+}
+
 const NEMOTRON_ONNX_FILES: &[&str] = &[
     "encoder.onnx",
     "encoder.onnx.data",

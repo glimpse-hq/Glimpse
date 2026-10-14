@@ -16,6 +16,12 @@ pub fn track_analytics_opt_out(app: &tauri::AppHandle<AppRuntime>) {
     }
 }
 
+/// Records that analytics was turned back on after an opt-out, so retention
+/// can tell a returning user from a new one.
+pub fn track_analytics_opt_in(app: &tauri::AppHandle<AppRuntime>) {
+    capture_event(app, "analytics_opt_in", json!({}));
+}
+
 /// Records that you opened the app (fires on every launch). Also refreshes
 /// your profile with license status, the selected speech model, lifetime
 /// dictation counts, the dictation language (auto, a supported language code,
@@ -91,7 +97,8 @@ pub struct TranscriptionEvent<'a> {
     pub asr_seconds: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm_seconds: Option<f32>,
-    /// off, ok, failed, or skipped.
+    /// off, ok, failed, skipped (writing model unavailable), or input_skipped
+    /// (the on-device model can't take this transcript).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub llm_outcome: Option<&'a str>,
     /// Key release to text inserted.
@@ -374,6 +381,26 @@ pub fn track_checkout_returned(app: &tauri::AppHandle<AppRuntime>) {
     capture_event(app, "checkout_returned", json!({}));
 }
 
+/// Records that checkout opened in the browser: the plan, where it was opened
+/// from, the locked feature if any, and whether a discount code came along.
+pub fn track_checkout_opened(
+    app: &tauri::AppHandle<AppRuntime>,
+    tier: &str,
+    source: &str,
+    feature: Option<&str>,
+    with_code: bool,
+) {
+    let feature = feature.map(|feature| match feature {
+        "personalization" | "library" | "record" | "api" => feature,
+        _ => "other",
+    });
+    capture_event(
+        app,
+        "checkout_opened",
+        json!({ "tier": tier, "source": source, "feature": feature, "with_code": with_code }),
+    );
+}
+
 /// Records which locked feature an unlicensed user ran into.
 #[tauri::command]
 pub fn track_gate_blocked(app: tauri::AppHandle<AppRuntime>, feature: String) {
@@ -546,6 +573,7 @@ pub fn track_onboarding_completed(
     app: &tauri::AppHandle<AppRuntime>,
     smart_shortcut: &str,
     first_dictation: bool,
+    auto_launch: bool,
 ) {
     capture_event(
         app,
@@ -553,6 +581,7 @@ pub fn track_onboarding_completed(
         json!({
             "smart_shortcut": smart_shortcut,
             "first_dictation": first_dictation,
+            "auto_launch": auto_launch,
             "mic_granted": crate::permissions::check_microphone_permission(),
             "accessibility_granted": crate::permissions::check_accessibility_permission(),
         }),

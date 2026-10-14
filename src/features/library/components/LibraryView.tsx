@@ -207,10 +207,7 @@ const LibraryView = ({
       } catch (err) {
         console.error("Failed to delete library item:", err);
         const message = err instanceof Error ? err.message : String(err);
-        invoke("debug_show_toast", {
-          toastType: "error",
-          message: formatDeleteErrorMessage(message),
-        }).catch(() => {});
+        showErrorToast(formatDeleteErrorMessage(message));
         throw err;
       }
     },
@@ -238,13 +235,12 @@ const LibraryView = ({
         await rediarizeMutation.mutateAsync(id);
       } catch (err) {
         console.error("Failed to detect speakers:", err);
-        invoke("debug_show_toast", {
-          toastType: "error",
-          message: t({
+        showErrorToast(
+          t({
             id: "library.view.rediarize_error",
             message: "Couldn't detect speakers.",
           }),
-        }).catch(() => {});
+        );
       }
     },
     [rediarizeMutation, t],
@@ -290,13 +286,12 @@ const LibraryView = ({
       }
     } catch (err) {
       console.error("Failed to open import dialog:", err);
-      invoke("debug_show_toast", {
-        toastType: "error",
-        message: t({
+      showErrorToast(
+        t({
           id: "library.view.import_dialog_error",
           message: "Could not open the import dialog.",
         }),
-      }).catch(() => {});
+      );
     }
   };
 
@@ -800,11 +795,7 @@ const LibraryView = ({
                   console.error("Failed to import file:", err);
                   const message =
                     err instanceof Error ? err.message : String(err);
-                  const toastMessage = formatImportErrorMessage(message);
-                  invoke("debug_show_toast", {
-                    toastType: "error",
-                    message: toastMessage,
-                  }).catch(() => {});
+                  showErrorToast(formatImportErrorMessage(message));
                 }
               }
 

@@ -34,7 +34,8 @@ use crate::analytics::{self, Activity, ErrorDetail, RecordingSessionSummary, err
 use crate::library::{
     AudioSources, Bookmark, JobSource, LibraryItem, LiveSpeakerHints, RecordingOutput,
 };
-use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
+use crate::library::{LibraryJob, LibraryJobKind};
+use crate::{AppRuntime, AppState};
 use live::{LiveTranscript, LiveWorker};
 use track::{TrackInput, TrackWriter};
 
