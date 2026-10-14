@@ -255,9 +255,9 @@ const LibraryImportModal = ({
               />
               <span>
                 {t({
-                  id: "library.import.no_models_installed",
+                  id: "library.import.no_models_installed.v2",
                   message:
-                    "No models available. Download one or add a provider in Settings > Models.",
+                    "No models available. Download one or add a provider in Settings → Models.",
                 })}
               </span>
             </div>

@@ -179,7 +179,7 @@ fn toggle_remote_model_from_menu(app: &AppHandle<AppRuntime>) -> Option<UserSett
 
     let next_enabled = !settings.remote_speech_enabled;
     if next_enabled && !remote::has_valid_config(&settings) {
-        remote::emit_not_configured_toast(app, &settings);
+        remote::emit_not_configured_toast(app);
         return None;
     }
 

@@ -57,11 +57,9 @@ import {
   useFetchLlmModels,
   useFetchRemoteSpeechModels,
   useCliInstallStatus,
-  useInstallCli,
   useDiarizerModel,
   useModelCatalog,
   useModelStatuses,
-  useRemoveCli,
 } from "./models-queries";
 import type {
   TranscriptionMode,
@@ -239,7 +237,6 @@ interface UseSettingsFormOptions {
   active: boolean;
   onClose: () => void;
   initialTab?: ActiveTab;
-  transcriptionMode: TranscriptionMode;
 }
 
 export function useSettingsForm({
@@ -247,7 +244,6 @@ export function useSettingsForm({
   active,
   onClose,
   initialTab = "general",
-  transcriptionMode: initialTranscriptionMode,
 }: UseSettingsFormOptions) {
   const [smartShortcut, setSmartShortcut] = useState("Control+Space");
   const [smartEnabled, setSmartEnabled] = useState(true);
@@ -268,7 +264,7 @@ export function useSettingsForm({
     useState<InvalidShortcutDraft>(null);
   const invalidShortcutDraftRef = useRef<InvalidShortcutDraft>(null);
   const [transcriptionMode, setTranscriptionModeRaw] =
-    useState<TranscriptionMode>(initialTranscriptionMode);
+    useState<TranscriptionMode>("local");
   const [localModel, setLocalModel] = useState("");
   const [remoteSpeechEnabled, setRemoteSpeechEnabled] = useState(false);
   const [remoteSpeechProvider, setRemoteSpeechProviderRaw] =
@@ -359,7 +355,6 @@ export function useSettingsForm({
     parseTextSizeMode(localStorage.getItem(TEXT_SIZE_MODE_STORAGE_KEY)),
   );
   const [themeMode, setThemeModeRaw] = useState<ThemeMode>("system");
-  const [showFAQModal, setShowFAQModal] = useState(false);
   const [micPermission, setMicPermission] = useState<boolean | null>(null);
   const [accessibilityPermission, setAccessibilityPermission] = useState<
     boolean | null
@@ -367,7 +362,6 @@ export function useSettingsForm({
   const [inputMonitoringPermission, setInputMonitoringPermission] = useState<
     boolean | null
   >(null);
-  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const didHydrateRef = useRef(false);
   const hydratedSettingsRef = useRef<StoredSettings | null>(null);
   const sentMenuSettingsRef = useRef<MenuSettings | null>(null);
@@ -406,10 +400,6 @@ export function useSettingsForm({
   const modelCatalogQuery = useModelCatalog(isOpen);
   const diarizerModel = useDiarizerModel(isOpen).data ?? null;
   const cliInstallQuery = useCliInstallStatus(isOpen);
-  const installCliMutation = useInstallCli();
-  const removeCliMutation = useRemoveCli();
-  const { mutateAsync: installCliAsync } = installCliMutation;
-  const { mutateAsync: removeCliAsync } = removeCliMutation;
   const fetchLlmModelsMutation = useFetchLlmModels();
   const fetchRemoteSpeechModelsMutation = useFetchRemoteSpeechModels();
   const { mutateAsync: fetchLlmModelsAsync } = fetchLlmModelsMutation;
@@ -420,8 +410,6 @@ export function useSettingsForm({
   const availableModels = modelDiscovery.models;
   const availableSpeechModels = speechModelDiscovery.models;
   const cliInstallStatus = cliInstallQuery.data ?? null;
-  const cliInstallBusy =
-    installCliMutation.isPending || removeCliMutation.isPending;
 
   const cliInstallError = cliInstallQuery.error;
   useEffect(() => {
@@ -1952,43 +1940,21 @@ export function useSettingsForm({
     }
   }, [showSettingsError]);
 
-  const handleInstallCli = useCallback(async () => {
-    try {
-      await installCliAsync();
-    } catch (err) {
-      console.error(err);
-      showSettingsError(String(err), "about");
-    }
-  }, [installCliAsync, showSettingsError]);
-
-  const handleRemoveCli = useCallback(async () => {
-    try {
-      await removeCliAsync();
-    } catch (err) {
-      console.error(err);
-      showSettingsError(String(err), "about");
-    }
-  }, [removeCliAsync, showSettingsError]);
-
   return {
-    activeTab,
     setActiveTab,
     loading,
     error,
     errorSourceTab,
+    showSettingsError,
 
-    smartShortcut,
     shortcutBindings,
     invalidShortcutDrafts,
     smartEnabled,
     setSmartEnabled,
-    holdShortcut,
     holdEnabled,
     setHoldEnabled,
-    toggleShortcut,
     toggleEnabled,
     setToggleEnabled,
-    transcriptionMode,
     localModel,
     setLocalModel: handleLocalModelChange,
     remoteSpeechEnabled,
@@ -2032,7 +1998,6 @@ export function useSettingsForm({
     setLlmApiKey,
     llmModel,
     setLlmModel,
-    llmConfigReady,
     aiFeaturesReady,
     licenseGateActive,
     activeLicense,
@@ -2073,13 +2038,10 @@ export function useSettingsForm({
     localApiBusy,
     localApiStopping,
     cliInstallStatus,
-    cliInstallBusy,
     handleStartLocalApi,
     handleStopLocalApi,
     handleRestartLocalApi,
     handleClearLocalApiLogs,
-    handleInstallCli,
-    handleRemoveCli,
     platformCapabilities,
 
     micPermission,
@@ -2090,11 +2052,6 @@ export function useSettingsForm({
     setTextSizeMode,
     themeMode,
     setThemeMode,
-
-    showFAQModal,
-    setShowFAQModal,
-    whatsNewOpen,
-    setWhatsNewOpen,
 
     handleDownload,
     handleDelete,

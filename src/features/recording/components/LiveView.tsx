@@ -76,16 +76,6 @@ const COMPACT_EASE_MS = 260;
 // Matches COMPACT_HEIGHT in live_window.rs.
 const HEADER_HEIGHT = 52;
 
-const formatClock = (elapsedMs: number) => {
-  const total = Math.floor(elapsedMs / 1000);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const seconds = total % 60;
-  const mm = minutes.toString().padStart(2, "0");
-  const ss = seconds.toString().padStart(2, "0");
-  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
-};
-
 const groupTurns = (segments: LiveSegment[]): Turn[] => {
   const turns: Turn[] = [];
   for (const segment of segments) {
@@ -791,7 +781,7 @@ const LiveView = () => {
             aria-hidden="true"
           />
           <span className="pointer-events-none font-satoshi ui-text-body font-medium tabular-nums">
-            {formatClock(state.elapsed_ms)}
+            {formatTimestamp(state.elapsed_ms, true)}
           </span>
           {compact && silenceWarning ? (
             <Warning

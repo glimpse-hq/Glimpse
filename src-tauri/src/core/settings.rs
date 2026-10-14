@@ -240,7 +240,12 @@ pub(crate) fn complete_onboarding(
         .first()
         .map(|binding| analytics::canonical_shortcut(&binding.shortcut))
         .unwrap_or_else(|| "none".to_string());
-    analytics::track_onboarding_completed(app, &smart_shortcut, first_dictation);
+    analytics::track_onboarding_completed(
+        app,
+        &smart_shortcut,
+        first_dictation,
+        next.auto_launch_enabled,
+    );
     Ok(())
 }
 
@@ -418,19 +423,14 @@ pub(crate) fn update_settings(
         let handle = app.clone();
         tauri::async_runtime::spawn(async move {
             analytics::init(&handle).await;
+            analytics::track_analytics_opt_in(&handle);
         });
     }
 
-    if crate::settings::auto_delete_recording_policy(&prev)
-        != crate::settings::auto_delete_recording_policy(&next)
+    if prev.auto_delete_target != next.auto_delete_target
+        || prev.auto_delete_duration != next.auto_delete_duration
     {
-        crate::schedule_recording_prune(app.clone(), next.clone());
-    }
-
-    if crate::settings::auto_delete_transcription_policy(&prev)
-        != crate::settings::auto_delete_transcription_policy(&next)
-    {
-        crate::schedule_transcription_prune(app.clone(), next.clone());
+        crate::auto_delete::schedule_prune(app.clone(), next.clone());
     }
 
     Ok(UpdateSettingsResult {

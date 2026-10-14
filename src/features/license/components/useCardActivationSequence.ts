@@ -18,7 +18,6 @@ export type CardRevealStage =
   | "done";
 
 export const REVEAL_NAME_SPEED_MS = 34;
-export const REVEAL_VALUE_SPEED_MS = 26;
 
 const WIPE_MS = 750;
 const STAMP_HOLD_MS = 650;
@@ -210,7 +209,6 @@ export function useCardActivationSequence(
 
   const cinematic = stage !== "draft" && stage !== "done";
   const typingReveal = cinematic;
-  const showTierPicker = stage === "draft";
   const showStamp = active && stage !== "draft" && stage !== "wiping";
   const showName =
     active && ["name", "email", "details", "coverage", "done"].includes(stage);
@@ -225,7 +223,6 @@ export function useCardActivationSequence(
     cinematic,
     typingReveal,
     isUserActivationReveal,
-    showTierPicker,
     showStamp,
     showName,
     showEmail,

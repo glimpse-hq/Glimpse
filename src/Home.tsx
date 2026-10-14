@@ -58,14 +58,16 @@ import {
   licenseKeys,
   useLicenseGate,
   useLicenseState,
+  useTrialEndedScreen,
 } from "./features/license/queries";
+import LockedFeature from "./features/license/components/LockedFeature";
+import TrialEndedScreen from "./features/license/components/TrialEndedScreen";
 import { useIsFetching } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { PurchaseSource } from "./features/license/purchaseConfig";
 import { useSettings } from "./features/settings/queries";
 import { updateKeys, useUpdateStatus } from "./features/updates/queries";
 import { askKeys } from "./features/asks/queries";
-import type { TranscriptionMode } from "./types";
 import { isRemoteSpeechInUse } from "./shared/lib/speechProviders";
 import { isCloudLlmInUse, isLlmInUse } from "./shared/lib/llmProviders";
 
@@ -164,6 +166,11 @@ const Home = ({ onReady }: HomeProps) => {
   const [settingsTab, setSettingsTab] = useState<SettingsPane>("account");
   const [accountSource, setAccountSource] =
     useState<PurchaseSource>("settings_account");
+  const [focusLicenseKey, setFocusLicenseKey] = useState(false);
+  const handleLicenseKeyFocused = useCallback(
+    () => setFocusLicenseKey(false),
+    [],
+  );
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [activeView, setActiveView] = useState<ActiveView>("home");
   useEffect(() => {
@@ -194,13 +201,10 @@ const Home = ({ onReady }: HomeProps) => {
     null,
   );
   const licenseGateActiveRef = useRef(false);
-  const licenseLoadedRef = useRef(false);
 
   const { data: settings } = useSettings();
   const { data: updateStatus } = useUpdateStatus();
 
-  const transcriptionMode: TranscriptionMode =
-    settings?.transcription_mode ?? "local";
   const llmEnabled = settings?.llm_enabled ?? false;
   const remoteSpeechInUse = settings ? isRemoteSpeechInUse(settings) : false;
   const cloudLlmInUse = settings ? isCloudLlmInUse(settings) : false;
@@ -230,6 +234,7 @@ const Home = ({ onReady }: HomeProps) => {
     setIsSettingsOpen(false);
     setSettingsTab("account");
     setAccountSource("settings_account");
+    setFocusLicenseKey(false);
   }, []);
 
   // While any sidebar tip is showing (or was within the last moment), the
@@ -274,15 +279,7 @@ const Home = ({ onReady }: HomeProps) => {
   }, [licenseGateActive, licenseState]);
 
   const openAccountSettings = useCallback(
-    (source: PurchaseSource = "settings_account", lockedFeature?: string) => {
-      if (source !== "settings_account") {
-        void invoke("track_paywall_clicked", { source }).catch(() => {});
-      }
-      if (lockedFeature) {
-        void invoke("track_gate_blocked", { feature: lockedFeature }).catch(
-          () => {},
-        );
-      }
+    (source: PurchaseSource = "settings_account") => {
       setAccountSource(source);
       setSettingsTab("account");
       setIsSettingsOpen(true);
@@ -290,31 +287,26 @@ const Home = ({ onReady }: HomeProps) => {
     [],
   );
 
-  // A gated view requested (from the CLI) before the license state has loaded.
-  const pendingGatedViewRef = useRef<"brain" | "library" | "record" | null>(
-    null,
-  );
-
   useEffect(() => {
     licenseGateActiveRef.current = licenseGateActive;
-    licenseLoadedRef.current = licenseState !== undefined;
-    if (licenseState && pendingGatedViewRef.current) {
-      const view = pendingGatedViewRef.current;
-      pendingGatedViewRef.current = null;
-      if (licenseGateActive) setActiveView(view);
-      else openAccountSettings("sidebar_lock", gatedFeatureName(view));
-    }
-    if (
-      !licenseGateActive &&
-      (activeView === "brain" ||
-        activeView === "library" ||
-        activeView === "record")
-    ) {
-      setActiveView("home");
+    if (!licenseGateActive) {
       setDragActive(false);
       setPendingImportPaths(null);
     }
-  }, [activeView, licenseGateActive, licenseState, openAccountSettings]);
+  }, [licenseGateActive]);
+
+  // A locked view opens on its locked screen, which offers it in place.
+  const openGatedView = useCallback((view: "brain" | "library" | "record") => {
+    setIsSettingsOpen(false);
+    setActiveView(view);
+    if (licenseGateActiveRef.current) return;
+    void invoke("track_paywall_clicked", { source: "sidebar_lock" }).catch(
+      () => {},
+    );
+    void invoke("track_gate_blocked", {
+      feature: gatedFeatureName(view),
+    }).catch(() => {});
+  }, []);
 
   const wideLights = isMac && (window.__GLIMPSE_BOOT__?.osMajor ?? 26) >= 26;
   const collapsedWidth = wideLights ? 78 : 68;
@@ -327,9 +319,9 @@ const Home = ({ onReady }: HomeProps) => {
   }, []);
 
   const openLocalApiSettings = useCallback(() => {
-    setSettingsTab(activeLicense ? "api" : "account");
+    setSettingsTab("api");
     setIsSettingsOpen(true);
-  }, [activeLicense]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -416,15 +408,11 @@ const Home = ({ onReady }: HomeProps) => {
       ] as const
     ).map(([event, view]) =>
       listen(event, () => {
-        setIsSettingsOpen(false);
         if (view === "dictionary") {
-          setActiveView(view);
-        } else if (!licenseLoadedRef.current) {
-          pendingGatedViewRef.current = view;
-        } else if (licenseGateActiveRef.current) {
+          setIsSettingsOpen(false);
           setActiveView(view);
         } else {
-          openAccountSettings("sidebar_lock", gatedFeatureName(view));
+          openGatedView(view);
         }
       }).then((fn) => {
         if (cancelled) fn();
@@ -432,11 +420,22 @@ const Home = ({ onReady }: HomeProps) => {
       }),
     );
 
+    const licenseReturnReady = listen("license:checkout-returned", () => {
+      // QuerySyncBridge refetches the license state.
+      setAccountSource("checkout_return");
+      setSettingsTab("account");
+      setIsSettingsOpen(true);
+    }).then((fn) => {
+      if (cancelled) fn();
+      else unlistenLicenseReturn = fn;
+    });
+
     Promise.all([
       navigateReady,
       historyReady,
       modelsReady,
       accountReady,
+      licenseReturnReady,
       ...viewsReady,
     ])
       .then(() => {
@@ -479,12 +478,14 @@ const Home = ({ onReady }: HomeProps) => {
 
     listen<{ paths?: string[] }>("tauri://drag-drop", (event) => {
       setDragActive(false);
-      if (!licenseGateActiveRef.current) return;
-      if (event.payload?.paths?.length) {
-        setPendingImportPaths(Array.from(new Set(event.payload.paths)));
-        setActiveView("library");
-        setIsSettingsOpen(false);
+      if (!event.payload?.paths?.length) return;
+      if (!licenseGateActiveRef.current) {
+        openGatedView("library");
+        return;
       }
+      setPendingImportPaths(Array.from(new Set(event.payload.paths)));
+      setActiveView("library");
+      setIsSettingsOpen(false);
     })
       .then((fn) => {
         if (cancelled) fn();
@@ -510,18 +511,6 @@ const Home = ({ onReady }: HomeProps) => {
       })
       .catch(() => {});
 
-    listen("license:checkout-returned", () => {
-      // QuerySyncBridge refetches the license state.
-      setAccountSource("checkout_return");
-      setSettingsTab("account");
-      setIsSettingsOpen(true);
-    })
-      .then((fn) => {
-        if (cancelled) fn();
-        else unlistenLicenseReturn = fn;
-      })
-      .catch(() => {});
-
     return () => {
       cancelled = true;
       unlistenNavigate?.();
@@ -537,7 +526,7 @@ const Home = ({ onReady }: HomeProps) => {
       unlistenOpenImport?.();
       unlistenLicenseReturn?.();
     };
-  }, []);
+  }, [openGatedView]);
 
   useClickOutside(
     supportMenuRef,
@@ -547,12 +536,6 @@ const Home = ({ onReady }: HomeProps) => {
   useMenuKeyboard(supportPopupRef, showSupportPopup, () =>
     setShowSupportPopup(false),
   );
-
-  useEffect(() => {
-    if (!showSupportPopup) {
-      resetEmailCopied();
-    }
-  }, [showSupportPopup, resetEmailCopied]);
 
   const copySupportEmail = () => copyEmail(SUPPORT_EMAIL);
 
@@ -592,11 +575,21 @@ const Home = ({ onReady }: HomeProps) => {
   });
 
   const lockedHint = t({
-    id: "home.sidebar.locked_hint",
-    message: "Needs a Glimpse license. Opens Account.",
+    id: "home.sidebar.locked_hint.v2",
+    message: "Comes with Glimpse Plus.",
   });
 
   const homeViewActive = activeView === "home" && !isSettingsOpen;
+  // While the license loads, gated views stay as they are rather than flash locked.
+  const lockedFeature =
+    licenseState && !licenseState.licenseGateActive && activeView !== "home"
+      ? activeView === "dictionary"
+        ? null
+        : gatedFeatureName(activeView)
+      : null;
+  const { data: trialEndedScreen } = useTrialEndedScreen(
+    Boolean(licenseState && !licenseState.licenseGateActive),
+  );
   const returnIcon = {
     home: HomeIcon,
     dictionary: Book,
@@ -703,11 +696,17 @@ const Home = ({ onReady }: HomeProps) => {
                           collapsed={isSidebarCollapsed}
                           locked={locked}
                           lockedHint={lockedHint}
-                          onClick={() =>
-                            locked
-                              ? openAccountSettings("sidebar_lock", paneDef.id)
-                              : setSettingsTab(paneDef.id)
-                          }
+                          onClick={() => {
+                            if (locked) {
+                              void invoke("track_paywall_clicked", {
+                                source: "settings_lock",
+                              }).catch(() => {});
+                              void invoke("track_gate_blocked", {
+                                feature: paneDef.id,
+                              }).catch(() => {});
+                            }
+                            setSettingsTab(paneDef.id);
+                          }}
                         />
                       );
                     })}
@@ -746,11 +745,7 @@ const Home = ({ onReady }: HomeProps) => {
                   collapsed={isSidebarCollapsed}
                   locked={!licenseGateActive}
                   lockedHint={lockedHint}
-                  onClick={() =>
-                    licenseGateActive
-                      ? setActiveView("brain")
-                      : openAccountSettings("sidebar_lock", "personalization")
-                  }
+                  onClick={() => openGatedView("brain")}
                 />
                 <SidebarItem
                   icon={Library}
@@ -762,11 +757,7 @@ const Home = ({ onReady }: HomeProps) => {
                   collapsed={isSidebarCollapsed}
                   locked={!licenseGateActive}
                   lockedHint={lockedHint}
-                  onClick={() =>
-                    licenseGateActive
-                      ? setActiveView("library")
-                      : openAccountSettings("sidebar_lock", "library")
-                  }
+                  onClick={() => openGatedView("library")}
                 />
                 <div className="flex h-5 items-center pr-3 pl-[var(--sidebar-icon-pl,17px)]">
                   <div className="flex w-[20px] shrink-0 justify-center">
@@ -783,11 +774,7 @@ const Home = ({ onReady }: HomeProps) => {
                   collapsed={isSidebarCollapsed}
                   locked={!licenseGateActive}
                   lockedHint={lockedHint}
-                  onClick={() =>
-                    licenseGateActive
-                      ? setActiveView("record")
-                      : openAccountSettings("sidebar_lock", "record")
-                  }
+                  onClick={() => openGatedView("record")}
                 />
               </>
             )}
@@ -853,7 +840,10 @@ const Home = ({ onReady }: HomeProps) => {
 
             <div className="relative" ref={supportMenuRef}>
               <button
-                onClick={() => setShowSupportPopup(!showSupportPopup)}
+                onClick={() => {
+                  if (!showSupportPopup) resetEmailCopied();
+                  setShowSupportPopup(!showSupportPopup);
+                }}
                 data-active={showSupportPopup ? "true" : "false"}
                 className={`ui-nav-item group relative h-9 pl-[var(--sidebar-icon-pl,17px)] pr-3 mb-[2px] ${
                   isSidebarCollapsed ? "gap-0" : "gap-3"
@@ -973,8 +963,8 @@ const Home = ({ onReady }: HomeProps) => {
                             >
                               <Bug size={10} aria-hidden="true" />
                               {t({
-                                id: "home.support.feedback.github",
-                                message: "GitHub Issue",
+                                id: "home.support.feedback.github.v2",
+                                message: "GitHub issue",
                               })}
                             </a>
                             <span aria-hidden="true">·</span>
@@ -992,8 +982,8 @@ const Home = ({ onReady }: HomeProps) => {
                               )}
                               {supportEmailCopied
                                 ? t({
-                                    id: "home.support.feedback.email_copied",
-                                    message: "Copied!",
+                                    id: "home.support.feedback.email_copied.v2",
+                                    message: "Copied",
                                   })
                                 : t({
                                     id: "home.support.feedback.email",
@@ -1104,7 +1094,16 @@ const Home = ({ onReady }: HomeProps) => {
               aria-hidden="true"
               className="h-4 w-px shrink-0 bg-border-primary"
             />
-            <AccountPill onClick={() => openAccountSettings("home_pill")} />
+            <AccountPill
+              onClick={() => {
+                if (!activeLicense) {
+                  void invoke("track_paywall_clicked", {
+                    source: "home_pill",
+                  }).catch(() => {});
+                }
+                openAccountSettings("home_pill");
+              }}
+            />
           </div>
         )}
 
@@ -1117,7 +1116,8 @@ const Home = ({ onReady }: HomeProps) => {
                 onPaneChange={setSettingsTab}
                 onClose={closeSettings}
                 accountSource={accountSource}
-                transcriptionMode={transcriptionMode}
+                focusLicenseKey={focusLicenseKey}
+                onLicenseKeyFocused={handleLicenseKeyFocused}
               />
             </Suspense>
           </div>
@@ -1149,8 +1149,20 @@ const Home = ({ onReady }: HomeProps) => {
             <DictionaryView isActive={activeView === "dictionary"} />
           </div>
 
+          {lockedFeature && (
+            <div className="flex min-h-0 flex-1 flex-col pt-8">
+              <LockedFeature
+                feature={lockedFeature}
+                onEnterKey={() => {
+                  setFocusLicenseKey(true);
+                  openAccountSettings();
+                }}
+              />
+            </div>
+          )}
+
           <div
-            className={`w-full max-w-5xl mx-auto pt-8 min-h-0 flex-1 ${activeView === "brain" ? "flex flex-col" : "hidden"}`}
+            className={`w-full max-w-5xl mx-auto pt-8 min-h-0 flex-1 ${activeView === "brain" && !lockedFeature ? "flex flex-col" : "hidden"}`}
           >
             <PersonalizationView
               isActive={activeView === "brain" && licenseGateActive}
@@ -1158,7 +1170,7 @@ const Home = ({ onReady }: HomeProps) => {
           </div>
 
           <div
-            className={`w-full min-w-0 flex-1 min-h-0 ${activeView === "library" ? "" : "hidden"}`}
+            className={`w-full min-w-0 flex-1 min-h-0 ${activeView === "library" && !lockedFeature ? "" : "hidden"}`}
           >
             <LibraryView
               pendingImportPaths={pendingImportPaths}
@@ -1170,7 +1182,7 @@ const Home = ({ onReady }: HomeProps) => {
           </div>
 
           <div
-            className={`w-full max-w-[400px] mx-auto pt-8 min-h-0 flex-1 ${activeView === "record" ? "flex flex-col" : "hidden"}`}
+            className={`w-full max-w-[400px] mx-auto pt-8 min-h-0 flex-1 ${activeView === "record" && !lockedFeature ? "flex flex-col" : "hidden"}`}
           >
             <RecordingView
               isActive={activeView === "record" && licenseGateActive}
@@ -1219,6 +1231,18 @@ const Home = ({ onReady }: HomeProps) => {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {trialEndedScreen && !licenseGateActive && (
+          <TrialEndedScreen
+            summary={trialEndedScreen}
+            onEnterKey={() => {
+              setFocusLicenseKey(true);
+              openAccountSettings();
+            }}
+          />
         )}
       </AnimatePresence>
 

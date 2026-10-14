@@ -61,7 +61,7 @@ export const NATIVE_MENU_STRINGS = [
   msg({ id: "native.menu.paste", message: "Paste" }),
   msg({ id: "native.menu.select_all", message: "Select All" }),
   msg({ id: "native.menu.help", message: "Help" }),
-  msg({ id: "native.menu.github", message: "Github" }),
+  msg({ id: "native.menu.github.v2", message: "GitHub" }),
 
   msg({
     id: "native.toast.too_quiet",
@@ -75,10 +75,142 @@ export const NATIVE_MENU_STRINGS = [
     id: "native.toast.no_words",
     message: "No words detected. Recording deleted.",
   }),
+  msg({ id: "native.toast.writing_model_title", message: "Writing model" }),
+  msg({
+    id: "native.toast.writing_model_edit_kept",
+    message: "Your selected text was left alone.",
+  }),
+  msg({
+    id: "native.toast.writing_model_raw_kept",
+    message: "Your words were left as dictated.",
+  }),
+  msg({ id: "native.toast.open_settings_action", message: "Open Settings" }),
+  msg({
+    id: "native.toast.dictionary_suggest",
+    message: 'Add "{word}" to the dictionary?',
+  }),
+  msg({ id: "native.toast.dictionary_add", message: "Add" }),
+  msg({ id: "native.toast.dictionary_never", message: "Never" }),
+  msg({ id: "native.toast.update_available", message: "Update available." }),
+  msg({ id: "native.toast.update_action", message: "Update" }),
+  msg({
+    id: "native.toast.updated_to",
+    message: "Glimpse updated to v{version}.",
+  }),
+  msg({ id: "native.provider.speech", message: "Speech provider" }),
+  msg({ id: "native.provider.writing", message: "Writing model" }),
+  msg({
+    id: "native.provider.rate_limited",
+    message: "{subject} rate limit reached.",
+  }),
+  msg({
+    id: "native.provider.rate_limited_retry",
+    message: "{subject} rate limit reached. Try again in about {seconds} s.",
+  }),
+  msg({ id: "native.provider.quota", message: "{subject} quota exceeded." }),
+  msg({
+    id: "native.provider.unauthorized",
+    message: "{subject} API key is invalid or expired.",
+  }),
+  msg({
+    id: "native.provider.rejected",
+    message: "{subject} rejected the request.",
+  }),
+  msg({
+    id: "native.provider.rejected_detail",
+    message: "{subject} rejected the request: {detail}",
+  }),
+  msg({
+    id: "native.provider.not_found",
+    message: "{subject} endpoint or model was not found.",
+  }),
+  msg({
+    id: "native.provider.unreachable",
+    message: "{subject} is unreachable.",
+  }),
+  msg({
+    id: "native.provider.fallback_local",
+    message: "Using your local model instead.",
+  }),
+  msg({
+    id: "native.provider.no_fallback",
+    message: "No local model is installed to fall back to.",
+  }),
+  msg({
+    id: "native.provider.not_configured",
+    message:
+      "Finish setting up the speech provider in Settings before turning it on.",
+  }),
+  msg({
+    id: "native.toast.speech_provider_title",
+    message: "Speech provider",
+  }),
+  msg({
+    id: "native.error.no_model_installed",
+    message: "No transcription model installed",
+  }),
+  msg({
+    id: "native.error.no_model_selected",
+    message: "No transcription model selected",
+  }),
+  msg({ id: "native.error.microphone", message: "Microphone error" }),
+  msg({ id: "native.error.permission", message: "Permission denied" }),
+  msg({
+    id: "native.error.pasted_to_clipboard",
+    message: "Pasted to clipboard instead",
+  }),
+  msg({
+    id: "native.error.transcription_timeout",
+    message: "Transcription took too long. You can retry it from Home.",
+  }),
+  msg({
+    id: "native.error.transcription_failed",
+    message: "Transcription failed",
+  }),
+  msg({
+    id: "native.error.mic_permission_mac",
+    message:
+      "Glimpse needs microphone access. Allow it in System Settings > Privacy & Security > Microphone.",
+  }),
+  msg({
+    id: "native.error.mic_permission_windows",
+    message:
+      "Glimpse needs microphone access. Allow it in Settings > Privacy & security > Microphone.",
+  }),
+  msg({
+    id: "native.error.mic_unavailable",
+    message: "Your microphone isn't available. Check that it's connected.",
+  }),
+  msg({ id: "native.error.recording_failed", message: "Recording failed" }),
+  msg({
+    id: "native.toast.admin_app_shortcut",
+    message:
+      "Windows doesn't let Glimpse hear your shortcut in apps running as administrator. To dictate there, run Glimpse as administrator too.",
+  }),
+  msg({
+    id: "native.toast.admin_app_paste",
+    message:
+      "That app runs as administrator, so Windows doesn't let Glimpse type into it. Your text is on the clipboard. Press Ctrl+V to paste it.",
+  }),
+  msg({
+    id: "native.toast.no_audio",
+    message:
+      "Glimpse got no sound from your microphone. Check which microphone is selected in Settings.",
+  }),
+  msg({
+    id: "native.transcription.no_words",
+    message: "No words detected",
+  }),
+  msg({
+    id: "native.toast.no_words_kept",
+    message:
+      "No words detected. The recording is in Home, where you can retry it.",
+  }),
   msg({ id: "native.toast.cancelled", message: "Transcription cancelled" }),
   msg({
-    id: "native.toast.mic_removed",
-    message: "Microphone disconnected. Recording stopped and saved to History.",
+    id: "native.toast.mic_removed.v2",
+    message:
+      "Microphone disconnected. The recording stopped and was saved to Home.",
   }),
   msg({
     id: "native.toast.recording_mic_switched",
@@ -138,6 +270,10 @@ export const NATIVE_MENU_STRINGS = [
     message: "Skipped {count} short clips.",
   }),
   msg({
+    id: "native.toast.transcripts_exported",
+    message: "Exported {count} transcripts.",
+  }),
+  msg({
     id: "native.toast.export_skipped_files",
     message: "{count} files couldn't be copied.",
   }),
@@ -148,19 +284,19 @@ export const NATIVE_MENU_STRINGS = [
       "Your license is inactive. Dictation stays free. Some features need an active license.",
   }),
   msg({
-    id: "native.toast.trial_expired",
+    id: "native.toast.trial_expired.v2",
     message:
-      "Your trial ended. Dictation stays free. Some features need a license.",
+      "Your trial ended. Dictation stays free. Library, Record and Personalization need Glimpse Plus.",
   }),
   msg({
-    id: "native.toast.trial_last_day",
+    id: "native.toast.trial_last_day.v2",
     message:
-      "Last day of your trial. Dictation stays free. Some features need a license.",
+      "Last day of your trial. Dictation stays free. After today, Library, Record and Personalization need Glimpse Plus.",
   }),
   msg({
-    id: "native.toast.trial_days_left",
+    id: "native.toast.trial_days_left.v2",
     message:
-      "{days} days left in your trial. Dictation stays free. Some features need a license.",
+      "{days} days left in your trial. Dictation stays free. After that, Library, Record and Personalization need Glimpse Plus.",
   }),
   msg({ id: "native.toast.manage_license", message: "Manage license" }),
   msg({ id: "native.toast.see_options", message: "See options" }),
@@ -178,6 +314,10 @@ export const NATIVE_MENU_STRINGS = [
     message: "Glimpse needs a speech model before it can type for you.",
   }),
   msg({ id: "native.toast.model_action", message: "Open Models" }),
+  msg({
+    id: "native.toast.model_ready",
+    message: "Your speech model is ready. Press your shortcut to dictate.",
+  }),
 
   msg({ id: "native.toast.accessibility_title", message: "Accessibility" }),
   msg({
@@ -225,12 +365,12 @@ export const NATIVE_MENU_STRINGS = [
     message: "Recording - {date}",
   }),
   msg({
-    id: "native.toast.recovered_saved_one",
-    message: "Recording saved to History.",
+    id: "native.toast.recovered_saved_one.v2",
+    message: "Recording saved to Home.",
   }),
   msg({
-    id: "native.toast.recovered_saved_many",
-    message: "Recordings saved to History.",
+    id: "native.toast.recovered_saved_many.v2",
+    message: "Recordings saved to Home.",
   }),
-  msg({ id: "native.toast.view_history", message: "View History" }),
+  msg({ id: "native.toast.view_home", message: "Open Home" }),
 ];

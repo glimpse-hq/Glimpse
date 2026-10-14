@@ -23,30 +23,25 @@ export const shouldShowImportProgress = (value: number) => {
   return clamped >= 0.02 && clamped < 0.98;
 };
 
-export const formatDuration = (seconds: number) => {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0:00";
-  const total = Math.round(seconds);
-  const hours = Math.floor(total / 3600);
-  const minutes = Math.floor((total % 3600) / 60);
-  const secs = total % 60;
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
-  return `${minutes}:${secs.toString().padStart(2, "0")}`;
-};
+export const formatDuration = (seconds: number) =>
+  Number.isFinite(seconds) && seconds > 0
+    ? formatTimestamp(Math.round(seconds) * 1000)
+    : "0:00";
 
 export const formatPlaybackRate = (rate: number) =>
   rate.toFixed(2).replace(/\.?0+$/, "");
 
-export const formatTimestamp = (ms: number) => {
+export const formatTimestamp = (ms: number, padMinutes = false) => {
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-  }
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const mm =
+    hours > 0 || padMinutes
+      ? minutes.toString().padStart(2, "0")
+      : minutes.toString();
+  const ss = seconds.toString().padStart(2, "0");
+  return hours > 0 ? `${hours}:${mm}:${ss}` : `${mm}:${ss}`;
 };
 
 export const getFileExtension = (path: string) => {

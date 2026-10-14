@@ -12,7 +12,7 @@ pub(crate) use commands::handle_opened_paths;
 pub(crate) use processing::{
     build_export_content, convert_to_wav, create_recording_item, read_wav_info, speaker_name,
 };
-pub(crate) use queue::schedule_library_job;
+pub(crate) use queue::{LibraryJob, LibraryJobKind, schedule_library_job};
 pub(crate) use speakers::{recording_speakers, voiced_segments};
 #[cfg(target_os = "macos")]
 pub use types::EVENT_LIBRARY_RENDERER_READY;

@@ -20,6 +20,15 @@ export type DatasetExportOptions = {
   skipShortClips: boolean;
 };
 
+export type TranscriptExportFormat = "txt" | "csv" | "json";
+
+export function exportTranscripts(
+  destination: string,
+  format: TranscriptExportFormat,
+): Promise<number> {
+  return invoke<number>("export_transcripts", { destination, format });
+}
+
 export function exportDataset(
   destination: string,
   options: DatasetExportOptions,

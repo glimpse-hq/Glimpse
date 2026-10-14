@@ -162,11 +162,28 @@ function spawnTauriCli() {
 
   return spawn(process.execPath, [tauriCli, ...args], {
     env,
-    stdio: "inherit",
+    stdio: ownProcessGroup ? ["ignore", "inherit", "inherit"] : "inherit",
+    detached: ownProcessGroup,
   });
 }
 
+const ownProcessGroup = process.platform !== "win32";
 const child = spawnTauriCli();
+
+function signalProcessGroup(signal) {
+  if (!ownProcessGroup || child.pid === undefined) {
+    return;
+  }
+  try {
+    process.kill(-child.pid, signal);
+  } catch {
+    return;
+  }
+}
+
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.on(signal, () => signalProcessGroup(signal));
+}
 
 child.on("error", (error) => {
   console.error(`Failed to spawn Tauri CLI at ${tauriCli}: ${error.message}`);
@@ -211,7 +228,10 @@ function generatedIcons() {
 }
 
 child.on("exit", (code, signal) => {
+  signalProcessGroup("SIGTERM");
+
   if (signal) {
+    process.removeAllListeners(signal);
     process.kill(process.pid, signal);
     return;
   }

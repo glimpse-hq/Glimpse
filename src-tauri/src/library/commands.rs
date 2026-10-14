@@ -9,7 +9,8 @@ use anyhow::{Context, Result};
 use parking_lot::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 
-use crate::{AppRuntime, AppState, LibraryJob, LibraryJobKind};
+use crate::library::{LibraryJob, LibraryJobKind};
+use crate::{AppRuntime, AppState};
 
 use super::processing::{
     build_export_content, create_item_from_path, library_root, probe_media_duration_ms,
@@ -48,6 +49,12 @@ fn flush_pending_library_import(app: &AppHandle<AppRuntime>) {
     };
 
     let _ = app.emit(EVENT_LIBRARY_OPEN_IMPORT, paths);
+}
+
+// The window was freed; a new one announces itself again before imports flush.
+#[cfg(target_os = "macos")]
+pub(crate) fn reset_library_import_renderer() {
+    pending_library_import().lock().renderer_ready = false;
 }
 
 #[cfg(target_os = "macos")]

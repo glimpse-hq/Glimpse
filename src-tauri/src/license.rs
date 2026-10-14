@@ -7,10 +7,10 @@ use chrono::{DateTime, Duration, Utc};
 use parking_lot::Mutex;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 use crate::{
-    AppRuntime, EVENT_LICENSE_CHECKOUT_RETURNED,
+    AppRuntime,
     settings::{KEY_ANALYTICS_INSTALL_ID, SettingsStore},
     tray,
 };
@@ -21,6 +21,7 @@ const KEY_LICENSE_GRANT: &str = "license_grant";
 
 const KEY_LICENSE_TRIAL_STARTED_AT: &str = "license_trial_started_at";
 const KEY_ANALYTICS_TRIAL_EXPIRED_REPORTED: &str = "analytics_trial_expired_reported";
+const KEY_TRIAL_ENDED_SCREEN_SEEN: &str = "trial_ended_screen_seen";
 const KEY_LICENSE_TRIAL_RECORD: &str = "license_trial_record";
 const KEY_LICENSE_TRIAL_TOKEN: &str = "license_trial_token";
 const TRIAL_SEAL_PEPPER: &str = "glimpse_trial_v1";
@@ -303,10 +304,8 @@ pub fn note_checkout_returned(app: &AppHandle<AppRuntime>) {
 }
 
 pub fn handle_deep_link(app: &AppHandle<AppRuntime>) -> Result<(), String> {
-    tray::toggle_settings_window(app)
-        .map_err(|err| format!("Failed to open settings for license deep link: {err}"))?;
-    app.emit(EVENT_LICENSE_CHECKOUT_RETURNED, ())
-        .map_err(|err| format!("Failed to emit license deep link event: {err}"))
+    tray::open_settings_page(app, tray::SettingsPage::CheckoutReturned)
+        .map_err(|err| format!("Failed to open settings for license deep link: {err}"))
 }
 
 /// Guard for license-gated tauri commands and background tasks. Returns `Ok`
@@ -326,7 +325,7 @@ pub fn require_license_gate(store: &SettingsStore, feature: &str) -> Result<(), 
     if license_gate_active(store) {
         Ok(())
     } else {
-        Err(format!("A Glimpse license is required for {feature}."))
+        Err(format!("Glimpse Plus is required for {feature}."))
     }
 }
 
@@ -343,7 +342,7 @@ pub(crate) fn require_active_license(store: &SettingsStore, feature: &str) -> Re
         Ok(())
     } else {
         Err(format!(
-            "An active Glimpse license is required for {feature}."
+            "A purchased Glimpse Plus license is required for {feature}."
         ))
     }
 }
@@ -1081,10 +1080,7 @@ fn read_optional_string(store: &SettingsStore, key: &str) -> Result<Option<Strin
 /// True only the first time the trial is found run out with no license ever
 /// activated, so the expiry is reported once per install rather than per launch.
 pub fn take_trial_expiry_report(store: &SettingsStore, state: &LicenseState) -> bool {
-    let lapsed_trial = !state.trial_active
-        && state.status == LicenseStatus::Expired
-        && state.display_key.is_none();
-    if !lapsed_trial {
+    if !trial_lapsed(state) {
         return false;
     }
     if read_optional_string(store, KEY_ANALYTICS_TRIAL_EXPIRED_REPORTED)
@@ -1095,6 +1091,106 @@ pub fn take_trial_expiry_report(store: &SettingsStore, state: &LicenseState) -> 
         return false;
     }
     write_string(store, KEY_ANALYTICS_TRIAL_EXPIRED_REPORTED, "1").is_ok()
+}
+
+fn trial_lapsed(state: &LicenseState) -> bool {
+    !state.trial_active && state.status == LicenseStatus::Expired && state.display_key.is_none()
+}
+
+/// The trial-ended screen shows once, after the trial runs out with no license.
+pub fn trial_ended_screen_due(store: &SettingsStore, state: &LicenseState) -> bool {
+    trial_lapsed(state)
+        && read_optional_string(store, KEY_TRIAL_ENDED_SCREEN_SEEN)
+            .ok()
+            .flatten()
+            .is_none()
+}
+
+pub fn mark_trial_ended_screen_seen(store: &SettingsStore) -> Result<(), String> {
+    write_string(store, KEY_TRIAL_ENDED_SCREEN_SEEN, "1")
+}
+
+/// A plan from the API's `/v1/config`, which owns prices so they change
+/// without an app update.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all(deserialize = "snake_case", serialize = "camelCase"))]
+pub struct PurchasePlan {
+    pub id: String,
+    pub price_cents: u32,
+    pub currency: String,
+    pub devices: u32,
+    /// `once` or `year`.
+    pub billing: String,
+}
+
+#[derive(Deserialize)]
+struct PurchaseConfig {
+    tiers: Vec<PurchasePlan>,
+}
+
+static PURCHASE_PLANS: Mutex<Option<Vec<PurchasePlan>>> = Mutex::new(None);
+
+/// The plans the app sells. Business is sold on the site. Empty when the API
+/// can't be reached; the app then shows plans without prices.
+pub async fn purchase_plans(client: &Client) -> Vec<PurchasePlan> {
+    if let Some(plans) = PURCHASE_PLANS.lock().clone() {
+        return plans;
+    }
+    for base in license_api_bases() {
+        let response = match client
+            .get(format!("{base}/v1/config"))
+            .timeout(std::time::Duration::from_secs(10))
+            .send()
+            .await
+        {
+            Ok(response) if response.status().is_success() => response,
+            Ok(response) => {
+                tracing::warn!("Plans request to {base} got {}", response.status());
+                continue;
+            }
+            Err(err) => {
+                tracing::warn!("Plans request to {base} failed: {err}");
+                continue;
+            }
+        };
+        let Ok(config) = response.json::<PurchaseConfig>().await else {
+            continue;
+        };
+        let plans: Vec<PurchasePlan> = config
+            .tiers
+            .into_iter()
+            .filter(|plan| is_app_plan(&plan.id))
+            .collect();
+        if !plans.is_empty() {
+            *PURCHASE_PLANS.lock() = Some(plans.clone());
+            return plans;
+        }
+    }
+    Vec::new()
+}
+
+fn is_app_plan(id: &str) -> bool {
+    matches!(id, "solo" | "plus")
+}
+
+/// The API's checkout link for a plan, which creates the Creem session and
+/// redirects to it. `code` is a discount code to apply.
+pub fn checkout_url(tier: &str, source: &str, code: Option<&str>) -> Result<String, String> {
+    if !is_app_plan(tier) {
+        return Err("Unknown plan.".to_string());
+    }
+    let base = license_api_bases()
+        .next()
+        .unwrap_or(DEFAULT_LICENSE_API_BASE);
+    let mut url = reqwest::Url::parse(&format!("{base}/v1/checkout"))
+        .map_err(|err| format!("Invalid checkout address: {err}"))?;
+    url.query_pairs_mut()
+        .append_pair("tier", tier)
+        .append_pair("source", source);
+    if let Some(code) = code.map(str::trim).filter(|code| !code.is_empty()) {
+        url.query_pairs_mut().append_pair("code", code);
+    }
+    Ok(url.into())
 }
 
 fn write_string(store: &SettingsStore, key: &str, value: &str) -> Result<(), String> {

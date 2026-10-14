@@ -125,8 +125,8 @@ const SpeechModelPanel = ({
             {
               value: "_cloud_header" as RemoteSpeechProvider,
               label: t({
-                id: "settings.speech_model.provider.cloud",
-                message: "Cloud (API Key)",
+                id: "settings.speech_model.provider.cloud.v2",
+                message: "Cloud (API key)",
               }),
               isHeader: true,
             },
@@ -154,8 +154,8 @@ const SpeechModelPanel = ({
       <div className="px-2">
         <span className="ui-text-label-strong ui-color-primary block">
           {t({
-            id: "settings.speech_model.api_key",
-            message: "API Key",
+            id: "settings.speech_model.api_key.v2",
+            message: "API key",
           })}
         </span>
         <ApiKeyField

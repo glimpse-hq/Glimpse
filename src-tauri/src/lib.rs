@@ -3,6 +3,7 @@ mod analytics;
 mod asks;
 mod assistive;
 mod audio;
+mod auto_delete;
 mod auto_dictionary;
 mod cli_install;
 mod core;
@@ -43,8 +44,7 @@ pub(crate) use speech::install as model_manager;
 pub(crate) use speech::remote as remote_speech;
 
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
@@ -52,12 +52,11 @@ use tokio::sync::Notify;
 use tokio_util::sync::CancellationToken;
 
 use anyhow::{Context, Result};
-use chrono::{DateTime, Local};
 use pill::PillController;
 use recorder::{CompletedRecording, RecorderManager, RecordingRejectionReason, validate_recording};
 use reqwest::Client;
 use serde::Serialize;
-use settings::{RecordingPrunePolicy, SettingsStore, TranscriptionMode, UserSettings};
+use settings::{SettingsStore, TranscriptionMode, UserSettings};
 use tauri::Emitter;
 use tauri::Listener;
 use tauri::async_runtime;
@@ -275,7 +274,7 @@ pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
             && !cache_active_before_refresh
         {
             anyhow::bail!(
-                "An active Glimpse license is required to use the CLI.\n\
+                "A purchased Glimpse Plus license is required to use the CLI.\n\
                      The saved license could not be refreshed: {err}\n\
                      Open Glimpse > Settings > Account to check or activate your license."
             );
@@ -283,7 +282,7 @@ pub(crate) fn require_cli_license(identifier: &str) -> Result<()> {
     }
     if !license::active_license_gate(&settings_store) {
         anyhow::bail!(
-            "An active Glimpse license is required to use the CLI.\n\
+            "A purchased Glimpse Plus license is required to use the CLI.\n\
              Open Glimpse > Settings > Account to check or activate your license."
         );
     }
@@ -428,11 +427,14 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            #[cfg(target_os = "windows")]
+            platform::windows::elevation::watch_foreground(handle.clone());
             speech::upgrade_retired_diarizers(handle);
             speech::follow_model_upgrade(handle);
             speech::remove_whisper_cpp_files(handle);
             speech::compile_pending_ane_encoders(handle);
             speech::upgrade_parakeet_encoder(handle);
+            speech::upgrade_whisper_decoder(handle);
             speech::replace_onnx_models(handle);
             {
                 let h = handle.clone();
@@ -574,9 +576,13 @@ pub fn run() {
             activate_license,
             refresh_license,
             deactivate_license,
+            get_purchase_plans,
+            open_checkout,
+            get_trial_ended_screen,
+            dismiss_trial_ended_screen,
             get_dictation_stats,
-            preview_recording_prune,
-            preview_transcription_prune,
+            auto_delete::preview_recording_prune,
+            auto_delete::preview_transcription_prune,
             dictionary::set_dictionary,
             dictionary::get_replacements,
             dictionary::set_replacements,
@@ -593,6 +599,7 @@ pub fn run() {
             open_data_dir,
             data_export::dataset_preview,
             data_export::export_dataset,
+            data_export::export_transcripts,
             data_export::delete_all_data,
             get_transcriptions_page,
             get_today_dictation_stats,
@@ -832,22 +839,6 @@ pub(crate) type AppRuntime = Wry;
 
 type GlimpseResult<T> = Result<T>;
 
-#[derive(Clone)]
-pub struct LibraryJob {
-    pub id: String,
-    pub kind: LibraryJobKind,
-    pub source: library::JobSource,
-}
-
-#[derive(Clone)]
-pub enum LibraryJobKind {
-    Import {
-        source_path: PathBuf,
-        store_original: bool,
-    },
-    TranscribeExisting,
-}
-
 pub struct AppState {
     pill: Arc<PillController>,
     http: Client,
@@ -867,7 +858,7 @@ pub struct AppState {
     download_percent: parking_lot::Mutex<HashMap<String, u8>>,
     pub(crate) ready_models: parking_lot::Mutex<HashSet<String>>,
     library_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
-    library_queue: parking_lot::Mutex<VecDeque<LibraryJob>>,
+    library_queue: parking_lot::Mutex<VecDeque<library::LibraryJob>>,
     library_active: parking_lot::Mutex<Option<String>>,
     retry_tokens: parking_lot::Mutex<HashMap<String, CancellationToken>>,
     pub(crate) local_api: Arc<local_api::LocalApiController>,
@@ -1171,6 +1162,19 @@ impl AppState {
         self.pending_recording_path.lock().take()
     }
 
+    pub fn owns_pending_path(&self, owner: &std::path::Path) -> bool {
+        self.pending_recording_path.lock().as_deref() == Some(owner)
+    }
+
+    pub fn release_pending_path(&self, owner: &std::path::Path) -> bool {
+        let mut current = self.pending_recording_path.lock();
+        if current.as_deref() != Some(owner) {
+            return false;
+        }
+        *current = None;
+        true
+    }
+
     pub fn set_pending_selected_text(&self, text: Option<String>) {
         *self.pending_selected_text.lock() = text;
     }
@@ -1218,89 +1222,6 @@ impl AppState {
                 .copied()
                 .unwrap_or_default()
         })
-    }
-
-    pub fn register_library_transcription(&self, id: String) -> CancellationToken {
-        let mut tokens = self.library_tokens.lock();
-        if let Some(token) = tokens.get(&id) {
-            return token.clone();
-        }
-        let token = CancellationToken::new();
-        tokens.insert(id, token.clone());
-        token
-    }
-
-    pub fn enqueue_library_job(&self, job: LibraryJob) -> bool {
-        if self.library_tokens.lock().contains_key(&job.id) {
-            return false;
-        }
-        if self.library_active.lock().as_deref() == Some(&job.id) {
-            return false;
-        }
-        let mut queue = self.library_queue.lock();
-        if queue.iter().any(|queued| queued.id == job.id) {
-            return false;
-        }
-        queue.push_back(job);
-        true
-    }
-
-    pub fn claim_next_library_job(&self) -> Option<LibraryJob> {
-        let mut active = self.library_active.lock();
-        if active.is_some() {
-            return None;
-        }
-        let mut queue = self.library_queue.lock();
-        let next = queue.pop_front()?;
-        *active = Some(next.id.clone());
-        Some(next)
-    }
-
-    pub(crate) fn library_job_active(&self) -> bool {
-        self.library_active.lock().is_some()
-    }
-
-    pub fn clear_active_library_job(&self, id: &str) {
-        let mut active = self.library_active.lock();
-        if active.as_deref() == Some(id) {
-            *active = None;
-        }
-    }
-
-    pub(crate) fn library_job_pending(&self, id: &str) -> bool {
-        // Each lock is released before the next is taken; nesting tokens
-        // inside active here would invert the order cancelling takes them in.
-        let has_token = self.library_tokens.lock().contains_key(id);
-        has_token
-            || self.library_active.lock().as_deref() == Some(id)
-            || self
-                .library_queue
-                .lock()
-                .iter()
-                .any(|queued| queued.id == id)
-    }
-
-    pub fn remove_library_job(&self, id: &str) -> bool {
-        let mut queue = self.library_queue.lock();
-        let before = queue.len();
-        queue.retain(|queued| queued.id != id);
-        before != queue.len()
-    }
-
-    pub fn cancel_library_transcription(&self, id: &str) {
-        // A claimed job registers its token only once its task runs, so the
-        // token is created here for it to pick up already cancelled.
-        let active = self.library_active.lock();
-        let mut tokens = self.library_tokens.lock();
-        if active.as_deref() == Some(id) {
-            tokens.entry(id.to_string()).or_default().cancel();
-        } else if let Some(token) = tokens.get(id) {
-            token.cancel();
-        }
-    }
-
-    pub fn clear_library_transcription(&self, id: &str) {
-        self.library_tokens.lock().remove(id);
     }
 
     /// None while a retry of the same transcription is still running.
@@ -1422,8 +1343,14 @@ fn set_shortcut_capture_active(active: bool, app: AppHandle<AppRuntime>) -> Resu
         return Ok(());
     }
 
+    end_shortcut_capture(&app)
+}
+
+pub(crate) fn end_shortcut_capture(app: &AppHandle<AppRuntime>) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    state.set_shortcut_capture_active(false);
     state.hotkeys.stop_capture();
-    pill::register_shortcuts(&app).map_err(|err| err.to_string())
+    pill::register_shortcuts(app).map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -1592,13 +1519,24 @@ fn get_license_state(
     Ok(license_state)
 }
 
+#[derive(Serialize)]
+struct ActivationError {
+    reason: &'static str,
+    message: String,
+}
+
 #[tauri::command]
 async fn activate_license(
     app: tauri::AppHandle<AppRuntime>,
     state: tauri::State<'_, AppState>,
     args: license::ActivateLicenseArgs,
-) -> Result<license::LicenseState, String> {
-    activate_license_and_note(&app, &state, args.key).await
+) -> Result<license::LicenseState, ActivationError> {
+    activate_license_and_note(&app, &state, args.key)
+        .await
+        .map_err(|message| ActivationError {
+            reason: analytics::classify_activation_failure(&message),
+            message,
+        })
 }
 
 async fn activate_license_and_note(
@@ -1647,6 +1585,57 @@ async fn deactivate_license(
     Ok(license_state)
 }
 
+#[tauri::command]
+async fn get_purchase_plans(
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<license::PurchasePlan>, String> {
+    Ok(license::purchase_plans(&state.http()).await)
+}
+
+#[tauri::command]
+fn open_checkout(
+    app: AppHandle<AppRuntime>,
+    tier: String,
+    source: String,
+    feature: Option<String>,
+    code: Option<String>,
+) -> Result<(), String> {
+    let source = match source.as_str() {
+        "account" | "locked_view" | "trial_ended" | "activation" => source,
+        _ => "other".to_string(),
+    };
+    let url = license::checkout_url(&tier, &source, code.as_deref())?;
+    app.opener()
+        .open_url(url, None::<&str>)
+        .map_err(|err| format!("Couldn't open checkout: {err}"))?;
+    analytics::track_checkout_opened(&app, &tier, &source, feature.as_deref(), code.is_some());
+    Ok(())
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TrialEndedScreen {
+    library_items: u64,
+}
+
+/// What the trial-ended screen shows, or None once it has been seen.
+#[tauri::command]
+fn get_trial_ended_screen(
+    state: tauri::State<AppState>,
+) -> Result<Option<TrialEndedScreen>, String> {
+    let license_state = license::get_license_state(&state.settings_store)?;
+    if !license::trial_ended_screen_due(&state.settings_store, &license_state) {
+        return Ok(None);
+    }
+    let library_items = state.storage().count_library_items().unwrap_or(0);
+    Ok(Some(TrialEndedScreen { library_items }))
+}
+
+#[tauri::command]
+fn dismiss_trial_ended_screen(state: tauri::State<AppState>) -> Result<(), String> {
+    license::mark_trial_ended_screen_seen(&state.settings_store)
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct DictationStats {
@@ -1669,40 +1658,6 @@ fn get_dictation_stats(state: tauri::State<AppState>) -> Result<DictationStats, 
 }
 
 #[derive(Serialize)]
-struct RecordingPrunePreview {
-    candidate_count: u32,
-}
-
-#[tauri::command]
-async fn preview_recording_prune(
-    policy: RecordingPrunePolicy,
-    app: AppHandle<AppRuntime>,
-) -> Result<RecordingPrunePreview, String> {
-    let candidate_count =
-        async_runtime::spawn_blocking(move || preview_recording_prune_for_policy(&app, policy))
-            .await
-            .map_err(|err| err.to_string())?
-            .map_err(|err| err.to_string())?;
-
-    Ok(RecordingPrunePreview { candidate_count })
-}
-
-#[tauri::command]
-async fn preview_transcription_prune(
-    policy: RecordingPrunePolicy,
-    app: AppHandle<AppRuntime>,
-) -> Result<RecordingPrunePreview, String> {
-    let candidate_count = async_runtime::spawn_blocking(move || {
-        transcribe::preview_transcription_prune_for_policy(&app, policy)
-    })
-    .await
-    .map_err(|err| err.to_string())?
-    .map_err(|err| err.to_string())?;
-
-    Ok(RecordingPrunePreview { candidate_count })
-}
-
-#[derive(Serialize)]
 struct StorageBreakdown {
     recordings_bytes: u64,
     library_bytes: u64,
@@ -1718,25 +1673,6 @@ struct AppInfo {
     data_dir_path: String,
     storage_breakdown: StorageBreakdown,
     store_build: bool,
-}
-
-#[cfg(target_os = "macos")]
-pub(crate) fn macos_major_version() -> u32 {
-    static MAJOR: std::sync::OnceLock<u32> = std::sync::OnceLock::new();
-    *MAJOR.get_or_init(|| {
-        std::process::Command::new("sw_vers")
-            .arg("-productVersion")
-            .output()
-            .ok()
-            .and_then(|out| String::from_utf8(out.stdout).ok())
-            .and_then(|version| version.trim().split('.').next()?.parse().ok())
-            .unwrap_or(0)
-    })
-}
-
-#[cfg(not(target_os = "macos"))]
-pub(crate) fn macos_major_version() -> u32 {
-    0
 }
 
 #[tauri::command]
@@ -1791,7 +1727,7 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
 #[tauri::command]
 fn apple_llm_availability() -> String {
     use glimpse_speech::cleanup::AppleAvailability;
-    match glimpse_speech::cleanup::CleanupProvider::apple_availability() {
+    match glimpse_speech::cleanup::apple_availability() {
         AppleAvailability::Available => "available",
         AppleAvailability::NotEnabled => "not_enabled",
         AppleAvailability::NotReady => "not_ready",
@@ -1802,13 +1738,16 @@ fn apple_llm_availability() -> String {
 
 #[tauri::command]
 async fn fetch_llm_models(
+    app: AppHandle<AppRuntime>,
     endpoint: String,
     api_key: String,
     state: tauri::State<'_, AppState>,
 ) -> Result<Vec<String>, String> {
     llm_cleanup::fetch_available_models(&state.http(), &endpoint, &api_key)
         .await
-        .map_err(|error| llm_cleanup::llm_issue_message(&error))
+        .map_err(|error| {
+            speech::remote::localized_issue_message(&app, "native.provider.writing", &error)
+        })
 }
 
 #[tauri::command]
@@ -1843,6 +1782,8 @@ fn open_about_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
 
 #[tauri::command]
 fn open_account_page(app: AppHandle<AppRuntime>) -> Result<(), String> {
+    // Only the trial and license notices offer this action.
+    analytics::track_paywall_clicked(app.clone(), "trial_toast".to_string());
     open_settings_page(&app, SettingsPage::Account)
 }
 
@@ -2076,11 +2017,7 @@ pub(crate) fn persist_recording_async(
     cancel_token: CancellationToken,
     origin: transcribe::DictationOrigin,
 ) {
-    let input = if settings.microphone_device.is_some() {
-        "selected"
-    } else {
-        "default"
-    };
+    let input = pill::microphone_input_kind(&settings);
     let base_dir = match recordings_root(&app) {
         Ok(path) => path,
         Err(err) => {
@@ -2123,7 +2060,7 @@ pub(crate) fn persist_recording_async(
             RecordingRejectionReason::EmptyBuffer => (
                 "empty_buffer",
                 "Recording buffer is empty".to_string(),
-                None,
+                Some("native.toast.no_audio"),
             ),
         };
         analytics::track_dictation_discarded(
@@ -2197,7 +2134,7 @@ fn persist_failed(app: &AppHandle<AppRuntime>, message: String, disk_full: bool)
     let text = if disk_full {
         toast::native(app, "native.toast.dictation_disk_full")
     } else {
-        pill::simplify_recording_error(&message)
+        pill::simplify_recording_error(app, &message)
     };
     toast::show(app, "error", None, &text);
     app.state::<AppState>().pill().finish_processing(app);
@@ -2241,189 +2178,6 @@ fn copy_last_transcription(
     };
     recent_transcriptions::copy_transcription_to_clipboard(&app, &record.id);
     Ok(())
-}
-
-pub(crate) fn schedule_recording_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {
-    if matches!(
-        settings::auto_delete_recording_policy(&settings),
-        RecordingPrunePolicy::Never
-    ) {
-        return;
-    }
-
-    async_runtime::spawn(async move {
-        let app_handle = app.clone();
-        match async_runtime::spawn_blocking(move || {
-            prune_recordings_for_settings(&app_handle, &settings)
-        })
-        .await
-        {
-            Ok(Ok(count)) => emit_recording_history_refresh(&app, count),
-            Ok(Err(err)) => tracing::error!("Failed to prune recordings: {err}"),
-            Err(err) => tracing::error!("Recording prune task failed: {err}"),
-        }
-    });
-}
-
-pub(crate) fn schedule_transcription_prune(app: AppHandle<AppRuntime>, settings: UserSettings) {
-    async_runtime::spawn(async move {
-        let app_handle = app.clone();
-        match async_runtime::spawn_blocking(move || {
-            transcribe::run_transcription_prune_for_settings(&app_handle, &settings)
-        })
-        .await
-        {
-            Ok(Ok(())) => {}
-            Ok(Err(err)) => tracing::error!("Failed to prune transcriptions: {err}"),
-            Err(err) => tracing::error!("Transcription prune task failed: {err}"),
-        }
-    });
-}
-
-fn emit_recording_history_refresh(app: &AppHandle<AppRuntime>, deleted_count: u32) {
-    if deleted_count > 0 {
-        let _ = app.emit(
-            EVENT_TRANSCRIPTION_COMPLETE,
-            TranscriptionCompletePayload {
-                transcript: String::new(),
-                auto_paste: false,
-                record: None,
-            },
-        );
-    }
-}
-
-fn prune_recordings_for_settings(
-    app: &AppHandle<AppRuntime>,
-    settings: &UserSettings,
-) -> GlimpseResult<u32> {
-    count_or_prune_recordings(
-        app,
-        settings::auto_delete_recording_policy(settings),
-        Local::now(),
-        RecordingPruneAction::Delete,
-    )
-}
-
-fn preview_recording_prune_for_policy(
-    app: &AppHandle<AppRuntime>,
-    policy: RecordingPrunePolicy,
-) -> GlimpseResult<u32> {
-    count_or_prune_recordings(app, policy, Local::now(), RecordingPruneAction::Count)
-}
-
-#[derive(Clone, Copy)]
-enum RecordingPruneAction {
-    Count,
-    Delete,
-}
-
-fn count_or_prune_recordings(
-    app: &AppHandle<AppRuntime>,
-    policy: RecordingPrunePolicy,
-    now: DateTime<Local>,
-    action: RecordingPruneAction,
-) -> GlimpseResult<u32> {
-    let root = recordings_root(app)?;
-    if !root.exists() || matches!(policy, RecordingPrunePolicy::Never) {
-        return Ok(0);
-    }
-
-    let cutoff = settings::recording_prune_cutoff(policy, now);
-    let (count, _) = walk_recording_tree(&root, policy, cutoff, action)?;
-    Ok(count)
-}
-
-fn walk_recording_tree(
-    path: &Path,
-    policy: RecordingPrunePolicy,
-    cutoff: Option<DateTime<Local>>,
-    action: RecordingPruneAction,
-) -> GlimpseResult<(u32, bool)> {
-    let delete = matches!(action, RecordingPruneAction::Delete);
-    let mut count = 0;
-    let mut is_empty = true;
-
-    for entry in fs::read_dir(path)
-        .with_context(|| format!("Failed to read recordings directory {}", path.display()))?
-    {
-        let entry = entry?;
-        let child_path = entry.path();
-        let metadata = entry.metadata()?;
-
-        if metadata.is_dir() {
-            if is_pending_recordings_dir(&child_path) {
-                is_empty = false;
-                continue;
-            }
-            let (child_count, child_empty) =
-                walk_recording_tree(&child_path, policy, cutoff, action)?;
-            count += child_count;
-            if !child_empty {
-                is_empty = false;
-            } else if delete {
-                fs::remove_dir(&child_path).with_context(|| {
-                    format!(
-                        "Failed to remove empty recordings directory {}",
-                        child_path.display()
-                    )
-                })?;
-            }
-            continue;
-        }
-
-        if should_prune_recording_file(&child_path, &metadata, policy, cutoff) {
-            if delete {
-                fs::remove_file(&child_path).with_context(|| {
-                    format!("Failed to remove recording {}", child_path.display())
-                })?;
-            }
-            count += 1;
-        } else {
-            is_empty = false;
-        }
-    }
-
-    Ok((count, is_empty))
-}
-
-fn is_pending_recordings_dir(path: &Path) -> bool {
-    path.file_name()
-        .and_then(|name| name.to_str())
-        .is_some_and(|name| name == recorder::PENDING_DIR_NAME)
-}
-
-fn should_prune_recording_file(
-    path: &Path,
-    metadata: &fs::Metadata,
-    policy: RecordingPrunePolicy,
-    cutoff: Option<DateTime<Local>>,
-) -> bool {
-    if !metadata.is_file() {
-        return false;
-    }
-
-    let is_wav = path
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .is_some_and(|ext| ext.eq_ignore_ascii_case("wav"));
-    if !is_wav {
-        return false;
-    }
-
-    if matches!(policy, RecordingPrunePolicy::Immediately) {
-        return true;
-    }
-
-    let Some(cutoff) = cutoff else {
-        return false;
-    };
-
-    metadata
-        .modified()
-        .ok()
-        .map(|modified| DateTime::<Local>::from(modified) <= cutoff)
-        .unwrap_or(false)
 }
 
 #[derive(Serialize, Clone)]

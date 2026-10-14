@@ -460,7 +460,7 @@ pub fn start_from_settings(app: &AppHandle<AppRuntime>, settings: &crate::settin
         state.local_api.push_log(
             app,
             "warn",
-            "API server start-on-launch skipped; an active Glimpse license is required."
+            "API server start-on-launch skipped; a purchased Glimpse Plus license is required."
                 .to_string(),
         );
         return;

@@ -21,7 +21,8 @@ import {
   UsersThree,
   WifiSlash,
 } from "@phosphor-icons/react";
-import type { LicenseState } from "../../license/api";
+import type { ActivationError, LicenseState } from "../../license/api";
+import { useActivationErrorText } from "../../license/useActivationErrorText";
 import { detectAppPlatform } from "../../../platform/service";
 import { getDefaultShortcuts } from "../platform";
 import { shortcutDisplayParts } from "../../../shared/lib/shortcuts";
@@ -43,7 +44,7 @@ interface LicenseStepProps {
   opening: boolean;
   openError: string | null;
   activating: boolean;
-  activationError: string | null;
+  activationError: ActivationError | null;
   onOpenCheckout: () => void;
   onActivate: (key: string) => void;
   onNext: () => void;
@@ -62,6 +63,11 @@ export function LicenseStep({
 }: LicenseStepProps) {
   const { t } = useLingui();
   const [enteringKey, setEnteringKey] = useState(false);
+  const [attemptedKey, setAttemptedKey] = useState("");
+  const activationErrorText = useActivationErrorText(
+    activationError,
+    attemptedKey,
+  );
   const status = licenseState?.status;
   const isActive = status === "active";
   const isTrial = status === "trial";
@@ -77,8 +83,8 @@ export function LicenseStep({
           message: "Everything is yours for 14 days.",
         })
       : t({
-          id: "onboarding.license_step.title_free",
-          message: "Get everything with a license.",
+          id: "onboarding.license_step.title_free.v2",
+          message: "Get everything with Glimpse Plus.",
         });
 
   const line = isActive
@@ -127,8 +133,8 @@ export function LicenseStep({
                 >
                   <span>
                     {t({
-                      id: "onboarding.license_step.buy",
-                      message: "Buy License",
+                      id: "onboarding.license_step.buy.v2",
+                      message: "Get Glimpse Plus",
                     })}
                   </span>
                   <span className="opacity-80">
@@ -157,7 +163,10 @@ export function LicenseStep({
                 {enteringKey ? (
                   <KeyField
                     activating={activating}
-                    onActivate={onActivate}
+                    onActivate={(key) => {
+                      setAttemptedKey(key);
+                      onActivate(key);
+                    }}
                     onCancel={() => setEnteringKey(false)}
                   />
                 ) : (
@@ -168,8 +177,8 @@ export function LicenseStep({
                       className="whitespace-nowrap text-content-secondary transition-colors hover:text-content-primary"
                     >
                       {t({
-                        id: "onboarding.license_step.have_license",
-                        message: "Already have a license?",
+                        id: "onboarding.license_step.have_license.v2",
+                        message: "Already bought?",
                       })}
                     </button>
                   </div>
@@ -177,7 +186,7 @@ export function LicenseStep({
               </>
             )}
             <p className="min-h-5 ui-text-meta text-error text-pretty">
-              {activating ? null : (activationError ?? openError)}
+              {activating ? null : (activationErrorText ?? openError)}
             </p>
           </div>
         </div>

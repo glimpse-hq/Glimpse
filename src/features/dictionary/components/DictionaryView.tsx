@@ -280,7 +280,6 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
   };
 
   const currentModel = models.find((m) => m.key === settings?.local_model);
-  const isLocal = settings?.transcription_mode === "local";
   const remoteSpeechActive = isRemoteSpeechConfigured({
     enabled: Boolean(settings?.remote_speech_enabled),
     provider: settings?.remote_speech_provider ?? "custom",
@@ -293,7 +292,7 @@ const DictionaryView = ({ isActive = true }: { isActive?: boolean }) => {
     MODEL_CAPABILITY_DICTIONARY,
   );
   const showWarning = Boolean(
-    isLocal && !remoteSpeechActive && currentModel && !supportsDictionary,
+    !remoteSpeechActive && currentModel && !supportsDictionary,
   );
   const dictionaryCountLabel =
     isSearching && entries.length > 0
