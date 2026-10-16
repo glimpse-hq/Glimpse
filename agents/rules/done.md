@@ -1,16 +1,21 @@
 # Done
 
-Run these before saying done. Formatting is the one most often forgotten.
+Choose checks for the change. Run commands from the repository root. Do not run app builds for prose-only edits or reformat unrelated files.
 
-1. `bun run format`
-2. `bun run lint` and `bun run build`
-3. `cargo check --manifest-path src-tauri/Cargo.toml` if Rust changed
-4. `bun run lingui:extract` and `bun run lingui:compile` if strings changed
-5. Reread your own `git diff` and clean it before handing it over.
+| Changed area                   | Validation                                                                                                                                                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation only             | Check referenced paths and commands, format the edited Markdown, and run `git diff --check`.                                                                                                                  |
+| Frontend                       | Format edited files, then `bun run lint:ci` and `bun run build`. Run relevant existing tests in `tests/frontend/` when behavior changes.                                                                      |
+| Rust                           | `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`, `cargo check --manifest-path src-tauri/Cargo.toml`, and relevant existing tests with `cargo test --manifest-path src-tauri/Cargo.toml <filter>`. |
+| User-facing strings            | Follow `../reference/i18n.md`, run `bun run lingui:extract` and `bun run lingui:compile`, and inspect catalog changes. Check Rust too when native menu strings change.                                        |
+| Native UI or platform behavior | Exercise the affected flow in the native app on the available platform. A frontend build cannot validate focus, shortcuts, permissions, paste, audio capture, or deep links.                                  |
 
-- Don't add tests unless asked.
-- Report what passed, what failed, and what wasn't verified (for example, Windows-only code built only in CI).
-- `CHANGELOG.md` is for users: describe what they will notice, never internals.
+- Format specific frontend or Markdown files with `bun run prettier --write <paths>`. For Rust formatting fixes use `cargo fmt --manifest-path src-tauri/Cargo.toml` and inspect its scope. `bun run format` rewrites the entire repository; use it only when that scope is intended.
+- `bun run format:check` is the read-only repository formatting check. `bun run test:frontend` runs the full existing frontend suite; a focused run is `bun --no-install test tests/frontend/<file>.test.ts`.
+- Do not add tests unless asked. Run relevant existing coverage; when asked for tests, target meaningful regressions rather than prose, styling, or checks that mirror implementation.
+- `.github/workflows/ci.yml` checks versions, formatting, strict lint, frontend build, and frontend tests. `.github/workflows/platform.yml` runs Rust tests on macOS and Windows. Linux CI is for platform-independent checks, not a supported app target.
+- Reread the complete diff, including new files, and run `git diff --check`. Report what passed, failed, or was not verified. A macOS Cargo check does not validate Windows-only code; do not claim CI passed without observing it.
+- `CHANGELOG.md` is for users: short `Fixed ...` / `Improved ...` bullets describing what they notice, never internals. Documentation maintenance alone does not need an app changelog entry.
 
 ## Git
 

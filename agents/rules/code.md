@@ -5,14 +5,14 @@
 - Read the implementation before claiming something is missing or broken.
 - Prefer the plain mechanism: emit raw state from Rust and let CSS or the platform handle the feel.
 - Exhaust std and existing dependencies before adding one.
-- macOS and Windows only. Platform code stays behind `platform/{macos,windows}/` and `#[cfg]`; no Linux fallbacks. A change on one platform must not break the other.
-- No dead code, commented-out code, or `#[allow(dead_code)]` for unused code. Check `reference/decisions.md` before removing something that looks unused or wrong.
+- macOS and Windows only. Follow the existing platform module and `#[cfg]` boundaries, including `core/keyboard/` and `recording/system_audio_*.rs`; no Linux fallbacks. A change on one platform must not break the other.
+- No dead code, commented-out code, or `#[allow(dead_code)]` for unused code. Check `../reference/decisions.md` before removing something that looks unused or wrong.
 
 ## Privacy
 
 - Never log transcripts, audio, prompts, LLM output, selected text, or API keys.
-- API keys are encrypted by `crypto.rs` and handled only in `settings.rs`.
-- Data stays local by default. Anything sent off the device goes to a provider the user configured.
+- API-key persistence and encryption handling belong in `settings.rs` and `crypto.rs`. Reuse that path; never introduce another credential store or log settings structs containing keys.
+- Audio and transcript processing stays local by default. Remote processing uses the provider the user configured. Existing licensing, updates, and opt-out analytics have separate network paths; do not send user content through them.
 - Never gate or cap free local dictation.
 
 ## Comments
