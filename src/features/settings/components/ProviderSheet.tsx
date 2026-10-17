@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLingui } from "@lingui/react/macro";
 import { motion } from "framer-motion";
@@ -92,7 +92,24 @@ const ProviderSheet = ({
   const [draft, setDraft] = useState<ProviderDraft>(initial);
   const [discovery, setDiscovery] = useState(EMPTY_MODEL_DISCOVERY_STATE);
   const discoveryRef = useRef(EMPTY_MODEL_DISCOVERY_STATE);
-  const [discoveryError, setDiscoveryError] = useState<string | null>(null);
+  const [modelStatus, setModelStatus] = useState<
+    "idle" | "loading" | "empty" | "failed"
+  >("idle");
+  const selectedRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  // Starts on the provider that is set up: the focus trap has focused the
+  // first control by now, and the list is long.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const list = listRef.current;
+      const selected = selectedRef.current;
+      if (!list || !selected) return;
+      list.scrollTop = selected.offsetTop - list.clientHeight / 2;
+      selected.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
   const choice = choices.find((item) => item.id === draft.provider) ?? null;
   const groups = [
     {
@@ -116,7 +133,7 @@ const ProviderSheet = ({
       requestSeq: discoveryRef.current.requestSeq + 1,
       models: [],
     });
-    setDiscoveryError(null);
+    setModelStatus("idle");
     setDraft((current) => ({
       ...current,
       provider: next.id,
@@ -129,6 +146,8 @@ const ProviderSheet = ({
     if (!choice?.canDiscoverModels) return;
     const begun = beginModelDiscovery(discoveryRef.current);
     updateDiscovery(begun.state);
+    setModelStatus("loading");
+    const current = () => discoveryRef.current.requestSeq === begun.requestSeq;
     try {
       const models = await fetchModels(draft.endpoint, draft.apiKey);
       updateDiscovery(
@@ -138,12 +157,12 @@ const ProviderSheet = ({
           models,
         ),
       );
-      setDiscoveryError(null);
-    } catch (err) {
+      if (current()) setModelStatus(models.length > 0 ? "idle" : "empty");
+    } catch {
       updateDiscovery(
         applyModelDiscoveryFailure(discoveryRef.current, begun.requestSeq),
       );
-      setDiscoveryError(String(err));
+      if (current()) setModelStatus("failed");
     }
   };
 
@@ -190,9 +209,10 @@ const ProviderSheet = ({
 
         <div className="mt-4 grid grid-cols-[13rem_minmax(0,1fr)] gap-5">
           <div
+            ref={listRef}
             role="radiogroup"
             aria-labelledby="provider-sheet-title"
-            className="custom-scrollbar -ml-2.5 h-[17rem] overflow-y-auto pr-1"
+            className="custom-scrollbar relative -ml-2.5 h-[17rem] overflow-y-auto pr-1"
           >
             {groups.map((group) =>
               group.items.length === 0 ? null : (
@@ -206,6 +226,7 @@ const ProviderSheet = ({
                       <button
                         key={item.id}
                         type="button"
+                        ref={selected ? selectedRef : undefined}
                         role="radio"
                         aria-checked={selected}
                         onClick={() => pick(item)}
@@ -324,12 +345,30 @@ const ProviderSheet = ({
                 })}
                 buttonClassName={FIELD_BUTTON_CLASS}
               />
-              <p className="mt-1 h-4 truncate ui-text-meta ui-color-warning">
-                {discoveryError &&
-                  t({
-                    id: "settings.models.provider.models_failed",
-                    message: "Couldn't load models from this provider.",
-                  })}
+              <p
+                className={`mt-1 h-4 truncate ui-text-meta ${
+                  modelStatus === "failed"
+                    ? "ui-color-warning"
+                    : "ui-color-muted"
+                }`}
+                aria-live="polite"
+              >
+                {modelStatus === "loading"
+                  ? t({
+                      id: "settings.models.provider.models_loading",
+                      message: "Loading models…",
+                    })
+                  : modelStatus === "empty"
+                    ? t({
+                        id: "settings.models.provider.models_empty",
+                        message: "This provider didn't list any models.",
+                      })
+                    : modelStatus === "failed"
+                      ? t({
+                          id: "settings.models.provider.models_failed",
+                          message: "Couldn't load models from this provider.",
+                        })
+                      : null}
               </p>
             </Field>
           </div>

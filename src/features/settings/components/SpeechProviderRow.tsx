@@ -66,6 +66,9 @@ const SpeechProviderRow = ({
   const [enableWhenReady, setEnableWhenReady] = useState(false);
   const { mutateAsync: fetchSpeechModels } = useFetchRemoteSpeechModels();
   const preset = getSpeechProviderPreset(provider);
+  const isServer =
+    provider === "custom" ||
+    LOCAL_SPEECH_PROVIDERS.some((item) => item.id === provider);
   const custom = getSpeechProviderPreset("custom");
   const choices = [
     ...LOCAL_SPEECH_PROVIDERS.map((item) => toChoice(item, true)),
@@ -113,7 +116,17 @@ const SpeechProviderRow = ({
         }
         facts={
           configReady
-            ? (resolvedSpeechModel(provider, model) ?? "")
+            ? `${
+                isServer
+                  ? t({
+                      id: "settings.models.group.server",
+                      message: "Local server",
+                    })
+                  : t({
+                      id: "settings.models.location.cloud",
+                      message: "Cloud",
+                    })
+              }  ·  ${resolvedSpeechModel(provider, model) ?? ""}`
             : t({
                 id: "settings.models.status.not_set_up",
                 message: "Not set up",

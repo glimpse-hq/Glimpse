@@ -273,6 +273,7 @@ export function useSettingsForm({
   const [llmEndpoint, setLlmEndpoint] = useState("");
   const [llmApiKey, setLlmApiKey] = useState("");
   const [llmModel, setLlmModel] = useState("");
+  const [llmServiceProvider, setLlmServiceProvider] = useState("");
   const [autoDictionaryEnabled, setAutoDictionaryEnabled] = useState(false);
   const [mediaAction, setMediaAction] = useState<MediaAction>("off");
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
@@ -484,6 +485,7 @@ export function useSettingsForm({
       setLlmEndpoint(s.llm_endpoint ?? "");
       setLlmApiKey(s.llm_api_key ?? "");
       setLlmModel(s.llm_model ?? "");
+      setLlmServiceProvider(s.llm_service_provider ?? "");
       setAutoDictionaryEnabled(s.auto_dictionary_enabled ?? false);
       setMediaAction(s.media_action ?? "off");
       setAutoUpdateEnabled(s.auto_update_enabled ?? false);
@@ -702,6 +704,7 @@ export function useSettingsForm({
         llmEndpoint: persistedLlmEndpoint,
         llmApiKey,
         llmModel,
+        llmServiceProvider,
         autoDictionaryEnabled: autoDictionarySupported
           ? autoDictionaryEnabled
           : false,
@@ -746,6 +749,7 @@ export function useSettingsForm({
       llmEndpoint,
       llmApiKey,
       llmModel,
+      llmServiceProvider,
       autoDictionarySupported,
       autoDictionaryEnabled,
       mediaAction,
@@ -1808,6 +1812,8 @@ export function useSettingsForm({
     setLlmApiKey,
     llmModel,
     setLlmModel,
+    llmServiceProvider,
+    setLlmServiceProvider,
     llmConfigReady,
     licenseGateActive,
     activeLicense,

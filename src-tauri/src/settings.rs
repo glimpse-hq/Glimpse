@@ -45,6 +45,7 @@ const KEY_LLM_PROVIDER: &str = "llm_provider";
 const KEY_LLM_ENDPOINT: &str = "llm_endpoint";
 const KEY_LLM_API_KEY: &str = "llm_api_key";
 const KEY_LLM_MODEL: &str = "llm_model";
+const KEY_LLM_SERVICE_PROVIDER: &str = "llm_service_provider";
 const KEY_PERSONALITIES_NOTES_SEEDED: &str = "personalities_notes_seeded";
 const KEY_DICTIONARY: &str = "dictionary";
 const KEY_AUTO_DICTIONARY_ENABLED: &str = "auto_dictionary_enabled";
@@ -174,6 +175,10 @@ pub struct UserSettings {
     pub llm_api_key: String,
     #[serde(default)]
     pub llm_model: String,
+    /// The server or cloud provider that `llm_endpoint`, `llm_api_key` and
+    /// `llm_model` belong to. Kept while an on-device model is active.
+    #[serde(default)]
+    pub llm_service_provider: String,
     #[serde(default)]
     pub personalities_notes_seeded: bool,
     #[serde(default)]
@@ -466,6 +471,7 @@ impl Default for UserSettings {
             llm_endpoint: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
+            llm_service_provider: String::new(),
             personalities_notes_seeded: false,
             dictionary: Vec::new(),
             auto_dictionary_enabled: false,
@@ -733,6 +739,18 @@ pub fn canonicalize_app_locale_or_default(value: &str) -> String {
 }
 
 /// Decrypts a stored key. On failure the ciphertext is kept so `save` writes it back untouched.
+/// The server or cloud provider to remember: the active one when it is a
+/// service, otherwise the stored one. Settings from 1.3.6 and earlier store
+/// none, and saves that omit the field send an empty one.
+pub(crate) fn llm_service_provider_for(stored: String, active: &str) -> String {
+    let active = active.trim();
+    if active.is_empty() || active == "none" || crate::llm_cleanup::is_on_device_provider(active) {
+        stored
+    } else {
+        active.to_string()
+    }
+}
+
 fn decrypt_stored_setting(encrypted: String, label: &str, cache: &Mutex<Option<String>>) -> String {
     if encrypted.is_empty() {
         *cache.lock() = None;
@@ -908,6 +926,10 @@ impl SettingsStore {
             encrypted_llm_api_key = loader.value(KEY_LLM_API_KEY, String::new())?;
 
             settings.llm_model = loader.value(KEY_LLM_MODEL, settings.llm_model.clone())?;
+            settings.llm_service_provider = llm_service_provider_for(
+                loader.value(KEY_LLM_SERVICE_PROVIDER, String::new())?,
+                &settings.llm_provider,
+            );
             settings.personalities_notes_seeded = loader.value(
                 KEY_PERSONALITIES_NOTES_SEEDED,
                 settings.personalities_notes_seeded,
@@ -1191,6 +1213,10 @@ impl SettingsStore {
             (KEY_LLM_API_KEY, json(&stored_key)?),
             (KEY_LLM_MODEL, json(&settings.llm_model)?),
             (
+                KEY_LLM_SERVICE_PROVIDER,
+                json(&settings.llm_service_provider)?,
+            ),
+            (
                 KEY_PERSONALITIES_NOTES_SEEDED,
                 json(&settings.personalities_notes_seeded)?,
             ),
@@ -1378,6 +1404,21 @@ fn settings_db_path(mut dir: PathBuf) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remembers_the_active_service_provider() {
+        assert_eq!(llm_service_provider_for(String::new(), "openai"), "openai");
+        assert_eq!(
+            llm_service_provider_for("ollama".to_string(), "openai"),
+            "openai"
+        );
+        assert_eq!(
+            llm_service_provider_for("ollama".to_string(), "bonsai"),
+            "ollama"
+        );
+        assert_eq!(llm_service_provider_for(String::new(), "apple"), "");
+        assert_eq!(llm_service_provider_for(String::new(), "none"), "");
+    }
 
     fn test_store() -> SettingsStore {
         let store = SettingsStore {

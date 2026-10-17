@@ -11,6 +11,7 @@ import ModelRow from "../ModelRow";
 import SpeechProviderRow from "../SpeechProviderRow";
 import LanguageModelList from "../LanguageModelList";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
+import SettingCard from "../../../../shared/ui/SettingCard";
 import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
 import {
@@ -69,6 +70,8 @@ type ModelsTabProps = {
   setLlmApiKey: (value: string) => void;
   llmModel: string;
   setLlmModel: (value: string) => void;
+  llmServiceProvider: string;
+  setLlmServiceProvider: (value: string) => void;
   llmConfigReady: boolean;
   activeLicense: boolean;
   setLocalModel: (value: string) => void;
@@ -258,6 +261,8 @@ const ModelsTab = ({
   setLlmApiKey,
   llmModel,
   setLlmModel,
+  llmServiceProvider,
+  setLlmServiceProvider,
   llmConfigReady,
   activeLicense,
   setLocalModel,
@@ -339,6 +344,21 @@ const ModelsTab = ({
                 />
               </button>
             </div>
+            <SettingCard flush>
+              <SpeechProviderRow
+                enabled={remoteSpeechEnabled}
+                setEnabled={setRemoteSpeechEnabled}
+                configReady={remoteSpeechConfigReady}
+                provider={remoteSpeechProvider}
+                setProvider={setRemoteSpeechProvider}
+                endpoint={remoteSpeechEndpoint}
+                setEndpoint={setRemoteSpeechEndpoint}
+                apiKey={remoteSpeechApiKey}
+                setApiKey={setRemoteSpeechApiKey}
+                model={remoteSpeechModel}
+                setModel={setRemoteSpeechModel}
+              />
+            </SettingCard>
             <AutomaticModelRow
               modelLabel={recommendedLabel}
               progress={
@@ -364,19 +384,6 @@ const ModelsTab = ({
                   onDelete={() => handleDelete(model.key)}
                 />
               ))}
-              <SpeechProviderRow
-                enabled={remoteSpeechEnabled}
-                setEnabled={setRemoteSpeechEnabled}
-                configReady={remoteSpeechConfigReady}
-                provider={remoteSpeechProvider}
-                setProvider={setRemoteSpeechProvider}
-                endpoint={remoteSpeechEndpoint}
-                setEndpoint={setRemoteSpeechEndpoint}
-                apiKey={remoteSpeechApiKey}
-                setApiKey={setRemoteSpeechApiKey}
-                model={remoteSpeechModel}
-                setModel={setRemoteSpeechModel}
-              />
             </div>
           </div>
 
@@ -393,6 +400,8 @@ const ModelsTab = ({
               setLlmApiKey={setLlmApiKey}
               llmModel={llmModel}
               setLlmModel={setLlmModel}
+              llmServiceProvider={llmServiceProvider}
+              setLlmServiceProvider={setLlmServiceProvider}
               llmConfigReady={llmConfigReady}
               activeLicense={activeLicense}
             />

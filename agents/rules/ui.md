@@ -17,7 +17,7 @@
 - Change shared primitives (`src/shared/ui/`, e.g. `ScreenHeader`) rather than restyling one screen.
 - Use the `ui-text-*` / `ui-color-*` classes and tokens. No hand-tuned inline type metrics.
 - Fields in Settings cards and expanded rows: label above in `ui-text-label-strong`, then an underline input or dropdown `mt-1.5` below it. Dropdowns inside table rows are borderless and transparent.
-- Choosing one item from a list: one row per item and a single selected marker. Per-item setup (provider, endpoint, key, model) opens in a dialog from a trailing "Set Up…" or "Edit…" button, and the row title names what is set up. One way to pick each thing per screen.
+- Choosing one item from a list: one row per item and a single selected marker. Per-item setup (provider, endpoint, key, model) opens in a dialog from a trailing "Set Up…" or "Edit…" button, and the row title names what is set up. A server or cloud provider sits in its own card above the on-device list; switching away keeps its setup. One way to pick each thing per screen.
 - Dialogs have no shared component; copy the Record naming dialog shell (portal, `bg-black/70` backdrop, `rounded-2xl bg-surface-tertiary p-5 ui-shadow-modal-deep`, `useFocusTrap`, text Cancel, `ui-button-primary`). Add `settings-typescale` when opened from Settings.
 - Checkboxes use `shared/ui/Checkbox`, checked in the feature's color.
 - Check light and dark, and one long locale.

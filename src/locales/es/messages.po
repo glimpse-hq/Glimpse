@@ -2029,7 +2029,9 @@ msgid "native.menu.close_window"
 msgstr "Cerrar ventana"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
 #: src/features/settings/components/ProviderSheet.tsx
+#: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.location.cloud"
 msgstr ""
 
@@ -3991,6 +3993,11 @@ msgid "library.view.load_more"
 msgstr "Cargar más"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.models_loading"
+msgstr ""
+
+#. js-lingui-explicit-id
 #: src/features/updates/components/WhatsNewModal.tsx
 msgid "updates.whats_new.loading"
 msgstr "Cargando versiones"
@@ -4011,7 +4018,9 @@ msgid "home.local_api.running"
 msgstr "API local"
 
 #. js-lingui-explicit-id
+#: src/features/settings/components/LanguageModelList.tsx
 #: src/features/settings/components/ProviderSheet.tsx
+#: src/features/settings/components/SpeechProviderRow.tsx
 msgid "settings.models.group.server"
 msgstr ""
 
@@ -6011,11 +6020,6 @@ msgid "onboarding.done.recap.model.v2"
 msgstr "Modelo de voz"
 
 #. js-lingui-explicit-id
-#: src/features/settings/components/SpeechProviderRow.tsx
-msgid "settings.models.provider.speech_title"
-msgstr ""
-
-#. js-lingui-explicit-id
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.provider.speech"
 msgstr "Proveedor de voz"
@@ -6024,6 +6028,11 @@ msgstr "Proveedor de voz"
 #: src/shared/lib/nativeMenuStrings.ts
 msgid "native.toast.speech_provider_title"
 msgstr "Proveedor de voz"
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/SpeechProviderRow.tsx
+msgid "settings.models.provider.speech_title"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/onboarding/steps/LicenseStep.tsx
@@ -6451,6 +6460,11 @@ msgstr "Esta licencia ya no está activa."
 #: src/features/settings/components/tabs/AppTab.tsx
 msgid "settings.app.auto_delete.confirm.audio_only"
 msgstr "Esto solo elimina los archivos de audio guardados, no tus transcripciones."
+
+#. js-lingui-explicit-id
+#: src/features/settings/components/ProviderSheet.tsx
+msgid "settings.models.provider.models_empty"
+msgstr ""
 
 #. js-lingui-explicit-id
 #: src/features/license/components/DictationStatsPanel.tsx

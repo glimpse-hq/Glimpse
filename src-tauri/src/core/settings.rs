@@ -43,6 +43,8 @@ pub(crate) struct UpdateSettingsArgs {
     pub llm_endpoint: String,
     pub llm_api_key: String,
     pub llm_model: String,
+    #[serde(default)]
+    pub llm_service_provider: String,
     pub auto_dictionary_enabled: bool,
     #[serde(default)]
     pub media_action: MediaAction,
@@ -362,6 +364,10 @@ pub(crate) fn update_settings(
         next.llm_endpoint = args.llm_endpoint;
         next.llm_api_key = args.llm_api_key;
         next.llm_model = args.llm_model.trim().to_string();
+        next.llm_service_provider = crate::settings::llm_service_provider_for(
+            args.llm_service_provider,
+            &next.llm_provider,
+        );
         next.auto_dictionary_enabled = args.auto_dictionary_enabled;
         next.media_action = args.media_action;
         next.auto_update_enabled = args.auto_update_enabled;
@@ -474,6 +480,7 @@ mod tests {
             llm_endpoint: String::new(),
             llm_api_key: String::new(),
             llm_model: String::new(),
+            llm_service_provider: String::new(),
             auto_dictionary_enabled: false,
             media_action: MediaAction::Pause,
             auto_update_enabled: true,
