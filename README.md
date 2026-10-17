@@ -115,6 +115,7 @@ Questions, bugs, or feedback: [hello@tryglimpse.cc](mailto:hello@tryglimpse.cc) 
 - [Glimpse-Speech](https://github.com/glimpse-hq/Glimpse-Speech) (MIT), local transcription engine
 - [transcribe.cpp](https://github.com/handy-computer/transcribe.cpp) (MIT), on-device inference for Whisper and other speech models, through [our fork](https://github.com/glimpse-hq/transcribe.cpp)
 - [Silero VAD](https://github.com/snakers4/silero-vad) (MIT), voice activity detection model
+- [Glimpse-Language](https://github.com/glimpse-hq/Glimpse-Language) (MIT), on-device writing models
 
 Speech models are downloaded in-app from Hugging Face. The live list lives in **Settings → Models**. By family:
 
@@ -126,6 +127,10 @@ Speech models are downloaded in-app from Hugging Face. The live list lives in **
 - **Nemotron Streaming GGUF** (NVIDIA Open Model License), English and 3.5 multilingual, via [`handy-computer`](https://huggingface.co/handy-computer/nemotron-3.5-asr-streaming-0.6b-gguf)
 - **NVIDIA Nemotron 3 Diarization GGUF** (OpenMDW 1.1), speaker detection, via [Glimpse's conversion](https://huggingface.co/Glimpse-Dictation/Nemotron-3-Diarization-gguf) of [`nvidia/Nemotron-3-Diarization`](https://huggingface.co/nvidia/Nemotron-3-Diarization)
 - **Qwen3-ASR GGUF** (Apache-2.0), via [`handy-computer`](https://huggingface.co/handy-computer/Qwen3-ASR-0.6B-gguf)
+
+The on-device writing model:
+
+- **G1** (Apache-2.0), Glimpse's fine-tune of [Ternary Bonsai 2](https://huggingface.co/prism-ml) by PrismML (Apache-2.0), which is built from [Qwen3.5](https://huggingface.co/Qwen) by Alibaba Cloud (Apache-2.0). Its LICENSE and NOTICE.txt are installed with the model files.
 
 ## License
 
