@@ -18,6 +18,7 @@ dependencies = [
  "crossbeam-channel",
  "dunce",
  "fs2",
+ "glimpse-language",
  "glimpse-speech",
  "hound",
  "interprocess",
@@ -2218,9 +2219,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "glimpse-language"
+version = "0.1.0"
+dependencies = [
+ "dispatch2",
+ "half",
+ "image",
+ "libc",
+ "objc2",
+ "objc2-foundation",
+ "objc2-metal",
+ "regex",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "glimpse-speech"
 version = "2.0.6"
-source = "git+https://github.com/glimpse-hq/Glimpse-Speech.git?tag=2.0.6#82c7652053c1071e3a7ca6c0c6317c51c1c4f72e"
 dependencies = [
  "anyhow",
  "axum",
@@ -2707,6 +2723,8 @@ dependencies = [
  "num-traits",
  "png 0.18.1",
  "tiff",
+ "zune-core",
+ "zune-jpeg",
 ]
 
 [[package]]
@@ -3603,6 +3621,19 @@ dependencies = [
  "bitflags 2.13.2",
  "objc2",
  "objc2-core-foundation",
+]
+
+[[package]]
+name = "objc2-metal"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0125f776a10d00af4152d74616409f0d4a2053a6f57fa5b7d6aa2854ac04794"
+dependencies = [
+ "bitflags 2.13.2",
+ "block2",
+ "dispatch2",
+ "objc2",
+ "objc2-foundation",
 ]
 
 [[package]]

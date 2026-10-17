@@ -1,4 +1,4 @@
-use glimpse_speech::cleanup::{AppleError, AppleErrorKind};
+use glimpse_language::apple::{AppleError, AppleErrorKind};
 use glimpse_speech::remote::{self as remote_lib, RemoteError, RemoteErrorKind};
 use parking_lot::Mutex;
 use reqwest::Client;
@@ -172,8 +172,8 @@ pub fn uses_apple_provider(settings: &UserSettings) -> bool {
 
 pub fn apple_llm_ready() -> bool {
     matches!(
-        glimpse_speech::cleanup::apple_availability(),
-        glimpse_speech::cleanup::AppleAvailability::Available
+        glimpse_language::apple::apple_availability(),
+        glimpse_language::apple::AppleAvailability::Available
     )
 }
 
@@ -205,7 +205,7 @@ pub fn prewarm_apple_cleanup(settings: &UserSettings) {
         }
         let guidance = style_guidance(&settings, mode.as_ref());
         let prompt = build_cleanup_system_prompt(&settings, guidance.as_deref());
-        if let Err(err) = glimpse_speech::cleanup::apple_prewarm(&prompt) {
+        if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
             tracing::debug!("[Apple LLM] prewarm skipped: {err}");
         }
     });
@@ -218,7 +218,7 @@ pub fn prewarm_apple_edit(settings: &UserSettings) {
         return;
     }
     std::thread::spawn(|| {
-        if let Err(err) = glimpse_speech::cleanup::apple_prewarm(EDIT_PROMPT.trim()) {
+        if let Err(err) = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim()) {
             tracing::debug!("[Apple LLM] edit prewarm skipped: {err}");
         }
     });
@@ -619,7 +619,7 @@ async fn run_apple_text_task(
 ) -> Result<String, AppleError> {
     let started = Instant::now();
     let result = tokio::task::spawn_blocking(move || {
-        glimpse_speech::cleanup::apple_generate(
+        glimpse_language::apple::apple_generate(
             &system_prompt,
             &user_content,
             task.temperature(),

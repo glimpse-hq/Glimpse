@@ -1726,8 +1726,8 @@ fn get_app_info(app: AppHandle<AppRuntime>) -> Result<AppInfo, String> {
 
 #[tauri::command]
 fn apple_llm_availability() -> String {
-    use glimpse_speech::cleanup::AppleAvailability;
-    match glimpse_speech::cleanup::apple_availability() {
+    use glimpse_language::apple::AppleAvailability;
+    match glimpse_language::apple::apple_availability() {
         AppleAvailability::Available => "available",
         AppleAvailability::NotEnabled => "not_enabled",
         AppleAvailability::NotReady => "not_ready",
