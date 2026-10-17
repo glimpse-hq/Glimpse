@@ -212,7 +212,7 @@ const ProviderSheet = ({
             ref={listRef}
             role="radiogroup"
             aria-labelledby="provider-sheet-title"
-            className="custom-scrollbar relative -ml-2.5 h-[17rem] overflow-y-auto pr-1"
+            className="scroll-quiet relative -ml-2.5 max-h-[min(32rem,calc(100vh-14rem))] overflow-y-auto pr-1"
           >
             {groups.map((group) =>
               group.items.length === 0 ? null : (
@@ -230,7 +230,7 @@ const ProviderSheet = ({
                         role="radio"
                         aria-checked={selected}
                         onClick={() => pick(item)}
-                        className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
+                        className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1 text-left transition-colors focus-visible:outline-none focus-visible:shadow-[var(--focus-ring)] ${
                           selected
                             ? "bg-surface-elevated/60"
                             : "hover:bg-surface-elevated/40"

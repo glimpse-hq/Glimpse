@@ -11,7 +11,7 @@ import {
   type SpeechProviderPreset,
 } from "../../../shared/lib/speechProviders";
 import { useFetchRemoteSpeechModels } from "../models-queries";
-import ModelRow from "./ModelRow";
+import ProviderCard from "./ProviderCard";
 import ProviderSheet, {
   ProviderSheetButton,
   type ProviderChoice,
@@ -105,7 +105,9 @@ const SpeechProviderRow = ({
 
   return (
     <>
-      <ModelRow
+      <ProviderCard
+        kind={configReady ? (isServer ? "server" : "cloud") : "none"}
+        seed={`${provider}:${model}`}
         title={
           configReady && preset
             ? preset.label
@@ -133,7 +135,7 @@ const SpeechProviderRow = ({
               })
         }
         state={
-          enabled
+          enabled && configReady
             ? {
                 kind: "active",
                 label: t({

@@ -7,12 +7,10 @@ import {
   Trash as Trash2,
 } from "@phosphor-icons/react";
 import ModelCapabilityIcon from "../../../../shared/ui/ModelCapabilityIcon";
-import ModelRow from "../ModelRow";
+import ModelRow, { type ModelRowState } from "../ModelRow";
 import SpeechProviderRow from "../SpeechProviderRow";
 import LanguageModelList from "../LanguageModelList";
 import SectionLabel from "../../../../shared/ui/SectionLabel";
-import SettingCard from "../../../../shared/ui/SettingCard";
-import ToggleSwitch from "../../../../shared/ui/ToggleSwitch";
 import { ModelPickerPanel } from "../../../../shared/ui/ModelPickerModal";
 import {
   deriveModelStats,
@@ -196,42 +194,35 @@ const InstalledModelRow = ({
 const AutomaticModelRow = ({
   modelLabel,
   progress,
-  enabled,
-  onToggle,
+  state,
 }: {
   modelLabel: string | null;
   progress: DownloadEvent | undefined;
-  enabled: boolean;
-  onToggle: () => void;
+  state: ModelRowState;
 }) => {
   const { t } = useLingui();
-  const title = t({ id: "settings.models.automatic", message: "Automatic" });
   const percent = Math.round(progress?.percent ?? 0);
   return (
-    <div className="flex shrink-0 items-center gap-3 border-b border-border-secondary px-2.5 pb-3">
-      <div className="min-w-0 flex-1">
-        <span className="block truncate ui-text-body-sm-strong text-content-primary">
-          {title}
-        </span>
-        <span className="mt-0.5 block truncate ui-text-meta tabular-nums text-content-muted">
-          {enabled && modelLabel && progress?.status === "downloading"
+    <ModelRow
+      title={t({ id: "settings.models.automatic", message: "Automatic" })}
+      facts={
+        state.kind !== "use" && modelLabel && progress?.status === "downloading"
+          ? t({
+              id: "settings.models.automatic.downloading",
+              message: `Downloading ${modelLabel} ${percent}%`,
+            })
+          : modelLabel
             ? t({
-                id: "settings.models.automatic.downloading",
-                message: `Downloading ${modelLabel} ${percent}%`,
+                id: "settings.models.automatic.uses",
+                message: `Uses ${modelLabel} for your language`,
               })
-            : modelLabel
-              ? t({
-                  id: "settings.models.automatic.uses",
-                  message: `Uses ${modelLabel} for your language`,
-                })
-              : t({
-                  id: "settings.models.automatic.description",
-                  message: "Uses the model for your language",
-                })}
-        </span>
-      </div>
-      <ToggleSwitch enabled={enabled} onToggle={onToggle} ariaLabel={title} />
-    </div>
+            : t({
+                id: "settings.models.automatic.description",
+                message: "Uses the model for your language",
+              })
+      }
+      state={state}
+    />
   );
 };
 
@@ -283,6 +274,31 @@ const ModelsTab = ({
     modelStatus,
     localModel,
   );
+
+  const activeState: ModelRowState = {
+    kind: "active",
+    label: t({ id: "settings.models.card.active", message: "Active" }),
+  };
+  const fallbackState: ModelRowState = {
+    kind: "fallback",
+    label: t({ id: "settings.models.card.fallback", message: "Fallback" }),
+  };
+  // Automatic is its own setting; choosing it, or a model, is one selection.
+  const chooseAutomatic = () => {
+    if (remoteSpeechEnabled) setRemoteSpeechEnabled(false);
+    void setLocalModelAuto(true).catch((err) => showErrorToast(String(err)));
+  };
+  const chooseModel = async (key: string) => {
+    if (automatic) {
+      try {
+        await setLocalModelAuto(false);
+      } catch (err) {
+        showErrorToast(String(err));
+        return;
+      }
+    }
+    setLocalModel(key);
+  };
 
   const installedModels = sortInstalledModels(
     modelCatalog.filter((m) => modelStatus[m.key]?.installed),
@@ -344,43 +360,42 @@ const ModelsTab = ({
                 />
               </button>
             </div>
-            <SettingCard flush>
-              <SpeechProviderRow
-                enabled={remoteSpeechEnabled}
-                setEnabled={setRemoteSpeechEnabled}
-                configReady={remoteSpeechConfigReady}
-                provider={remoteSpeechProvider}
-                setProvider={setRemoteSpeechProvider}
-                endpoint={remoteSpeechEndpoint}
-                setEndpoint={setRemoteSpeechEndpoint}
-                apiKey={remoteSpeechApiKey}
-                setApiKey={setRemoteSpeechApiKey}
-                model={remoteSpeechModel}
-                setModel={setRemoteSpeechModel}
-              />
-            </SettingCard>
-            <AutomaticModelRow
-              modelLabel={recommendedLabel}
-              progress={
-                recommendedKey ? downloadState[recommendedKey] : undefined
-              }
-              enabled={automatic}
-              onToggle={() =>
-                void setLocalModelAuto(!automatic).catch((err) =>
-                  showErrorToast(String(err)),
-                )
-              }
+            <SpeechProviderRow
+              enabled={remoteSpeechEnabled}
+              setEnabled={setRemoteSpeechEnabled}
+              configReady={remoteSpeechConfigReady}
+              provider={remoteSpeechProvider}
+              setProvider={setRemoteSpeechProvider}
+              endpoint={remoteSpeechEndpoint}
+              setEndpoint={setRemoteSpeechEndpoint}
+              apiKey={remoteSpeechApiKey}
+              setApiKey={setRemoteSpeechApiKey}
+              model={remoteSpeechModel}
+              setModel={setRemoteSpeechModel}
             />
             <div className="flex flex-col">
+              <AutomaticModelRow
+                modelLabel={recommendedLabel}
+                progress={
+                  recommendedKey ? downloadState[recommendedKey] : undefined
+                }
+                state={
+                  automatic
+                    ? remoteSpeechEnabled
+                      ? fallbackState
+                      : activeState
+                    : { kind: "use", onUse: chooseAutomatic }
+                }
+              />
               {installedModels.map((model) => (
                 <InstalledModelRow
                   key={model.key}
                   model={model}
-                  active={model.key === installedModel?.key}
+                  active={!automatic && model.key === installedModel?.key}
                   fallback={remoteSpeechEnabled}
                   aneInstalled={Boolean(modelStatus[model.key]?.ane_installed)}
                   shiftHeld={shiftHeld}
-                  onUse={() => setLocalModel(model.key)}
+                  onUse={() => void chooseModel(model.key)}
                   onDelete={() => handleDelete(model.key)}
                 />
               ))}

@@ -11,7 +11,7 @@ import {
 import type { LlmProvider } from "../../../types";
 import { useFetchLlmModels } from "../models-queries";
 import ModelRow, { type ModelRowState } from "./ModelRow";
-import SettingCard from "../../../shared/ui/SettingCard";
+import ProviderCard from "./ProviderCard";
 import ProviderSheet, {
   ProviderSheetButton,
   type ProviderChoice,
@@ -147,50 +147,50 @@ const LanguageModelList = ({
 
   return (
     <div className="space-y-2">
-      <SettingCard flush>
-        <ModelRow
-          title={
-            service && !service.onDevice
-              ? service.label
-              : t({
-                  id: "settings.models.provider.title",
-                  message: "Server or cloud",
-                })
-          }
-          facts={
-            serviceReady && service
-              ? `${
-                  isServer
-                    ? t({
-                        id: "settings.models.group.server",
-                        message: "Local server",
-                      })
-                    : t({
-                        id: "settings.models.location.cloud",
-                        message: "Cloud",
-                      })
-                }  ·  ${llmModel}`
-              : t({
-                  id: "settings.models.status.not_set_up",
-                  message: "Not set up",
-                })
-          }
-          factsWarning={serviceActive && !serviceReady}
-          state={
-            serviceActive
-              ? active
-              : serviceReady && service
-                ? { kind: "use", onUse: () => select(service.id) }
-                : { kind: "status", text: "" }
-          }
-          trailing={
-            <ProviderSheetButton
-              configured={serviceReady}
-              onClick={() => setSheetOpen(true)}
-            />
-          }
-        />
-      </SettingCard>
+      <ProviderCard
+        kind={serviceReady ? (isServer ? "server" : "cloud") : "none"}
+        seed={`${service?.id ?? ""}:${llmModel}`}
+        title={
+          service && !service.onDevice
+            ? service.label
+            : t({
+                id: "settings.models.provider.title",
+                message: "Server or cloud",
+              })
+        }
+        facts={
+          serviceReady && service
+            ? `${
+                isServer
+                  ? t({
+                      id: "settings.models.group.server",
+                      message: "Local server",
+                    })
+                  : t({
+                      id: "settings.models.location.cloud",
+                      message: "Cloud",
+                    })
+              }  ·  ${llmModel}`
+            : t({
+                id: "settings.models.status.not_set_up",
+                message: "Not set up",
+              })
+        }
+        factsWarning={serviceActive && !serviceReady}
+        state={
+          serviceActive && serviceReady
+            ? active
+            : serviceReady && service
+              ? { kind: "use", onUse: () => select(service.id) }
+              : { kind: "status", text: "" }
+        }
+        trailing={
+          <ProviderSheetButton
+            configured={serviceReady}
+            onClick={() => setSheetOpen(true)}
+          />
+        }
+      />
       <div className="flex flex-col">
         {showG1 && (
           <ModelRow
@@ -207,7 +207,7 @@ const LanguageModelList = ({
             }
             factsWarning={g1Selected && Boolean(g1Blocker)}
             state={
-              g1Selected
+              g1Selected && !g1Blocker && g1Installed
                 ? active
                 : g1Blocker
                   ? { kind: "status", text: g1Blocker }
@@ -233,7 +233,7 @@ const LanguageModelList = ({
             }
             factsWarning={appleSelected && Boolean(appleBlocker)}
             state={
-              appleSelected
+              appleSelected && appleAvailability === "available"
                 ? active
                 : appleBlocker
                   ? { kind: "status", text: appleBlocker }

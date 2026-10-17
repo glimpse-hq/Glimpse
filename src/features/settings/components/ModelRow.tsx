@@ -10,45 +10,52 @@ export type ModelRowState =
   | { kind: "use"; onUse: () => void }
   | { kind: "status"; text: string };
 
-type ModelRowProps = {
+export type ModelRowProps = {
+  leading?: ReactNode;
   title: string;
   titleAdornment?: ReactNode;
   facts: ReactNode;
   factsWarning?: boolean;
   state: ModelRowState;
   trailing?: ReactNode;
+  surfaceClassName?: string;
 };
 
 const ModelRow = ({
+  leading,
   title,
   titleAdornment,
   facts,
   factsWarning = false,
   state,
   trailing,
+  surfaceClassName = "rounded-lg transition-colors hover:bg-surface-elevated/40",
 }: ModelRowProps) => {
   const { t } = useLingui();
   const select = state.kind === "use" ? state.onUse : undefined;
 
   return (
-    <div className="rounded-lg transition-colors hover:bg-surface-elevated/40">
+    <div className={surfaceClassName}>
       <div className="group grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2.5 py-2">
         <button
           type="button"
           onClick={select}
           disabled={!select}
-          className="min-w-0 text-left disabled:cursor-default"
+          className="flex min-w-0 items-center gap-3.5 text-left disabled:cursor-default"
         >
-          <span className="flex min-w-0 items-center gap-1.5 ui-text-body-sm-strong text-content-primary">
-            <span className="truncate">{title}</span>
-            {titleAdornment}
-          </span>
-          <span
-            className={`mt-0.5 block truncate ui-text-meta tabular-nums ${
-              factsWarning ? "ui-color-warning" : "text-content-muted"
-            }`}
-          >
-            {facts}
+          {leading}
+          <span className="min-w-0">
+            <span className="flex min-w-0 items-center gap-1.5 ui-text-body-sm-strong text-content-primary">
+              <span className="truncate">{title}</span>
+              {titleAdornment}
+            </span>
+            <span
+              className={`mt-0.5 block truncate ui-text-meta tabular-nums ${
+                factsWarning ? "ui-color-warning" : "text-content-muted"
+              }`}
+            >
+              {facts}
+            </span>
           </span>
         </button>
 
