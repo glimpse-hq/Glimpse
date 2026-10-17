@@ -195,7 +195,15 @@ fn validate_update_settings_args(args: &UpdateSettingsArgs) -> Result<(), String
         return Err("AI Cleanup cannot be enabled without an active language model".into());
     }
 
-    if args.llm_enabled && args.llm_provider != crate::llm_cleanup::APPLE_PROVIDER {
+    if args.llm_enabled
+        && args.llm_provider == crate::llm_cleanup::BONSAI_PROVIDER
+        && !args.llm_model.trim().is_empty()
+        && crate::speech::catalog::g1_definition(args.llm_model.trim()).is_none()
+    {
+        return Err("Unknown G1 model selection".into());
+    }
+
+    if args.llm_enabled && !crate::llm_cleanup::is_on_device_provider(&args.llm_provider) {
         if args.llm_endpoint.trim().is_empty() {
             return Err("Language model endpoint cannot be empty".into());
         }
@@ -286,13 +294,20 @@ pub(crate) fn update_settings(
     if args.local_api_start_on_launch {
         crate::license::require_active_license(&state.settings_store, "the API server")?;
     }
+    let previous = state.current_settings_unmasked();
+    let bonsai = crate::llm_cleanup::BONSAI_PROVIDER;
+    if args.llm_enabled
+        && args.llm_provider == bonsai
+        && !(previous.llm_enabled && previous.llm_provider == bonsai)
+    {
+        crate::license::require_active_license(&state.settings_store, "G1")?;
+    }
     let license_active = crate::license::license_gate_active(&state.settings_store);
     let active_license = crate::license::active_license_gate(&state.settings_store);
     let shortcut_bindings = canonicalize_shortcut_bindings(&args)?;
 
     let requested_auto_launch_enabled = args.auto_launch_enabled;
-    let launch_changed =
-        state.current_settings_unmasked().auto_launch_enabled != requested_auto_launch_enabled;
+    let launch_changed = previous.auto_launch_enabled != requested_auto_launch_enabled;
     if launch_changed {
         crate::sync_launch_at_login(app, requested_auto_launch_enabled)?;
     }

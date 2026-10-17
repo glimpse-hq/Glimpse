@@ -16,7 +16,11 @@ pub const MODEL_CAPABILITY_STREAMING: &str = "streaming";
 pub const MODEL_CAPABILITY_DIARIZATION: &str = "diarization";
 pub const MODEL_CATEGORY_LEGACY: &str = "legacy";
 pub const MODEL_CATEGORY_DIARIZATION: &str = "diarization";
+pub const MODEL_CATEGORY_CLEANUP: &str = "cleanup";
 pub const DIARIZER_MODEL: &str = "nemotron3_diar_q8";
+// The G1 files are not on Hugging Face yet. Until they are, G1 is installed by
+// copying its files into the model's directory.
+const G1_PUBLISHED: bool = false;
 /// (directory, file) of speaker models earlier versions installed. Each keeps
 /// working until `DIARIZER_MODEL` is installed, and is then removed.
 pub const RETIRED_DIARIZERS: &[(&str, &str)] = &[(
@@ -30,6 +34,7 @@ pub fn is_legacy_category(category: &str) -> bool {
 
 pub fn is_downloadable(manifest: &LocalModelManifest) -> bool {
     !is_legacy_category(manifest.category)
+        && (manifest.category != MODEL_CATEGORY_CLEANUP || G1_PUBLISHED)
 }
 
 pub fn model_is_downloadable(key: &str) -> bool {
@@ -180,6 +185,70 @@ const QWEN3_ASR_0_6B_DECODER_FILE: CatalogFile = CatalogFile {
     size_bytes: Some(639_554_336),
     sha256: Some("8a1bf11a571607b88ae53ae44c0e38b616c441fd64c53bce37fea9d403a9c489"),
 };
+
+// Hashes and sizes are filled in when the files are published.
+const fn g1_file(url: &'static str, path: &'static str) -> CatalogFile {
+    CatalogFile {
+        url,
+        path,
+        size_bytes: None,
+        sha256: None,
+    }
+}
+
+const G1_2B_FILES: &[CatalogFile] = &[
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/model.safetensors",
+        "model.safetensors",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/config.json",
+        "config.json",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/tokenizer.json",
+        "tokenizer.json",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/adapter.safetensors",
+        "adapter.safetensors",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/LICENSE",
+        "LICENSE",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/2b/NOTICE.txt",
+        "NOTICE.txt",
+    ),
+];
+
+const G1_4B_FILES: &[CatalogFile] = &[
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/model.safetensors",
+        "model.safetensors",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/config.json",
+        "config.json",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/tokenizer.json",
+        "tokenizer.json",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/adapter.safetensors",
+        "adapter.safetensors",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/LICENSE",
+        "LICENSE",
+    ),
+    g1_file(
+        "https://huggingface.co/glimpse-hq/G1/resolve/main/4b/NOTICE.txt",
+        "NOTICE.txt",
+    ),
+];
 
 /// Core ML encoder companions for transcribe.cpp models, unpacked next to the
 /// GGUF as `<gguf stem>-encoder.mlmodelc` (the name the engine looks for).
@@ -1051,6 +1120,38 @@ const DIARIZER_MANIFEST: LocalModelManifest = LocalModelManifest {
     capabilities: &[],
 };
 
+// G1, the on-device cleanup model, run by glimpse-language rather than the
+// speech service. The install manager treats every engine but Apple alike, so
+// `engine` only keeps these out of the Apple paths.
+pub const G1_MANIFESTS: &[LocalModelManifest] = &[
+    LocalModelManifest {
+        id: "g1_2b",
+        family: "g1",
+        label: "G1 2B",
+        description: "Cleans up dictation on this Mac.",
+        tags: &[],
+        category: MODEL_CATEGORY_CLEANUP,
+        engine: LocalModelEngine::Transcribe,
+        languages: Languages::None,
+        variant: "2B",
+        files: G1_2B_FILES,
+        capabilities: &[],
+    },
+    LocalModelManifest {
+        id: "g1_4b",
+        family: "g1",
+        label: "G1 4B",
+        description: "Cleans up dictation on this Mac.",
+        tags: &[],
+        category: MODEL_CATEGORY_CLEANUP,
+        engine: LocalModelEngine::Transcribe,
+        languages: Languages::None,
+        variant: "4B",
+        files: G1_4B_FILES,
+        capabilities: &[],
+    },
+];
+
 /// Automatic walks this in order and takes the first model that covers the
 /// user's languages. The first one usable here is also the stock default.
 pub const RECOMMENDED: &[&str] = &[
@@ -1175,13 +1276,20 @@ pub fn local_manifests() -> &'static [LocalModelManifest] {
     MODEL_MANIFESTS
 }
 
-/// Transcription models only. [`installable_definition`] also covers the diarizer.
+/// Transcription models only. [`installable_definition`] also covers the
+/// diarizer and G1.
 pub fn definition(key: &str) -> Option<&'static LocalModelManifest> {
     MODEL_MANIFESTS.iter().find(|manifest| manifest.id == key)
 }
 
 pub(crate) fn installable_definition(key: &str) -> Option<&'static LocalModelManifest> {
-    definition(key).or_else(|| (key == DIARIZER_MODEL).then_some(&DIARIZER_MANIFEST))
+    definition(key)
+        .or_else(|| (key == DIARIZER_MODEL).then_some(&DIARIZER_MANIFEST))
+        .or_else(|| g1_definition(key))
+}
+
+pub fn g1_definition(key: &str) -> Option<&'static LocalModelManifest> {
+    G1_MANIFESTS.iter().find(|manifest| manifest.id == key)
 }
 
 fn ane_replacement_files(model: &str) -> Option<&'static [CatalogFile]> {

@@ -10,6 +10,7 @@ mod core;
 mod crypto;
 mod data_export;
 mod dictionary;
+mod g1;
 mod import;
 mod integrations;
 mod library;
@@ -427,6 +428,7 @@ pub fn run() {
 
             analytics::set_crash_phase("app_state");
             app.manage(AppState::new(Arc::clone(&settings_store), settings, handle));
+            g1::init(handle);
             #[cfg(target_os = "windows")]
             platform::windows::elevation::watch_foreground(handle.clone());
             speech::upgrade_retired_diarizers(handle);
@@ -689,6 +691,7 @@ pub fn run() {
             analytics::track_screen_viewed,
             fetch_llm_models,
             apple_llm_availability,
+            g1::g1_status,
             fetch_remote_speech_models,
             open_about_page,
             open_account_page,

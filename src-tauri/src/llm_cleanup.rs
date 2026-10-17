@@ -1,4 +1,5 @@
 use glimpse_language::apple::{AppleError, AppleErrorKind};
+use glimpse_language::bonsai::{BonsaiError, BonsaiErrorKind, StopReason};
 use glimpse_speech::remote::{self as remote_lib, RemoteError, RemoteErrorKind};
 use parking_lot::Mutex;
 use reqwest::Client;
@@ -6,7 +7,8 @@ use reqwest::StatusCode;
 use reqwest::header::RETRY_AFTER;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::settings::{Personality, TranscriptionMode, UserSettings};
@@ -165,9 +167,19 @@ pub async fn edit_transcription(
 }
 
 pub const APPLE_PROVIDER: &str = "apple";
+pub const BONSAI_PROVIDER: &str = "bonsai";
 
 pub fn uses_apple_provider(settings: &UserSettings) -> bool {
     settings.llm_provider.trim() == APPLE_PROVIDER
+}
+
+pub fn uses_bonsai_provider(settings: &UserSettings) -> bool {
+    settings.llm_provider.trim() == BONSAI_PROVIDER
+}
+
+/// Built-in models with no endpoint, API key, or model name to configure.
+pub fn is_on_device_provider(provider: &str) -> bool {
+    matches!(provider.trim(), APPLE_PROVIDER | BONSAI_PROVIDER)
 }
 
 pub fn apple_llm_ready() -> bool {
@@ -184,6 +196,9 @@ pub fn is_llm_available(settings: &UserSettings) -> bool {
     if uses_apple_provider(settings) {
         return apple_llm_ready();
     }
+    if uses_bonsai_provider(settings) {
+        return crate::g1::resolve(settings).is_some();
+    }
     settings.llm_provider != "none"
         && !settings.llm_endpoint.trim().is_empty()
         && configured_model(settings).is_some()
@@ -193,35 +208,53 @@ pub fn should_refine_transcript(settings: &UserSettings, mode: Option<&Personali
     is_llm_available(settings) && (settings.cleanup_enabled || personality_has_style_guidance(mode))
 }
 
-pub fn prewarm_apple_cleanup(settings: &UserSettings) {
-    if !settings.llm_enabled || !uses_apple_provider(settings) {
+pub fn prewarm_cleanup(settings: &UserSettings) {
+    let apple = uses_apple_provider(settings);
+    if !settings.llm_enabled || !(apple || uses_bonsai_provider(settings)) {
         return;
     }
     let settings = settings.clone();
     std::thread::spawn(move || {
+        if !apple {
+            // Picks up model files copied in since the last scan.
+            crate::g1::refresh_installed();
+        }
         let mode = mode_context::resolve_active_personality(&settings);
         if !should_refine_transcript(&settings, mode.as_ref()) {
             return;
         }
         let guidance = style_guidance(&settings, mode.as_ref());
         let prompt = build_cleanup_system_prompt(&settings, guidance.as_deref());
-        if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
-            tracing::debug!("[Apple LLM] prewarm skipped: {err}");
+        if apple {
+            if let Err(err) = glimpse_language::apple::apple_prewarm(&prompt) {
+                tracing::debug!("[Apple LLM] prewarm skipped: {err}");
+            }
+        } else if let Err(err) = crate::g1::prewarm(&settings, &prompt) {
+            tracing::debug!("[G1] prewarm skipped: {err}");
         }
     });
 }
 
 /// Edit mode is only known at stop, once the selection is captured; prewarming
 /// then overlaps the session setup with transcription.
-pub fn prewarm_apple_edit(settings: &UserSettings) {
-    if !settings.llm_enabled || !uses_apple_provider(settings) {
+pub fn prewarm_edit(settings: &UserSettings) {
+    if !settings.llm_enabled {
         return;
     }
-    std::thread::spawn(|| {
-        if let Err(err) = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim()) {
-            tracing::debug!("[Apple LLM] edit prewarm skipped: {err}");
-        }
-    });
+    if uses_apple_provider(settings) {
+        std::thread::spawn(|| {
+            if let Err(err) = glimpse_language::apple::apple_prewarm(EDIT_PROMPT.trim()) {
+                tracing::debug!("[Apple LLM] edit prewarm skipped: {err}");
+            }
+        });
+    } else if uses_bonsai_provider(settings) {
+        let settings = settings.clone();
+        std::thread::spawn(move || {
+            if let Err(err) = crate::g1::prewarm(&settings, EDIT_PROMPT.trim()) {
+                tracing::debug!("[G1] edit prewarm skipped: {err}");
+            }
+        });
+    }
 }
 
 pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
@@ -229,6 +262,10 @@ pub fn resolved_model_label(settings: &UserSettings) -> Option<String> {
         None
     } else if uses_apple_provider(settings) {
         Some(APPLE_PROVIDER.to_string())
+    } else if uses_bonsai_provider(settings) {
+        crate::g1::resolve(settings)
+            .and_then(crate::g1::size_label)
+            .map(|size| format!("{BONSAI_PROVIDER}:{size}"))
     } else {
         configured_model(settings).map(|model| format!("{}:{model}", settings.llm_provider.trim()))
     }
@@ -545,16 +582,25 @@ async fn run_text_task(
     fallback_text: &str,
     output_tracks_input: bool,
 ) -> Result<String, RemoteError> {
+    // On-device models can loop until their context is full (Apple's took 53 s
+    // on an empty transcript in testing). Cleanup output tracks input length.
+    let on_device_max_tokens = if output_tracks_input {
+        task.max_tokens()
+            .min(u32::try_from(fallback_text.len() / 2 + 256).unwrap_or(u32::MAX))
+    } else {
+        task.max_tokens()
+    };
+    if uses_bonsai_provider(settings) {
+        let model = crate::g1::resolve(settings)
+            .ok_or_else(|| remote_lib::config_error("G1 is not installed"))?;
+        let raw =
+            run_bonsai_text_task(model, on_device_max_tokens, system_prompt, user_content).await?;
+        return Ok(
+            extract_plain_text(&raw, fallback_text).unwrap_or_else(|| fallback_text.to_string())
+        );
+    }
     if uses_apple_provider(settings) {
-        // Apple's model can loop until its 4,096-token window is full (53 s on
-        // an empty transcript in testing). Cleanup output tracks input length.
-        let max_tokens = if output_tracks_input {
-            task.max_tokens()
-                .min(u32::try_from(fallback_text.len() / 2 + 256).unwrap_or(u32::MAX))
-        } else {
-            task.max_tokens()
-        };
-        let raw = run_apple_text_task(task, max_tokens, system_prompt, user_content)
+        let raw = run_apple_text_task(task, on_device_max_tokens, system_prompt, user_content)
             .await
             .map_err(|err| {
                 let mut error =
@@ -638,6 +684,61 @@ async fn run_apple_text_task(
         result.len()
     );
     Ok(result)
+}
+
+async fn run_bonsai_text_task(
+    model: &'static str,
+    max_tokens: u32,
+    system_prompt: String,
+    user_content: String,
+) -> Result<String, RemoteError> {
+    let started = Instant::now();
+    let cancel = Arc::new(AtomicBool::new(false));
+    let task = tokio::task::spawn_blocking({
+        let cancel = Arc::clone(&cancel);
+        move || {
+            crate::g1::generate(
+                model,
+                &system_prompt,
+                &user_content,
+                max_tokens as usize,
+                &cancel,
+            )
+        }
+    });
+    let generation = match tokio::time::timeout(CHAT_TIMEOUT, task).await {
+        Ok(joined) => joined
+            .map_err(|err| remote_lib::transport_error(format!("G1 task failed: {err}")))?
+            .map_err(bonsai_error)?,
+        Err(_) => {
+            cancel.store(true, Ordering::Relaxed);
+            return Err(remote_lib::transport_error("G1 timed out"));
+        }
+    };
+    let stats = &generation.stats;
+    tracing::info!(
+        "[G1] {model} responded in {} ms ({} prompt + {} cached tokens, {} generated, {:?})",
+        started.elapsed().as_millis(),
+        stats.prompt_tokens,
+        stats.cached_tokens,
+        stats.generated_tokens,
+        generation.stop
+    );
+    // A stop short of the end-of-turn token can cut the text off mid-sentence.
+    if generation.stop != StopReason::Eos {
+        let mut error = remote_lib::transport_error("G1 output may be cut off");
+        error.code = Some(INPUT_UNSUITABLE_CODE.to_string());
+        return Err(error);
+    }
+    Ok(generation.text)
+}
+
+fn bonsai_error(err: BonsaiError) -> RemoteError {
+    let mut error = remote_lib::transport_error(format!("G1 failed: {err}"));
+    if err.kind == BonsaiErrorKind::ContextTooLarge {
+        error.code = Some(INPUT_UNSUITABLE_CODE.to_string());
+    }
+    error
 }
 
 async fn send_chat_request(
@@ -1175,7 +1276,7 @@ pub async fn run_preflight(client: Client, settings: UserSettings) {
         return;
     }
 
-    if uses_apple_provider(&settings) {
+    if is_on_device_provider(&settings.llm_provider) {
         // is_llm_available already probed on-device availability; no endpoint to ping.
         let mut state = preflight_state().lock();
         state.last_checked_at = Some(Instant::now());

@@ -344,6 +344,9 @@ pub async fn download_model_now(
     ane: Option<bool>,
 ) -> Result<ModelStatus, String> {
     let state = app.state::<crate::AppState>();
+    if super::catalog::g1_definition(&model).is_some() {
+        crate::license::require_active_license(&state.settings_store, "G1")?;
+    }
     let manager =
         model_manager(&app).map_err(|err| download_failed(&app, &model, "resolve", err))?;
     let ane = ane.unwrap_or_else(|| super::catalog::ane_encoder_dir(&model).is_some());
@@ -466,6 +469,8 @@ pub async fn download_model_now(
         super::compile_ane_encoder(&app, status.id.clone());
     } else if definition(&model).is_some() {
         super::warm_model(&app, status.id.clone());
+    } else if super::catalog::g1_definition(&model).is_some() {
+        crate::g1::refresh_installed();
     }
 
     let settings = state.current_settings();
@@ -644,6 +649,9 @@ pub async fn delete_model(
                 tracing::error!("[speech] delete {model} failed: {err:#}");
                 format!("{err:#}")
             });
+        if super::catalog::g1_definition(&model).is_some() {
+            crate::g1::refresh_installed();
+        }
         refresh_model_readiness(&handle, &model);
         result
     })

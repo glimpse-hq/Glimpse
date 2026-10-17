@@ -18,6 +18,7 @@ const BUILTIN_PERSONALITIES: &[(&str, &str)] = &[
 
 const LLM_PROVIDERS: &[&str] = &[
     "apple",
+    "bonsai",
     "lmstudio",
     "ollama",
     "openai",
