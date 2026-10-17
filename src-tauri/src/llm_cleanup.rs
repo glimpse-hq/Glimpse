@@ -975,15 +975,14 @@ fn cleanup_result_looks_safe(source: &str, candidate: &str, has_style_guidance: 
     }
 
     let candidate_tokens = significant_tokens(candidate);
-    let overlap = source_tokens
-        .iter()
-        .filter(|token| candidate_tokens.contains(*token))
-        .count() as f32
-        / source_tokens.len() as f32;
+    let shared = source_tokens.intersection(&candidate_tokens).count() as f32;
+    // Corrections drop source words on purpose; answers, commentary and translations add new ones.
+    let grounded = shared / candidate_tokens.len().max(1) as f32;
+    let kept = shared / source_tokens.len() as f32;
     let candidate_words = word_count(candidate) as f32;
     let max_words = (source_words as f32 * 1.35) + 8.0;
 
-    overlap >= 0.5 && candidate_words <= max_words
+    grounded >= 0.8 && kept >= 0.25 && candidate_words <= max_words
 }
 
 // Catch obvious translation/transliteration even on short, unsegmented text.
@@ -1045,11 +1044,26 @@ fn starts_with_result_label(text: &str) -> bool {
         .any(|label| lowered.starts_with(label))
 }
 
+const NUMBER_WORDS: &str = "zero one two three four five six seven eight nine ten eleven twelve \
+    thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty \
+    seventy eighty ninety hundred thousand million first second third fourth fifth sixth seventh \
+    eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth \
+    eighteenth nineteenth twentieth thirtieth";
+
 fn significant_tokens(text: &str) -> HashSet<String> {
     text.split(|ch: char| !ch.is_alphanumeric())
         .filter_map(|token| {
             let token = token.trim().to_lowercase();
-            if token.chars().count() >= 3 {
+            let digits = ["st", "nd", "rd", "th"]
+                .iter()
+                .find_map(|suffix| token.strip_suffix(suffix))
+                .unwrap_or(&token);
+            // Number words and digits compare equal, so "nine fifteen" matches "9:15".
+            if (!digits.is_empty() && digits.chars().all(|ch| ch.is_ascii_digit()))
+                || NUMBER_WORDS.split_whitespace().any(|word| word == token)
+            {
+                Some("#".to_string())
+            } else if token.chars().count() >= 3 {
                 Some(token)
             } else {
                 None
@@ -1310,6 +1324,30 @@ mod tests {
         assert!(!cleanup_result_looks_safe(
             "Schedule the review for tomorrow afternoon.",
             "Here is a polished rewrite with action items and added context.",
+            false
+        ));
+        assert!(!cleanup_result_looks_safe(
+            "What's the best way to cook rice on the stove",
+            "Rinse the rice, then simmer one cup with two cups of water for about eighteen minutes.",
+            false
+        ));
+        assert!(!cleanup_result_looks_safe(
+            "So I talked to the design team this morning and they said the new onboarding flow is mostly done but they still need to finish the pricing screen and the empty states",
+            "Onboarding is mostly done.",
+            false
+        ));
+    }
+
+    #[test]
+    fn cleanup_safety_accepts_corrections_and_number_formatting() {
+        assert!(cleanup_result_looks_safe(
+            "I'll be there at eight thirty, scratch that, nine fifteen, traffic is bad",
+            "I'll be there at 9:15, traffic is bad.",
+            false
+        ));
+        assert!(cleanup_result_looks_safe(
+            "the meeting is on june twenty first at three fifteen",
+            "The meeting is on June 21st at 3:15.",
             false
         ));
     }
